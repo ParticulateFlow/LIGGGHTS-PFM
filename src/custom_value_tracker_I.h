@@ -1,0 +1,252 @@
+/* ----------------------------------------------------------------------
+   LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
+   Transfer Simulations
+
+   LIGGGHTS is part of the CFDEMproject
+   www.liggghts.com | www.cfdem.com
+
+   Christoph Kloss, christoph.kloss@cfdem.com
+   Copyright 2009-2012 JKU Linz
+   Copyright 2012-     DCS Computing GmbH, Linz
+
+   LIGGGHTS is based on LAMMPS
+   LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
+   http://lammps.sandia.gov, Sandia National Laboratories
+   Steve Plimpton, sjplimp@sandia.gov
+
+   This software is distributed under the GNU General Public License.
+
+   See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Philippe Seil (JKU Linz)
+------------------------------------------------------------------------- */
+
+#ifndef LMP_CUSTOM_VALUE_TRACKER_I_H
+#define LMP_CUSTOM_VALUE_TRACKER_I_H
+
+  /* ----------------------------------------------------------------------
+   add property
+  ------------------------------------------------------------------------- */
+
+  template<typename T>
+  T* CustomValueTracker::addElementProperty(char *_id, char* _comm, char* _ref,char *_restart,int _scalePower)
+  {
+     // error if property exists already
+     if(elementProperties_.getPointerById<T>(_id))
+     {
+         char *errmsg = new char[strlen(_id)+200];
+         sprintf(errmsg,"Illegal command, features are incompatible - element property '%s' exists already",_id);
+         error->all(FLERR,errmsg);
+         delete []errmsg;
+     }
+
+     // add property
+     elementProperties_.add<T>(_id,_comm,_ref,_restart,_scalePower);
+
+     // check if properties were set correctly
+     // error here since ContainerBase not derived from Pointers
+     if(!elementProperties_.getPointerById<T>(_id)->propertiesSetCorrectly())
+     {
+         char *errmsg = new char[strlen(_id)+200];
+         sprintf(errmsg,"Illegal element property, comm or frame property not set correctly for property '%s'",_id);
+         error->all(FLERR,errmsg);
+         delete []errmsg;
+     }
+
+     // allocate memory and initialize
+     //NP only do this in case of mesh, since elements are generated before properties
+     if(ownerMesh_)
+        elementProperties_.getPointerById<T>(_id)->addUninitialized(ownerMesh_->sizeLocal()+ownerMesh_->sizeGhost());
+     elementProperties_.getPointerById<T>(_id)->setAll(0);
+
+     // return pointer
+     return elementProperties_.getPointerById<T>(_id);
+  }
+
+  template<typename T>
+  T* CustomValueTracker::addGlobalProperty(char *_id, char* _comm, char* _ref,char *_restart,int _scalePower)
+  {
+     // error if property exists already
+     if(globalProperties_.getPointerById<T>(_id))
+     {
+         char *errmsg = new char[strlen(_id)+200];
+         sprintf(errmsg,"Illegal command, features are incompatible - global property '%s' exists already",_id);
+         error->all(FLERR,errmsg);
+         delete []errmsg;
+     }
+
+     // add property
+     globalProperties_.add<T>(_id,_comm,_ref,_restart,_scalePower);
+
+     // check if properties were set correctly
+     // error here since ContainerBase not derived from Pointers
+     if(!globalProperties_.getPointerById<T>(_id)->propertiesSetCorrectly())
+     {
+         char *errmsg = new char[strlen(_id)+200];
+         sprintf(errmsg,"Illegal global property, comm or frame property not set correctly for property '%s'",_id);
+         error->all(FLERR,errmsg);
+         delete []errmsg;
+     }
+
+     // allocate memory
+     globalProperties_.getPointerById<T>(_id)->addUninitialized(capacityElement_);
+
+     // return pointer
+     return globalProperties_.getPointerById<T>(_id);
+  }
+
+  /* ----------------------------------------------------------------------
+   mem management
+  ------------------------------------------------------------------------- */
+
+  void CustomValueTracker::grow(int to)
+  {
+      elementProperties_.grow(to);
+      capacityElement_ = to;
+  }
+
+  /* ----------------------------------------------------------------------
+   get reference
+  ------------------------------------------------------------------------- */
+
+  template<typename T>
+  T* CustomValueTracker::getElementProperty(char *_id)
+  {
+     return elementProperties_.getPointerById<T>(_id);
+  }
+
+  template<typename T>
+  T* CustomValueTracker::getGlobalProperty(char *_id)
+  {
+     return globalProperties_.getPointerById<T>(_id);
+  }
+
+  /* ----------------------------------------------------------------------
+   set property
+  ------------------------------------------------------------------------- */
+
+  template<typename T, typename U>
+  void CustomValueTracker::setElementProperty(char *_id, U def)
+  {
+     elementProperties_.getPointerById<T>(_id)->set(def);
+  }
+  template<typename T, typename U>
+  void CustomValueTracker::setGlobalProperty(char *_id, U def)
+  {
+     //NP global properties are container classes with just one element contained
+     globalProperties_.getPointerById<T>(_id)->set(0,def);
+  }
+
+  /* ----------------------------------------------------------------------
+   copy data from element from to element to
+  ------------------------------------------------------------------------- */
+
+  void CustomValueTracker::copyElement(int from, int to)
+  {
+      elementProperties_.copyElement(from,to);
+  }
+
+  /* ----------------------------------------------------------------------
+   delete element i
+  ------------------------------------------------------------------------- */
+
+  void CustomValueTracker::deleteElement(int i)
+  {
+      elementProperties_.deleteElement(i);
+  }
+
+  /* ----------------------------------------------------------------------
+   delete forward comm properties of element i
+  ------------------------------------------------------------------------- */
+
+  void CustomValueTracker::deleteForwardElement(int i,bool scale,bool translate,bool rotate)
+  {
+      elementProperties_.deleteForwardElement(i,scale,translate,rotate);
+  }
+
+  /* ----------------------------------------------------------------------
+   delete restart properties of element i
+  ------------------------------------------------------------------------- */
+
+  void CustomValueTracker::deleteRestartElement(int i,bool scale,bool translate,bool rotate)
+  {
+      elementProperties_.deleteRestartElement(i,scale,translate,rotate);
+  }
+
+  /* ----------------------------------------------------------------------
+   move element i
+  ------------------------------------------------------------------------- */
+
+  void CustomValueTracker::moveElement(int i, double *delta)
+  {
+      elementProperties_.moveElement(i,delta);
+  }
+
+  /* ----------------------------------------------------------------------
+   push / pop for list of elements
+  ------------------------------------------------------------------------- */
+
+  int CustomValueTracker::elemListBufSize(int n,int operation,bool scale,bool translate,bool rotate)
+  {
+    return elementProperties_.elemListBufSize(n,operation,scale,translate,rotate);
+  }
+
+  int CustomValueTracker::pushElemListToBuffer(int n, int *list, double *buf, int operation,bool scale,bool translate, bool rotate)
+  {
+    return elementProperties_.pushElemListToBuffer(n,list,buf,operation,scale,translate,rotate);
+  }
+
+  int CustomValueTracker::popElemListFromBuffer(int first, int n, double *buf, int operation,bool scale,bool translate, bool rotate)
+  {
+    return elementProperties_.popElemListFromBuffer(first,n,buf,operation,scale,translate,rotate);
+  }
+
+  /* ----------------------------------------------------------------------
+   push / pop for element i
+  ------------------------------------------------------------------------- */
+
+  int CustomValueTracker::elemBufSize(int operation,bool scale,bool translate,bool rotate)
+  {
+    /*NL*///char _id[300];
+    /*NL*///for(int i=0;i<elementProperties_.numElem_;i++)
+    /*NL*///{
+    /*NL*///  elementProperties_.getBasePointerByIndex(i)->id(_id);
+    /*NL*///  fprintf(this->screen,"prop %s size %d\n",_id,elementProperties_.getBasePointerByIndex(i)->elemBufSize(operation,scale,translate,rotate));
+    /*NL*///}
+    return elementProperties_.elemBufSize(operation,scale,translate,rotate);
+  }
+
+  int CustomValueTracker::pushElemToBuffer(int i, double *buf, int operation,bool scale,bool translate, bool rotate)
+  {
+    return elementProperties_.pushElemToBuffer(i,buf,operation,scale,translate,rotate);
+  }
+
+  int CustomValueTracker::popElemFromBuffer(double *buf, int operation,bool scale,bool translate, bool rotate)
+  {
+    return elementProperties_.popElemFromBuffer(buf,operation,scale,translate,rotate);
+  }
+
+  /* ----------------------------------------------------------------------
+   push / pop for global properties
+  ------------------------------------------------------------------------- */
+
+  int CustomValueTracker::globalPropsBufSize(int operation,bool scale,bool translate,bool rotate)
+  {
+    return globalProperties_.bufSize(operation,scale,translate,rotate);
+  }
+
+  int CustomValueTracker::pushGlobalPropsToBuffer(double *buf, int operation,bool scale,bool translate, bool rotate)
+  {
+    return globalProperties_.pushToBuffer(buf,operation,scale,translate,rotate);
+  }
+
+  int CustomValueTracker::popGlobalPropsFromBuffer(double *buf, int operation,bool scale,bool translate, bool rotate)
+  {
+    return globalProperties_.popFromBuffer(buf,operation,scale,translate,rotate);
+  }
+
+#endif

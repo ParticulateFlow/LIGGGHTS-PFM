@@ -1,0 +1,59 @@
+#ifndef LMP_FIX_DUMMY_H
+#define LMP_FIX_DUMMY_H
+
+#include "fix_rigid.h"
+
+namespace LAMMPS_NS {
+
+class Multisphere {
+
+ public:
+  int n_body() {return 0;}
+  int map(int i) {return 0;}
+  int tag(int i) {return 0;}
+  int tag_max_body() {return 0;}
+  
+  inline void x_bound(double *x_bnd,int i){  }
+
+  inline double r_bound(int i)
+  {
+      return 0.;
+  }
+
+  inline double mass(int i)
+  {
+      return 0.;
+  }
+
+  inline double density(int i)
+  {
+      return 0.;
+  }
+  int calc_n_steps(int iatom,double *p_ref,double *normalvec,double *v_normal) {return 0;}
+  void* extract(char*& a, int& b, int& c) {return NULL;}
+};
+
+
+class FixRigidMultisphere : public Fix {
+
+ public:
+
+  void set_v_integrate(double *v) {}
+  int belongs_to(int i) {return 0;}
+
+  inline class Multisphere& data()
+  { return (*multisphere_);}
+
+  inline int n_body()
+  { return data().n_body(); }
+
+  inline int tag_max_body()
+  { return data().tag_max_body(); }
+
+  class Multisphere *multisphere_;
+
+};
+}
+
+
+#endif
