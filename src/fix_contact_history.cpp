@@ -568,6 +568,8 @@ void FixContactHistory::cleanUpContacts()
             // delete and copy values
             if(delflag[i][j])
             {
+                /*NL*/ //fprintf(screen,"deleting contact\n");
+
                 // swap with last contact if more than 1
                 if(npartner[i] > 1)
                 {
@@ -584,7 +586,7 @@ void FixContactHistory::cleanUpContacts()
 
                 if(dnum)
                     for(int d = 0; d < dnum; d++)
-                        contacthistory[i][j][d] = 0.;
+                        contacthistory[i][npartner[i]-1][d] = 0.;
 
                 npartner[i]--;
             }

@@ -34,12 +34,17 @@
 
   template<int NUM_NODES>
   MultiNodeMesh<NUM_NODES>::MultiNodeMesh(LAMMPS *lmp)
-  : AbstractMesh(lmp), node_(), node_orig_(0), nMove_(0), stepLastReset_(-1),
-    nScale_(0), nTranslate_(0), nRotate_(0),
+  : AbstractMesh(lmp),
+    node_orig_(0),
+    nMove_(0),
+    stepLastReset_(-1),
+    nScale_(0),
+    nTranslate_(0),
+    nRotate_(0),
     random_(new RanPark(lmp,179424799)), // big prime #
     mesh_id_(0)
   {
-
+      quatUnitize4D(quat_);
   }
 
   /* ----------------------------------------------------------------------
@@ -53,7 +58,6 @@
       delete random_;
       if(mesh_id_) delete []mesh_id_;
   }
-
 
   /* ----------------------------------------------------------------------
    set ID
@@ -155,6 +159,39 @@
   }
 
   /* ----------------------------------------------------------------------
+   return the lowest iNode/jNode combination that is shared
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  bool MultiNodeMesh<NUM_NODES>::shareNode(int iElem, int jElem, int &iNode, int &jNode)
+  {
+    // broad phase
+    double dist[3], radsum;
+    vectorSubtract3D(center_(iElem),center_(jElem),dist);
+    radsum = rBound_(iElem)+ rBound_(jElem);
+    if(vectorMag3DSquared(dist) > radsum*radsum)
+    {
+        iNode = -1; jNode = -1;
+        /*NL*/ //fprintf(this->screen,"shareNode broad phase false\n");
+        return false;
+    }
+
+    // narrow phase
+    for(int i=0;i<NUM_NODES;i++){
+      for(int j=0;j<NUM_NODES;j++){
+        if(MultiNodeMesh<NUM_NODES>::nodesAreEqual(iElem,i,jElem,j)){
+          iNode = i; jNode = j;
+          /*NL*/ //fprintf(this->screen,"shareNode narrow phase true\n");
+          return true;
+        }
+      }
+    }
+    iNode = -1; jNode = -1;
+    /*NL*/ //fprintf(this->screen,"shareNode narrow phase false\n");
+    return false;
+  }
+
+  /* ----------------------------------------------------------------------
    register and unregister mesh movement
    on registration, return bool staing if this is first mover on this mesh
   ------------------------------------------------------------------------- */
@@ -196,6 +233,9 @@
           }
 
           this->memory->destroy<double>(tmp);
+
+          // also re-set quaternion
+          quatUnitize4D(quat_);
       }
 
       return isFirst;
@@ -277,6 +317,9 @@
   template<int NUM_NODES>
   void MultiNodeMesh<NUM_NODES>::move(double *vecTotal, double *vecIncremental)
   {
+    if(!isTranslating())
+        this->error->all(FLERR,"Illegal call, need to register movement first");
+
     //NP add vecTotal to each of the nodes, which have been reset to
     //NP original position before
     resetNodesToOrig();
@@ -377,6 +420,9 @@
   template<int NUM_NODES>
   void MultiNodeMesh<NUM_NODES>::rotate(double *totalQ, double *dQ,double *totalDispl, double *dDispl)
   {
+    if(!isRotating())
+        this->error->all(FLERR,"Illegal call, need to register movement first");
+
     //NP add rotation due to totalQ to each of the nodes, which have been reset to
     //NP original position before
     resetNodesToOrig();
@@ -451,6 +497,33 @@
     }
 
     updateGlobalBoundingBox();
+  }
+
+  /* ----------------------------------------------------------------------
+   set orientation of mesh
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  void MultiNodeMesh<NUM_NODES>::setRotation(double *quatNew)
+  {
+      if(!isRotating())
+        this->error->all(FLERR,"Illegal call, need to register movement first");
+
+      // will just rotate the mesh, no translation
+      double dQ[4],dx[3],dX[3];
+      vectorZeroize3D(dx);
+      vectorZeroize3D(dX);
+
+      //NP quat_ represents old (current) orientation
+      //NP quatNew represents new orientation
+      MathExtraLiggghts::quat_diff(quat_,quatNew,dQ);
+
+      /*NL*/ this->error->all(FLERR,"CHECK THIS");
+
+      vectorCopy4D(quatNew,quat_);
+
+      //NP call rotate() - object orientation will do the rest
+      rotate(quatNew, dQ, dX, dx);
   }
 
   /* ----------------------------------------------------------------------
@@ -532,6 +605,73 @@
   {
     for(int i = 0; i < NUM_NODES; ++i)
       box.extendToContain(node_(nElem)[i]);
+  }
+
+
+  /* ----------------------------------------------------------------------
+   decide if any node has moved far enough to trigger re-build
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  bool MultiNodeMesh<NUM_NODES>::decideRebuild()
+  {
+    // just return for non-moving mesh
+    if(!isMoving()) return false;
+
+    //NP from Neighbor::decide()
+
+    double ***node = node_.begin();
+    double ***old = nodesLastRe_.begin();
+    int flag = 0;
+    int nlocal = sizeLocal();
+    double triggersq = 0.25*this->neighbor->skin*this->neighbor->skin;
+
+    if(nlocal != nodesLastRe_.size())
+        this->error->one(FLERR,"Internal error in MultiNodeMesh::decide_rebuild()");
+
+    /*NL*/// fprintf(screen,"proc %d: sizes %d %d, nlocal %d, neighbor->triggersq %f\n",
+    /*NL*///        comm->me, mesh_->node_.size(),oldNodes.size(),nlocal,neighbor->triggersq);
+
+    for(int iTri = 0; iTri < nlocal; iTri++)
+    {
+      for(int iNode = 0; iNode < NUM_NODES; iNode++)
+      {
+        double deltaX[3];
+        vectorSubtract3D(node[iTri][iNode],old[iTri][iNode],deltaX);
+        double distSq = deltaX[0]*deltaX[0] + deltaX[1]*deltaX[1] + deltaX[2]*deltaX[2];
+        if(distSq > triggersq){
+          /*NL*/ //printf("triangle %d distance %f skin %f\n",iTri,distSq,neighbor->triggersq);
+          flag = 1;
+        }
+      }
+      if (flag) break;
+    }
+
+    // allreduce result
+    MPI_Max_Scalar(flag,this->world);
+
+    /*NL*/ //fprintf (screen,"step %d, flag is %d \n",update->ntimestep,flag);
+
+    if(flag) return true;
+    else     return false;
+}
+
+  /* ----------------------------------------------------------------------
+   store node pos at last re-build
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  void MultiNodeMesh<NUM_NODES>::storeNodePos()
+  {
+    // just return for non-moving mesh
+    if(!isMoving()) return;
+
+    int nlocal = sizeLocal();
+    double ***node = node_.begin();
+
+    nodesLastRe_.empty();
+    for(int i = 0; i < nlocal; i++)
+        nodesLastRe_.add(node[i]);
   }
 
 #endif

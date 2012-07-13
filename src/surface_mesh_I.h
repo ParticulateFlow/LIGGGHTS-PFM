@@ -92,6 +92,7 @@ void SurfaceMesh<NUM_NODES>::setCurvature(double _curvature)
 template<int NUM_NODES>
 void SurfaceMesh<NUM_NODES>::useAsInsertionMesh()
 {
+    /*NL*/ //this->error->all(FLERR,"useAsInsertionMesh() called");
     isInsertionMesh_ = true;
 }
 
@@ -174,7 +175,7 @@ void SurfaceMesh<NUM_NODES>::recalcLocalSurfProperties()
     }
 
     // mesh area must be summed up
-   MPI_Sum_Scalar(areaMesh_(1),areaMesh_(0),this->world);
+    MPI_Sum_Scalar(areaMesh_(1),areaMesh_(0),this->world);
 
     /*NL*/// fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
     /*NL*///         this->comm->me,areaMeshGlobal(),areaMeshOwned(),areaMeshGhost());
@@ -218,7 +219,10 @@ void SurfaceMesh<NUM_NODES>::recalcGhostSurfProperties()
 
     /*NL*///fprintf(this->screen,"proc %d: areaMeshOwned+Ghost %f areaAcc(lastGhost) %f SHOULD BE EQUAL\n",
     /*NL*///        this->comm->me,areaMeshOwned()+areaMeshGhost(),areaAcc(nall-1));
-    /*NL*///this->error->all(FLERR,"CHECK this");
+    /*NL*/// this->error->all(FLERR,"CHECK this");
+
+    /*NL*///fprintf(this->screen,"proc %d: isInsertionMesh_ %s\n",this->comm->me,isInsertionMesh_?"true":"false");
+    /*NL*/// this->error->all(FLERR,"CHECK this");
 
     // calc area of owned and ghost elements in my subdomain
     //NP use monte carlo
@@ -255,13 +259,12 @@ void SurfaceMesh<NUM_NODES>::recalcGhostSurfProperties()
 
         // correct so sum of all owned areas is equal to global area
         areaMesh_(3) *= areaMeshGlobal()/areaCheck;
+
+        /*NL*///fprintf(this->screen,"proc %d: sizeGlobal() %d, sizeLocal() %d, sizeGhost() %d,  areaMeshGlobal %f areaMeshOwned %f  areaMeshGhost %f areaMeshLocal %f n_iter %d tolerance %f\n",
+        /*NL*///        this->comm->me,this->sizeGlobal(),this->sizeLocal(),this->sizeGhost(),areaMeshGlobal(),areaMeshOwned(),areaMeshGhost(),areaMeshLocal(),
+        /*NL*///        n_iter,((areaCheck-areaMeshGlobal()))/areaMeshGlobal());
+        /*NL*///this->error->all(FLERR,"CHECK this");
     }
-
-    /*NL*///fprintf(this->screen,"proc %d: sizeGlobal() %d, sizeLocal() %d, sizeGhost() %d,  areaMeshGlobal %f areaMeshOwned %f  areaMeshGhost %f areaMeshLocal %f n_iter %d tolerance %f\n",
-    /*NL*///        this->comm->me,this->sizeGlobal(),this->sizeLocal(),this->sizeGhost(),areaMeshGlobal(),areaMeshOwned(),areaMeshGhost(),areaMeshLocal(),
-    /*NL*///        n_iter,((areaCheck-areaMeshGlobal()))/areaMeshGlobal());
-    /*NL*///this->error->all(FLERR,"CHECK this");
-
 }
 
 /* ----------------------------------------------------------------------
@@ -472,8 +475,9 @@ void SurfaceMesh<NUM_NODES>::buildNeighbours()
     {
       for(int j = i+1; j < nall; j++)
       {
+        //NP continue of do not share any node
         int iNode(0), jNode(0), iEdge(0), jEdge(0);
-        if(!shareNode(i,j,iNode,jNode)) continue;
+        if(!this->shareNode(i,j,iNode,jNode)) continue;
 
         if(shareEdge(i,j,iEdge,jEdge))
           handleSharedEdge(i,iEdge,j,jEdge, areCoplanar(this->id(i),this->id(j)));
@@ -522,36 +526,10 @@ void SurfaceMesh<NUM_NODES>::growSurface(int iSrf, double by)
 }
 
 template<int NUM_NODES>
-bool SurfaceMesh<NUM_NODES>::shareNode(int iSrf, int jSrf, int &iNode, int &jNode)
-{
-    // broad phase
-    double dist[3], radsum;
-    vectorSubtract3D(this->center_(iSrf),this->center_(jSrf),dist);
-    radsum = this->rBound_(iSrf)+ this->rBound_(jSrf);
-    if(vectorMag3D(dist) > radsum*radsum)
-    {
-        iNode = -1; jNode = -1;
-        return false;
-    }
-
-    // narrow phase
-    for(int i=0;i<NUM_NODES;i++){
-      for(int j=0;j<NUM_NODES;j++){
-        if(MultiNodeMesh<NUM_NODES>::nodesAreEqual(iSrf,i,jSrf,j)){
-          iNode = i; jNode = j;
-          return true;
-        }
-      }
-    }
-    iNode = -1; jNode = -1;
-    return false;
-}
-
-template<int NUM_NODES>
 bool SurfaceMesh<NUM_NODES>::shareEdge(int iSrf, int jSrf, int &iEdge, int &jEdge)
 {
     int i,j;
-    if(shareNode(iSrf,jSrf,i,j)){
+    if(this->shareNode(iSrf,jSrf,i,j)){
       // following implementation of shareNode(), the only remaining option to
       // share an edge is that the next node of iSrf is equal to the previous
       // node if jSrf
@@ -589,6 +567,9 @@ void SurfaceMesh<NUM_NODES>::handleSharedEdge(int iSrf, int iEdge, int jSrf, int
     // deactivate other edge if coplanar
     if(coplanar)
       edgeActive(jSrf)[jEdge] = false;
+
+    /*NL*/// fprintf(this->screen,"called for iSrf %d iSrf %d, coplanar %s\n",iSrf,jSrf,coplanar?"yes":"no");
+    /*NL*/// this->error->all(FLERR,"END");
 
     handleSharedNode(iSrf,iEdge,jSrf,(jEdge+1)%NUM_NODES,coplanar);
     handleSharedNode(iSrf,(iEdge+1)%NUM_NODES,jSrf,jEdge,coplanar);
@@ -746,9 +727,11 @@ bool SurfaceMesh<NUM_NODES>::isOnSurface(double *pos)
 {
     bool on_surf = false;
 
+    int nall = this->sizeLocal()+this->sizeGhost();
+
     // brute force
     // loop over ghosts as well as they might overlap my subbox
-    for(int i = 0; i < this->sizeLocal()+this->sizeGhost(); i++)
+    for(int i = 0; i < nall; i++)
     {
         on_surf = on_surf || isInElement(pos,i);
         if(on_surf) break;

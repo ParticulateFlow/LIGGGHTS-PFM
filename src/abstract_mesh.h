@@ -59,11 +59,18 @@ namespace LAMMPS_NS
         //   calls rotate(double *dQuat,double *displacement)
         virtual void rotate(double dAngle, double *axis, double *p) = 0;
 
+        // set rotation state of mesh
+        virtual void setRotation(double *quat) = 0;
+
         // initialize movement
         virtual bool registerMove(bool _scale, bool _translate, bool _rotate) = 0;
         virtual void unregisterMove(bool _scale, bool _translate, bool _rotate) = 0;
 
         virtual bool isMoving() = 0;
+
+        // neigh list stuff for moving mesh
+        virtual bool decideRebuild() = 0;
+        virtual void storeNodePos() = 0;
 
         //NP ***************************************
         //NP interface to MultiNodeMeshParallel
@@ -71,6 +78,7 @@ namespace LAMMPS_NS
 
         virtual void initalSetup() = 0;
         virtual void pbcExchangeBorders(int setupFlag) = 0;
+        virtual void clearReverse() = 0;
         virtual void forwardComm() = 0;
         virtual void reverseComm() = 0;
 
@@ -83,6 +91,15 @@ namespace LAMMPS_NS
         virtual int numNodes() = 0;
 
         virtual inline class CustomValueTracker& prop() = 0;
+
+        //NP ***************************************
+        //NP interface to TrackingMesh
+        //NP ***************************************
+        /*
+        virtual ContainerBase* container(double type,int lenVec) = 0;
+        virtual ContainerBase* container(int type,int lenVec) = 0;
+        virtual ContainerBase* container(bool type,int lenVec) = 0;
+        */
 
         //NP ***************************************
         //NP inline access functions for size

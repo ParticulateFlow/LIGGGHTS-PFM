@@ -12,7 +12,10 @@ class Multisphere {
   int map(int i) {return 0;}
   int tag(int i) {return 0;}
   int tag_max_body() {return 0;}
-  
+
+  void id_extend() {}
+  void generate_map() {}
+
   inline void x_bound(double *x_bnd,int i){  }
 
   inline double r_bound(int i)
@@ -34,12 +37,15 @@ class Multisphere {
 };
 
 
-class FixRigidMultisphere : public Fix {
+class FixMultisphere : public Fix {
 
  public:
 
   void set_v_integrate(double *v) {}
   int belongs_to(int i) {return 0;}
+
+  int calc_n_steps(int iatom,double *p_ref,double *normalvec,double *v_normal)
+  { return 0; }
 
   inline class Multisphere& data()
   { return (*multisphere_);}

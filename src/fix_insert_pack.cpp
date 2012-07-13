@@ -39,7 +39,7 @@
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
 #include "particleToInsert.h"
-#include "fix_rigid_multisphere.h"
+#include "fix_multisphere.h"
 
 #define SEED_OFFSET 12
 
@@ -206,7 +206,7 @@ int FixInsertPack::calc_ninsert_this()
   for(int i = 0; i < nlocal; i++)
   {
       //NP only count single particles
-      if(fix_rm && fix_rm->belongs_to(i) >= 0) continue;
+      if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0) continue;
       if
       (
         ((!all_in_flag) && ins_region->match(x[i][0],x[i][1],x[i][2]))    ||
@@ -222,7 +222,7 @@ int FixInsertPack::calc_ninsert_this()
   //NP count bodies for multisphere
   int nbody;
   double x_bound_body[3], mass_body, r_bound_body, density_body;
-  if(fix_rm)
+  if(multisphere)
   {
       nbody = multisphere->n_body();
 
