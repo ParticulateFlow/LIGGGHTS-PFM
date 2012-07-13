@@ -183,6 +183,15 @@ class Neighbor : protected Pointers {
   int coord2bin(double *);              // mapping atom coord to a bin
   int coord2bin(double *, int &, int &, int&); // ditto
 
+  void bin2XYZ(int, int &, int &, int &); //NP modified St.A.
+  int XYZ2bin(int, int, int); //NP modified St.A.
+  int binUpX(int); //NP modified St.A.
+  int binDownX(int); //NP modified St.A.
+  int binUpY(int); //NP modified St.A.
+  int binDownY(int); //NP modified St.A.
+  int binUpZ(int); //NP modified St.A.
+  int binDownZ(int); //NP modified St.A.
+
   int exclusion(int, int, int,
                 int, int *, int *) const;  // test for pair exclusion
 
