@@ -24,6 +24,7 @@
 #include "fix_gravity.h"
 #include "fix_heat.h"
 #include "fix_heat_gran_conduction.h"
+#include "fix_heat_gran_radiation.h"
 #include "fix_indent.h"
 #include "fix_insert.h"
 #include "fix_insert_pack.h"
