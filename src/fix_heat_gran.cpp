@@ -22,27 +22,14 @@
 #include "fix_heat_gran.h"
 
 #include "atom.h"
-#include "comm.h"
-#include "compute_pair_gran_local.h"
-#include "domain.h"
-#include "error.h"
 #include "fix_property_atom.h"
-#include "fix_property_global.h"
 #include "fix_scalar_transport_equation.h"
 #include "force.h"
 #include "group.h"
-#include "math.h"
 #include "math_extra.h"
-#include "mech_param_gran.h"
 #include "modify.h"
-#include "neigh_list.h"
-#include "neigh_request.h"
-#include "neighbor.h"
 #include "pair_gran.h"
-#include "respa.h"
 #include "stdlib.h"
-#include "string.h"
-#include "update.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
