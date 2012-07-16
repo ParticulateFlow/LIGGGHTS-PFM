@@ -20,14 +20,14 @@
 ------------------------------------------------------------------------- */
 #ifdef FIX_CLASS
 
-FixStyle(heat/gran/conduction,FixHeatGran)
+FixStyle(heat/gran/conduction,FixHeatGranCond)
 
 #else
 
 #ifndef LMP_FIX_HEATGRAN_CONDUCTION_H
 #define LMP_FIX_HEATGRAN_CONDUCTION_H
 
-#include "fix_heat_gran_new.h"
+#include "fix_heat_gran.h"
 
 namespace LAMMPS_NS {
 
@@ -35,13 +35,21 @@ namespace LAMMPS_NS {
   public:
     FixHeatGranCond(class LAMMPS *, int, char **);
     ~FixHeatGranCond();
+    void pre_delete(bool);
 
+    int setmask();
+    void init();
     void post_force(int);
+
+    void cpl_evaluate(class ComputePairGranLocal *);
+    void register_compute_pair_local(ComputePairGranLocal *);
+    void unregister_compute_pair_local(ComputePairGranLocal *);
 
   private:
     template <int> void post_force_eval(int,int);
 
     class FixPropertyGlobal* fix_conductivity;
+    class ComputePairGranLocal *cpl;
 
     double *conductivity;
 
@@ -52,7 +60,8 @@ namespace LAMMPS_NS {
 
 }
 
-
+#endif
+#endif
 
 
 
