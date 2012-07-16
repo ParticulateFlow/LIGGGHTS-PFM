@@ -25,7 +25,6 @@
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
 ------------------------------------------------------------------------- */
 
-
 #ifndef LMP_CONTACT_HISTORY_I_H
 #define LMP_CONTACT_HISTORY_I_H
 
@@ -40,14 +39,16 @@
     if(haveContact(iP,idTri,history))
       return;
 
-    // else check if one of the present contacts is coplanar with iTri
-    // if so, copy history, set history pointer to correct location,
-    // set delete flag and return
-    if(hasContactCoplanarTo(iP,idTri,history))
-      return;
+    /*NL*/// fprintf(screen,"   new contact - adding\n");
 
     // else new contact - add contact
     addNewTriContactToExistingParticle(iP,idTri,history);
+
+    // check if one of the present contacts is coplanar with iTri
+    // if so, copy history
+    checkCoplanarContact(iP,idTri,history);
+
+    return;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -57,11 +58,15 @@
     // check if contact is present - if yes, set deleteflag
     //NP do not delete at this point to enable shear history transfer
 
+    /*NL*/ //fprintf(screen,"   old contact check, npartner[iP] %d\n",npartner[iP]);
+    /*NL*/ //for (int j = 0; j < npartner[iP]; j++) {fprintf(screen,"   partner %d\n",partner[iP][j]); printVec3D(screen,"   hist",contacthistory[iP][j]);}
+
     for(int j = 0; j < npartner[iP]; j++)
     {
         if(partner[iP][j] == idTri)
         {
             delflag[iP][j] = true;
+            /*NL*/ //fprintf(screen,"   old contact - removing\n");
             break;
         }
     }
@@ -86,17 +91,20 @@
 
   /* ---------------------------------------------------------------------- */
 
-  inline bool FixContactHistory::hasContactCoplanarTo(int iP, int idTri, double *&history)
+  inline bool FixContactHistory::checkCoplanarContact(int iP, int idTri, double *&history)
   {
-
     int *tri = partner[iP];
     for(int i = 0; i < npartner[iP]; i++)
     {
-      if(mesh_->areCoplanar(tri[i],idTri))
+      if(tri[i] != idTri && mesh_->areCoplanar(tri[i],idTri))
       {
-        tri[i] = idTri;
-        history = contacthistory[iP][i];
-        delflag[iP][i] = false;
+        // copy contact history
+        vectorCopyN(contacthistory[iP][i],history,dnum);
+        /*NL*/// fprintf(screen,"Found coplanar contact, old contact hist %f %f %f\n",
+        /*NL*///                   contacthistory[iP][i][0],contacthistory[iP][i][1],contacthistory[iP][i][2]);
+        /*NL*/// fprintf(screen,"Found coplanar contact, new contact hist %f %f %f\n",
+        /*NL*///                   history[0],history[1],history[2]);
+        /*NL*/ //error->one(FLERR,"end");
         return true;
       }
     }
@@ -118,6 +126,8 @@
         history[i] = 0.;
 
       npartner[iP]++;
+
+      /*NL*/// for (int j = 0; j < npartner[iP]; j++) fprintf(screen,"ADD -partner %d\n",partner[iP][j]);
   }
 
   /* ---------------------------------------------------------------------- */

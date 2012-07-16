@@ -74,11 +74,6 @@ FixMoveMesh::FixMoveMesh(LAMMPS *lmp, int narg, char **arg)
 
     //NP indicate that restart data is stored
     restart_global = 1;
-
-    //NP this fix can force reneighboring
-    force_reneighbor = 1;
-
-    next_reneighbor = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -136,9 +131,7 @@ int FixMoveMesh::setmask()
 {
     int mask = 0;
     mask |= INITIAL_INTEGRATE;
-    mask |= PRE_FORCE;
     mask |= FINAL_INTEGRATE;
-    mask |= PRE_NEIGHBOR;
     return mask;
 }
 
@@ -150,15 +143,14 @@ void FixMoveMesh::setup_pre_force(int vflag)
 
     /*NL*///fprintf(screen,"FixMoveMesh setup: time_since_setup_ %f\n",time_since_setup_);
 
-    //NP initial storage of node positions
-    pre_neighbor();
-    pre_force(0);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMoveMesh::setup(int vflag)
 {
+    /*NL*///  fprintf(screen,"FixMoveMesh::setup()\n");
+
     if(!mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v"))
     {
         mesh_->prop().addElementProperty<MultiVectorContainer<double,3,3> >("v","comm_none","frame_general","restart_no");
@@ -188,38 +180,6 @@ void FixMoveMesh::initial_integrate(int dummy)
 
     // integration
     move_->initial_integrate(time_since_setup_,dt);
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixMoveMesh::pre_neighbor()
-{
-    neighListFresh_ = true;
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixMoveMesh::pre_force(int vflag)
-{
-    // only first move on this mesh handles neigh list build
-    if(!move_->isFirst()) return;
-
-    /*NL*/// fprintf (screen,"step %d, exec pre force \n",update->ntimestep);
-
-    // neigh list built on this step
-    //NP store node info now
-    if(neighListFresh_)
-    {
-        store_node_pos();
-        neighListFresh_ = false;
-
-    }
-    // check for re-build of neigh list
-    else
-    {
-        if(decide_rebuild())
-            next_reneighbor = update->ntimestep + 1;
-    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -258,59 +218,4 @@ void FixMoveMesh::restart(char *buf)
   double *list = (double *) buf;
 
   time_ = static_cast<int> (list[n++]);
-}
-
-/* ----------------------------------------------------------------------
-   decide if any node has moved far enough to trigger re-build
-------------------------------------------------------------------------- */
-
-bool FixMoveMesh::decide_rebuild()
-{
-    //NP from Neighbor::decide()
-
-    double ***node = mesh_->nodePtr();
-    double ***old = oldNodes.begin();
-    int flag = 0;
-    int nlocal = mesh_->sizeLocal();
-    double triggersq = 0.25*neighbor->skin*neighbor->skin;
-
-    /*NL*/// fprintf(screen,"proc %d: sizes %d %d, nlocal %d, neighbor->triggersq %f\n",
-    /*NL*///        comm->me, mesh_->node_.size(),oldNodes.size(),nlocal,neighbor->triggersq);
-
-    for(int iTri = 0; iTri < nlocal; iTri++)
-    {
-      for(int iNode = 0; iNode < 3; iNode++)
-      {
-        double deltaX[3];
-        vectorSubtract3D(node[iTri][iNode],old[iTri][iNode],deltaX);
-        double distSq = deltaX[0]*deltaX[0] + deltaX[1]*deltaX[1] + deltaX[2]*deltaX[2];
-        if(distSq > triggersq){
-          /*NL*/ //printf("triangle %d distance %f skin %f\n",iTri,distSq,neighbor->triggersq);
-          flag = 1;
-        }
-      }
-      if (flag) break;
-    }
-
-    // allreduce result
-    MPI_Max_Scalar(flag,this->world);
-
-    /*NL*/ //fprintf (screen,"step %d, flag is %d \n",update->ntimestep,flag);
-
-    if(flag) return true;
-    else     return false;
-}
-
-/* ----------------------------------------------------------------------
-   store node pos at lat re-build
-------------------------------------------------------------------------- */
-
-void FixMoveMesh::store_node_pos()
-{
-    int nlocal = mesh_->sizeLocal();
-    double ***node = mesh_->nodePtr();
-
-    oldNodes.empty();
-    for(int i = 0; i < nlocal; i++)
-        oldNodes.add(node[i]);
 }

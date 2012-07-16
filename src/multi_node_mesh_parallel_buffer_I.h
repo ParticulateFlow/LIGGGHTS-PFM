@@ -274,14 +274,6 @@
 
       int nsend = 0;
 
-      if(operation == OPERATION_COMM_REVERSE)
-      {
-        this->error->one(FLERR,"TODO here");
-        return nsend;
-      }
-
-      //NP OPERATION_RESTART not implemented, is per-element operation, not a list operation
-
       if(operation == OPERATION_COMM_EXCHANGE || operation == OPERATION_COMM_BORDERS)
       {
           //NP push center first to test against
@@ -303,6 +295,8 @@
           return nsend;
       }
 
+      //NP OPERATION_RESTART not implemented, is per-element operation, not a list operation
+      //NP OPERATION_COMM_REVERSE is implemented in pushElemListToBufferReverse
       this->error->one(FLERR,"Illegal operation in MultiNodeMeshParallel<NUM_NODES>::pushElemToBuffer");
       return 0;
   }
@@ -317,12 +311,6 @@
   int MultiNodeMeshParallel<NUM_NODES>::popElemListFromBuffer(int first, int n, double *buf,int operation,bool scale,bool translate,bool rotate)
   {
       int nrecv = 0;
-
-      if(operation == OPERATION_COMM_REVERSE)
-      {
-        this->error->one(FLERR,"TODO here");
-        return nrecv;
-      }
 
       //NP OPERATION_RESTART not implemented, is per-element operation, not a list operation
 
@@ -350,6 +338,50 @@
   }
 
   /* ----------------------------------------------------------------------
+   push a list of elements for reverseComm()
+   depending on operation and if mesh scales, translates or rotates,
+   different properties are communicated
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  int MultiNodeMeshParallel<NUM_NODES>::pushElemListToBufferReverse(int first, int n, double *buf,int operation,bool scale,bool translate,bool rotate)
+  {
+      int nsend = 0;
+
+      if(operation == OPERATION_COMM_REVERSE)
+      {
+        //NP no reverse comm here
+        return nsend;
+      }
+
+      //NP other stuff implemented in pushElemListToBuffer
+      this->error->one(FLERR,"Illegal operation in MultiNodeMeshParallel<NUM_NODES>::popElemFromBuffer");
+      return 0;
+  }
+
+  /* ----------------------------------------------------------------------
+   pop a list of elements for reverseComm()
+   depending on operation and if mesh scales, translates or rotates,
+   different properties are communicated
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  int MultiNodeMeshParallel<NUM_NODES>::popElemListFromBufferReverse(int n, int *list, double *buf,int operation,bool scale,bool translate,bool rotate)
+  {
+      int nrecv = 0;
+
+      if(operation == OPERATION_COMM_REVERSE)
+      {
+        //NP no reverse comm here
+        return nrecv;
+      }
+
+      //NP other stuff implemented in pushElemListToBuffer
+      this->error->one(FLERR,"Illegal operation in MultiNodeMeshParallel<NUM_NODES>::popElemFromBuffer");
+      return 0;
+  }
+
+  /* ----------------------------------------------------------------------
    return required buffer size for one element for exchange()
    must match push / pop implementation
    depending on operation and if mesh scales, translates or rotates,
@@ -363,12 +395,6 @@
 
       //NP need to implement for per-element and per-list calls here
       //NP since per-list = n * per_element
-
-      if(operation == OPERATION_COMM_REVERSE)
-      {
-        this->error->one(FLERR,"TODO here");
-        return size_buf;
-      }
 
       if(operation == OPERATION_RESTART)
       {
@@ -386,14 +412,21 @@
           return size_buf;
       }
 
+      //NP OPERATION_COMM_FORWARD, OPERATION_COMM_REVSERSE are list operations, not per-element operations
+      //NP need to implement this here since elemListBufSize() refers to here
       if(operation == OPERATION_COMM_FORWARD)
       {
           //NP node_orig cannot change during a run
-
           //NP if(translate || rotate || scale)
           //NP  size_buf += MultiNodeMesh<NUM_NODES>::node_.elemBufSize();
-
           return size_buf;
+      }
+
+      if(operation == OPERATION_COMM_REVERSE)
+      {
+        //NP nothing todo here
+        //NP need to implement this
+        return size_buf;
       }
 
       this->error->one(FLERR,"Illegal operation in MultiNodeMeshParallel<NUM_NODES>::elemBufSize");
@@ -431,7 +464,7 @@
           return nsend;
       }
 
-      //NP OPERATION_COMM_FORWARD is a list operation, not per-element operation
+      //NP OPERATION_COMM_FORWARD, OPERATION_COMM_REVSERSE are list operations, not per-element operations
 
       this->error->one(FLERR,"Illegal operation in MultiNodeMeshParallel<NUM_NODES>::pushElemToBuffer");
       return 0;
@@ -476,7 +509,7 @@
           return nrecv;
       }
 
-      //NP OPERATION_COMM_FORWARD is a list operation, not per-element operation
+      //NP OPERATION_COMM_FORWARD, OPERATION_COMM_REVSERSE are list operations, not per-element operations
 
       this->error->one(FLERR,"Illegal operation in MultiNodeMeshParallel<NUM_NODES>::popElemFromBuffer");
       return 0;

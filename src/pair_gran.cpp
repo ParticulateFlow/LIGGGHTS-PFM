@@ -204,7 +204,7 @@ void PairGran::init_style()
   //NP do NOT do this for fix rigid/multisphere, since there
   //NP the particles are inserted with the mass of the template
 
-  fix_rigid = static_cast<FixRigid*>(modify->find_fix_style("rigid",0));
+  fix_rigid = static_cast<FixRigid*>(modify->find_fix_style_strict("rigid",0));
 
   if(modify->n_fixes_style("rigid") > 1)
     error->warning(FLERR,"Pair gran does currently not support more than one fix rigid. This may result in under-damping.");

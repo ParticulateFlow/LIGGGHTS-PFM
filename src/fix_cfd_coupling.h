@@ -60,7 +60,7 @@ class FixCfdCoupling : public Fix {
   int coupleThis() {return couple_this_;}
 
   class CfdDatacoupling* get_dc(){return dc_;}
-  //inline class FixRigidMultisphere* fix_rigid_ms() {return dc_->frm_;}
+  //NP inline class FixMultisphere* fix_ms() {return dc_->frm_;}
 
  protected:
 

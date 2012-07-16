@@ -33,7 +33,7 @@
 #include "domain.h"
 #include "modify.h"
 #include "fix_cfd_coupling.h"
-/*NL*/#include "fix_rigid_multisphere.h"
+/*NL*/#include "fix_multisphere.h"
 #include "cfd_regionmodel.h"
 #include "memory.h"
 #include "error.h"
@@ -61,9 +61,9 @@ int liggghts_get_maxtag(void *ptr)
 /*NL*/  // so just return # of bodies
 /*NL*/
 /*NL*/  LAMMPS *lmp = (LAMMPS *) ptr;
-/*NL*/  FixRigidMultisphere *frm = static_cast<FixRigidMultisphere*>(lmp->modify->find_fix_style_strict("rigid/multisphere",0));
-/*NL*/  if(!frm) return 0;
-/*NL*/  return frm->tag_max_body();
+/*NL*/  FixMultisphere *fix_ms = static_cast<FixMultisphere*>(lmp->modify->find_fix_style_strict("multisphere",0));
+/*NL*/  if(!fix_ms) return 0;
+/*NL*/  return fix_ms->tag_max_body();
 /*NL*/}
 
 /* ---------------------------------------------------------------------- */

@@ -37,7 +37,6 @@ class FixInsert : public Fix {
   FixInsert(class LAMMPS *, int, char **);
   ~FixInsert();
 
-
   virtual int setmask();
   virtual void init();
   void setup(int vflag);
@@ -138,7 +137,7 @@ class FixInsert : public Fix {
   // determine if print stats
   int print_stats_start_flag;
 
-  class FixRigidMultisphere *fix_rm;
+  class FixMultisphere *fix_multisphere;
   class Multisphere *multisphere;
 
   /*---FUNCTION MEMBERS---*/

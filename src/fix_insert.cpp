@@ -32,13 +32,14 @@
 #include "random_park.h"
 #include "memory.h"
 #include "error.h"
-#include "fix_rigid_multisphere.h"
+#include "fix_multisphere.h"
 #include "fix_particledistribution_discrete.h"
 #include "fix_template_sphere.h"
 #include "fix_insert.h"
 #include "math_extra_liggghts.h"
 #include "mpi_liggghts.h"
 #include "vector_liggghts.h"
+/*NL*/ #include "volume_mesh.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -59,6 +60,12 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
   restart_global = 1;
 
   setup_flag = false;
+
+  /*NL*/ VolumeMesh<3,3> *vm;
+
+  fix_distribution = NULL;
+  fix_multisphere = NULL;
+  multisphere = NULL;
 
   // required args
   iarg = 3;
@@ -288,8 +295,6 @@ void FixInsert::init_defaults()
 
   //NP initialize as unit maxtrix
   quatUnitize4D(quat_insert);
-
-  fix_distribution = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -358,13 +363,13 @@ void FixInsert::init()
     if (domain->dimension != 3) error->fix_error(FLERR,this,"Can use fix insert for 3d simulations only");
     //NP gravity fix is checked in derived class if needed
 
-    fix_rm = static_cast<FixRigidMultisphere*>(modify->find_fix_style("rigid/multisphere", 0));
-    if(!fix_rm) multisphere = NULL;
-    else multisphere = &fix_rm->data();
+    fix_multisphere = static_cast<FixMultisphere*>(modify->find_fix_style("multisphere", 0));
+    if(!fix_multisphere) multisphere = NULL;
+    else multisphere = &fix_multisphere->data();
 
     //NP need to ensure particles are added to the fix rigid group
-    if(fix_rm && fix_rm->igroup != igroup)
-        error->fix_error(FLERR,this,"Fix insert command and fix rigid/multisphere command are not compatible, must be same group");
+    if(fix_multisphere && fix_multisphere->igroup != igroup)
+        error->fix_error(FLERR,this,"Fix insert command and fix multisphere command are not compatible, must be same group");
 
     // in case of new fix insert in a restarted simulation, have to add current time-step
     if(next_reneighbor > 0 && next_reneighbor < ntimestep)
@@ -417,7 +422,7 @@ int FixInsert::calc_ninsert_this()
   int ninsert_this = static_cast<int>(ninsert_per + random->uniform());
   if (ninsert_exists && ninserted + ninsert_this > ninsert) ninsert_this = ninsert - ninserted;
 
-  /*NL*///  fprintf(screen,"ninsert_this %d\n",ninsert_this);
+  /*NL*/  fprintf(screen,"ninsert_per %f, ninsert_this %d\n",ninsert_per,ninsert_this);
 
   return ninsert_this;
 }
@@ -428,7 +433,7 @@ int FixInsert::calc_ninsert_this()
 
 void FixInsert::pre_exchange()
 {
-  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 1\n");
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 1\n");}
 
   int ninsert_this, ninsert_this_local; // global and local # bodies to insert this time-step
 
@@ -456,6 +461,8 @@ void FixInsert::pre_exchange()
   // distribute ninsert_this across processors
   ninsert_this_local = distribute_ninsert_this(ninsert_this);
 
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 2\n");}
+
   // re-allocate list if necessary
   //NP list is local on processes
   if(ninsert_this_local > ninsert_this_max_local)
@@ -463,6 +470,8 @@ void FixInsert::pre_exchange()
       fix_distribution->random_init_list(ninsert_this_local);
       ninsert_this_max_local = ninsert_this;
   }
+
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 3\n");}
 
   // generate list of insertions
   // number of inserted particles can change if exact_number = 0
@@ -489,12 +498,15 @@ void FixInsert::pre_exchange()
       // schedule next insertion
       if (insert_every && (!ninsert_exists || ninserted < ninsert))
         next_reneighbor += insert_every;
+
       return;
   }
   else if(ninsert_this < 0)
   {
       error->one(FLERR,"Particle insertion: Internal error");
   }
+
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 4\n");}
 
   // warn if max # insertions exceeded by random processes
   if (ninsert_exists && ninserted + ninsert_this > ninsert)
@@ -521,9 +533,13 @@ void FixInsert::pre_exchange()
   // returns # bodies and # spheres that could actually be inserted
   x_v_omega(ninsert_this_local,ninserted_this_local,ninserted_spheres_this_local,mass_inserted_this_local);
 
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 5\n");}
+
   // actual particle insertion
   //NP pti list is body list, so use ninserted_this as arg
   ninserted_spheres_this_local = fix_distribution->insert(ninserted_this_local);
+
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 6\n");}
 
   // give derived classes the chance to do some wrap-up
   finalize_insertion(ninserted_spheres_this_local);
@@ -534,7 +550,7 @@ void FixInsert::pre_exchange()
   //NP also sets molecule id
   fix_distribution->finalize_insertion();
 
-  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 2\n");
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 7\n");}
 
   // set tag # of new particles beyond all previous atoms, reset global natoms
   // if global map exists, reset it now instead of waiting for comm
@@ -552,10 +568,17 @@ void FixInsert::pre_exchange()
     }
   }
 
+  //NP generate ID(tag) for multisphere
+  if(multisphere)
+  {
+    multisphere->id_extend();
+    multisphere->generate_map();
+  }
+
   // tally stats
- MPI_Sum_Scalar(ninserted_this_local,ninserted_this,world);
+  MPI_Sum_Scalar(ninserted_this_local,ninserted_this,world);
   ninserted += ninserted_this;
- MPI_Sum_Scalar(mass_inserted_this_local,mass_inserted_this,world);
+  MPI_Sum_Scalar(mass_inserted_this_local,mass_inserted_this,world);
   massinserted += mass_inserted_this;
   print_stats_during(ninserted_this,mass_inserted_this);
 
@@ -569,7 +592,7 @@ void FixInsert::pre_exchange()
   if (insert_every && (!ninsert_exists || ninserted < ninsert)) next_reneighbor += insert_every;
   else next_reneighbor = 0;
 
-  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 3\n");
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 8\n");}
 }
 
 /* ----------------------------------------------------------------------

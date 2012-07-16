@@ -315,6 +315,7 @@ Region* FixParticledistributionDiscrete::randomize_single()
 void FixParticledistributionDiscrete::random_init_list(int ntotal)
 {
     int parttogen_max_i, n_pti_max_requested;
+    int nprocs = comm->nprocs;
 
     //NP 2 is worst case of random->uniform, may be applied by each template
     ntotal += 2 * ntemplates;
@@ -323,9 +324,11 @@ void FixParticledistributionDiscrete::random_init_list(int ntotal)
     n_pti_max_requested = 0;
 
     //NP calc parttogen_max for each template - 1.01 stands for worst case of random->uniform
+    //NP with exact_number = 1, all the round-off remainders may be attributed to one particle
+    //NP round-off comes from FixInsert::distribute_ninsert_this() and FixParticledistributionDiscrete::randomize_list()
     for(int i = 0; i < ntemplates; i++)
     {
-        parttogen_max_i = static_cast<int>(static_cast<double>(ntotal) * distweight[i] + 1.01);
+        parttogen_max_i = static_cast<int>(static_cast<double>(ntotal) * distweight[i] + static_cast<double>(1.01)*(ntemplates+nprocs));
         n_pti_max_requested += parttogen_max_i;
 
         // re-allocated if need more ptis in this template than allocated so far
@@ -361,8 +364,8 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
 {
     if(ntotal > n_pti_max)
     {
-        /*NL*///fprintf(screen," fix %s, ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
-        error->all(FLERR,"Faulty implementation: FixParticledistributionDiscrete::randomize_list() called for more particles than defined in random_init_list()");
+        /*NL*/fprintf(screen," fix %s, ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
+        error->one(FLERR,"Faulty implementation: FixParticledistributionDiscrete::randomize_list() called for more particles than defined in random_init_list()");
     }
 
     ninsert = ntotal;
@@ -416,6 +419,8 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
 
         delete []remainder;
     }
+
+    /*NL*/// MPI_Barrier(world); fprintf(screen,"FixParticledistributionDiscrete::randomize_list on proc %d\n",comm->me);
 
     /*NL*/ //if(comm->me == 0) fprintf(screen,"randomizing particles to generate out of the distribution\n");
     /*NL*/ //for(int i=0;i<ntemplates;i++)
