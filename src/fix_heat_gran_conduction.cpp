@@ -105,7 +105,9 @@ void FixHeatGranCond::init(){
   double expo, Yeff_ij, Yeff_orig_ij, ratio;
   Fix *ymo_fix;
 
-	FixHeatGran::init();
+  if (FHG_init_flag == false){
+    FixHeatGran::init();
+  }
 
 	int max_type = pair_gran->mpg->max_type();
 

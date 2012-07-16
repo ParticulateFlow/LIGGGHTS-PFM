@@ -60,6 +60,10 @@ FixHeatGran::FixHeatGran(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg
   scalar_flag = 1; //NP total thermal energy computed
   global_freq = 1; //NP available always
 
+  cpl = NULL;
+
+  FHG_init_flag = false;
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -130,6 +134,8 @@ void FixHeatGran::init(){
 
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
+
+  FHG_init_flag = true;
 }
 
 /* ---------------------------------------------------------------------- */
