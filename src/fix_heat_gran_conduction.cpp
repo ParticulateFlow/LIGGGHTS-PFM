@@ -62,7 +62,6 @@ FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) : FixH
   fix_conductivity = NULL;
   conductivity = NULL;
 
-  cpl = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -90,8 +89,7 @@ void FixHeatGranCond::pre_delete(bool unfixflag){
 
 /* ---------------------------------------------------------------------- */
 
-int FixHeatGranCond::setmask()
-{
+int FixHeatGranCond::setmask(){
   int mask = 0;
   mask |= POST_FORCE;
   return mask;
@@ -165,9 +163,9 @@ void FixHeatGranCond::init(){
 
 void FixHeatGranCond::post_force(int vflag){
 
-    //template function for using touchflag or not
-    if(history_flag == 0) post_force_eval<0>(vflag,0);
-    if(history_flag == 1) post_force_eval<1>(vflag,0);
+  //template function for using touchflag or not
+  if(history_flag == 0) post_force_eval<0>(vflag,0);
+  if(history_flag == 1) post_force_eval<1>(vflag,0);
 
 }
 
@@ -175,9 +173,9 @@ void FixHeatGranCond::post_force(int vflag){
 
 void FixHeatGranCond::cpl_evaluate(ComputePairGranLocal *caller)
 {
-    if(caller != cpl) error->all(FLERR,"Illegal situation in FixHeatGran::cpl_evaluate");
-    if(history_flag == 0) post_force_eval<0>(0,1);
-    if(history_flag == 1) post_force_eval<1>(0,1);
+  if(caller != cpl) error->all(FLERR,"Illegal situation in FixHeatGranCond::cpl_evaluate");
+  if(history_flag == 0) post_force_eval<0>(0,1);
+  if(history_flag == 1) post_force_eval<1>(0,1);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -303,7 +301,7 @@ void FixHeatGranCond::register_compute_pair_local(ComputePairGranLocal *ptr)
    /*NL*///fprintf(screen,"FixHeatGran::register_compute_pair_local, ptr->id %s\n",ptr->id);
 
    if(cpl != NULL)
-      error->all(FLERR,"Fix heat/gran allows only one compute of type pair/local");
+      error->all(FLERR,"Fix heat/gran/conduction allows only one compute of type pair/local");
    cpl = ptr;
 }
 
@@ -311,7 +309,7 @@ void FixHeatGranCond::unregister_compute_pair_local(ComputePairGranLocal *ptr)
 {
    /*NL*///fprintf(screen,"FixHeatGran::unregister_compute_pair_local\n");
    if(cpl != ptr)
-       error->all(FLERR,"Illegal situation in FixHeatGran::unregister_compute_pair_local");
+       error->all(FLERR,"Illegal situation in FixHeatGranCond::unregister_compute_pair_local");
    cpl = NULL;
 }
 

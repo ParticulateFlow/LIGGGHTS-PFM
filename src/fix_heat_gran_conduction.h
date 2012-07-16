@@ -18,6 +18,7 @@
 
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
+
 #ifdef FIX_CLASS
 
 FixStyle(heat/gran/conduction,FixHeatGranCond)
