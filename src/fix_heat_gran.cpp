@@ -139,11 +139,38 @@ double FixHeatGran::compute_scalar()
     return fix_ste->compute_scalar();
 }
 
+/* ---------------------------------------------------------------------- */
 
+void FixHeatGran::cpl_evaluate(class ComputePairGranLocal * cpl){
 
+  char *mystyle = style;
+  char *emsg = new char[100];
+  sprintf(emsg, "Fix %s does not implement cpl_evaluate().\n", mystyle);
+  error->all(FLERR, emsg);
 
+}
 
+/* ---------------------------------------------------------------------- */
 
+void FixHeatGran::register_compute_pair_local(class ComputePairGranLocal *ptr){
+
+  char *mystyle = style;
+  char *emsg = new char[100];
+  sprintf(emsg, "Fix %s does not implement register_compute_pair_local().\n", mystyle);
+  error->all(FLERR, emsg);
+
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixHeatGran::unregister_compute_pair_local(class ComputePairGranLocal *ptr){
+
+  char *mystyle = style;
+  char *emsg = new char[100];
+  sprintf(emsg, "Fix %s does not implement unregister_compute_pair_local().\n", mystyle);
+  error->all(FLERR, emsg);
+
+}
 
 
 

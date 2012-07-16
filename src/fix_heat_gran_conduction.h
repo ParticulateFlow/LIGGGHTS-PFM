@@ -49,8 +49,6 @@ namespace LAMMPS_NS {
     template <int> void post_force_eval(int,int);
 
     class FixPropertyGlobal* fix_conductivity;
-    class ComputePairGranLocal *cpl;
-
     double *conductivity;
 
     // for heat transfer area correction
