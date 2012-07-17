@@ -82,6 +82,7 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
 
     // initializations
     pairgran_ = NULL;
+    fix_rigid_ = NULL;
     fix_wallforce_ = NULL;
     heattransfer_flag_ = false;
 
