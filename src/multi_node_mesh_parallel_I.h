@@ -37,7 +37,7 @@
   template<int NUM_NODES>
   MultiNodeMeshParallel<NUM_NODES>::MultiNodeMeshParallel(LAMMPS *lmp)
   : MultiNodeMesh<NUM_NODES>(lmp),
-    nLocal_(0), nGhost_(0), nGlobal_(0),
+    nLocal_(0), nGhost_(0), nGlobal_(0), nGlobalOrig_(0),
     maxsend_(0), maxrecv_(0),
     buf_send_(0), buf_recv_(0),
     half_atom_cut_(0.),
@@ -544,6 +544,8 @@
   template<int NUM_NODES>
   void MultiNodeMeshParallel<NUM_NODES>::initalSetup()
   {
+      nGlobalOrig_ = sizeLocal();
+
       // delete all elements that do not belong to this processor
       deleteUnowned();
 
@@ -568,6 +570,12 @@
 
       // store node positions for neigh list trigger
       this->storeNodePos();
+
+      if(sizeGlobal() != sizeGlobalOrig())
+      {
+        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
+        this->error->all(FLERR,"Mesh elements have been lost");
+      }
 
       /*NL*/// fprintf(this->screen,"INITIALSETUP: proc %d, mesh %s - nLocal %d, nGhost %d\n",
       /*NL*///                      this->comm->me,this->mesh_id_,nLocal_,nGhost_);
@@ -624,6 +632,12 @@
 
       // store node positions for neigh list trigger
       this->storeNodePos();
+
+      if(sizeGlobal() != sizeGlobalOrig())
+      {
+        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
+        this->error->all(FLERR,"Mesh elements have been lost");
+      }
   }
 
   /* ----------------------------------------------------------------------
@@ -723,7 +737,7 @@
 
           nsend = pushExchange(dim,buf_send_);
 
-          /*NL*/// fprintf(this->screen,"pushing %d doubles to buf on proc %d, dim %d on step %d\n",nsend,this->comm->me,dim,this->update->ntimestep);
+          /*NL*/ //fprintf(this->screen,"proc %d pushing %d doubles to buf, dim %d on step %d\n",this->comm->me,nsend,dim,this->update->ntimestep);
 
           // send/recv in both directions
           // if 1 proc in dimension, no send/recv, set recv buf to send buf
@@ -769,7 +783,7 @@
 
           /*NL*/// fprintf(this->screen,"proc %d has %d owned elems, dim %d on step %d\n",this->comm->me,nLocal_,dim,this->update->ntimestep);
           /*NL*/// fprintf(this->screen,"received %d doubles on proc %d, dim %d on step %d\n",nrecv,this->comm->me,dim,this->update->ntimestep);
-          popExchange(nrecv, buf);
+          popExchange(nrecv,dim, buf);
           /*NL*/// fprintf(this->screen,"proc %d has %d owned elems, dim %d on step %d\n",this->comm->me,nLocal_,dim,this->update->ntimestep);
       }
 

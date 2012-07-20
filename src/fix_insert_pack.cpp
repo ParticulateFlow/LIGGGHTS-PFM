@@ -319,6 +319,9 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
     ParticleToInsert *pti;
     /*NL*/// fprintf(screen,"STARTED\n");
 
+    int ntry = 0;
+    int maxtry = ninsert_this_local * maxattempt;
+
     // no overlap check
     if(!check_ol_flag)
     {
@@ -327,8 +330,15 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             pti = fix_distribution->pti_list[ninserted_this_local];
             double rbound = pti->r_bound_ins;
 
-            if(all_in_flag) ins_region->generate_random_shrinkby_cut(pos,rbound,true);
-            else ins_region->generate_random(pos,true);
+            do
+            {
+                if(all_in_flag) ins_region->generate_random_shrinkby_cut(pos,rbound,true);
+                else ins_region->generate_random(pos,true);
+                ntry++;
+            }
+            while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
+
+            if(ntry == maxtry) break;
 
             // could ramdonize vel, omega, quat here
 
@@ -346,9 +356,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
     // pti checks against xnear and adds self contributions
     else
     {
-        int ntry = 0;
-        int maxtry = ninsert_this_local * maxattempt;
-        /*NL*/fprintf(screen,"proc %d ninsert_this_local %d maxtry %d\n",comm->me,ninsert_this_local,maxtry);
+        /*NL*///fprintf(screen,"proc %d ninsert_this_local %d maxtry %d\n",comm->me,ninsert_this_local,maxtry);
 
         while(ntry < maxtry && ninserted_this_local < ninsert_this_local)
         {
@@ -359,14 +367,13 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             int nins = 0;
             while(nins == 0 && ntry < maxtry)
             {
-                //NP do not need this since calling with flag true will only generate subbox positions
-                //do
-                //{
+                do
+                {
                     if(all_in_flag) ins_region->generate_random_shrinkby_cut(pos,rbound,true);
                     else ins_region->generate_random(pos,true);
                     ntry++;
-                //}
-                //while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
+                }
+                while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
 
                 // could ramdonize vel, omega, quat here
 

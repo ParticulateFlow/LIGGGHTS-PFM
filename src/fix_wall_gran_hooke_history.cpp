@@ -503,9 +503,9 @@ inline void FixWallGranHookeHistory::deriveContactModelParams(int ip, double del
 
     if (dampflag == 0) gammat = 0.0;
 
-    /*NP sprintf(testmsg,"ip=%d, meff=%f, deltan=%f, kn=%f, kt=%f, gamman=%f, gammat=%f\n", ip,meff,deltan,kn,kt,gamman,gammat);
-    error->warning(testmsg);
-    delete []testmsg;
-    */
+        // convert Kn and Kt from pressure units to force/distance^2
+    kn /= force->nktv2p;
+    kt /= force->nktv2p;
+
     return;
 }

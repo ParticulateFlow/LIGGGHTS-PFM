@@ -422,7 +422,7 @@ int FixInsert::calc_ninsert_this()
   int ninsert_this = static_cast<int>(ninsert_per + random->uniform());
   if (ninsert_exists && ninserted + ninsert_this > ninsert) ninsert_this = ninsert - ninserted;
 
-  /*NL*/  fprintf(screen,"ninsert_per %f, ninsert_this %d\n",ninsert_per,ninsert_this);
+  /*NL*/ // fprintf(screen,"ninsert_per %f, ninsert_this %d\n",ninsert_per,ninsert_this);
 
   return ninsert_this;
 }
@@ -468,7 +468,7 @@ void FixInsert::pre_exchange()
   if(ninsert_this_local > ninsert_this_max_local)
   {
       fix_distribution->random_init_list(ninsert_this_local);
-      ninsert_this_max_local = ninsert_this;
+      ninsert_this_max_local = ninsert_this_local;
   }
 
   /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 3\n");}
@@ -632,12 +632,12 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
             ninsert_this_local_all[iproc] = static_cast<int>(fraction_local_all[iproc]*static_cast<double>(ninsert_this));
             remainder[iproc] = fraction_local_all[iproc]*static_cast<double>(ninsert_this) - ninsert_this_local_all[iproc];
             rsum += remainder[iproc];
-            /*NL*/ fprintf(screen,"proc %d (fraction_local %f): ninsert_this_local %d, remainder %f \n",
-            /*NL*/                 iproc,fraction_local_all[iproc],ninsert_this_local_all[iproc],remainder[iproc]);
+            /*NL*/// fprintf(screen,"proc %d (fraction_local %f): ninsert_this_local %d, remainder %f \n",
+            /*NL*///                 iproc,fraction_local_all[iproc],ninsert_this_local_all[iproc],remainder[iproc]);
         }
 
         ngap = round(rsum);
-        /*NL*/ fprintf(screen,"ngap %d rsum %f\n",ngap,rsum);
+        /*NL*/// fprintf(screen,"ngap %d rsum %f\n",ngap,rsum);
         for(int i = 0; i < ngap; i++)
         {
             r = random->uniform() * static_cast<double>(ngap);
@@ -657,7 +657,7 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
     MPI_Bcast(ninsert_this_local_all,nprocs, MPI_INT,0,world);
     ninsert_this_local = ninsert_this_local_all[me];
 
-    /*NL*/ fprintf(screen,"proc %d: fraction_local %f ninsert_this_local %d ninsert_this %d\n",me,fraction_local,ninsert_this_local,ninsert_this);
+    /*NL*/// fprintf(screen,"proc %d: fraction_local %f ninsert_this_local %d ninsert_this %d\n",me,fraction_local,ninsert_this_local,ninsert_this);
 
     delete []fraction_local_all;
     delete []remainder;

@@ -85,7 +85,7 @@ class Modify : protected Pointers {
   void modify_fix(int, char **);
   void delete_fix(const char *,bool unfixflag = false); //NP modified C.K.
   int find_fix(const char *);
-class FixPropertyGlobal* add_fix_property_global(int narg,char **arg,const char *);//NP modified C.K.
+  class FixPropertyGlobal* add_fix_property_global(int narg,char **arg,const char *);//NP modified C.K.
   class FixPropertyAtom* add_fix_property_atom(int narg,char **arg,const char *);//NP modified C.K.
   class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char * );//NP modified C.K.
   class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char *,bool );//NP modified C.K.
@@ -96,6 +96,8 @@ class FixPropertyGlobal* add_fix_property_global(int narg,char **arg,const char 
   int n_fixes_style_strict(const char *style); //NP modified C.K.
   bool i_am_first_of_style(class Fix *fix_to_check); //NP modified C.K.
   class FixScalarTransportEquation* find_fix_scalar_transport_equation(const char *equation_id);//NP modified C.K.
+
+  void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi);
 
   void add_compute(int, char **, char *suffix = NULL);
   void modify_compute(int, char **);

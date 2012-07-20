@@ -263,7 +263,9 @@ void Verlet::run(int n)
       comm->forward_comm();
       timer->stamp(TIME_COMM);
     } else {
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre_exchange\n");__debug__(lmp);}
       if (n_pre_exchange) modify->pre_exchange();
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pbc, reset_box, comm setup\n");__debug__(lmp);}
       if (triclinic) domain->x2lamda(atom->nlocal);
       domain->pbc();
       if (domain->box_change) {
@@ -273,12 +275,14 @@ void Verlet::run(int n)
         if (neighbor->style) neighbor->setup_bins();
       }
       timer->stamp();
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing exchange\n");__debug__(lmp);}
       comm->exchange();
       /*NL*/ //fprintf(screen,"proc %d has %d owned particles\n",comm->me,atom->nlocal);
       if (sortflag && ntimestep >= atom->nextsort) atom->sort();
       comm->borders();
       if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
       timer->stamp(TIME_COMM);
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre neigh\n");__debug__(lmp);}
       if (n_pre_neighbor) modify->pre_neighbor();
       neighbor->build();
       timer->stamp(TIME_NEIGHBOR);

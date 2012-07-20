@@ -49,7 +49,8 @@
               nsend_this = pushElemToBuffer(i,&(buf[nsend+1]),OPERATION_COMM_EXCHANGE,dummy,dummy,dummy);
               buf[nsend] = static_cast<double>(nsend_this+1);
               nsend += (nsend_this+1);
-              /*NL*/ //fprintf(this->screen,"nsend_this+1 %d\n",nsend_this+1);
+              /*NL*/// fprintf(this->screen,"proc %d pushes element id %d with center %f %f %f\n",
+              /*NL*///         this->comm->me,this->id_slow(i),this->center_(i)[0],this->center_(i)[1],this->center_(i)[2]);
               if (nsend > maxsend_)
                   grow_send(nsend,1);
               this->deleteElement(i); //NP deleteElement() decreases nLocal
@@ -60,13 +61,21 @@
   }
 
   template<int NUM_NODES>
-  void MultiNodeMeshParallel<NUM_NODES>::popExchange(int nrecv,double *buf)
+  void MultiNodeMeshParallel<NUM_NODES>::popExchange(int nrecv,int dim,double *buf)
   {
       double center_elem[3];
+      double checklo,checkhi;
       int m = 0, nrecv_this;
 
       // scale translate rotate not needed here
       bool dummy = false;
+
+      //NP consistent with Domain::is_in_subdomain()
+      checklo = this->domain->sublo[dim];
+      if(this->domain->subhi[dim] == this->domain->boxhi[dim])
+        checkhi = this->domain->boxhi[dim] + SMALL_DMBRDR;
+      else
+        checkhi = this->domain->subhi[dim];
 
       while (m < nrecv)
       {
@@ -78,12 +87,19 @@
 
           /*NL*/// fprintf(this->screen,"nrecv_this %d center %f %f %f\n",nrecv_this,center_elem[0],center_elem[1],center_elem[2]);
 
-          if(this->domain->is_in_subdomain(center_elem))
+          //NP do not ask if the center is completely in, just ask for center_elem[dim]
+          //NP this makes elements go around the corner
+          if(center_elem[dim] >= checklo && center_elem[dim] < checkhi)
           {
             popElemFromBuffer(&(buf[m+1]),OPERATION_COMM_EXCHANGE,dummy,dummy,dummy);
             nLocal_++;
-            /*NL*///  fprintf(this->screen,"popped one\n");
+            /*NL*/// fprintf(this->screen,"proc %d pops element id %d with center %f %f %f\n",
+            /*NL*///                      this->comm->me,this->id_slow(nLocal_-1),center_elem[0],center_elem[1],center_elem[2]);
           }
+          /*NL*/// else
+          /*NL*///   fprintf(this->screen,"proc %d DID NOT pop one with center %f %f %f\n",
+          /*NL*///                      this->comm->me,center_elem[0],center_elem[1],center_elem[2]);
+
           /*NL*/// this->error->one(FLERR,"end");
 
           m += nrecv_this;

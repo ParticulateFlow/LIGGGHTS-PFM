@@ -6,6 +6,7 @@
 #include "fix_ave_spatial.h"
 #include "fix_ave_time.h"
 #include "fix_aveforce.h"
+#include "fix_balance.h"
 #include "fix_box_relax.h"
 #include "fix_cfd_coupling.h"
 #include "fix_cfd_coupling_convection.h"

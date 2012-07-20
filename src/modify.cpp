@@ -303,7 +303,10 @@ void Modify::post_integrate()
 void Modify::pre_exchange()
 {
   for (int i = 0; i < n_pre_exchange; i++)
+  {
+    /*NL*/ //fprintf(screen,"proc %d executing pre_exch for %s\n",comm->me,fix[list_pre_exchange[i]]->style);
     fix[list_pre_exchange[i]]->pre_exchange();
+  }
 }
 
 /* ----------------------------------------------------------------------

@@ -324,7 +324,7 @@ void FixParticledistributionDiscrete::random_init_list(int ntotal)
     n_pti_max_requested = 0;
 
     //NP calc parttogen_max for each template - 1.01 stands for worst case of random->uniform
-    //NP with exact_number = 1, all the round-off remainders may be attributed to one particle
+    //NP with exact_number = 1, all the round-off remainders may be attributed to one particle template
     //NP round-off comes from FixInsert::distribute_ninsert_this() and FixParticledistributionDiscrete::randomize_list()
     for(int i = 0; i < ntemplates; i++)
     {
