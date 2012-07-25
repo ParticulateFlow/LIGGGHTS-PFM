@@ -53,8 +53,6 @@ class FixWallSph : public FixSph {
   double lo,hi,cylradius;
   double r0,D;
 
- private:
-  template <int> void post_force(int vflag);
 };
 
 }
