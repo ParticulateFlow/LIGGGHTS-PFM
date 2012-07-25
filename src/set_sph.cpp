@@ -50,13 +50,13 @@ andreas.aigner@jku.at
 using namespace LAMMPS_NS;
 
 enum{ATOM,GROUP,REGION};
-enum{TYPE,X,Y,Z,VX,VY,VZ,DIAMETER,DENSITY,MASS};
+enum{TYPE,DIAMETER,DENSITY,MASS};
 
 /* ---------------------------------------------------------------------- */
 
 SetSph::SetSph(LAMMPS *lmp) : Pointers(lmp)
 {
-  PI = 4.0*atan(1.0);
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -100,36 +100,6 @@ void SetSph::command(int narg, char **arg)
 	error->all(FLERR, "Invalid value in set command");
       set(TYPE);
       iarg += 2;
-    } else if (strcmp(arg[iarg],"x") == 0) {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
-      dvalue = atof(arg[iarg+1]);
-      set(X);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"y") == 0) {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
-      dvalue = atof(arg[iarg+1]);
-      set(Y);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"z") == 0) {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
-      dvalue = atof(arg[iarg+1]);
-      set(Z);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"vx") == 0) {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
-      dvalue = atof(arg[iarg+1]);
-      set(VX);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"vy") == 0) {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
-      dvalue = atof(arg[iarg+1]);
-      set(VY);
-      iarg += 2;
-    } else if (strcmp(arg[iarg],"vz") == 0) {
-      if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
-      dvalue = atof(arg[iarg+1]);
-      set(VZ);
-      iarg += 2;
     } else if (strcmp(arg[iarg],"diameter") == 0) {
       if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
       dvalue = atof(arg[iarg+1]);
@@ -156,9 +126,6 @@ void SetSph::command(int narg, char **arg)
       kernel_style = NULL;
       kernel_style = new char[strlen(arg[iarg+1])+1];
       strcpy(kernel_style,arg[iarg+1]);
-/*      if (!atom->rmass_flag)
-        error->all(FLERR, "Cannot set this attribute for this atom style");
-*/
       // check uniqueness of kernel IDs
 
       int flag = SPH_KERNEL_NS::sph_kernels_unique_id();
@@ -262,12 +229,6 @@ void SetSph::set(int keyword)
   for (int i = 0; i < nlocal; i++)
     if (select[i]) {
       if (keyword == TYPE) atom->type[i] = ivalue;
-      else if (keyword == X) atom->x[i][0] = dvalue;
-      else if (keyword == Y) atom->x[i][1] = dvalue;
-      else if (keyword == Z) atom->x[i][2] = dvalue;
-      else if (keyword == VX) atom->v[i][0] = dvalue;
-      else if (keyword == VY) atom->v[i][1] = dvalue;
-      else if (keyword == VZ) atom->v[i][2] = dvalue;
       else if (keyword == MASS) atom->rmass[i] = dvalue;
       else if (keyword == DIAMETER) atom->radius[i] = 0.5 * dvalue;
       else if (keyword == DENSITY) atom->density[i] = dvalue;

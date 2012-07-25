@@ -52,8 +52,6 @@ class SetSph : protected Pointers {
   int kernel_id;
   char *kernel_style;
 
-  double PI;
-
   void selection(int);
   void set(int);
 };
