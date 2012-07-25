@@ -25,36 +25,37 @@ Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
 andreas.aigner@jku.at
 ------------------------------------------------------------------------- */
 
-#ifdef FIX_CLASS
+#ifdef COMMAND_CLASS
 
-FixStyle(wall/sph,FixWallSph)
+CommandStyle(setSph,SetSph)
 
 #else
 
-#ifndef LMP_FIX_WALL_SPH_H
-#define LMP_FIX_WALL_SPH_H
+#ifndef LMP_SET_SPH_H
+#define LMP_SET_SPH_H
 
-#include "fix_sph.h"
+#include "pointers.h"
 
 namespace LAMMPS_NS {
 
-class FixWallSph : public FixSph {
+class SetSph : protected Pointers {
  public:
-  FixWallSph(class LAMMPS *, int, char **);
-  ~FixWallSph();
-  int setmask();
-  void init();
-  void setup(int vflag);
-  void post_force(int vflag);
-  void post_force_respa(int vflag, int ilevel, int iloop);
-
- protected:
-  int wallstyle;
-  double lo,hi,cylradius;
-  double r0,D;
+  SetSph(class LAMMPS *);
+  void command(int, char **);
 
  private:
-  template <int> void post_force(int vflag);
+  char *id;
+  int *select;
+  int style,ivalue,count;
+  double dvalue;
+
+  int kernel_id;
+  char *kernel_style;
+
+  double PI;
+
+  void selection(int);
+  void set(int);
 };
 
 }

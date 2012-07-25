@@ -20,28 +20,28 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-Contributing authors:
-Andreas Aigner (JKU Linz)
-Christoph Kloss Andreas Aigner (JKU Linz and DCS Computing Gmbh, Linz)
+Contributing author for SPH:
+Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
+andreas.aigner@jku.at
 ------------------------------------------------------------------------- */
 
 #ifdef ATOM_CLASS
 
-AtomStyle(sph,AtomVecSPH)
+AtomStyle(sph/var,AtomVecSPH2)
 
 #else
 
-#ifndef LMP_ATOM_VEC_SPH_H
-#define LMP_ATOM_VEC_SPH_H
+#ifndef LMP_ATOM_VEC_SPH2_H
+#define LMP_ATOM_VEC_SPH2_H
 
 #include "atom_vec.h"
 
 namespace LAMMPS_NS {
 
-class AtomVecSPH : public AtomVec {
+class AtomVecSPH2 : public AtomVec {
  public:
-  AtomVecSPH(class LAMMPS *, int, char **);
-  ~AtomVecSPH() {}
+  AtomVecSPH2(class LAMMPS *, int, char **);
+  ~AtomVecSPH2() {}
   void init();
   void grow(int);
   void grow_reset();
@@ -81,7 +81,8 @@ class AtomVecSPH : public AtomVec {
  private:
   int *tag,*type,*mask,*image;
   double **x,**v,**f;
-  double *q,*density;
+  double *q,*density,*radius,*rmass;
+  int radvary;
 };
 
 }

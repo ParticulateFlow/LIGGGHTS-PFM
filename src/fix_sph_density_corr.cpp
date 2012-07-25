@@ -35,7 +35,6 @@ andreas.aigner@jku.at
 #include "atom.h"
 #include "force.h"
 #include "modify.h"
-#include "pair.h"
 #include "comm.h"
 #include "neighbor.h"
 #include "neigh_list.h"
@@ -44,32 +43,61 @@ andreas.aigner@jku.at
 #include "error.h"
 #include "sph_kernels.h"
 #include "fix_property_atom.h"
-
+#include "timer.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
 /* ---------------------------------------------------------------------- */
 
-FixSPHDensityCorr::FixSPHDensityCorr(LAMMPS *lmp, int narg, char **arg) :
-  FixSPH(lmp, narg, arg)
+FixSphDensityCorr::FixSphDensityCorr(LAMMPS *lmp, int narg, char **arg) :
+  FixSph(lmp, narg, arg)
 {
-  int iarg = 3;
-  if (narg < iarg+1) error->fix_error(FLERR,this,"Not enough arguments");
+  int iarg = 0;
+  if (narg < iarg+4) error->fix_error(FLERR,this,"Illegal fix sph/density/corr command, not enough arguments");
+
+  // correction style
+  iarg += 3;
 
   if (strcmp(arg[iarg],"shepard") == 0) {
-    if (iarg+2 > narg) error->fix_error(FLERR,this,"Not enough arguments");
+    if (iarg+3 > narg) error->fix_error(FLERR,this,"Not enough arguments");
     if (strcmp(arg[iarg+1],"every") == 0) {
       every = force->inumeric(arg[iarg+2]);
       if (every <= 0) error->fix_error(FLERR,this,"every <= 0 not allowed");
       corrStyle = CORR_SHEPARD;
-      iarg += 2;
+      iarg += 3;
     } else error->fix_error(FLERR,this,"");
   } else if (strcmp(arg[iarg],"mls") == 0) {
     error->fix_error(FLERR,this,"MLS correction is not implemented until now.");
     corrStyle = CORR_MLS;
   } else error->fix_error(FLERR,this,"Unknown style for fix sph/density/corr. Valid styles are 'shepard' or 'mls'");
 
+  while (iarg < narg) {
+    // kernel style
+    if (strcmp(arg[iarg],"sphkernel") == 0) {
+          if (iarg+2 > narg) error->fix_error(FLERR,this,"Illegal fix sph/density/continuity command");
+
+          if(kernel_style) delete []kernel_style;
+          kernel_style = new char[strlen(arg[iarg+1])+1];
+          strcpy(kernel_style,arg[iarg+1]);
+
+          // check uniqueness of kernel IDs
+
+          int flag = SPH_KERNEL_NS::sph_kernels_unique_id();
+          if(flag < 0) error->fix_error(FLERR,this,"Cannot proceed, sph kernels need unique IDs, check all sph_kernel_* files");
+
+          // get kernel id
+
+          kernel_id = SPH_KERNEL_NS::sph_kernel_id(kernel_style);
+          if(kernel_id < 0) error->fix_error(FLERR,this,"Illegal fix sph/density/continuity command, unknown sph kernel");
+
+          iarg += 2;
+
+    } else error->fix_error(FLERR,this,"Illegal fix sph/density/continuity command");
+  }
+
+
+  // init variables and set flags
 
   quantity_name = new char[strlen("corrKernel")+1];
   strcpy(quantity_name,"corrKernel");
@@ -79,7 +107,7 @@ FixSPHDensityCorr::FixSPHDensityCorr(LAMMPS *lmp, int narg, char **arg) :
   peratom_flag = 1;
   size_peratom_cols = 0;
   peratom_freq = 1;
-  time_depend = 1;
+  time_depend = 0;
 
   scalar_flag = 1;
   global_freq = 1;
@@ -90,14 +118,14 @@ FixSPHDensityCorr::FixSPHDensityCorr(LAMMPS *lmp, int narg, char **arg) :
 
 /* ---------------------------------------------------------------------- */
 
-FixSPHDensityCorr::~FixSPHDensityCorr()
+FixSphDensityCorr::~FixSphDensityCorr()
 {
     delete []quantity_name;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityCorr::pre_delete(bool unfixflag)
+void FixSphDensityCorr::pre_delete(bool unfixflag)
 {
     //unregister property/atom fixes
     if (fix_quantity) modify->delete_fix(quantity_name);
@@ -105,7 +133,7 @@ void FixSPHDensityCorr::pre_delete(bool unfixflag)
 
 /* ---------------------------------------------------------------------- */
 
-int FixSPHDensityCorr::setmask()
+int FixSphDensityCorr::setmask()
 {
   int mask = 0;
   mask |= POST_INTEGRATE;
@@ -115,8 +143,9 @@ int FixSPHDensityCorr::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityCorr::updatePtrs()
+void FixSphDensityCorr::updatePtrs()
 {
+  FixSph::updatePtrs(); // update sl
   quantity = fix_quantity->vector_atom;
 
   vector_atom = quantity;
@@ -124,7 +153,7 @@ void FixSPHDensityCorr::updatePtrs()
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityCorr::post_create()
+void FixSphDensityCorr::post_create()
 {
   char **fixarg;
   fixarg=new char*[9];
@@ -146,209 +175,267 @@ void FixSPHDensityCorr::post_create()
 
   delete []fixarg;
 
-  updatePtrs();
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityCorr::init()
+void FixSphDensityCorr::init()
 {
-  FixSPH::init();
+  FixSph::init();
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityCorr::post_integrate()
+void FixSphDensityCorr::post_integrate()
 {
-  int i,j,m,ii,jj,inum,jnum,itype,jtype;
+  //template function for using per atom or per atomtype smoothing length
+  if (mass_type) post_integrate_eval<1>();
+  else post_integrate_eval<0>();
+}
+
+/* ---------------------------------------------------------------------- */
+
+template <int MASSFLAG>
+void FixSphDensityCorr::post_integrate_eval()
+{
+  int i,j,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,s,W;
+  double sli,sliInv,slj,slCom,slComInv,cut,imass,jmass;
   int *ilist,*jlist,*numneigh,**firstneigh;
 
   double **x = atom->x;
   int *mask = atom->mask;
-  int *type = atom->type;
   double *density = atom->density;
-  double *mass = atom->mass;
-  int newton_pair = force->newton_pair;
-
   int nlocal = atom->nlocal;
 
+  // TODO: Both declaration necessary?
+  int *type = atom->type;
+  double *mass = atom->mass;
+  double *rmass = atom->rmass;
 
-  updatePtrs();
+  int newton_pair = force->newton_pair;
+
+  updatePtrs(); // get sl, quantity
+
+  timer->stamp();
+  comm->forward_comm();
+  if (!MASSFLAG) fppaSl->do_forward_comm();
+  timer->stamp(TIME_COMM);
 
   ago++;
   if (ago % every == 0) {
+    ago = 0;
 
-  ago = 0;
+    // kernel normalization
 
-  // kernel normalization
+    for (i = 0; i < nlocal; i++)
+    {
+      if (mask[i] & groupbit) {
+        if (MASSFLAG) {
+          itype = type[i];
+          sli = sl[itype-1];
+          imass = mass[itype];
+        } else {
+          sli = sl[i];
+          imass = rmass[i];
+        }
 
-  for (i = 0; i < nlocal; i++)
-  {
-    if (mask[i] & groupbit) {
+        sliInv = 1./sli;
+
+        // this gets a value for W at self, perform error check
+
+        W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,sli,sliInv);
+        if (W < 0.)
+        {
+          fprintf(screen,"s = %f, W = %f\n",s,W);
+          error->one(FLERR,"Illegal kernel used, W < 0");
+        }
+
+        quantity[i] = W*imass / density[i];
+      }
+    }
+
+    // loop over neighbors of my atoms
+
+    inum = list->inum;
+    ilist = list->ilist;
+    numneigh = list->numneigh;
+    firstneigh = list->firstneigh;
+
+    for (ii = 0; ii < inum; ii++) {
+      i = ilist[ii];
+      if (!(mask[i] & groupbit)) continue;
+      xtmp = x[i][0];
+      ytmp = x[i][1];
+      ztmp = x[i][2];
+      jlist = firstneigh[i];
+      jnum = numneigh[i];
+
+      if (MASSFLAG) {
+        itype = type[i];
+        imass = mass[itype];
+      } else {
+        sli = sl[i];
+        imass = rmass[i];
+      }
+
+      for (jj = 0; jj < jnum; jj++) {
+        j = jlist[jj];
+        if (!(mask[j] & groupbit)) continue;
+
+        if (MASSFLAG) {
+          jtype = type[j];
+          jmass = mass[jtype];
+          slCom = slComType[itype][jtype];
+        } else {
+          jmass = rmass[j];
+          slj = sl[j];
+          slCom = interpDist(sli,slj);
+        }
+
+        cut = slCom*kernel_cut;//SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
+
+        delx = xtmp - x[j][0];
+        dely = ytmp - x[j][1];
+        delz = ztmp - x[j][2];
+        rsq = delx*delx + dely*dely + delz*delz;
+
+        if (rsq >= cut*cut) continue;
+
+        // calculate distance
+        r = sqrt(rsq);
+        slComInv = 1./slCom;
+        s = r*slComInv;
+
+        // this gets a value for W at self, perform error check
+
+        W = SPH_KERNEL_NS::sph_kernel(kernel_id,s,slCom,slComInv);
+        if (W < 0.)
+        {
+          fprintf(screen,"s = %f, W = %f\n",s,W);
+          error->one(FLERR,"Illegal kernel used, W < 0");
+        }
+
+        // add contribution of neighbor
+        // have a half neigh list, so do it for both if necessary
+        quantity[i] += W*jmass / density[j];
+        if (newton_pair || j < nlocal)
+          quantity[j] += W*imass / density[i];
+      }
+    }
+
+    // reset and add density contribution of self
+
+    for (i = 0; i < nlocal; i++) {
+      if (MASSFLAG) {
+        itype = type[i];
+        sli = sl[itype-1];
+        imass = mass[itype];
+      } else {
+        sli = sl[i];
+        imass = rmass[i];
+      }
+
+      sliInv = 1./sli;
 
       // this gets a value for W at self, perform error check
 
-      W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,h,hinv);
+      W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,sli,sliInv);
       if (W < 0.)
       {
-        fprintf(screen,"s = 0, W = %f\n",W);
+        fprintf(screen,"s = %f, W = %f\n",s,W);
         error->one(FLERR,"Illegal kernel used, W < 0");
       }
 
-      quantity[i] = W * mass[type[i]] / density[i];
+      // add contribution of self
+      density[i] = W*imass;
     }
-  }
 
+    // need updated ghost positions and self contributions
+    timer->stamp();
+    comm->forward_comm();
+    timer->stamp(TIME_COMM);
 
-  // loop over neighbors of my atoms
+    // loop over neighbors of my atoms
+    /*
+      inum = list->inum;
+      ilist = list->ilist;
+      numneigh = list->numneigh;
+      firstneigh = list->firstneigh;
+     */
+    for (ii = 0; ii < inum; ii++) {
+      i = ilist[ii];
+      if (!(mask[i] & groupbit)) continue;
+      xtmp = x[i][0];
+      ytmp = x[i][1];
+      ztmp = x[i][2];
+      jlist = firstneigh[i];
+      jnum = numneigh[i];
 
-  inum = list->inum;
-  ilist = list->ilist;
-  numneigh = list->numneigh;
-  firstneigh = list->firstneigh;
-
-  for (ii = 0; ii < inum; ii++) {
-    i = ilist[ii];
-    if (!(mask[i] & groupbit)) continue;
-    itype = type[i];
-    xtmp = x[i][0];
-    ytmp = x[i][1];
-    ztmp = x[i][2];
-    jlist = firstneigh[i];
-    jnum = numneigh[i];
-
-    for (jj = 0; jj < jnum; jj++) {
-      j = jlist[jj];
-      if (!(mask[j] & groupbit)) continue;
-      jtype = type[j];
-
-      delx = xtmp - x[j][0];
-      dely = ytmp - x[j][1];
-      delz = ztmp - x[j][2];
-      rsq = delx*delx + dely*dely + delz*delz;
-
-      if (rsq >= cutsq[itype][jtype]) continue;
-
-      // calculate distance and normalized distance
-
-      r = sqrt(rsq);
-      s = r * hinv;
-
-      // this sets a value for W
-      // error on kernel existence already performed in FixSPH::FixSPH()
-
-      W = SPH_KERNEL_NS::sph_kernel(kernel_id,s,h,hinv);
-      if (W < 0.)
-      {
-          fprintf(screen,"s = %f, W = %f\n",s,W);
-          error->one(FLERR,"Illegal kernel used, W < 0");
+      if (MASSFLAG) {
+        itype = type[i];
+        imass = mass[itype];
+      } else {
+        imass = rmass[i];
+        sli = sl[i];
       }
 
-      // add contribution of neighbor
-      // have a half neigh list, so do it for both if necessary
+      for (jj = 0; jj < jnum; jj++) {
+        j = jlist[jj];
+        if (!(mask[j] & groupbit)) continue;
 
+        if (MASSFLAG) {
+          jtype = type[j];
+          jmass = mass[jtype];
+          slCom = slComType[itype][jtype];
+        } else {
+          jmass = rmass[j];
+          slj = sl[j];
+          slCom = interpDist(sli,slj);
+        }
 
-      quantity[i] += W * mass[jtype] / density[j];
+        cut = slCom*kernel_cut;//SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
 
-      if (newton_pair || j < nlocal)
-        quantity[j] += W * mass[itype] / density[i];
-    }
-  }
+        delx = xtmp - x[j][0];
+        dely = ytmp - x[j][1];
+        delz = ztmp - x[j][2];
+        rsq = delx*delx + dely*dely + delz*delz;
 
-  // reset and add density contribution of self
+        if (rsq >= cut*cut) continue;
 
-  for (i = 0; i < nlocal; i++) {
+        // calculate distance
+        r = sqrt(rsq);
+        slComInv = 1./slCom;
+        s = r*slComInv;
 
-    // this gets a value for W at self, perform error check
+        // this gets a value for W at self, perform error check
 
-    W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,h,hinv);
-    if (W < 0.)
-    {
-        fprintf(screen,"s = 0, W = %f\n",W);
-        error->one(FLERR,"Illegal kernel used, W < 0");
-    }
-
-    // add contribution of self
-
-    density[i] = mass[type[i]] * W;
-  }
-
-/*
-  for (i = 0; i < nlocal; i++)
-    fprintf(screen,"ts %d, particle %d after self: density %f\n",update->ntimestep,i,density[i]);
-*/
-
-  // need updated ghost positions and self contributions
-
-  comm->forward_comm();
-
-  // loop over neighbors of my atoms
-
-  inum = list->inum;
-  ilist = list->ilist;
-  numneigh = list->numneigh;
-  firstneigh = list->firstneigh;
-
-  for (ii = 0; ii < inum; ii++) {
-    i = ilist[ii];
-    if (!(mask[i] & groupbit)) continue;
-    itype = type[i];
-    xtmp = x[i][0];
-    ytmp = x[i][1];
-    ztmp = x[i][2];
-    jlist = firstneigh[i];
-    jnum = numneigh[i];
-
-    for (jj = 0; jj < jnum; jj++) {
-      j = jlist[jj];
-      if (!(mask[j] & groupbit)) continue;
-      jtype = type[j];
-
-      delx = xtmp - x[j][0];
-      dely = ytmp - x[j][1];
-      delz = ztmp - x[j][2];
-      rsq = delx*delx + dely*dely + delz*delz;
-
-      if (rsq >= cutsq[itype][jtype]) continue;
-
-      // calculate distance and normalized distance
-
-      r = sqrt(rsq);
-      s = r * hinv;
-
-      // this sets a value for W
-      // error on kernel existence already performed in FixSPH::FixSPH()
-
-      W = SPH_KERNEL_NS::sph_kernel(kernel_id,s,h,hinv);
-      if (W < 0.)
-      {
+        W = SPH_KERNEL_NS::sph_kernel(kernel_id,s,slCom,slComInv);
+        if (W < 0.)
+        {
           fprintf(screen,"s = %f, W = %f\n",s,W);
           error->one(FLERR,"Illegal kernel used, W < 0");
+        }
+
+        // add contribution of neighbor
+        // have a half neigh list, so do it for both if necessary
+        density[i] += W*jmass;
+        if (newton_pair || j < nlocal)
+          density[j] += W*imass;
       }
-
-      // add contribution of neighbor
-      // have a half neigh list, so do it for both if necessary
-
-
-      density[i] += mass[jtype] * W;
-
-      if (newton_pair || j < nlocal)
-        density[j] += mass[itype] * W;
     }
-  }
 
-  // normalize density
-  for (i = 0; i < nlocal; i++) {
+    // normalize density
+    for (i = 0; i < nlocal; i++) {
       density[i] = density[i]/quantity[i];
-  }
+    }
 
-  // density is now correct, send to ghosts
+    // density is now correct, send to ghosts
+    timer->stamp();
+    comm->forward_comm();
+    timer->stamp(TIME_COMM);
 
-  comm->forward_comm();
-
-
-//  fprintf(screen,"ts %d, particles are reinitaialized. \n",update->ntimestep);
+    //  fprintf(screen,"ts %d, particles are reinitialized. \n",update->ntimestep);
 
   }
 

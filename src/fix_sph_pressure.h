@@ -38,9 +38,9 @@ FixStyle(sph/pressure,FixSPHPressure)
 
 namespace LAMMPS_NS {
 
-  enum {PRESSURESTYLE_ABSOLUT,PRESSURESTYLE_TAIT};
+  enum {PRESSURESTYLE_ABSOLUT,PRESSURESTYLE_TAIT,PRESSURESTYLE_RELATIV};
 
-class FixSPHPressure : public FixSPH {
+class FixSPHPressure : public FixSph {
  public:
   FixSPHPressure(class LAMMPS *, int, char **);
   ~FixSPHPressure();

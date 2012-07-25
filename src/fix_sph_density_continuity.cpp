@@ -35,7 +35,6 @@ andreas.aigner@jku.at
 #include "atom.h"
 #include "force.h"
 #include "modify.h"
-#include "pair.h"
 #include "comm.h"
 #include "neighbor.h"
 #include "neigh_list.h"
@@ -43,28 +42,61 @@ andreas.aigner@jku.at
 #include "memory.h"
 #include "error.h"
 #include "sph_kernels.h"
+#include "fix_property_atom.h"
+#include "timer.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
 /* ---------------------------------------------------------------------- */
 
-FixSPHDensityContinuity::FixSPHDensityContinuity(LAMMPS *lmp, int narg, char **arg) :
-  FixSPH(lmp, narg, arg)
+FixSphDensityContinuity::FixSphDensityContinuity(LAMMPS *lmp, int narg, char **arg) :
+  FixSph(lmp, narg, arg)
+{
+  int iarg = 0;
+
+  if (iarg+3 > narg) error->all(FLERR,"Illegal fix sph/density/continuity command");
+
+  iarg += 3;
+
+  while (iarg < narg) {
+    // kernel style
+    if (strcmp(arg[iarg],"sphkernel") == 0) {
+          if (iarg+2 > narg) error->all(FLERR,"Illegal fix sph/density/continuity command");
+
+          if(kernel_style) delete []kernel_style;
+          kernel_style = new char[strlen(arg[iarg+1])+1];
+          strcpy(kernel_style,arg[iarg+1]);
+
+          // check uniqueness of kernel IDs
+
+          int flag = SPH_KERNEL_NS::sph_kernels_unique_id();
+          if(flag < 0) error->all(FLERR,"Cannot proceed, sph kernels need unique IDs, check all sph_kernel_* files");
+
+          // get kernel id
+
+          kernel_id = SPH_KERNEL_NS::sph_kernel_id(kernel_style);
+          if(kernel_id < 0) error->all(FLERR,"Illegal fix sph/density/continuity command, unknown sph kernel");
+
+          iarg += 2;
+
+    } else error->all(FLERR,"Illegal fix sph/density/continuity command");
+  }
+
+  time_depend = 0; // only time step is used, but not a relative time
+
+}
+
+/* ---------------------------------------------------------------------- */
+
+FixSphDensityContinuity::~FixSphDensityContinuity()
 {
 
 }
 
 /* ---------------------------------------------------------------------- */
 
-FixSPHDensityContinuity::~FixSPHDensityContinuity()
-{
-
-}
-
-/* ---------------------------------------------------------------------- */
-
-int FixSPHDensityContinuity::setmask()
+int FixSphDensityContinuity::setmask()
 {
   int mask = 0;
   mask |= POST_INTEGRATE;
@@ -74,53 +106,76 @@ int FixSPHDensityContinuity::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityContinuity::init()
+void FixSphDensityContinuity::init()
 {
-  int i;
+  FixSph::init();
 
-  FixSPH::init();
-
-/*  // check if I am first SPH fix
-  // if I am not first, something must be mis-ordered
-
-  int first = 10000, mine = -1;
-  for(int i = 0; i < modify->nfix; i++)
-  {
-      if(modify->fix[i] == this) mine = i;
-      if(strncmp("sph",modify->fix[i]->style,3) == 0 && i < first) first = i;
-  }
-
-  if (first < mine) error->all(FLERR,"There must be only one fix sph/density, and it must come before other sph fixes"); */
-
-  dtdensity = update->dt;
+  dt = update->dt;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityContinuity::post_integrate()
+void FixSphDensityContinuity::post_integrate()
+{
+  //template function for using per atom or per atomtype smoothing length
+  if (mass_type) post_integrate_eval<1>();
+  else post_integrate_eval<0>();
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixSphDensityContinuity::post_integrate_respa(int ilevel, int flag)
+{
+  if (flag) return;             // only used by NPT,NPH
+
+  dt = step_respa[ilevel];
+
+  if (ilevel == 0) post_integrate();
+
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixSphDensityContinuity::reset_dt()
+{
+  dt = update->dt;
+}
+
+/* ---------------------------------------------------------------------- */
+
+template <int MASSFLAG>
+void FixSphDensityContinuity::post_integrate_eval()
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,rinv,s,gradWmag;
   int *ilist,*jlist,*numneigh,**firstneigh;
+  double sli,slj,slCom,slComInv,cut,delVDotDelR,imass,jmass;
 
   double **x = atom->x;
   double **v = atom->v;
   double *density = atom->density;
-  double *mass = atom->mass;
-  int *type = atom->type;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
+
+  // TODO: Both declaration necessary?
+  int *type = atom->type;       // if MASSFLAG
+  double *mass = atom->mass;    // if MASSFLAG
+  double *rmass = atom->rmass;  // if !MASSFLAG
 
   int newton_pair = force->newton_pair;
 
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
 
   // need updated ghost positions and self contributions
-
+  timer->stamp();
   comm->forward_comm();
+  if (!MASSFLAG) fppaSl->do_forward_comm();
+  timer->stamp(TIME_COMM);
+
+  if (!MASSFLAG) updatePtrs(); // get sl
+
 
   // loop over neighbors of my atoms
-
   inum = list->inum;
   ilist = list->ilist;
   numneigh = list->numneigh;
@@ -129,73 +184,83 @@ void FixSPHDensityContinuity::post_integrate()
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
     if (!(mask[i] & groupbit)) continue;
-    itype = type[i];
     xtmp = x[i][0];
     ytmp = x[i][1];
     ztmp = x[i][2];
     jlist = firstneigh[i];
     jnum = numneigh[i];
 
+    if (MASSFLAG) {
+      itype = type[i];
+      imass = mass[itype];
+    } else {
+      imass = rmass[i];
+      sli = sl[i];
+    }
+
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
       if (!(mask[j] & groupbit)) continue;
-      jtype = type[j];
+
+      if (MASSFLAG) {
+        jtype = type[j];
+        jmass = mass[jtype];
+        slCom = slComType[itype][jtype];
+      } else {
+        jmass = rmass[j];
+        slj = sl[j];
+        slCom = interpDist(sli,slj);
+      }
+
+      cut = slCom*kernel_cut;//SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
 
       delx = xtmp - x[j][0];
       dely = ytmp - x[j][1];
       delz = ztmp - x[j][2];
       rsq = delx*delx + dely*dely + delz*delz;
 
-      if (rsq >= cutsq[itype][jtype]) continue;
+      // TODO: Cutsq from pair?
+      if (rsq >= cut*cut) continue;
 
-      // calculate distance and normalized distance
+      // calculate normalized distance
 
       r = sqrt(rsq);
+      if (r == 0.) {
+        error->one(FLERR,"Zero distance between SPH particles!");
+      }
       rinv = 1./r;
-      s = r * hinv;
+      slComInv = 1./slCom;
+      s = r * slComInv;
+
+      //    scalar product of delV and delR/R
+      delVDotDelR = rinv * ( delx*(v[i][0]-v[j][0]) + dely*(v[i][1]-v[j][1]) + delz*(v[i][2]-v[j][2]) );
 
       // calculate value for magnitude of grad W
-
-      gradWmag = SPH_KERNEL_NS::sph_kernel_der(kernel_id,s,h,hinv);
-
+      gradWmag = SPH_KERNEL_NS::sph_kernel_der(kernel_id,s,slCom,slComInv);
 
       // add contribution of neighbor
       // have a half neigh list, so do it for both if necessary
 
-      density[i] += delx * rinv * dtdensity * mass[jtype] * (v[i][0]-v[j][0]) * gradWmag;
-      density[i] += dely * rinv * dtdensity * mass[jtype] * (v[i][1]-v[j][1]) * gradWmag;
-      density[i] += delz * rinv * dtdensity * mass[jtype] * (v[i][2]-v[j][2]) * gradWmag;
+      density[i] += calcDensityDer(delVDotDelR,gradWmag,jmass);
 
       if (newton_pair || j < nlocal) {
-        density[j] += -delx * rinv * dtdensity * mass[itype] * (v[j][0]-v[i][0]) * gradWmag;
-        density[j] += -dely * rinv * dtdensity * mass[itype] * (v[j][1]-v[i][1]) * gradWmag;
-        density[j] += -delz * rinv * dtdensity * mass[itype] * (v[j][2]-v[i][2]) * gradWmag;
+        density[j] += calcDensityDer(delVDotDelR,gradWmag,imass);
       }
     }
   }
 
   // density is now correct, send to ghosts
-
+  timer->stamp();
   comm->forward_comm();
-
-
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixSPHDensityContinuity::post_integrate_respa(int ilevel, int flag)
-{
-  if (flag) return;             // only used by NPT,NPH
-
-  dtdensity = step_respa[ilevel];
-
-  if (ilevel == 0) post_integrate();
+  timer->stamp(TIME_COMM);
 
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHDensityContinuity::reset_dt()
+double FixSphDensityContinuity::calcDensityDer(double delVDotDelR,
+    double gradWmag, double mass)
 {
-  dtdensity = update->dt;
+  // return contribution of neighbor
+  return (dt * mass * delVDotDelR * gradWmag);
 }
