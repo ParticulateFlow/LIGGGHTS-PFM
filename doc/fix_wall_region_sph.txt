@@ -49,7 +49,7 @@ An additional force is acting on particles within the cutoff distance of the int
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
-No informatino about this fix is written to "binary restart files"_restart.html.
+No information about this fix is written to "binary restart files"_restart.html.
 
 None of the "fix_modify"_fix_modify.html options are relevant to this fix.
 
