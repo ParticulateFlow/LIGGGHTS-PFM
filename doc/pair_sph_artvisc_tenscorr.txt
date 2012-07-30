@@ -11,7 +11,7 @@ pair_style sph/artVisc/tensCorr command :h3
 
 [Syntax:]
 
-pair_style sph/artVisc/tensCorr args keyword values ... :pre
+pair_style sph/artVisc/tensCorr kernelstyle args keyword values ... :pre
 
 sph/artVisc/tensCorr = name of this pair_style command
 kernelstyle = {cubicspline} or {wendland}
@@ -73,7 +73,9 @@ The choice of &#945; and &#946; should not be critical, although there are some 
   "In the present case, with negligible changes in the density \[weakly compressible SPH\], the viscosity is almost entirely shear viscosity with a viscosity coefficient approximately &#945;hc." "(Monaghan, 1994)"_#Monaghan1994 :p
 
 Bar-parameters like c<sub>ab</sub> and &#961;<sub>ab</sub> are mean values of particle a and b.
-NOTE: &#961;<sub>ab</sub> is calculated, whereas c<sub>ab</sub> is a given parameter. In a next version speed of sound should be added as atom property.
+NOTE: &#961;<sub>ab</sub> is calculated, and for the calculation of c<sub>ab</sub> the per-type property {speedOfSound} has to be defined, e.g., 
+
+fix 		      m1 all property/global speedOfSound peratomtype 20. :pre
 
 By appending the keyword {tensCorr} you enable the tensile correction algorithm "(Monaghan, 2000)"_#Monaghan2000 which improves results in combination with negative pressures (e.g. EOS like Tait's equation). This method adds R*(f<sub>ab</sub>)<sup>n</sup> to the bracket term, where the factor R is related to the pressure and can be calculated by R=R<sub>a</sub> + R<sub>b</sub>. In case of negative pressures (P<sub>a</sub> < 0) we use the rule
 
