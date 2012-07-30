@@ -64,6 +64,10 @@ pair_style sph cubicspline 0.001 artVisc 1e-4 0 1e-8 tensCorr 0.2 1e-2
 </P>
 <CENTER><IMG SRC = "Eqs/pair_sph_artvisc_tenscorr_eq4.jpg">
 </CENTER>
+<P>The atom style <I>sph/var</I> uses the input argument h as initial smoothing length for all particles. In case the atom style <I>sph</I> (per-type smoothing length) is used an additional per-type property <I>sl</I> must be defined, e.g., 
+</P>
+<PRE>fix           m2 all property/global sl peratomtype 0.0012 
+</PRE>
 <P>For further details on the basics of the SPH-method we recommend the papers from Monaghan <A HREF = "#Monaghan1992">(1992)</A>, <A HREF = "#Monaghan1994">(1994)</A>, etc.
 </P>
 <P>Optionally, this pairstyle can take into account the artificial viscosity proposed my Monaghan (1985), if the artVisc keyword is appended. In this case, &#928;<sub>ab</sub> is added to the bracket term in the above acceleration equation, where &#928;<sub>ab</sub> is given by 

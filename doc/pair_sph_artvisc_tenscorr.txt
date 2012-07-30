@@ -57,6 +57,10 @@ The smoothing length h is the most important parameter for SPH-calculations. It 
 
 :c,image(Eqs/pair_sph_artvisc_tenscorr_eq4.jpg)
 
+The atom style {sph/var} uses the input argument h as initial smoothing length for all particles. In case the atom style {sph} (per-type smoothing length) is used an additional per-type property {sl} must be defined, e.g., 
+
+fix           m2 all property/global sl peratomtype 0.0012 :pre
+
 For further details on the basics of the SPH-method we recommend the papers from Monaghan "(1992)"_#Monaghan1992, "(1994)"_#Monaghan1994, etc.
 
 Optionally, this pairstyle can take into account the artificial viscosity proposed my Monaghan (1985), if the artVisc keyword is appended. In this case, &#928;<sub>ab</sub> is added to the bracket term in the above acceleration equation, where &#928;<sub>ab</sub> is given by 
