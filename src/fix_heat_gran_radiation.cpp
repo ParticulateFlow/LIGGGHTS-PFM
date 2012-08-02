@@ -38,7 +38,8 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
 
 	//NP use initial temperature as background temperature if
 	//NP TB is not passed as argument background_temperature
-	TB = T0;
+  //NP this is handled in init()
+	TB = -1.0;
 
 	bool hasargs = true;
 	while(iarg < narg && hasargs)
@@ -76,6 +77,10 @@ void FixHeatGranRad::init(){
 
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
+
+  if (TB == -1.0){
+    TB = T0;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
