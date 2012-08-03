@@ -23,7 +23,10 @@
 
 #include "atom.h"
 #include "error.h"
+#include "fix_property_global.h"
 #include "math_extra.h"
+#include "mech_param_gran.h"
+#include "modify.h"
 #include "neigh_list.h"
 #include "pair_gran.h"
 #include "random_mars.h"
@@ -35,8 +38,9 @@ using namespace FixConst;
 
 using MathExtra::dot3;
 using MathExtra::lensq3;
-using MathExtra::scale3;
 using MathExtra::sub3;
+using MathExtra::normalize3;
+using MathExtra::snormalize3;
 
 /* ---------------------------------------------------------------------- */
 
@@ -51,6 +55,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
 	//NP TB is not passed as argument background_temperature
   //NP background temperature is further handled in init()
   TB  = -1.0;
+  Qtot = 0.0;
   sigma = 5.670373E-8;
 
 	bool hasargs = true;
@@ -65,11 +70,18 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
     } else if(strcmp(style,"heat/gran/radiation") == 0)
       	error->fix_error(FLERR,this,"unknown keyword");
   }
+
+  fix_emissivity = NULL;
+  emissivity = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
 
-FixHeatGranRad::~FixHeatGranRad(){}
+FixHeatGranRad::~FixHeatGranRad(){
+  if (emissivity){
+    delete [] emissivity;
+  }
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -90,15 +102,78 @@ void FixHeatGranRad::init(){
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
 
+  // set background temperature to T0 if it was not provided as an argument
   if (TB == -1.0){
     TB = T0;
   }
+
+  // find mechanical-parameter-granular "emissivity" and fetch data
+  // if "emissivity" not found: error handling happens inside find_fix_property().
+  int max_type = pair_gran->mpg->max_type();
+  if (emissivity){
+    delete [] emissivity;
+  }
+  emissivity = new double[max_type];
+  fix_emissivity = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalEmissivity","property/global","peratomtype",max_type,0,style));
+  for (int i = 0; i < max_type; i++)
+  {
+    emissivity[i] = fix_emissivity->compute_vector(i);
+    if (emissivity[i] < 0.0 || emissivity[i] > 2.0){
+      error->all(FLERR,"Fix heat/gran/radiation: Thermal emissivity must not be < 0.0 or > 1.0.");
+    }
+  }
+
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixHeatGranRad::post_force(int vflag){
+  //NP neighborlist data
+  int *ilist;
+  int *numneigh;
+  int i;
+  int inum;
 
+  //NP particle data
+  double **x;
+  double *radius;
+  int nlocal;
+
+  //NP ray data
+  double *buffer = new double[3]; //NP buffer for computations later on
+  double *d = new double[3]; //NP direction of ray
+  double *o = new double[3]; //NP origin of ray
+  double t; //NP parameter of ray
+
+  //NP individual particle data
+  double a; //NP area
+  double r; //NP radius;
+
+  //NP fetch neighborlist data
+  inum = pair_gran->listfull->inum;
+  ilist = pair_gran->listfull->ilist;
+  numneigh = pair_gran->listfull->numneigh;
+
+  //NP fetch particle data
+  nlocal = atom->nlocal;
+  radius = atom->radius;
+  x = atom->x;
+
+  //NP TODO should I do this here? What's the purpose?
+  updatePtrs();
+
+  // calculate total heat of all particles to update energy of one ray
+  for (int ii = 0; ii < inum; ii++)
+  {
+    i = ilist[ii];
+
+  }
+
+  // all owned particles radiate
+  for (int ii = 0; ii < inum; ii++)
+  {
+    i = ilist[ii];
+  }
 }
 
 /* ---------------------------------------------------------------------- */
