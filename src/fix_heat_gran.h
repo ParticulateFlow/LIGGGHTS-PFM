@@ -45,7 +45,6 @@ namespace LAMMPS_NS {
     virtual void register_compute_pair_local(class ComputePairGranLocal *);
     virtual void unregister_compute_pair_local(class ComputePairGranLocal *);
     void updatePtrs();
-    // what about register_compute_pair_local() and unregister~?
 
   protected:
     class ComputePairGranLocal *cpl;
@@ -53,7 +52,6 @@ namespace LAMMPS_NS {
     class FixPropertyAtom* fix_heatSource;
     class FixPropertyAtom* fix_temp;
     class FixScalarTransportEquation *fix_ste;
-    // what about class ComputePairGranLocal *cpl? is this heat_gran or heat_gran_conduction?
 
     double *heatFlux;   //NP heat flux from/to the particle
     double *heatSource; //NP heat source
