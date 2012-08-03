@@ -49,7 +49,12 @@ namespace LAMMPS_NS {
     void randDir(double*, double*);
     void randOnSphere(double*, double, double*, double*);
 
-		double TB;	//NP background temperature
+    double TB;   // background temperature
+    double Qtot; // total energy of all particles (heat)
+    double Qr;   // energy of one ray
+
+    class FixPropertyGlobal* fix_emissivity;
+    double *emissivity;
 
     double sigma; // stefan bolzmann constant
     class RanMars rGen;
