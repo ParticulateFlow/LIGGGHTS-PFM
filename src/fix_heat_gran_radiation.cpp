@@ -21,32 +21,44 @@
 
 #include "fix_heat_gran_radiation.h"
 
+#include "atom.h"
+#include "error.h"
+#include "math_extra.h"
+#include "neigh_list.h"
+#include "pair_gran.h"
+#include "random_mars.h"
 #include <cstdlib>
 #include <cstring>
-#include "error.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+
+using MathExtra::dot3;
+using MathExtra::lensq3;
+using MathExtra::scale3;
+using MathExtra::sub3;
 
 /* ---------------------------------------------------------------------- */
 
 //NP assumptions:
 //NP if background_temperature is not passed it is assumed that
 //NP    initial_temperature is the background temperature
-FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg){
+FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg),
+                                                                          rGen(lmp, 1){
 	int iarg = 5;
 
 	//NP use initial temperature as background temperature if
 	//NP TB is not passed as argument background_temperature
-  //NP this is handled in init()
-	TB = -1.0;
+  //NP background temperature is further handled in init()
+  TB  = -1.0;
+  sigma = 5.670373E-8;
 
 	bool hasargs = true;
 	while(iarg < narg && hasargs)
   {
     hasargs = false;
-    if(strcmp(arg[iarg],"background_temperature") == 0) {
-      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'background_temperature'");
+    if(strcmp(arg[iarg],"backgroundTemperature") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'backgroundTemperature'");
       TB = atof(arg[iarg+1]);
       iarg += 2;
       hasargs = true;
