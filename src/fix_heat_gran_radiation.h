@@ -29,6 +29,7 @@ FixStyle(heat/gran/radiation,FixHeatGranRad)
 #define LMP_FIX_HEATGRAN_RADIATION_H
 
 #include "fix_heat_gran.h"
+#include "random_mars.h"
 
 namespace LAMMPS_NS {
 
@@ -37,13 +38,21 @@ namespace LAMMPS_NS {
 	public:
 		FixHeatGranRad(class LAMMPS *, int, char **);
 		~FixHeatGranRad();
+    void pre_delete(bool){};
 
 		int setmask();
 		void init();
 		void post_force(int);
 
 	private:
+    bool intersectRaySphere(double*, double*, double*, double, double&, double*);
+    void randDir(double*, double*);
+    void randOnSphere(double*, double, double*, double*);
+
 		double TB;	//NP background temperature
+
+    double sigma; // stefan bolzmann constant
+    class RanMars rGen;
 	};
 }
 
