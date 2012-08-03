@@ -50,7 +50,7 @@ using MathConst::MY_4PI;
 //NP if background_temperature is not passed it is assumed that
 //NP    initial_temperature is the background temperature
 FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg),
-                                                                          rGen(lmp, 1){
+                                                                          RGen(lmp, 1){
 	int iarg = 5;
 
 	//NP use initial temperature as background temperature if
@@ -58,7 +58,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
   //NP background temperature is further handled in init()
 
   Qr = 0.0;
-  mtot = 10; //NP TODO tweak this parameter or let it be user input
+  avgNRays = 10; //NP TODO optimize this parameter
 
   TB  = -1.0;
   Qtot = 0.0;
@@ -66,8 +66,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
   fix_emissivity = NULL;
   emissivity = NULL;
 
-
-  sigma = 5.670373E-8;
+  Sigma = 5.670373E-8;
 
   // parse input arguments:
   //  - backgroundTemperature
@@ -84,7 +83,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
     }
     else if(strcmp(arg[iarg],"averageNumberOfRaysPerParticle") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'backgroundTemperature'");
-      mtot = atoi(arg[iarg+1]);
+      avgNRays = atoi(arg[iarg+1]);
       iarg += 2;
       hasargs = true;
     }
@@ -171,6 +170,9 @@ void FixHeatGranRad::post_force(int vflag){
   double radi;  //NP radius
   double tempi; //NP temperature
 
+  //NP others
+  int NRaysTot; //NP total number of rays per timestep
+
   //NP fetch neighborlist data
   ilist = pair_gran->listfull->ilist;
   inum = pair_gran->listfull->inum;
@@ -196,9 +198,10 @@ void FixHeatGranRad::post_force(int vflag){
       emisi = emissivity[type[i]-1];
       tempi = Temp[i];
 
-      Qtot += areai * emisi * sigma * tempi * tempi * tempi * tempi;
+      Qtot += areai * emisi * Sigma * tempi * tempi * tempi * tempi;
     }
-
+    NRaysTot = avgNRays * inum;
+    Qr = Qtot / (double)NRaysTot;
   }
 
   // all owned particles radiate
@@ -288,9 +291,9 @@ ansD ... return value - direction vector that points out of the sphere
 void FixHeatGranRad::randOnSphere(double *c, double r, double *ansP, double *ansD){
 
   // generate random direction
-  ansD[0] = 2.0*rGen.uniform() - 1.0;
-  ansD[1] = 2.0*rGen.uniform() - 1.0;
-  ansD[2] = 2.0*rGen.uniform() - 1.0;
+  ansD[0] = 2.0*RGen.uniform() - 1.0;
+  ansD[1] = 2.0*RGen.uniform() - 1.0;
+  ansD[2] = 2.0*RGen.uniform() - 1.0;
 
   normalize3(ansD, ansD);
 
@@ -314,9 +317,9 @@ void FixHeatGranRad::randDir(double *n, double *o){
   double side;
 
   // generate random direction
-  o[0] = 2.0*rGen.uniform() - 1.0;
-  o[1] = 2.0*rGen.uniform() - 1.0;
-  o[2] = 2.0*rGen.uniform() - 1.0;
+  o[0] = 2.0*RGen.uniform() - 1.0;
+  o[1] = 2.0*RGen.uniform() - 1.0;
+  o[2] = 2.0*RGen.uniform() - 1.0;
   normalize3(o, o);
 
   // adjust direction, if it points to the wrong side
