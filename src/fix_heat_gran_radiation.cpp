@@ -24,6 +24,7 @@
 #include "atom.h"
 #include "error.h"
 #include "fix_property_global.h"
+#include "math_const.h"
 #include "math_extra.h"
 #include "mech_param_gran.h"
 #include "modify.h"
@@ -41,6 +42,7 @@ using MathExtra::lensq3;
 using MathExtra::sub3;
 using MathExtra::normalize3;
 using MathExtra::snormalize3;
+using MathConst::MY_4PI;
 
 /* ---------------------------------------------------------------------- */
 
@@ -54,10 +56,22 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
 	//NP use initial temperature as background temperature if
 	//NP TB is not passed as argument background_temperature
   //NP background temperature is further handled in init()
+
+  Qr = 0.0;
+  mtot = 10; //NP TODO tweak this parameter or let it be user input
+
   TB  = -1.0;
   Qtot = 0.0;
+
+  fix_emissivity = NULL;
+  emissivity = NULL;
+
+
   sigma = 5.670373E-8;
 
+  // parse input arguments:
+  //  - backgroundTemperature
+  //  - averageNumberOfRaysPerParticle
 	bool hasargs = true;
 	while(iarg < narg && hasargs)
   {
@@ -67,12 +81,16 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
       TB = atof(arg[iarg+1]);
       iarg += 2;
       hasargs = true;
-    } else if(strcmp(style,"heat/gran/radiation") == 0)
+    }
+    else if(strcmp(arg[iarg],"averageNumberOfRaysPerParticle") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'backgroundTemperature'");
+      mtot = atoi(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
+    }
+    else if(strcmp(style,"heat/gran/radiation") == 0)
       	error->fix_error(FLERR,this,"unknown keyword");
   }
-
-  fix_emissivity = NULL;
-  emissivity = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -137,6 +155,8 @@ void FixHeatGranRad::post_force(int vflag){
   //NP particle data
   double **x;
   double *radius;
+  int *mask;
+  int *type;
   int nlocal;
 
   //NP ray data
@@ -146,26 +166,38 @@ void FixHeatGranRad::post_force(int vflag){
   double t; //NP parameter of ray
 
   //NP individual particle data
-  double a; //NP area
-  double r; //NP radius;
+  double areai; //NP area
+  double emisi; //NP emissivity
+  double radi;  //NP radius
+  double tempi; //NP temperature
 
   //NP fetch neighborlist data
-  inum = pair_gran->listfull->inum;
   ilist = pair_gran->listfull->ilist;
+  inum = pair_gran->listfull->inum;
   numneigh = pair_gran->listfull->numneigh;
 
   //NP fetch particle data
+  mask = atom->mask;
   nlocal = atom->nlocal;
   radius = atom->radius;
+  type = atom->type;
   x = atom->x;
 
   //NP TODO should I do this here? What's the purpose?
   updatePtrs();
 
   // calculate total heat of all particles to update energy of one ray
-  for (int ii = 0; ii < inum; ii++)
-  {
-    i = ilist[ii];
+  if (Qtot == 0.0 || neighbor->decide()){
+    for (int ii = 0; ii < inum; ii++){
+      i = ilist[ii];
+      radi = radius[i];
+
+      areai = MY_4PI * radi * radi;
+      emisi = emissivity[type[i]-1];
+      tempi = Temp[i];
+
+      Qtot += areai * emisi * sigma * tempi * tempi * tempi * tempi;
+    }
 
   }
 

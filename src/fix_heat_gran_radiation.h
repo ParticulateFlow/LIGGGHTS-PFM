@@ -49,15 +49,19 @@ namespace LAMMPS_NS {
     void randDir(double*, double*);
     void randOnSphere(double*, double, double*, double*);
 
+    // model parameters
+    double Qr; // energy of one ray
+    int mtot;  // average number of rays per particle per timestep
+
+    // physical parameters
     double TB;   // background temperature
     double Qtot; // total energy of all particles (heat)
-    double Qr;   // energy of one ray
 
     class FixPropertyGlobal* fix_emissivity;
     double *emissivity;
 
-    double sigma; // stefan bolzmann constant
-    class RanMars rGen;
+    double sigma;       // stefan bolzmann constant
+    class RanMars rGen; // random number generator
 	};
 }
 
