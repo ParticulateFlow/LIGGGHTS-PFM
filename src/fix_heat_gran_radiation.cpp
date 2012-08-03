@@ -29,6 +29,7 @@
 #include "mech_param_gran.h"
 #include "modify.h"
 #include "neigh_list.h"
+#include "neighbor.h"
 #include "pair_gran.h"
 #include "random_mars.h"
 #include <cstdlib>
@@ -59,6 +60,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
 
   Qr = 0.0;
   avgNRays = 10; //NP TODO optimize this parameter
+  maxBounces = 10;
 
   TB  = -1.0;
   Qtot = 0.0;
@@ -84,6 +86,12 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
     else if(strcmp(arg[iarg],"averageNumberOfRaysPerParticle") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'backgroundTemperature'");
       avgNRays = atoi(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
+    }
+    else if(strcmp(arg[iarg],"maxNumberOfBounces") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'backgroundTemperature'");
+      maxBounces = atoi(arg[iarg+1]);
       iarg += 2;
       hasargs = true;
     }
@@ -208,8 +216,17 @@ void FixHeatGranRad::post_force(int vflag){
   for (int ii = 0; ii < inum; ii++)
   {
     i = ilist[ii];
+    //NP TODO
   }
+
+  // reverse communication of heatflux (ghost particles send flux to owner)
+  fix_heatFlux->do_reverse_comm();
 }
+
+/* ---------------------------------------------------------------------- */
+
+void FixHeatGranRad::radiate(int i, )
+
 
 /* ---------------------------------------------------------------------- */
 /*
