@@ -330,21 +330,21 @@ void FixHeatGranRad::randOnSphere(double *c, double r, double *ansP, double *ans
   o ... return value - random direction
 */
 //NP unit tested
-void FixHeatGranRad::randDir(double *n, double *o){
+void FixHeatGranRad::randDir(double *n, double *d){
   double side;
 
   // generate random direction
-  o[0] = 2.0*RGen.uniform() - 1.0;
-  o[1] = 2.0*RGen.uniform() - 1.0;
-  o[2] = 2.0*RGen.uniform() - 1.0;
-  normalize3(o, o);
+  d[0] = 2.0*RGen.uniform() - 1.0;
+  d[1] = 2.0*RGen.uniform() - 1.0;
+  d[2] = 2.0*RGen.uniform() - 1.0;
+  normalize3(d, d);
 
   // adjust direction, if it points to the wrong side
   // and if n != 0
-  side = dot3(o, n);
+  side = dot3(d, n);
   if (side < 0.0 && (n[0] != 0.0 || n[1] != 0.0 || n[2] != 0.0)){
-    o[0] *= -1.0;
-    o[1] *= -1.0;
-    o[2] *= -1.0;
+    d[0] *= -1.0;
+    d[1] *= -1.0;
+    d[2] *= -1.0;
   }
 }
