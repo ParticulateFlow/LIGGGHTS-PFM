@@ -45,14 +45,15 @@ namespace LAMMPS_NS {
 		void post_force(int);
 
 	private:
+    void radiate();
     bool intersectRaySphere(double*, double*, double*, double, double&, double*);
     void randDir(double*, double*);
     void randOnSphere(double*, double, double*, double*);
 
     // model parameters
-    double Qr;    // energy of one ray
-    int avgNRays; // average number of rays per particle per timestep
-    int NRaysTot; // total number of rays per timestep
+    double Qr;      // energy of one ray
+    int avgNRays;   // average number of rays per particle per timestep
+    int maxBounces; // maximum number of bounces
 
     // physical parameters
     double TB;   // background temperature
