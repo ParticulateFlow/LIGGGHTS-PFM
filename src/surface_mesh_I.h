@@ -46,8 +46,11 @@ SurfaceMesh<NUM_NODES>::SurfaceMesh(LAMMPS *lmp)
     // TODO should keep areaMeshSubdomain up-to-date more often for insertion faces
     areaMesh_     (*this->prop().template addGlobalProperty   < ScalarContainer<double> >                 ("areaMesh",     "comm_none","frame_trans_rot_invariant","restart_no",2)),
 
-    //NP no forward communication - communicate on borders, afterwards re-calc properties for ghosts
-    //NP if scale,move,translate: properties are manipulated via CustomValueTracker
+    //NP neigh topology is communicated at exchange and borders
+    //NP  (neigh topology is created once and never changed)
+
+    //NP no forward communication at all
+    //NP if scale,move,translate: properties are manipulated/updated via CustomValueTracker
 
     area_         (*this->prop().template addElementProperty< ScalarContainer<double> >                   ("area",         "comm_none","frame_trans_rot_invariant", "restart_no",2)),
     areaAcc_      (*this->prop().template addElementProperty< ScalarContainer<double> >                   ("areaAcc",      "comm_none","frame_trans_rot_invariant", "restart_no",2)),
@@ -55,19 +58,18 @@ SurfaceMesh<NUM_NODES>::SurfaceMesh(LAMMPS *lmp)
     edgeVec_      (*this->prop().template addElementProperty< MultiVectorContainer<double,NUM_NODES,3> >  ("edgeVec",      "comm_none","frame_scale_trans_invariant","restart_no")),
     edgeNorm_     (*this->prop().template addElementProperty< MultiVectorContainer<double,NUM_NODES,3> >  ("edgeNorm",     "comm_none","frame_scale_trans_invariant","restart_no")),
     surfaceNorm_  (*this->prop().template addElementProperty< VectorContainer<double,3> >                 ("surfaceNorm",  "comm_none","frame_scale_trans_invariant","restart_no")),
-    edgeActive_   (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("edgeActive",   "comm_none","frame_invariant",            "restart_no")),
-    cornerActive_ (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("cornerActive", "comm_none","frame_invariant",            "restart_no")),
-    hasNonCoplanarSharedNode_(*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >("hasNonCoplanarSharedNode","comm_none","frame_invariant", "restart_no")),
-    nNeighs_      (*this->prop().template addElementProperty< ScalarContainer<int> >                      ("nNeighs",      "comm_none","frame_invariant",            "restart_no")),
+    edgeActive_   (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("edgeActive",   "comm_exchange_borders","frame_invariant",            "restart_no")),
+    cornerActive_ (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("cornerActive", "comm_exchange_borders","frame_invariant",            "restart_no")),
+    hasNonCoplanarSharedNode_(*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >("hasNonCoplanarSharedNode","comm_exchange_borders","frame_invariant", "restart_no")),
+    nNeighs_      (*this->prop().template addElementProperty< ScalarContainer<int> >                      ("nNeighs",      "comm_exchange_borders","frame_invariant",            "restart_no")),
     //NP fundamental assumption: no hanging nodes
-    neighFaces_   (*this->prop().template addElementProperty< VectorContainer<int,NUM_NODES> >            ("neighFaces",   "comm_none","frame_invariant",            "restart_no"))
+    neighFaces_   (*this->prop().template addElementProperty< VectorContainer<int,NUM_NODES> >            ("neighFaces",   "comm_exchange_borders","frame_invariant",            "restart_no"))
 {
     //NP allocate 4 scalar spaces
     areaMesh_.add(0.);
     areaMesh_.add(0.);
     areaMesh_.add(0.);
     areaMesh_.add(0.);
-
     /*NL*///this->error->all(FLERR,"check: use ID instead of index for neigh list, areCoplanar etc");
 }
 
@@ -496,6 +498,9 @@ bool SurfaceMesh<NUM_NODES>::areCoplanar(int tag_a, int tag_b)
 {
     int a = this->map(tag_a);
     int b = this->map(tag_b);
+
+    if(a < 0 || b < 0)
+        this->error->one(FLERR,"Internal error: Illegal call to SurfaceMesh::areCoplanar()");
 
     // check if two faces are coplanar
     // eg used to transfer shear history btw planar faces

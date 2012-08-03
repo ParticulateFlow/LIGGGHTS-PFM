@@ -434,6 +434,11 @@ void FixWallGranHookeHistory::addHeatFlux(TriMesh *mesh,int ip, double rsq, doub
     if(mesh)
         Temp_wall = (*mesh->prop().getGlobalProperty< ScalarContainer<double> >("Temp"))(0);
 
+    double *Temp_p = fppa_T->vector_atom;
+    double *heatflux = fppa_hf->vector_atom;
+
+    /*NL*/ //fprintf(screen,"size %d Temp %f\n",(*mesh->prop().getGlobalProperty< ScalarContainer<double> >("Temp")).size(),Temp_wall);
+
     r = sqrt(rsq);
 
     //NP adjust overlap that may be superficially large due to softening

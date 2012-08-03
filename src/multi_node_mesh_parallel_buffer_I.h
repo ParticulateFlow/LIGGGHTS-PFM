@@ -27,8 +27,10 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  int MultiNodeMeshParallel<NUM_NODES>::pushExchange(int dim,double *buf)
+  int MultiNodeMeshParallel<NUM_NODES>::pushExchange(int dim)
   {
+      //NP do NOT make a local copy of buf_send_ as this fct calls re-allocation!!
+
       // scale translate rotate not needed here
       bool dummy = false;
       double checklo,checkhi;
@@ -46,11 +48,11 @@
       {
           if(!(this->center_(i)[dim] >= checklo && this->center_(i)[dim] < checkhi))
           {
-              nsend_this = pushElemToBuffer(i,&(buf[nsend+1]),OPERATION_COMM_EXCHANGE,dummy,dummy,dummy);
-              buf[nsend] = static_cast<double>(nsend_this+1);
+              nsend_this = pushElemToBuffer(i,&(buf_send_[nsend+1]),OPERATION_COMM_EXCHANGE,dummy,dummy,dummy);
+              buf_send_[nsend] = static_cast<double>(nsend_this+1);
               nsend += (nsend_this+1);
-              /*NL*/// fprintf(this->screen,"proc %d pushes element id %d with center %f %f %f\n",
-              /*NL*///         this->comm->me,this->id_slow(i),this->center_(i)[0],this->center_(i)[1],this->center_(i)[2]);
+              /*NL*/// fprintf(this->screen,"step %d: proc %d pushes element id %d with center %f %f %f\n",
+              /*NL*///         this->update->ntimestep,this->comm->me,this->id_slow(i),this->center_(i)[0],this->center_(i)[1],this->center_(i)[2]);
               if (nsend > maxsend_)
                   grow_send(nsend,1);
               this->deleteElement(i); //NP deleteElement() decreases nLocal
@@ -85,7 +87,8 @@
           // center is next in buffer, test it
           vectorCopy3D(&(buf[m+1]),center_elem);
 
-          /*NL*/// fprintf(this->screen,"nrecv_this %d center %f %f %f\n",nrecv_this,center_elem[0],center_elem[1],center_elem[2]);
+          /*NL*/// fprintf(this->screen,"proc %d: nrecv_this %d center %f %f %f xlo %f xhi %f\n",
+          /*NL*///         this->comm->me,nrecv_this,center_elem[0],center_elem[1],center_elem[2],this->domain->sublo[0],this->domain->subhi[0]);
 
           //NP do not ask if the center is completely in, just ask for center_elem[dim]
           //NP this makes elements go around the corner
@@ -221,7 +224,7 @@
       for(int i = 0; i < nglobal; i++)
       {
           nrecv_this = static_cast<int>(list[m]);
-          /*NL*/fprintf(this->screen,"nrecv_this %d\n",nrecv_this);
+          /*NL*///fprintf(this->screen,"nrecv_this %d\n",nrecv_this);
           popElemFromBuffer(&(list[m+1]),OPERATION_RESTART,dummy,dummy,dummy);
           m += nrecv_this;
       }

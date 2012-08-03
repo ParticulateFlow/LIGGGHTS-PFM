@@ -229,6 +229,7 @@ void FixMesh::setup_pre_force(int vflag)
     // if mesh already set-up and parallelized
     //NP as in Verlet::setup()
     //NP call with setup flag so know to copy node_orig_ if necessary
+    //NP copy node_orig_ is necessary if a second fix move/mesh is added
     else
     {
         mesh_->pbcExchangeBorders(1);

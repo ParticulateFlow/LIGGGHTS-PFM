@@ -436,8 +436,8 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
         if(cpl && !addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
 
         /*NL*/ //if(update->ntimestep > 33000 && (atom->tag[i] == 1 || atom->tag[i] == 37) && (atom->tag[j] == 1 || atom->tag[j] == 37)) fprintf(screen,"contact at %d, overlap %f\n",update->ntimestep,deltan);
-        /*NL*/ //fprintf(screen,"contact at %d, force %f %f %f\n",update->ntimestep,fx,fy,fz);
-        /*NL*/ //error->all(FLERR,"end");
+        /*NL*/ //fprintf(screen,"contact at step %d, force %f %f %f tags %d %d\n",update->ntimestep,fx,fy,fz,atom->tag[i],atom->tag[j]);
+        /*NL*/ //error->one(FLERR,"end");
 
         if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
       }

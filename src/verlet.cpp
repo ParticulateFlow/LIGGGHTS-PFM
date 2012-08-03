@@ -126,6 +126,8 @@ void Verlet::setup()
   if (atom->sortfreq > 0) atom->sort();
   comm->borders();
   if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting modify->setup_pre_neighbor\n");__debug__(lmp);}
+  modify->setup_pre_neighbor(); //NP modified C.K.
   /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: doing neigh build\n");__debug__(lmp);}
   neighbor->build();
   neighbor->ncalls = 0;
@@ -189,6 +191,7 @@ void Verlet::setup_minimal(int flag)
     comm->exchange();
     comm->borders();
     if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
+    modify->setup_pre_neighbor(); //NP modified C.K.
     neighbor->build();
     neighbor->ncalls = 0;
   }

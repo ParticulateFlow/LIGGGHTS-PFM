@@ -125,6 +125,8 @@ void FixInsertPack::init_defaults()
       masstotal_region = 0.0;
 
       region_volume = region_volume_local = 0.;
+
+      insertion_ratio = 0.;
 }
 
 /* ----------------------------------------------------------------------
@@ -139,7 +141,8 @@ void FixInsertPack::calc_insertion_properties()
     if(!ins_region)
         error->fix_error(FLERR,this,"must define an insertion region");
     ins_region->reset_random(seed + SEED_OFFSET);
-    ins_region->volume_mc(ntry_mc,region_volume,region_volume_local);
+
+    calc_region_volume_local();
     if(region_volume <= 0. || region_volume_local < 0. || region_volume_local > region_volume)
         error->one(FLERR,"Fix insert: Region volume calculation with MC failed");
 
@@ -168,6 +171,17 @@ void FixInsertPack::calc_insertion_properties()
     if(n_defined != 1)
         error->fix_error(FLERR,this,"must define exactly one keyword out of 'volumefraction_region', 'particles_in_region', and 'mass_in_region'");
 
+}
+
+/* ----------------------------------------------------------------------
+   calculate volume of region on my subbox
+   has to be called at initialization and before every insertion in case
+   box is changing
+------------------------------------------------------------------------- */
+
+void FixInsertPack::calc_region_volume_local()
+{
+    ins_region->volume_mc(ntry_mc,region_volume,region_volume_local);
 }
 
 /* ----------------------------------------------------------------------
@@ -207,11 +221,11 @@ int FixInsertPack::calc_ninsert_this()
   {
       //NP only count single particles
       if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0) continue;
-      if
-      (
-        ((!all_in_flag) && ins_region->match(x[i][0],x[i][1],x[i][2]))    ||
-        (( all_in_flag) && ins_region->match_shrinkby_cut(x[i],radius[i]))
-      )
+      if(ins_region->match(x[i][0],x[i][1],x[i][2]))
+        //NP OLD - had problems with particles just slightly leaving shinked body
+        //NP e.g. if due ot particle-wall overlap if insertion box = wall
+        /*NP ((!all_in_flag) && ins_region->match(x[i][0],x[i][1],x[i][2]))    ||
+             (( all_in_flag) && ins_region->match_shrinkby_cut(x[i],radius[i]))*/
       {
           np_region++;
           vol_region += _4Pi3*radius[i]*radius[i]*radius[i];
@@ -231,11 +245,11 @@ int FixInsertPack::calc_ninsert_this()
 
           multisphere->x_bound(x_bound_body,ibody);
           r_bound_body = multisphere->r_bound(ibody);
-          if
-          (
-              !all_in_flag && ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2])  ||
-              all_in_flag && ins_region->match_shrinkby_cut(x_bound_body,r_bound_body)
-          )
+          if(ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]))
+            //NP OLD - had problems with particles just slightly leaving shinked body
+            //NP e.g. if due ot particle-wall overlap if insertion box = wall
+            /*NP (!all_in_flag) && ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]) ||
+                  (all_in_flag) && ins_region->match_shrinkby_cut(x_bound_body,r_bound_body)*/
           {
               np_region++;
               mass_body = multisphere->mass(ibody);
@@ -250,30 +264,38 @@ int FixInsertPack::calc_ninsert_this()
 
   if(volumefraction_region > 0.)
   {
-     MPI_Sum_Scalar(vol_region,world);
+      MPI_Sum_Scalar(vol_region,world);
       ninsert_this = static_cast<int>((volumefraction_region*region_volume - vol_region) / fix_distribution->vol_expect() + random->uniform());
+      insertion_ratio = vol_region / (volumefraction_region*region_volume);
   }
   else if(ntotal_region > 0)
   {
-     MPI_Sum_Scalar(np_region,world);
+      MPI_Sum_Scalar(np_region,world);
       ninsert_this = ntotal_region - np_region;
+      insertion_ratio = static_cast<double>(np_region) / static_cast<double>(ntotal_region);
+      /*NL*/ //fprintf(screen,"ninsert_this %d np_region %d\n",ninsert_this,np_region);
   }
   else if(masstotal_region > 0.)
   {
-     MPI_Sum_Scalar(mass_region,world);
+      MPI_Sum_Scalar(mass_region,world);
       ninsert_this = static_cast<int>((masstotal_region - mass_region) / fix_distribution->mass_expect() + random->uniform());
+      insertion_ratio = mass_region / masstotal_region;
   }
   else error->one(FLERR,"Internal error in FixInsertPack::calc_ninsert_this()");
 
   // can be < 0 due to round-off etc
   if(ninsert_this < 0) ninsert_this = 0;
 
+  if(insertion_ratio < 0.) insertion_ratio = 0.;
+  if(insertion_ratio > 1.) insertion_ratio = 1.;
+
   //NP number of particles in region, volume and mass are not counted correctly for clumps
   //NP update - should be correct now
   //NP if(fix_rm && (np_region > 0 || vol_region > 0. || mass_region > 0.))
   //NP   error->warning(FLERR,"Fix insert/pack insertion volume is partly filled and you are using multisphere particles - command does not work accurately in this case");
 
-  /*NL*/ // fprintf(screen,"ninsert_this %d\n",ninsert_this);
+  /*NL*/ //fprintf(screen,"ninsert_this %d\n",ninsert_this);
+
 
   return ninsert_this;
 }
@@ -282,7 +304,12 @@ int FixInsertPack::calc_ninsert_this()
 
 double FixInsertPack::insertion_fraction()
 {
+    // have to re-calculate region_volume_local in case simulation box is changing
+    if(domain->box_change)
+        calc_region_volume_local();
+
     /*NL*/ //fprintf(screen,"proc %d: region_volume_local %f , region_volume %f\n",comm->me,region_volume_local,region_volume);
+
     return region_volume_local/region_volume;
 }
 
@@ -305,6 +332,19 @@ inline int FixInsertPack::is_nearby(int i)
 }
 
 /* ----------------------------------------------------------------------
+   calc # of maximum tries
+   propertional to total desired # of particles to insert on this
+   subdomain to ensure insertion "does not give up too early" if a low
+   remaining # of insertions is to be performed
+------------------------------------------------------------------------- */
+
+int FixInsertPack::calc_maxtry(int ninsert_this_local)
+{
+    if(insertion_ratio >= 1.) return ninsert_this_local * maxattempt;
+    else return static_cast<int>( static_cast<double>(ninsert_this_local*maxattempt) / (1.-insertion_ratio));
+}
+
+/* ----------------------------------------------------------------------
    generate random positions within insertion volume
    perform overlap check via xnear if requested
    returns # bodies and # spheres that could actually be inserted
@@ -317,10 +357,11 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
 
     double pos[3];
     ParticleToInsert *pti;
-    /*NL*/// fprintf(screen,"STARTED\n");
 
     int ntry = 0;
-    int maxtry = ninsert_this_local * maxattempt;
+    int maxtry = calc_maxtry(ninsert_this_local);
+
+    /*NL*/ //fprintf(screen,"STARTED,maxtry %d\n",maxtry);
 
     // no overlap check
     if(!check_ol_flag)

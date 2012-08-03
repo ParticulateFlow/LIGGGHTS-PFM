@@ -638,7 +638,7 @@ int Balance::dynamic()
             if(split[i] > split_old[i+1]-skin)
                 split[i] = split_old[i+1]-skin;
             //split[i] = split_old[i];
-            /*NL*/// fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
+            /*NL*/ //fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
         }
     }
 
@@ -1073,13 +1073,19 @@ void Balance::debug_output(int idim, int m, int np, double *split)
 //NP modified C.K.
 
 /* ----------------------------------------------------------------------
-   disallow irregular comm if mesh is involved
+   disallow irregular comm for some cases
 ------------------------------------------------------------------------- */
 
 bool Balance::disallow_irregular()
 {
     /*NL*/// fprintf(screen,"proc %d at step %d: result %d\n",me,update->ntimestep,modify->n_fixes_style("mesh"));
+    //NP disallow if mesh is involved
     if(modify->n_fixes_style("mesh") > 0)
         return true;
+    //NP disallow if multisphere is used
+    //NP b/c body data is also communicated with exchange()-like
+    if(modify->n_fixes_style("multisphere") > 0)
+        return true;
+
     return false;
 }

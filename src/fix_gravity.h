@@ -50,7 +50,7 @@ class FixGravity : public Fix {
   int eflag;
   double egrav,egrav_all;
 
-  class FixRigid *fr;//NP modified C.K.
+  class FixMultisphere *fm;//NP modified C.K.
 };
 
 }

@@ -75,7 +75,6 @@ namespace LAMMPS_NS
 
         // neigh list stuff for moving mesh
         virtual bool decideRebuild() = 0;
-        virtual void storeNodePos() = 0;
 
         //NP ***************************************
         //NP interface to MultiNodeMeshParallel

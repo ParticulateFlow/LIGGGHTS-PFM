@@ -502,6 +502,11 @@ void FixWallGran::post_force_mesh(int vflag)
       TriMesh *mesh = FixMesh_list_[iMesh]->triMesh();
       nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
       FixContactHistory *fix_contact = FixMesh_list_[iMesh]->contactHistory();
+
+      // mark all contacts for delettion at this point
+      //NP all detected contacts will be un-marked by fix_contact->handleContact()
+      if(fix_contact) fix_contact->markAllContacts();
+
       int *neighborList  = 0, *numNeigh = 0;
 
       /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
@@ -553,7 +558,7 @@ void FixWallGran::post_force_mesh(int vflag)
             {
               /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
               /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d 3a\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
-              if(fix_contact) fix_contact->handleNoContact(iPart,idTri);
+              //NP OLD if(fix_contact) fix_contact->handleNoContact(iPart,idTri);
             }
             else
             {
@@ -602,7 +607,7 @@ void FixWallGran::post_force_mesh(int vflag)
             //NP hack for SPH
             if(deltan > 0.)
             {
-              if(fix_contact) fix_contact->handleNoContact(iPart,idTri);
+              //NP OLD  if(fix_contact) fix_contact->handleNoContact(iPart,idTri);
             }
             else //NP always handle contact for SPH
             {
@@ -613,7 +618,8 @@ void FixWallGran::post_force_mesh(int vflag)
         }
       }
 
-      // clean-up
+      // clean-up contacts
+      //NP i.e. delete all which have not been detected this time-step
       if(fix_contact) fix_contact->cleanUpContacts();
     }
 

@@ -230,7 +230,7 @@
        bool translate = this->isTranslating();
        bool rotate = this->isRotating();
 
-       size_exchange_ = elemBufSize(OPERATION_COMM_EXCHANGE,scale,translate,rotate);
+       size_exchange_ = elemBufSize(OPERATION_COMM_EXCHANGE,scale,translate,rotate) + 1;
        size_border_ = elemBufSize(OPERATION_COMM_BORDERS,scale,translate,rotate);
        size_forward_ = elemBufSize(OPERATION_COMM_FORWARD,scale,translate,rotate);
        size_reverse_ = elemBufSize(OPERATION_COMM_REVERSE,scale,translate,rotate);
@@ -504,7 +504,7 @@
   void MultiNodeMeshParallel<NUM_NODES>::grow_send(int n, int flag)
   {
       maxsend_ = static_cast<int> (BUFFACTOR_MNMP * n);
-      /*NL*///fprintf(this->screen,"maxsend_ %d\n",maxsend_);
+      /*NL*///fprintf(this->screen,"grow_send at proc %d with flag %d, maxsend_ %d\n",this->comm->me,flag,maxsend_);
       if (flag)
         this->memory->grow(buf_send_,(maxsend_+BUFEXTRA_MNMP),"MultiNodeMeshParallel:buf_send");
       else {
@@ -532,7 +532,7 @@
   template<int NUM_NODES>
   void MultiNodeMeshParallel<NUM_NODES>::grow_list(int iswap, int n)
   {
-    maxsendlist_[iswap] = static_cast<int> (BUFFACTOR_MNMP * n);
+    maxsendlist_[iswap] = static_cast<int> (BUFFACTOR_MNMP * n)+1;
     this->memory->grow(sendlist_[iswap],maxsendlist_[iswap],"MultiNodeMeshParallel:sendlist[iswap]");
   }
 
@@ -548,6 +548,12 @@
 
       // delete all elements that do not belong to this processor
       deleteUnowned();
+
+      if(sizeGlobal() != sizeGlobalOrig())
+      {
+        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
+        this->error->all(FLERR,"Mesh elements have been lost");
+      }
 
       // set-up mesh parallelism
       setup();
@@ -568,15 +574,6 @@
       //NP operations performed in parallel at this point
       buildNeighbours();
 
-      // store node positions for neigh list trigger
-      this->storeNodePos();
-
-      if(sizeGlobal() != sizeGlobalOrig())
-      {
-        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
-        this->error->all(FLERR,"Mesh elements have been lost");
-      }
-
       /*NL*/// fprintf(this->screen,"INITIALSETUP: proc %d, mesh %s - nLocal %d, nGhost %d\n",
       /*NL*///                      this->comm->me,this->mesh_id_,nLocal_,nGhost_);
 
@@ -596,6 +593,10 @@
       //NP in this case borders() and refresh() is done once
       //NP via parallelize()
 
+      //NP have to reset to nodeOrig twice for steps where consecutive runs overlap
+      //NP this is for consecutive runs
+      if(setupFlag) this->reset_stepLastReset();
+
       //NP check for setupFlag since some mesh properties might have changed
       //NP so need to refresh everything once
       if(!setupFlag && !this->isMoving() && !this->domain->box_change) return;
@@ -608,6 +609,12 @@
 
       // communicate particles
       exchange();
+
+      if(sizeGlobal() != sizeGlobalOrig())
+      {
+        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
+        this->error->all(FLERR,"Mesh elements have been lost");
+      }
 
       // re-calculate properties for owned particles
       //NP i.e. re-calculate from nodes, removing round-off issues for moving mesh
@@ -629,15 +636,6 @@
       //NP need not do this because neighs are based on IDs and are
       //NP forward communicated
       /*NL*///buildNeighbours();
-
-      // store node positions for neigh list trigger
-      this->storeNodePos();
-
-      if(sizeGlobal() != sizeGlobalOrig())
-      {
-        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
-        this->error->all(FLERR,"Mesh elements have been lost");
-      }
   }
 
   /* ----------------------------------------------------------------------
@@ -735,7 +733,7 @@
           //NP fill buffer with elements leaving my box, using < and >=
           //NP when elements is deleted, fill it in with last atom
 
-          nsend = pushExchange(dim,buf_send_);
+          nsend = pushExchange(dim);
 
           /*NL*/ //fprintf(this->screen,"proc %d pushing %d doubles to buf, dim %d on step %d\n",this->comm->me,nsend,dim,this->update->ntimestep);
 
@@ -869,7 +867,7 @@
                       if( ((ineed % 2 == 0) && checkBorderElementLeft(i,dim,lo,hi))  ||
                           ((ineed % 2 != 0) && checkBorderElementRight(i,dim,lo,hi))  )
                       {
-                          if (nsend == maxsendlist_[iswap])
+                          if (nsend >= maxsendlist_[iswap])
                               grow_list(iswap,nsend);
                           sendlist_[iswap][nsend++] = i;
 

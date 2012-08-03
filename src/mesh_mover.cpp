@@ -261,6 +261,7 @@ void MeshMoverRotate::initial_integrate(double dT,double dt)
     double ***nodes = get_nodes();
 
     /*NL*/ //fprintf(screen,"proc %d, size %d\n",comm->me,size);
+    /*NL*/ //if(comm->me == 2 && update->ntimestep >= 599995) fprintf(screen,"time %f totalPhi %f incrementalPhi %f\n",dT,totalPhi,incrementalPhi);
 
     // rotate the mesh
     mesh_->rotate(totalPhi,incrementalPhi,axis,p);
