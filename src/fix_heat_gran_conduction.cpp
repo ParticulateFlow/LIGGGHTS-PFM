@@ -118,7 +118,7 @@ void FixHeatGranCond::init(){
       for(int j=1;j<max_type+1;j++)
       {
           conductivity[i-1] = fix_conductivity->compute_vector(i-1);
-          if(conductivity[i-1] < 0.) error->all(FLERR,"Fix heat/gran: Thermal conductivity must not be < 0");
+          if(conductivity[i-1] < 0.) error->all(FLERR,"Fix heat/gran/conduction: Thermal conductivity must not be < 0");
       }
 
   // calculate heat transfer correction
@@ -129,7 +129,7 @@ void FixHeatGranCond::init(){
 
     if(force->pair_match("gran/hooke",0)) expo = 1.;
     else if(force->pair_match("gran/hertz",0)) expo = 2./3.;
-    else error->all(FLERR,"Fix heat/gran with area correction could not identify the granular pair style you are using, supported are hooke and hertz types");
+    else error->all(FLERR,"Fix heat/gran/conduction with area correction could not identify the granular pair style you are using, supported are hooke and hertz types");
 
     Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
     nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
@@ -194,9 +194,9 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
 
   //NP see implementation of match in atom.cpp, this accounts for hybrid/overlay
   if (strcmp(force->pair_style,"hybrid")==0)
-    error->warning(FLERR,"Fix heat/gran implementation may not be valid for pair style hybrid");
+    error->warning(FLERR,"Fix heat/gran/conduction implementation may not be valid for pair style hybrid");
   if (strcmp(force->pair_style,"hybrid/overlay")==0)
-    error->warning(FLERR,"Fix heat/gran implementation may not be valid for pair style hybrid/overlay");
+    error->warning(FLERR,"Fix heat/gran/conduction implementation may not be valid for pair style hybrid/overlay");
 
   inum = pair_gran->list->inum;
   ilist = pair_gran->list->ilist;
