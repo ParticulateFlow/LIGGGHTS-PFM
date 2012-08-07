@@ -205,7 +205,7 @@ void FixSphDensityCorr::post_integrate_eval()
 
   double **x = atom->x;
   int *mask = atom->mask;
-  double *density = atom->density;
+  double *rho = atom->rho;
   int nlocal = atom->nlocal;
 
   // TODO: Both declaration necessary?
@@ -251,7 +251,7 @@ void FixSphDensityCorr::post_integrate_eval()
           error->one(FLERR,"Illegal kernel used, W < 0");
         }
 
-        quantity[i] = W*imass / density[i];
+        quantity[i] = W*imass / rho[i];
       }
     }
 
@@ -318,13 +318,13 @@ void FixSphDensityCorr::post_integrate_eval()
 
         // add contribution of neighbor
         // have a half neigh list, so do it for both if necessary
-        quantity[i] += W*jmass / density[j];
+        quantity[i] += W*jmass / rho[j];
         if (newton_pair || j < nlocal)
-          quantity[j] += W*imass / density[i];
+          quantity[j] += W*imass / rho[i];
       }
     }
 
-    // reset and add density contribution of self
+    // reset and add rho contribution of self
 
     for (i = 0; i < nlocal; i++) {
       if (MASSFLAG) {
@@ -348,7 +348,7 @@ void FixSphDensityCorr::post_integrate_eval()
       }
 
       // add contribution of self
-      density[i] = W*imass;
+      rho[i] = W*imass;
     }
 
     // need updated ghost positions and self contributions
@@ -419,18 +419,18 @@ void FixSphDensityCorr::post_integrate_eval()
 
         // add contribution of neighbor
         // have a half neigh list, so do it for both if necessary
-        density[i] += W*jmass;
+        rho[i] += W*jmass;
         if (newton_pair || j < nlocal)
-          density[j] += W*imass;
+          rho[j] += W*imass;
       }
     }
 
-    // normalize density
+    // normalize rho
     for (i = 0; i < nlocal; i++) {
-      density[i] = density[i]/quantity[i];
+      rho[i] = rho[i]/quantity[i];
     }
 
-    // density is now correct, send to ghosts
+    // rho is now correct, send to ghosts
     timer->stamp();
     comm->forward_comm();
     timer->stamp(TIME_COMM);

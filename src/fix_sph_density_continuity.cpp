@@ -99,8 +99,8 @@ FixSphDensityContinuity::~FixSphDensityContinuity()
 int FixSphDensityContinuity::setmask()
 {
   int mask = 0;
-  mask |= POST_INTEGRATE;
-  mask |= POST_INTEGRATE_RESPA;
+  mask |= PRE_FORCE;
+  mask |= PRE_FORCE_RESPA;
   return mask;
 }
 
@@ -115,25 +115,25 @@ void FixSphDensityContinuity::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixSphDensityContinuity::post_integrate()
+void FixSphDensityContinuity::pre_force(int vflag)
 {
   //template function for using per atom or per atomtype smoothing length
-  if (mass_type) post_integrate_eval<1>();
-  else post_integrate_eval<0>();
+  if (mass_type) pre_force_eval<1>(vflag);
+  else pre_force_eval<0>(vflag);
 }
 
 /* ---------------------------------------------------------------------- */
-
-void FixSphDensityContinuity::post_integrate_respa(int ilevel, int flag)
+/*
+void FixSphDensityContinuity::pre_force_respa(int ilevel, int flag)
 {
   if (flag) return;             // only used by NPT,NPH
 
   dt = step_respa[ilevel];
 
-  if (ilevel == 0) post_integrate();
+  if (ilevel == 0) pre_force();
 
 }
-
+*/
 /* ---------------------------------------------------------------------- */
 
 void FixSphDensityContinuity::reset_dt()
@@ -144,7 +144,7 @@ void FixSphDensityContinuity::reset_dt()
 /* ---------------------------------------------------------------------- */
 
 template <int MASSFLAG>
-void FixSphDensityContinuity::post_integrate_eval()
+void FixSphDensityContinuity::pre_force_eval(int vflag)
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,rinv,s,gradWmag;
@@ -152,8 +152,8 @@ void FixSphDensityContinuity::post_integrate_eval()
   double sli,slj,slCom,slComInv,cut,delVDotDelR,imass,jmass;
 
   double **x = atom->x;
-  double **v = atom->v;
-  double *density = atom->density;
+  double **v = atom->vest;
+  double *drho = atom->drho;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
@@ -168,7 +168,7 @@ void FixSphDensityContinuity::post_integrate_eval()
 
   // need updated ghost positions and self contributions
   timer->stamp();
-  comm->forward_comm();
+//  comm->forward_comm(); // pre_force --> communication already done
   if (!MASSFLAG) fppaSl->do_forward_comm();
   timer->stamp(TIME_COMM);
 
@@ -241,26 +241,29 @@ void FixSphDensityContinuity::post_integrate_eval()
       // add contribution of neighbor
       // have a half neigh list, so do it for both if necessary
 
-      density[i] += calcDensityDer(delVDotDelR,gradWmag,jmass);
+      //drho[i] += calcDensityDer(delVDotDelR,gradWmag,jmass);
+      drho[i] += jmass*gradWmag*delVDotDelR;
 
       if (newton_pair || j < nlocal) {
-        density[j] += calcDensityDer(delVDotDelR,gradWmag,imass);
+        //drho[j] += calcDensityDer(delVDotDelR,gradWmag,imass);
+        drho[j] += imass*gradWmag*delVDotDelR;
       }
     }
   }
 
-  // density is now correct, send to ghosts
+/*  // rho is now correct, send to ghosts
   timer->stamp();
   comm->forward_comm();
   timer->stamp(TIME_COMM);
-
+*/ // no communication of drho !!
 }
 
 /* ---------------------------------------------------------------------- */
-
+/*
 double FixSphDensityContinuity::calcDensityDer(double delVDotDelR,
     double gradWmag, double mass)
 {
   // return contribution of neighbor
   return (dt * mass * delVDotDelR * gradWmag);
 }
+*/

@@ -44,12 +44,12 @@ class FixSphDensityContinuity : public FixSph {
   ~FixSphDensityContinuity();
   int setmask();
   void init();
-  void post_integrate();
-  void post_integrate_respa(int, int);
+  void pre_force(int);
+//  void pre_force_respa(int, int);
   void reset_dt();
 
  private:
-  template <int> void post_integrate_eval();
+  template <int> void pre_force_eval(int);
   double calcDensityDer(double, double, double);
 
   double dt;

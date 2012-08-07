@@ -22,7 +22,7 @@
 /* ----------------------------------------------------------------------
 Contributing authors:
 Andreas Aigner (JKU Linz)
-Christoph Kloss Andreas Aigner (JKU Linz and DCS Computing Gmbh, Linz)
+Christoph Kloss (JKU Linz and DCS Computing Gmbh, Linz)
 ------------------------------------------------------------------------- */
 
 #ifdef ATOM_CLASS
@@ -81,7 +81,8 @@ class AtomVecSPH : public AtomVec {
  private:
   int *tag,*type,*mask,*image;
   double **x,**v,**f;
-  double *q,*density;
+  double *p,*rho,*drho,*e,*de;
+  double **vest; //NP A.A.: euler integration of velocity
 };
 
 }

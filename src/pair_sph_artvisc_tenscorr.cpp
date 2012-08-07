@@ -330,18 +330,18 @@ double PairSphArtviscTenscorr::artificialViscosity(int ip, int jp, int itype, in
 /*
 template <int MASSFLAG>
 void PairSphArtviscTenscorr::tensileCorrection(int itype, int jtype, double rhoi, double rhoj,
-    double qi, double qj, double s, double slCom, double slComInv, double &rAB, double &fAB4)
+    double pi, double pj, double s, double slCom, double slComInv, double &rAB, double &fAB4)
 {
   double rA,rB,fAB,fAB2;
   double wDeltaPinv;
 
   // repulsive term for tensile instability [Monaghan, 2000]
-  if (qi > 0.0 && qj > 0.0) {
-    rAB = 0.01 * (qi / (rhoi * rhoi) + qj / (rhoj * rhoj));
+  if (pi > 0.0 && pj > 0.0) {
+    rAB = 0.01 * (pi / (rhoi * rhoi) + pj / (rhoj * rhoj));
   } else {
-    if (qi < 0.0) rA = epsilon * -1.0 * qi / (rhoi * rhoi);
+    if (pi < 0.0) rA = epsilon * -1.0 * pi / (rhoi * rhoi);
     else rA = 0;
-    if (qj < 0.0) rB = epsilon * -1.0 * qj / (rhoj * rhoj);
+    if (pj < 0.0) rB = epsilon * -1.0 * pj / (rhoj * rhoj);
     else rB = 0;
     rAB = rA+rB;
   }
@@ -370,7 +370,7 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
   double xtmp,ytmp,ztmp,delx,dely,delz,r,rsq,rinv,s;
   double gradWmag,fpair;
 
-  double rhoi,rhoj,qi,qj;
+  double rhoi,rhoj,pi,pj;
   double sli,slj,slCom,slComInv,imass,jmass;
 
   double artVisc,fAB4,rAB;
@@ -382,8 +382,8 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
 
   double **x = atom->x;
   double **v = atom->v;
-  double *q = atom->q;
-  double *density = atom->density;
+  double *p = atom->p;
+  double *rho = atom->rho;
   double **f = atom->f;
   int *type = atom->type;
   int nlocal = atom->nlocal;
@@ -426,8 +426,8 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
     jlist = firstneigh[i];
     jnum = numneigh[i];
 
-    rhoi = density[i];
-    qi = q[i];
+    rhoi = rho[i];
+    pi = p[i];
 
     if (MASSFLAG) {
       imass = mass[itype];
@@ -465,8 +465,8 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
           slCom = interpDist(sli,slj);
         }
 
-        qj = q[j];
-        rhoj = density[j];
+        pj = p[j];
+        rhoj = rho[j];
         slComInv = 1./slCom;
         //cut = slCom*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
 
@@ -502,12 +502,12 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
         rAB = fAB4 = 0.0;
         if (tensCorr_flag) {
           // repulsive term for tensile instability [Monaghan, 2000]
-          if (qi > 0.0 && qj > 0.0) {
-            rAB = 0.01 * (qi / (rhoi * rhoi) + qj / (rhoj * rhoj));
+          if (pi > 0.0 && pj > 0.0) {
+            rAB = 0.01 * (pi / (rhoi * rhoi) + pj / (rhoj * rhoj));
           } else {
-            if (qi < 0.0) rA = epsilon * -1.0 * qi / (rhoi * rhoi);
+            if (pi < 0.0) rA = epsilon * -1.0 * pi / (rhoi * rhoi);
             else rA = 0;
-            if (qj < 0.0) rB = epsilon * -1.0 * qj / (rhoj * rhoj);
+            if (pj < 0.0) rB = epsilon * -1.0 * pj / (rhoj * rhoj);
             else rB = 0;
             rAB = rA+rB;
           }
@@ -524,11 +524,11 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
           fAB4 = fAB2 * fAB2;
 
           // version with function
-          //tensileCorrection<MASSFLAG>(itype,jtype,rhoi,rhoj,qi,qj,s,slCom,slComInv,rAB,fAB4); //XXX: function call is slower :-/
+          //tensileCorrection<MASSFLAG>(itype,jtype,rhoi,rhoj,pi,pj,s,slCom,slComInv,rAB,fAB4); //XXX: function call is slower :-/
         }
 
         // calculate the force
-        fpair = - rinv * imass * jmass * (qi/(rhoi*rhoi) + qj/(rhoj*rhoj) + rAB*fAB4 + artVisc) * gradWmag; // mass[i] for integration.. check fix_nve.cpp
+        fpair = - rinv * imass * jmass * (pi/(rhoi*rhoi) + pj/(rhoj*rhoj) + rAB*fAB4 + artVisc) * gradWmag; // mass[i] for integration.. check fix_nve.cpp
 
 
         // apply the force

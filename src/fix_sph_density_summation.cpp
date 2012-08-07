@@ -110,6 +110,27 @@ void FixSPHDensitySum::init()
 {
   FixSph::init();
 
+  // check if there is an sph/pressure fix present
+  // must come before me, because
+  // a - it needs the rho for the pressure calculation
+  // b - i have to do the forward comm to have updated ghost properties
+
+  int pres = -1;
+  int me = -1;
+  for(int i = 0; i < modify->nfix; i++)
+  {
+    if(strcmp("sph/density/summation",modify->fix[i]->style)) {
+      me = i;
+    }
+    if(strncmp("sph/pressure",modify->fix[i]->style,12) == 0) {
+      pres = i;
+      break;
+    }
+  }
+
+  if(me == -1 && pres >= 0) error->fix_error(FLEER,this,"Fix sph/pressure has to be defined after sph/density/summation \n");
+  if(pres == -1) error->fix_error(FLERR,this,"Requires to define a fix sph/pressure also \n");
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -133,7 +154,7 @@ void FixSPHDensitySum::post_integrate_eval()
 
   double **x = atom->x;
   int *mask = atom->mask;
-  double *density = atom->density;
+  double *rho = atom->rho;
   int newton_pair = force->newton_pair;
 
   int *type = atom->type;
@@ -142,7 +163,7 @@ void FixSPHDensitySum::post_integrate_eval()
 
   if (!MASSFLAG) updatePtrs(); // get sl
 
-  // reset and add density contribution of self
+  // reset and add rho contribution of self
 
   int nlocal = atom->nlocal;
   for (i = 0; i < nlocal; i++) {
@@ -167,7 +188,7 @@ void FixSPHDensitySum::post_integrate_eval()
     }
 
     // add contribution of self
-    density[i] = W * imass;
+    rho[i] = W * imass;
   }
 
   // need updated ghost positions and self contributions
@@ -243,14 +264,14 @@ void FixSPHDensitySum::post_integrate_eval()
       // add contribution of neighbor
       // have a half neigh list, so do it for both if necessary
 
-      density[i] += W * jmass;
+      rho[i] += W * jmass;
 
       if (newton_pair || j < nlocal)
-        density[j] += W * imass;
+        rho[j] += W * imass;
     }
   }
 
-  // density is now correct, send to ghosts
+  // rho is now correct, send to ghosts
   timer->stamp();
   comm->forward_comm();
   timer->stamp(TIME_COMM);

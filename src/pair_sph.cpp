@@ -183,8 +183,8 @@ void PairSph::init_style()
 	int i,j= 0;
 	int ntypes = atom->ntypes;
 
-  // check for mass, density
-  if(!atom->density_flag || !atom->q_flag) error->all(FLERR,"Pair sph requires atom_style sph");
+  // check for mass, rho
+  if(!atom->rho_flag || !atom->p_flag) error->all(FLERR,"Pair sph requires atom_style sph");
 
   // request neighbor list
   // if mass_type -> regular (half) list

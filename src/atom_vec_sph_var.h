@@ -20,9 +20,9 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-Contributing author for SPH:
-Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
-andreas.aigner@jku.at
+Contributing authors:
+Andreas Aigner (JKU Linz)
+Christoph Kloss (JKU Linz and DCS Computing Gmbh, Linz)
 ------------------------------------------------------------------------- */
 
 #ifdef ATOM_CLASS
@@ -81,7 +81,8 @@ class AtomVecSPH2 : public AtomVec {
  private:
   int *tag,*type,*mask,*image;
   double **x,**v,**f;
-  double *q,*density,*radius,*rmass;
+	double *p,*rho,*drho,*e,*de;
+	double *radius,*rmass;
   int radvary;
 };
 

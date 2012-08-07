@@ -97,7 +97,7 @@ void FixCheckTimestepSph::init()
   FixSph::init();
 
   //some error checks
-  if(!atom->density_flag) error->all(FLERR,"Fix check/timestep/sph can only be used together with a sph atom style");
+  if(!atom->rho_flag) error->all(FLERR,"Fix check/timestep/sph can only be used together with a sph atom style");
 
 /*
   fwg = NULL;

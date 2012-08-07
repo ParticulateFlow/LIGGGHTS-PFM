@@ -296,8 +296,8 @@ double FixWallRegionSph::repulsivSph(double r)
 double FixWallRegionSph::selfInfluenceForce(int ip, double r, double h, double mass)
 {
   double ih,ir,s,gradWmag;
-  double *density = atom->density;
-  double *q = atom->q;
+  double *rho = atom->rho;
+  double *p = atom->p;
 
   // fwall, due to self influence
   // a small perturbation to avoid stacking particles
@@ -309,5 +309,5 @@ double FixWallRegionSph::selfInfluenceForce(int ip, double r, double h, double m
   gradWmag = SPH_KERNEL_NS::sph_kernel_der(kernel_id,s,h,ih);
 
   // zero order approximation - properties at wall assumed to be equal to properties at particle (thuis factor 2)
-  return (- ir * mass * mass * (2.*q[ip]/(density[ip]*density[ip])) * gradWmag);
+  return (- ir * mass * mass * (2.*p[ip]/(rho[ip]*rho[ip])) * gradWmag);
 }

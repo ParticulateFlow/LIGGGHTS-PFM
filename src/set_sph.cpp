@@ -107,10 +107,10 @@ void SetSph::command(int narg, char **arg)
         error->all(FLERR, "Cannot set this attribute for this atom style");
       set(DIAMETER);
       iarg += 2;
-    } else if (strcmp(arg[iarg],"density") == 0) {
+    } else if (strcmp(arg[iarg],"rho") == 0) {
       if (iarg+2 > narg) error->all(FLERR, "Illegal set command");
       dvalue = atof(arg[iarg+1]);
-      if (!atom->density_flag)
+      if (!atom->rho_flag)
         error->all(FLERR, "Cannot set this attribute for this atom style");
       set(DENSITY);
       iarg += 2;
@@ -231,7 +231,7 @@ void SetSph::set(int keyword)
       if (keyword == TYPE) atom->type[i] = ivalue;
       else if (keyword == MASS) atom->rmass[i] = dvalue;
       else if (keyword == DIAMETER) atom->radius[i] = 0.5 * dvalue;
-      else if (keyword == DENSITY) atom->density[i] = dvalue;
+      else if (keyword == DENSITY) atom->rho[i] = dvalue;
       count++;
     }
 }

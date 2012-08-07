@@ -157,6 +157,8 @@ class DumpCustom : public Dump {
   void pack_fz(int);
   void pack_q(int);
   void pack_density(int); //NP modified C.K.
+  void pack_p(int);       //NP modified A.A.
+  void pack_rho(int);     //NP modified A.A.
   void pack_mux(int);
   void pack_muy(int);
   void pack_muz(int);

@@ -54,7 +54,7 @@ pair_coeff	  * *
 # density
 fix           density all sph/density/continuity
 fix           corr all sph/density/corr shepard every 30
-set           group all density 1000
+setSph           group all rho 1000
 
 # pressure
 # fix         id group style type [if Tait: B rho0 gamma] (according to Monaghan 1994)
@@ -72,7 +72,7 @@ fix           wall all wall/sph xplane  ${wallpos} NULL ${lathalf} 1.0
 # time integration
 # for c=20 --> dt~1e-5
 timestep      1e-5
-fix           integr all nve
+fix           integr all nve/sph
 
 #gravity
 fix           gravi all gravity 9.81 vector 0.0 0.0 -1.0
@@ -87,7 +87,7 @@ thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 run           1
-dump	      dmp all custom 1000 post/dump*.sph id type type x y z ix iy iz vx vy vz fx fy fz vx vy vz q q density
+dump	      dmp all custom 1000 post/dump*.sph id type type x y z ix iy iz vx vy vz fx fy fz vx vy vz p p rho
 run           5000
 
 unfix         wall

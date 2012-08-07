@@ -67,9 +67,9 @@ FixSPHPressure::FixSPHPressure(LAMMPS *lmp, int narg, char **arg) :
     {
       if (narg < iarg+4) error->fix_error(FLERR,this,"Not enough arguments for 'Tait' pressure style \n");
       B = force->numeric(arg[iarg+1]);
-      density0 = force->numeric(arg[iarg+2]);
-      if (density0 > 0) density0inv = 1./density0;
-      else error->fix_error(FLERR,this," density0 is zero or negativ \n");
+      rho0 = force->numeric(arg[iarg+2]);
+      if (rho0 > 0) rho0inv = 1./rho0;
+      else error->fix_error(FLERR,this," rho0 is zero or negativ \n");
       gamma = force->numeric(arg[iarg+3]);
       pressureStyle = PRESSURESTYLE_TAIT;
       iarg += 4;
@@ -78,7 +78,7 @@ FixSPHPressure::FixSPHPressure(LAMMPS *lmp, int narg, char **arg) :
     {
       if (narg < iarg+3) error->fix_error(FLERR,this,"Not enough arguments for 'relativ' pressure style \n");
       B = force->numeric(arg[iarg+1]);
-      density0 = force->numeric(arg[iarg+2]);
+      rho0 = force->numeric(arg[iarg+2]);
       pressureStyle = PRESSURESTYLE_RELATIV;
       iarg += 3;
     }
@@ -99,7 +99,7 @@ FixSPHPressure::~FixSPHPressure()
 int FixSPHPressure::setmask()
 {
   int mask = 0;
-  mask |= PRE_FORCE;
+  mask |= POST_INTEGRATE;
   return mask;
 }
 
@@ -115,7 +115,7 @@ void FixSPHPressure::init()
 
   // check if there is an sph/density fix present
   // must come before me, because -- (sph/density has post_integrate routine... it will be called first)
-  // a - need the pressure for the density
+  // a - need the pressure for the rho
   // b - does the forward comm for me to have updated ghost properties
   // check is done by fix sph/density itself
 
@@ -133,11 +133,11 @@ void FixSPHPressure::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHPressure::pre_force(int vflag)
+void FixSPHPressure::post_integrate()
 {
   int *mask = atom->mask;
-  double *density = atom->density;
-  double *q = atom->q;
+  double *rho = atom->rho;
+  double *p = atom->p;
   int nlocal = atom->nlocal;
 
   // already have updated ghost positions
@@ -151,8 +151,8 @@ void FixSPHPressure::pre_force(int vflag)
       //XXX: mask and groupbit..?!
       if (mask[i] & groupbit)
       {
-        // TODO: density0 a atom type property?
-      q[i] = B*(pow(density[i]*density0inv,gamma) - 1); // Tait's equation
+        // TODO: rho0 a atom type property?
+      p[i] = B*(pow(rho[i]*rho0inv,gamma) - 1); // Tait's equation
     }
     }
   }
@@ -162,7 +162,7 @@ void FixSPHPressure::pre_force(int vflag)
     {
       if (mask[i] & groupbit)
       {
-        q[i] = B * (density[i] - density0);
+        p[i] = B * (rho[i] - rho0);
       }
     }
   }
@@ -172,14 +172,14 @@ void FixSPHPressure::pre_force(int vflag)
     {
       if (mask[i] & groupbit)
       {
-        q[i] = B * B * density[i];//0.1 * density[i] * density[i];
+        p[i] = B * B * rho[i];//0.1 * rho[i] * rho[i];
       }
     }
   }
-
+/*
   // send pressure to ghosts
   timer->stamp();
   comm->forward_comm();
   timer->stamp(TIME_COMM);
-
+*/ // no communication, because we now use post_integrate!
 }
