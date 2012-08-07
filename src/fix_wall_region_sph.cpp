@@ -184,7 +184,7 @@ template <int MASSFLAG>
 void FixWallRegionSph::post_force_eval(int vflag)
 {
   int i,m,n;
-  double fx,fy,fz,h,imass;
+  double fx,fy,fz,sli,imass;
 
   eflag = 0;
   ewall[0] = ewall[1] = ewall[2] = ewall[3] = 0.0;
@@ -214,10 +214,10 @@ void FixWallRegionSph::post_force_eval(int vflag)
 
       if (MASSFLAG) {
         itype = type[i];
-        h = sl[itype-1];
+        sli = sl[itype-1];
         imass = mass[itype];
       } else {
-        h = sl[i];
+        sli = sl[i];
         imass = rmass[i];
       }
 
@@ -242,7 +242,7 @@ void FixWallRegionSph::post_force_eval(int vflag)
         }
 
         // add fwall, due to self influence
-        fwall = selfInfluenceForce(i,region->contact[m].r,h,imass);
+        fwall = selfInfluenceForce(i,region->contact[m].r,sli,imass);
 
         // add fwall, due to repulsive force
         fwall += repulsivSph(region->contact[m].r);
@@ -293,20 +293,20 @@ double FixWallRegionSph::repulsivSph(double r)
    force due to self influence
 ------------------------------------------------------------------------- */
 
-double FixWallRegionSph::selfInfluenceForce(int ip, double r, double h, double mass)
+double FixWallRegionSph::selfInfluenceForce(int ip, double r, double sl, double mass)
 {
-  double ih,ir,s,gradWmag;
+  double isl,ir,s,gradWmag;
   double *rho = atom->rho;
   double *p = atom->p;
 
   // fwall, due to self influence
   // a small perturbation to avoid stacking particles
   ir = 1./r;
-  ih = 1./h;
-  s = r*ih;
+  isl = 1./sl;
+  s = r*isl;
 
   // calculate value for magnitude of grad W
-  gradWmag = SPH_KERNEL_NS::sph_kernel_der(kernel_id,s,h,ih);
+  gradWmag = SPH_KERNEL_NS::sph_kernel_der(kernel_id,s,sl,isl);
 
   // zero order approximation - properties at wall assumed to be equal to properties at particle (thuis factor 2)
   return (- ir * mass * mass * (2.*p[ip]/(rho[ip]*rho[ip])) * gradWmag);

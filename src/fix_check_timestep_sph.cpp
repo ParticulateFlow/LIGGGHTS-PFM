@@ -181,7 +181,7 @@ void FixCheckTimestepSph::calc_courant_estims_eval()
   double delvx,delvy,delvz,mu;
   double sli,slj,slCom,cut;
   int *ilist,*jlist,*numneigh,**firstneigh;
-  double vmag,vrel,courant_time_one;
+  double vmag,courant_time_one;
   double cmean;
   int j_maxmu;
 
@@ -260,8 +260,6 @@ void FixCheckTimestepSph::calc_courant_estims_eval()
     cmean = 0.5*(cs->values[type[i]-1]+cs->values[type[j_maxmu]-1]);
     courant_time_one = sli / (cmean + mumax);
     courant_time = MIN(courant_time,courant_time_one);
-
-    // /*NL*/if (screen) fprintf(screen,"i = %d, j_maxmu = %d, mumax = %f, cmean = %f, courant_time_one = %f \n",i,j_maxmu,mumax,cmean,courant_time_one);
 
   }
 
