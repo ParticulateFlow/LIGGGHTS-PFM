@@ -128,7 +128,7 @@ void FixSPHDensitySum::init()
     }
   }
 
-  if(me == -1 && pres >= 0) error->fix_error(FLEER,this,"Fix sph/pressure has to be defined after sph/density/summation \n");
+  if(me == -1 && pres >= 0) error->fix_error(FLERR,this,"Fix sph/pressure has to be defined after sph/density/summation \n");
   if(pres == -1) error->fix_error(FLERR,this,"Requires to define a fix sph/pressure also \n");
 
 }
