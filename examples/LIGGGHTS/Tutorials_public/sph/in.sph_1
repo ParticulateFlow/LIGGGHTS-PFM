@@ -54,7 +54,7 @@ pair_coeff	  * *
 # density
 fix           density all sph/density/continuity
 fix           corr all sph/density/corr shepard every 30
-setSph           group all rho 1000
+set           group all meso_rho 1000
 
 # pressure
 # fix         id group style type [if Tait: B rho0 gamma] (according to Monaghan 1994)
@@ -78,7 +78,7 @@ fix           integr all nve/sph
 fix           gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 # set sph kernels for all fix after all fixes are defined
-setSph        group all sphkernel cubicspline
+set        group all sphkernel cubicspline
 
 #output settings, include total thermal energy
 thermo_style	custom step atoms ke vol cpu
