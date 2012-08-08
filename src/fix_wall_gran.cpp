@@ -564,7 +564,7 @@ void FixWallGran::post_force_mesh(int vflag)
             {
               /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
               /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d 3b\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
-              if(fix_contact) fix_contact->handleContact(iPart,idTri,c_history);
+              if(fix_contact && ! fix_contact->handleContact(iPart,idTri,c_history)) continue;
 
               for(int i = 0; i < 3; i++)
                 v_wall[i] = (bary[0]*vMesh[iTri][0][i] + bary[1]*vMesh[iTri][1][i] + bary[2]*vMesh[iTri][2][i]);
@@ -611,7 +611,7 @@ void FixWallGran::post_force_mesh(int vflag)
             }
             else //NP always handle contact for SPH
             {
-              if(fix_contact) fix_contact->handleContact(iPart,idTri,c_history);
+              if(fix_contact && ! fix_contact->handleContact(iPart,idTri,c_history)) continue;
               post_force_eval_contact(iPart,deltan,delta,v_wall,c_history,FixMesh_list_[iMesh],mesh,iTri);
             }
           }
@@ -716,7 +716,7 @@ inline void FixWallGran::post_force_eval_contact(int iPart, double deltan, doubl
 
   // add heat flux
   if(heattransfer_flag_)
-    addHeatFlux(mesh,iPart,radius_[iPart]*radius_[iPart],1.);
+    addHeatFlux(mesh,iPart,deltan,1.);
 }
 
 /* ---------------------------------------------------------------------- */

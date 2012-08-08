@@ -111,6 +111,8 @@ MeshMoverLinearVariable::MeshMoverLinearVariable(LAMMPS *lmp,AbstractMesh *_mesh
       if (myvar2 < 0) error->all(FLERR,"Variable name 2 for fix move/mesh linear/variable does not exist");
       if (myvar3 < 0) error->all(FLERR,"Variable name 3 for fix move/mesh linear/variable does not exist");
 
+      vectorZeroize3D(dX_);
+
       vel_[0] = input->variable->compute_equal(myvar1);
       vel_[1] = input->variable->compute_equal(myvar2);
       vel_[2] = input->variable->compute_equal(myvar3);
@@ -134,7 +136,7 @@ MeshMoverLinearVariable::~MeshMoverLinearVariable()
 
 void MeshMoverLinearVariable::initial_integrate(double dT,double dt)
 {
-    double dX[3],dx[3];
+    double dx[3];
 
     int size = mesh_->size();
     int numNodes = mesh_->numNodes();
@@ -147,11 +149,11 @@ void MeshMoverLinearVariable::initial_integrate(double dT,double dt)
     vel_[2] = input->variable->compute_equal(myvar3);
     /*NL*///fprintf(screen,"######### var=%f %f %f\n ########",vel_[0],vel_[1],vel_[2]);
     // calculate total and incremental displacement
-    vectorScalarMult3D(vel_,dT,dX);
+    vectorAdd3D(dX_,dx,dX_);
     vectorScalarMult3D(vel_,dt,dx);
 
     // apply move
-    mesh_->move(dX,dx);
+    mesh_->move(dX_,dx);
 
     // set mesh velocity
     for (int i = 0; i < size; i++)

@@ -98,6 +98,8 @@ ComputePairGranLocal::~ComputePairGranLocal()
 
   if(reference_exists == 0) return;
 
+  //NP should do this in a pre_delete() step with uncomputeflag - as for fixes (unfixflag)
+
   if(wall == 0) pairgran->unregister_compute_pair_local(this);
   else fixwall->unregister_compute_wall_local(this);
 
