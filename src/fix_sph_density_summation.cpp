@@ -54,8 +54,6 @@ using namespace FixConst;
 FixSPHDensitySum::FixSPHDensitySum(LAMMPS *lmp, int narg, char **arg) :
   FixSph(lmp, narg, arg)
 {
-//	kernel_style = NULL;
-
   int iarg = 0;
 
   if (iarg+3 > narg) error->fix_error(FLERR,this,"Not enough input arguments");
@@ -194,7 +192,7 @@ void FixSPHDensitySum::post_integrate_eval()
   // need updated ghost positions and self contributions
   timer->stamp();
   comm->forward_comm();
-  //fppaSl->do_forward_comm();
+  //NP fppaSl->do_forward_comm();
   timer->stamp(TIME_COMM);
 
   // loop over neighbors of my atoms
@@ -238,7 +236,7 @@ void FixSPHDensitySum::post_integrate_eval()
       }
 
       slComInv = 1./slCom;
-      cut = slCom*kernel_cut;//*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
+      cut = slCom*kernel_cut;//NP slCom*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
 
       delx = xtmp - x[j][0];
       dely = ytmp - x[j][1];

@@ -105,7 +105,7 @@ int FixSPHPressure::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-// TODO: post_create with per atom property
+//NP TODO: post_create with per atom property
 
 /* ---------------------------------------------------------------------- */
 
@@ -140,18 +140,18 @@ void FixSPHPressure::post_integrate()
   double *p = atom->p;
   int nlocal = atom->nlocal;
 
-  // already have updated ghost positions
+  // already have updated ghost positions due to regular communication
 
   // set pressure
-  // TODO: Switch case!
+  //NP TODO: Switch case!
   if (pressureStyle == PRESSURESTYLE_TAIT)
   {
     for (int i = 0; i < nlocal; i++)
     {
-      //XXX: mask and groupbit..?!
+      //NP XXX: mask and groupbit..?!
       if (mask[i] & groupbit)
       {
-        // TODO: rho0 a atom type property?
+        //NP TODO: rho0 a atom type property?
       p[i] = B*(pow(rho[i]*rho0inv,gamma) - 1); // Tait's equation
     }
     }
@@ -172,14 +172,8 @@ void FixSPHPressure::post_integrate()
     {
       if (mask[i] & groupbit)
       {
-        p[i] = B * B * rho[i];//0.1 * rho[i] * rho[i];
+        p[i] = B * B * rho[i];//NP old version: 0.1 * rho[i] * rho[i];
       }
     }
   }
-/*
-  // send pressure to ghosts
-  timer->stamp();
-  comm->forward_comm();
-  timer->stamp(TIME_COMM);
-*/ // no communication, because we now use post_integrate!
 }

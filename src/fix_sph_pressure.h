@@ -46,7 +46,6 @@ class FixSPHPressure : public FixSph {
   ~FixSPHPressure();
   int setmask();
   void init();
-//  void pre_force(int);
   void post_integrate();
 
  private:

@@ -293,7 +293,7 @@ void FixSphDensityCorr::post_integrate_eval()
           slCom = interpDist(sli,slj);
         }
 
-        cut = slCom*kernel_cut;//SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
+        cut = slCom*kernel_cut; //NP slCom*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
 
         delx = xtmp - x[j][0];
         dely = ytmp - x[j][1];
@@ -357,12 +357,11 @@ void FixSphDensityCorr::post_integrate_eval()
     timer->stamp(TIME_COMM);
 
     // loop over neighbors of my atoms
-    /*
-      inum = list->inum;
-      ilist = list->ilist;
-      numneigh = list->numneigh;
-      firstneigh = list->firstneigh;
-     */
+    inum = list->inum;
+    ilist = list->ilist;
+    numneigh = list->numneigh;
+    firstneigh = list->firstneigh;
+
     for (ii = 0; ii < inum; ii++) {
       i = ilist[ii];
       if (!(mask[i] & groupbit)) continue;
@@ -394,7 +393,7 @@ void FixSphDensityCorr::post_integrate_eval()
           slCom = interpDist(sli,slj);
         }
 
-        cut = slCom*kernel_cut;//SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
+        cut = slCom*kernel_cut; //NP slCom*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
 
         delx = xtmp - x[j][0];
         dely = ytmp - x[j][1];
@@ -435,7 +434,7 @@ void FixSphDensityCorr::post_integrate_eval()
     comm->forward_comm();
     timer->stamp(TIME_COMM);
 
-    //  fprintf(screen,"ts %d, particles are reinitialized. \n",update->ntimestep);
+    //NP fprintf(screen,"ts %d, particles are reinitialized. \n",update->ntimestep);
 
   }
 

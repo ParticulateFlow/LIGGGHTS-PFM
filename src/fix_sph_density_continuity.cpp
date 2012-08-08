@@ -31,7 +31,6 @@ andreas.aigner@jku.at
 #include "stdlib.h"
 #include "fix_sph_density_continuity.h"
 #include "update.h"
-#include "respa.h"
 #include "atom.h"
 #include "force.h"
 #include "modify.h"
@@ -100,7 +99,6 @@ int FixSphDensityContinuity::setmask()
 {
   int mask = 0;
   mask |= PRE_FORCE;
-  mask |= PRE_FORCE_RESPA;
   return mask;
 }
 
@@ -134,19 +132,6 @@ void FixSphDensityContinuity::pre_force(int vflag)
 }
 
 /* ---------------------------------------------------------------------- */
-/*
-void FixSphDensityContinuity::pre_force_respa(int ilevel, int flag)
-{
-  if (flag) return;             // only used by NPT,NPH
-
-  dt = step_respa[ilevel];
-
-  if (ilevel == 0) pre_force();
-
-}
-*/
-
-/* ---------------------------------------------------------------------- */
 
 template <int MASSFLAG>
 void FixSphDensityContinuity::pre_force_eval(int vflag)
@@ -162,7 +147,7 @@ void FixSphDensityContinuity::pre_force_eval(int vflag)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
-  // TODO: Both declaration necessary?
+  //NP TODO: Both declaration necessary?
   int *type = atom->type;       // if MASSFLAG
   double *mass = atom->mass;    // if MASSFLAG
   double *rmass = atom->rmass;  // if !MASSFLAG
@@ -173,8 +158,8 @@ void FixSphDensityContinuity::pre_force_eval(int vflag)
 
   // need updated ghost positions and self contributions
   timer->stamp();
-//  comm->forward_comm(); // pre_force --> communication already done
-  if (!MASSFLAG) fppaSl->do_forward_comm();
+  //NP  comm->forward_comm(); // pre_force --> communication already done
+  if (!MASSFLAG) fppaSl->do_forward_comm(); //NP May we add this to the regular forward communication?
   timer->stamp(TIME_COMM);
 
   if (!MASSFLAG) updatePtrs(); // get sl
@@ -246,29 +231,12 @@ void FixSphDensityContinuity::pre_force_eval(int vflag)
       // add contribution of neighbor
       // have a half neigh list, so do it for both if necessary
 
-      //drho[i] += calcDensityDer(delVDotDelR,gradWmag,jmass);
       drho[i] += jmass*gradWmag*delVDotDelR;
 
       if (newton_pair || j < nlocal) {
-        //drho[j] += calcDensityDer(delVDotDelR,gradWmag,imass);
         drho[j] += imass*gradWmag*delVDotDelR;
       }
     }
   }
 
-/*  // rho is now correct, send to ghosts
-  timer->stamp();
-  comm->forward_comm();
-  timer->stamp(TIME_COMM);
-*/ // no communication of drho !!
 }
-
-/* ---------------------------------------------------------------------- */
-/*
-double FixSphDensityContinuity::calcDensityDer(double delVDotDelR,
-    double gradWmag, double mass)
-{
-  // return contribution of neighbor
-  return (dt * mass * delVDotDelR * gradWmag);
-}
-*/

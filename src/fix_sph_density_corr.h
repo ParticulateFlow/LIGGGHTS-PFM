@@ -53,7 +53,6 @@ class FixSphDensityCorr : public FixSph {
 
  private:
   template <int> void post_integrate_eval();
-//  double densitySummation(double, double, double);
 
   class FixPropertyAtom* fix_quantity;
   char *quantity_name;
