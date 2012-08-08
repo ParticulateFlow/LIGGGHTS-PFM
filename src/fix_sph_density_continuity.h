@@ -46,13 +46,11 @@ class FixSphDensityContinuity : public FixSph {
   void init();
   void pre_force(int);
 //  void pre_force_respa(int, int);
-  void reset_dt();
 
  private:
   template <int> void pre_force_eval(int);
   double calcDensityDer(double, double, double);
 
-  double dt;
   double *step_respa;
 };
 

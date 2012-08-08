@@ -110,7 +110,18 @@ void FixSphDensityContinuity::init()
 {
   FixSph::init();
 
-  dt = update->dt;
+  // check if there is an nve/sph fix present
+
+  int idx_integ = -1;
+  for(int i = 0; i < modify->nfix; i++)
+  {
+    if(strncmp("nve/sph",modify->fix[i]->style,7) == 0) {
+      idx_integ = i;
+      break;
+    }
+  }
+
+  if(idx_integ == -1) error->fix_error(FLERR,this,"Requires to define a fix nve/sph also \n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -134,12 +145,6 @@ void FixSphDensityContinuity::pre_force_respa(int ilevel, int flag)
 
 }
 */
-/* ---------------------------------------------------------------------- */
-
-void FixSphDensityContinuity::reset_dt()
-{
-  dt = update->dt;
-}
 
 /* ---------------------------------------------------------------------- */
 
