@@ -327,28 +327,30 @@ void FixSphDensityCorr::post_integrate_eval()
     // reset and add rho contribution of self
 
     for (i = 0; i < nlocal; i++) {
-      if (MASSFLAG) {
-        itype = type[i];
-        sli = sl[itype-1];
-        imass = mass[itype];
-      } else {
-        sli = sl[i];
-        imass = rmass[i];
+      if (mask[i] & groupbit) {
+        if (MASSFLAG) {
+          itype = type[i];
+          sli = sl[itype-1];
+          imass = mass[itype];
+        } else {
+          sli = sl[i];
+          imass = rmass[i];
+        }
+
+        sliInv = 1./sli;
+
+        // this gets a value for W at self, perform error check
+
+        W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,sli,sliInv);
+        if (W < 0.)
+        {
+          fprintf(screen,"s = %f, W = %f\n",s,W);
+          error->one(FLERR,"Illegal kernel used, W < 0");
+        }
+
+        // add contribution of self
+        rho[i] = W*imass;
       }
-
-      sliInv = 1./sli;
-
-      // this gets a value for W at self, perform error check
-
-      W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,sli,sliInv);
-      if (W < 0.)
-      {
-        fprintf(screen,"s = %f, W = %f\n",s,W);
-        error->one(FLERR,"Illegal kernel used, W < 0");
-      }
-
-      // add contribution of self
-      rho[i] = W*imass;
     }
 
     // need updated ghost positions and self contributions
@@ -426,7 +428,9 @@ void FixSphDensityCorr::post_integrate_eval()
 
     // normalize rho
     for (i = 0; i < nlocal; i++) {
-      rho[i] = rho[i]/quantity[i];
+      if (mask[i] & groupbit) {
+        rho[i] = rho[i]/quantity[i];
+      }
     }
 
     // rho is now correct, send to ghosts

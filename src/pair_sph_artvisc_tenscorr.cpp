@@ -151,7 +151,7 @@ void PairSphArtviscTenscorr::settings(int narg, char **arg)
 
 void PairSphArtviscTenscorr::coeff(int narg, char **arg)
 {
-  if (narg > 2) error->all(FLERR, "Incorrect args for pair coefficients");
+  if (narg > 3) error->all(FLERR, "Incorrect args for pair coefficients");
   if (!allocated) allocate();
 
   int ilo,ihi,jlo,jhi;
