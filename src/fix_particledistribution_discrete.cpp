@@ -393,27 +393,29 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
            parttogen[i] = static_cast<int>(static_cast<double>(ninsert) * distweight[i]);
            ninsert_truncated += parttogen[i];
            remainder[i] = static_cast<double>(ninsert) * distweight[i] - static_cast<double>(parttogen[i]);
+           /*NL*/ //fprintf(screen,"remainder[i] %f\n",remainder[i]);
         }
 
         int ninsert_gap = ninsert - ninsert_truncated;
 
         //NP check if sum of remainders is equal to gap
-        /*NL*/// rsum = 0.;
-        /*NL*/// for(int i = 0; i < ntemplates; i++) rsum+=remainder[i];
-        /*NL*/// fprintf(screen,"ninsert_gap %d, remaindersum %f - SHOULD BE EQUAL\n",ninsert_gap,rsum);
+        /*NL*/ rsum = 0.;
+        /*NL*/ for(int i = 0; i < ntemplates; i++) rsum+=remainder[i];
+        /*NL*/ //fprintf(screen,"ninsert_gap %d, remaindersum %f - SHOULD BE EQUAL\n",ninsert_gap,rsum);
 
         // distribute remaining ninsert_gap particles
         for(int i = 0; i < ninsert_gap; i++)
         {
             r = random->uniform() * static_cast<double>(ninsert_gap);
             j = 0;
-            rsum = 0.;
+            rsum = remainder[0];
 
             while(j < (ntemplates-1) && rsum < r)
             {
                 rsum += remainder[j];
                 j++;
             }
+            /*NL*/ //fprintf(screen,"chose template %d\n",j);
             parttogen[j]++;
         }
 

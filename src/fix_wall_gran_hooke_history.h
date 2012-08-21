@@ -70,8 +70,6 @@ class FixWallGranHookeHistory : public FixWallGran {
   double Temp_wall;
   double Q,Q_add;
 
-  double *Temp_p;
-  double *heatflux;
   const double *th_cond;
   double const* const* deltan_ratio;
 };

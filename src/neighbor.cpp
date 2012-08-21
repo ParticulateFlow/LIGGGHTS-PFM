@@ -1850,7 +1850,8 @@ int Neighbor::coord2bin(double *x, int &ix, int &iy, int &iz)
 int Neighbor::exclusion(int i, int j, int itype, int jtype,
                         int *mask, int *molecule) const {
   int m;
-
+  /*NL*/// fprintf(screen,"step %d proc %d called for tags %d and %d (ghost %d %d) with mols %d and %d\n",
+  /*NL*///        update->ntimestep,comm->me,atom->tag[i],atom->tag[j],i>=atom->nlocal?1:0,j>=atom->nlocal?1:0,molecule[i],molecule[j]);
   if (nex_type && ex_type[itype][jtype]) return 1;
 
   if (nex_group) {

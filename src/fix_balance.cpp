@@ -169,7 +169,7 @@ void FixBalance::init()
           if(my_i < ifix && fix[ifix]->max_rad(itype) > 0.)
           {
               char errstr[200];
-              sprintf(errstr,"Fix style %s has to come before fix of style %s\n",fix[ifix]->style,style);
+              sprintf(errstr,"Fix %s has to come before fix %s",fix[ifix]->style,style);
               error->fix_error(FLERR,this,errstr);
           }
       }

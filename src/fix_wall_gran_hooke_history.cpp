@@ -423,10 +423,10 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
 /* ---------------------------------------------------------------------- */
 
 //NP modified C.K.
-void FixWallGranHookeHistory::addHeatFlux(TriMesh *mesh,int ip, double rsq, double area_ratio)
+void FixWallGranHookeHistory::addHeatFlux(TriMesh *mesh,int ip, double delta_n, double area_ratio)
 {
     //r is the distance between the sphere center and wall
-    double tcop, tcowall, hc, Acont, delta_n, r;
+    double tcop, tcowall, hc, Acont, r;
     double reff_wall = atom->radius[ip];
     int itype = atom->type[ip];
     double ri = atom->radius[ip];
@@ -434,15 +434,16 @@ void FixWallGranHookeHistory::addHeatFlux(TriMesh *mesh,int ip, double rsq, doub
     if(mesh)
         Temp_wall = (*mesh->prop().getGlobalProperty< ScalarContainer<double> >("Temp"))(0);
 
-    r = sqrt(rsq);
+    double *Temp_p = fppa_T->vector_atom;
+    double *heatflux = fppa_hf->vector_atom;
+
+    /*NL*/ //fprintf(screen,"size %d Temp %f\n",(*mesh->prop().getGlobalProperty< ScalarContainer<double> >("Temp")).size(),Temp_wall);
 
     //NP adjust overlap that may be superficially large due to softening
     if(deltan_ratio)
-    {
-       delta_n = ri - r;
        delta_n *= deltan_ratio[itype-1][atom_type_wall_-1];
-       r = ri - delta_n;
-    }
+
+    r = ri + delta_n;
 
     Acont = (reff_wall*reff_wall-r*r)*M_PI*area_ratio; //contact area sphere-wall
     tcop = th_cond[itype-1]; //types start at 1, array at 0
@@ -458,8 +459,11 @@ void FixWallGranHookeHistory::addHeatFlux(TriMesh *mesh,int ip, double rsq, doub
     }
     else if(cwl_)
         cwl_->add_heat_wall(ip,(Temp_wall-Temp_p[ip]) * hc);
-    /*NL*/ //fprintf(screen,"adding heat flux of %f to particle %d\n",(T_wall-Temp_p[ip]) * hc,ip);
+    /*NL*/ //fprintf(screen,"adding heat flux of %g to particle %d, wall %f Part %f hc %f\n",(Temp_wall-Temp_p[ip]) * hc,ip,Temp_wall,Temp_p[ip],hc);
+    /*NL*/ //fprintf(screen,"tcop %f tcowall %f Acont %f reff_wall %f r %f\n",tcop,tcowall,Acont,reff_wall,r);
 }
+
+/* ---------------------------------------------------------------------- */
 
 inline void FixWallGranHookeHistory::addCohesionForce(int &ip, double &r, double &Fn_coh,double area_ratio)
 {

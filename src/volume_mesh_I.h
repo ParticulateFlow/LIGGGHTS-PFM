@@ -38,8 +38,12 @@ VolumeMesh<NUM_NODES,N_FACES>::VolumeMesh()
     // TODO should keep volMeshSubdomain up-to-date more often for insertion faces
     volMesh_(*this->prop().template addMeshProperty   < ScalarContainer<double> >  ("volMesh", "comm_none","frame_trans_rot_invariant","restart_no",3)),
 
-    //NP no forward communication - communicate on borders, afterwards re-calc properties for ghosts
-    //NP if scale,move,translate: properties are manipulated via CustomValueTracker
+    //NP neigh topology is communicated at exchange and borders
+    //NP  (neigh topology is created once and never changed)
+
+    //NP no forward communication at all
+    //NP if scale,move,translate: properties are manipulated/updated via CustomValueTracker
+
     vol_    (*this->prop().template addElementProperty< ScalarContainer<double> > ("vol",     "comm_none","frame_trans_rot_invariant", "restart_no",3)),
     volAcc_ (*this->prop().template addElementProperty< ScalarContainer<double> > ("volAcc",  "comm_none","frame_trans_rot_invariant", "restart_no",3))
 {
@@ -48,6 +52,8 @@ VolumeMesh<NUM_NODES,N_FACES>::VolumeMesh()
     volMesh_.add(0.);
     volMesh_.add(0.);
     volMesh_.add(0.);
+
+    this->error->all(FLERR,"have to add neigh topology with comm_exchange_borders");
 }
 
 template<int NUM_NODES,int N_FACES>

@@ -46,8 +46,11 @@ SurfaceMesh<NUM_NODES>::SurfaceMesh(LAMMPS *lmp)
     // TODO should keep areaMeshSubdomain up-to-date more often for insertion faces
     areaMesh_     (*this->prop().template addGlobalProperty   < ScalarContainer<double> >                 ("areaMesh",     "comm_none","frame_trans_rot_invariant","restart_no",2)),
 
-    //NP no forward communication - communicate on borders, afterwards re-calc properties for ghosts
-    //NP if scale,move,translate: properties are manipulated via CustomValueTracker
+    //NP neigh topology is communicated at exchange and borders
+    //NP  (neigh topology is created once and never changed)
+
+    //NP no forward communication at all
+    //NP if scale,move,translate: properties are manipulated/updated via CustomValueTracker
 
     area_         (*this->prop().template addElementProperty< ScalarContainer<double> >                   ("area",         "comm_none","frame_trans_rot_invariant", "restart_no",2)),
     areaAcc_      (*this->prop().template addElementProperty< ScalarContainer<double> >                   ("areaAcc",      "comm_none","frame_trans_rot_invariant", "restart_no",2)),
@@ -55,19 +58,18 @@ SurfaceMesh<NUM_NODES>::SurfaceMesh(LAMMPS *lmp)
     edgeVec_      (*this->prop().template addElementProperty< MultiVectorContainer<double,NUM_NODES,3> >  ("edgeVec",      "comm_none","frame_scale_trans_invariant","restart_no")),
     edgeNorm_     (*this->prop().template addElementProperty< MultiVectorContainer<double,NUM_NODES,3> >  ("edgeNorm",     "comm_none","frame_scale_trans_invariant","restart_no")),
     surfaceNorm_  (*this->prop().template addElementProperty< VectorContainer<double,3> >                 ("surfaceNorm",  "comm_none","frame_scale_trans_invariant","restart_no")),
-    edgeActive_   (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("edgeActive",   "comm_none","frame_invariant",            "restart_no")),
-    cornerActive_ (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("cornerActive", "comm_none","frame_invariant",            "restart_no")),
-    hasNonCoplanarSharedNode_(*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >("hasNonCoplanarSharedNode","comm_none","frame_invariant", "restart_no")),
-    nNeighs_      (*this->prop().template addElementProperty< ScalarContainer<int> >                      ("nNeighs",      "comm_none","frame_invariant",            "restart_no")),
+    edgeActive_   (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("edgeActive",   "comm_exchange_borders","frame_invariant",            "restart_no")),
+    cornerActive_ (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("cornerActive", "comm_exchange_borders","frame_invariant",            "restart_no")),
+    hasNonCoplanarSharedNode_(*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >("hasNonCoplanarSharedNode","comm_exchange_borders","frame_invariant", "restart_no")),
+    nNeighs_      (*this->prop().template addElementProperty< ScalarContainer<int> >                      ("nNeighs",      "comm_exchange_borders","frame_invariant",            "restart_no")),
     //NP fundamental assumption: no hanging nodes
-    neighFaces_   (*this->prop().template addElementProperty< VectorContainer<int,NUM_NODES> >            ("neighFaces",   "comm_none","frame_invariant",            "restart_no"))
+    neighFaces_   (*this->prop().template addElementProperty< VectorContainer<int,NUM_NODES> >            ("neighFaces",   "comm_exchange_borders","frame_invariant",            "restart_no"))
 {
     //NP allocate 4 scalar spaces
     areaMesh_.add(0.);
     areaMesh_.add(0.);
     areaMesh_.add(0.);
     areaMesh_.add(0.);
-
     /*NL*///this->error->all(FLERR,"check: use ID instead of index for neigh list, areCoplanar etc");
 }
 
@@ -244,18 +246,22 @@ void SurfaceMesh<NUM_NODES>::recalcGhostSurfProperties()
                 for(int i = 0; i < NTRY_MC_SURFACE_MESH_I_H; i++)
                 {
                     // pick a random position on owned or ghost element
-                    if((generateRandomOwnedGhost(pos) >= 0) && (this->domain->is_in_subdomain(pos)))
+                    if((generateRandomOwnedGhost(pos)) >= 0 && (this->domain->is_in_extended_subdomain(pos)))
                         n_succ++;
                 }
             }
             n_iter++;
             areaMesh_(3) = static_cast<double>(n_succ)/static_cast<double>(NTRY_MC_SURFACE_MESH_I_H*n_iter) * (areaMeshOwned()+areaMeshGhost());
 
-           MPI_Sum_Scalar(areaMesh_(3),areaCheck,this->world);
+            MPI_Sum_Scalar(areaMesh_(3),areaCheck,this->world);
+            /*NL*/// fprintf(this->screen,"proc %d: iter  %d area %f, areaCheck %f areaMeshGlobal %f\n",this->comm->me,n_iter,areaMesh_(3),areaCheck);
         }
 
         if(fabs((areaCheck-areaMeshGlobal()))/areaMeshGlobal() > TOLERANCE_MC_SURFACE_MESH_I_H)
+        {
+            /*NL*/ fprintf(this->screen,"proc %d: area %f, areaCheck %f areaMeshGlobal %f\n",this->comm->me,areaMesh_(3),areaCheck,areaMeshGlobal());
             this->error->all(FLERR,"Local mesh area calculation failed, try boosting NITER_MC_SURFACE_MESH_I_H");
+        }
 
         // correct so sum of all owned areas is equal to global area
         areaMesh_(3) *= areaMeshGlobal()/areaCheck;
@@ -265,6 +271,8 @@ void SurfaceMesh<NUM_NODES>::recalcGhostSurfProperties()
         /*NL*///        n_iter,((areaCheck-areaMeshGlobal()))/areaMeshGlobal());
         /*NL*///this->error->all(FLERR,"CHECK this");
     }
+
+    /*NL*/ //if(this->map(21) >= 0) fprintf(this->screen,"proc %d has ID 21 and edgeActive(21)[1] is %s\n",this->comm->me,edgeActive(this->map(21))[1]?"y":"n");
 }
 
 /* ----------------------------------------------------------------------
@@ -291,14 +299,21 @@ inline int SurfaceMesh<NUM_NODES>::randomOwnedGhostElement()
 {
     //NP disallow to use this unless this is an insertion mesh
     if(!isInsertionMesh_) this->error->one(FLERR,"Illegal call for non-insertion mesh");
+
     double r = this->random_->uniform() * (areaMeshOwned()+areaMeshGhost());
-    int nall = this->sizeLocal()+this->sizeGhost()-1;
-    return searchElementByAreaAcc(r,0,nall);
+    /*NL*/ //fprintf(this->screen,"areaMeshOwned()+areaMeshGhost() %f\n",areaMeshOwned()+areaMeshGhost());
+
+    int first = 0;
+    int last = this->sizeLocal()+this->sizeGhost()-1;
+
+    return searchElementByAreaAcc(r,first,last);
 }
 
 template<int NUM_NODES>
 inline int SurfaceMesh<NUM_NODES>::searchElementByAreaAcc(double area,int lo, int hi)
 {
+    /*NL*/ //fprintf(this->screen,"areaAcc(lo) %f areaAcc(hi) %f\n",areaAcc(lo),areaAcc(hi));
+
     if( (lo < 1 || area > areaAcc(lo-1)) && (area <= areaAcc(lo)) )
         return lo;
     if( (hi < 1 || area > areaAcc(hi-1)) && (area <= areaAcc(hi)) )
@@ -470,6 +485,8 @@ void SurfaceMesh<NUM_NODES>::buildNeighbours()
         hasNonCoplanarSharedNode_.set(i,f);
     }
 
+    /*NL*/// if(this->map(21) >= 0) fprintf(this->screen,"B proc %d has 21 and edgeActive(21)[1] is %s\n",this->comm->me,edgeActive(this->map(21))[1]?"y":"n");
+
     // build neigh topology, ~n*n/2
     for(int i = 0; i < nall; i++)
     {
@@ -483,8 +500,13 @@ void SurfaceMesh<NUM_NODES>::buildNeighbours()
           handleSharedEdge(i,iEdge,j,jEdge, areCoplanar(this->id(i),this->id(j)));
         else
           handleSharedNode(i,iNode,j,jNode, areCoplanar(this->id(i),this->id(j)));
+
+        /*NL*/// if(this->map(21) >= 0) fprintf(this->screen,"A1 proc %d has 21 and edgeActive(21)[1] is %s\n",this->comm->me,edgeActive(this->map(21))[1]?"y":"n");
       }
     }
+
+    /*NL*/ //if(this->map(21) >= 0) fprintf(this->screen,"BN proc %d has 21 and edgeActive(21)[1] is %s\n",this->comm->me,edgeActive(this->map(21))[1]?"y":"n");
+    /*NL*/// this->error->all(FLERR,"end");
 }
 
 /* ----------------------------------------------------------------------
@@ -497,13 +519,17 @@ bool SurfaceMesh<NUM_NODES>::areCoplanar(int tag_a, int tag_b)
     int a = this->map(tag_a);
     int b = this->map(tag_b);
 
+    if(a < 0 || b < 0)
+        this->error->one(FLERR,"Internal error: Illegal call to SurfaceMesh::areCoplanar()");
+
     // check if two faces are coplanar
     // eg used to transfer shear history btw planar faces
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
-    // fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
-    // printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
-    // printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
+    /*NL*/// fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
+    /*NL*/// printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
+    /*NL*/// printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
+    /*NL*/// if(fabs(dot) > curvature_) fprintf(this->screen,"a %d b %d  are coplanar \n",a,b);
 
     // need fabs in case surface normal is other direction
     if(fabs(dot) > curvature_) return true;
@@ -561,15 +587,24 @@ void SurfaceMesh<NUM_NODES>::handleSharedEdge(int iSrf, int iEdge, int jSrf, int
     /*NL*///if(this->comm->nprocs > 1)
     /*NL*///    this->error->all(FLERR,"Have to ensured active/inactive edge and corner this is done the same on 2 procs");
 
-    // deactivate egde
-    edgeActive(iSrf)[iEdge] = false;
-
-    // deactivate other edge if coplanar
+    // deactivate one egde
+    // other as well if coplanar
+    //NP IMPORTANT have to use ID criterion in parallel because local i/j are different
     if(coplanar)
-      edgeActive(jSrf)[jEdge] = false;
+    {
+        edgeActive(iSrf)[iEdge] = false;
+        edgeActive(jSrf)[jEdge] = false;
+    }
+    else
+    {
+        if(this->id(iSrf) < this->id(jSrf))
+            edgeActive(iSrf)[iEdge] = false;
+        else
+            edgeActive(jSrf)[jEdge] = false;
+    }
 
-    /*NL*/// fprintf(this->screen,"called for iSrf %d iSrf %d, coplanar %s\n",iSrf,jSrf,coplanar?"yes":"no");
-    /*NL*/// this->error->all(FLERR,"END");
+    /*NL*/ //fprintf(this->screen,"proc %d called for iSrf %d ID %d jSrf %d ID %d iEdge %d jEdge %d, coplanar %s, edgeActive(jSrf)[jEdge] %s\n",
+    /*NL*/ //               this->comm->me,iSrf,this->id(iSrf),jSrf,this->id(jSrf),iEdge,jEdge,coplanar?"yes":"no",edgeActive(jSrf)[jEdge]?"y":"n");
 
     handleSharedNode(iSrf,iEdge,jSrf,(jEdge+1)%NUM_NODES,coplanar);
     handleSharedNode(iSrf,(iEdge+1)%NUM_NODES,jSrf,jEdge,coplanar);
@@ -578,6 +613,23 @@ void SurfaceMesh<NUM_NODES>::handleSharedEdge(int iSrf, int iEdge, int jSrf, int
 template<int NUM_NODES>
 void SurfaceMesh<NUM_NODES>::handleSharedNode(int iSrf, int iNode, int jSrf, int jNode, bool coplanar)
 {
+    // coplanar - deactivate both
+
+    if(coplanar)
+    {
+        cornerActive(iSrf)[iNode] = false;
+        cornerActive(jSrf)[jNode] = false;
+    }
+    // non-coplanar - let one live
+    //NP let the one with the highest ID live
+    else
+    {
+        if(this->id(iSrf) < this->id(jSrf))
+            cornerActive(iSrf)[iNode] = false;
+        else
+            cornerActive(jSrf)[jNode] = false;
+    }
+    /*NP  --- OLD ---
     cornerActive(iSrf)[iNode] = false;
     if
     ( coplanar &&
@@ -589,7 +641,7 @@ void SurfaceMesh<NUM_NODES>::handleSharedNode(int iSrf, int iNode, int jSrf, int
       hasNonCoplanarSharedNode(iSrf)[iNode] = true;
       hasNonCoplanarSharedNode(jSrf)[jNode] = true;
       cornerActive(jSrf)[jNode] = true;
-    }
+    }*/
 }
 
 /* ----------------------------------------------------------------------
@@ -700,11 +752,13 @@ bool SurfaceMesh<NUM_NODES>::isPlanar()
     int id_j;
     int flag = 0;
 
-    for(int i=0;i<this->sizeLocal();i++)
+    int nlocal = this->sizeLocal();
+
+    for(int i = 0; i < this->sizeLocal(); i++)
     {
         if(flag) break;
 
-        for(int ineigh=0;ineigh<nNeighs_(i);ineigh++)
+        for(int ineigh = 0; ineigh < nNeighs_(i); ineigh++)
         {
             id_j = neighFaces_(i)[ineigh];
             if(!areCoplanar(this->id(i),id_j))
@@ -712,7 +766,7 @@ bool SurfaceMesh<NUM_NODES>::isPlanar()
         }
     }
 
-   MPI_Max_Scalar(flag,this->world);
+    MPI_Max_Scalar(flag,this->world);
 
     if(flag) return false;
     return true;
