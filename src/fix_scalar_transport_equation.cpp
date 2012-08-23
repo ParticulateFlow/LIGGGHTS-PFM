@@ -196,7 +196,9 @@ void FixScalarTransportEquation::post_create()
     fix_source=static_cast<FixPropertyAtom*>(modify->find_fix_property(source_name,"property/atom","scalar",0,0,style));
   }
 
-  delete []fixarg;
+  for (int kk = 0; kk < 9; kk++)
+    delete [] fixarg[kk];
+  delete [] fixarg;
 
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
