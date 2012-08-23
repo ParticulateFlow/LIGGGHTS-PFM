@@ -33,6 +33,8 @@ class Neighbor : protected Pointers {
   //NP modified C.K.
   friend class FixNeighlistMesh;
   /*NL*/ friend class Lbalance;
+  //NP modified St.A.
+  friend class FixHeatGranRad;
 
  public:
   int style;                       // 0,1,2 = nsq, bin, multi
@@ -183,14 +185,10 @@ class Neighbor : protected Pointers {
   int coord2bin(double *);              // mapping atom coord to a bin
   int coord2bin(double *, int &, int &, int&); // ditto
 
+  void binBorders(int, double &, double &, double &, double &, double &, double &); //NP modified St.A.
   void bin2XYZ(int, int &, int &, int &); //NP modified St.A.
   int XYZ2bin(int, int, int); //NP modified St.A.
-  int binUpX(int); //NP modified St.A.
-  int binDownX(int); //NP modified St.A.
-  int binUpY(int); //NP modified St.A.
-  int binDownY(int); //NP modified St.A.
-  int binUpZ(int); //NP modified St.A.
-  int binDownZ(int); //NP modified St.A.
+  int binHop(int, int, int, int); //NP modified St.A.
 
   int exclusion(int, int, int,
                 int, int *, int *) const;  // test for pair exclusion
