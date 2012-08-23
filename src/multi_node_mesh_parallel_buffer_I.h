@@ -132,7 +132,7 @@
       double *bufMesh = NULL, *sendbufElems = NULL, *recvbufElems = NULL;
       bool dummy = false;
 
-      /*NL*/ fprintf(this->screen,"buffersize mesh %d buffersize elems local %d\n",sizeMesh,sizeElements);
+      /*NL*/ //fprintf(this->screen,"buffersize mesh %d buffersize elems local %d\n",sizeMesh,sizeElements);
 
       // pack global data into buffer
       // do this only on proc 0
@@ -157,7 +157,7 @@
       //NP send from all to proc 0
       sizeElements_all = MPI_Gather0_Vector(sendbufElems,sizeElements,recvbufElems,this->world);
 
-      /*NL*/ fprintf(this->screen,"buffersize mesh %d buffersize elems local %d, buffersize elems global %d\n",sizeMesh,sizeElements, sizeElements_all);
+      /*NL*/ //fprintf(this->screen,"buffersize mesh %d buffersize elems local %d, buffersize elems global %d\n",sizeMesh,sizeElements, sizeElements_all);
 
       // actually write data to restart file
       // do this only on proc 0

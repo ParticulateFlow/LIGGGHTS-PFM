@@ -190,6 +190,8 @@ void FixNeighlistMesh::pre_force(int vflag)
 
 void FixNeighlistMesh::handleTriangle(int iTri)
 {
+    int *mask = atom->mask;
+
     // get bounding box of element on this subdomain
     //NP is bounded by sublo, subhi
     BoundingBox b = mesh_->getElementBoundingBoxOnSubdomain(iTri);
@@ -235,6 +237,8 @@ void FixNeighlistMesh::handleTriangle(int iTri)
               int iAtom = binhead[iBin];
               while(iAtom != -1 && iAtom < nlocal)
               {
+                if(! (mask[iAtom] & groupbit)) continue;
+
                 /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
                 /*NL*/                                     && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID == atom->map(iAtom) )
                 /*NL*/          fprintf(screen, "   handleTriangle atom %d for tri id %d on proc %d\n",
