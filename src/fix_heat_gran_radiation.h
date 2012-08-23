@@ -45,10 +45,14 @@ namespace LAMMPS_NS {
 		void post_force(int);
 
 	private:
-    void radiate();
-    bool intersectRaySphere(double*, double*, double*, double, double&, double*);
-    void randDir(double*, double*);
-    void randOnSphere(double*, double, double*, double*);
+    void reflect(int, int, double *, double *, double, int, double *);
+    int trace(int, int, double *, double *, double, double *, double *);
+    int nextBin(int, double *, double *, double *, int &, int &, int &);
+    bool intersectRaySphere(double *, double *, double *, double, double &, double *);
+    void randDir(double *, double *);
+    void randOnSphere(double *, double, double *, double *);
+    bool trace(int, int, double *, double *, double, int, double *);
+    void updateQr();
 
     // model parameters
     double Qr;      // energy of one ray
@@ -57,12 +61,12 @@ namespace LAMMPS_NS {
 
     // physical parameters
     double TB;   // background temperature
-    double Qtot; // total energy of all particles (heat)
 
     class FixPropertyGlobal* fix_emissivity;
     double *emissivity;
 
     double Sigma;       // stefan bolzmann constant
+    double Qtot;        // total radiative energy in the system
     class RanMars RGen; // random number generator
 	};
 }
