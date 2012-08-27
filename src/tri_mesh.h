@@ -47,7 +47,7 @@ namespace LAMMPS_NS
         void deleteTriangle(int n);
 
         double resolveTriSphereContact(int nTri, double rSphere, double *cSphere, double *delta);
-        double resolveTriSphereContactBary(int nTri, double rSphere, double *cSphere, double *contactPoint,double *bary);
+    double resolveTriSphereContactBary(int nTri, double rSphere, double *cSphere, double *contactPoint,double *bary);
         double resolveTriSphereContactBaryDefunct(int nTri, double rSphere, double *cSphere, double *contactPoint,double *bary);
         bool resolveTriSphereNeighbuild(int nTri, double rSphere, double *cSphere, double treshold);
 
@@ -64,7 +64,8 @@ namespace LAMMPS_NS
 
         double calcDist(double *cs, double *closestPoint, double *en0);
         double calcDistToPlane(double *p, double *pPlane, double *nPlane);
-        double resolveEdgeContact(int iTri, int iEdge, double *p, double *pPlane, double *en0, double *bary);
+    double resolveEdgeContactBary(int iTri, int iEdge, double *p, double *pPlane, double *en0, double *bary, bool recursion = false);
+    //    double calcDistToEdgeBary()
   };
 
   // *************************************
