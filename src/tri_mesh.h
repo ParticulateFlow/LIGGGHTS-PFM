@@ -64,7 +64,7 @@ namespace LAMMPS_NS
 
         double calcDist(double *cs, double *closestPoint, double *en0);
         double calcDistToPlane(double *p, double *pPlane, double *nPlane);
-    double resolveEdgeContactBary(int iTri, int iEdge, double *p, double *pPlane, double *en0, double *bary, bool recursion = false);
+    double resolveEdgeCornerContactBary(int iTri, int iEdge, double *p, double *pPlane, double *en0, double *bary, bool recursion = false);
     //    double calcDistToEdgeBary()
   };
 

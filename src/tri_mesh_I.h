@@ -239,14 +239,14 @@
         case 1:
         case 2:
         case 3: // bary[2] < 0 --> edge contact on edge[0]
-          d = resolveEdgeContactBary(nTri,0,cSphere,csPlane,delta,bary);
+          d = resolveEdgeCornerContactBary(nTri,0,cSphere,csPlane,delta,bary);
           break;
         case 4:
         case 6: // bary[0] < 0 --> edge contact on edge[1]
-          d = resolveEdgeContactBary(nTri,1,cSphere,csPlane,delta,bary);
+          d = resolveEdgeCornerContactBary(nTri,1,cSphere,csPlane,delta,bary);
           break;
         case 5: // bary[1] < 0 --> edge contact on edge[2]
-          d = resolveEdgeContactBary(nTri,2,cSphere,csPlane,delta,bary);
+          d = resolveEdgeCornerContactBary(nTri,2,cSphere,csPlane,delta,bary);
           break;
         case 7: // face contact - all three barycentric coordinates are > 0
           d = calcDist(cSphere,csPlane,delta);
@@ -265,7 +265,7 @@
      * pPlane : projection of p to triangle plane
      * delta: overlap vector
      */
-inline double TriMesh::resolveEdgeContactBary(int iTri, int iEdge, double *p, double *pPlane, double *delta, double *bary, bool recursion)
+inline double TriMesh::resolveEdgeCornerContactBary(int iTri, int iEdge, double *p, double *pPlane, double *delta, double *bary, bool recursion)
   {
     double nodeToPPlane[3];
     double **n = node_(iTri);
@@ -279,7 +279,7 @@ inline double TriMesh::resolveEdgeContactBary(int iTri, int iEdge, double *p, do
 	vectorSubtract3D(pPlane,n[ipp],prevNodeToPPlane);
         double distFromPrevNode = vectorDot3D(prevNodeToPPlane,edgeVec(iTri)[ipp]);
         if(distFromPrevNode < edgeLen(iTri)[ipp]){
-	  d = resolveEdgeContactBary(iTri,ipp,p,pPlane,delta,bary,true);
+	  d = resolveEdgeCornerContactBary(iTri,ipp,p,pPlane,delta,bary,true);
 	}
         else{
           if(!cornerActive(iTri)[iEdge]) d=1.;
@@ -293,7 +293,7 @@ inline double TriMesh::resolveEdgeContactBary(int iTri, int iEdge, double *p, do
 	vectorSubtract3D(pPlane,n[ip],nextNodeToPPlane);
         double distFromNextNode = vectorDot3D(nextNodeToPPlane,edgeVec(iTri)[ip]);
         if(distFromNextNode > 0){
-	  d = resolveEdgeContactBary(iTri,ip,p,pPlane,delta,bary,true);
+	  d = resolveEdgeCornerContactBary(iTri,ip,p,pPlane,delta,bary,true);
 	}
         else{
           if(!cornerActive(iTri)[ip]) d=1.;
