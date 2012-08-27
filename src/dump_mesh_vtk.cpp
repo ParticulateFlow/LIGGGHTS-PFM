@@ -104,7 +104,7 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
 
   int iarg = 5;
   dump_what_ = 0;
-  dataMode_;
+  dataMode_ = 0; // "face" is default behaviour for "output" i assume... / P.S.
 
   bool hasargs = true;
   while (iarg < narg && hasargs)
