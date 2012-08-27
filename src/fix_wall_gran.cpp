@@ -284,7 +284,7 @@ void FixWallGran::post_create()
    // also create contact tracker
    for(int i=0;i<n_FixMesh_;i++)
    {
-      FixMesh_list_[i]->createNeighList();
+      FixMesh_list_[i]->createNeighList(igroup);
       if(dnum()>0)FixMesh_list_[i]->createContactHistory(dnum());
    }
 }
@@ -485,6 +485,8 @@ void FixWallGran::post_force_respa(int vflag, int ilevel, int iloop)
 
 void FixWallGran::post_force_mesh(int vflag)
 {
+    //NP groupbit accounted for via neighlist/mesh
+
     // contact properties
     double force_old[3],force_wall[3],v_wall[3],bary[3];
     double delta[3],deltan;
@@ -551,8 +553,8 @@ void FixWallGran::post_force_mesh(int vflag)
             /*NL*/// if(!radius_) error->one(FLERR,"need to revise this for SPH");
             deltan = mesh->resolveTriSphereContactBary(iTri,radius_ ? radius_[iPart]:r0_ ,x_[iPart],delta,bary);
 
-            /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
-            /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d 2, deltan %f\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri],deltan);
+            /*NL*/// if(atom->tag[iPart] == 624)// && mesh->id(iTri) == 4942)
+            /*NL*///   fprintf(screen,"particle 624 step %d moving mesh %d Tri %d iCont %d numNeigh %d 2, deltan %f\n",update->ntimestep,iMesh,mesh->id(iTri),iCont,numNeigh[iTri],deltan);
 
             if(deltan > 0.)
             {
@@ -569,7 +571,7 @@ void FixWallGran::post_force_mesh(int vflag)
               for(int i = 0; i < 3; i++)
                 v_wall[i] = (bary[0]*vMesh[iTri][0][i] + bary[1]*vMesh[iTri][1][i] + bary[2]*vMesh[iTri][2][i]);
 
-              post_force_eval_contact(iPart,deltan,delta,v_wall,c_history,FixMesh_list_[iMesh],mesh,iTri);
+              post_force_eval_contact(iPart,deltan,delta,v_wall,c_history,iMesh,FixMesh_list_[iMesh],mesh,iTri);
             }
 
             /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
@@ -600,6 +602,9 @@ void FixWallGran::post_force_mesh(int vflag)
             int idTri = mesh->id(iTri);
             deltan = mesh->resolveTriSphereContact(iTri,radius_ ? radius_[iPart]:r0_,x_[iPart],delta);
 
+            /*NL*/// if(atom->tag[iPart] == 624)// && mesh->id(iTri) == 4942)
+            /*NL*///   fprintf(screen,"particle 624 step %d nonmoving mesh %d Tri %d iCont %d numNeigh %d 2, deltan %f\n",update->ntimestep,iMesh,mesh->id(iTri),iCont,numNeigh[iTri],deltan);
+
             /*NL*/// if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
             /*NL*///    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
             /*NL*///  fprintf(screen,"step %d: handling tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
@@ -612,7 +617,7 @@ void FixWallGran::post_force_mesh(int vflag)
             else //NP always handle contact for SPH
             {
               if(fix_contact && ! fix_contact->handleContact(iPart,idTri,c_history)) continue;
-              post_force_eval_contact(iPart,deltan,delta,v_wall,c_history,FixMesh_list_[iMesh],mesh,iTri);
+              post_force_eval_contact(iPart,deltan,delta,v_wall,c_history,iMesh,FixMesh_list_[iMesh],mesh,iTri);
             }
           }
         }
@@ -633,6 +638,8 @@ void FixWallGran::post_force_mesh(int vflag)
 
 void FixWallGran::post_force_primitive(int vflag)
 {
+  int *mask = atom->mask;
+
   // contact properties
   double force_old[3],force_wall[3];
   double delta[3],deltan;
@@ -649,6 +656,9 @@ void FixWallGran::post_force_primitive(int vflag)
   for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++)
   {
     int iPart = *neighborList;
+
+    if(!(mask[iPart] & groupbit)) continue;
+
     deltan = primitiveWall_->resolveContact(x_[iPart],radius_?radius_[iPart]:r0_,delta);
 
     /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
@@ -671,7 +681,7 @@ void FixWallGran::post_force_primitive(int vflag)
 ------------------------------------------------------------------------- */
 
 inline void FixWallGran::post_force_eval_contact(int iPart, double deltan, double *delta,
-     double *v_wall, double *c_history, FixMeshSurface *fix_mesh, TriMesh *mesh, int iTri)
+     double *v_wall, double *c_history, int iMesh, FixMeshSurface *fix_mesh, TriMesh *mesh, int iTri)
 {
 
   double delr = (radius_ ? radius_[iPart] : r0_) + deltan;
@@ -712,6 +722,14 @@ inline void FixWallGran::post_force_eval_contact(int iPart, double deltan, doubl
            iPart,f_pw,delta,iTri,v_wall
         );
     }
+  }
+
+  // add to cwl
+  if(cwl_ && !addflag_)
+  {
+      double contactPoint[3];
+      vectorAdd3D(x_[iPart],delta,contactPoint);
+      cwl_->add_wall_1(iMesh,mesh->id(iTri),iPart,contactPoint);
   }
 
   // add heat flux
