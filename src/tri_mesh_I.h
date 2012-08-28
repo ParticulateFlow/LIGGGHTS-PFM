@@ -30,8 +30,8 @@
 
 #define SMALL_TRIMESH 1.e-10
 
-/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H false // (update->ntimestep > 3700)
-/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID 5910
+/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H false //(update->ntimestep > 2350)
+/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID -1 // 208
 
   /* ---------------------------------------------------------------------- */
 
@@ -192,7 +192,6 @@
   inline double TriMesh::resolveTriSphereContactBary(int nTri, double rSphere,
                                    double *cSphere, double *delta, double *bary)
   {
-    bool print = false;//(nTri == 25);
     // this is only the overlap algorithm, neighbor list build is
     // coded in resolveTriSphereNeighbuild
 
@@ -231,8 +230,15 @@
 
     double d(0.);
 
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
-    /*NL*/     fprintf(screen,"step %d: detected barysign %d bary %f %f %f \n",update->ntimestep,barySign,bary[0],bary[1],bary[2]);
+    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H /*&& DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)*/)
+      /*NL*/     fprintf(screen,"step %d: triangle %d: detected barysign %d bary %f %f %f \n",update->ntimestep,nTri,barySign,bary[0],bary[1],bary[2]);
+
+    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H /*&& DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)*/)
+      /*NL*/     fprintf(screen,"step %d: triangle %d: edgeActive %d %d %d cornerActive %d %d %d\n",
+			 /*NL*/update->ntimestep,nTri,
+			 /*NL*/edgeActive(nTri)[0],edgeActive(nTri)[1],edgeActive(nTri)[2],
+			 /*NL*/cornerActive(nTri)[0],cornerActive(nTri)[1],cornerActive(nTri)[2]);
+
 
     switch(barySign)
     {
@@ -256,7 +262,12 @@
           break;
     }
 
-    return d == 1. ? d : d - rSphere;
+    d = (d == 1.) ? d : d - rSphere;
+    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H)
+      /*NL*/ //if(d!=1.)
+	/*NL*/     fprintf(screen,"step %d: possible contact detected, triangle %d, d = %e\n",update->ntimestep,nTri,d);
+    
+    return d;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -274,10 +285,14 @@ inline double TriMesh::resolveEdgeCornerContactBary(int iTri, int iEdge, double 
     vectorSubtract3D(pPlane,n[iEdge],nodeToPPlane);
     double d(0.), distFromNode = vectorDot3D(nodeToPPlane,edgeVec(iTri)[iEdge]);
 
+
     if(!recursion && distFromNode <= 0){
 	double prevNodeToPPlane[3];
 	vectorSubtract3D(pPlane,n[ipp],prevNodeToPPlane);
         double distFromPrevNode = vectorDot3D(prevNodeToPPlane,edgeVec(iTri)[ipp]);
+	/*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+	  /*NL*/     fprintf(screen,"step %d: distFromNode %e distFromPrevNode %e edgeLen(iTri)[ipp] %e\n",
+			     /*NL*/ update->ntimestep,distFromNode,distFromPrevNode,edgeLen(iTri)[ipp]);
         if(distFromPrevNode < edgeLen(iTri)[ipp]){
 	  d = resolveEdgeCornerContactBary(iTri,ipp,p,pPlane,delta,bary,true);
 	}
@@ -292,6 +307,9 @@ inline double TriMesh::resolveEdgeCornerContactBary(int iTri, int iEdge, double 
 	double nextNodeToPPlane[3];
 	vectorSubtract3D(pPlane,n[ip],nextNodeToPPlane);
         double distFromNextNode = vectorDot3D(nextNodeToPPlane,edgeVec(iTri)[ip]);
+	/*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+	  /*NL*/     fprintf(screen,"step %d: distFromNode %e distFromNextNode %e edgeLen(iTri)[ip] %e\n",
+			     /*NL*/ update->ntimestep,distFromNode,distFromNextNode,edgeLen(iTri)[ipp]);
         if(distFromNextNode > 0){
 	  d = resolveEdgeCornerContactBary(iTri,ip,p,pPlane,delta,bary,true);
 	}
@@ -305,6 +323,9 @@ inline double TriMesh::resolveEdgeCornerContactBary(int iTri, int iEdge, double 
     } else{
       if(!edgeActive(iTri)[iEdge]) d=1.;
       else{
+	/*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+	  /*NL*/     fprintf(screen,"step %d: distFromNode %e\n",
+			     /*NL*/ update->ntimestep,distFromNode);
         bary[ipp] = 0.;
         bary[iEdge] = 1. - distFromNode/edgeLen(iTri)[iEdge];
         bary[ip] = 1. - bary[iEdge];
@@ -315,30 +336,9 @@ inline double TriMesh::resolveEdgeCornerContactBary(int iTri, int iEdge, double 
       }
     }
 
-    /*
-        if(print)
-          printf("triangle %d bary %f %f %f | distFromEdge %f edgeLen_ %f \n",
-              iTri,bary[0],bary[1],bary[2],distFromNode,edgeLen_(iTri)[iEdge]);
-    */
     return d;
   }
-/*
-double TriMesh::calcDistToEdgeBary(int iTri, int iEdge, double *p, , double *en0, double *bary)
-{
-  double d(0.);
-     if(!edgeActive(iTri)[iEdge]) d=1.;
-      else{
-        bary[ipp] = 0.;
-        bary[iEdge] = 1. - distFromNode/edgeLen(iTri)[iEdge];
-        bary[ip] = 1. - bary[iEdge];
-        vectorScalarMult3D(edgeVec(iTri)[iEdge],distFromNode,tmp);
-        vectorAdd3D(tmp,n[iEdge],tmp);
-        d = calcDist(p,tmp,delta);
-      }
 
-     return d;
-}
-*/
   /* ---------------------------------------------------------------------- */
 
   inline bool TriMesh::resolveTriSphereNeighbuild(int nTri, double rSphere,
