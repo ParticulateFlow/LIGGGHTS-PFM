@@ -30,8 +30,8 @@
 
 #define SMALL_TRIMESH 1.e-10
 
-/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H false //(update->ntimestep > 2350)
-/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID -1 // 208
+/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H false // (update->ntimestep > 2350)
+/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID  208
 
   /* ---------------------------------------------------------------------- */
 
