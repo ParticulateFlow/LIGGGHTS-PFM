@@ -32,7 +32,7 @@
 #define NITER_MC_SURFACE_MESH_I_H 5
 #define TOLERANCE_MC_SURFACE_MESH_I_H 0.05
 
-/*NL*/ #define DEBUGMODE_SURFACE_MESH false
+/*NL*/ #define DEBUGMODE_SURFACE_MESH false //true
 
 /* ----------------------------------------------------------------------
    constructors, destructor
@@ -586,6 +586,9 @@ void SurfaceMesh<NUM_NODES>::handleSharedEdge(int iSrf, int iEdge, int jSrf, int
     nNeighs_(iSrf)++;
     nNeighs_(jSrf)++;
 
+    int id_i = this->id(iSrf), id_j = this->id(jSrf);
+
+
     /*NL*///if(this->comm->nprocs > 1)
     /*NL*///    this->error->all(FLERR,"Have to ensured active/inactive edge and corner this is done the same on 2 procs");
 
@@ -619,7 +622,7 @@ void SurfaceMesh<NUM_NODES>::handleSharedNode(int iSrf, int iNode, int jSrf, int
 
   int id_i = this->id(iSrf), id_j = this->id(jSrf);
 
-  /*NL*/if(DEBUGMODE_SURFACE_MESH){
+  /*NL*/if(DEBUGMODE_SURFACE_MESH && (id_i > 260 || id_j > 260)){
   /*NL*/  fprintf(this->screen,"triangles %d and %d, coplanar %d\n",id_i, id_j, coplanar);
   /*NL*/  fprintf(this->screen," *** iNode %d, jNode %d | iActive %d jActive %d\n",
 /*NL*/	    iNode,jNode,cornerActive(iSrf)[iNode],cornerActive(jSrf)[jNode]);
@@ -651,7 +654,7 @@ void SurfaceMesh<NUM_NODES>::handleSharedNode(int iSrf, int iNode, int jSrf, int
             cornerActive(jSrf)[jNode] = false;
     }
 
-/*NL*/    if(DEBUGMODE_SURFACE_MESH)
+/*NL*/    if(DEBUGMODE_SURFACE_MESH && (id_i > 260 || id_j > 260))
 /*NL*/      fprintf(this->screen," *** iNode %d, jNode %d | iActive %d jActive %d\n",
 /*NL*/	      iNode,jNode,cornerActive(iSrf)[iNode],cornerActive(jSrf)[jNode]);
 
