@@ -556,6 +556,11 @@ void FixWallGran::post_force_mesh(int vflag)
             /*NL*/// if(atom->tag[iPart] == 624)// && mesh->id(iTri) == 4942)
             /*NL*///   fprintf(screen,"particle 624 step %d moving mesh %d Tri %d iCont %d numNeigh %d 2, deltan %f\n",update->ntimestep,iMesh,mesh->id(iTri),iCont,numNeigh[iTri],deltan);
 
+	    /*NL*///    if(atom->tag[iPart] == 159 && update->ntimestep > 210199)
+	    /*NL*///	fprintf(screen,"asdfasdf before timestep %d | triangleId %d | force %f %f %f\n",
+	    /*NL*///		update->ntimestep,mesh->id(iTri),atom->f[iPart][0],atom->f[iPart][1],atom->f[iPart][2]);
+
+
             if(deltan > 0.)
             {
               /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
@@ -572,7 +577,13 @@ void FixWallGran::post_force_mesh(int vflag)
                 v_wall[i] = (bary[0]*vMesh[iTri][0][i] + bary[1]*vMesh[iTri][1][i] + bary[2]*vMesh[iTri][2][i]);
 
               post_force_eval_contact(iPart,deltan,delta,v_wall,c_history,iMesh,FixMesh_list_[iMesh],mesh,iTri);
+
             }
+	    
+	    /*NL*///  if(atom->tag[iPart] == 159 && update->ntimestep > 210199)
+	    /*NL*///	fprintf(screen,"asdfasdf after timestep %d | triangleId %d | deltan %e | force %f %f %f\n",
+	    /*NL*///		update->ntimestep,mesh->id(iTri),deltan,atom->f[iPart][0],atom->f[iPart][1],atom->f[iPart][2]);
+	    
 
             /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
             /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d END\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);

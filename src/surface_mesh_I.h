@@ -32,6 +32,8 @@
 #define NITER_MC_SURFACE_MESH_I_H 5
 #define TOLERANCE_MC_SURFACE_MESH_I_H 0.05
 
+/*NL*/ #define DEBUGMODE_SURFACE_MESH false //true
+
 /* ----------------------------------------------------------------------
    constructors, destructor
 ------------------------------------------------------------------------- */
@@ -584,6 +586,9 @@ void SurfaceMesh<NUM_NODES>::handleSharedEdge(int iSrf, int iEdge, int jSrf, int
     nNeighs_(iSrf)++;
     nNeighs_(jSrf)++;
 
+    int id_i = this->id(iSrf), id_j = this->id(jSrf);
+
+
     /*NL*///if(this->comm->nprocs > 1)
     /*NL*///    this->error->all(FLERR,"Have to ensured active/inactive edge and corner this is done the same on 2 procs");
 
@@ -615,20 +620,44 @@ void SurfaceMesh<NUM_NODES>::handleSharedNode(int iSrf, int iNode, int jSrf, int
 {
     // coplanar - deactivate both
 
+  int id_i = this->id(iSrf), id_j = this->id(jSrf);
+
+  /*NL*/if(DEBUGMODE_SURFACE_MESH && (id_i > 260 || id_j > 260)){
+  /*NL*/  fprintf(this->screen,"triangles %d and %d, coplanar %d\n",id_i, id_j, coplanar);
+  /*NL*/  fprintf(this->screen," *** iNode %d, jNode %d | iActive %d jActive %d\n",
+/*NL*/	    iNode,jNode,cornerActive(iSrf)[iNode],cornerActive(jSrf)[jNode]);
+  /*NL*/ }
+
     if(coplanar)
     {
+      if( hasNonCoplanarSharedNode(iSrf)[iNode] || hasNonCoplanarSharedNode(jSrf)[jNode] ){
+        if(this->id(iSrf) < this->id(jSrf))
+            cornerActive(iSrf)[iNode] = false;
+        else
+            cornerActive(jSrf)[jNode] = false;
+
+      } else{
         cornerActive(iSrf)[iNode] = false;
         cornerActive(jSrf)[jNode] = false;
+      }
     }
     // non-coplanar - let one live
     //NP let the one with the highest ID live
     else
     {
+      // save that there exists a non-coplanar shared node
+      hasNonCoplanarSharedNode(iSrf)[iNode] = true;
+      hasNonCoplanarSharedNode(jSrf)[jNode] = true;
         if(this->id(iSrf) < this->id(jSrf))
             cornerActive(iSrf)[iNode] = false;
         else
             cornerActive(jSrf)[jNode] = false;
     }
+
+/*NL*/    if(DEBUGMODE_SURFACE_MESH && (id_i > 260 || id_j > 260))
+/*NL*/      fprintf(this->screen," *** iNode %d, jNode %d | iActive %d jActive %d\n",
+/*NL*/	      iNode,jNode,cornerActive(iSrf)[iNode],cornerActive(jSrf)[jNode]);
+
     /*NP  --- OLD ---
     cornerActive(iSrf)[iNode] = false;
     if
