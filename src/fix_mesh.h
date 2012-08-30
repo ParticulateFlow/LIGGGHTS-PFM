@@ -36,7 +36,6 @@
 
 #include "fix.h"
 
-
 namespace LAMMPS_NS
 {
   class FixMesh : public Fix

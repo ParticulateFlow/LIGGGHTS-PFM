@@ -30,8 +30,8 @@
 
 #define SMALL_TRIMESH 1.e-10
 
-/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H false
-/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID 21
+/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H false //(update->ntimestep > 2350)
+/*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID -1 // 208
 
   /* ---------------------------------------------------------------------- */
 
@@ -41,7 +41,7 @@
     // coded in resolveTriSphereNeighbuild
 
     /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
-    /*NL*/          fprintf(screen, "step %d: resolveTriSphereContactNeigh for tri id %d with center %f %f %f\n",
+    /*NL*/          fprintf(screen, "step %d: resolveTriSphereContact for tri id %d with center %f %f %f\n",
     /*NL*/                      update->ntimestep,id(nTri),center_(nTri)[0],center_(nTri)[1],center_(nTri)[2]);
 
     double tmp[3];
@@ -69,7 +69,8 @@
        **edgeNorm = SurfaceMesh<3>::edgeNorm(nTri);
     int i;
     double distFromEdge(0.);
-    for(i=0;i<3;i++){
+    for(i = 0; i < 3; i++)
+    {
       vectorSubtract3D(csPlane,node[i],nodeToCsPlane);
       distFromEdge = vectorDot3D(edgeNorm[i],nodeToCsPlane);
       /*NL*/if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"distFromEdge %g\n",distFromEdge);
@@ -84,28 +85,59 @@
         return (calcDist(cSphere,csPlane,delta) - rSphere);
     }
 
-    double *edgeVec = SurfaceMesh<3>::edgeVec(nTri)[i];
-    double distFromNode = vectorDot3D(nodeToCsPlane,edgeVec);
+    double distFromNode;
 
-    if(distFromNode < 0.)
+    // check for dist to next edge
+    // have to do this for obtuse angled triangle
+    bool isEdgeContNext = false;
+    if(i != 2)
     {
-      if(SurfaceMesh<3>::cornerActive(nTri)[i])
-      {
-          /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"corner contact detected\n");
-          return calcDist(cSphere,node[i],delta) - rSphere;
-      }
-      else
-          return 1.;
+        int iNext = i+1;
+        double nodeToCsPlaneNext[3], distFromEdgeNext;
+        vectorSubtract3D(csPlane,node[iNext],nodeToCsPlaneNext);
+        distFromEdgeNext = vectorDot3D(edgeNorm[iNext],nodeToCsPlaneNext);
+        if(distFromEdgeNext > 0.)
+        {
+            double *edgeVecNext = SurfaceMesh<3>::edgeVec(nTri)[i+1];
+            distFromNode = vectorDot3D(nodeToCsPlaneNext,edgeVecNext);
+            if(distFromNode > -SMALL_TRIMESH)
+            {
+                isEdgeContNext = true;
+                i = iNext;
+            }
+        }
     }
-    else if(distFromNode > edgeLen(nTri)[i])
+
+    double *edgeVec = SurfaceMesh<3>::edgeVec(nTri)[i];
+
+    // go for corner contact only if not edge contact with next edge (case obtuse angled triangle)
+    if(!isEdgeContNext)
     {
-      if(SurfaceMesh<3>::cornerActive(nTri)[(i+1)%3])
-      {
-          /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"corner contact detected\n");
-          return calcDist(cSphere,node[(i+1)%3],delta) - rSphere;
-      }
-      else
-          return 1.;
+        distFromNode = vectorDot3D(nodeToCsPlane,edgeVec);
+        /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"distFromNode %g edgeLen(nTri)[i] %g\n",distFromNode,edgeLen(nTri)[i]);
+
+        if(distFromNode < 0.)
+        {
+          /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"corner contact detected (0), but pot deactivated\n");
+          if(SurfaceMesh<3>::cornerActive(nTri)[i])
+          {
+              /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"corner contact detected\n");
+              return calcDist(cSphere,node[i],delta) - rSphere;
+          }
+          else
+              return 1.;
+        }
+        else if(distFromNode > edgeLen(nTri)[i])
+        {
+          /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"corner contact detected (1), but pot deactivated\n");
+          if(SurfaceMesh<3>::cornerActive(nTri)[(i+1)%3])
+          {
+              /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)) fprintf(screen,"corner contact detected\n");
+              return calcDist(cSphere,node[(i+1)%3],delta) - rSphere;
+          }
+          else
+              return 1.;
+        }
     }
 
     /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
@@ -124,12 +156,42 @@
     return d - rSphere;
   }
 
+
+  /* ---------------------------------------------------------------------- */
+
+  inline double TriMesh::resolveTriSphereContactBaryDefunct(int nTri, double rSphere,
+                                   double *cSphere, double *delta, double *bary)
+  {
+      double deltan, contactPoint[3], node0ToCsPlane[3];
+
+      // for now, use standard algorithm for distance calculation
+      deltan = resolveTriSphereContact(nTri, rSphere, cSphere, delta);
+
+      // additionaly calc bary coordinates
+      if(deltan < 0.)
+      {
+          vectorAdd3D(cSphere,delta,contactPoint);
+
+          double node0ToSphereCenter[3];
+          double *surfNorm = SurfaceMesh<3>::surfaceNorm(nTri);
+          vectorSubtract3D(cSphere,node_(nTri)[0],node0ToSphereCenter);
+
+          double csPlane[3],tmp[3];
+          double dNorm = vectorDot3D(surfNorm,node0ToSphereCenter);
+          vectorScalarMult3D(surfNorm,dNorm,tmp);
+          vectorSubtract3D(cSphere,tmp,csPlane);
+
+          MathExtraLiggghts::calcBaryTriCoords(node0ToCsPlane,edgeVec(nTri),edgeLen(nTri),bary);
+      }
+
+      return deltan;
+  }
+
   /* ---------------------------------------------------------------------- */
 
   inline double TriMesh::resolveTriSphereContactBary(int nTri, double rSphere,
                                    double *cSphere, double *delta, double *bary)
   {
-    bool print = false;//(nTri == 25);
     // this is only the overlap algorithm, neighbor list build is
     // coded in resolveTriSphereNeighbuild
 
@@ -142,9 +204,11 @@
     double **n = node_(nTri);
 
     // sphere-plane distance is coded explicitly because we need an intermediate result
+
     double node0ToSphereCenter[3];
     double *surfNorm = SurfaceMesh<3>::surfaceNorm(nTri);
     vectorSubtract3D(cSphere,n[0],node0ToSphereCenter);
+
     // normal distance of sphere center_ to plane
     double dNorm = vectorDot3D(surfNorm,node0ToSphereCenter);
 
@@ -163,87 +227,115 @@
     //NP optimized decision making
     //NP use SMALL_TRIMESH to artificially enlarge triangle
     int barySign = (bary[0] > -SMALL_TRIMESH) + 2*(bary[1] > -SMALL_TRIMESH) + 4*(bary[2] > -SMALL_TRIMESH);
-/*
-    if(print){
-      printf("node_ ");
-      for(int i=0;i<3;i++)
-        printf("%f %f %f | ",n[i][0],n[i][1],n[i][2]);
 
-      printf("%f %f %f\n",csPlane[0],csPlane[1],csPlane[2]);
-
-      printf("iTri %d barySign %d bary %f %f %f \n",nTri,barySign,bary[0],bary[1],bary[2]);
-    }
-*/
     double d(0.);
 
-    switch(barySign){
-    case 1:
-    case 2:
-    case 3: // bary[2] < 0 --> edge contact on edge[0]
-      d = resolveEdgeContact(nTri,0,cSphere,csPlane,delta,bary);
-      break;
-    case 4:
-    case 6: // bary[0] < 0 --> edge contact on edge[1]
-      d = resolveEdgeContact(nTri,1,cSphere,csPlane,delta,bary);
-      break;
-    case 5: // bary[1] < 0 --> edge contact on edge[2]
-      d = resolveEdgeContact(nTri,2,cSphere,csPlane,delta,bary);
-      break;
-    case 7: // face contact - all three barycentric coordinates are > 0
-      d = calcDist(cSphere,csPlane,delta);
-      break;
-    default:
-      d = 1.; // doesn't exist, just to satisfy the compiler
-      break;
+    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H /*&& DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)*/)
+      /*NL*/     fprintf(screen,"step %d: triangle %d: detected barysign %d bary %f %f %f \n",update->ntimestep,nTri,barySign,bary[0],bary[1],bary[2]);
+
+    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H /*&& DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri)*/)
+      /*NL*/     fprintf(screen,"step %d: triangle %d: edgeActive %d %d %d cornerActive %d %d %d\n",
+			 /*NL*/update->ntimestep,nTri,
+			 /*NL*/edgeActive(nTri)[0],edgeActive(nTri)[1],edgeActive(nTri)[2],
+			 /*NL*/cornerActive(nTri)[0],cornerActive(nTri)[1],cornerActive(nTri)[2]);
+
+
+    switch(barySign)
+    {
+        case 1:
+        case 2:
+        case 3: // bary[2] < 0 --> edge contact on edge[0]
+          d = resolveEdgeCornerContactBary(nTri,0,cSphere,csPlane,delta,bary);
+          break;
+        case 4:
+        case 6: // bary[0] < 0 --> edge contact on edge[1]
+          d = resolveEdgeCornerContactBary(nTri,1,cSphere,csPlane,delta,bary);
+          break;
+        case 5: // bary[1] < 0 --> edge contact on edge[2]
+          d = resolveEdgeCornerContactBary(nTri,2,cSphere,csPlane,delta,bary);
+          break;
+        case 7: // face contact - all three barycentric coordinates are > 0
+          d = calcDist(cSphere,csPlane,delta);
+          break;
+        default:
+          d = 1.; // doesn't exist, just to satisfy the compiler
+          break;
     }
 
-    return d == 1. ? d : d - rSphere;
-
+    d = (d == 1.) ? d : d - rSphere;
+    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H)
+      /*NL*/ //if(d!=1.)
+	/*NL*/     fprintf(screen,"step %d: possible contact detected, triangle %d, d = %e\n",update->ntimestep,nTri,d);
+    
+    return d;
   }
 
   /* ---------------------------------------------------------------------- */
     /*
      * p : sphere center_
      * pPlane : projection of p to triangle plane
+     * delta: overlap vector
      */
-  inline double TriMesh::resolveEdgeContact(int iTri, int iEdge, double *p, double *pPlane, double *delta, double *bary)
+inline double TriMesh::resolveEdgeCornerContactBary(int iTri, int iEdge, double *p, double *pPlane, double *delta, double *bary, bool recursion)
   {
-    bool print = false;//(iTri == 25);
-    double tmp[3];
+    double nodeToPPlane[3];
     double **n = node_(iTri);
-    int ip = (iEdge+1)%3, ipp = (iEdge+2)%3;
+    int ip = (iEdge+1)%3, ipp = (iEdge+2)%3; // read "i plus", "i plus plus" ;-)
 
-    vectorSubtract3D(pPlane,n[iEdge],tmp);
-    double d(0.), distFromNode = vectorDot3D(tmp,edgeVec(iTri)[iEdge]);
+    vectorSubtract3D(pPlane,n[iEdge],nodeToPPlane);
+    double d(0.), distFromNode = vectorDot3D(nodeToPPlane,edgeVec(iTri)[iEdge]);
 
-    if(distFromNode <= 0){
-      if(!cornerActive(iTri)[iEdge]) d=1.;
-      else{
-        bary[iEdge] = 1.; bary[ip] = 0.; bary[ipp] = 0.;
-        d = calcDist(p,node_(iTri)[iEdge],delta);
-      }
-    } else if(distFromNode >= edgeLen(iTri)[iEdge]){
-      if(!cornerActive(iTri)[ip]) d=1.;
-      else{
-        bary[iEdge] = 0.; bary[ip] = 1.; bary[ipp] = 0.;
-        d = calcDist(p,node_(iTri)[ip],delta);
-      }
+
+    if(!recursion && distFromNode <= 0){
+	double prevNodeToPPlane[3];
+	vectorSubtract3D(pPlane,n[ipp],prevNodeToPPlane);
+        double distFromPrevNode = vectorDot3D(prevNodeToPPlane,edgeVec(iTri)[ipp]);
+	/*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+	  /*NL*/     fprintf(screen,"step %d: distFromNode %e distFromPrevNode %e edgeLen(iTri)[ipp] %e\n",
+			     /*NL*/ update->ntimestep,distFromNode,distFromPrevNode,edgeLen(iTri)[ipp]);
+        if(distFromPrevNode < edgeLen(iTri)[ipp]){
+	  d = resolveEdgeCornerContactBary(iTri,ipp,p,pPlane,delta,bary,true);
+	}
+        else{
+          if(!cornerActive(iTri)[iEdge]) d=1.;
+          else{
+            bary[iEdge] = 1.; bary[ip] = 0.; bary[ipp] = 0.;
+            d = calcDist(p,node_(iTri)[iEdge],delta);
+          }
+        }
+    } else if(!recursion && distFromNode >= edgeLen(iTri)[iEdge]){
+	double nextNodeToPPlane[3];
+	vectorSubtract3D(pPlane,n[ip],nextNodeToPPlane);
+        double distFromNextNode = vectorDot3D(nextNodeToPPlane,edgeVec(iTri)[ip]);
+	/*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+	  /*NL*/     fprintf(screen,"step %d: distFromNode %e distFromNextNode %e edgeLen(iTri)[ip] %e\n",
+			     /*NL*/ update->ntimestep,distFromNode,distFromNextNode,edgeLen(iTri)[ipp]);
+        if(distFromNextNode > 0){
+	  d = resolveEdgeCornerContactBary(iTri,ip,p,pPlane,delta,bary,true);
+	}
+        else{
+          if(!cornerActive(iTri)[ip]) d=1.;
+          else{
+            bary[iEdge] = 0.; bary[ip] = 1.; bary[ipp] = 0.;
+            d = calcDist(p,node_(iTri)[ip],delta);
+          }
+        }
     } else{
       if(!edgeActive(iTri)[iEdge]) d=1.;
       else{
+	/*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+	  /*NL*/     fprintf(screen,"step %d: distFromNode %e\n",
+			     /*NL*/ update->ntimestep,distFromNode);
         bary[ipp] = 0.;
         bary[iEdge] = 1. - distFromNode/edgeLen(iTri)[iEdge];
         bary[ip] = 1. - bary[iEdge];
-        vectorScalarMult3D(edgeVec(iTri)[iEdge],distFromNode,tmp);
-        vectorAdd3D(tmp,n[iEdge],tmp);
-        d = calcDist(p,tmp,delta);
+	// nodeToPPlane is now closest point on edge
+        vectorScalarMult3D(edgeVec(iTri)[iEdge],distFromNode,nodeToPPlane); 
+        vectorAdd3D(nodeToPPlane,n[iEdge],nodeToPPlane);
+        d = calcDist(p,nodeToPPlane,delta);
       }
     }
-    /*
-        if(print)
-          printf("triangle %d bary %f %f %f | distFromEdge %f edgeLen_ %f \n",
-              iTri,bary[0],bary[1],bary[2],distFromNode,edgeLen_(iTri)[iEdge]);
-    */
+
     return d;
   }
 
