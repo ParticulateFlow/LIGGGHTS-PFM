@@ -735,7 +735,7 @@ int DumpCustom::count()
       } else if (thresh_array[ithresh] == RHO) {
         if (!atom->rho_flag)
           error->all(FLERR,
-              "Threshhold for an atom property that isn't allocated");
+                     "Threshhold for an atom property that isn't allocated");
         ptr = atom->rho;
         nstride = 1;
       } else if (thresh_array[ithresh] == DENSITY) {

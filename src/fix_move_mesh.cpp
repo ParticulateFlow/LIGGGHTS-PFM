@@ -45,10 +45,11 @@ FixMoveMesh::FixMoveMesh(LAMMPS *lmp, int narg, char **arg)
     fix_mesh_(0),
     mesh_(0),
     move_(0),
-    neighListFresh_(false),
     time_(0),
     time_since_setup_(0)
 {
+    vectorZeroize3D(reference_point_);
+
     if(narg < 6)
       error->all(FLERR,"Illegal fix move/mesh command, you need to specify a mesh");
 
@@ -62,7 +63,7 @@ FixMoveMesh::FixMoveMesh(LAMMPS *lmp, int narg, char **arg)
         error->all(FLERR,"Illegal fix move/mesh command, illegal mesh ID provided");
 
     mesh_ = fix_mesh_->mesh();
-    move_ = createMeshMover(lmp,mesh_,&arg[iarg],narg-iarg);
+    move_ = createMeshMover(lmp,mesh_,this,&arg[iarg],narg-iarg);
 
     if(move_ == 0)
       error->all(FLERR,"Illegal fix move/mesh command, illegal arguments");
@@ -143,6 +144,8 @@ void FixMoveMesh::setup(int vflag)
     time_since_setup_ = 0.;
     /*NL*/// fprintf(screen,"time_since_setup_ %f\n",time_since_setup_);
 
+    reset_reference_point();
+
     if(!mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v"))
     {
         mesh_->prop().addElementProperty<MultiVectorContainer<double,3,3> >("v","comm_none","frame_general","restart_no");
@@ -193,8 +196,11 @@ void FixMoveMesh::final_integrate()
 void FixMoveMesh::write_restart(FILE *fp)
 {
   int n = 0;
-  double list[1];
+  double list[1 + move_->n_restart()];
   list[n++] = time_;
+
+  move_->write_restart(&(list[n]));
+  n += move_->n_restart();
 
   if (comm->me == 0) {
     int size = n * sizeof(double);
@@ -213,4 +219,76 @@ void FixMoveMesh::restart(char *buf)
   double *list = (double *) buf;
 
   time_ = static_cast<int> (list[n++]);
+  move_->read_restart(&(list[n]));
+}
+
+/* ----------------------------------------------------------------------
+   called by mesh mover
+------------------------------------------------------------------------- */
+
+void FixMoveMesh::add_reference_point(double *point)
+{
+    char refpt_id[200];
+    sprintf(refpt_id, "REFPT_%s",id);
+
+    if(mesh_->prop().getGlobalProperty<VectorContainer<double,3> >(refpt_id))
+        error->fix_error(FLERR,this,"only one reference point allowed");
+
+    /*NL*/ //printVec3D(screen,"adding point",point);
+    vectorCopy3D(point,reference_point_);
+
+    mesh_->prop().addGlobalProperty<VectorContainer<double,3> >(refpt_id,"comm_none","frame_general","restart_no");
+    mesh_->prop().setGlobalProperty<VectorContainer<double,3> >(refpt_id,point);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMoveMesh::get_reference_point(double *point)
+{
+    VectorContainer<double,3> *refpt;
+    char refpt_id[200];
+
+    sprintf(refpt_id, "REFPT_%s",id);
+    refpt = mesh_->prop().getGlobalProperty<VectorContainer<double,3> >(refpt_id);
+
+    if(!refpt)
+        error->fix_error(FLERR,this,"internal error");
+
+    //NP need to explicitly reset reference point
+    //NP otherwise would be too late since reset is called in rotate()
+    //NP or move() only and first mesh mover needs resetted reference point
+    //NP so only do this for first mesh mover
+    if(move_->isFirst())
+        mesh_->prop().resetGlobalPropToOrig(refpt_id);
+
+    refpt->get(0,point);
+    vectorCopy3D(point,reference_point_);
+    /*NL*/ //printVec3D(screen,"getting point",point);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMoveMesh::reset_reference_point()
+{
+    //NP need to re-set reference point from local copy upon setup
+    //NP this ensures orig value of reference_point for fix i has been
+    //NP handled by fixes i-1, i-2 only (not by i, i+1,...)
+
+    VectorContainer<double,3> *refpt;
+    char refpt_id[200];
+
+    sprintf(refpt_id, "REFPT_%s",id);
+    refpt = mesh_->prop().getGlobalProperty<VectorContainer<double,3> >(refpt_id);
+
+    // no error since not all moves have reference points
+    if(!refpt)
+        return;
+
+    // set value for property
+    refpt->set(0,reference_point_);
+
+    // set orig value for property
+    mesh_->prop().storeGlobalPropOrig(refpt_id);
+
+    /*NL*/ //printVec3D(screen,"setting point",reference_point_);
 }

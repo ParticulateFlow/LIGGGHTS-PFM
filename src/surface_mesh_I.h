@@ -68,6 +68,8 @@ SurfaceMesh<NUM_NODES>::SurfaceMesh(LAMMPS *lmp)
     neighFaces_   (*this->prop().template addElementProperty< VectorContainer<int,NUM_NODES> >            ("neighFaces",   "comm_exchange_borders","frame_invariant",            "restart_no"))
 {
     //NP allocate 4 scalar spaces
+    //NP add directly instead of setGlobalProperty
+    //NP so no resetToOrig functionality (but not needed here)
     areaMesh_.add(0.);
     areaMesh_.add(0.);
     areaMesh_.add(0.);
@@ -588,7 +590,6 @@ void SurfaceMesh<NUM_NODES>::handleSharedEdge(int iSrf, int iEdge, int jSrf, int
 
     int id_i = this->id(iSrf), id_j = this->id(jSrf);
 
-
     /*NL*///if(this->comm->nprocs > 1)
     /*NL*///    this->error->all(FLERR,"Have to ensured active/inactive edge and corner this is done the same on 2 procs");
 
@@ -635,11 +636,10 @@ void SurfaceMesh<NUM_NODES>::handleSharedNode(int iSrf, int iNode, int jSrf, int
             cornerActive(iSrf)[iNode] = false;
         else
             cornerActive(jSrf)[jNode] = false;
-
-      } else{
+      } else {
         cornerActive(iSrf)[iNode] = false;
         cornerActive(jSrf)[jNode] = false;
-      }
+    }
     }
     // non-coplanar - let one live
     //NP let the one with the highest ID live

@@ -272,7 +272,7 @@ void Set::command(int narg, char **arg)
       iarg += 4;
     } else if (strcmp(arg[iarg],"diameter") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
-      dvalue = atof(arg[iarg+1]);
+      dvalue = atof(arg[iarg+1])*force->cg();
       if (!atom->radius_flag)
         error->all(FLERR,"Cannot set this attribute for this atom style");
       if (dvalue < 0.0) error->all(FLERR,"Invalid diameter in set command");

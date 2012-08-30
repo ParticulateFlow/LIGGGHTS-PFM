@@ -48,6 +48,7 @@
 #include "fix_nve.h"
 #include "fix_nve_limit.h"
 #include "fix_nve_noforce.h"
+#include "fix_nve_sph.h"
 #include "fix_nve_sphere.h"
 #include "fix_nve_sphere_limit.h"
 #include "fix_nvt.h"

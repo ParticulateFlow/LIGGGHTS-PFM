@@ -88,6 +88,17 @@
   }
 
   /* ----------------------------------------------------------------------
+   reset global properties to original value
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  bool TrackingMesh<NUM_NODES>::resetToOrig()
+  {
+    if(MultiNodeMesh<NUM_NODES>::resetToOrig())
+        customValues_.resetToOrig();
+  }
+
+  /* ----------------------------------------------------------------------
    recalculate properties on setup (on start and during simulation)
   ------------------------------------------------------------------------- */
 
@@ -95,6 +106,7 @@
   void TrackingMesh<NUM_NODES>::refreshOwned(int setupFlag)
   {
     MultiNodeMeshParallel<NUM_NODES>::refreshOwned(setupFlag);
+    if(setupFlag) customValues_.storeOrig();
   }
 
   template<int NUM_NODES>
@@ -298,7 +310,7 @@
   {
     //NP this handles owned and ghost elements
     MultiNodeMesh<NUM_NODES>::move(vecTotal, vecIncremental);
-    customValues_.move(vecIncremental);
+    customValues_.move(vecTotal,vecIncremental);
   }
 
   template<int NUM_NODES>
@@ -327,7 +339,7 @@
 
     //NP this handles owned and ghost elements
     if(trans) customValues_.move(negorigin);
-    customValues_.rotate(dQ);
+    customValues_.rotate(totalQ,dQ);
     if(trans) customValues_.move(origin);
   }
 

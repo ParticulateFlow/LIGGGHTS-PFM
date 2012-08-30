@@ -44,7 +44,6 @@
     random_(new RanPark(lmp,179424799)), // big prime #
     mesh_id_(0)
   {
-      quatUnitize4D(quat_);
   }
 
   /* ----------------------------------------------------------------------
@@ -235,9 +234,6 @@
           }
 
           this->memory->destroy<double>(tmp);
-
-          // also re-set quaternion
-          quatUnitize4D(quat_);
       }
 
       return isFirst;
@@ -293,7 +289,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::resetNodesToOrig()
+  bool MultiNodeMesh<NUM_NODES>::resetToOrig()
   {
     if(!node_orig_)
         error->all(FLERR,"Internal error in MultiNodeMesh<NUM_NODES>::resetNodesToOrig");
@@ -309,7 +305,10 @@
         for(int i = 0; i < nall; i++)
             for(int j = 0; j < NUM_NODES; j++)
                 vectorCopy3D(node_orig(i)[j],node_(i)[j]);
+
+        return true;
     }
+    return false;
   }
 
   /* ----------------------------------------------------------------------
@@ -324,7 +323,7 @@
 
     //NP add vecTotal to each of the nodes, which have been reset to
     //NP original position before
-    resetNodesToOrig();
+    resetToOrig();
 
     //NP need only move owned elements
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
@@ -421,7 +420,7 @@
 
     //NP add rotation due to totalQ to each of the nodes, which have been reset to
     //NP original position before
-    resetNodesToOrig();
+    resetToOrig();
 
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
     int n = sizeLocal() + sizeGhost();
