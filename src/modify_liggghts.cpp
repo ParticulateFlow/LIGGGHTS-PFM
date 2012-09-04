@@ -240,3 +240,17 @@ bool Modify::have_restart_data(Fix *f)
 
   return false;
 }
+
+/* ----------------------------------------------------------------------
+   let fixes extend bounding box
+------------------------------------------------------------------------- */
+
+void Modify::box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi)
+{
+  //NP from Modify::add_fix
+
+  // check if Fix is in restart_global list
+
+  for (int i = 0; i < nfix; i++)
+    fix[i]->box_extent(xlo,xhi,ylo,yhi,zlo,zhi);
+}

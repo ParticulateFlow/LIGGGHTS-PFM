@@ -59,6 +59,9 @@ namespace LAMMPS_NS
         inline int sizeGlobal()
         { return nGlobal_; }
 
+        inline int sizeGlobalOrig()
+        { return nGlobalOrig_; }
+
         virtual int id(int i) = 0;
 
       protected:
@@ -107,8 +110,8 @@ namespace LAMMPS_NS
         bool checkBorderElementRight(int,int,double,double);
 
         // lo-level parallelization
-        int pushExchange(int dim,double *buf);
-        void popExchange(int nrecv,double *buf);
+        int pushExchange(int dim);
+        void popExchange(int nrecv,int dim,double *buf);
 
         int sizeRestartMesh();
         int sizeRestartElement();
@@ -117,6 +120,9 @@ namespace LAMMPS_NS
         int nLocal_;
         int nGhost_;
         int nGlobal_;
+
+        // initial number of elements
+        int nGlobalOrig_;
 
         // *************************************
         // comm stuff - similar to Comm class

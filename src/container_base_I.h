@@ -49,14 +49,19 @@
 
   enum{ // communication invoked manually
         COMM_TYPE_MANUAL,
+        // only exchange and borders comm
+        COMM_EXCHANGE_BORDERS,
         // forward comm every step
         COMM_TYPE_FORWARD,
         // forward comm based on reference frame setting
         // ie if mesh rotates, egdeVecs are communicated
+        //NP does exchange, borders with buffer-initialized values
         COMM_TYPE_FORWARD_FROM_FRAME,
         // reverse comm every step
+        //NP does exchange and borders with 0-initialized values
         COMM_TYPE_REVERSE,
         // no comm at all
+        //NP does exchange and borders with 0-initialized values
         COMM_TYPE_NONE,
         // undefined state for error check
         COMM_TYPE_UNDEFINED};  // communication types
@@ -69,17 +74,17 @@
 
 
   /* ----------------------------------------------------------------------
-   decide if property is pushed or pulled
+   decide if property is pushed or pulled at all
   ------------------------------------------------------------------------- */
 
-  inline bool ContainerBase::decideBufferOperation(int operation,bool scale,bool translate, bool rotate)
+  inline bool ContainerBase::decidePackUnpackOperation(int operation,bool scale,bool translate, bool rotate)
   {
       // return true for manual communication, such as for node_, node_orig_
       // etc in MultiNodeMeshParallel
       if(communicationType_ == COMM_TYPE_MANUAL)
         return true;
 
-      //NP check for restrart
+      //NP check for restart
       if(operation == OPERATION_RESTART)
       {
           if(restartType_ == RESTART_TYPE_YES)
@@ -122,29 +127,97 @@
   }
 
   /* ----------------------------------------------------------------------
+   decide if operation performs data communication
+  ------------------------------------------------------------------------- */
+
+  inline bool ContainerBase::decideCommOperation(int operation)
+  {
+      //NP have to decide at unpack if data is initialized with 0
+      //NP or pulled from buffer
+
+      //NP e.g. at exchange:
+      //NP      forces would be initialized with 0
+      //NP      positions would be initialized from buffer data
+
+      //NP restart always pulls from buffer
+      if(operation == OPERATION_RESTART)
+          return true;
+
+      //NP forward and reverse comm always pull from buffer
+      //NP (thats why they are done)
+      if(operation == OPERATION_COMM_FORWARD ||
+         operation == OPERATION_COMM_REVERSE )
+        return true;
+
+
+      //NP exchange() and borders()
+      if(operation == OPERATION_COMM_BORDERS ||
+         operation == OPERATION_COMM_EXCHANGE )
+      {
+          //NP comm none and comm reverse dont pull from buffer
+          if(communicationType_ == COMM_TYPE_NONE ||
+             communicationType_ == COMM_TYPE_REVERSE)
+             return false;
+
+          //NP all others do
+          return true;
+      }
+
+      // default
+      return true;
+  }
+
+  /* ----------------------------------------------------------------------
+   decide if unpack creates new element or overwrites existing data
+  ------------------------------------------------------------------------- */
+
+  inline bool ContainerBase::decideCreateNewElements(int operation)
+  {
+      //NP have to decide at unpack if new elements are created or
+      //NP existing ones are over-written
+
+      //NP restart always creates new elements
+      if(operation == OPERATION_RESTART)
+          return true;
+
+      //NP exchange() and borders() always create new elements
+      if(operation == OPERATION_COMM_BORDERS ||
+         operation == OPERATION_COMM_EXCHANGE )
+        return true;
+
+      //NP forward and reverse comm never create new elements
+      if(operation == OPERATION_COMM_FORWARD ||
+         operation == OPERATION_COMM_REVERSE )
+        return false;
+
+      // default
+      return false;
+  }
+
+  /* ----------------------------------------------------------------------
    fast test for reference frame
    note that rotation is only carried out for LEN_VEC==3
   ------------------------------------------------------------------------- */
 
     bool ContainerBase::isScaleInvariant()
     {
-       return ( refFrame_==REF_FRAME_INVARIANT ||
-                refFrame_==REF_FRAME_SCALE_TRANS_INVARIANT);
+       return ( refFrame_ == REF_FRAME_INVARIANT ||
+                refFrame_ == REF_FRAME_SCALE_TRANS_INVARIANT);
     }
 
     bool ContainerBase::isTranslationInvariant()
     {
-        return ( refFrame_==REF_FRAME_INVARIANT ||
-                 refFrame_==REF_FRAME_TRANS_ROT_INVARIANT ||
-                 refFrame_==REF_FRAME_SCALE_TRANS_INVARIANT ||
-                 refFrame_==REF_FRAME_TRANS_INVARIANT);
+        return ( refFrame_ == REF_FRAME_INVARIANT ||
+                 refFrame_ == REF_FRAME_TRANS_ROT_INVARIANT ||
+                 refFrame_ == REF_FRAME_SCALE_TRANS_INVARIANT ||
+                 refFrame_ == REF_FRAME_TRANS_INVARIANT);
     }
 
     bool ContainerBase::isRotationInvariant()
     {
-        return ( refFrame_==REF_FRAME_INVARIANT ||
-                 refFrame_==REF_FRAME_TRANS_ROT_INVARIANT ||
-                 lenVec()!=3);
+        return ( refFrame_ == REF_FRAME_INVARIANT ||
+                 refFrame_ == REF_FRAME_TRANS_ROT_INVARIANT ||
+                 lenVec() != 3);
     }
 
 #endif

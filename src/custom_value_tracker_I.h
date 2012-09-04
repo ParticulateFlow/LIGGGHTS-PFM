@@ -93,7 +93,7 @@
      }
 
      // allocate memory
-     globalProperties_.getPointerById<T>(_id)->addUninitialized(capacityElement_);
+     //globalProperties_.getPointerById<T>(_id)->addUninitialized(capacityElement_);
 
      // return pointer
      return globalProperties_.getPointerById<T>(_id);
@@ -138,6 +138,8 @@
   void CustomValueTracker::setGlobalProperty(char *_id, U def)
   {
      //NP global properties are container classes with just one element contained
+     if(globalProperties_.getPointerById<T>(_id)->size() == 0)
+        globalProperties_.getPointerById<T>(_id)->addUninitialized(1);
      globalProperties_.getPointerById<T>(_id)->set(0,def);
   }
 

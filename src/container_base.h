@@ -106,7 +106,15 @@ namespace LAMMPS_NS
           inline bool isTranslationInvariant();
           inline bool isRotationInvariant();
 
-          inline bool decideBufferOperation(int operation,bool scale,bool translate, bool rotate);
+          //NP decide on wheater at all an operation is performed here
+          inline bool decidePackUnpackOperation(int operation,bool scale,bool translate, bool rotate);
+
+          //NP decide if operation performs data communication
+          inline bool decideCommOperation(int operation);
+
+          //NP decide if unpack creates new element or overwrites existing data
+          inline bool decideCreateNewElements(int operation);
+
 
           char *id_;
           int communicationType_;

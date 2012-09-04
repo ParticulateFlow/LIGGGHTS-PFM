@@ -32,44 +32,45 @@
 
   /* ---------------------------------------------------------------------- */
 
-  inline void FixContactHistory::handleContact(int iP, int idTri, double *&history)
+  inline bool FixContactHistory::handleContact(int iP, int idTri, double *&history)
   {
     // check if contact with iTri was there before
     // if so, set history to correct location and return
     if(haveContact(iP,idTri,history))
-      return;
+      return true;
 
     /*NL*/// fprintf(screen,"   new contact - adding\n");
 
-    // else new contact - add contact
-    addNewTriContactToExistingParticle(iP,idTri,history);
+    // else new contact - add contact if did not calculate contact with coplanar neighbor already
+    //NP this can be detected via delflag == false
+    if(!coplanarContactAlready(iP,idTri))
+    {
+        addNewTriContactToExistingParticle(iP,idTri,history);
 
-    // check if one of the present contacts is coplanar with iTri
-    // if so, copy history
-    checkCoplanarContact(iP,idTri,history);
+        // check if one of the contacts of previous steps is coplanar with iTri
+        //NP can be seen via delflag == false
+        // if so, copy history
+        // also check if this contact has delflag = false, i.e. has been executed already
+        // this step. If so, signalize not to execute this contact (return false)
+        checkCoplanarContactHistory(iP,idTri,history);
+        return true;
+    }
 
-    return;
+    // did not add new contact
+    return false;
   }
 
-  /* ---------------------------------------------------------------------- */
+  /* ----------------------------------------------------------------------
+     mark all contacts for deletion
+  ------------------------------------------------------------------------- */
 
-  inline void FixContactHistory::handleNoContact(int iP, int idTri)
+  inline void FixContactHistory::markAllContacts()
   {
-    // check if contact is present - if yes, set deleteflag
-    //NP do not delete at this point to enable shear history transfer
+      int nlocal = atom->nlocal;
 
-    /*NL*/ //fprintf(screen,"   old contact check, npartner[iP] %d\n",npartner[iP]);
-    /*NL*/ //for (int j = 0; j < npartner[iP]; j++) {fprintf(screen,"   partner %d\n",partner[iP][j]); printVec3D(screen,"   hist",contacthistory[iP][j]);}
-
-    for(int j = 0; j < npartner[iP]; j++)
-    {
-        if(partner[iP][j] == idTri)
-        {
-            delflag[iP][j] = true;
-            /*NL*/ //fprintf(screen,"   old contact - removing\n");
-            break;
-        }
-    }
+      for(int i = 0; i < nlocal; i++)
+          for(int j = 0; j < npartner[i]; j++)
+              delflag[i][j] = true;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -83,6 +84,7 @@
         if(tri[i] == idTri)
         {
             history = contacthistory[iP][i];
+            delflag[iP][i] = false;
             return true;
         }
     }
@@ -91,24 +93,50 @@
 
   /* ---------------------------------------------------------------------- */
 
-  inline bool FixContactHistory::checkCoplanarContact(int iP, int idTri, double *&history)
+  inline bool FixContactHistory::coplanarContactAlready(int iP, int idTri)
   {
     int *tri = partner[iP];
     for(int i = 0; i < npartner[iP]; i++)
     {
-      if(tri[i] != idTri && mesh_->areCoplanar(tri[i],idTri))
+      /*NL*/// fprintf(screen," step %d: iP %d, partner %d: %d, coplanar %s delflag %s, mesh_->map(tri[i]) %d\n",
+      /*NL*///                update->ntimestep,iP,i,tri[i],mesh_->areCoplanar(tri[i],idTri)?"y":"n",delflag[iP][i]?"y":"n",mesh_->map(tri[i]));
+
+      //NP do only if old partner owned or ghost on this proc
+      if(tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanar(tri[i],idTri))
       {
-        // copy contact history
-        vectorCopyN(contacthistory[iP][i],history,dnum);
-        /*NL*/// fprintf(screen,"Found coplanar contact, old contact hist %f %f %f\n",
-        /*NL*///                   contacthistory[iP][i][0],contacthistory[iP][i][1],contacthistory[iP][i][2]);
-        /*NL*/// fprintf(screen,"Found coplanar contact, new contact hist %f %f %f\n",
-        /*NL*///                   history[0],history[1],history[2]);
-        /*NL*/ //error->one(FLERR,"end");
-        return true;
+        /*NL*/ //fprintf(screen," step %d: idTri %d, delflag %s \n",update->ntimestep,idTri,delflag[iP][i]?"true":"false");
+
+        // other coplanar contact handled already - do not handle this contact
+        if(!delflag[iP][i]) return true;
       }
     }
+
+    // no coplanar contact found - handle this contact
     return false;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  inline void FixContactHistory::checkCoplanarContactHistory(int iP, int idTri, double *&history)
+  {
+    int *tri = partner[iP];
+    for(int i = 0; i < npartner[iP]; i++)
+    {
+      //NP do only if old partner owned or ghost on this proc
+      if(tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanar(tri[i],idTri))
+      {
+          //NP this is illegal since coplanarContactAlready() should have avoided this
+          /*NL*/ if(!delflag[iP][i]) error->one(FLERR,"internal error");
+
+          // copy contact history
+          vectorCopyN(contacthistory[iP][i],history,dnum);
+          /*NL*/// fprintf(screen,"Found coplanar contact, old contact hist %f %f %f\n",
+          /*NL*///                   contacthistory[iP][i][0],contacthistory[iP][i][1],contacthistory[iP][i][2]);
+          /*NL*/// fprintf(screen,"Found coplanar contact, new contact hist %f %f %f\n",
+          /*NL*///                   history[0],history[1],history[2]);
+          /*NL*/ //error->one(FLERR,"end");
+      }
+    }
   }
 
   /* ---------------------------------------------------------------------- */
@@ -127,6 +155,7 @@
 
       npartner[iP]++;
 
+      /*NL*/ //fprintf(screen,"ADD -partner idTri %d\n",idTri);
       /*NL*/// for (int j = 0; j < npartner[iP]; j++) fprintf(screen,"ADD -partner %d\n",partner[iP][j]);
   }
 

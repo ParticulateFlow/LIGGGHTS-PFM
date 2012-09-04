@@ -436,8 +436,8 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
         if(cpl && !addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
 
         /*NL*/ //if(update->ntimestep > 33000 && (atom->tag[i] == 1 || atom->tag[i] == 37) && (atom->tag[j] == 1 || atom->tag[j] == 37)) fprintf(screen,"contact at %d, overlap %f\n",update->ntimestep,deltan);
-        /*NL*/ //fprintf(screen,"contact at %d, force %f %f %f\n",update->ntimestep,fx,fy,fz);
-        /*NL*/ //error->all(FLERR,"end");
+        /*NL*/ //fprintf(screen,"contact at step %d, force %f %f %f tags %d %d\n",update->ntimestep,fx,fy,fz,atom->tag[i],atom->tag[j]);
+        /*NL*/ //error->one(FLERR,"end");
 
         if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
       }
@@ -468,6 +468,7 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
     {
         hasargs = false;
         if (strcmp(arg[iarg_],"cohesion") == 0) {
+            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'cohesion'");
             iarg_++;
             if(strcmp(arg[iarg_],"sjkr") == 0)
                 cohesionflag = 1;
@@ -478,6 +479,7 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
             iarg_++;
             hasargs = true;
         } else if (strcmp(arg[iarg_],"rolling_friction") == 0) {
+            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'rolling_friction'");
             iarg_++;
             if(strcmp(arg[iarg_],"cdt") == 0)
                 rollingflag = 1;
@@ -488,6 +490,7 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
             iarg_++;
             hasargs = true;
         } else if (strcmp(arg[iarg_],"tangential_damping") == 0) {
+            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'tangential_damping'");
             iarg_++;
             if(strcmp(arg[iarg_],"on") == 0)
                 dampflag = 1;

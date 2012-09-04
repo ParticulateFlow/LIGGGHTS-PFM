@@ -95,7 +95,8 @@ void FixWallGranHertzHistory::init_granular()
    contact model parameters derived for hertz model //NP modified C.K.
 ------------------------------------------------------------------------- */
 
-inline void FixWallGranHertzHistory::deriveContactModelParams(int ip, double deltan,double meff_wall, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu)  //NP modified C.K.
+inline void FixWallGranHertzHistory::deriveContactModelParams(int ip, double deltan,
+    double meff_wall, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu)  //NP modified C.K.
 {
 /*NP
     char testmsg[200];

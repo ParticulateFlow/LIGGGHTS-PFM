@@ -911,7 +911,7 @@ void Comm::exchange()
   }
 
   //NP modified C.K.
-  //NP make ,atom->natoms current as # particles can change
+  //NP make atom->natoms current as # particles can change
   //NP this is not done in LAMMPS to save global comm
   bigint tmp = atom->nlocal;
   MPI_Allreduce(&tmp,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);

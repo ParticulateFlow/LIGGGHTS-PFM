@@ -23,7 +23,7 @@
 #include "math_const.h"
 #include "modify.h"  //NP modified C.K.
 #include "force.h"  //NP modified C.K.
-#include "fix_rigid.h"  //NP modified C.K.
+#include "fix_multisphere.h"  //NP modified C.K.
 #include "error.h"
 
 using namespace LAMMPS_NS;
@@ -86,11 +86,13 @@ FixGravity::FixGravity(LAMMPS *lmp, int narg, char **arg) :
   } else if (style == VECTOR) {
     if (domain->dimension == 3) {
       double length = sqrt(xdir*xdir + ydir*ydir + zdir*zdir);
+      if(length == 0.) error->fix_error(FLERR,this,"length must be > 0"); //NP modified C.K.
       xgrav = xdir/length;
       ygrav = ydir/length;
       zgrav = zdir/length;
     } else {
       double length = sqrt(xdir*xdir + ydir*ydir);
+      if(length == 0.) error->fix_error(FLERR,this,"length must be > 0"); //NP modified C.K.
       xgrav = xdir/length;
       ygrav = ydir/length;
       zgrav = 0.0;
@@ -102,7 +104,7 @@ FixGravity::FixGravity(LAMMPS *lmp, int narg, char **arg) :
   eflag = 0;
   egrav = 0.0;
 
-  fr=NULL; //NP modified C.K.
+  fm = NULL; //NP modified C.K.
 }
 
 /* ---------------------------------------------------------------------- */
@@ -129,17 +131,13 @@ void FixGravity::init()
   yacc = magnitude*ygrav;
   zacc = magnitude*zgrav;
 
-  //NP modified C.K. check if a fix rigid is registered
-  fr = NULL;
-  for(int ifix=0;ifix<modify->nfix;ifix++)
-  {
-      if(strcmp(modify->fix[ifix]->style,"rigid/multisphere")==0)
-      {
-          fr=static_cast<FixRigid*>(modify->fix[ifix]);
-          break;
-      }
-
-  }
+  //NP modified C.K. check if a fix multisphere is registered
+  fm = NULL;
+  int nms = modify->n_fixes_style("multisphere");
+  if(nms > 1)
+    error->fix_error(FLERR,this,"support for more than one fix multisphere not implemented");
+  if(nms)
+    fm = static_cast<FixMultisphere*>(modify->find_fix_style("multisphere",0));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -195,7 +193,7 @@ void FixGravity::post_force(int vflag)
 
   if (rmass) {
     for (int i = 0; i < nlocal; i++)
-      if (mask[i] & groupbit) {
+      if (mask[i] & groupbit && (!fm || fm && fm->belongs_to(i) < 0)) { //NP modified C.K.
         massone = rmass[i];
         f[i][0] += massone*xacc;
         f[i][1] += massone*yacc;
@@ -204,7 +202,7 @@ void FixGravity::post_force(int vflag)
       }
   } else {
     for (int i = 0; i < nlocal; i++)
-      if (mask[i] & groupbit) {
+      if (mask[i] & groupbit && (!fm || fm && fm->belongs_to(i) < 0)) { //NP modified C.K.
         massone = mass[type[i]];
         f[i][0] += massone*xacc;
         f[i][1] += massone*yacc;

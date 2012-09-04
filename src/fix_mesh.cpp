@@ -50,7 +50,8 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
   mesh_(NULL),
   atom_type_mesh_(-1),
   setupFlag_(false),
-  pOpFlag_(false)
+  pOpFlag_(false),
+  manipulated_(false)
 {
     if(narg < 5)
       error->fix_error(FLERR,this,"not enough arguments - at least keyword 'file' and a filename are required.");
@@ -98,6 +99,7 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
       if(strcmp(arg[iarg_],"move") == 0){
           if (narg < iarg_+4) error->fix_error(FLERR,this,"not enough arguments");
           moveMesh(force->numeric(arg[iarg_+1]),force->numeric(arg[iarg_+2]),force->numeric(arg[iarg_+3]));
+          manipulated_ = true;
           iarg_ += 4;
           hasargs = true;
       } else if(strcmp(arg[iarg_],"rotate") == 0){
@@ -109,11 +111,13 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
               error->fix_error(FLERR,this,"expecting keyword 'angle' after axis definition");
           rotateMesh(force->numeric(arg[iarg_+2]),force->numeric(arg[iarg_+3]),force->numeric(arg[iarg_+4]),
                    force->numeric(arg[iarg_+6]));
+          manipulated_ = true;
           iarg_ += 7;
           hasargs = true;
       } else if(strcmp(arg[iarg_],"scale") == 0){
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
           scaleMesh(force->numeric(arg[iarg_+1]));
+          manipulated_ = true;
           iarg_ += 2;
           hasargs = true;
       } else if (strcmp(arg[iarg_],"temperature") == 0) {
@@ -162,6 +166,7 @@ void FixMesh::create_mesh(char *mesh_fname)
         // read file
         // can be from STL file or VTK file
         InputMeshTri *mesh_input = new InputMeshTri(lmp,0,NULL);
+        /*NL*///fprintf(screen,"READING MESH DATA\n");
         mesh_input->meshtrifile(mesh_fname,static_cast<TriMesh*>(mesh_));
         delete mesh_input;
     }
@@ -175,7 +180,7 @@ void FixMesh::create_mesh_restart()
     //NP cannot do this object-oriented since cannot call virtual functions
     //NP out of constructor
 
-    if(strcmp(style,"mesh/surface") == 0)
+    if(strncmp(style,"mesh/surface",12) == 0)
     {
         mesh_ = new TriMesh(lmp);
         static_cast<TriMesh*>(mesh_)->setMeshID(id);
@@ -224,6 +229,7 @@ void FixMesh::setup_pre_force(int vflag)
     // if mesh already set-up and parallelized
     //NP as in Verlet::setup()
     //NP call with setup flag so know to copy node_orig_ if necessary
+    //NP copy node_orig_ is necessary if a second fix move/mesh is added
     else
     {
         mesh_->pbcExchangeBorders(1);
@@ -297,7 +303,7 @@ void FixMesh::pre_force(int vflag)
 
         if(mesh_->decideRebuild())
         {
-            /*NL*/ //fprintf(screen,"triggered neigh build at step %d\n",update->ntimestep);
+            /*NL*/ //fprintf(screen,"mesh triggered neigh build at step %d\n",update->ntimestep);
             next_reneighbor = update->ntimestep + 1;
         }
     }
@@ -399,4 +405,30 @@ void FixMesh::restart(char *buf)
 {
     double *list = (double *) buf;
     mesh_->restart(list);
+}
+
+/* ----------------------------------------------------------------------
+   change box extent due to mesh node position
+------------------------------------------------------------------------- */
+
+void FixMesh::box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi)
+{
+    double node[3];
+    int size = mesh()->size();
+    int numNodes = mesh()->numNodes();
+
+    for(int i = 0; i < size; i++)
+    {
+        /*NL*/ //fprintf(screen,"i %d size %d\n",i,size);
+        for(int j = 0; j < numNodes; j++)
+        {
+            mesh()->node_slow(i,j,node);
+            xlo = MathExtraLiggghts::min(xlo,node[0]);
+            xhi = MathExtraLiggghts::max(xhi,node[0]);
+            ylo = MathExtraLiggghts::min(ylo,node[1]);
+            yhi = MathExtraLiggghts::max(yhi,node[1]);
+            zlo = MathExtraLiggghts::min(zlo,node[2]);
+            zhi = MathExtraLiggghts::max(zhi,node[2]);
+        }
+    }
 }

@@ -36,9 +36,9 @@
   TrackingMesh<NUM_NODES>::TrackingMesh(LAMMPS *lmp)
   : MultiNodeMeshParallel<NUM_NODES>(lmp),
     customValues_(*(new CustomValueTracker(lmp,this))),
+    id_ (*this->prop().template addElementProperty< ScalarContainer<int> >("id","comm_exchange_borders"/*ID does never change*/,"frame_invariant","restart_yes")),
     mapArray_(0),
-    mapTagMax_(0),
-    id_ (*this->prop().template addElementProperty< ScalarContainer<int> >("id","comm_none"/*ID does never change*/,"frame_invariant","restart_yes"))
+    mapTagMax_(0)
   {
   }
 
@@ -118,22 +118,22 @@
   template<int NUM_NODES>
   void TrackingMesh<NUM_NODES>::generateMap()
   {
+      int nall = this->sizeLocal() + this->sizeGhost();
+
       // deallocate old memory if exists
       if(mapArray_) clearMap();
 
       // get max ID of all proc
-      int idmax = id_.max();
+      int idmax = id_.max(nall);
       MPI_Max_Scalar(idmax,mapTagMax_,this->world);
 
-      /*NL*/ //fprintf(this->screen,"idmax %d, mapTagMax_ %d\n",idmax,mapTagMax_);
+      /*NL*/ //if(this->update->ntimestep >= 600000) fprintf(this->screen,"proc %d idmax %d, mapTagMax_ %d nall %d\n",this->comm->me,idmax,mapTagMax_,nall);
 
       // alocate and initialize new array
       // IDs start at 0, so have to use mapTagMax_+1
       this->memory->create(mapArray_,mapTagMax_+1,"TrackingMesh:mapArray_");
       for(int i = 0; i < mapTagMax_; i++)
         mapArray_[i] = -1;
-
-      int nall = this->sizeLocal() + this->sizeGhost();
 
       // build map for owned and ghost particles
       for (int i = nall-1; i >= 0; i--)
@@ -317,23 +317,33 @@
   }
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::rotate(double *totalQ, double *dQ,double *totalDispl, double *dDispl)
+  void TrackingMesh<NUM_NODES>::rotate(double *totalQ, double *dQ,double *origin)
   {
-    MultiNodeMesh<NUM_NODES>::rotate(totalQ,dQ,totalDispl,dDispl);
+    double negorigin[3];
+    bool trans = vectorMag3DSquared(origin) > 0.;
+    vectorNegate3D(origin,negorigin);
+
+    MultiNodeMesh<NUM_NODES>::rotate(totalQ,dQ,origin);
 
     //NP this handles owned and ghost elements
+    if(trans) customValues_.move(negorigin);
     customValues_.rotate(dQ);
-    customValues_.move(dDispl);
+    if(trans) customValues_.move(origin);
   }
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::rotate(double *dQ,double *dDispl)
+  void TrackingMesh<NUM_NODES>::rotate(double *dQ,double *origin)
   {
-    MultiNodeMesh<NUM_NODES>::rotate(dQ,dDispl);
+    double negorigin[3];
+    bool trans = vectorMag3DSquared(origin) > 0.;
+    vectorNegate3D(origin,negorigin);
+
+    MultiNodeMesh<NUM_NODES>::rotate(dQ,origin);
 
     //NP this handles owned and ghost elements
+    if(trans) customValues_.move(negorigin);
     customValues_.rotate(dQ);
-    customValues_.move(dDispl);
+    if(trans) customValues_.move(origin);
   }
 
   template<int NUM_NODES>
