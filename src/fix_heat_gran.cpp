@@ -177,20 +177,3 @@ void FixHeatGran::unregister_compute_pair_local(class ComputePairGranLocal *ptr)
   error->all(FLERR, emsg);
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

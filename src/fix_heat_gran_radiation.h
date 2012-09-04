@@ -40,34 +40,43 @@ namespace LAMMPS_NS {
 		~FixHeatGranRad();
     void pre_delete(bool){};
 
-		int setmask();
-		void init();
-		void post_force(int);
+    double extend_cut_ghost();
+    int setmask();
+    void init();
+    void post_force(int);
+    void setup(int);
 
 	private:
-    void reflect(int, int, double *, double *, double, int, double *);
-    int trace(int, int, double *, double *, double, double *, double *);
-    int nextBin(int, double *, double *, double *, int &, int &, int &);
     bool intersectRaySphere(double *, double *, double *, double, double &, double *);
+    bool trace(int, int, double *, double *, double, int, double *);
+    int nextBin(int, double *, double *, double *, int &, int &, int &);
+    int trace(int, int, double *, double *, double *, double *);
     void randDir(double *, double *);
     void randOnSphere(double *, double, double *, double *);
-    bool trace(int, int, double *, double *, double, int, double *);
+    void reflect(int, int, int, double *, double *, double, double, int, double *);
     void updateQr();
 
     // model parameters
     double Qr;      // energy of one ray
     int avgNRays;   // average number of rays per particle per timestep
     int maxBounces; // maximum number of bounces
+    int nTimesteps, updateCounter;
+    double cutGhost;
+    int seed;
 
     // physical parameters
-    double TB;   // background temperature
+    double TB; // background temperature
 
     class FixPropertyGlobal* fix_emissivity;
     double *emissivity;
 
-    double Sigma;       // stefan bolzmann constant
-    double Qtot;        // total radiative energy in the system
-    class RanMars RGen; // random number generator
+    double Sigma;        // stefan bolzmann constant
+    double Qtot;         // total radiative energy in the system
+    class RanMars *RGen; // random number generator
+
+    // pre-allocate these for optimization
+    double *raypoint;
+    int *binStencil;
 	};
 }
 
