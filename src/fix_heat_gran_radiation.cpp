@@ -22,9 +22,10 @@
 #include "fix_heat_gran_radiation.h"
 
 #include "atom.h"
+#include "comm.h"
 #include "error.h"
-#include "fix_property_global.h"
 #include "fix_property_atom.h"
+#include "fix_property_global.h"
 #include "math_const.h"
 #include "math_extra.h"
 #include "mech_param_gran.h"
@@ -35,46 +36,35 @@
 #include "random_mars.h"
 #include <cstdlib>
 #include <cstring>
-//DEBUG
-#include "update.h"
-#include <iostream>
-#include <fstream>
-//ENDDEBUG
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
+using MathConst::MY_4PI;
 using MathExtra::add3;
 using MathExtra::dot3;
 using MathExtra::lensq3;
-using MathExtra::sub3;
 using MathExtra::normalize3;
 using MathExtra::snormalize3;
-using MathConst::MY_4PI;
+using MathExtra::sub3;
 
 /* ---------------------------------------------------------------------- */
 
-//NP assumptions:
-//NP if background_temperature is not passed it is assumed that
-//NP    initial_temperature is the background temperature
-FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg),
-                                                                          RGen(lmp, 1){
+// assumptions:
+// if background_temperature is not passed it is assumed that
+//    initial_temperature is the background temperature
+FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg){
 	int iarg = 5;
 
-  //DEBUG
-  bool debugFlg = false;
-  //ENDDEBUG
-
-	//NP use initial temperature as background temperature if
-	//NP TB is not passed as argument background_temperature
-  //NP background temperature is further handled in init()
-
-  Qr         = 0.0;
-  avgNRays   = 1; //NP TODO optimize these parameters
-  maxBounces = 3;
+  Qr            = 0.0;
+  maxBounces    = 100;
+  nTimesteps    = 1000;
+  updateCounter = 0;
+  cutGhost      = 0.0;
 
   TB   = -1.0;
   Qtot = 0.0;
+  seed = 0;
 
   fix_emissivity = NULL;
   emissivity     = NULL;
@@ -87,47 +77,50 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
   }
 
   // parse input arguments:
-  //  - backgroundTemperature
-  //  - averageNumberOfRaysPerParticle
-  //  - maxNumberOfBounces
+  //  - background_temperature
+  //  - max_bounces
+  //  - cutoff
+  //  - seed
 	bool hasargs = true;
 	while(iarg < narg && hasargs)
   {
-    //DEBUG
-    if (debugFlg) printf("DEBUG: SETTING PARAMETERS\n");
-    if (debugFlg) printf("DEBUG: arg[%d]: %s\n", iarg, arg[iarg]);
-    //ENDDEBUG
     hasargs = false;
-    if(strcmp(arg[iarg],"backgroundTemperature") == 0) {
-      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'backgroundTemperature'");
+    if(strcmp(arg[iarg],"background_temperature") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'background_temperature'");
       TB = atof(arg[iarg+1]);
-      //DEBUG
-      if (debugFlg) printf("DEBUG: TB: %f\n", TB);
-      //ENDDEBUG
       iarg += 2;
       hasargs = true;
     }
-    else if(strcmp(arg[iarg],"averageNumberOfRaysPerParticle") == 0) {
-      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'averageNumberOfRaysPerParticle'");
-      avgNRays = atoi(arg[iarg+1]);
-      //DEBUG
-      if (debugFlg) printf("DEBUG: avgNRays: %d\n", avgNRays);
-      //ENDDEBUG
-      iarg += 2;
-      hasargs = true;
-    }
-    else if(strcmp(arg[iarg],"maxNumberOfBounces") == 0) {
-      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'maxNumberOfBounces'");
+    else if(strcmp(arg[iarg],"max_bounces") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'max_bounces'");
       maxBounces = atoi(arg[iarg+1]);
-      //DEBUG
-      if (debugFlg) printf("DEBUG: maxBounces: %d\n", maxBounces);
-      //ENDDEBUG
+      iarg += 2;
+      hasargs = true;
+    }
+    else if(strcmp(arg[iarg],"cutoff") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'cutoff'");
+      cutGhost = atof(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
+    }
+    else if(strcmp(arg[iarg],"seed") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'seed'");
+      seed = atoi(arg[iarg+1]);
       iarg += 2;
       hasargs = true;
     }
     else if(strcmp(style,"heat/gran/radiation") == 0)
       	error->fix_error(FLERR,this,"unknown keyword");
   }
+  if (seed == 0){
+    error->fix_error(FLERR,this,"expecting keyword 'seed'");
+  }
+
+  RGen = new RanMars(lmp, seed + comm->me);
+
+  // for optimization of trace() preallocate these
+  raypoint = new double[3];
+  binStencil = new int[27];
 }
 
 /* ---------------------------------------------------------------------- */
@@ -136,6 +129,9 @@ FixHeatGranRad::~FixHeatGranRad(){
   if (emissivity){
     delete [] emissivity;
   }
+  delete [] raypoint;
+  delete [] binStencil;
+  delete RGen;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -144,6 +140,12 @@ int FixHeatGranRad::setmask(){
   int mask = 0;
   mask |= POST_FORCE;
   return mask;
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixHeatGranRad::extend_cut_ghost(){
+  return cutGhost;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -179,17 +181,19 @@ void FixHeatGranRad::init(){
   }
 }
 
+void FixHeatGranRad::setup(int i){
+
+  // forces algorithm to call updateQr() in post_force()
+  Qr = 0.0;
+
+}
+
 /* ---------------------------------------------------------------------- */
 
 void FixHeatGranRad::post_force(int vflag){
 
-  //DEBUG
-  bool debugFlg = false;
-  if (debugFlg) printf("DEBUG: in post_force()\n");
-  if (debugFlg) printf("DEBUG: TB: %f\n",TB);
-  //ENDDEBUG
   //NP neighborlist data
-  int i, j;
+  int i;
   int ibin;
 
   //NP particle data
@@ -200,7 +204,6 @@ void FixHeatGranRad::post_force(int vflag){
   int nlocal, nghost;
 
   //NP ray data
-  bool hit;                  //NP if a ray hit one particular particle
   double *hitp = new double[3]; //NP the point where a ray hit a particle
   double hitEmis;            //NP emissivity of hit particle
   int hitId;                 //NP index of particle that was hit by ray
@@ -210,22 +213,15 @@ void FixHeatGranRad::post_force(int vflag){
 
   double *buffer3 = new double[3]; //NP buffer for computations in intersectRaySphere
   double *ci;                //NP center of one particle
-  double *cj;                //NP center of another particle
   double *d = new double[3]; //NP direction of ray
   double *o = new double[3]; //NP origin of ray
   double flux;               //NP energy of ray
   double sendflux;           //NP flux that is sent in a particular ray
-  double t;                  //NP parameter of ray
-  int m;                     //NP number of rays for one specific particle
-  int NRaysTot;              //NP total number of rays per timestep
 
   //NP individual particle data
   double areai; //NP area
-  double areaj; //NP area
   double emisi; //NP emissivity
-  double emisj; //NP emissivity
   double radi;  //NP radius
-  double radj;  //NP radius
   double tempi; //NP temperature
 
   //NP fetch particle data
@@ -240,14 +236,9 @@ void FixHeatGranRad::post_force(int vflag){
   updatePtrs();
 
   // calculate total heat of all particles to update energy of one ray
-  if (Qtot == 0.0 || neighbor->decide()){
-    updateQr();
-
-  //DEBUG
-  if (debugFlg) printf("DEBUG: updated Qr\n");
-  if (debugFlg) printf("DEBUG: Qr:%f\n", Qr);
-  //ENDDEBUG
-  }
+  // if (Qr == 0.0 || neighbor->ago() == 0){
+  //   updateQr();
+  // }
 
   // all owned particles radiate
   for (i = 0; i < nlocal + nghost; i++)
@@ -257,98 +248,49 @@ void FixHeatGranRad::post_force(int vflag){
     ci    = x[i];
     emisi = emissivity[type[i]-1];
     tempi = Temp[i];
-    //DEBUG
-    if (debugFlg) printf("------------------------------------------------------\n");
-    if (debugFlg) printf("DEBUG: radiating from atom %d with center: [%f %f %f] and radius %f\n", i, ci[0], ci[1], ci[2], radi);
-    //ENDDEBUG
 
     // check in which box we are in
     ibin = neighbor->coord2bin(ci);
-    //DEBUG
-    // if (debugFlg) printf("DEBUG: ibin: %d\n", ibin);
-    //ENDDEBUG
 
     // calculate heat flux from this particle
     areai = MY_4PI * radi * radi;
     flux  = areai * emisi * Sigma * tempi * tempi * tempi * tempi;
-    //DEBUG
-    // if (debugFlg) printf("DEBUG: areai: %f\n", areai);
-    // if (debugFlg) printf("DEBUG: emisi: %f\n", emisi);
-    // if (debugFlg) printf("DEBUG: Sigma: %.10f\n", Sigma);
-    if (debugFlg) printf("DEBUG: tempi: %f\n", tempi);
-    if (debugFlg) printf("DEBUG: heatFlux[%d] -= %f\n", i, flux);
-    //ENDDEBUG
 
-    // calculate number of rays
-    m = (int)(flux/Qr) + 1;
-
-    // calculate effective energy of each ray
-    sendflux = flux / (double) m;
+    sendflux = flux;
 
     // let this particle radiate (flux is reduced)
     heatFlux[i] -= flux;
 
-    // shoot rays
-    for (int r = 0; r < m; r++){
-      //DEBUG
-      if (debugFlg) printf("DEBUG: handling ray %d of %d\n", r+1, m);
-      //ENDDEBUG
+    // generate random point and direction
+    randOnSphere(ci, radi, o, buffer3);
+    randDir(buffer3, d);
 
-      // generate random point and direction
-      randOnSphere(ci, radi, o, buffer3);
-      randDir(buffer3, d);
-      //DEBUG
-      // if (debugFlg) printf("DEBUG: o: [%f %f %f]\n", o[0], o[1], o[2]);
-      // if (debugFlg) printf("DEBUG: d: [%f %f %f]\n", d[0], d[1], d[2]);
-      //ENDDEBUG
+    // start radiating and tracing
+    hitId = trace(i, ibin, o, d, buffer3, hitp);
 
-      // start radiating and tracing
-      hitId = trace(i, ibin, o, d, sendflux, buffer3, hitp);
+    if (hitId != -1){ // the ray hit a particle: reflect from hit particle
 
-      if (hitId != -1){ // the ray hit a particle: reflect from hit particle
+      // update heatflux of particle j
+      hitEmis = emissivity[type[hitId]-1];
+      heatFlux[hitId] += hitEmis * sendflux;
 
-        // update heatflux of particle j
-        hitEmis = emissivity[type[hitId]-1];
-        heatFlux[hitId] += hitEmis * sendflux;
-        //DEBUG
-        if (debugFlg) printf("DEBUG: a hit -> heatFlux[%d] += %f\n", hitId, hitEmis*sendflux);
-        //ENDDEBUG
+      hitBin   = neighbor->coord2bin(x[hitId]);
+      nextO[0] = hitp[0];
+      nextO[1] = hitp[1];
+      nextO[2] = hitp[2];
 
-        hitBin   = neighbor->coord2bin(x[hitId]);
-        nextO[0] = hitp[0];
-        nextO[1] = hitp[1];
-        nextO[2] = hitp[2];
+      // calculate new normal vector of reflection for reflected ray
+      sub3(hitp, x[hitId], buffer3);
+      normalize3(buffer3, nextNormal);
 
-        // calculate new normal vector of reflection for reflected ray
-        sub3(hitp, x[hitId], buffer3);
-        normalize3(buffer3, nextNormal);
+      // reflect ray at the hitpoint.
+      reflect(i, hitId, hitBin, nextO, nextNormal, sendflux, 1.0-hitEmis, maxBounces, buffer3);
 
-        // reflect ray at the hitpoint.
-        reflect(hitId, hitBin, nextO, nextNormal, (1.0-hitEmis) * sendflux, maxBounces, buffer3);
-
-      } else { // if a ray does not hit a particle we assume radiation from the background
-        heatFlux[i] += (areai * emisi * Sigma * TB * TB * TB * TB) / ((double) m);
-        //DEBUG
-        if (debugFlg) printf("DEBUG: nohit -> heatFlux[%d] += %f\n", i, (areai * emisi * Sigma * TB * TB * TB * TB) / ((double) m));
-        // if (debugFlg) error->all(FLERR, "muhaha");
-        //ENDDEBUG
-      }
+    } else { // if a ray does not hit a particle we assume radiation from the background
+      heatFlux[i] += (areai * emisi * Sigma * TB * TB * TB * TB);
     }
   }
 
-  //DEBUG
-  if (debugFlg) printf("\nDEBUG: === summary of FLUX ===\n");
-  for (int i = 0; i < nlocal; i++){
-    if (debugFlg) printf("DEBUG: flux[%d]: %f\n", i, heatFlux[i]);
-  }
-  if (debugFlg) printf("\n");
-  //ENDDEBUG
-
-  // reverse communication of heatflux (ghost particles send flux to owner)
-  // fix_heatFlux->do_reverse_comm();
-  //DEBUG
-  // if (debugFlg) error->all(FLERR, "end this, now!!");
-  //ENDDEBUG
   delete [] buffer3;
   delete [] d;
   delete [] hitp;
@@ -357,70 +299,58 @@ void FixHeatGranRad::post_force(int vflag){
   delete [] o;
 }
 
-/* ---------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------
 
-void FixHeatGranRad::reflect(int orig_id, int ibin, double *o, double *d,
-  double influx, int n, double *buffer3){
+radID ... id of particle that originally radiated (source of energy)
+orig_id ... id of particle whereupon the ray was reflected (source of ray)
 
-  //DEBUG
-  bool debugFlg = false;
-  if (debugFlg) printf("DEBUG: reflect()\n");
-  if (debugFlg) printf("DEBUG: n: %d\n", n);
-  //ENDDEBUG
+---------------------------------------------------------------------- */
+void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double *d,
+  double flux, double accum_eps, int n, double *buffer3){
 
   double ratio;
   double sendflux;
   double hitEmis;
+  double influx = flux * accum_eps;
   int hitId, hitBin;
-  int m;
 
   // base case
   if (n == 0){
+    heatFlux[radID] += influx;
     return;
   }
 
-  ratio = influx / Qr;
-  m = (int) ratio + 1;
-
-  //DEBUG
-  if (debugFlg) printf("DEBUG: ratio: %f\n", ratio);
-  if (debugFlg) printf("DEBUG: m: %d\n", m);
-  //ENDDEBUG
-
-  // if energy of one ray would be too small -> stop.
-  //NP TODO: optimize this parameter
-  if (ratio < 0.01){
+  // if energy of one ray would be too small -> stop. //NP TODO: optimize this.
+  if (accum_eps < 0.001){
+    heatFlux[radID] += influx;
     return;
   }
 
-  sendflux = influx / (double) m;
+  sendflux = influx;
 
   // shoot rays.
   double **x         = atom->x;
+  double *radius     = atom->radius;
   double *dd         = new double[3];
   double *hitp       = new double[3];
   double *nextNormal = new double[3];
   double *nextO      = new double[3];
   int *type          = atom->type;
 
+  double radArea, radRad, radEmis;
+
   for (int r = 0; r < m; r++){
 
     // generate random (diffuse) direction
     randDir(d, dd);
 
-    hitId = trace(orig_id, ibin, o, dd, sendflux, buffer3, hitp);
+    hitId = trace(orig_id, ibin, o, dd, buffer3, hitp);
 
     if (hitId != -1){ // ray hit a particle
 
       // update heat flux for particle
       hitEmis = emissivity[type[hitId]-1];
       heatFlux[hitId] += hitEmis * sendflux;
-      //DEBUG
-      if (debugFlg) printf("DEBUG: hitId: %d\n", hitId);
-      if (debugFlg) printf("DEBUG: hitEmis: %f\n", hitEmis);
-      if (debugFlg) printf("DEBUG: sendflux: %f\n", sendflux);
-      if (debugFlg) printf("DEBUG: a hit -> heatFlux[%d] += %f\n", hitId, hitEmis*sendflux);
-      //ENDDEBUG
 
       // calculate new starting point for reflected ray
       hitBin = neighbor->coord2bin(x[hitId]);
@@ -433,7 +363,13 @@ void FixHeatGranRad::reflect(int orig_id, int ibin, double *o, double *d,
       normalize3(buffer3, nextNormal);
 
       // reflect ray at the hitpoint.
-      reflect(hitId, hitBin, nextO, nextNormal, (1.0-hitEmis) * sendflux, n-1, buffer3);
+      reflect(radID, hitId, hitBin, nextO, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
+    }
+    else {
+      radRad  = radius[radID];
+      radArea = MY_4PI * radRad * radRad;
+      radEmis = emissivity[type[radID]-1];
+      heatFlux[radID] += (radArea * radEmis * accum_eps * Sigma * TB * TB * TB * TB);
     }
   }
 
@@ -458,18 +394,7 @@ void FixHeatGranRad::reflect(int orig_id, int ibin, double *o, double *d,
   return value:
   particle id that has been hit, or -1
 */
-int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d,
-  double flux, double *buffer3, double *hitp){
-  //DEBUG
-  bool debugFlg = false;
-  //ENDDEBUG
-
-  //DEBUG
-  if (debugFlg) printf("DEBUG: in trace()\n");
-  // printf("DEBUG: radiating atom: %d\n", orig_id);
-  //ENDDEBUG
-
-  double *raypoint = new double[3];
+int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *buffer3, double *hitp){
 
   int *binhead = neighbor->binhead;
   int *bins = neighbor->bins;
@@ -490,13 +415,10 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d,
   //NP fetch particle data
   double **x     = atom->x;
   double *radius = atom->radius;
-  int *mask      = atom->mask; //NP? needed ?
-  int *type      = atom->type; //NP? needed ?
 
   int i, j;
   int currentBin = neighbor->coord2bin(o);
   int dx, dy, dz;
-  int *binStencil = new int[27]; // binStencil[x*9 + y*3 + z]
 
   // initialize binStencil
   for (i = 0; i < 27; i++)
@@ -512,29 +434,16 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d,
 
   while ((currentBin != -1) && (hitFlag == false)){
 
-    //DEBUG
-    // printf("DEBUG: currentBin: %d\n", currentBin);
-    // for (int debug000 = 0; debug000 < 27; debug000++){
-      // printf("DEBUG: binStencil[%d]: %d\n", debug000, binStencil[debug000]);
-    // }
-    //ENDDEBUG
-
     // walk the stencil of bins related to this bin, check all of their atoms
     for (int k = 0; k < 27; k++){
       if (binStencil[k] == -1){
         continue;
       }
-      //DEBUG
-      if (debugFlg) printf("DEBUG: checking bin (from stencil) %d\n", binStencil[k]);
-      //ENDDEBUG
       // first atom in this bin
       i = binhead[binStencil[k]];
 
       // walk all atoms in this bin
       while (i != -1){
-        //DEBUG
-        if (debugFlg) printf("DEBUG: checking atom: %d\n", i);
-        //ENDDEBUG
         // do not intersect with reflecting particle
         if (i == orig_id){
           i = bins[i];
@@ -564,16 +473,8 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d,
       // calculate hit point 'hitp'
       snormalize3(hitT, d, buffer3);
       add3(o, buffer3, hitp);
-      //DEBUG
-      if (debugFlg) printf("DEBUG: hit in stencil around bin %d\n", currentBin);
-      //ENDDEBUG
-      delete [] raypoint;
-      delete [] binStencil;
       return hitId;
     }
-    //DEBUG
-    if (debugFlg) printf("DEBUG: no hit in stencil around bin %d\n", currentBin);
-    //ENDDEBUG
     // find the next bin, since in this bin there was no intersection found
     ibin       = currentBin;
     currentBin = nextBin(ibin, o, d, raypoint, dx, dy, dz);
@@ -602,8 +503,6 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d,
     }
   }
 
-  delete [] raypoint;
-  delete [] binStencil;
   return -1;
 }
 
@@ -624,52 +523,23 @@ dy ... bin hopped in y direction? (-1/0/1)
 dz ... bin hopped in z direction? (-1/0/1)
 */
 int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, int &dy, int &dz){
-  //DEBUG
-  // printf("DEBUG: in nextBin()\n");
-  //ENDDEBUG
   double s;
   double smax = 0.0;
   double xlo, xhi, ylo, yhi, zlo, zhi;
   int nextBinId;
-  //DEBUG
-  bool debugFlg = false;
-  //ENDDEBUG
 
   dx = dy = dz = 0;
-
-  //DEBUG
-  // d[0] = 1.0;
-  // d[1] = 0.0;
-  // d[2] = 0.0;
-  //ENDDEBUG
 
   // calculate borders of this bin
   neighbor->binBorders(ibin, xlo, xhi, ylo, yhi, zlo, zhi);
 
-  //DEBUG
-  if (debugFlg) printf("DEBUG: bin: %d\n", ibin);
-  if (debugFlg) printf("DEBUG: binBorders: xlo: %f, xhi: %f, ylo: %f, yhi: %f, zlo: %f, zhi: %f\n", xlo, xhi, ylo, yhi, zlo, zhi);
-  if (debugFlg) printf("DEBUG: o: %f %f %f\n",o[0],o[1],o[2]);
-  if (debugFlg) printf("DEBUG: d: %f %f %f\n",d[0],d[1],d[2]);
-  //ENDDEBUG
-
   // xlo, xhi
   if (d[0] != 0.0){
-    //DEBUG
-    if (debugFlg) printf("\nDEBUG: case xlo, xhi\n");
-    //ENDDEBUG
     s = (xlo - o[0]) / d[0];
     p[0] = o[0] + s*d[0];
     p[1] = o[1] + s*d[1];
     p[2] = o[2] + s*d[2];
-    //DEBUG
-    if (debugFlg) printf("DEBUG: s: %f\n", s);
-    if (debugFlg) printf("DEBUG: p: [%f %f %f]\n", p[0], p[1], p[2]);
-    //ENDDEBUG
     if ((s > smax) && (ylo <= p[1] && p[1] <= yhi) && (zlo <= p[2] && p[2] <= zhi)){
-      //DEBUG
-      if (debugFlg) printf("DEBUG: inside conditional\n");
-      //ENDDEBUG
       smax = s;
       dy = dz = 0;
       dx = -1;
@@ -679,15 +549,8 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
     p[0] = o[0] + s*d[0];
     p[1] = o[1] + s*d[1];
     p[2] = o[2] + s*d[2];
-    //DEBUG
-    if (debugFlg) printf("DEBUG: s: %f\n", s);
-    if (debugFlg) printf("DEBUG: p: [%f %f %f]\n", p[0], p[1], p[2]);
-    //ENDDEBUG
 
     if ((s > smax) && (ylo <= p[1] && p[1] <= yhi) && (zlo <= p[2] && p[2] <= zhi)){
-      //DEBUG
-      if (debugFlg) printf("DEBUG: inside conditional\n");
-      //ENDDEBUG
 
       smax = s;
       dy = dz = 0;
@@ -697,23 +560,12 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
 
   // ylo, yhi
   if (d[1] != 0.0){
-    //DEBUG
-    if (debugFlg) printf("\nDEBUG: case ylo, yhi\n");
-    //ENDDEBUG
     s = (ylo - o[1]) / d[1];
     p[0] = o[0] + s*d[0];
     p[1] = o[1] + s*d[1];
     p[2] = o[2] + s*d[2];
-    //DEBUG
-    if (debugFlg) printf("DEBUG: s: %f\n", s);
-    if (debugFlg) printf("DEBUG: p: [%f %f %f]\n", p[0], p[1], p[2]);
-    //ENDDEBUG
-
 
     if ((s > smax) && (xlo <= p[0] && p[0] <= xhi) && (zlo <= p[2] && p[2] <= zhi)){
-      //DEBUG
-      if (debugFlg) printf("DEBUG: inside conditional\n");
-      //ENDDEBUG
 
       smax = s;
       dx = dz = 0;
@@ -724,15 +576,8 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
     p[0] = o[0] + s*d[0];
     p[1] = o[1] + s*d[1];
     p[2] = o[2] + s*d[2];
-    //DEBUG
-    if (debugFlg) printf("DEBUG: s: %f\n", s);
-    if (debugFlg) printf("DEBUG: p: [%f %f %f]\n", p[0], p[1], p[2]);
-    //ENDDEBUG
 
     if ((s > smax) && (xlo <= p[0] && p[0] <= xhi) && (zlo <= p[2] && p[2] <= zhi)){
-      //DEBUG
-      if (debugFlg) printf("DEBUG: inside conditional\n");
-      //ENDDEBUG
 
       smax = s;
       dx = dz = 0;
@@ -742,22 +587,12 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
 
   // zlo, zhi
   if (d[2] != 0.0){
-    //DEBUG
-    if (debugFlg) printf("\nDEBUG: case zlo, zhi\n");
-    //ENDDEBUG
     s = (zlo - o[2]) / d[2];
     p[0] = o[0] + s*d[0];
     p[1] = o[1] + s*d[1];
     p[2] = o[2] + s*d[2];
-    //DEBUG
-    if (debugFlg) printf("DEBUG: s: %f\n", s);
-    if (debugFlg) printf("DEBUG: p: [%f %f %f]\n", p[0], p[1], p[2]);
-    //ENDDEBUG
 
     if ((s > smax) && (xlo <= p[0] && p[0] <= xhi) && (ylo <= p[1] && p[1] <= yhi)){
-      //DEBUG
-      if (debugFlg) printf("DEBUG: inside conditional\n");
-      //ENDDEBUG
 
       smax = s;
       dx = dy = 0;
@@ -768,15 +603,8 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
     p[0] = o[0] + s*d[0];
     p[1] = o[1] + s*d[1];
     p[2] = o[2] + s*d[2];
-    //DEBUG
-    if (debugFlg) printf("DEBUG: s: %f\n", s);
-    if (debugFlg) printf("DEBUG: p: [%f %f %f]\n", p[0], p[1], p[2]);
-    //ENDDEBUG
 
     if ((s > smax) && (xlo <= p[0] && p[0] <= xhi) && (ylo <= p[1] && p[1] <= yhi)){
-      //DEBUG
-      if (debugFlg) printf("DEBUG: inside conditional\n");
-      //ENDDEBUG
 
       smax = s;
       dx = dy = 0;
@@ -787,22 +615,12 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
   p[0] = o[0] + smax*d[0];
   p[1] = o[1] + smax*d[1];
   p[2] = o[2] + smax*d[2];
-    //DEBUG
-    if (debugFlg) printf("DEBUG: sfin: %f\n", smax);
-    if (debugFlg) printf("DEBUG: pfin: [%f %f %f]\n", p[0], p[1], p[2]);
-    //ENDDEBUG
 
   nextBinId = neighbor->binHop(ibin,dx,dy,dz);
   if (nextBinId != ibin){
-    //DEBUG
-    if (debugFlg) printf("DEBUG: returning next bin: %d\n", nextBinId);
-    //ENDDEBUG
     return nextBinId;
   }
   else {
-    //DEBUG
-    if (debugFlg) printf("DEBUG: WARNING: nextBin() did not find suitable next bin.\n");
-    //ENDDEBUG
     error->all(FLERR, "FixHeatGranRad::nextBin() did not find a suitable next bin.");
     return -1;
   }
@@ -820,11 +638,10 @@ void FixHeatGranRad::updateQr(){
   int nghost = atom->nghost;
 
   double areai, emisi, tempi;
-  double Qtot = 0.0;
   double radi;
-  int i;
   unsigned long NRaysTot;
 
+  Qtot = 0.0;
   for (int i = 0; i < nlocal + nghost; i++){
     radi = radius[i];
 
@@ -835,7 +652,7 @@ void FixHeatGranRad::updateQr(){
     Qtot += areai * emisi * Sigma * tempi * tempi * tempi * tempi;
   }
 
-  NRaysTot = avgNRays * nlocal;
+  NRaysTot = nlocal + nghost;
   Qr = Qtot / (double)NRaysTot;
 }
 
@@ -901,7 +718,9 @@ bool FixHeatGranRad::intersectRaySphere(double *o, double *d, double *center, do
     return false;
   }
 
-  // if t0 is less than zero, the intersection point is at t1
+  // since the variale "raypoint" in nextBin() could possibly be inside a sphere
+  // we leave this part.
+  // // if t0 is less than zero, the intersection point is at t1
   // if (t0 < 0.0){
   //   t = t1;
   // } else {
@@ -919,16 +738,30 @@ c ...... center of sphere
 r ...... radius of sphere
 ansP ... return value - random point on sphere
 ansD ... return value - direction vector that points out of the sphere
+
+ * This is a variant of the algorithm for computing a random point
+ * on the unit sphere; the algorithm is suggested in Knuth, v2,
+ * 3rd ed, p136; and attributed to Robert E Knop, CACM, 13 (1970),
+ * 326.
+ * see http://fossies.org/dox/gsl-1.15/sphere_8c_source.html#l00066
 */
-//NP unit tested
-void FixHeatGranRad::randOnSphere(double *c, double r, double *ansP, double *ansD){
+ void FixHeatGranRad::randOnSphere(double *c, double r, double *ansP, double *ansD){
+  double s, a;
 
   // generate random direction
-  ansD[0] = 2.0*RGen.uniform() - 1.0;
-  ansD[1] = 2.0*RGen.uniform() - 1.0;
-  ansD[2] = 2.0*RGen.uniform() - 1.0;
+  do
+  {
+    ansD[0] = 2.0*RGen->uniform() - 1.0;
+    ansD[1] = 2.0*RGen->uniform() - 1.0;
+    s = ansD[0]*ansD[0] + ansD[1]*ansD[1];
 
-  normalize3(ansD, ansD);
+  } while (s > 1.0);
+
+  ansD[2] = 2.0*s - 1.0;
+  a = 2.0 * sqrt(1.0 - s);
+
+  ansD[0] *= a;
+  ansD[1] *= a;
 
   // calculate corresponding point on surface
   snormalize3(r, ansD, ansP);
@@ -944,21 +777,33 @@ void FixHeatGranRad::randOnSphere(double *c, double r, double *ansP, double *ans
   generates a random direction in direction of the vector n
   n ... input - normal vector
   o ... output - random direction
-*/
-//NP unit tested
-void FixHeatGranRad::randDir(double *n, double *d){
-  double side;
 
-  // generate random direction
-  d[0] = 2.0*RGen.uniform() - 1.0;
-  d[1] = 2.0*RGen.uniform() - 1.0;
-  d[2] = 2.0*RGen.uniform() - 1.0;
-  normalize3(d, d);
+* This is a variant of the algorithm for computing a random point
+* on the unit sphere; the algorithm is suggested in Knuth, v2,
+* 3rd ed, p136; and attributed to Robert E Knop, CACM, 13 (1970),
+* 326.
+* see http://fossies.org/dox/gsl-1.15/sphere_8c_source.html#l00066
+*/
+void FixHeatGranRad::randDir(double *n, double *d){
+  double side, s, a;
+
+  do
+  {
+    d[0] = 2.0*RGen->uniform() - 1.0;
+    d[1] = 2.0*RGen->uniform() - 1.0;
+    s = d[0]*d[0] + d[1]*d[1];
+
+  } while (s > 1.0);
+
+  d[2] = 2.0*s - 1.0;
+  a = 2.0 * sqrt(1.0 - s);
+
+  d[0] *= a;
+  d[1] *= a;
 
   // adjust direction, if it points to the wrong side
-  // and if n != 0
   side = dot3(d, n);
-  if (side < 0.0 && (n[0] != 0.0 || n[1] != 0.0 || n[2] != 0.0)){
+  if (side < 0.0){
     d[0] *= -1.0;
     d[1] *= -1.0;
     d[2] *= -1.0;
