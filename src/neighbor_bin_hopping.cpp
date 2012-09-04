@@ -52,23 +52,30 @@ int Neighbor::binHop(int i, int x, int y, int z){
 
 	bin2XYZ(i, ix, iy, iz);
 
-	// x
-	if (0 <= ix + x && ix + x < mbinx)
-		ix += x;
-	else
+	if (0 > ix + x || ix + x >= mbinx || 0 > iy + y || iy + y >= mbiny || 0 > iz + z || iz + z >= mbinz)
 		return -1;
 
-	// y
-	if (0 <= iy + y && iy + y < mbiny)
-		iy += y;
-	else
-		return -1;
+	ix += x;
+	iy += y;
+	iz += z;
 
-	// z
-	if (0 <= iz + z && iz + z < mbinz)
-		iz += z;
-	else
-		return -1;
+	// // x
+	// if (0 <= ix + x && ix + x < mbinx)
+	// 	ix += x;
+	// else
+	// 	return -1;
+
+	// // y
+	// if (0 <= iy + y && iy + y < mbiny)
+	// 	iy += y;
+	// else
+	// 	return -1;
+
+	// // z
+	// if (0 <= iz + z && iz + z < mbinz)
+	// 	iz += z;
+	// else
+	// 	return -1;
 
 	return XYZ2bin(ix, iy, iz);
 }
