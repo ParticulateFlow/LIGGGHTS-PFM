@@ -339,38 +339,35 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double
 
   double radArea, radRad, radEmis;
 
-  for (int r = 0; r < m; r++){
+  // generate random (diffuse) direction
+  randDir(d, dd);
 
-    // generate random (diffuse) direction
-    randDir(d, dd);
+  hitId = trace(orig_id, ibin, o, dd, buffer3, hitp);
 
-    hitId = trace(orig_id, ibin, o, dd, buffer3, hitp);
+  if (hitId != -1){ // ray hit a particle
 
-    if (hitId != -1){ // ray hit a particle
+    // update heat flux for particle
+    hitEmis = emissivity[type[hitId]-1];
+    heatFlux[hitId] += hitEmis * sendflux;
 
-      // update heat flux for particle
-      hitEmis = emissivity[type[hitId]-1];
-      heatFlux[hitId] += hitEmis * sendflux;
+    // calculate new starting point for reflected ray
+    hitBin = neighbor->coord2bin(x[hitId]);
+    nextO[0] = hitp[0];
+    nextO[1] = hitp[1];
+    nextO[2] = hitp[2];
 
-      // calculate new starting point for reflected ray
-      hitBin = neighbor->coord2bin(x[hitId]);
-      nextO[0] = hitp[0];
-      nextO[1] = hitp[1];
-      nextO[2] = hitp[2];
+    // calculate new normal vector of reflection for reflected ray
+    sub3(hitp, x[hitId], buffer3);
+    normalize3(buffer3, nextNormal);
 
-      // calculate new normal vector of reflection for reflected ray
-      sub3(hitp, x[hitId], buffer3);
-      normalize3(buffer3, nextNormal);
-
-      // reflect ray at the hitpoint.
-      reflect(radID, hitId, hitBin, nextO, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
-    }
-    else {
-      radRad  = radius[radID];
-      radArea = MY_4PI * radRad * radRad;
-      radEmis = emissivity[type[radID]-1];
-      heatFlux[radID] += (radArea * radEmis * accum_eps * Sigma * TB * TB * TB * TB);
-    }
+    // reflect ray at the hitpoint.
+    reflect(radID, hitId, hitBin, nextO, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
+  }
+  else {
+    radRad  = radius[radID];
+    radArea = MY_4PI * radRad * radRad;
+    radEmis = emissivity[type[radID]-1];
+    heatFlux[radID] += (radArea * radEmis * accum_eps * Sigma * TB * TB * TB * TB);
   }
 
   delete [] dd;
