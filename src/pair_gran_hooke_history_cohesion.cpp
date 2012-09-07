@@ -456,7 +456,8 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
             	phiF_ = force->numeric(arg[iarg_+3]);
             	iarg_ = iarg_+3;
             }
-            else if(strcmp(arg[iarg_],"off") == 0) {}
+            else if(strcmp(arg[iarg_],"off") == 0)
+            	error->warning(FLERR,"This pair_style is designed for cohesion model. If you need not this feature, use another gran pair_style instead.");
             else
                 error->all(FLERR,"Illegal pair_style gran command, expecting 'lcm' or 'off' after keyword 'cohesion'");
             iarg_++;
@@ -487,9 +488,6 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
             error->all(FLERR,"Illegal pair_style gran command, illegal keyword");
     }
 
-    if(cohesionflag && domain->dimension!=3)
-        error->all(FLERR,"Cohesion model valid for 3d simulations only");
-
     //NP Test parameters
     //NP if (kn2k2Max_ < 0 || kn2kc_ < 0) error->all(FLERR,"kn2k2 or kn2kc is not set!");
 }
@@ -516,8 +514,6 @@ void PairGranHookeHistoryCohesion::init_granular()
 
   if(rollingflag)
     coeffRollFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingFriction","property/global","peratomtypepair",max_type,max_type,force->pair_style));
-  if(cohesionflag)
-    cohEnergyDens1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("cohesionEnergyDensity","property/global","peratomtypepair",max_type,max_type,force->pair_style));
 
   if(charVelflag) charVel1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,force->pair_style));
 
@@ -543,7 +539,6 @@ void PairGranHookeHistoryCohesion::init_granular()
 
           /*NL*/ //fprintf(screen,"");
 
-          if(cohesionflag) cohEnergyDens[i][j] = cohEnergyDens1->compute_array(i-1,j-1);
           //omitting veff here
 
           /*NL*/ //fprintf(screen,"coeff rest for %i %i : %f\n",i,j,coeffRest1->compute_array(i-1,j-1));
