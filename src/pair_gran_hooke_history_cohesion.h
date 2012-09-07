@@ -86,7 +86,7 @@ class PairGranHookeHistoryCohesion : public PairGranHookeHistory {
 //  int cohesionflag; //NP indicates if linear cohesion model is used
 //  int dampflag,rollingflag; //NP indicates if tang damping or rolling friction is used
 
-  double kn2k2_, kn2kc_;
+  double kn2k2Max_, kn2kc_, phiF_;
 };
 
 }

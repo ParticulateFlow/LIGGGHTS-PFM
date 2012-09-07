@@ -59,8 +59,8 @@ PairGranHookeHistoryCohesion::PairGranHookeHistoryCohesion(LAMMPS *lmp) : PairGr
     history = 1;
     dnum_pairgran = 4;  //NP modified A.A.
 
-    kn2k2_ = -1.0;
-    kn2kc_ = -1.0;
+    kn2k2Max_ = 0.0;
+    kn2kc_ = 0.0;
 
     /*
     Yeff = NULL;
@@ -130,7 +130,7 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
   double Fn_coh;//NP modified C.K.
 
   double fHys,fTmp; //NP modified A.A.
-  double k2,kc,delta0,deltaMax; //NP test parameter A.A.
+  double k2,k2Max,kc,delta0,deltaMax,deltaMaxLim; //NP test parameter A.A.
 
   int i,j,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz,fx,fy,fz;
@@ -275,9 +275,12 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
         	deltaMax = deltan;
         }
 
-        if (kn2k2_ < 0 || kn2kc_ < 0) error->all(FLERR,"kn2k2 or kn2kc is not set!");
-        k2 = kn * kn2k2_; //2*kn; //NP Test parameter
-        kc = kn * kn2kc_; //kn; //NP Test parameter
+        k2Max = kn * kn2k2Max_; //NP Test parameter
+        kc = kn * kn2kc_; //NP Test parameter
+
+        deltaMaxLim =(k2Max/(k2Max-kn))*phiF_*2*radi*radj/(radi+radj);
+        if (deltaMax >= deltaMaxLim) k2 = k2Max;
+        else k2 = kn+(k2Max-kn)*deltaMax/deltaMaxLim;
 
         /*NL*/ //if(screen) fprintf(screen,"k1 = kn = %f; k2 = %f; kc = %f \n",kn,k2,kc);
 
@@ -491,9 +494,10 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
                 cohesionflag = 1;
             else if(strcmp(arg[iarg_],"lcm") == 0) {
             	cohesionflag = 0;
-            	kn2k2_ = force->numeric(arg[iarg_+1]);
+            	kn2k2Max_ = force->numeric(arg[iarg_+1]);
             	kn2kc_ = force->numeric(arg[iarg_+2]);
-            	iarg_ = iarg_+2;
+            	phiF_ = force->numeric(arg[iarg_+3]);
+            	iarg_ = iarg_+3;
             }
             else if(strcmp(arg[iarg_],"off") == 0)
                 cohesionflag = 0;
@@ -529,6 +533,9 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
 
     if(cohesionflag && domain->dimension!=3)
         error->all(FLERR,"Cohesion model valid for 3d simulations only");
+
+    //NP Test parameters
+    //NP if (kn2k2Max_ < 0 || kn2kc_ < 0) error->all(FLERR,"kn2k2 or kn2kc is not set!");
 }
 
 /* ----------------------------------------------------------------------
