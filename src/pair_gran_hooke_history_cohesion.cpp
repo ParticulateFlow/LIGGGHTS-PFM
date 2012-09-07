@@ -62,34 +62,13 @@ PairGranHookeHistoryCohesion::PairGranHookeHistoryCohesion(LAMMPS *lmp) : PairGr
     kn2k2Max_ = 0.0;
     kn2kc_ = 0.0;
 
-    /*
-    Yeff = NULL;
-    Geff = NULL;
-    betaeff = NULL;
-    veff = NULL;
-    cohEnergyDens = NULL;
-    coeffRestLog = NULL;
-    coeffFrict = NULL;
-    coeffRollFrict = NULL;
-
-    charVelflag = 1;
-    */
 }
 
 /* ---------------------------------------------------------------------- */
 
 PairGranHookeHistoryCohesion::~PairGranHookeHistoryCohesion()
 {
-	/*
-    memory->destroy(Yeff);
-    memory->destroy(Geff);
-    memory->destroy(betaeff);
-    memory->destroy(veff);
-    memory->destroy(cohEnergyDens);
-    memory->destroy(coeffRestLog);
-    memory->destroy(coeffFrict);
-    memory->destroy(coeffRollFrict);
-    */
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -110,27 +89,13 @@ void PairGranHookeHistoryCohesion::history_args(char** args)
 
 /* ---------------------------------------------------------------------- */
 
-//NP modified C.K.
-inline void PairGranHookeHistoryCohesion::addCohesionForce(int &ip, int &jp,double &r, double &Fn_coh) //NP modified C.K.
-{
-    //r is the distance between the sphere's centeres
-    double ri = atom->radius[ip];
-    double rj = atom->radius[jp];
-    double Acont = - M_PI/4 * ( (r-ri-rj)*(r+ri-rj)*(r-ri+rj)*(r+ri+rj) )/(r*r); //contact area of the two spheres
-    /*NL*/ //double Acont = 0.5*sqrt( -(r-ri-rj)*(r+ri-rj)*(r-ri+rj)*(r+ri+rj) )/r; //contact are of the two spheres
-    Fn_coh=cohEnergyDens[atom->type[ip]][atom->type[jp]]*Acont;
-}
-
-/* ---------------------------------------------------------------------- */
-
 void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
 {
   //calculated from the material properties //NP modified C.K.
   double kn,kt,gamman,gammat,xmu,rmu; //NP modified C.K.
-  double Fn_coh;//NP modified C.K.
 
   double fHys,fTmp; //NP modified A.A.
-  double k2,k2Max,kc,delta0,deltaMax,deltaMaxLim; //NP test parameter A.A.
+  double k2,k2Max,kc,deltaMax,deltaMaxLim; //NP test parameter A.A.
 
   int i,j,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz,fx,fy,fz;
@@ -278,6 +243,8 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
         k2Max = kn * kn2k2Max_; //NP Test parameter
         kc = kn * kn2kc_; //NP Test parameter
 
+        // k2 dependent on the maximum overlap
+        // this accounts for an increasing stiffness with deformation
         deltaMaxLim =(k2Max/(k2Max-kn))*phiF_*2*radi*radj/(radi+radj);
         if (deltaMax >= deltaMaxLim) k2 = k2Max;
         else k2 = kn+(k2Max-kn)*deltaMax/deltaMaxLim;
@@ -303,10 +270,6 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
         /*NL*/ // END modified A.A.
 
         /*NL*/ //ccel = MAX(0.,ccel);//NP modified C.K. remove artificial force effect (Poeschel, Schwager: Comp. Gran. Dynamics)
-        if (cohesionflag) { //NP modified C.K.
-            addCohesionForce(i,j,r,Fn_coh);
-            ccel-=Fn_coh*rinv;
-        }
 
         // relative velocities
 
@@ -325,8 +288,6 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
         /*NL*///printVec3D(screen,"xi",x[i]);
         /*NL*///printVec3D(screen,"xj",x[j]);
         /*NL*///error->one(FLERR,"touch");
-
-//        shear = &allshear[dnum_pairgran*jj]; //NP modified A.A.
 
         if (shearupdate && addflag)
         {
@@ -479,7 +440,6 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
     // set defaults
     dampflag = 1;
     rollingflag = 0;
-    cohesionflag = 0;
 
     // parse args
 
@@ -490,19 +450,15 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
         if (strcmp(arg[iarg_],"cohesion") == 0) {
             if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'cohesion'");
             iarg_++;
-            if(strcmp(arg[iarg_],"sjkr") == 0)
-                cohesionflag = 1;
-            else if(strcmp(arg[iarg_],"lcm") == 0) {
-            	cohesionflag = 0;
+            if(strcmp(arg[iarg_],"lcm") == 0) {
             	kn2k2Max_ = force->numeric(arg[iarg_+1]);
             	kn2kc_ = force->numeric(arg[iarg_+2]);
             	phiF_ = force->numeric(arg[iarg_+3]);
             	iarg_ = iarg_+3;
             }
-            else if(strcmp(arg[iarg_],"off") == 0)
-                cohesionflag = 0;
+            else if(strcmp(arg[iarg_],"off") == 0) {}
             else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'sjkr' or 'off' after keyword 'cohesion'");
+                error->all(FLERR,"Illegal pair_style gran command, expecting 'lcm' or 'off' after keyword 'cohesion'");
             iarg_++;
             hasargs = true;
         } else if (strcmp(arg[iarg_],"rolling_friction") == 0) {

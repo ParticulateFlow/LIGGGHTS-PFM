@@ -56,36 +56,6 @@ class PairGranHookeHistoryCohesion : public PairGranHookeHistory {
   virtual void history_args(char**);
   void allocate_properties(int);
 
-  //NP modified C.K.
-
-  //NP define the mechanical properties for all models here, since other model classes are derived from
-  //NP the PairGranHookeHistory class
-
-  //NP these are properties defined for each atom type (each material) - thus vectors
-//  class FixPropertyGlobal* Y1; //Youngs Modulus
-//  class FixPropertyGlobal* v1; //Poisson's ratio
-//  class FixPropertyGlobal* cohEnergyDens1; //Cohesion energy density
-
-  //NP these are properties defined for each pair of atom types (pair of materials) - thus matrices
-//  class FixPropertyGlobal* coeffRest1; //coefficient of restitution
-//  class FixPropertyGlobal* coeffFrict1; //coefficient of (static) friction
-//  class FixPropertyGlobal* coeffRollFrict1; //characteristic velocity needed for Linear Spring Model
-
-  //NP these are general properties defined only once - thus scalars
-//  int charVelflag;
-//  class FixPropertyGlobal* charVel1; //characteristic velocity needed for Linear Spring Model
-
-  //NP here, pre-calculated contact parameters for all possible material combinations
-//  double **Yeff,**Geff,**betaeff,**veff,**cohEnergyDens,**coeffRestLog,**coeffFrict,charVel,**coeffRollFrict;
-
-  //NP these values are now calculated from the material properties for each contact, they are thus not constant!
-  //NP double kn,kt,gamman,gammat,xmu;
-
-  virtual void addCohesionForce(int &, int &,double &,double &);
-
-//  int cohesionflag; //NP indicates if linear cohesion model is used
-//  int dampflag,rollingflag; //NP indicates if tang damping or rolling friction is used
-
   double kn2k2Max_, kn2kc_, phiF_;
 };
 
