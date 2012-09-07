@@ -30,14 +30,22 @@ using namespace FixConst;
 FixNVELimit::FixNVELimit(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg)
 {
-  if (narg != 4) error->all(FLERR,"Illegal fix nve/limit command");
+  if (narg != 5) error->all(FLERR,"Illegal fix nve/limit command"); //NP modified C.K.
 
   time_integrate = 1;
   scalar_flag = 1;
   global_freq = 1;
   extscalar = 1;
 
-  xlimit = atof(arg[3]);
+  //NP modified C.K.
+  if(strcmp(arg[3],"radius_ratio") == 0)
+      relflag = 1;
+  else if(strcmp(arg[3],"absolute") == 0)
+      relflag = 0;
+  else
+      error->fix_error(FLERR,this,"expecting keyword 'absolute' or 'radius_ratio'"); //NP modified C.K.
+
+  xlimit = atof(arg[4]);
 
   ncount = 0;
 }
@@ -63,6 +71,10 @@ void FixNVELimit::init()
   vlimitsq = (xlimit/dtv) * (xlimit/dtv);
   ncount = 0;
 
+  //NP modified C.K.
+  if(relflag == 1 && (!atom->radius_flag || !atom->rmass_flag))
+        error->fix_error(FLERR,this,"using 'radius_ratio' needs per-atom radius and mass");
+
   if (strstr(update->integrate_style,"respa"))
     step_respa = ((Respa *) update->integrate)->step;
 }
@@ -73,39 +85,68 @@ void FixNVELimit::init()
 
 void FixNVELimit::initial_integrate(int vflag)
 {
-  double dtfm,vsq,scale;
+  double dtfm,vsq,scale, rsq; //NP modied C.K.
 
   double **x = atom->x;
   double **v = atom->v;
   double **f = atom->f;
   double *mass = atom->mass;
   double *rmass = atom->rmass;
+  double *radius = atom->radius; //NP modified C.K.
   int *type = atom->type;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
 
   if (rmass) {
-    for (int i = 0; i < nlocal; i++) {
-      if (mask[i] & groupbit) {
-        dtfm = dtf / rmass[i];
-        v[i][0] += dtfm * f[i][0];
-        v[i][1] += dtfm * f[i][1];
-        v[i][2] += dtfm * f[i][2];
+    if (relflag == 1)
+    {
+        for (int i = 0; i < nlocal; i++) {
+          if (mask[i] & groupbit) {
+            dtfm = dtf / rmass[i];
+            v[i][0] += dtfm * f[i][0];
+            v[i][1] += dtfm * f[i][1];
+            v[i][2] += dtfm * f[i][2];
 
-        vsq = v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2];
-        if (vsq > vlimitsq) {
-          ncount++;
-          scale = sqrt(vlimitsq/vsq);
-          v[i][0] *= scale;
-          v[i][1] *= scale;
-          v[i][2] *= scale;
+            vsq = v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2];
+            rsq = radius[i]*radius[i];
+            if (vsq > vlimitsq*rsq) {
+              ncount++;
+              scale = sqrt(vlimitsq*rsq/vsq);
+              v[i][0] *= scale;
+              v[i][1] *= scale;
+              v[i][2] *= scale;
+            }
+
+            x[i][0] += dtv * v[i][0];
+            x[i][1] += dtv * v[i][1];
+            x[i][2] += dtv * v[i][2];
+          }
         }
+    }
+    else
+    {
+        for (int i = 0; i < nlocal; i++) {
+          if (mask[i] & groupbit) {
+            dtfm = dtf / rmass[i];
+            v[i][0] += dtfm * f[i][0];
+            v[i][1] += dtfm * f[i][1];
+            v[i][2] += dtfm * f[i][2];
 
-        x[i][0] += dtv * v[i][0];
-        x[i][1] += dtv * v[i][1];
-        x[i][2] += dtv * v[i][2];
-      }
+            vsq = v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2];
+            if (vsq > vlimitsq) {
+              ncount++;
+              scale = sqrt(vlimitsq/vsq);
+              v[i][0] *= scale;
+              v[i][1] *= scale;
+              v[i][2] *= scale;
+            }
+
+            x[i][0] += dtv * v[i][0];
+            x[i][1] += dtv * v[i][1];
+            x[i][2] += dtv * v[i][2];
+          }
+        }
     }
 
   } else {
@@ -137,34 +178,59 @@ void FixNVELimit::initial_integrate(int vflag)
 
 void FixNVELimit::final_integrate()
 {
-  double dtfm,vsq,scale;
+  double dtfm,vsq,scale,rsq; //NP modified C.K.
 
   double **v = atom->v;
   double **f = atom->f;
   double *mass = atom->mass;
   double *rmass = atom->rmass;
+  double *radius = atom->radius;
   int *type = atom->type;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
 
   if (rmass) {
-    for (int i = 0; i < nlocal; i++) {
-      if (mask[i] & groupbit) {
-        dtfm = dtf / rmass[i];
-        v[i][0] += dtfm * f[i][0];
-        v[i][1] += dtfm * f[i][1];
-        v[i][2] += dtfm * f[i][2];
+    if (relflag == 1)
+    {
+        for (int i = 0; i < nlocal; i++) {
+          if (mask[i] & groupbit) {
+            dtfm = dtf / rmass[i];
+            v[i][0] += dtfm * f[i][0];
+            v[i][1] += dtfm * f[i][1];
+            v[i][2] += dtfm * f[i][2];
 
-        vsq = v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2];
-        if (vsq > vlimitsq) {
-          ncount++;
-          scale = sqrt(vlimitsq/vsq);
-          v[i][0] *= scale;
-          v[i][1] *= scale;
-          v[i][2] *= scale;
+            vsq = v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2];
+            rsq = radius[i]*radius[i];
+            if (vsq > vlimitsq*rsq) {
+              ncount++;
+              scale = sqrt(vlimitsq*rsq/vsq);
+              v[i][0] *= scale;
+              v[i][1] *= scale;
+              v[i][2] *= scale;
+            }
+          }
         }
-      }
+    }
+    else
+    {
+        for (int i = 0; i < nlocal; i++) {
+          if (mask[i] & groupbit) {
+            dtfm = dtf / rmass[i];
+            v[i][0] += dtfm * f[i][0];
+            v[i][1] += dtfm * f[i][1];
+            v[i][2] += dtfm * f[i][2];
+
+            vsq = v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2];
+            if (vsq > vlimitsq) {
+              ncount++;
+              scale = sqrt(vlimitsq/vsq);
+              v[i][0] *= scale;
+              v[i][1] *= scale;
+              v[i][2] *= scale;
+            }
+          }
+        }
     }
 
   } else {

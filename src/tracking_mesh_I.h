@@ -74,6 +74,18 @@
     // set ID for element
     // ID starts from 0
     id_(this->sizeLocal()-1) = this->sizeLocal()-1;
+
+    /*NP
+    if(this->sizeLocal() == 1) id_(this->sizeLocal()-1) = 7;
+    if(this->sizeLocal() == 2) id_(this->sizeLocal()-1) = 6;
+    if(this->sizeLocal() == 3) id_(this->sizeLocal()-1) = 5;
+    if(this->sizeLocal() == 4) id_(this->sizeLocal()-1) = 1;
+    if(this->sizeLocal() == 5) id_(this->sizeLocal()-1) = 3;
+    if(this->sizeLocal() == 6) id_(this->sizeLocal()-1) = 2;
+    if(this->sizeLocal() == 7) id_(this->sizeLocal()-1) = 4;
+    if(this->sizeLocal() == 8) id_(this->sizeLocal()-1) = 0;
+    */
+
   }
 
   template<int NUM_NODES>
@@ -144,7 +156,7 @@
       // alocate and initialize new array
       // IDs start at 0, so have to use mapTagMax_+1
       this->memory->create(mapArray_,mapTagMax_+1,"TrackingMesh:mapArray_");
-      for(int i = 0; i < mapTagMax_; i++)
+      for(int i = 0; i < mapTagMax_+1; i++)
         mapArray_[i] = -1;
 
       // build map for owned and ghost particles
