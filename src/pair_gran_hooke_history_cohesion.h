@@ -56,7 +56,15 @@ class PairGranHookeHistoryCohesion : public PairGranHookeHistory {
   virtual void history_args(char**);
   void allocate_properties(int);
 
-  double kn2k2Max_, kn2kc_, phiF_;
+  //NP these are properties defined for each pair of atom types (pair of materials) - thus matrices
+  class FixPropertyGlobal* coeffKn2K2Max_;
+  class FixPropertyGlobal* coeffKn2Kc_;
+  class FixPropertyGlobal* coeffPhiF_;
+
+  //NP here, pre-calculated contact parameters for all possible material combinations
+  double **kn2k2Max_, **kn2kc_, **phiF_;
+
+ // double kn2k2Max_, kn2kc_, phiF_;
 };
 
 }

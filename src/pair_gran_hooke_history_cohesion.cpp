@@ -59,8 +59,9 @@ PairGranHookeHistoryCohesion::PairGranHookeHistoryCohesion(LAMMPS *lmp) : PairGr
     history = 1;
     dnum_pairgran = 4;  //NP modified A.A.
 
-    kn2k2Max_ = 0.0;
-    kn2kc_ = 0.0;
+    kn2k2Max_ = NULL;
+    kn2kc_ = NULL;
+    phiF_ = NULL;
 
 }
 
@@ -68,7 +69,9 @@ PairGranHookeHistoryCohesion::PairGranHookeHistoryCohesion(LAMMPS *lmp) : PairGr
 
 PairGranHookeHistoryCohesion::~PairGranHookeHistoryCohesion()
 {
-
+	memory->destroy(kn2k2Max_);
+	memory->destroy(kn2kc_);
+	memory->destroy(phiF_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -233,6 +236,9 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
         /*NL*/ // Modification according Luding (2008): Cohesive, frictional powders: contact models for tension
         /*NL*/ // modified A.A.
         /*NL*/ // kn := k1 in the paper
+        itype = type[i];
+        jtype = type[j];
+
         shear = &allshear[dnum_pairgran*jj];
         deltaMax = shear[3]; // the 4th value of the history array is deltaMax
         if (deltan > deltaMax) {
@@ -240,12 +246,15 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
         	deltaMax = deltan;
         }
 
-        k2Max = kn * kn2k2Max_; //NP Test parameter
-        kc = kn * kn2kc_; //NP Test parameter
+        /*NL*/ //if(screen) fprintf(screen,"For types %d %d\n",itype,jtype);
+        /*NL*/ //if(screen) fprintf(screen,"kn2k2Max = %f and kn2kc = %f \n",kn2k2Max_[itype][jtype],kn2kc_[itype][jtype]);
+
+        k2Max = kn * kn2k2Max_[itype][jtype]; //NP Test parameter
+        kc = kn * kn2kc_[itype][jtype]; //NP Test parameter
 
         // k2 dependent on the maximum overlap
         // this accounts for an increasing stiffness with deformation
-        deltaMaxLim =(k2Max/(k2Max-kn))*phiF_*2*radi*radj/(radi+radj);
+        deltaMaxLim =(k2Max/(k2Max-kn))*phiF_[itype][jtype]*2*radi*radj/(radi+radj);
         if (deltaMax >= deltaMaxLim) k2 = k2Max;
         else k2 = kn+(k2Max-kn)*deltaMax/deltaMaxLim;
 
@@ -451,10 +460,10 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
             if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'cohesion'");
             iarg_++;
             if(strcmp(arg[iarg_],"lcm") == 0) {
-            	kn2k2Max_ = force->numeric(arg[iarg_+1]);
-            	kn2kc_ = force->numeric(arg[iarg_+2]);
-            	phiF_ = force->numeric(arg[iarg_+3]);
-            	iarg_ = iarg_+3;
+            	//kn2k2Max_ = force->numeric(arg[iarg_+1]);
+            	//kn2kc_ = force->numeric(arg[iarg_+2]);
+            	//phiF_ = force->numeric(arg[iarg_+3]);
+            	//iarg_ = iarg_+3;
             }
             else if(strcmp(arg[iarg_],"off") == 0)
             	error->warning(FLERR,"This pair_style is designed for cohesion model. If you need not this feature, use another gran pair_style instead.");
@@ -512,6 +521,10 @@ void PairGranHookeHistoryCohesion::init_granular()
   coeffRest1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRestitution","property/global","peratomtypepair",max_type,max_type,force->pair_style));
   coeffFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientFriction","property/global","peratomtypepair",max_type,max_type,force->pair_style));
 
+  coeffKn2K2Max_=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientMaxElasticStiffness","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+  coeffKn2Kc_=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientAdhesionStiffness","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+  coeffPhiF_=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientPlasticityDepth","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+
   if(rollingflag)
     coeffRollFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingFriction","property/global","peratomtypepair",max_type,max_type,force->pair_style));
 
@@ -533,6 +546,13 @@ void PairGranHookeHistoryCohesion::init_granular()
           coeffRestLog[i][j] = log(coeffRest1->compute_array(i-1,j-1));
 
           betaeff[i][j] =coeffRestLog[i][j] /sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
+
+
+          kn2k2Max_[i][j] = coeffKn2K2Max_->compute_array(i-1,j-1);
+          kn2kc_[i][j] = coeffKn2Kc_->compute_array(i-1,j-1);
+          phiF_[i][j] = coeffPhiF_->compute_array(i-1,j-1);
+
+          /*NL*/ //fprintf(screen,"kn2k2Max for %i %i : %f\n",i,j,coeffKn2K2Max_->compute_array(i-1,j-1));
 
           coeffFrict[i][j] = coeffFrict1->compute_array(i-1,j-1);
           if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
@@ -562,6 +582,9 @@ void PairGranHookeHistoryCohesion::allocate_properties(int size)
     memory->destroy(coeffRestLog);
     memory->destroy(coeffFrict);
     memory->destroy(coeffRollFrict);
+    memory->destroy(kn2k2Max_);
+    memory->destroy(kn2kc_);
+    memory->destroy(phiF_);
     memory->create(Yeff,size+1,size+1,"Yeff");
     memory->create(Geff,size+1,size+1,"Geff");
     memory->create(betaeff,size+1,size+1,"betaeff");
@@ -570,4 +593,7 @@ void PairGranHookeHistoryCohesion::allocate_properties(int size)
     memory->create(coeffRestLog,size+1,size+1,"coeffRestLog");
     memory->create(coeffFrict,size+1,size+1,"coeffFrict");
     memory->create(coeffRollFrict,size+1,size+1,"coeffRollFrict");
+    memory->create(kn2k2Max_,size+1,size+1,"kn2k2Max_");
+    memory->create(kn2kc_,size+1,size+1,"kn2kc_");
+    memory->create(phiF_,size+1,size+1,"phiF_");
 }
