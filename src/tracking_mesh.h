@@ -62,6 +62,9 @@ namespace LAMMPS_NS{
         inline int map(int global)
         { return (mapArray_ ? mapArray_[global] : -1);}
 
+        inline int tag_max()
+        { return mapTagMax_; }
+
         int id_slow(int i)
         { return id_(i); }
 
@@ -77,6 +80,9 @@ namespace LAMMPS_NS{
         virtual void deleteElement(int n);
 
         void clearGhostForward(bool scale,bool translate,bool rotate);
+
+        // called via mesh move functions
+        bool resetToOrig();
 
         virtual void refreshOwned(int setupFlag);
         virtual void refreshGhosts(int setupFlag);

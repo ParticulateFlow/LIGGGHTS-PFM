@@ -572,6 +572,7 @@
 
       // build mesh topology and neigh list
       //NP operations performed in parallel at this point
+      //NP already have IDs at this point which is important
       buildNeighbours();
 
       /*NL*/// fprintf(this->screen,"INITIALSETUP: proc %d, mesh %s - nLocal %d, nGhost %d\n",
@@ -949,6 +950,10 @@
   /* ----------------------------------------------------------------------
    check if element qualifies as ghost
   ------------------------------------------------------------------------- */
+
+  //NP IMPORTANT need bounding radius  as criterion so have all ghosts to correctly
+  //NP calculate edge activation/deactivation in case edge of owned element is
+  //NP completely off the processor
 
   template<int NUM_NODES>
   inline bool MultiNodeMeshParallel<NUM_NODES>::checkBorderElementLeft(int i,int dim,double lo, double hi)

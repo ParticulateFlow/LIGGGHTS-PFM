@@ -126,11 +126,15 @@ namespace LAMMPS_NS
         virtual void refreshGhosts(int setupFlag);
 
         bool nodesAreEqual(int iSurf, int iNode, int jSurf, int jNode);
+        bool nodesAreEqual(double *nodeToCheck1,double *nodeToCheck2);
 
         // returns true if surfaces share a node
         // called with local index
         // iNode, jNode return indices of first shared node
         bool shareNode(int iElem, int jElem, int &iNode, int &jNode);
+
+        // returns node index if iElem contains nodeToCheck
+        int containsNode(int iElem, double *nodeToCheck);
 
         void extendToElem(int const nElem) const;
 
@@ -169,18 +173,16 @@ namespace LAMMPS_NS
         inline void reset_stepLastReset()
         { stepLastReset_ = -1; }
 
+        // reset mesh nodes to original position
+        // called via mesh move functions
+        //NP resets node pos and global Props
+        virtual bool resetToOrig();
+
       private:
 
         // flags stating how many move operations are performed on the mesh
         int nMove_;
         int nScale_,nTranslate_,nRotate_;
-
-        // integrated quaternion
-        double quat_[4];
-
-        // reset mesh nodes to original position
-        // called via mesh move functions
-        void resetNodesToOrig();
 
         // store current node position for use by moving mesh
         void storeNodePosOrig(int ilo, int ihi);

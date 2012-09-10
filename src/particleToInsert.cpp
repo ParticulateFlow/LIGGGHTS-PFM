@@ -64,9 +64,11 @@ int ParticleToInsert::insert()
 
     for(int i = 0; i < nspheres; i++)
     {
-        if (domain->is_in_extended_subdomain(x_ins[i]))
-        {
-                /*NL*/ //printVec3D(screen,"inserting particle at pos",x_ins[i]);
+        /*NL*/ //fprintf(screen,"proc %d tyring to insert particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+        //NP do not need subdomain check any longer since have processor-local lists anyway
+        //if (domain->is_in_extended_subdomain(x_ins[i]))
+        //{
+                /*NL*/ //fprintf(screen,"   proc %d inserting particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
                 inserted++;
                 atom->avec->create_atom(atom_type,x_ins[i]);
                 int m = atom->nlocal - 1;
@@ -79,7 +81,7 @@ int ParticleToInsert::insert()
 
                 for (int j = 0; j < nfix; j++)
                    if (fix[j]->create_attribute) fix[j]->set_arrays(m);
-        }
+        //}
     }
     return inserted;
 }

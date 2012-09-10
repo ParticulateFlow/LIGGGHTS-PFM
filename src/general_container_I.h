@@ -130,6 +130,7 @@
                           arr_[n][i][j] = arr_[numElem_][i][j];
   }
 
+
   /* ----------------------------------------------------------------------
    copy element data
   ------------------------------------------------------------------------- */
@@ -222,6 +223,36 @@
   T** const& GeneralContainer<T,NUM_VEC,LEN_VEC>::operator() (int n) const
   {
           return arr_[n];
+  }
+
+  /* ----------------------------------------------------------------------
+   set all data by copy from other container
+  ------------------------------------------------------------------------- */
+
+  template<typename T, int NUM_VEC, int LEN_VEC>
+  bool GeneralContainer<T,NUM_VEC,LEN_VEC>::setFromContainer(ContainerBase *cont)
+  {
+      GeneralContainer<T,NUM_VEC,LEN_VEC> *gcont = static_cast<GeneralContainer<T,NUM_VEC,LEN_VEC>* >(cont);
+
+      /*NL*/// printf("container %s sizes %d %d nvec %d %d lenvec %d %d\n",
+      /*NL*///        id_,size(),gcont->size(),nVec(),gcont->nVec(),lenVec(),gcont->lenVec());
+
+      //NP only copy if identical
+      if(size() != gcont->size() || nVec() != gcont->nVec() || lenVec() != gcont->lenVec())
+        return false;
+
+      /*NL*/ //printf("SETTING container %s\n",id_);
+
+      int len = size();
+      for(int n = 0; n < len; n++)
+          for(int i=0;i<NUM_VEC;i++)
+                  for(int j=0;j<LEN_VEC;j++)
+                  {
+                          arr_[n][i][j] = gcont->arr_[n][i][j];
+                          /*NL*/ //printf("   gcont->arr_[n][i][j] %f \n",static_cast<double>(gcont->arr_[n][i][j]));
+                  }
+
+      return true;
   }
 
   /* ---------------------------------------------------------------------- */

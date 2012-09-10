@@ -82,6 +82,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   cs = csforce = vforce = ervelforce = NULL;
   etag = NULL;
   rho = drho = NULL;
+  p = NULL; //NP modified A.A.
   e = de = NULL;
   cv = NULL;
   vest = NULL;
@@ -118,6 +119,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   vfrac_flag = spin_flag = eradius_flag = ervel_flag = erforce_flag = 0;
   cs_flag = csforce_flag = vforce_flag = ervelforce_flag= etag_flag = 0;
   rho_flag = e_flag = cv_flag = vest_flag = 0;
+  p_flag = 0; //NP modified A.A.
 
   // ntype-length arrays
 
@@ -200,6 +202,13 @@ Atom::~Atom()
   memory->destroy(ervel);
   memory->destroy(erforce);
 
+  //NP modified A.A.
+  memory->destroy(rho);
+  memory->destroy(drho);
+  memory->destroy(e);
+  memory->destroy(de);
+  memory->destroy(p);
+
   memory->destroy(molecule);
 
   memory->destroy(nspecial);
@@ -276,6 +285,7 @@ void Atom::create_avec(const char *style, int narg, char **arg, char *suffix)
   molecule_flag = q_flag = mu_flag = 0;
   rmass_flag = radius_flag = omega_flag = torque_flag = angmom_flag = 0;
   density_flag = 0; //NP modified C.K.
+  rho_flag = p_flag = 0; //NP modified A.A.
   vfrac_flag = spin_flag = eradius_flag = ervel_flag = erforce_flag = 0;
 
   int sflag;
@@ -1651,6 +1661,8 @@ void *Atom::extract(char *name,int &len)
   if (strcmp(name,"rmass") == 0) return (void *) rmass;
   if (strcmp(name,"radius") == 0) return (void *) radius;
   if (strcmp(name,"density") == 0) return (void *) density;
+  if (strcmp(name,"rho") == 0) return (void *) rho;  //NP modified A.A.
+  if (strcmp(name,"pressure") == 0) return (void *) p;  //NP modified A.A.
 
   len = 3;
   if (strcmp(name,"x") == 0) return (void *) x;

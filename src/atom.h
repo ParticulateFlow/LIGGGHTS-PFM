@@ -59,6 +59,7 @@ class Atom : protected Pointers {
   double *cs,*csforce,*vforce;
   int *etag;
   double *rho, *drho;
+  double *p; //NP modified A.A.
   double *e, *de;
   double **vest;
   double *cv;
@@ -100,6 +101,7 @@ class Atom : protected Pointers {
   int cs_flag,csforce_flag,vforce_flag,ervelforce_flag,etag_flag;
   int rho_flag,e_flag,cv_flag,vest_flag;
   int density_flag; //NP modified C.K.
+  int p_flag;  //NP modified A.A.
 
   // extra peratom info in restart file destined for fix & diag
 

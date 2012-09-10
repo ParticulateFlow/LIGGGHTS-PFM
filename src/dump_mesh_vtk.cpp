@@ -49,7 +49,10 @@ enum
     DUMP_WEAR = 16,
     DUMP_TEMP = 32,
     DUMP_OWNER = 64,
-    DUMP_AREA = 128
+    DUMP_AREA = 128,
+    DUMP_AEDGES = 256,
+    DUMP_ACORNERS = 512,
+    DUMP_INDEX = 1024
 };
 
 enum
@@ -61,6 +64,7 @@ enum
 /* ---------------------------------------------------------------------- */
 
 DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, arg),
+  dataMode_(0),
   nMesh_(0),
   meshList_(0),
   dump_what_(0),
@@ -84,9 +88,6 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
   nMesh_ = modify->n_fixes_style("mesh/surface");
   /*NL*/ //fprintf(screen,"nMesh_ %d\n",nMesh_);
 
-  if (nMesh_ == 0)
-    error->warning(FLERR,"Dump mesh/vtk cannot find any fix of type 'mesh/surface' to dump");
-
   // create meshlist
   meshList_ = new TriMesh*[nMesh_];
   for (int iMesh = 0; iMesh < nMesh_; iMesh++)
@@ -95,16 +96,7 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
       meshList_[iMesh] = static_cast<FixMeshSurface*>(modify->find_fix_style("mesh/surface",iMesh))->triMesh();
   }
 
-  // allocate arrays
-  sigma_n_ = new ScalarContainer<double>*[nMesh_];
-  sigma_t_ = new ScalarContainer<double>*[nMesh_];
-  wear_ = new ScalarContainer<double>*[nMesh_];
-  v_node_ = new MultiVectorContainer<double,3,3>*[nMesh_];
-  f_node_ = new VectorContainer<double,3>*[nMesh_];
-
   int iarg = 5;
-  dump_what_ = 0;
-  dataMode_ = 0; // "face" is default behaviour for "output" i assume... / P.S.
 
   bool hasargs = true;
   while (iarg < narg && hasargs)
@@ -115,7 +107,7 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
           if (iarg+2 > narg) error->all(FLERR,"Dump mesh/vtk: not enough arguments for 'interpolate'");
           if(strcmp(arg[iarg+1],"face")==0) dataMode_ = 0;
           else if(strcmp(arg[iarg+1],"interpolate")==0) dataMode_ = 1;
-          else error->all(FLERR,"Dump mesh/vtk: wrong arrgument for 'interpolate'");
+          else error->all(FLERR,"Dump mesh/vtk: wrong arrgument for 'output'");
           iarg += 2;
           hasargs = true;
       }
@@ -167,7 +159,65 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
           iarg++;
           hasargs = true;
       }
+      else if(strcmp(arg[iarg],"aedges")==0)
+      {
+          dump_what_ |= DUMP_AEDGES;
+          iarg++;
+          hasargs = true;
+      }
+      else if(strcmp(arg[iarg],"acorners")==0)
+      {
+          dump_what_ |= DUMP_ACORNERS;
+          iarg++;
+          hasargs = true;
+      }
+      else if(strcmp(arg[iarg],"index")==0)
+      {
+          dump_what_ |= DUMP_INDEX;
+          iarg++;
+          hasargs = true;
+      }
+      else
+      {
+          // assume it's a mesh
+          TriMesh **meshListNew = new TriMesh*[nMesh_+1];
+          for(int i = 0; i < nMesh_; i++)
+            meshListNew[i] = meshList_[i];
+          delete[] meshList_;
+          meshList_ = meshListNew;
+
+          int ifix = modify->find_fix(arg[iarg++]);
+          if(ifix == -1)
+              error->all(FLERR,"Illegal dump mesh/vtk command, unknown keyword or mesh");
+          FixMeshSurface *fms = static_cast<FixMeshSurface*>(modify->fix[ifix]);
+          meshList_[nMesh_] = fms->triMesh();
+          nMesh_++;
+      }
   }
+
+  // in case meshes not specified explicitly, take all meshes
+  if (nMesh_ == 0)
+  {
+      nMesh_ = modify->n_fixes_style("mesh/surface");
+
+      meshList_ = new TriMesh*[nMesh_];
+      for (int iMesh = 0; iMesh < nMesh_; iMesh++)
+      {
+          /*NL*/ //fprintf(screen,"nMesh_ %d, found mesh %s\n",nMesh_,modify->find_fix_style("mesh",iMesh)->id);
+          meshList_[iMesh] = static_cast<FixMeshSurface*>(modify->find_fix_style("mesh/surface",iMesh))->triMesh();
+      }
+
+      if (nMesh_ == 0)
+          error->warning(FLERR,"Dump mesh/vtk cannot find any fix of type 'mesh/surface' to dump");
+  }
+
+  // allocate arrays
+  sigma_n_ = new ScalarContainer<double>*[nMesh_];
+  sigma_t_ = new ScalarContainer<double>*[nMesh_];
+  wear_ = new ScalarContainer<double>*[nMesh_];
+  v_node_ = new MultiVectorContainer<double,3,3>*[nMesh_];
+  f_node_ = new VectorContainer<double,3>*[nMesh_];
+
 
   if(dump_what_ == 0)
     error->all(FLERR,"Dump mesh/vtk: No dump quantity selected");
@@ -218,6 +268,12 @@ void DumpMeshVTK::init_style()
   if(dump_what_ & DUMP_OWNER)
     size_one += 1;
   if(dump_what_ & DUMP_AREA)
+    size_one += 1;
+  if(dump_what_ & DUMP_AEDGES)
+    size_one += 1;
+  if(dump_what_ & DUMP_ACORNERS)
+    size_one += 1;
+  if(dump_what_ & DUMP_INDEX)
     size_one += 1;
 
   delete [] format;
@@ -397,8 +453,21 @@ void DumpMeshVTK::pack(int *ids)
 
         if(dump_what_ & DUMP_AREA)
         {
-            int me = comm->me;
             buf[m++] = mesh->areaElem(iTri);
+        }
+
+        if(dump_what_ & DUMP_AEDGES)
+        {
+            buf[m++] = static_cast<double>(mesh->n_active_edges(iTri));
+        }
+
+        if(dump_what_ & DUMP_ACORNERS)
+        {
+            buf[m++] = static_cast<double>(mesh->n_active_corners(iTri));
+        }
+        if(dump_what_ & DUMP_INDEX)
+        {
+            buf[m++] = static_cast<double>(iTri);
         }
     }
   }
@@ -591,7 +660,7 @@ void DumpMeshVTK::write_data_ascii_point(int n, double *mybuf)
         {
             helper1 += mybuf[m + points_neightri[i]->get(j)*size_one];
             helper2 += mybuf[m+1 + points_neightri[i]->get(j)*size_one];
-             helper3 += mybuf[m+2 + points_neightri[i]->get(j)*size_one];
+            helper3 += mybuf[m+2 + points_neightri[i]->get(j)*size_one];
         }
         helper1 /= points_neightri[i]->size();
         helper2 /= points_neightri[i]->size();
@@ -659,7 +728,24 @@ void DumpMeshVTK::write_data_ascii_point(int n, double *mybuf)
         fprintf(fp,"%f\n",helper);
         }
         buf_pos++;
-       }
+      }
+
+      // not able to interpolate this
+      if(dump_what_ & DUMP_AEDGES)
+      {
+        buf_pos++;
+      }
+
+      // not able to interpolate this
+      if(dump_what_ & DUMP_ACORNERS)
+      {
+        buf_pos++;
+      }
+      // not able to interpolate this
+      if(dump_what_ & DUMP_INDEX)
+      {
+        buf_pos++;
+      }
     return;
 }
 
@@ -817,7 +903,44 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
           m += size_one;
       }
       buf_pos++;
-   }
+  }
+
+  if(dump_what_ & DUMP_AEDGES)
+  {
+      //write owner data
+      fprintf(fp,"SCALARS active_edges float 1\nLOOKUP_TABLE default\n");
+      m = buf_pos;
+      for (int i = 0; i < n; i++)
+      {
+          fprintf(fp,"%f\n",mybuf[m]);
+          m += size_one;
+      }
+      buf_pos++;
+  }
+  if(dump_what_ & DUMP_ACORNERS)
+  {
+      //write owner data
+      fprintf(fp,"SCALARS active_corners float 1\nLOOKUP_TABLE default\n");
+      m = buf_pos;
+      for (int i = 0; i < n; i++)
+      {
+          fprintf(fp,"%f\n",mybuf[m]);
+          m += size_one;
+      }
+      buf_pos++;
+  }
+  if(dump_what_ & DUMP_INDEX)
+  {
+      //write owner data
+      fprintf(fp,"SCALARS index float 1\nLOOKUP_TABLE default\n");
+      m = buf_pos;
+      for (int i = 0; i < n; i++)
+      {
+          fprintf(fp,"%f\n",mybuf[m]);
+          m += size_one;
+      }
+      buf_pos++;
+  }
 
   // footer not needed
   // if would be needed, would do like in dump stl
