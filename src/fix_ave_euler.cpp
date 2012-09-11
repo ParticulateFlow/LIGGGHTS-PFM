@@ -176,18 +176,11 @@ void FixAveEuler::setup(int vflag)
 void FixAveEuler::setup_bins()
 {
     int ibin;
-    double cell_size[3];
 
     // calc ideal cell size as multiple of max cutoff
     cell_size_ideal_ = cell_size_ideal_rel_ * (neighbor->cutneighmax-neighbor->skin);
 
-    cell_size[0] = cell_size[1] = cell_size[2] = cell_size_ideal_;
-
     //NP TODO: There are lot if(triclinic_); Maybe a template function?
-    if (triclinic_) {
-      domain->x2lamda(cell_size,cell_size);
-    }
-
     for(int dim = 0; dim < 3; dim++)
     {
         // get bounds
@@ -197,6 +190,8 @@ void FixAveEuler::setup_bins()
       } else {
         lo_lamda_[dim] = domain->sublo_lamda[dim];
         hi_lamda_[dim] = domain->subhi_lamda[dim];
+
+        cell_size_ideal_lamda_[dim] = cell_size_ideal_/domain->h[dim];
       }
     }
     if (triclinic_) {
@@ -207,19 +202,21 @@ void FixAveEuler::setup_bins()
     for(int dim = 0; dim < 3; dim++) {
       // round down (makes cell size larger)
       if (triclinic_) {
-        ncells_dim_[dim] = static_cast<int>((hi_lamda_[dim]-lo_lamda_[dim])/cell_size[dim]);
+        //ncells_dim_[dim] = static_cast<int>((hi_lamda_[dim]-lo_lamda_[dim])/cell_size[dim]);
+    	ncells_dim_[dim] = static_cast<int>((hi_lamda_[dim]-lo_lamda_[dim])/cell_size_ideal_lamda_[dim]);
         cell_size_lamda_[dim] = (hi_lamda_[dim]-lo_lamda_[dim])/static_cast<double>(ncells_dim_[dim]);
+
+        cell_size_[dim] = cell_size_lamda_[dim]*domain->h[dim];
       } else {
         ncells_dim_[dim] = static_cast<int>((hi_[dim]-lo_[dim])/cell_size_ideal_);
         cell_size_[dim] = (hi_[dim]-lo_[dim])/static_cast<double>(ncells_dim_[dim]);
       }
     }
-    if (triclinic_) domain->lamda2x(cell_size_lamda_,cell_size_);
 
     for(int dim = 0; dim < 3; dim++)
     {
-        cell_size_inv_[dim] = 1./cell_size_[dim];
-      if (triclinic_) cell_size_lamda_inv_[dim] = 1./cell_size_lamda_[dim];
+    	cell_size_inv_[dim] = 1./cell_size_[dim];
+    	if (triclinic_) cell_size_lamda_inv_[dim] = 1./cell_size_lamda_[dim];
 
         // add 2 extra cells for ghosts
         // do not need to match subbox expaned by cutneighmax
@@ -232,6 +229,7 @@ void FixAveEuler::setup_bins()
     }
 
     ncells_ = ncells_dim_[0]*ncells_dim_[1]*ncells_dim_[2];
+    //NP TODO: This is not correct for triclinic boxes!
     cell_volume_ = cell_size_[0]*cell_size_[1]*cell_size_[2];
 
     // (re) allocate spatial bin arrays
