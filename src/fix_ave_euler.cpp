@@ -331,9 +331,9 @@ void FixAveEuler::bin_atoms()
   {
     ibin = coord2bin(x[i]);
 
-      // ghosts outside grid may return values ibin < 0 || ibin > ncells_
+      // ghosts outside grid may return values ibin < 0 || ibin >= ncells_
       // lets ignore them
-      if (ibin < 0 || ibin > ncells_) {
+      if (ibin < 0 || ibin >= ncells_) {
         //NP Test-output if any particle is out of bounds; modified A.A.
         /*NL*/ //int nlocal = atom->nlocal;
         /*NL*/ //if(screen) fprintf(screen,"Particle with id= %d is out of bounds. nlocal = %d\n",i,nlocal);
@@ -352,7 +352,7 @@ void FixAveEuler::bin_atoms()
 inline int FixAveEuler::coord2bin(double *x)
 {
   int i,iCell[3];
-  double float_iCell[3],tmp_x[3];
+  double float_iCell[3];
 
   if (triclinic_) {
     double tmp_x[3];
