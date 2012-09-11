@@ -25,6 +25,7 @@
 
 #include "stdlib.h"
 #include "string.h"
+#include "math.h"
 #include "fix_ave_euler.h"
 #include "compute_stress_atom.h"
 #include "atom.h"
@@ -330,9 +331,9 @@ void FixAveEuler::bin_atoms()
   {
     ibin = coord2bin(x[i]);
 
-      // ghosts outside grid may return -1
+      // ghosts outside grid may return values ibin < 0 || ibin > ncells_
       // lets ignore them
-      if (ibin < 0) {
+      if (ibin < 0 || ibin > ncells_) {
         //NP Test-output if any particle is out of bounds; modified A.A.
         /*NL*/ //int nlocal = atom->nlocal;
         /*NL*/ //if(screen) fprintf(screen,"Particle with id= %d is out of bounds. nlocal = %d\n",i,nlocal);
