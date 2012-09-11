@@ -31,13 +31,18 @@
 #include "modify.h"
 #include "comm.h"
 #include <stdint.h>
+#include "memory.h"
 
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
 DumpEulerVTK::DumpEulerVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, arg),
-  fix_euler_(0)
+  fix_euler_(0),
+  n_calls_(0),
+  n_all_(0),
+  n_all_max_(0),
+  buf_all_(0)
 {
   if (narg < 5)
     error->all(FLERR,"Illegal dump pic/vtk command");
@@ -51,6 +56,7 @@ DumpEulerVTK::DumpEulerVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, 
 
 DumpEulerVTK::~DumpEulerVTK()
 {
+	memory->destroy(buf_all_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -139,7 +145,28 @@ void DumpEulerVTK::pack(int *ids)
 
 void DumpEulerVTK::write_data(int n, double *mybuf)
 {
-  write_data_ascii(n,mybuf);
+  //write_data_ascii(n,mybuf);
+
+    if (comm->me != 0) return;
+
+    n_calls_++;
+
+    // grow buffer if necessary
+    if(n_all_+n*size_one > n_all_max_)
+    {
+        n_all_max_ = n_all_ + n*size_one;
+        memory->grow(buf_all_,n_all_max_,"DumpEulerVTK:buf_all_");
+    }
+
+    // copy to buffer
+    vectorCopyN(mybuf,&(buf_all_[n_all_]),n*size_one);
+    n_all_ += n*size_one;
+
+    // write on last call
+    if(n_calls_ == comm->nprocs) {
+        write_data_ascii(n_all_/size_one,buf_all_);
+        n_calls_ = 0;
+    }
 }
 
 void DumpEulerVTK::write_data_ascii(int n, double *mybuf)
