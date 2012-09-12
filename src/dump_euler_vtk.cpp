@@ -166,6 +166,7 @@ void DumpEulerVTK::write_data(int n, double *mybuf)
     if(n_calls_ == comm->nprocs) {
         write_data_ascii(n_all_/size_one,buf_all_);
         n_calls_ = 0;
+        n_all_ = 0;
     }
 }
 
