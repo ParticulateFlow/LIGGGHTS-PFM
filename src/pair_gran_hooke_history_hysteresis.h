@@ -25,26 +25,26 @@
 
 #ifdef PAIR_CLASS
 
-PairStyle(gran/hooke/history/cohesion,PairGranHookeHistoryCohesion)
+PairStyle(gran/hooke/history/hysteresis,PairGranHookeHistoryHysteresis)
 
 #else
 
-#ifndef LMP_PAIR_GRAN_HOOKE_HISTORY_COHESION_H
-#define LMP_PAIR_GRAN_HOOKE_HISTORY_COHESION_H
+#ifndef LMP_PAIR_GRAN_HOOKE_HISTORY_HYSTERESIS_H
+#define LMP_PAIR_GRAN_HOOKE_HISTORY_HYSTERESIS_H
 
 #include "pair_gran_hooke_history.h"
 
 namespace LAMMPS_NS {
 
-class PairGranHookeHistoryCohesion : public PairGranHookeHistory {
+class PairGranHookeHistoryHysteresis : public PairGranHookeHistory {
 
  friend class FixWallGranHookeHistory;
  friend class FixCheckTimestepGran;
 
  public:
 
-  PairGranHookeHistoryCohesion(class LAMMPS *);
-  ~PairGranHookeHistoryCohesion();
+  PairGranHookeHistoryHysteresis(class LAMMPS *);
+  ~PairGranHookeHistoryHysteresis();
 
   virtual void settings(int, char **);
   virtual void init_granular(); //NP makes inits specific to certain gran style     //NP modified C.K.

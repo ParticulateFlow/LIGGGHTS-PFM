@@ -27,7 +27,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-#include "pair_gran_hooke_history_cohesion.h"
+#include "pair_gran_hooke_history_hysteresis.h"
 #include "atom.h"
 #include "atom_vec.h"
 #include "domain.h"
@@ -53,7 +53,7 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-PairGranHookeHistoryCohesion::PairGranHookeHistoryCohesion(LAMMPS *lmp) : PairGranHookeHistory(lmp)
+PairGranHookeHistoryHysteresis::PairGranHookeHistoryHysteresis(LAMMPS *lmp) : PairGranHookeHistory(lmp)
 {
     //flag that we intend to use contact history
     history = 1;
@@ -67,7 +67,7 @@ PairGranHookeHistoryCohesion::PairGranHookeHistoryCohesion(LAMMPS *lmp) : PairGr
 
 /* ---------------------------------------------------------------------- */
 
-PairGranHookeHistoryCohesion::~PairGranHookeHistoryCohesion()
+PairGranHookeHistoryHysteresis::~PairGranHookeHistoryHysteresis()
 {
 	memory->destroy(kn2k2Max_);
 	memory->destroy(kn2kc_);
@@ -76,7 +76,7 @@ PairGranHookeHistoryCohesion::~PairGranHookeHistoryCohesion()
 
 /* ---------------------------------------------------------------------- */
 
-void PairGranHookeHistoryCohesion::history_args(char** args)
+void PairGranHookeHistoryHysteresis::history_args(char** args)
 {
     //provide names and newtonflags for each history value
     //newtonflag = 0 means that the value
@@ -92,7 +92,7 @@ void PairGranHookeHistoryCohesion::history_args(char** args)
 
 /* ---------------------------------------------------------------------- */
 
-void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
+void PairGranHookeHistoryHysteresis::compute(int eflag, int vflag,int addflag)
 {
   //calculated from the material properties //NP modified C.K.
   double kn,kt,gamman,gammat,xmu,rmu; //NP modified C.K.
@@ -442,7 +442,7 @@ void PairGranHookeHistoryCohesion::compute(int eflag, int vflag,int addflag)
    global settings
 ------------------------------------------------------------------------- */
 
-void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified C.K.
+void PairGranHookeHistoryHysteresis::settings(int narg, char **arg) //NP modified C.K.
 {
     iarg_ = 0;
 
@@ -505,7 +505,7 @@ void PairGranHookeHistoryCohesion::settings(int narg, char **arg) //NP modified 
    init specific to this granular substyle
 ------------------------------------------------------------------------- */
 
-void PairGranHookeHistoryCohesion::init_granular()
+void PairGranHookeHistoryHysteresis::init_granular()
 {
   int max_type = mpg->max_type();
 
@@ -513,7 +513,7 @@ void PairGranHookeHistoryCohesion::init_granular()
 
   //Get pointer to the fixes that have the material properties
   //NP get the mechanical properties for all models here, since other model classes are derived from
-  //NP the PairGranHookeHistoryCohesion class
+  //NP the PairGranHookeHistoryHysteresis class
 
   Y1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,force->pair_style));
   v1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,force->pair_style));
@@ -572,7 +572,7 @@ void PairGranHookeHistoryCohesion::init_granular()
   allocate per-type and per-type pair properties
 ------------------------------------------------------------------------- */
 
-void PairGranHookeHistoryCohesion::allocate_properties(int size)
+void PairGranHookeHistoryHysteresis::allocate_properties(int size)
 {
     memory->destroy(Yeff);
     memory->destroy(Geff);
