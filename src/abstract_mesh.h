@@ -107,6 +107,14 @@ namespace LAMMPS_NS
         virtual int id_slow(int i) = 0;
 
         //NP ***************************************
+        //NP interface to SurfaceMesh
+        //NP ***************************************
+
+        virtual int nBelowAngle() = 0;
+        virtual double angleLimit() = 0;
+        virtual int nTooManyNeighs() = 0;
+
+        //NP ***************************************
         //NP inline access functions for size
         //NP ***************************************
 

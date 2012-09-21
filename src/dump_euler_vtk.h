@@ -44,12 +44,6 @@ class DumpEulerVTK : public Dump {
 
   class FixAveEuler *fix_euler_;
 
-  int n_calls_;
-
-  // buffer for data from all procs
-  int n_all_, n_all_max_;
-  double *buf_all_;
-
   int modify_param(int, char **);
   void write_header(bigint ndump);
   int count();

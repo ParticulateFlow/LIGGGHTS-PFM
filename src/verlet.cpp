@@ -46,7 +46,7 @@
 
 using namespace LAMMPS_NS;
 
-/*NL*/ #define DEBUG_VERLET false //(update->ntimestep>3700) //false
+/*NL*/ #define DEBUG_VERLET false // true // (update->ntimestep>650) //false
 
 /* ---------------------------------------------------------------------- */
 
@@ -287,6 +287,7 @@ void Verlet::run(int n)
       timer->stamp(TIME_COMM);
       /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre neigh\n");__debug__(lmp);}
       if (n_pre_neighbor) modify->pre_neighbor();
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing neigh\n");__debug__(lmp);}
       neighbor->build();
       timer->stamp(TIME_NEIGHBOR);
     }

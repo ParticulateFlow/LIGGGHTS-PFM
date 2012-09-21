@@ -43,7 +43,7 @@ MechParamGran::~MechParamGran()
 int MechParamGran::max_type()
 {
   //loop over all particles to check how many atom types are present
-  mintype=1;
+  mintype=100000;
   maxtype=1;
 
   for (int i=0;i<atom->nlocal;i++)
@@ -58,9 +58,9 @@ int MechParamGran::max_type()
   {
       // checks
       Fix *fix = modify->fix[i];
-      if(fix->min_type() < mintype)
+      if(fix->min_type() > 0 &&  fix->min_type() < mintype)
         mintype = fix->min_type();
-      if(fix->max_type() > mintype)
+      if(fix->max_type() > 0 &&  fix->max_type() > maxtype)
         maxtype = fix->max_type();
   }
 
@@ -74,8 +74,6 @@ int MechParamGran::max_type()
   //error check
   if(mintype != 1) error->all(FLERR,"Atom types must start from 1 for granular simulations");
   if(maxtype > atom->ntypes) error->all(FLERR,"Please increase the number of atom types in the 'create_box' command to match the number of atom types you use in the simulation");
-
-  //NPfprintf(lmp->screen,"Yeff[1][1]=%f Geff[1][1]=%f coeffRestLog[1][1]=%f coeffFrict[1][1]=%f betaeff[1][1]=%f\n",Yeff[1][1],Geff[1][1],coeffRestLog[1][1],coeffFrict[1][1],betaeff[1][1]);
 
   return maxtype;
 }

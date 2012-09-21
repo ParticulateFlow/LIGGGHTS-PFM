@@ -46,7 +46,7 @@ using namespace FixConst;
 
 #define EPSILON 0.001
 
-#define LMP_DEBUGMODE_FIXINSERT false
+#define LMP_DEBUGMODE_FIXINSERT false //(667 == update->ntimestep)//  true
 #define LMP_DEBUG_OUT_FIXINSERT screen
 
 /* ---------------------------------------------------------------------- */
@@ -515,7 +515,7 @@ void FixInsert::pre_exchange()
       error->one(FLERR,"Particle insertion: Internal error");
   }
 
-  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 4\n");}
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 4a\n");}
 
   // warn if max # insertions exceeded by random processes
   if (ninsert_exists && ninserted + ninsert_this > ninsert)
@@ -536,6 +536,8 @@ void FixInsert::pre_exchange()
   int ninserted_this_local = 0, ninserted_spheres_this_local = 0;
   double mass_inserted_this = 0.;
   double mass_inserted_this_local = 0.;
+
+  /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 4b\n");}
 
   // randomize insertion positions and set v, omega
   // also performs overlap check via xnear if requested

@@ -35,6 +35,7 @@
 #include "update.h"
 #include "memory.h"
 #include "error.h"
+#include "pair.h" //NP modified C.K.
 #include "neighbor.h" //NP modified C.K.
 #include "vector_liggghts.h" //NP modified C.K.
 #include "modify.h" //NP modified C.K.
@@ -631,13 +632,18 @@ int Balance::dynamic()
     {
         //NP skin in lamda coords
         double skin = neighbor->skin / (domain->boxhi[bdim[idim]]-domain->boxlo[bdim[idim]]);
+        double cut = force->pair->cutforce / (domain->boxhi[bdim[idim]]-domain->boxlo[bdim[idim]]);
         for (i = 1; i < np; i++)
         {
+            if(cut > 0. && split[i]-split[i-1] < 1.5*cut)
+                split[i] = split[i-1]+1.5*cut;
             if(split[i] < split_old[i-1]+skin)
                 split[i] = split_old[i-1]+skin;
             if(split[i] > split_old[i+1]-skin)
                 split[i] = split_old[i+1]-skin;
+
             //split[i] = split_old[i];
+            /*NL*/ //fprintf(screen,"proc %d - cut %f\n",me,cut);
             /*NL*/ //fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
         }
     }

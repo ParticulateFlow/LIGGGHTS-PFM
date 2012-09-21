@@ -223,8 +223,8 @@ void FixAveEuler::setup_bins()
 
     for(int dim = 0; dim < 3; dim++)
     {
-    	cell_size_inv_[dim] = 1./cell_size_[dim];
-    	if (triclinic_) cell_size_lamda_inv_[dim] = 1./cell_size_lamda_[dim];
+        cell_size_inv_[dim] = 1./cell_size_[dim];
+      if (triclinic_) cell_size_lamda_inv_[dim] = 1./cell_size_lamda_[dim];
 
         // add 2 extra cells for ghosts
         // do not need to match subbox expaned by cutneighmax
@@ -375,10 +375,10 @@ inline int FixAveEuler::coord2bin(double *x)
   }
 
   //NP Test-output if any particle is out of bounds; modified A.A.
-  /*NL*/ if (iCell[0]>=ncells_dim_[0] || iCell[1]>=ncells_dim_[1] || iCell[2]>=ncells_dim_[2] || iCell[0]<0 || iCell[1]<0 || iCell[2]<0) {
+  /*NL*/ //if (iCell[0]>=ncells_dim_[0] || iCell[1]>=ncells_dim_[1] || iCell[2]>=ncells_dim_[2] || iCell[0]<0 || iCell[1]<0 || iCell[2]<0) {
   /*NL*/ //  if(screen) fprintf(screen,"Particle with x[0-2] = %f %f %f would have iCell[0] = %d, iCell[1] = %d and iCell[2] = %d \n",x[0],x[1],x[2],iCell[0],iCell[1],iCell[2]);
-  /*NL*/   return -1;
-  /*NL*/ }
+  /*NL*/ //  return -1;
+  /*NL*/ //}
 
   return iCell[2]*ncells_dim_[1]*ncells_dim_[0] + iCell[1]*ncells_dim_[0] + iCell[0];
 }

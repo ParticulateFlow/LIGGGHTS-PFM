@@ -285,7 +285,7 @@ void FixBalance::rebalance()
   if (domain->triclinic) domain->x2lamda(atom->nlocal);
   if (irregular->migrate_check())
   {
-      if(balance->disallow_irregular())
+      if(balance->disallow_irregular() && 0 == comm->me)
         error->warning(FLERR,"Processor boundaries moved too far - mesh elements might be lost");
       irregular->migrate_atoms();
   }

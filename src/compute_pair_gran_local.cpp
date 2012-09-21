@@ -18,6 +18,7 @@
 
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
+
 #include "math.h"
 #include "string.h"
 #include "compute_pair_gran_local.h"
@@ -251,6 +252,8 @@ void ComputePairGranLocal::compute_local()
   if(wall == 0) ncount = count_pairs();        // # pairs is ensured to be the same for pair and heat
   else          ncount = count_wallcontacts(); // # wall contacts ensured to be same for wall/gran and heat
 
+  /*NL*/ //fprintf(screen,"ncount %d\n",ncount);
+
   if (ncount > nmax) reallocate(ncount);
   size_local_rows = ncount;
 
@@ -349,7 +352,7 @@ int ComputePairGranLocal::count_pairs()
 int ComputePairGranLocal::count_wallcontacts()
 {
     // account for fix group
-    return fixwall->n_contacts(groupbit);
+    return fixwall->n_contacts_local(groupbit);
 }
 
 /* ----------------------------------------------------------------------
@@ -471,6 +474,8 @@ void ComputePairGranLocal::add_wall_1(int iFMG,int idTri,int iP,double *contact_
     {
         array[ipair][n++] = static_cast<double>(iFMG);
         array[ipair][n++] = static_cast<double>(idTri);
+        n += 1;
+        /*NL*/ //fprintf(screen,"having iFmG %d and idtri %d\n",iFMG,idTri);
     }
 
 }
@@ -498,6 +503,7 @@ void ComputePairGranLocal::add_wall_2(int i,double fx,double fy,double fz,double
     {
         n += 2;
         array[ipair][n++] = static_cast<double>(atom->tag[i]);
+        /*NL*/ //fprintf(screen,"having tag %d\n",atom->tag[i]);
     }
     if(fflag)
     {

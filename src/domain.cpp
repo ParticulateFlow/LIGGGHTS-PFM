@@ -284,6 +284,8 @@ void Domain::set_local_box()
     if (myloc[2] < procgrid[2]-1)
       subhi[2] = boxlo[2] + zprd*zsplit[myloc[2]+1];
     else subhi[2] = boxhi[2];
+
+    /*NL*/ //fprintf(screen,"step %d, proc %d: sublo/hi %f %f\n",update->ntimestep,comm->me,sublo[2],subhi[2]);
   }
 }
 

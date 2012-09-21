@@ -171,8 +171,8 @@ class Fix : protected Pointers {
   virtual double memory_usage() {return 0.0;}
 
   virtual double max_rad(int) {return 0.0;} //NP modified C.K.
-  virtual int min_type() {return 1;} //NP modified C.K.
-  virtual int max_type() {return 1;} //NP modified C.K.
+  virtual int min_type() {return 0;} //NP modified C.K.
+  virtual int max_type() {return 0;} //NP modified C.K.
   virtual double extend_cut_ghost() {return 0.0;} //NP modified C.K.
   virtual int n_history_extra() {return 0;} //NP modified C.K.
   virtual bool history_args(char** args) {return false;} //NP modified C.K.

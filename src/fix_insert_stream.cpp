@@ -50,7 +50,8 @@ using namespace FixConst;
 /*NL*/ #define LMP_DEBUGMODE_FIXINSERT_STREAM false
 /*NL*/ #define LMP_DEBUG_OUT_FIXINSERT_STREAM screen
 
-#define TINY 1e-14
+#define FIX_INSERT_NTRY_SUBBOX 500
+#define FIX_INSERT_STREAM_TINY 1e-14
 
 /* ---------------------------------------------------------------------- */
 
@@ -68,9 +69,9 @@ FixInsertStream::FixInsertStream(LAMMPS *lmp, int narg, char **arg) :
     if (strcmp(arg[iarg],"insertion_face") == 0)
     {
       //NP should be possible to define either mesh or face
-      if (iarg+2 > narg) error->fix_error(FLERR,this,"");
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       int f_i = modify->find_fix(arg[iarg+1]);
-      if (f_i == -1) error->fix_error(FLERR,this,"Could not find fix mesh/gran id you provided for the fix insert/stream command");
+      if (f_i == -1) error->fix_error(FLERR,this,"Could not find fix mesh/gran id you provided");
       if (strncmp(modify->fix[f_i]->style,"mesh",4))
         error->fix_error(FLERR,this,"The fix belonging to the id you provided is not of type mesh");
       ins_face = (static_cast<FixMeshSurface*>(modify->fix[f_i]))->triMesh();
@@ -79,19 +80,28 @@ FixInsertStream::FixInsertStream(LAMMPS *lmp, int narg, char **arg) :
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"extrude_length") == 0) {
-      if (iarg+2 > narg) error->fix_error(FLERR,this,"");
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       extrude_length = atof(arg[iarg+1]);
       if(extrude_length < 0. ) error->fix_error(FLERR,this,"invalid extrude_length");
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"duration") == 0) {
-      if (iarg+2 > narg) error->fix_error(FLERR,this,"");
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       duration = atoi(arg[iarg+1]);
       if(duration < 1 ) error->fix_error(FLERR,this,"'duration' can not be < 1");
       iarg += 2;
       hasargs = true;
+    } else if (strcmp(arg[iarg],"parallel") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
+      if(strcmp("yes",arg[iarg+1]) == 0)
+        parallel = true;
+      else if(strcmp("no",arg[iarg+1]) == 0)
+        parallel = false;
+      else error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'parallel'");
+      iarg += 2;
+      hasargs = true;
     } else if (strcmp(arg[iarg],"ntry_mc") == 0) {
-      if (iarg+2 > narg) error->fix_error(FLERR,this,"");
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       ntry_mc = atoi(arg[iarg+1]);
       if(ntry_mc < 1000) error->fix_error(FLERR,this,"ntry_mc must be > 1000");
       iarg += 2;
@@ -149,6 +159,8 @@ void FixInsertStream::post_create()
         fixarg[15]="0.";
         modify->add_fix_property_atom(16,fixarg,style);
   }
+
+  if(do_copy) create_mesh_copy();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -167,7 +179,11 @@ void FixInsertStream::init_defaults()
     face_style = FACE_NONE;
     extrude_length = 0.;
 
+    extrude_length_min = extrude_length_max = 0.;
+
     duration = 0;
+
+    parallel = false;
 
     ntry_mc = 100000;
 }
@@ -241,7 +257,7 @@ void FixInsertStream::calc_insertion_properties()
         if(extrude_length < 3.*max_r_bound())
             error->fix_error(FLERR,this,"'extrude_length' is too small");
         // add TINY for resolving round-off
-        insert_every = static_cast<int>((extrude_length+TINY)/(dt*vectorMag3D(v_normal)));
+        insert_every = static_cast<int>((extrude_length+FIX_INSERT_STREAM_TINY)/(dt*vectorMag3D(v_normal)));
         /*NL*///fprintf(screen,"insert_every %d, extrude_length %f, dt %f, vectorMag3D(v_normal) %f\n",insert_every,extrude_length,dt,vectorMag3D(v_normal));
         if(insert_every == 0)
           error->fix_error(FLERR,this,"insertion velocity too high or extrude_length too low");
@@ -267,7 +283,7 @@ void FixInsertStream::calc_insertion_properties()
     // ninsert - if ninsert not defined directly, calculate it
     if(ninsert == 0)
     {
-        if(massinsert > 0.) ninsert = static_cast<int>((massinsert+TINY) / fix_distribution->mass_expect());
+        if(massinsert > 0.) ninsert = static_cast<int>((massinsert+FIX_INSERT_STREAM_TINY) / fix_distribution->mass_expect());
         else error->fix_error(FLERR,this,"must define either 'nparticles' or 'mass'");
     }
 
@@ -302,6 +318,9 @@ void FixInsertStream::calc_insertion_properties()
         /*NL*///printVec3D(screen,"ins_vol_xmin",ins_vol_xmax);
     }
     else error->fix_error(FLERR,this,"Missing implementation in calc_insertion_properties()");
+
+    extrude_length_min = 0.;
+    extrude_length_max = extrude_length;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -336,39 +355,63 @@ void FixInsertStream::init()
     //NP disallow movement because shallow mesh copy would not know about it
     if(ins_face->isMoving() || ins_face->isScaling() || ins_face->isTranslating())
         error->fix_error(FLERR,this,"cannot translate, rotate, scale mesh which is used for particle insertion");
-
-    if(do_copy) create_mesh_copy();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixInsertStream::create_mesh_copy()
 {
-    //NP mesh is not parallelized at this point
-    //NP simply copy it - needed for calc_ins_fraction()
-
-    //NP WARNING
+    //NP ****WARNING****
     //NP this creates only a very shallow copy
 
-    double **nodeTmp = create<double>(nodeTmp,3,3);
+    int size_global = ins_face->sizeGlobal();
+    int size_local = ins_face->sizeLocal();
 
-    int size = ins_face->size();
-    for(int i = 0; i < size; i++)
+    //NP mesh is not parallelized at this point
+    //NP simply copy it - needed for calc_ins_fraction()
+    if(!ins_face->isParallel())
     {
-        for(int j = 0; j < 3; j++)
-            ins_face->node_slow(i,j,nodeTmp[j]);
+        double **nodeTmp = create<double>(nodeTmp,3,3);
+        for(int i = 0; i < size_local; i++)
+        {
+            for(int j = 0; j < 3; j++)
+                ins_face->node_slow(i,j,nodeTmp[j]);
 
-        mesh_copy->addElement(nodeTmp);
+            mesh_copy->addElement(nodeTmp);
+        }
+        destroy<double>(nodeTmp);
+    }
+    //NP mesh is already parallelized at this point
+    //NP need to allreduce again
+    else
+    {
+        double ***nodeTmp = create<double>(nodeTmp,size_global,3,3);
+        int id;
+
+        vectorZeroizeN(&(nodeTmp[0][0][0]),size_global*3*3);
+
+        for(int i = 0; i < size_local; i++)
+        {
+            id = ins_face->id_slow(i);
+            for(int j = 0; j < 3; j++)
+                ins_face->node_slow(i,j,nodeTmp[id][j]);
+        }
+
+        MPI_Sum_Vector(&(nodeTmp[0][0][0]),size_global*3*3,world);
+
+        for(int i = 0; i < size_global; i++)
+            mesh_copy->addElement(nodeTmp[i]);
+
+        destroy<double>(nodeTmp);
     }
 
-    destroy<double>(nodeTmp);
     mesh_copy->useAsShallowGlobalMesh();
+    mesh_copy->setMeshID(ins_face->mesh_id());
 
     do_copy = false;
-
-    /*NL*/ //fprintf(screen,"proc %d have %d elems in mesh copy\n",
-    /*NL*/ //       comm->me,mesh_copy->size());
-    /*NL*/ //error->all(FLERR,"end");
+    /*NL*/ //fprintf(screen,"proc %d have %d elems in mesh copy for mesh %s\n",
+    /*NL*/ //       comm->me,mesh_copy->size(),ins_face->mesh_id());
+    /*NL*/ //error->one(FLERR,"end");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -395,7 +438,7 @@ void FixInsertStream::calc_ins_fraction()
 
     do_ins_fraction_calc = false;
 
-    double pos[3];
+    double pos[3], boxedgevec[3], dot;
     int n_in_local = 0, n_test = ntry_mc;
 
     for(int i = 0; i < n_test; i++)
@@ -408,7 +451,46 @@ void FixInsertStream::calc_ins_fraction()
 
     ins_fraction = static_cast<double>(n_in_local)/static_cast<double>(n_test);
 
-    /*NL*/ //fprintf(screen,"proc %d: fraction %f\n",comm->me,ins_fraction);
+    // also calculate min and max extrusion
+    // this can speed up insertion if extrusion volume extends across multiple procs
+
+    if(parallel)
+    {
+        extrude_length_min = extrude_length;
+        extrude_length_max = 0.;
+
+        for(int ix = 0; ix < 2; ix++)
+            for(int iy = 0; iy < 2; iy++)
+                for(int iz = 0; iz < 2; iz++)
+                {
+                    vectorConstruct3D
+                    (
+                        boxedgevec,
+                        (ix == 0 ? domain->sublo[0] : domain->subhi[0]) - p_ref[0],
+                        (iy == 0 ? domain->sublo[1] : domain->subhi[1]) - p_ref[1],
+                        (iz == 0 ? domain->sublo[2] : domain->subhi[2]) - p_ref[2]
+                    );
+
+                    dot = -vectorDot3D(boxedgevec,normalvec);
+                    /*NL*/ //fprintf(screen,"dot %f\n",dot);
+                    if(dot > 0. && dot < extrude_length)
+                    {
+                        extrude_length_max = MathExtraLiggghts::max(extrude_length_max,dot);
+                        extrude_length_min = MathExtraLiggghts::min(extrude_length_min,dot);
+                    }
+                    else if(dot < 0.)
+                        extrude_length_min = 0.;
+                    else if(dot >= extrude_length)
+                        extrude_length_max = extrude_length;
+                }
+        if(extrude_length_min == extrude_length)
+            extrude_length_min = 0.;
+        if(extrude_length_max == 0.)
+            extrude_length_max = extrude_length;
+    }
+
+    /*NL*/ //fprintf(screen,"proc %d: fraction %f extrude_length_min %f extrude_length_max %f\n",
+    /*NL*/ //        comm->me,ins_fraction,extrude_length_min,extrude_length_max);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -473,9 +555,11 @@ inline void FixInsertStream::generate_random(double *pos, double rad)
     //NP position has to be within the subbox
     if(all_in_flag)
         error->one(FLERR,"FixInsertStream: all_in 'yes' not yet implemented");
-        //ins_face->generateRandomSubboxWithin(pos,rad);
+        //NP ins_face->generateRandomSubboxWithin(pos,rad);
     else
-        ins_face->generateRandomSubbox(pos);
+        //NP position is not restricted to my subbox
+        mesh_copy->generateRandomOwnedGhost(pos);
+        //NP ins_face->generateRandomSubbox(pos);
 
     // extrude the position
     //NP min pos: max_rbound,
@@ -485,9 +569,9 @@ inline void FixInsertStream::generate_random(double *pos, double rad)
     //NP   stream is more continuous
 
     if(check_ol_flag)
-        r = -1.*(random->uniform()*(extrude_length         ) + rad);
+        r = -1.*(random->uniform()*(extrude_length_max         ) + rad + extrude_length_min);
     else
-        r = -1.*(random->uniform()*(extrude_length - 2.*rad) + rad);
+        r = -1.*(random->uniform()*(extrude_length_max - 2.*rad) + rad + extrude_length_min);
 
     vectorScalarMult3D(normalvec,r,ext);
     vectorAdd3D(pos,ext,pos);
@@ -527,8 +611,6 @@ inline void FixInsertStream::generate_random_global(double *pos)
 
 void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local, int &ninserted_spheres_this_local, double &mass_inserted_this_local)
 {
-    /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::x_v_omega() start\n");
-
     ninserted_this_local = ninserted_spheres_this_local = 0;
     mass_inserted_this_local = 0.;
 
@@ -540,6 +622,11 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
 
     int ntry = 0;
     int maxtry = ninsert_this_local * maxattempt;
+
+    /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::x_v_omega() start, maxtry %d\n",maxtry);
+
+    /*NL*/ //if(maxtry > 0) fprintf(screen,"proc %d: ninsert_this_local, maxtry %d sublo/hi %f %f, extrude_length_max %f extrude_length_min %f\n",
+    /*NL*/ //              comm->me,ninsert_this_local,maxtry,domain->sublo[2],domain->subhi[2],extrude_length_max,extrude_length_min);
 
     // no overlap check
     // insert with v_normal, no omega
@@ -555,15 +642,19 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
                 generate_random(pos,rad_to_insert);
                 ntry++;
             }
-            while(ntry < maxtry && domain->dist_subbox_borders(pos) < rad_to_insert);
+            while(ntry < maxtry && ((!domain->is_in_subdomain(pos)) || (domain->dist_subbox_borders(pos) < rad_to_insert)));
 
             // could randomize vel, omega, quat here
 
-            nins = pti->set_x_v_omega(pos,v_normal,omega_tmp,quat_insert);
+            //NP only insert if could successfully randomize position
+            if(ntry < maxtry)
+            {
+                nins = pti->set_x_v_omega(pos,v_normal,omega_tmp,quat_insert);
 
-            ninserted_spheres_this_local += nins;
-            mass_inserted_this_local += pti->mass_ins;
-            ninserted_this_local++;
+                ninserted_spheres_this_local += nins;
+                mass_inserted_this_local += pti->mass_ins;
+                ninserted_this_local++;
+            }
         }
     }
     // overlap check
@@ -583,13 +674,18 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
                 {
                     generate_random(pos,rad_to_insert);
                     ntry++;
-                    /*NL*///fprintf(screen,"domain->dist_subbox_borders(pos) %f\n",domain->dist_subbox_borders(pos));
+
                 }
-                while(ntry < maxtry && domain->dist_subbox_borders(pos) < rad_to_insert);
+                while(ntry < maxtry && ((!domain->is_in_subdomain(pos)) || (domain->dist_subbox_borders(pos) < rad_to_insert)));
 
                 // could randomize vel, omega, quat here
 
-                nins = pti->check_near_set_x_v_omega(pos,v_normal,omega_tmp,quat_insert,xnear,nspheres_near);
+                //NP only insert if could successfully randomize position
+                if(ntry < maxtry)
+                {
+                    /*NL*///fprintf(screen,"domain->dist_subbox_borders(pos) %f rad_to_insert %f\n",domain->dist_subbox_borders(pos),rad_to_insert);
+                    nins = pti->check_near_set_x_v_omega(pos,v_normal,omega_tmp,quat_insert,xnear,nspheres_near);
+                }
             }
 
             if(nins > 0)
@@ -635,7 +731,7 @@ void FixInsertStream::finalize_insertion(int ninserted_spheres_this_local)
         {
             vectorSubtract3D(p_ref,x[i],pos_rel);
             dist_normal = vectorDot3D(pos_rel,normalvec);
-            n_steps = static_cast<int>((dist_normal+TINY)/(vectorMag3D(v_normal)*dt));
+            n_steps = static_cast<int>((dist_normal+FIX_INSERT_STREAM_TINY)/(vectorMag3D(v_normal)*dt));
         }
 
         // first 3 values is original position to integrate
@@ -688,8 +784,8 @@ void FixInsertStream::end_of_step()
         {
             if(release_data[i][3] == 0.) continue;
 
-            i_step = static_cast<int>(release_data[i][3]+TINY);
-            r_step = static_cast<int>(release_data[i][4]+TINY);
+            i_step = static_cast<int>(release_data[i][3]+FIX_INSERT_STREAM_TINY);
+            r_step = static_cast<int>(release_data[i][4]+FIX_INSERT_STREAM_TINY);
             vectorCopy3D(&release_data[i][5],v_integrate);
 
             if(step > r_step) continue;

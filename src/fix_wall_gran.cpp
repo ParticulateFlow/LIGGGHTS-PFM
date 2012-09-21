@@ -594,7 +594,7 @@ void FixWallGran::post_force_mesh(int vflag)
             int iPart = *neighborList;
 
             /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
-            /*NL*///   fprintf(screen,"proc 3 nonmoving mesh %d Tri %d iCont %d numNeigh %d\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
+            /*NL*///   fprintf(screen,"nonmoving mesh %d Tri %d iCont %d numNeigh %d\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
 
             // do not need to handle ghost particles
             if(iPart >= nlocal) continue;
@@ -616,6 +616,7 @@ void FixWallGran::post_force_mesh(int vflag)
             }
             else //NP always handle contact for SPH
             {
+              //NP continue in case already have a contact with a coplanar face
               if(fix_contact && ! fix_contact->handleContact(iPart,idTri,c_history)) continue;
               post_force_eval_contact(iPart,deltan,delta,v_wall,c_history,iMesh,FixMesh_list_[iMesh],mesh,iTri);
             }
@@ -699,9 +700,17 @@ inline void FixWallGran::post_force_eval_contact(int iPart, double deltan, doubl
 
   /*NL*/ //if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
   /*NL*/ // if(strcmp(id,"cylwalls") == 0) {
-  /*NL*/ //   fprintf(screen,"handling mesh wall with particle id %d, pos %f %f %f,deltan %f, delr %f dx %f dy %f dz %f\n",
-  /*NL*/ //                   atom->tag[iPart],atom->x[iPart][0],atom->x[iPart][1],atom->x[iPart][2],deltan,delr,dx,dy,dz);
+  /*NL*/ //   fprintf(screen,"step "BIGINT_FORMAT "handling mesh wall with particle id %d, tri id %d, deltan %e, delr %e dx %e dy %e dz %e\n",
+  /*NL*/ //                   update->ntimestep,atom->tag[iPart],mesh->id(iTri),deltan,delr,dx,dy,dz);
   /*NL*/ //    error->one(FLERR,"end");
+
+  // add to cwl
+  if(cwl_ && !addflag_)
+  {
+      double contactPoint[3];
+      vectorAdd3D(x_[iPart],delta,contactPoint);
+      cwl_->add_wall_1(iMesh,mesh->id(iTri),iPart,contactPoint);
+  }
 
   // deltan > 0 in compute_force
   // but negative in distance algorithm
@@ -722,14 +731,6 @@ inline void FixWallGran::post_force_eval_contact(int iPart, double deltan, doubl
            iPart,f_pw,delta,iTri,v_wall
         );
     }
-  }
-
-  // add to cwl
-  if(cwl_ && !addflag_)
-  {
-      double contactPoint[3];
-      vectorAdd3D(x_[iPart],delta,contactPoint);
-      cwl_->add_wall_1(iMesh,mesh->id(iTri),iPart,contactPoint);
   }
 
   // add heat flux
@@ -757,7 +758,7 @@ int FixWallGran::is_moving()
 
 /* ---------------------------------------------------------------------- */
 
-int FixWallGran::n_contacts()
+int FixWallGran::n_contacts_local()
 {
     if (!is_mesh_wall() || dnum() == 0) return 0;
 
@@ -765,13 +766,21 @@ int FixWallGran::n_contacts()
     for(int i = 0; i < n_FixMesh_; i++)
         ncontacts += FixMesh_list_[i]->contactHistory()->n_contacts();
 
+    return ncontacts;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixWallGran::n_contacts_all()
+{
+    int ncontacts = n_contacts_local();
     MPI_Sum_Scalar(ncontacts,world);
     return ncontacts;
 }
 
 /* ---------------------------------------------------------------------- */
 
-int FixWallGran::n_contacts(int contact_groupbit)
+int FixWallGran::n_contacts_local(int contact_groupbit)
 {
     if (!is_mesh_wall() || dnum() == 0) return 0;
 
@@ -779,6 +788,14 @@ int FixWallGran::n_contacts(int contact_groupbit)
     for(int i = 0; i < n_FixMesh_; i++)
         ncontacts += FixMesh_list_[i]->contactHistory()->n_contacts(contact_groupbit);
 
+    return ncontacts;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixWallGran::n_contacts_all(int contact_groupbit)
+{
+    int ncontacts = n_contacts_local(contact_groupbit);
     MPI_Sum_Scalar(ncontacts,world);
     return ncontacts;
 }

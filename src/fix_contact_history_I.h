@@ -99,10 +99,10 @@
     for(int i = 0; i < npartner[iP]; i++)
     {
       /*NL*/// fprintf(screen," step %d: iP %d, partner %d: %d, coplanar %s delflag %s, mesh_->map(tri[i]) %d\n",
-      /*NL*///                update->ntimestep,iP,i,tri[i],mesh_->areCoplanar(tri[i],idTri)?"y":"n",delflag[iP][i]?"y":"n",mesh_->map(tri[i]));
+      /*NL*///                update->ntimestep,iP,i,tri[i],mesh_->areCoplanarNeighs(tri[i],idTri)?"y":"n",delflag[iP][i]?"y":"n",mesh_->map(tri[i]));
 
       //NP do only if old partner owned or ghost on this proc
-      if(tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanar(tri[i],idTri))
+      if(tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanarNeighs(tri[i],idTri))
       {
         /*NL*/ //fprintf(screen," step %d: idTri %d, delflag %s \n",update->ntimestep,idTri,delflag[iP][i]?"true":"false");
 
@@ -123,7 +123,7 @@
     for(int i = 0; i < npartner[iP]; i++)
     {
       //NP do only if old partner owned or ghost on this proc
-      if(tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanar(tri[i],idTri))
+      if(tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanarNeighs(tri[i],idTri))
       {
           //NP this is illegal since coplanarContactAlready() should have avoided this
           /*NL*/ if(!delflag[iP][i]) error->one(FLERR,"internal error");
