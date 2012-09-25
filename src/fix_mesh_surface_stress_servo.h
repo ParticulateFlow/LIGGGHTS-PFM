@@ -75,6 +75,9 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       double dtf_,dtv_,dtfm_;
       VectorContainer<bool,3> &fflag_;
 
+      bool int_flag_;
+      int modify_param(int, char **);
+
       // velocity for each node
 
       MultiVectorContainer<double,3,3> &v_;

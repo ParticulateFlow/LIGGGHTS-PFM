@@ -60,7 +60,8 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   mass_(     0.),
   f_servo_(  0.),
   fflag_(    *mesh()->prop().addGlobalProperty< VectorContainer<bool,3> > ("fflag","comm_none","frame_invariant","restart_yes",1)),
-  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_none","frame_invariant","restart_no",1))
+  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_none","frame_invariant","restart_no",1)),
+  int_flag_( true)
 {
     if(!trackStress())
         error->fix_error(FLERR,this,"stress = 'on' required");
@@ -220,33 +221,35 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 {
     double dX[3],dx[3];
 
-    // update vcm by 1/2 step
+    if (int_flag_) {
+    	// update vcm by 1/2 step
 
-    if(fflag_(0)[0]) vcm_(0)[0] += dtfm_ * f_total(0);
-    if(fflag_(0)[1]) vcm_(0)[1] += dtfm_ * f_total(1);
-    if(fflag_(0)[2]) vcm_(0)[2] += dtfm_ * f_total(2);
+    	if(fflag_(0)[0]) vcm_(0)[0] += dtfm_ * f_total(0);
+    	if(fflag_(0)[1]) vcm_(0)[1] += dtfm_ * f_total(1);
+    	if(fflag_(0)[2]) vcm_(0)[2] += dtfm_ * f_total(2);
 
-    limit_vel();
-    set_v_node();
+    	limit_vel();
+    	set_v_node();
 
-    // update xcm by full step
+    	// update xcm by full step
 
-    dx[0] = dtv_ * vcm_(0)[0];
-    dx[1] = dtv_ * vcm_(0)[1];
-    dx[2] = dtv_ * vcm_(0)[2];
-    vectorAdd3D(xcm_(0),dx,xcm_(0));
-    vectorSubtract3D(xcm_(0),xcm_orig_(0),dX);
+    	dx[0] = dtv_ * vcm_(0)[0];
+    	dx[1] = dtv_ * vcm_(0)[1];
+    	dx[2] = dtv_ * vcm_(0)[2];
+    	vectorAdd3D(xcm_(0),dx,xcm_(0));
+    	vectorSubtract3D(xcm_(0),xcm_orig_(0),dX);
 
-    mesh()->move(dX,dx);
+    	mesh()->move(dX,dx);
 
-    // update reference point to COM
-    //NP would not be necessary b/c p_ref_ is moved, rotated automatically
-    //NP do it anyway to avoid long-term divergence
-    //NP which could happen b/c move, rotate is done incrementally
+    	// update reference point to COM
+    	//NP would not be necessary b/c p_ref_ is moved, rotated automatically
+    	//NP do it anyway to avoid long-term divergence
+    	//NP which could happen b/c move, rotate is done incrementally
 
-    set_p_ref(xcm_(0));
-    /*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
-    /*NL*/ //printVec3D(screen,"xcm",xcm_(0));
+    	set_p_ref(xcm_(0));
+    	/*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
+    	/*NL*/ //printVec3D(screen,"xcm",xcm_(0));
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -256,20 +259,22 @@ void FixMeshSurfaceStressServo::final_integrate()
     //NP update forces
     FixMeshSurfaceStress::final_integrate();
 
-    // add servo force
-    //NP add same force in 3 dims, will be integrated in one dim only anyway
-    add_external_contribution(f_servo_vec_);
+    if (int_flag_) {
+    	// add servo force
+    	//NP add same force in 3 dims, will be integrated in one dim only anyway
+    	add_external_contribution(f_servo_vec_);
 
-    /*NL*/ //double ft[3]; f_total(ft);
-    /*NL*/ //printVec3D(screen,"f_total",ft);
+    	/*NL*/ //double ft[3]; f_total(ft);
+    	/*NL*/ //printVec3D(screen,"f_total",ft);
 
-    // update vcm by 1/2 step
+    	// update vcm by 1/2 step
 
-    if(fflag_(0)[0]) vcm_(0)[0] += dtfm_ * f_total(0);
-    if(fflag_(0)[1]) vcm_(0)[1] += dtfm_ * f_total(1);
-    if(fflag_(0)[2]) vcm_(0)[2] += dtfm_ * f_total(2);
-    limit_vel();
-    set_v_node();
+    	if(fflag_(0)[0]) vcm_(0)[0] += dtfm_ * f_total(0);
+    	if(fflag_(0)[1]) vcm_(0)[1] += dtfm_ * f_total(1);
+    	if(fflag_(0)[2]) vcm_(0)[2] += dtfm_ * f_total(2);
+    	limit_vel();
+    	set_v_node();
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -302,4 +307,25 @@ void FixMeshSurfaceStressServo::set_v_node()
     for(int i = 0; i < nall; i++)
         for(int j = 0; j < nnodes; j++)
             v_.set(i,j,vcm_(0));
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
+{
+  if (strcmp(arg[0],"integrate") == 0) {
+    if (narg < 2) error->all(FLERR,"Illegal fix_modify command");
+
+    if (strcmp(arg[1],"start") == 0) {
+    	int_flag_ = true;
+    } else if (strcmp(arg[1],"stop") == 0) {
+    	int_flag_ = false;
+    } else
+    	error->all(FLERR,"Illegal fix_modify command");
+
+    return 2;
+
+  }
+
+  return 0;
 }
