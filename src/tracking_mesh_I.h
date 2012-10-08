@@ -37,8 +37,10 @@
   : MultiNodeMeshParallel<NUM_NODES>(lmp),
     customValues_(*(new CustomValueTracker(lmp,this))),
     id_ (*this->prop().template addElementProperty< ScalarContainer<int> >("id","comm_exchange_borders"/*ID does never change*/,"frame_invariant","restart_yes")),
+    lineNo_(this->prop().template addElementProperty< ScalarContainer<int> >("lineNo","comm_none"/*so deleting after setup does not interefere*/,"frame_invariant","restart_no")),
     mapArray_(0),
-    mapTagMax_(0)
+    mapTagMax_(0),
+    verbose_(false)
   {
   }
 
@@ -60,32 +62,26 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::addElement(double **nodeToAdd)
+  bool TrackingMesh<NUM_NODES>::addElement(double **nodeToAdd,int lineNumb)
   {
     // this function is always called in serial mode
     //NP so use sizeLocal()
 
-    MultiNodeMeshParallel<NUM_NODES>::addElement(nodeToAdd);
+    if(MultiNodeMeshParallel<NUM_NODES>::addElement(nodeToAdd))
+    {
+        // tracking mesh add memory
+        //NP only used upon first creation, so only local elements present
+        customValues_.grow(this->sizeLocal());
 
-    // tracking mesh add memory
-    //NP only used upon first creation, so only local elements present
-    customValues_.grow(this->sizeLocal());
+        // set ID for element
+        // ID starts from 0
+        id_(this->sizeLocal()-1) = this->sizeLocal()-1;
+        (*lineNo_)(this->sizeLocal()-1) = lineNumb;
 
-    // set ID for element
-    // ID starts from 0
-    id_(this->sizeLocal()-1) = this->sizeLocal()-1;
-
-    /*NP
-    if(this->sizeLocal() == 1) id_(this->sizeLocal()-1) = 7;
-    if(this->sizeLocal() == 2) id_(this->sizeLocal()-1) = 6;
-    if(this->sizeLocal() == 3) id_(this->sizeLocal()-1) = 5;
-    if(this->sizeLocal() == 4) id_(this->sizeLocal()-1) = 1;
-    if(this->sizeLocal() == 5) id_(this->sizeLocal()-1) = 3;
-    if(this->sizeLocal() == 6) id_(this->sizeLocal()-1) = 2;
-    if(this->sizeLocal() == 7) id_(this->sizeLocal()-1) = 4;
-    if(this->sizeLocal() == 8) id_(this->sizeLocal()-1) = 0;
-    */
-
+        /*NL*/ //fprintf(this->screen,"elem %d: line %d\n",this->sizeLocal()-1,lineNumb);
+        return true;
+    }
+    return false;
   }
 
   template<int NUM_NODES>
@@ -104,10 +100,31 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
+  void TrackingMesh<NUM_NODES>::setVerbose()
+  {
+    verbose_ = true;
+  }
+
+  /* ----------------------------------------------------------------------
+   reset global properties to original value
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
   bool TrackingMesh<NUM_NODES>::resetToOrig()
   {
     if(MultiNodeMesh<NUM_NODES>::resetToOrig())
         customValues_.resetToOrig();
+  }
+
+  /* ----------------------------------------------------------------------
+   recalculate properties on setup (on start and during simulation)
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  void TrackingMesh<NUM_NODES>::postInitialSetup()
+  {
+    this->prop().removeElementProperty("lineNo");
+    lineNo_ = 0;
   }
 
   /* ----------------------------------------------------------------------

@@ -52,6 +52,9 @@ namespace MathExtraLiggghts {
   inline double max(double a,double b);
   inline double min(double a,double b,double c);
   inline double max(double a,double b,double c);
+  inline double min(double a,double b,double c,double d);
+  inline double min(double *input, int n,int &which);
+  inline double max(double *input, int n,int &which);
   inline double abs(double a);
 
   //NP modified C.K. barycentric operations on tets
@@ -82,7 +85,8 @@ namespace MathExtraLiggghts {
   inline bool compDouble(double const a, double const b, double const prec = 1e-13);
 
   // calculate barycentrc coordinates of p w.r.t node, added by P.S.
-  inline void calcBaryTriCoords(double *p, double **node, double *edgeLen, double *bary);
+  inline void calcBaryTriCoords(double *p, double **edgeVec, double *edgeLen, double *bary);
+  inline void calcBaryTriCoords(double *p, double *edgeVec0, double *edgeVec1, double *edgeVec2, double *edgeLen, double *bary);
 };
 
 /* ----------------------------------------------------------------------
@@ -156,6 +160,45 @@ inline double MathExtraLiggghts::halley_cbrt1d(double d)
       double ab = MathExtraLiggghts::max(a,b);
       if (ab<c) return c;
       return ab;
+  }
+
+  double MathExtraLiggghts::min(double a,double b,double c,double d)
+  {
+      double ab = MathExtraLiggghts::min(a,b);
+      double cd = MathExtraLiggghts::min(c,d);
+      if (ab<cd) return ab;
+      return cd;
+  }
+
+  double MathExtraLiggghts::min(double *input, int n,int &which)
+  {
+      double min = input[0];
+      which = 0;
+
+      for(int i = 1; i < n; i++)
+      {
+          if(input[i] < min)
+          {
+              which = i;
+              min = input[i];
+          }
+      }
+      return min;
+  }
+  double MathExtraLiggghts::max(double *input, int n,int &which)
+  {
+      double max = input[0];
+      which = 0;
+
+      for(int i = 1; i < n; i++)
+      {
+          if(input[i] > max)
+          {
+              which = i;
+              max = input[i];
+          }
+      }
+      return max;
   }
 
   int MathExtraLiggghts::abs(int a) { if (a>0) return a; return -a;}
@@ -441,6 +484,12 @@ bool MathExtraLiggghts::compDouble(double const a, double const b, double const 
   if (a == b)
     return true;
 
+  /*NP non-tested alternative
+  double x = a-b;
+  if(MathExtraLiggghts::abs(x) < prec)
+    return true;
+  return false;
+  */
   if (b == 0)
     return a < prec && a > -prec;
 
@@ -467,6 +516,24 @@ void MathExtraLiggghts::calcBaryTriCoords(double *ap, double **edgeVec, double *
   double ap_ab = LAMMPS_NS::vectorDot3D(edgeVec[0],ap)*edgeLen[0];
   double ac_ac = edgeLen[2]*edgeLen[2];
   double ap_ac = -LAMMPS_NS::vectorDot3D(ap,edgeVec[2])*edgeLen[2];
+
+  // Compute barycentric coordinates
+  double invDenom = 1. / (ab_ab * ac_ac - ab_ac * ab_ac);
+  /*NL*///printf("invDenom %f ac_ac %f ap_ab %f ab_ac %f ap_ac %f\n",invDenom,ac_ac,ap_ab,ab_ac,ap_ac);
+  bary[1] =  (ac_ac * ap_ab - ab_ac * ap_ac) * invDenom;
+  bary[2] =  (ab_ab * ap_ac - ab_ac * ap_ab) * invDenom;
+  bary[0] = 1. - bary[1] - bary[2];
+}
+
+void MathExtraLiggghts::calcBaryTriCoords(double *ap, double *edgeVec0, double *edgeVec1, double *edgeVec2,
+                                           double *edgeLen, double *bary)
+{
+  // Compute dot products
+  double ab_ab = edgeLen[0]*edgeLen[0];
+  double ab_ac = -LAMMPS_NS::vectorDot3D(edgeVec0,edgeVec2)*edgeLen[0]*edgeLen[2];
+  double ap_ab = LAMMPS_NS::vectorDot3D(edgeVec0,ap)*edgeLen[0];
+  double ac_ac = edgeLen[2]*edgeLen[2];
+  double ap_ac = -LAMMPS_NS::vectorDot3D(ap,edgeVec2)*edgeLen[2];
 
   // Compute barycentric coordinates
   double invDenom = 1. / (ab_ab * ac_ac - ab_ac * ab_ac);

@@ -342,7 +342,11 @@ void Modify::pre_neighbor()
 void Modify::pre_force(int vflag)
 {
   for (int i = 0; i < n_pre_force; i++)
+  {
+    /*NL*/// if(update->ntimestep > 54500) fprintf(screen,"proc %d executing pre_force for %s\n",
+    /*NL*///                                     comm->me,fix[list_pre_force[i]]->style);
     fix[list_pre_force[i]]->pre_force(vflag);
+  }
 }
 
 /* ----------------------------------------------------------------------

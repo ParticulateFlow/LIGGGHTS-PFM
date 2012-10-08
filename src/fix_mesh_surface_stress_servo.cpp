@@ -110,7 +110,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           if(f_servo_ == 0.)
             error->fix_error(FLERR,this,"please define 'f_servo' before 'acc_max'");
           mass_ = fabs(f_servo_)/acc_max_;
-          /*NL*/ fprintf(screen,"mass %f\n",mass_);
+          /*NL*/ //fprintf(screen,"mass %f\n",mass_);
           hasargs = true;
       } else if(strcmp(arg[iarg_],"dim") == 0) {
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'forceflags'");
@@ -125,7 +125,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           hasargs = true;
       } else if(strcmp(style,"mesh/surface/stress/servo") == 0) {
           char *errmsg = new char[strlen(arg[iarg_])+20];
-          sprintf(errmsg,"unknown keyword: %s", arg[iarg_]);
+          sprintf(errmsg,"unknown keyword or wrong keyword order: %s", arg[iarg_]);
           error->fix_error(FLERR,this,errmsg);
           delete []errmsg;
       }
@@ -278,17 +278,29 @@ void FixMeshSurfaceStressServo::limit_vel()
 {
     double vmag, factor;
 
-    vmag = vectorMag3D(vcm_(0));
-
-    // re-scale velocity if needed
-
-    if(vmag > vel_max_)
+    double dot = f_servo_vec_[0]*f_total(0)+f_servo_vec_[1]*f_total(1)+f_servo_vec_[2]*f_total(2);
+    if(dot < 0.)
     {
-        factor = vel_max_ / vmag;
-        /*NL*/ //fprintf(screen,"factor %f\n",factor);
-        vcm_(0)[0] *= factor;
-        vcm_(0)[1] *= factor;
-        vcm_(0)[2] *= factor;
+        //NP set velocity to 5% max vel
+        factor = 0.001/f_servo_*vel_max_;
+        vcm_(0)[0] = f_servo_vec_[0] * factor;
+        vcm_(0)[1] = f_servo_vec_[1] * factor;
+        vcm_(0)[2] = f_servo_vec_[2] * factor;
+    }
+    else
+    {
+        vmag = vectorMag3D(vcm_(0));
+
+        // re-scale velocity if needed
+
+        if(vmag > vel_max_)
+        {
+            factor = vel_max_ / vmag;
+            /*NL*/ //fprintf(screen,"factor %f\n",factor);
+            vcm_(0)[0] *= factor;
+            vcm_(0)[1] *= factor;
+            vcm_(0)[2] *= factor;
+        }
     }
 }
 

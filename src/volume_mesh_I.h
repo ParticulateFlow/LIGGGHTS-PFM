@@ -30,22 +30,25 @@
    constructor(s), destructor
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-VolumeMesh<NUM_NODES,N_FACES>::VolumeMesh()
-:   TrackingMesh<NUM_NODES>(),
-    isInsertionMesh_(false),
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::VolumeMesh(LAMMPS *lmp)
+:   TrackingMesh<NUM_NODES>(lmp),
 
     // TODO should keep volMeshSubdomain up-to-date more often for insertion faces
-    volMesh_(*this->prop().template addMeshProperty   < ScalarContainer<double> >  ("volMesh", "comm_none","frame_trans_rot_invariant","restart_no",3)),
+    volMesh_(*this->prop().template addGlobalProperty < ScalarContainer<double> >  ("volMesh", "comm_none","frame_trans_rot_invariant","restart_no",3)),
 
-    //NP neigh topology is communicated at exchange and borders
+    //NP neigh topology and volume is communicated at exchange and borders
     //NP  (neigh topology is created once and never changed)
 
-    //NP no forward communication at all
-    //NP if scale,move,translate: properties are manipulated/updated via CustomValueTracker
+    vol_            (*this->prop().template addElementProperty< ScalarContainer<double> >        ("vol",   "comm_exchange_borders","frame_trans_rot_invariant", "restart_no",3)),
+    volAcc_         (*this->prop().template addElementProperty< ScalarContainer<double> >        ("volAcc","comm_exchange_borders","frame_trans_rot_invariant", "restart_no",3)),
 
-    vol_    (*this->prop().template addElementProperty< ScalarContainer<double> > ("vol",     "comm_none","frame_trans_rot_invariant", "restart_no",3)),
-    volAcc_ (*this->prop().template addElementProperty< ScalarContainer<double> > ("volAcc",  "comm_none","frame_trans_rot_invariant", "restart_no",3))
+    faceNodes_      (*this->prop().template addElementProperty< MultiVectorContainer<int,NUM_FACES,NUM_NODES_PER_FACE> > ("faceNodes ","comm_exchange_borders","frame_invariant", "restart_no")),
+    faceNormals_    (*this->prop().template addElementProperty< MultiVectorContainer<double,NUM_FACES,3> >               ("faceNormals ","comm_none","frame_scale_trans_invariant", "restart_no")),
+    isBoundaryFace_ (*this->prop().template addElementProperty< VectorContainer<bool,NUM_FACES> >                        ("isBoundaryFace","comm_exchange_borders","frame_invariant", "restart_no")),
+
+    nNeighs_        (*this->prop().template addElementProperty< ScalarContainer<int> >           ("nNeighs",        "comm_exchange_borders","frame_invariant", "restart_no")),
+    neighElems_     (*this->prop().template addElementProperty< VectorContainer<int,NUM_FACES> > ("neighElems",     "comm_exchange_borders","frame_invariant", "restart_no"))
 {
     //NP allocate 4 scalar spaces
     volMesh_.add(0.);
@@ -56,46 +59,118 @@ VolumeMesh<NUM_NODES,N_FACES>::VolumeMesh()
     this->error->all(FLERR,"have to add neigh topology with comm_exchange_borders");
 }
 
-template<int NUM_NODES,int N_FACES>
-VolumeMesh<NUM_NODES,N_FACES>::~VolumeMesh()
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::~VolumeMesh()
 {}
-
-/* ----------------------------------------------------------------------
-   set flag if used as insertion mesh
-------------------------------------------------------------------------- */
-
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::useAsInsertionMesh()
-{
-    isInsertionMesh_ = true;
-}
 
 /* ----------------------------------------------------------------------
    add / delete element
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::addElement(double **nodeToAdd)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+bool VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::addElement(double **nodeToAdd)
 {
-    TrackingMesh<NUM_NODES>::addElement(nodeToAdd);
+    TrackingMesh<NUM_NODES>::addElement(nodeToAdd,-1);
+    this->error->one(FLERR,"TODO line #");
+    this->error->one(FLERR,"TODO auto remove dupl");
 
     //NP need to do this because some classes may access data before
     //NP setup() is called
     calcVolPropertiesOfNewElement();
 }
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::deleteElement(int n)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::deleteElement(int n)
 {
     TrackingMesh<NUM_NODES>::deleteElement(n);
+}
+
+/* ----------------------------------------------------------------------
+   calculate properties when adding new element
+------------------------------------------------------------------------- */
+
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::calcVolPropertiesOfNewElement()
+{
+    //NP IMPORTANT: do not use add() functions here
+    //NP rather use set
+    //NP this is b/c elements have been added already
+    //NP in TrackingMesh::addElement()
+    //NP via customValues_.grow()
+
+    int f0[3],f1[3],f2[3],f3[3];
+
+    int n = MultiNodeMesh<NUM_NODES>::node_.size()-1;
+
+    // flip node 3 if on the wrong side
+    checkOrientation(n);
+
+    // assign nodes to faces
+    vectorConstruct3D(f0,0,1,2);
+    vectorConstruct3D(f1,0,3,1);
+    vectorConstruct3D(f2,0,2,3);
+    vectorConstruct3D(f1,1,3,2);
+    faceNodes_.set(n,0,f0);
+    faceNodes_.set(n,1,f1);
+    faceNodes_.set(n,2,f2);
+    faceNodes_.set(n,3,f3);
+
+    // calc face normals
+    calcFaceNormals(n);
+
+    // calc volume
+    double vol_elem = calcVol(n);
+    volMesh_(0) += vol_elem;
+    vol_(n) = vol_elem;
+    volAcc_(n) = vol_elem;
+    if(n > 0) volAcc_(n) += volAcc_(n-1);
+}
+
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+inline void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::checkOrientation(int n)
+{
+    double v01[3],v02[3],v03[3],tmp[3];
+    double **node = this->node_.begin()[n];
+
+    vectorSubtract3D(node[1],node[0],v01);
+    vectorSubtract3D(node[2],node[0],v02);
+    vectorSubtract3D(node[3],node[0],v03);
+
+    vectorCross3D(v01,v02,tmp);
+
+    // if wrong orientation, switch node 0 and 1
+    if(vectorDot3D(tmp,v03) > 0.)
+    {
+        vectorCopy3D(node[0],tmp);
+        vectorCopy3D(node[1],node[0]);
+        vectorCopy3D(tmp,node[1]);
+    }
+}
+
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::calcFaceNormals(int n)
+{
+    double v01[3],v02[3],fnormal[3];
+    double **node = this->node_.begin()[n];
+    int **facenodes = this->faceNodes_(n);
+
+    for(int iFace = 0; iFace < NUM_FACES; iFace++)
+    {
+        vectorSubtract3D(node[facenodes[iFace][1]],node[facenodes[iFace][0]],v01);
+        vectorSubtract3D(node[facenodes[iFace][2]],node[facenodes[iFace][0]],v02);
+        vectorCross3D(v01,v02,fnormal);
+        vectorNormalize3D(fnormal);
+
+        faceNormals_.set(n,iFace,fnormal);
+    }
 }
 
 /* ----------------------------------------------------------------------
    recalculate properties on setup (on start and during simulation)
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::refreshOwned(int setupFlag)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::refreshOwned(int setupFlag)
 {
     TrackingMesh<NUM_NODES>::refreshOwned(setupFlag);
     // (re)calculate all properties for owned elements
@@ -104,8 +179,8 @@ void VolumeMesh<NUM_NODES,N_FACES>::refreshOwned(int setupFlag)
 
     recalcLocalVolProperties();
 }
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::refreshGhosts(int setupFlag)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::refreshGhosts(int setupFlag)
 {
     TrackingMesh<NUM_NODES>::refreshGhosts(setupFlag);
 
@@ -116,13 +191,14 @@ void VolumeMesh<NUM_NODES,N_FACES>::refreshGhosts(int setupFlag)
    recalculate properties of local elements
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::recalcLocalVolProperties()
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcLocalVolProperties()
 {
     //NP could use this function instead of rotating
     //NP all properties
     //NP execute this after re-neighboring via
     //NP refresh() so no round-off issues occur
+
 
     // volMeshGlobal [volMesh_(0)] and volMeshOwned [volMesh_(1)]
     // calculated here
@@ -136,6 +212,8 @@ void VolumeMesh<NUM_NODES,N_FACES>::recalcLocalVolProperties()
 
     for(int i = 0; i < nlocal; i++)
     {
+      calcFaceNormals(i);
+
       vol(i) = calcVol(i);
       volAcc(i) = vol(i);
       if(i > 0) volAcc(i) += volAcc(i-1);
@@ -148,6 +226,7 @@ void VolumeMesh<NUM_NODES,N_FACES>::recalcLocalVolProperties()
     // mesh vol must be summed up
     MPI_Sum_Scalar(volMesh_(1),volMesh_(0),this->world);
 
+
     /*NL*/// fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
     /*NL*///         this->comm->me,areaMeshGlobal(),areaMeshOwned(),areaMeshGhost());
     /*NL*/// this->error->all(FLERR,"check this");
@@ -157,8 +236,8 @@ void VolumeMesh<NUM_NODES,N_FACES>::recalcLocalVolProperties()
    recalculate properties of ghost elements
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::recalcGhostVolProperties()
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcGhostVolProperties()
 {
     double pos[3], areaCheck;
     int n_succ, n_iter;
@@ -172,6 +251,8 @@ void VolumeMesh<NUM_NODES,N_FACES>::recalcGhostVolProperties()
     volMesh_(2) = 0.;
     for(int i = nlocal; i < nall; i++)
     {
+      calcFaceNormals(i);
+
       vol(i) = calcVol(i);
       volAcc(i) = vol(i);
       if(i > 0) volAcc(i) += volAcc(i-1);
@@ -193,7 +274,7 @@ void VolumeMesh<NUM_NODES,N_FACES>::recalcGhostVolProperties()
     volMesh_(3) = 0.;
     double volCheck = 0.;
 
-    if(isInsertionMesh_)
+    if(this->isInsertionMesh())
     {
         n_succ = 0;
         n_iter = 0;
@@ -235,18 +316,18 @@ void VolumeMesh<NUM_NODES,N_FACES>::recalcGhostVolProperties()
    generate a random Element by volAcc
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-int VolumeMesh<NUM_NODES,N_FACES>::randomOwnedGhostElement()
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+int VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::randomOwnedGhostElement()
 {
     //NP disallow to use this unless this is an insertion mesh
-    if(!isInsertionMesh_) this->error->one(FLERR,"Illegal call for non-insertion mesh");
+    if(!this->isInsertionMesh()) this->error->one(FLERR,"Illegal call for non-insertion mesh");
     double r = this->random_->uniform() * (volMeshOwned()+volMeshGhost());
     int nall = this->sizeLocal()+this->sizeGhost()-1;
     return searchElementByVolAcc(r,0,nall);
 }
 
-template<int NUM_NODES,int N_FACES>
-int VolumeMesh<NUM_NODES,N_FACES>::searchElementByVolAcc(double vol,int lo, int hi)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+int VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::searchElementByVolAcc(double vol,int lo, int hi)
 {
     if( (lo < 1 || vol > volAcc(lo-1)) && (vol <= volAcc(lo)) )
         return lo;
@@ -260,50 +341,33 @@ int VolumeMesh<NUM_NODES,N_FACES>::searchElementByVolAcc(double vol,int lo, int 
         return searchElementByVolAcc(vol,lo,mid);
 }
 
-
-/* ----------------------------------------------------------------------
-   calculate properties when adding new element
-------------------------------------------------------------------------- */
-
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::calcVolPropertiesOfNewElement()
-{
-    //NP IMPORTANT: do not use add() functions here
-    //NP rather use set
-    //NP this is b/c elements have been added already
-    //NP in TrackingMesh::addElement()
-    //NP via customValues_.grow()
-
-    int n = MultiNodeMesh<NUM_NODES>::node.size()-1;
-
-    // calc volume
-    double vol_elem = calcVol(n);
-    volMesh_(0) += vol_elem;
-    vol_(n) = vol_elem;
-    volAcc_(n) = vol_elem;
-    if(n > 0) volAcc_(n) += volAcc_(n-1);
-}
-
 /* ----------------------------------------------------------------------
    build neighlist, generate mesh topology
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::buildNeighbours()
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::buildNeighbours()
 {
+    int iFace,jFace;
+
     // iterate over all elems, over ghosts as well
     int nall = this->sizeLocal()+this->sizeGhost();
 
     // inititalize neigh topology - reset to default, ~n
 
-    int neighs[NUM_NODES];
-    for(int i=0;i<NUM_NODES;i++)
+    int neighs[NUM_FACES];
+    bool isb[NUM_FACES];
+    for(int i=0;i<NUM_FACES;i++)
+    {
         neighs[i] = -1;
+        isb[i] = true;
+    }
 
     for(int i = 0; i < nall; i++)
     {
         nNeighs_.set(i,0);
         neighElems_.set(i,neighs);
+        isBoundaryFace_.set(i,isb);
     }
 
     // build neigh topology, ~n*n/2
@@ -315,13 +379,14 @@ void VolumeMesh<NUM_NODES,N_FACES>::buildNeighbours()
         int iNode(0), jNode(0), iEdge(0), jEdge(0);
         if(!this->shareNode(i,j,iNode,jNode)) continue;
 
-        this->error->all(FLERR,"TODO");
-        //if(shareFace(i,j))
+        if(shareFace(i,j,iFace,jFace))
         {
             neighElems_(i)[nNeighs_(i)] = this->id(i);
             neighElems_(j)[nNeighs_(j)] = this->id(j);
             nNeighs_(i)++;
             nNeighs_(j)++;
+            isBoundaryFace_(i)[iFace] = false;
+            isBoundaryFace_(j)[jFace] = false;
         }
       }
     }
@@ -331,8 +396,8 @@ void VolumeMesh<NUM_NODES,N_FACES>::buildNeighbours()
    isInside etc
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-bool VolumeMesh<NUM_NODES,N_FACES>::isInside(double *p)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+bool VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::isInside(double *p)
 {
     // check subdomain
     if(!this->domain->is_in_subdomain(p)) return false;
@@ -353,33 +418,33 @@ bool VolumeMesh<NUM_NODES,N_FACES>::isInside(double *p)
    move, rotate, scale mesh
 ------------------------------------------------------------------------- */
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::move(double *vecTotal, double *vecIncremental)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::move(double *vecTotal, double *vecIncremental)
 {
     TrackingMesh<NUM_NODES>::move(vecTotal,vecIncremental);
 }
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::move(double *vecIncremental)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::move(double *vecIncremental)
 {
     TrackingMesh<NUM_NODES>::move(vecIncremental);
 }
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::scale(double factor)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::scale(double factor)
 {
     TrackingMesh<NUM_NODES>::scale(factor);
 }
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::rotate(double *totalQ, double *dQ,double *totalDispl, double *dDisp)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::rotate(double *totalQ, double *dQ,double *totalDispl, double *dDisp)
 {
     TrackingMesh<NUM_NODES>::rotate(totalQ,dQ,totalDispl,dDisp);
 
 }
 
-template<int NUM_NODES,int N_FACES>
-void VolumeMesh<NUM_NODES,N_FACES>::rotate(double *dQ,double *dDispl)
+template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
+void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::rotate(double *dQ,double *dDispl)
 {
     TrackingMesh<NUM_NODES>::rotate(dQ,dDispl);
 }
