@@ -347,6 +347,7 @@ void Neighbor::init()
 
   if (dist_check == 0) {
     memory->destroy(xhold);
+    memory->destroy(rhold);
     maxhold = 0;
     xhold = NULL;
     rhold = NULL;
@@ -1169,7 +1170,7 @@ int Neighbor::decide()
 int Neighbor::check_distance()
 {
   double delx,dely,delz,rsq;
-  double delta,deltasq,delta1,delta2,delta_r,trigger; //NP modified C.K.
+  double delta,deltasq,delta1,delta2,delr,delrsq,trigger; //NP modified C.K.
 
   if (boxcheck) {
     if (triclinic == 0) {
@@ -1214,6 +1215,7 @@ int Neighbor::check_distance()
         delz = x[i][2] - xhold[i][2];
         rsq = delx*delx + dely*dely + delz*delz;
         if (rsq > deltasq) flag = 1;
+        /*NL*///fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
       }
   }
   //NP standard: |dx| > delta
@@ -1224,11 +1226,15 @@ int Neighbor::check_distance()
         delx = x[i][0] - xhold[i][0];
         dely = x[i][1] - xhold[i][1];
         delz = x[i][2] - xhold[i][2];
-        delta_r = radius[i] - rhold[i];
+        delr = radius[i] - rhold[i];
         rsq = delx*delx + dely*dely + delz*delz;
-        /*NL*///fprintf(screen,"r %f rhold %f\n",radius[i],rhold[i]);
-        if (delta_r > delta || rsq > deltasq - 2.*delta_r*delta + delta_r*delta_r)
+        delrsq = delr*delr;
+        if (delrsq > deltasq || rsq > deltasq - 2.*delr*delta + delr*delr)
             flag = 1;
+        /*NL*///if(1==flag)
+        /*NL*///{fprintf(screen,"r %f rhold %f delr %f x %f %f %f, xhold %f %f %f rsq %f delta %f deltasq %f\n",
+        /*NL*///             radius[i],rhold[i],delr,x[i][0],x[i][1],x[i][2],xhold[i][0],xhold[i][1],xhold[i][2],rsq,delta,deltasq);
+        /*NL*/// error->one(FLERR,"end");}
       }
       /*NL*///fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
   }
@@ -1878,6 +1884,7 @@ bigint Neighbor::memory_usage()
 {
   bigint bytes = 0;
   bytes += memory->usage(xhold,maxhold,3);
+  bytes += memory->usage(rhold,maxhold);
 
   if (style != NSQ) {
     bytes += memory->usage(bins,maxbin);

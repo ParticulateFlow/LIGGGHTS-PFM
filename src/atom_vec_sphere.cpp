@@ -80,7 +80,7 @@ void AtomVecSphere::init()
   for (int i = 0; i < modify->nfix; i++)
       if (modify->fix[i]->rad_mass_vary_flag) {
         radvary = 1;
-        size_forward = 6;
+        size_forward = 6; //NP mass, density, radius
         comm_x_only = 1;
       }
 
@@ -151,8 +151,8 @@ void AtomVecSphere::copy(int i, int j, int delflag)
   v[j][2] = v[i][2];
 
   radius[j] = radius[i];
-  density[j] = density[i]; //NP modified C.K.
   rmass[j] = rmass[i];
+  density[j] = density[i]; //NP modified C.K.
   omega[j][0] = omega[i][0];
   omega[j][1] = omega[i][1];
   omega[j][2] = omega[i][2];
@@ -207,6 +207,7 @@ int AtomVecSphere::pack_comm(int n, int *list, double *buf,
         buf[m++] = x[j][2];
         buf[m++] = radius[j];
         buf[m++] = rmass[j];
+        buf[m++] = density[j]; //NP modified C.K.
       }
     } else {
       if (domain->triclinic == 0) {
@@ -340,6 +341,7 @@ int AtomVecSphere::pack_comm_vel(int n, int *list, double *buf,
           buf[m++] = x[j][2] + dz;
           buf[m++] = radius[j];
           buf[m++] = rmass[j];
+          buf[m++] = density[j]; //NP modified C.K.
           buf[m++] = v[j][0];
           buf[m++] = v[j][1];
           buf[m++] = v[j][2];
@@ -701,7 +703,7 @@ int AtomVecSphere::pack_border_hybrid(int n, int *list, double *buf)
     j = list[i];
     buf[m++] = radius[j];
     buf[m++] = rmass[j];
-        buf[m++] = density[j]; //NP modified C.K.
+    buf[m++] = density[j]; //NP modified C.K.
   }
   return m;
 }
@@ -724,7 +726,7 @@ void AtomVecSphere::unpack_border(int n, int first, double *buf)
     mask[i] = static_cast<int> (buf[m++]);
     radius[i] = buf[m++];
     rmass[i] = buf[m++];
-        density[i] = buf[m++]; //NP modified C.K.
+    density[i] = buf[m++]; //NP modified C.K.
   }
 }
 
@@ -747,7 +749,7 @@ void AtomVecSphere::unpack_border_vel(int n, int first, double *buf)
     mask[i] = static_cast<int> (buf[m++]);
     radius[i] = buf[m++];
     rmass[i] = buf[m++];
-        density[i] = buf[m++]; //NP modified C.K.
+    density[i] = buf[m++]; //NP modified C.K.
     v[i][0] = buf[m++];
     v[i][1] = buf[m++];
     v[i][2] = buf[m++];
@@ -768,7 +770,7 @@ int AtomVecSphere::unpack_border_hybrid(int n, int first, double *buf)
   for (i = first; i < last; i++) {
     radius[i] = buf[m++];
     rmass[i] = buf[m++];
-        density[i] = buf[m++];
+    density[i] = buf[m++]; //NP modified C.K.
   }
   return m;
 }
@@ -828,7 +830,7 @@ int AtomVecSphere::unpack_exchange(double *buf)
 
   radius[nlocal] = buf[m++];
   rmass[nlocal] = buf[m++];
-  density[nlocal] =        buf[m++]; //NP modified C.K.
+  density[nlocal] = buf[m++]; //NP modified C.K.
   omega[nlocal][0] = buf[m++];
   omega[nlocal][1] = buf[m++];
   omega[nlocal][2] = buf[m++];

@@ -176,7 +176,7 @@ void FixNeighlistMesh::pre_force(int vflag)
     /*NL*/          int iAtomDeb = atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID);
     /*NL*/          int ixDeb, iyDeb, izDeb;
     /*NL*/          int iBinDeb = neighbor->coord2bin(atom->x[iAtomDeb],ixDeb, iyDeb, izDeb);
-    /*NL*/          fprintf(screen, "**step %d, particle id %d at bin %d (indixes %d %d %d) on proc %d, within skin to target tri %s\n",
+    /*NL*/          fprintf(screen, "**step "BIGINT_FORMAT", particle id %d at bin %d (indixes %d %d %d) on proc %d, within skin to target tri %s\n",
     /*NL*/                      update->ntimestep,DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID,
     /*NL*/                      iBinDeb,ixDeb, iyDeb, izDeb,comm->me,
     /*NL*/                      mesh_->resolveTriSphereNeighbuild(iTriDeb,atom->radius[iAtomDeb],atom->x[iAtomDeb],skin) ? "true" : "false" );
@@ -237,7 +237,12 @@ void FixNeighlistMesh::handleTriangle(int iTri)
               int iAtom = binhead[iBin];
               while(iAtom != -1 && iAtom < nlocal)
               {
-                if(! (mask[iAtom] & groupbit)) continue;
+                if(! (mask[iAtom] & groupbit))
+                {
+                    if(bins) iAtom = bins[iAtom];
+                    else iAtom = -1;
+                    continue;
+                }
 
                 /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
                 /*NL*/                                     && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID == atom->map(iAtom) )

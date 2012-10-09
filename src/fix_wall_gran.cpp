@@ -698,12 +698,6 @@ inline void FixWallGran::post_force_eval_contact(int iPart, double deltan, doubl
   if(store_force_ || stress_flag_)
     vectorCopy3D(f_[iPart],force_old);
 
-  /*NL*/ //if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-  /*NL*/ // if(strcmp(id,"cylwalls") == 0) {
-  /*NL*/ //   fprintf(screen,"step "BIGINT_FORMAT "handling mesh wall with particle id %d, tri id %d, deltan %e, delr %e dx %e dy %e dz %e\n",
-  /*NL*/ //                   update->ntimestep,atom->tag[iPart],mesh->id(iTri),deltan,delr,dx,dy,dz);
-  /*NL*/ //    error->one(FLERR,"end");
-
   // add to cwl
   if(cwl_ && !addflag_)
   {
@@ -715,6 +709,14 @@ inline void FixWallGran::post_force_eval_contact(int iPart, double deltan, doubl
   // deltan > 0 in compute_force
   // but negative in distance algorithm
   compute_force(iPart, -deltan,rsqr,mass, dx, dy, dz, v_wall, c_history, 1.);
+
+  /*NL*/ //if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
+  /*NL*/ // if(strcmp(id,"cylwalls") == 0) {
+  /*NL*/ //if(6817 == atom->tag[iPart]){
+  /*NL*/ //  fprintf(screen,"step "BIGINT_FORMAT "handling mesh wall with particle id %d, tri id %d, deltan %e, delr %e dx %e dy %e dz %e f is now %f %f %f\n",
+  /*NL*/ //                  update->ntimestep,atom->tag[iPart],mesh->id(iTri),deltan,delr,dx,dy,dz,atom->f[iPart][0],atom->f[iPart][1],atom->f[iPart][2]);
+  /*NL*/ //  error->one(FLERR,"end");
+  /*NL*/ //}
 
   // if force should be stored or evaluated
   if(store_force_ || stress_flag_)

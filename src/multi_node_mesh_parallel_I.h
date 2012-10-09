@@ -38,7 +38,9 @@
   MultiNodeMeshParallel<NUM_NODES>::MultiNodeMeshParallel(LAMMPS *lmp)
   : MultiNodeMesh<NUM_NODES>(lmp),
     nLocal_(0), nGhost_(0), nGlobal_(0), nGlobalOrig_(0),
+    doParallellization_(true),
     isParallel_(false),
+    isInsertionMesh_(false),
     maxsend_(0), maxrecv_(0),
     buf_send_(0), buf_recv_(0),
     half_atom_cut_(0.),
@@ -103,10 +105,14 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMeshParallel<NUM_NODES>::addElement(double **nodeToAdd)
+  bool MultiNodeMeshParallel<NUM_NODES>::addElement(double **nodeToAdd)
   {
-    MultiNodeMesh<NUM_NODES>::addElement(nodeToAdd);
-    nLocal_++;
+    if(MultiNodeMesh<NUM_NODES>::addElement(nodeToAdd))
+    {
+        nLocal_++;
+        return true;
+    }
+    return false;
   }
 
   template<int NUM_NODES>
@@ -212,12 +218,33 @@
   }
 
   /* ----------------------------------------------------------------------
+   set flag if used as insertion mesh
+  ------------------------------------------------------------------------- */
+
+  template<int NUM_NODES>
+  void MultiNodeMeshParallel<NUM_NODES>::useAsInsertionMesh(bool parallelflag)
+  {
+    /*NL*/ //this->error->all(FLERR,"useAsInsertionMesh() called");
+    isInsertionMesh_ = true;
+    if(!parallelflag)
+    {
+        if(isParallel())
+            this->error->all(FLERR,"If a run command is between the fix mesh/surface and the "
+                             "fix insert command, you have to use fix mesh/surface/planar for "
+                             "the insertion mesh");
+        doParallellization_ = false;
+    }
+  }
+
+  /* ----------------------------------------------------------------------
    setup of communication
   ------------------------------------------------------------------------- */
 
    template<int NUM_NODES>
    void MultiNodeMeshParallel<NUM_NODES>::setup()
    {
+       if(!doParallellization_) return;
+
        double sublo[3],subhi[3], cut, extent_acc;
        double rBound_max, cut_ghost;
        double **sublo_all, **subhi_all;
@@ -358,7 +385,7 @@
        }
 
        // maxneed_ summed accross all processors
-      MPI_Max_Vector(maxneed_,3,this->world);
+       MPI_Max_Vector(maxneed_,3,this->world);
 
        destroy(sublo_all);
        destroy(subhi_all);
@@ -554,21 +581,18 @@
       if(span < 1e-4)
         this->error->all(FLERR,"Mesh error: dimensions too small - use different unit system");
 
-      if(this->nBelowAngle() > 0 && 0 == this->comm->me)
-      {
-        fprintf(this->screen,"%d mesh elements have high aspect ratio (angle < %f °)\n",
-                this->nBelowAngle(),this->angleLimit());
-        this->error->warning(FLERR,"Mesh contains highly skewed element");
-      }
-
       // delete all elements that do not belong to this processor
       deleteUnowned();
 
       if(sizeGlobal() != sizeGlobalOrig())
       {
         /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
-        this->error->all(FLERR,"Mesh elements have been lost");
+        this->error->all(FLERR,"Mesh elements have been lost / left the domain. Please use "
+                         "'boundary m m m' or scale/translate/rotate the mesh or change its dynamics");
       }
+
+      // perform operations that should be done before initial setup
+      preInitialSetup();
 
       // set-up mesh parallelism
       setup();
@@ -590,14 +614,15 @@
       //NP already have IDs at this point which is important
       buildNeighbours();
 
-      if(this->nTooManyNeighs() > 0 && 0 == this->comm->me)
-      {
-        fprintf(this->screen,"%d mesh elements have more than %d neighbors \n",
-                this->nTooManyNeighs(),NUM_NODES);
-        this->error->warning(FLERR,"Mesh contains possibly corrupt elements with too many neighbors");
-      }
+      // perform quality check on the mesh
+      qualityCheck();
 
-      isParallel_ = true;
+      if(doParallellization_) isParallel_ = true;
+
+      postInitialSetup();
+
+      // stuff that should be done before resuming simulation
+      postBorders();
 
       /*NL*/// fprintf(this->screen,"INITIALSETUP: proc %d, mesh %s - nLocal %d, nGhost %d\n",
       /*NL*///                      this->comm->me,this->mesh_id_,nLocal_,nGhost_);
@@ -622,9 +647,12 @@
       //NP this is for consecutive runs
       if(setupFlag) this->reset_stepLastReset();
 
+      // perform operations that should be done before setting up parallellism and exchanging elements
+      preSetup();
+
       //NP check for setupFlag since some mesh properties might have changed
       //NP so need to refresh everything once
-      if(!setupFlag && !this->isMoving() && !this->domain->box_change) return;
+      if(!setupFlag && !this->isMoving() && !this->isDeforming() && !this->domain->box_change) return;
 
       // set-up mesh parallelism
       setup();
@@ -652,6 +680,9 @@
 
       // re-calculate properties for ghosts
       refreshGhosts(setupFlag);
+
+      // stuff that should be done before resuming simulation
+      postBorders();
 
       /*NL*/// fprintf(this->screen,"PBCEXCHBRDRS: proc %d, mesh %s - nLocal %d, nGhost %d\n",
       /*NL*///                      this->comm->me,this->mesh_id_,nLocal_,nGhost_);
@@ -684,15 +715,21 @@
 
       int i = 0;
 
-      while(i < nLocal_)
+      if(doParallellization_)
       {
-          if(!this->domain->is_in_subdomain(this->center_(i)))
-              this->deleteElement(i);
-          else i++;
-      }
 
-      // calculate nGlobal for the first time
-     MPI_Sum_Scalar(nLocal_,nGlobal_,this->world);
+          while(i < nLocal_)
+          {
+              if(!this->domain->is_in_subdomain(this->center_(i)))
+                  this->deleteElement(i);
+              else i++;
+          }
+
+          // calculate nGlobal for the first time
+          MPI_Sum_Scalar(nLocal_,nGlobal_,this->world);
+      }
+      else
+        nGlobal_ = nLocal_;
 
       /*NL*/// fprintf(this->screen,"proc %d has %d owned elements, nglobal is %d\n",this->comm->me,nLocal_,nGlobal_);
       /*NL*/// this->error->all(FLERR,"check this\n");
@@ -705,6 +742,8 @@
   template<int NUM_NODES>
   void MultiNodeMeshParallel<NUM_NODES>::pbc()
   {
+      if(!doParallellization_) return;
+
       double centerNew[3], delta[3];
 
       for(int i = 0; i < this->sizeLocal(); i++)
@@ -726,6 +765,8 @@
   template<int NUM_NODES>
   void MultiNodeMeshParallel<NUM_NODES>::exchange()
   {
+      if(!doParallellization_) return;
+
       int nrecv, nsend = 0;
       int nrecv1,nrecv2;
       double *buf;
@@ -821,151 +862,154 @@
   template<int NUM_NODES>
   void MultiNodeMeshParallel<NUM_NODES>::borders()
   {
-      int iswap, twoneed, nfirst, nlast, n, nsend, nrecv, smax, rmax;
-      bool sendflag, dummy = false;
-      double *buf;
-      double lo,hi;
-      MPI_Request request;
-      MPI_Status status;
-
-      iswap = 0;
-      smax = rmax = 0;
-
-      for (int dim = 0; dim < 3; dim++)
+      if(doParallellization_)
       {
-          nlast = 0;
+          int iswap, twoneed, nfirst, nlast, n, nsend, nrecv, smax, rmax;
+          bool sendflag, dummy = false;
+          double *buf;
+          double lo,hi;
+          MPI_Request request;
+          MPI_Status status;
 
-          // need to go left and right in each dim
-          twoneed = 2*maxneed_[dim];
-          for (int ineed = 0; ineed < twoneed; ineed++)
+          iswap = 0;
+          smax = rmax = 0;
+
+          for (int dim = 0; dim < 3; dim++)
           {
-              lo = slablo_[iswap];
-              hi = slabhi_[iswap];
+              nlast = 0;
 
-              // find elements within slab boundaries lo/hi using <= and >=
-              //NP   for first swaps in a dim, check owned and ghost
-              //NP   for later swaps in a dim, only check newly arrived ghosts
-              //NP store sent atom indices in list for use in future timesteps
-
-              if (ineed % 2 == 0)
+              // need to go left and right in each dim
+              twoneed = 2*maxneed_[dim];
+              for (int ineed = 0; ineed < twoneed; ineed++)
               {
-                  nfirst = nlast;
-                  nlast = sizeLocal() + sizeGhost();
-              }
+                  lo = slablo_[iswap];
+                  hi = slabhi_[iswap];
 
-              nsend = 0;
+                  // find elements within slab boundaries lo/hi using <= and >=
+                  //NP   for first swaps in a dim, check owned and ghost
+                  //NP   for later swaps in a dim, only check newly arrived ghosts
+                  //NP store sent atom indices in list for use in future timesteps
 
-              // sendflag = 0 if I do not send on this swap
-              //NP deviating from Comm, it is only zero if would send
-              //NP through periodic or non-periodic BC
-
-              //NP TODO: differentiate between non-PBC (do not send)
-              //NP       PBC (send). if send through PBC, add box offset
-              //NP       to ghost position
-
-              /*NP OLD - from Comm
-              if (ineed/2 >= sendneed_[dim][ineed % 2])
-                  sendflag = false;
-              else sendflag = true;
-              */
-
-              sendflag = true;
-              //NP comm left and on left end of proc grid
-              if(ineed % 2 == 0 && this->comm->myloc[dim] == 0)
-                sendflag = false;
-
-              //NP comm right and on right end of proc grid
-              if(ineed % 2 == 1 && this->comm->myloc[dim] == this->comm->procgrid[dim]-1)
-                sendflag = false;
-
-              /*NL*/// if(this->comm->me == 1 && iswap == 2)
-              /*NL*///    fprintf(this->screen,"   mesh %s: proc %d swap # %d: sendflag %s\n",this->mesh_id_,this->comm->me,iswap,sendflag?"true":"false");
-
-              // find send elements
-              if(sendflag)
-              {
-                  /*NL*/// if(true/*this->comm->me == 1 && iswap == 2*/)
-                  /*NL*///    fprintf(this->screen,"   mesh %s: proc %d checks elements from %d to %d for send on swap # %d\n",this->mesh_id_,this->comm->me,nfirst,nlast,iswap);
-
-                  for (int i = nfirst; i < nlast; i++)
+                  if (ineed % 2 == 0)
                   {
-                      if( ((ineed % 2 == 0) && checkBorderElementLeft(i,dim,lo,hi))  ||
-                          ((ineed % 2 != 0) && checkBorderElementRight(i,dim,lo,hi))  )
-                      {
-                          if (nsend >= maxsendlist_[iswap])
-                              grow_list(iswap,nsend);
-                          sendlist_[iswap][nsend++] = i;
+                      nfirst = nlast;
+                      nlast = sizeLocal() + sizeGhost();
+                  }
 
-                          /*NL*/ if(LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(i))
-                          /*NL*/    fprintf(this->screen,"     mesh %s: proc %d prepares element id %d for send on swap # %d\n",this->mesh_id_,this->comm->me,id(i),iswap);
+                  nsend = 0;
+
+                  // sendflag = 0 if I do not send on this swap
+                  //NP deviating from Comm, it is only zero if would send
+                  //NP through periodic or non-periodic BC
+
+                  //NP TODO: differentiate between non-PBC (do not send)
+                  //NP       PBC (send). if send through PBC, add box offset
+                  //NP       to ghost position
+
+                  /*NP OLD - from Comm
+                  if (ineed/2 >= sendneed_[dim][ineed % 2])
+                      sendflag = false;
+                  else sendflag = true;
+                  */
+
+                  sendflag = true;
+                  //NP comm left and on left end of proc grid
+                  if(ineed % 2 == 0 && this->comm->myloc[dim] == 0)
+                    sendflag = false;
+
+                  //NP comm right and on right end of proc grid
+                  if(ineed % 2 == 1 && this->comm->myloc[dim] == this->comm->procgrid[dim]-1)
+                    sendflag = false;
+
+                  /*NL*/// if(this->comm->me == 1 && iswap == 2)
+                  /*NL*///    fprintf(this->screen,"   mesh %s: proc %d swap # %d: sendflag %s\n",this->mesh_id_,this->comm->me,iswap,sendflag?"true":"false");
+
+                  // find send elements
+                  if(sendflag)
+                  {
+                      /*NL*/// if(true/*this->comm->me == 1 && iswap == 2*/)
+                      /*NL*///    fprintf(this->screen,"   mesh %s: proc %d checks elements from %d to %d for send on swap # %d\n",this->mesh_id_,this->comm->me,nfirst,nlast,iswap);
+
+                      for (int i = nfirst; i < nlast; i++)
+                      {
+                          if( ((ineed % 2 == 0) && checkBorderElementLeft(i,dim,lo,hi))  ||
+                              ((ineed % 2 != 0) && checkBorderElementRight(i,dim,lo,hi))  )
+                          {
+                              if (nsend >= maxsendlist_[iswap])
+                                  grow_list(iswap,nsend);
+                              sendlist_[iswap][nsend++] = i;
+
+                              /*NL*/ if(LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(i))
+                              /*NL*/    fprintf(this->screen,"     mesh %s: proc %d prepares element id %d for send on swap # %d\n",this->mesh_id_,this->comm->me,id(i),iswap);
+                          }
                       }
                   }
+
+                  /*NL*/// fprintf(this->screen,"mesh %s: proc %d sends %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nsend,iswap);
+
+                  // pack up list of border elements
+
+                  if(nsend*size_border_ > maxsend_)
+                    grow_send(nsend*size_border_,0);
+
+                  n = pushElemListToBuffer(nsend, sendlist_[iswap], buf_send_, OPERATION_COMM_BORDERS,dummy,dummy,dummy);
+
+                  // swap atoms with other proc
+                  // no MPI calls except SendRecv if nsend/nrecv = 0
+                  // put incoming ghosts at end of my atom arrays
+                  // if swapping with self, simply copy, no messages
+
+                  if (sendproc_[iswap] != this->comm->me)
+                  {
+                      MPI_Sendrecv(&nsend,1,MPI_INT,sendproc_[iswap],0,&nrecv,1,MPI_INT,recvproc_[iswap],0,this->world,&status);
+                      if (nrecv*size_border_ > maxrecv_)
+                          grow_recv(nrecv*size_border_);
+                      if (nrecv)
+                          MPI_Irecv(buf_recv_,nrecv*size_border_,MPI_DOUBLE,recvproc_[iswap],0,this->world,&request);
+
+                      if (n)
+                          MPI_Send(buf_send_,n,MPI_DOUBLE,sendproc_[iswap],0,this->world);
+
+                      if (nrecv)
+                          MPI_Wait(&request,&status);
+
+                      buf = buf_recv_;
+                  }
+                  else
+                  {
+                      nrecv = nsend;
+                      buf = buf_send_;
+                  }
+
+                  // unpack buffer
+
+                  /*NL*/// fprintf(this->screen,"mesh %s: proc %d received %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nrecv,iswap);
+
+                  n = popElemListFromBuffer(nLocal_+nGhost_,nrecv,buf_recv_,OPERATION_COMM_BORDERS,dummy,dummy,dummy);
+
+                  /*NL*/// if(LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(nLocal_+nGhost_-1))
+                  /*NL*///    fprintf(this->screen,"     mesh %s: proc %d recvs element id %d on swap # %d\n",this->mesh_id_,this->comm->me,id(nLocal_+nGhost_-1),iswap);
+
+                  // set pointers & counters
+
+                  smax = MAX(smax,nsend);
+                  rmax = MAX(rmax,nrecv);
+                  sendnum_[iswap] = nsend;
+                  recvnum_[iswap] = nrecv;
+                  size_forward_recv_[iswap] = nrecv*size_forward_;
+                  size_reverse_recv_[iswap] = nsend*size_reverse_;
+                  firstrecv_[iswap] = nLocal_+nGhost_;
+                  nGhost_ += nrecv;
+                  iswap++;
               }
-
-              /*NL*/// fprintf(this->screen,"mesh %s: proc %d sends %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nsend,iswap);
-
-              // pack up list of border elements
-
-              if(nsend*size_border_ > maxsend_)
-                grow_send(nsend*size_border_,0);
-
-              n = pushElemListToBuffer(nsend, sendlist_[iswap], buf_send_, OPERATION_COMM_BORDERS,dummy,dummy,dummy);
-
-              // swap atoms with other proc
-              // no MPI calls except SendRecv if nsend/nrecv = 0
-              // put incoming ghosts at end of my atom arrays
-              // if swapping with self, simply copy, no messages
-
-              if (sendproc_[iswap] != this->comm->me)
-              {
-                  MPI_Sendrecv(&nsend,1,MPI_INT,sendproc_[iswap],0,&nrecv,1,MPI_INT,recvproc_[iswap],0,this->world,&status);
-                  if (nrecv*size_border_ > maxrecv_)
-                      grow_recv(nrecv*size_border_);
-                  if (nrecv)
-                      MPI_Irecv(buf_recv_,nrecv*size_border_,MPI_DOUBLE,recvproc_[iswap],0,this->world,&request);
-
-                  if (n)
-                      MPI_Send(buf_send_,n,MPI_DOUBLE,sendproc_[iswap],0,this->world);
-
-                  if (nrecv)
-                      MPI_Wait(&request,&status);
-
-                  buf = buf_recv_;
-              }
-              else
-              {
-                  nrecv = nsend;
-                  buf = buf_send_;
-              }
-
-              // unpack buffer
-
-              /*NL*/// fprintf(this->screen,"mesh %s: proc %d received %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nrecv,iswap);
-
-              n = popElemListFromBuffer(nLocal_+nGhost_,nrecv,buf_recv_,OPERATION_COMM_BORDERS,dummy,dummy,dummy);
-
-              /*NL*/// if(LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(nLocal_+nGhost_-1))
-              /*NL*///    fprintf(this->screen,"     mesh %s: proc %d recvs element id %d on swap # %d\n",this->mesh_id_,this->comm->me,id(nLocal_+nGhost_-1),iswap);
-
-              // set pointers & counters
-
-              smax = MAX(smax,nsend);
-              rmax = MAX(rmax,nrecv);
-              sendnum_[iswap] = nsend;
-              recvnum_[iswap] = nrecv;
-              size_forward_recv_[iswap] = nrecv*size_forward_;
-              size_reverse_recv_[iswap] = nsend*size_reverse_;
-              firstrecv_[iswap] = nLocal_+nGhost_;
-              nGhost_ += nrecv;
-              iswap++;
           }
-      }
 
-      // insure send/recv buffers are long enough for all forward & reverse comm
-      int max = MAX(maxforward_*smax,maxreverse_*rmax);
-      if (max > maxsend_) grow_send(max,0);
-      max = MAX(maxforward_*rmax,maxreverse_*smax);
-      if (max > maxrecv_) grow_recv(max);
+          // insure send/recv buffers are long enough for all forward & reverse comm
+          int max = MAX(maxforward_*smax,maxreverse_*rmax);
+          if (max > maxsend_) grow_send(max,0);
+          max = MAX(maxforward_*rmax,maxreverse_*smax);
+          if (max > maxrecv_) grow_recv(max);
+      }
 
       // build global-local map
       this->generateMap();
