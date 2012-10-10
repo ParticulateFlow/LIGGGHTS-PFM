@@ -528,19 +528,29 @@ void MathExtraLiggghts::calcBaryTriCoords(double *ap, double **edgeVec, double *
 void MathExtraLiggghts::calcBaryTriCoords(double *ap, double *edgeVec0, double *edgeVec1, double *edgeVec2,
                                            double *edgeLen, double *bary)
 {
-  // Compute dot products
-  double ab_ab = edgeLen[0]*edgeLen[0];
-  double ab_ac = -LAMMPS_NS::vectorDot3D(edgeVec0,edgeVec2)*edgeLen[0]*edgeLen[2];
-  double ap_ab = LAMMPS_NS::vectorDot3D(edgeVec0,ap)*edgeLen[0];
-  double ac_ac = edgeLen[2]*edgeLen[2];
-  double ap_ac = -LAMMPS_NS::vectorDot3D(ap,edgeVec2)*edgeLen[2];
+  //NP // Compute dot products
+  //NP double ab_ab = edgeLen[0]*edgeLen[0];
+  //NP double ab_ac = -LAMMPS_NS::vectorDot3D(edgeVec0,edgeVec2)*edgeLen[0]*edgeLen[2];
+  //NP double ap_ab = LAMMPS_NS::vectorDot3D(edgeVec0,ap)*edgeLen[0];
+  //NP double ac_ac = edgeLen[2]*edgeLen[2];
+  //NP double ap_ac = -LAMMPS_NS::vectorDot3D(ap,edgeVec2)*edgeLen[2];
 
-  // Compute barycentric coordinates
-  double invDenom = 1. / (ab_ab * ac_ac - ab_ac * ab_ac);
-  /*NL*///printf("invDenom %f ac_ac %f ap_ab %f ab_ac %f ap_ac %f\n",invDenom,ac_ac,ap_ab,ab_ac,ap_ac);
-  bary[1] =  (ac_ac * ap_ab - ab_ac * ap_ac) * invDenom;
-  bary[2] =  (ab_ab * ap_ac - ab_ac * ap_ab) * invDenom;
+  //NP // Compute barycentric coordinates
+  //NP double invDenom = 1. / (ab_ab * ac_ac - ab_ac * ab_ac);
+  //NP /*NL*///printf("invDenom %f ac_ac %f ap_ab %f ab_ac %f ap_ac %f\n",invDenom,ac_ac,ap_ab,ab_ac,ap_ac);
+  //NP bary[1] =  (ac_ac * ap_ab - ab_ac * ap_ac) * invDenom;
+  //NP bary[2] =  (ab_ab * ap_ac - ab_ac * ap_ab) * invDenom;
+  //NP bary[0] = 1. - bary[1] - bary[2];
+
+  double a = LAMMPS_NS::vectorDot3D(ap,edgeVec0);
+  double b = LAMMPS_NS::vectorDot3D(ap,edgeVec2);
+  double c = LAMMPS_NS::vectorDot3D(edgeVec0,edgeVec2);
+  double oneMinCSqr = 1 - c*c;
+
+  bary[1] = (a - b*c)/(edgeLen[0] * oneMinCSqr);
+  bary[2] = (a*c - b)/(edgeLen[2] * oneMinCSqr);
   bary[0] = 1. - bary[1] - bary[2];
+
 }
 
 #endif
