@@ -61,7 +61,8 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   f_servo_(  0.),
   fflag_(    *mesh()->prop().addGlobalProperty< VectorContainer<bool,3> > ("fflag","comm_none","frame_invariant","restart_yes",1)),
   v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_none","frame_invariant","restart_no",1)),
-  int_flag_( true)
+  int_flag_( true),
+  kp_( 		 0.)
 {
     if(!trackStress())
         error->fix_error(FLERR,this,"stress = 'on' required");
@@ -124,6 +125,16 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           iarg_++;
           fflag_.add(flags);
           hasargs = true;
+      } else if(strcmp(arg[iarg_],"kp") == 0) {
+    	  if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
+    	  kp_ = force->numeric(arg[iarg_+1]);
+    	  iarg_ = iarg_+2;
+    	  hasargs = true;
+      } else if(strcmp(arg[iarg_],"ki") == 0) {
+    	  if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
+    	  ki_ = force->numeric(arg[iarg_+1]);
+    	  iarg_ = iarg_+2;
+    	  hasargs = true;
       } else if(strcmp(style,"mesh/surface/stress/servo") == 0) {
           char *errmsg = new char[strlen(arg[iarg_])+20];
           sprintf(errmsg,"unknown keyword or wrong keyword order: %s", arg[iarg_]);
@@ -146,6 +157,26 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
         fflag_(0)[1] ? f_servo_ : 0.,
         fflag_(0)[2] ? f_servo_ : 0.
     );
+
+    vectorNegate3D(f_servo_vec_); // my desired force points in opposite direction
+
+    kp_ = kp_/vectorMag3D(f_servo_vec_); // to normalize the error
+    ki_ = ki_/vectorMag3D(f_servo_vec_);
+
+/*    vectorConstruct3D
+    (
+    	sign_servo_vec_,
+    	f_servo_vec_[0] >= 0. ? 1.0 : -1.0,
+    	f_servo_vec_[1] >= 0. ? 1.0 : -1.0,
+    	f_servo_vec_[2] >= 0. ? 1.0 : -1.0
+    );*/
+
+    /*NL*/ //if(screen) fprintf(screen,"f_servo_vec_ = %f %f %f\n",f_servo_vec_[0],f_servo_vec_[1],f_servo_vec_[2]);
+    /*NL*/ //if(screen) fprintf(screen,"sign_servo_vec_ = %f %f %f\n",sign_servo_vec_[0],sign_servo_vec_[1],sign_servo_vec_[2]);
+
+    vectorZeroize3D(error_vec_);
+    vectorZeroize3D(sum_error_vec_);
+    vectorZeroize3D(old_error_vec_);
 
     //NP inform mesh of upcoming movement
     mesh()->registerMove(false,true,false);
@@ -221,7 +252,7 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 {
     double dX[3],dx[3];
 
-    if (int_flag_) {
+/*    if (int_flag_) {
     	// update vcm by 1/2 step
 
     	if(fflag_(0)[0]) vcm_(0)[0] += dtfm_ * f_total(0);
@@ -230,6 +261,50 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 
     	limit_vel();
     	set_v_node();
+
+    	// update xcm by full step
+
+    	dx[0] = dtv_ * vcm_(0)[0];
+    	dx[1] = dtv_ * vcm_(0)[1];
+    	dx[2] = dtv_ * vcm_(0)[2];
+    	vectorAdd3D(xcm_(0),dx,xcm_(0));
+    	vectorSubtract3D(xcm_(0),xcm_orig_(0),dX);
+
+    	mesh()->move(dX,dx);
+
+    	// update reference point to COM
+    	//NP would not be necessary b/c p_ref_ is moved, rotated automatically
+    	//NP do it anyway to avoid long-term divergence
+    	//NP which could happen b/c move, rotate is done incrementally
+
+    	set_p_ref(xcm_(0));
+    	NL //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
+    	NL //printVec3D(screen,"xcm",xcm_(0));
+    }*/
+
+    // simple P-controller
+    if (int_flag_) {
+
+    	for (int i=0;i<3;i++) {
+    		if(fflag_(0)[i]) {
+    			error_vec_[i] = f_servo_vec_[i]-f_total(i);
+    			if (sgn(error_vec_[i]) != sgn(old_error_vec_[i])) {
+    				vectorZeroize3D(sum_error_vec_);
+    				/*NL*/ //fprintf(screen,"TEST: Reset integrator at timestep %d\n",update->ntimestep);
+    				/*NL*/ //fprintf(screen,"sgn new = %d sgn old = %d\n",sgn(vcm_(0)[i]),sgn(old_error_vec_[1]));
+    			} else sum_error_vec_[i] += error_vec_[i];
+
+    			vcm_(0)[i] = -vel_max_ * (error_vec_[i] * kp_ + sum_error_vec_[i] * ki_); // vel points opposite to force vector
+    			old_error_vec_[i] = error_vec_[i];
+    		}
+    	}
+
+    	limit_vel();
+    	set_v_node();
+
+    	/*NL*/ //printVec3D(screen,"f_servo_vec",f_servo_vec_);
+    	/*NL*/ //fprintf(screen," vector f_total: %g %g %g\n",f_total(0),f_total(1),f_total(2));
+    	/*NL*/ //printVec3D(screen,"vcm",vcm_(0));
 
     	// update xcm by full step
 
@@ -259,13 +334,13 @@ void FixMeshSurfaceStressServo::final_integrate()
     //NP update forces
     FixMeshSurfaceStress::final_integrate();
 
-    if (int_flag_) {
+/*    if (int_flag_) {
     	// add servo force
     	//NP add same force in 3 dims, will be integrated in one dim only anyway
     	add_external_contribution(f_servo_vec_);
 
-    	/*NL*/ //double ft[3]; f_total(ft);
-    	/*NL*/ //printVec3D(screen,"f_total",ft);
+    	NL //double ft[3]; f_total(ft);
+    	NL //printVec3D(screen,"f_total",ft);
 
     	// update vcm by 1/2 step
 
@@ -274,23 +349,24 @@ void FixMeshSurfaceStressServo::final_integrate()
     	if(fflag_(0)[2]) vcm_(0)[2] += dtfm_ * f_total(2);
     	limit_vel();
     	set_v_node();
-    }
+    }*/
+
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStressServo::limit_vel()
 {
-    double vmag, factor;
+/*    double vmag, factor;
 
     double dot = f_servo_vec_[0]*f_total(0)+f_servo_vec_[1]*f_total(1)+f_servo_vec_[2]*f_total(2);
-    if(dot < 0.)
+    if(dot < 0.) // f_servo_vec_ and f_total point opposite direction
     {
         //NP set velocity to 5% max vel
         factor = 0.001/f_servo_*vel_max_;
-        vcm_(0)[0] = f_servo_vec_[0] * factor;
-        vcm_(0)[1] = f_servo_vec_[1] * factor;
-        vcm_(0)[2] = f_servo_vec_[2] * factor;
+        vcm_(0)[0] = -f_servo_vec_[0] * factor;
+        vcm_(0)[1] = -f_servo_vec_[1] * factor;
+        vcm_(0)[2] = -f_servo_vec_[2] * factor;
     }
     else
     {
@@ -300,13 +376,22 @@ void FixMeshSurfaceStressServo::limit_vel()
 
         if(vmag > vel_max_)
         {
-            factor = vel_max_ / vmag;
+            factor = vel_max_ / vmag;*/
             /*NL*/ //fprintf(screen,"factor %f\n",factor);
-            vcm_(0)[0] *= factor;
+/*            vcm_(0)[0] *= factor;
             vcm_(0)[1] *= factor;
             vcm_(0)[2] *= factor;
         }
-    }
+    }*/
+	double vmag, factor;
+	vmag = vectorMag3D(vcm_(0));
+
+	if(vmag > vel_max_ && vmag != 0) {
+		factor = vel_max_ / vmag;
+		vcm_(0)[0] *= factor;
+		vcm_(0)[1] *= factor;
+		vcm_(0)[2] *= factor;
+	}
 }
 
 /* ---------------------------------------------------------------------- */

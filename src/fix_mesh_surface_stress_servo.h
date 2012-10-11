@@ -78,9 +78,19 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       bool int_flag_;
       int modify_param(int, char **);
 
+      // controller
+      double kp_,ki_;
+      double sign_servo_vec_[3],error_vec_[3],sum_error_vec_[3],old_error_vec_[3];
+
       // velocity for each node
 
       MultiVectorContainer<double,3,3> &v_;
+
+      // TEST
+      template <typename T> int sgn(T val) {
+          return (T(0) < val) - (val < T(0));
+      }
+
 
 }; //end class
 
