@@ -196,37 +196,55 @@
         vectorSubtract3D(p,n,nodeToP);
 
         double distFromNode = vectorDot3D(nodeToP,edge[ipp]);
-        if(distFromNode < SMALL_TRIMESH && distFromNode > -edgeLen(iTri)[ipp])
-        {
-          //NP contact at "previous" edge ipp
+        if(distFromNode < SMALL_TRIMESH)
+          {
+            if(distFromNode > -edgeLen(iTri)[ipp]){
+              //NP contact at "previous" edge ipp
+              if(!edgeActive(iTri)[ipp])
+                return LARGE_TRIMESH;
+              
+              vectorAddMultiple3D(n,distFromNode,edge[ipp],closestPoint);
+              
+              bary[ip] = 0.;
+              bary[iNode] = 1. + distFromNode/edgeLen(iTri)[ipp];
+              bary[ipp] = 1. - bary[iNode];
+        
+              return calcDist(p,closestPoint,delta);
+            } else{
+              //NP corner contact at "previous" node ipp
+              if(!cornerActive(iTri)[ipp])
+                return LARGE_TRIMESH;
 
-          if(!edgeActive(iTri)[ipp])
-            return LARGE_TRIMESH;
-
-          vectorAddMultiple3D(n,distFromNode,edge[ipp],closestPoint);
-
-          bary[ip] = 0.;
-          bary[iNode] = 1. + distFromNode/edgeLen(iTri)[iNode];
-          bary[ipp] = 1. - bary[iNode];
-
-          return calcDist(p,closestPoint,delta);
-        }
+              bary[ipp] = 1.; bary[iNode] = bary[ip] = 0.;
+              return calcDist(p,node_(iTri)[ipp],delta);
+            }
+          }
 
         distFromNode = vectorDot3D(nodeToP,edge[iNode]);
-        if(distFromNode > -SMALL_TRIMESH && distFromNode < edgeLen(iTri)[iNode])
-        {
-          //NP contact at "current" edge with index iNode
-          if(!edgeActive(iTri)[iNode])
-            return LARGE_TRIMESH;
-
-          vectorAddMultiple3D(n,distFromNode,edge[ipp],closestPoint);
-
-          bary[ipp] = 0.;
-          bary[iNode] = 1. - distFromNode/edgeLen(iTri)[iNode];
-          bary[ip] = 1. - bary[iNode];
-
-          return calcDist(p,closestPoint,delta);
-        }
+        if(distFromNode > -SMALL_TRIMESH)
+          {
+            if(distFromNode < edgeLen(iTri)[iNode]){
+              //NP contact at "current" edge with index iNode
+              if(!edgeActive(iTri)[iNode])
+                return LARGE_TRIMESH;
+              
+              vectorAddMultiple3D(n,distFromNode,edge[ipp],closestPoint);
+              
+              bary[ipp] = 0.;
+              bary[iNode] = 1. - distFromNode/edgeLen(iTri)[iNode];
+              bary[ip] = 1. - bary[iNode];
+              
+              return calcDist(p,closestPoint,delta);
+            } else{
+              //NP corner contact at "next" node ip
+              if(!cornerActive(iTri)[ip])
+                return LARGE_TRIMESH;
+              
+              bary[ip] = 1.; bary[iNode] = bary[ipp] = 0.;
+              return calcDist(p,node_(iTri)[ip],delta);
+              
+            }
+          }
       }
 
       if(!cornerActive(iTri)[iNode])
