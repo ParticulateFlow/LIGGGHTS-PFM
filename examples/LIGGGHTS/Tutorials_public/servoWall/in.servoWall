@@ -1,0 +1,139 @@
+# Test for controller of servo walls - simulation
+# Andreas Aigner (CD Lab Particulate FLow Modelling, JKU)
+# andreas.aigner@jku.at
+
+# ------------------------------
+
+# loop parameter
+variable    ctrlForce     index  -0.01 -0.1 -1 -10 -100 -1000
+variable    ctrlForceName index  A B C D E F
+
+variable    ctrlKp      equal     1e-2
+variable    ctrlKi      equal     1e-5
+variable    ctrlKd      equal     0
+
+# Particle parameter
+variable    density   equal   2500
+variable    radius    equal   2e-3
+
+# Simulation parameters
+variable    deltat  equal    5.0e-5
+
+# Internal variables
+variable    nStepsInit      equal   1.0/${deltat}
+variable    nStepsRun       equal   5/${deltat}
+variable    dumpfreq        equal   5.0e-2/${deltat}
+variable    dumpfreqForce   equal   1.0e-3/${deltat}
+
+variable    cylRadius       equal   0.025
+variable    cylDiameter     equal   2.0*${cylRadius}
+
+variable    skin            equal   0.5*${radius}
+
+variable    boxZMax         equal   2.0*${cylDiameter}
+
+variable    velMax          equal   0.5*${skin}/${deltat}
+# ------------------------------
+
+processors  1 2 1
+
+atom_style	granular
+atom_modify	map array
+boundary	f f f
+newton		off
+
+communicate	single vel yes
+
+units		si
+
+region		reg block -${cylRadius} ${cylRadius} -${cylRadius} ${cylRadius} 0.0 ${boxZMax} units box
+create_box	1 reg
+
+neighbor	    ${skin} bin
+neigh_modify	delay 0
+
+
+#Material properties required for new pair styles
+fix 		m1 all property/global youngsModulus peratomtype 5.e6
+fix 		m2 all property/global poissonsRatio peratomtype 0.45
+fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.9
+fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.20
+fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 0.02
+fix 		m6 all property/global characteristicVelocity scalar 2.
+
+#New pair style
+pair_style 	gran/hertz/history rolling_friction cdt #Hertzian without cohesion
+pair_coeff	* *
+
+#Timestep
+timestep	${deltat}
+
+#Gravity
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+#import triangular mesh from cad; the syntax is as follows:
+#"fix customname all mesh/gran stl_filename wall_type scale_factor x_off y_off z_off"
+fix   cad1 all mesh/surface/stress/servo file plate.stl type 1 scale ${cylRadius} move 0. 0. ${boxZMax} com 0. 0. ${boxZMax} f_servo ${ctrlForce} vel_max ${velMax} dim z kp ${ctrlKp} ki ${ctrlKi} kd ${ctrlKd}
+
+fix_modify cad1 integrate stop
+
+#use the imported mesh as granular wall
+fix		meshWall all wall/gran/hertz/history mesh n_meshes 1 meshes cad1
+
+#additonal walls for particle insertion
+fix   wCylinder all wall/gran/hertz/history primitive type 1 zcylinder ${cylRadius} 0. 0.
+fix   wBottom all wall/gran/hertz/history primitive type 1 zplane 0.
+
+#region for insertion
+region		bc cylinder z 0.0 0.0 ${cylRadius} ${cylDiameter} ${boxZMax} units box
+group		  nve_group region reg
+
+#distributions for insertion
+fix		pts1 all particletemplate/sphere 5330 atom_type 1 density constant ${density} radius constant ${radius}
+fix		pdd1 all particledistribution/discrete 5331  1 pts1 1.0
+
+#particle insertion
+fix		ins nve_group insert/pack seed 5332 distributiontemplate pdd1 maxattempt 100 insert_every 1500 overlapcheck yes all_in yes vel constant 0.0 0.0 -0.2 region bc particles_in_region 1000 ntry_mc 10000
+
+#apply nve integration to all particles that are inserted as single particles
+fix		integr nve_group nve/sphere
+
+#check timestep
+fix   ts all check/timestep/gran ${dumpfreq} 0.2 0.2
+
+#output settings, include total thermal energy
+compute		    1 all erotate/sphere
+thermo_style	custom step atoms ke c_1 vol
+thermo		    ${dumpfreq}
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+#insert the first particles so that dump is not empty
+run		  1
+dump    dmp all custom ${dumpfreq} post/dump*.servoWall_f${ctrlForceName} id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+
+dump 		dumpstl1 all mesh/stl ${dumpfreq} post/dump_stl_cad1_f${ctrlForceName}_*.stl cad1
+
+# write stl-forces
+variable ForceXCad1 equal f_cad1[1]
+variable ForceYCad1 equal f_cad1[2]
+variable ForceZCad1 equal f_cad1[3]
+variable TorqueXCad1 equal f_cad1[4]
+variable TorqueYCad1 equal f_cad1[5]
+variable TorqueZCad1 equal f_cad1[6]
+fix DumpTextCad1 all print ${dumpfreqForce} "${ForceXCad1} ${ForceYCad1} ${ForceZCad1} ${TorqueXCad1} ${TorqueYCad1} ${TorqueZCad1}" screen no title "Fx Fy Fz Tx Ty Tz " file force_cad1_f${ctrlForceName}.txt
+
+#insert particles
+run     ${nStepsInit}
+unfix   ins
+
+# now move cad1
+fix_modify cad1 integrate start
+
+#run
+run     ${nStepsRun}
+
+# loop
+clear
+next    ctrlForce ctrlForceName
+jump    in.servoWall
