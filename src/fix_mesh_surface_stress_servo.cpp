@@ -56,13 +56,13 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   vcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("vcm","comm_none","frame_invariant","restart_yes",1)),
   xcm_orig_( *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm_orig","comm_none","frame_invariant","restart_yes",3)),
   vel_max_(  0.),
-  acc_max_(  0.),
-  mass_(     0.),
   f_servo_(  0.),
   fflag_(    *mesh()->prop().addGlobalProperty< VectorContainer<bool,3> > ("fflag","comm_none","frame_invariant","restart_yes",1)),
   v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_none","frame_invariant","restart_no",1)),
   int_flag_( true),
-  kp_( 		 0.)
+  kp_( 		 0.),
+  ki_(       0.),
+  kd_(       0.)
 {
     if(!trackStress())
         error->fix_error(FLERR,this,"stress = 'on' required");
@@ -103,17 +103,6 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           iarg_++;
           f_servo_ = force->numeric(arg[iarg_++]);
           hasargs = true;
-      } else if (strcmp(arg[iarg_],"acc_max") == 0) {
-          if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
-          iarg_++;
-          acc_max_ = force->numeric(arg[iarg_++]);
-          if(acc_max_ <= 0.)
-            error->fix_error(FLERR,this,"acc_max > 0 required");
-          if(f_servo_ == 0.)
-            error->fix_error(FLERR,this,"please define 'f_servo' before 'acc_max'");
-          mass_ = fabs(f_servo_)/acc_max_;
-          /*NL*/ //fprintf(screen,"mass %f\n",mass_);
-          hasargs = true;
       } else if(strcmp(arg[iarg_],"dim") == 0) {
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'forceflags'");
           iarg_++;
@@ -133,6 +122,11 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
       } else if(strcmp(arg[iarg_],"ki") == 0) {
     	  if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
     	  ki_ = force->numeric(arg[iarg_+1]);
+    	  iarg_ = iarg_+2;
+    	  hasargs = true;
+      } else if(strcmp(arg[iarg_],"kd") == 0) {
+    	  if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
+    	  kd_ = force->numeric(arg[iarg_+1]);
     	  iarg_ = iarg_+2;
     	  hasargs = true;
       } else if(strcmp(style,"mesh/surface/stress/servo") == 0) {
@@ -158,25 +152,14 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
         fflag_(0)[2] ? f_servo_ : 0.
     );
 
-    vectorNegate3D(f_servo_vec_); // my desired force points in opposite direction
+    vectorNegate3D(f_servo_vec_); // my desired wall force points in opposite direction
 
-    kp_ = kp_/vectorMag3D(f_servo_vec_); // to normalize the error
+    //NP TODO: Right scaling of the controller parameters?
+    kp_ = kp_/vectorMag3D(f_servo_vec_);// to normalize the error
     ki_ = ki_/vectorMag3D(f_servo_vec_);
-
-/*    vectorConstruct3D
-    (
-    	sign_servo_vec_,
-    	f_servo_vec_[0] >= 0. ? 1.0 : -1.0,
-    	f_servo_vec_[1] >= 0. ? 1.0 : -1.0,
-    	f_servo_vec_[2] >= 0. ? 1.0 : -1.0
-    );*/
+    kd_ = kd_/vectorMag3D(f_servo_vec_);
 
     /*NL*/ //if(screen) fprintf(screen,"f_servo_vec_ = %f %f %f\n",f_servo_vec_[0],f_servo_vec_[1],f_servo_vec_[2]);
-    /*NL*/ //if(screen) fprintf(screen,"sign_servo_vec_ = %f %f %f\n",sign_servo_vec_[0],sign_servo_vec_[1],sign_servo_vec_[2]);
-
-    vectorZeroize3D(error_vec_);
-    vectorZeroize3D(sum_error_vec_);
-    vectorZeroize3D(old_error_vec_);
 
     //NP inform mesh of upcoming movement
     mesh()->registerMove(false,true,false);
@@ -202,20 +185,22 @@ void FixMeshSurfaceStressServo::init_defaults()
     double zerovec[3];
     vectorZeroize3D(zerovec);
     vcm_.add(zerovec);
+
+    vectorZeroize3D(error_vec_);
+    vectorZeroize3D(sum_error_vec_);
+    vectorZeroize3D(old_f_total_);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStressServo::error_checks()
 {
-    /*NL*/ //fprintf(screen,"sizes xcm %d mass %d moi %d\n",xcm_.size(),mass_.size(),moi_.size());
+    /*NL*/ //fprintf(screen,"sizes xcm %d moi %d\n",xcm_.size(),moi_.size());
 
     if(!xcm_.size())
         error->fix_error(FLERR,this,"please define 'com' for the mesh");
     if(f_servo_ == 0.)
         error->fix_error(FLERR,this,"please define 'f_servo' for the mesh");
-    if(mass_ == 0. )
-        error->fix_error(FLERR,this,"please define 'acc_max' for the mesh");
     if(vel_max_ == 0.)
         error->fix_error(FLERR,this,"please define 'vel_max' for the mesh");
     if(!fflag_.size())
@@ -228,9 +213,7 @@ void FixMeshSurfaceStressServo::init()
 {
     FixMeshSurfaceStress::init();
 
-    dtv_ = update->dt;
-    dtf_ = 0.5 * update->dt * force->ftm2v;
-    dtfm_ = dtf_ / mass_;
+    reset_dt();
 
     if (strcmp(update->integrate_style,"respa") == 0)
         error->fix_error(FLERR,this,"not respa-compatible");
@@ -250,61 +233,33 @@ int FixMeshSurfaceStressServo::setmask()
 
 void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 {
-    double dX[3],dx[3];
+    double dX[3],dx[3],dfdt;
 
-/*    if (int_flag_) {
-    	// update vcm by 1/2 step
-
-    	if(fflag_(0)[0]) vcm_(0)[0] += dtfm_ * f_total(0);
-    	if(fflag_(0)[1]) vcm_(0)[1] += dtfm_ * f_total(1);
-    	if(fflag_(0)[2]) vcm_(0)[2] += dtfm_ * f_total(2);
-
-    	limit_vel();
-    	set_v_node();
-
-    	// update xcm by full step
-
-    	dx[0] = dtv_ * vcm_(0)[0];
-    	dx[1] = dtv_ * vcm_(0)[1];
-    	dx[2] = dtv_ * vcm_(0)[2];
-    	vectorAdd3D(xcm_(0),dx,xcm_(0));
-    	vectorSubtract3D(xcm_(0),xcm_orig_(0),dX);
-
-    	mesh()->move(dX,dx);
-
-    	// update reference point to COM
-    	//NP would not be necessary b/c p_ref_ is moved, rotated automatically
-    	//NP do it anyway to avoid long-term divergence
-    	//NP which could happen b/c move, rotate is done incrementally
-
-    	set_p_ref(xcm_(0));
-    	NL //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
-    	NL //printVec3D(screen,"xcm",xcm_(0));
-    }*/
-
-    // simple P-controller
+    // simple PID-controller
     if (int_flag_) {
 
     	for (int i=0;i<3;i++) {
     		if(fflag_(0)[i]) {
-    			error_vec_[i] = f_servo_vec_[i]-f_total(i);
-    			if (sgn(error_vec_[i]) != sgn(old_error_vec_[i])) {
-    				vectorZeroize3D(sum_error_vec_);
-    				/*NL*/ //fprintf(screen,"TEST: Reset integrator at timestep %d\n",update->ntimestep);
-    				/*NL*/ //fprintf(screen,"sgn new = %d sgn old = %d\n",sgn(vcm_(0)[i]),sgn(old_error_vec_[1]));
-    			} else sum_error_vec_[i] += error_vec_[i];
 
-    			vcm_(0)[i] = -vel_max_ * (error_vec_[i] * kp_ + sum_error_vec_[i] * ki_); // vel points opposite to force vector
-    			old_error_vec_[i] = error_vec_[i];
+    			// calc error and sum of the errors
+    			error_vec_[i] = f_servo_vec_[i]-f_total(i);
+    			sum_error_vec_[i] += error_vec_[i]*dtv_;
+    			// derivative term
+    			// force used instead of the error in order to avoid signal spikes in case of change of the set point
+    			// de()/dt = - dforce()/dt for constant set point
+    			dfdt = -(f_total(i)-old_f_total_[i])/dtv_;
+
+    			// vel points opposite to force vector
+    			vcm_(0)[i] = -vel_max_ * (error_vec_[i] * kp_ + sum_error_vec_[i] * ki_ + dfdt * kd_);
+
+    			// save force for next timestep
+    			old_f_total_[i] = f_total(i);
+
     		}
     	}
 
     	limit_vel();
     	set_v_node();
-
-    	/*NL*/ //printVec3D(screen,"f_servo_vec",f_servo_vec_);
-    	/*NL*/ //fprintf(screen," vector f_total: %g %g %g\n",f_total(0),f_total(1),f_total(2));
-    	/*NL*/ //printVec3D(screen,"vcm",vcm_(0));
 
     	// update xcm by full step
 
@@ -334,63 +289,35 @@ void FixMeshSurfaceStressServo::final_integrate()
     //NP update forces
     FixMeshSurfaceStress::final_integrate();
 
-/*    if (int_flag_) {
-    	// add servo force
-    	//NP add same force in 3 dims, will be integrated in one dim only anyway
-    	add_external_contribution(f_servo_vec_);
-
-    	NL //double ft[3]; f_total(ft);
-    	NL //printVec3D(screen,"f_total",ft);
-
-    	// update vcm by 1/2 step
-
-    	if(fflag_(0)[0]) vcm_(0)[0] += dtfm_ * f_total(0);
-    	if(fflag_(0)[1]) vcm_(0)[1] += dtfm_ * f_total(1);
-    	if(fflag_(0)[2]) vcm_(0)[2] += dtfm_ * f_total(2);
-    	limit_vel();
-    	set_v_node();
-    }*/
-
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStressServo::limit_vel()
 {
-/*    double vmag, factor;
 
-    double dot = f_servo_vec_[0]*f_total(0)+f_servo_vec_[1]*f_total(1)+f_servo_vec_[2]*f_total(2);
-    if(dot < 0.) // f_servo_vec_ and f_total point opposite direction
-    {
-        //NP set velocity to 5% max vel
-        factor = 0.001/f_servo_*vel_max_;
-        vcm_(0)[0] = -f_servo_vec_[0] * factor;
-        vcm_(0)[1] = -f_servo_vec_[1] * factor;
-        vcm_(0)[2] = -f_servo_vec_[2] * factor;
-    }
-    else
-    {
-        vmag = vectorMag3D(vcm_(0));
-
-        // re-scale velocity if needed
-
-        if(vmag > vel_max_)
-        {
-            factor = vel_max_ / vmag;*/
-            /*NL*/ //fprintf(screen,"factor %f\n",factor);
-/*            vcm_(0)[0] *= factor;
-            vcm_(0)[1] *= factor;
-            vcm_(0)[2] *= factor;
-        }
-    }*/
 	double vmag, factor;
 	vmag = vectorMag3D(vcm_(0));
 
+	/*NL*/ //if(screen) fprintf(screen,"Test for velocity: vel_max_ = %g; vmag = %g\n",vel_max_,vmag);
+
+	// saturation of the velocity
 	if(vmag > vel_max_ && vmag != 0) {
 		factor = vel_max_ / vmag;
-		vcm_(0)[0] *= factor;
-		vcm_(0)[1] *= factor;
-		vcm_(0)[2] *= factor;
+
+    	for (int i=0;i<3;i++) {
+    		if(fflag_(0)[i]) {
+
+    			vcm_(0)[i] *= factor;
+
+    			// anti-windup of the integral part (only if ki_>0)
+    			if (ki_ > 0) {
+    				sum_error_vec_[i] = (-sgn(vcm_(0)[i])-error_vec_[i]*kp_)/ki_; //inverted controller equation
+    				/*NL*/ //fprintf(screen,"vcm_(0)[%d] = %g; sum_error_vec_[%d] = %g; error_vec = %g\n",i,vcm_(0)[i],i,sum_error_vec_[i],error_vec_[i]);
+    			}
+
+    		}
+    	}
 	}
 }
 
@@ -425,4 +352,12 @@ int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
   }
 
   return 0;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMeshSurfaceStressServo::reset_dt()
+{
+  dtv_ = update->dt;
+  dtf_ = 0.5 * update->dt * force->ftm2v;
 }

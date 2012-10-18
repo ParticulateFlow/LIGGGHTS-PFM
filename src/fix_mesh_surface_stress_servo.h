@@ -49,6 +49,7 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
 
       void initial_integrate(int vflag);
       void final_integrate();
+      void reset_dt();
 
     private:
 
@@ -67,26 +68,27 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
 
       // servo settings
 
-      double vel_max_, acc_max_, mass_, f_servo_;
+      double vel_max_, f_servo_;
       double f_servo_vec_[3];
 
       // timesteps and flags for integration
 
-      double dtf_,dtv_,dtfm_;
+      double dtf_,dtv_;
       VectorContainer<bool,3> &fflag_;
 
       bool int_flag_;
       int modify_param(int, char **);
 
       // controller
-      double kp_,ki_;
-      double sign_servo_vec_[3],error_vec_[3],sum_error_vec_[3],old_error_vec_[3];
+      double kp_,ki_,kd_;
+      double sign_servo_vec_[3],error_vec_[3],sum_error_vec_[3],old_f_total_[3];
 
       // velocity for each node
 
       MultiVectorContainer<double,3,3> &v_;
 
-      // TEST
+      //NP TODO: Is somewhere a better place for this function?!
+      // signum function
       template <typename T> int sgn(T val) {
           return (T(0) < val) - (val < T(0));
       }
