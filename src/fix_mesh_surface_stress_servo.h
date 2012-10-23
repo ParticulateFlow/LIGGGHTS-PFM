@@ -47,9 +47,12 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       void init();
       int setmask();
 
+      virtual void setup_pre_force(int vflag);
       void initial_integrate(int vflag);
       void final_integrate();
+
       void reset_dt();
+      double compute_vector(int n);
 
     private:
 

@@ -71,6 +71,9 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
         error->warning(FLERR,"Mesh has been scaled, moved, or rotated.\n"
                              "Please note that values for 'com', 'vel' refer to the scaled, moved, or rotated configuration");
 
+    // override default from base
+    size_vector = 9;
+
     // set defaults
 
     init_defaults();
@@ -231,6 +234,17 @@ int FixMeshSurfaceStressServo::setmask()
 
 /* ---------------------------------------------------------------------- */
 
+void FixMeshSurfaceStressServo::setup_pre_force(int vflag)
+{
+    FixMeshSurfaceStress::setup_pre_force(vflag);
+
+    // set xcm_orig_
+    xcm_orig_.set(0,xcm_(0));
+
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 {
     double dX[3],dx[3],dfdt;
@@ -361,3 +375,14 @@ void FixMeshSurfaceStressServo::reset_dt()
   dtv_ = update->dt;
   dtf_ = 0.5 * update->dt * force->ftm2v;
 }
+
+/* ----------------------------------------------------------------------
+   return total force or torque component on body
+------------------------------------------------------------------------- */
+
+double FixMeshSurfaceStressServo::compute_vector(int n)
+{
+  if(n < 6) return FixMeshSurfaceStress::compute_vector(n);
+  else      return xcm_(0)[n-6];
+}
+
