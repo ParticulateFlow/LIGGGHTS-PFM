@@ -1,0 +1,159 @@
+LIGGGHTS (Version LIGGGHTS-PFM 2.0.6, compiled 2012-11-13-13:30:34 by stefan based on LAMMPS 20 Apr 2012)
+#Conveyor
+atom_style	granular
+atom_modify	map array
+boundary	m m m
+newton		off
+
+processors 2 1 1
+
+communicate	single vel yes
+
+units		si
+
+region		reg block -0.5 0.5 -0.2 0.2 -0.2 0.35 units box
+create_box	1 reg
+Created orthogonal box = (-0.5 -0.2 -0.2) to (0.5 0.2 0.35)
+  2 by 1 by 1 MPI processor grid
+
+neighbor	0.01 bin
+neigh_modify	delay 0
+
+#Material properties required for new pair styles
+
+fix 		m1 all property/global youngsModulus peratomtype 5.e6
+fix 		m2 all property/global poissonsRatio peratomtype 0.45
+fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.5
+fix     m5 all property/global thermalCapacity peratomtype 10.
+fix     m6 all property/global thermalEmissivity peratomtype 0.8
+fix 		ftco all property/global thermalConductivity peratomtype 100.
+
+#New pair style
+pair_style 	gran/hertz/history  #Hertzian without cohesion
+pair_coeff	* *
+
+timestep	0.00001
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+#granular walls
+fix		cv all mesh/surface file conveyor.stl type 1 surface_vel -5. 0. 0.
+fix		bx all mesh/surface file box.stl      type 1 
+fix		inface all mesh/surface file insertion_face.stl type 1
+fix		wall all wall/gran/hertz/history mesh n_meshes 2 meshes bx cv 
+
+#distributions for insertion
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.015
+fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.025
+fix		pdd1 all particledistribution/discrete 1.  2 pts1 0.3 pts2 0.7
+
+#region for insertion
+group		nve_group region reg
+0 atoms in group nve_group
+region		bc block 0.3 0.5 -0.2 0.2 0.1 0.2 units box
+
+#heat transfer
+fix   heattranr all heat/gran/radiation initial_temperature 300. background_temperature 600. max_bounces 10 seed 1 cutoff 0.025
+fix   heattranc all heat/gran/conduction initial_temperature 300.
+
+#deprecated pour command
+#fix		ins nve_group pour/dev mass 30. 1 distributiontemplate pdd1 vol 0.25 200 massflowrate 30. vel uniform 0. 0. 0. 0. 0.0 region bc
+
+#particle insertion
+fix			ins nve_group insert/stream seed 5330 distributiontemplate pdd1 				maxattempt 100 mass 30. massrate 30. overlapcheck yes vel constant 0. 0. -1.0				insertion_face inface extrude_length 0.1
+
+#apply nve integration to all particles that are inserted as single particles
+fix		integr nve_group nve/sphere
+
+
+#output settings, include total thermal energy
+fix				ts all check/timestep/gran 1000 0.1 0.1
+compute			rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke f_ts[1] f_ts[2] vol
+thermo			1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+#insert the first particles so that dump is not empty
+run			1
+Particle insertion: 38.299046 particles every 10000 steps - particle rate 382.990455, (mass rate 30.000000)
+   382 particles (mass 29.922417) within 99741 steps
+Memory usage per processor = 11.5533 Mbytes
+Step Atoms KinEng rke ts[1] ts[2] Volume 
+       0        0           -0            0            0            0   0.22011002 
+Particle insertion: inserted 38 particle templates (mass 2.882411) at step 1
+ - a total of 38 particle templates (mass 2.882411) inserted so far.
+       1       38    1.4412056            0            0            0   0.22011002 
+Loop time of 0.00494719 on 2 procs for 1 steps with 38 atoms
+
+Pair  time (%) = 9.53674e-07 (0.0192771)
+Neigh time (%) = 7.14064e-05 (1.44337)
+Comm  time (%) = 8.70228e-06 (0.175904)
+Outpt time (%) = 0.000365496 (7.38795)
+Other time (%) = 0.00450063 (90.9735)
+
+Nlocal:    19 ave 38 max 0 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+Nghost:    0 ave 0 max 0 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+Neighs:    11 ave 22 max 0 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+
+Total # of neighbors = 22
+Ave neighs/atom = 0.578947
+Neighbor list builds = 1
+Dangerous builds = 0
+dump		dmp all custom 400 post/dump*.conveyor id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_Temp[0] 
+
+#insert particles
+run			140000 upto
+Memory usage per processor = 11.8586 Mbytes
+Step Atoms KinEng rke ts[1] ts[2] Volume 
+       1       38    1.4412056            0            0            0   0.22011002 
+    1000       38    1.4412056            0 0.0052941493 0.0022724751   0.22011002 
+    2000       38    1.4426143            0 0.0052941493 0.0022899711   0.22011002 
+    3000       38    1.4555736            0 0.0052941493 0.0023316639   0.22011002 
+    4000       38    1.5434975            0 0.0052941493 0.0023705718   0.22011002 
+    5000       38    1.6565597            0 0.0052941493 0.0024070812   0.22011002 
+    6000       38    1.7874091            0 0.0052941493 0.0024415013   0.22011002 
+    7000       38     1.961086            0 0.0052941493 0.0024740832   0.22011002 
+    8000       38    2.1686691            0 0.0052941493 0.0025050339   0.22011002 
+    9000       38    2.4119538            0 0.0052941493 0.0025345266   0.22011002 
+   10000       38    2.7109396            0 0.0052941493 0.0025627072   0.22011002 
+Particle insertion: inserted 38 particle templates (mass 2.882411) at step 10001
+ - a total of 76 particle templates (mass 5.764823) inserted so far.
+   11000       76    4.4965441            0 0.0052941493 0.0025897001   0.22011002 
+   12000       76    4.8830967            0 0.0052941493 0.0026156124   0.22011002 
+   13000       76    5.3309332            0 0.0052941493 0.0026405368   0.22011002 
+   14000       76    5.7477605   0.11390399 0.0052941493 0.0026480515   0.22011002 
+   15000       76    5.4275015    2.2825395 0.0052941493 0.0026294128   0.22011002 
+   16000       76    5.6711124    2.4162263 0.0052941493 0.0026404634   0.22011002 
+   17000       76    5.8160786    2.3968626 0.0052941493 0.0026458958   0.22011002 
+   18000       76     6.069401    3.1628324 0.0052941493 0.0026537782   0.22011002 
+   19000       76    6.2694569    3.2993955 0.0052941493 0.0028014554   0.22011002 
+   20000       76    5.7795697     3.810416 0.0052941493 0.0028058819   0.22011002 
+Particle insertion: inserted 38 particle templates (mass 3.010693) at step 20001
+ - a total of 114 particle templates (mass 8.775515) inserted so far.
+   21000      114    7.7499819    4.7161954 0.0052941493 0.0027515382   0.22011002 
+   22000      114    7.5447165     4.639484 0.0052941493 0.0026842819   0.22011002 
+   23000      114    7.8190311    4.6573816 0.0052941493 0.0027954056   0.22011002 
+   24000      114    8.0437519    4.9914953 0.0052941493 0.0027946718   0.22011002 
+   25000      114    8.3082933     5.162576 0.0052941493  0.002794617   0.22011002 
+   26000      114     8.584735      5.65648 0.0052941493 0.0027952415   0.22011002 
+   27000      114    9.0087116    6.4306981 0.0052941493  0.002827526   0.22011002 
+   28000      114     9.053046    6.5837402 0.0052941493 0.0027641441   0.22011002 
+   29000      114    8.7671113     6.501058 0.0052941493 0.0027756743   0.22011002 
+   30000      114    8.9331496    6.6542947 0.0052941493 0.0027846609   0.22011002 
+Particle insertion: inserted 38 particle templates (mass 3.010693) at step 30001
+ - a total of 152 particle templates (mass 11.786208) inserted so far.
+   31000      152    10.788991    6.6804593 0.0052941493  0.002793827   0.22011002 
+   32000      152    11.144061    6.9039726 0.0052941493 0.0027900992   0.22011002 
+   33000      152    11.324338    7.1340837 0.0052941493 0.0027802255   0.22011002 
+   34000      152    11.479046    7.5060939 0.0052941493 0.0027778785   0.22011002 
+   35000      152    11.414047    7.8680543 0.0052941493 0.0027706669   0.22011002 
+   36000      152    11.704969    7.6262868 0.0052941493 0.0027605027   0.22011002 
+   37000      152     11.62047    8.2772696 0.0052941493 0.0027561676   0.22011002 
+   38000      152    12.178069    8.7279278 0.0052941493 0.0027581142   0.22011002 
+   39000      152    12.452268    9.1702518 0.0052941493 0.0027876887   0.22011002 
+   40000      152    12.996911
