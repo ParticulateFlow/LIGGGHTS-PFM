@@ -49,8 +49,8 @@ using namespace FixConst;
 FixInsertRateRegion::FixInsertRateRegion(LAMMPS *lmp, int narg, char **arg) :
   FixInsertPack(lmp, narg, arg)
 {
-    // no fixed total number of particles inserted by this fix exists
-    ninsert_exists = 1;
+  // fixed total number of particles inserted by this fix exists
+  ninsert_exists = 1;
 
   bool hasargs = true;
   while(iarg < narg && hasargs)
@@ -58,7 +58,7 @@ FixInsertRateRegion::FixInsertRateRegion(LAMMPS *lmp, int narg, char **arg) :
     hasargs = false;
     if (strcmp(arg[iarg],"some_arg") == 0) {
     } else if(strcmp(style,"insert/rate/region") == 0)
-        error->fix_error(FLERR,this,"unknown keyword");
+    error->fix_error(FLERR,this,"unknown keyword");
   }
 }
 
@@ -84,8 +84,6 @@ void FixInsertRateRegion::calc_insertion_properties()
 
     if(ins_region->dynamic_check())
         error->fix_error(FLERR,this,"dynamic regions are not allowed");
-
-    /*NL*///fprintf(screen,"FixInsertPack: Volume of insertion region: %f\n",region_volume);
 
     // error check on insert_every
     if(insert_every < 0)
@@ -115,6 +113,8 @@ void FixInsertRateRegion::calc_insertion_properties()
     else massflowrate = nflowrate * fix_distribution->mass_expect();
 
     ninsert_per = nflowrate*(static_cast<double>(insert_every)*dt);
+
+    /*NL*///fprintf(screen,"FixInsertPack: Volume of insertion region: %f ninsert_per %f\n",region_volume,ninsert_per);
 }
 
 /* ---------------------------------------------------------------------- */

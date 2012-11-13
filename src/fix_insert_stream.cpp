@@ -278,7 +278,7 @@ void FixInsertStream::calc_insertion_properties()
         extrude_length = static_cast<double>(duration) * dt * vectorMag3D(v_normal);
         /*NL*/ //fprintf(screen,"extrude_length %f, max_r_bound() %f, duration %d\n",extrude_length,max_r_bound(),duration);
         if(extrude_length < 3.*max_r_bound())
-          error->fix_error(FLERR,this,"'insert_every' or 'vel' is too small");
+          error->fix_error(FLERR,this,"'insert_every' or 'vel' is too small, or radius of inserted particles too large");
     }
 
     /*NL*///fprintf(screen,"insert_every %d, duration %d, v_normal %f, extrude_length %f dt %e\n",insert_every,duration,vectorMag3D(v_normal),extrude_length,dt);
@@ -356,7 +356,7 @@ void FixInsertStream::init()
     /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::init() end\n");
 
     //NP disallow movement because shallow mesh copy would not know about it
-    if(ins_face->isMoving() || ins_face->isScaling() || ins_face->isTranslating())
+    if(ins_face->isMoving() || ins_face->isScaling())
         error->fix_error(FLERR,this,"cannot translate, rotate, scale mesh which is used for particle insertion");
 }
 

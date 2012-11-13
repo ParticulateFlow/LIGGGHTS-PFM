@@ -107,6 +107,8 @@
   template<int NUM_NODES>
   bool MultiNodeMeshParallel<NUM_NODES>::addElement(double **nodeToAdd)
   {
+    /*NL*/ //fprintf(this->screen,"MultiNodeMeshParallel<NUM_NODES>::addElement\n");
+
     if(MultiNodeMesh<NUM_NODES>::addElement(nodeToAdd))
     {
         nLocal_++;

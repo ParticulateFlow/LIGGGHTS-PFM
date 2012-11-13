@@ -122,7 +122,7 @@
     /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/ // if(5879 == id(nTri))
     /*NL*/     fprintf(screen,"step "BIGINT_FORMAT": deltan %f\n",
-    /*NL*/     update->ntimestep,deltan);
+    /*NL*/                    update->ntimestep,deltan);
 
     /*NL*/ //printVec3D(screen,"bary tri_mesh_I",bary);
 
@@ -363,8 +363,10 @@
     u = (dot11 * dot02 - dot01 * dot12) * invDenom;
     v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
-    if((u > -SMALL_TRIMESH) && (v > -SMALL_TRIMESH) && (u + v < 1+SMALL_TRIMESH)) return true;
-    return true;
+    if((u > -SMALL_TRIMESH) && (v > -SMALL_TRIMESH) && (u + v < 1+SMALL_TRIMESH))
+        return true;
+    else
+        return false;
   }
 
   /* ----------------------------------------------------------------------
