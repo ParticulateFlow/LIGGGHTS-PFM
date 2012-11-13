@@ -75,8 +75,8 @@ unfix	ins
 run		20000 upto
 
 #set heat sources for distint particles
-region	pos_source block 0.03 INF INF INF INF INF units box 
-region	neg_source block INF -0.03 INF INF INF INF units box 
+region	pos_source block 0.03 INF INF INF INF INF units box
+region	neg_source block INF -0.03 INF INF INF INF units box
 
 set		region pos_source property/atom heatSource 1.5
 set		region neg_source property/atom heatSource -1.5
