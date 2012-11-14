@@ -691,9 +691,10 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNeighs(int tag_a, int tag_
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
     /*NL*/ //fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
-    /*NL*/// printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
-    /*NL*/// printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
+    /*NL*/ //printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
+    /*NL*/ //printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
     /*NL*/ //if(fabs(dot) > curvature_) fprintf(this->screen,"a %d b %d  are coplanar \n",a,b);
+    /*NL*/ //else  fprintf(this->screen,"a %d b %d  are NOT coplanar \n",a,b);
 
     // need fabs in case surface normal is other direction
     if(fabs(dot) > curvature_) return true;

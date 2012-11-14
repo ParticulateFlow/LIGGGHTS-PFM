@@ -228,6 +228,7 @@
   {
     /*NL*/ //this->error->all(FLERR,"useAsInsertionMesh() called");
     isInsertionMesh_ = true;
+    //NP because mesh would be parallel at this point already
     if(!parallelflag)
     {
         if(isParallel())
