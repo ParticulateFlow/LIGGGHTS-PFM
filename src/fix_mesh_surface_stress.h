@@ -55,7 +55,7 @@ namespace LAMMPS_NS
         void pre_force(int vflag);
         void final_integrate();
 
-        virtual double compute_vector(int n);
+        double compute_vector(int n);
 
         virtual void add_particle_contribution(int ip, double *frc,
                             double *delta, int iTri, double *v_wall);

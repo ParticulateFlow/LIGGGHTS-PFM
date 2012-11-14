@@ -565,7 +565,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
         //NP no error there because could be caused by duplicate faces
         fprintf(this->screen,"Mesh %s: %d mesh elements have more than %d neighbors \n",
                 this->mesh_id_,this->nTooManyNeighs(),NUM_NEIGH_MAX);
-        this->error->all(FLERR,"Fix mesh: Bad mesh, cannot continue. Possibly corrupt elements with too many neighbors");
+        this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. Possibly corrupt elements with too many neighbors");
     }
 
     if(nOverlapping() > 0)
@@ -667,6 +667,8 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanar(int tag_a, int tag_b)
     else return false;
 }
 
+/* ---------------------------------------------------------------------- */
+
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNeighs(int tag_a, int tag_b)
 {
@@ -689,6 +691,40 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNeighs(int tag_a, int tag_
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
     /*NL*/ //fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
+    /*NL*/ //printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
+    /*NL*/ //printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
+    /*NL*/ //if(fabs(dot) > curvature_) fprintf(this->screen,"a %d b %d  are coplanar \n",a,b);
+    /*NL*/ //else  fprintf(this->screen,"a %d b %d  are NOT coplanar \n",a,b);
+
+    // need fabs in case surface normal is other direction
+    if(fabs(dot) > curvature_) return true;
+    else return false;
+}
+
+/* ---------------------------------------------------------------------- */
+
+template<int NUM_NODES, int NUM_NEIGH_MAX>
+bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNodeNeighs(int tag_a, int tag_b)
+{
+    bool areNeighs = false;
+    int a = this->map(tag_a);
+    int b = this->map(tag_b);
+
+    if(a < 0 || b < 0)
+        this->error->one(FLERR,"Internal error: Illegal call to SurfaceMesh::areCoplanarNeighs()");
+
+    // check if two faces are coplanar
+    //NP used to transfer shear history btw planar faces
+
+    // must be neighs, otherwise not considered coplanar
+    for(int i = 0; i < nNeighs_(a); i++)
+        if(neighFaces_(a)[i] == tag_b)
+            areNeighs = true;
+
+    if(!areNeighs && MultiNodeMesh<NUM_NODES>::nSharedNodes(a,b) == 0) return false;
+
+    double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
+    /*NL*/ //fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
     /*NL*/// printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
     /*NL*/// printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
     /*NL*/ //if(fabs(dot) > curvature_) fprintf(this->screen,"a %d b %d  are coplanar \n",a,b);
@@ -697,6 +733,8 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNeighs(int tag_a, int tag_
     if(fabs(dot) > curvature_) return true;
     else return false;
 }
+
+/* ---------------------------------------------------------------------- */
 
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::coplanarNeighsOverlap(int iSrf,int iEdge,int jSrf,int jEdge)

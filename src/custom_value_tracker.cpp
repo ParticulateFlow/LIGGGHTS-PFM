@@ -83,7 +83,8 @@ using namespace LAMMPS_NS;
   {
       //NP this handles owned and ghost elements
       globalProperties_.storeOrig(globalProperties_orig_);
-      //  error->all(FLERR,"Internal error");
+      /*NL*/ //fprintf(screen,"storeOrig() called \n");
+      /*NL*///  error->all(FLERR,"Internal error");
   }
 
   /* ----------------------------------------------------------------------
@@ -94,7 +95,8 @@ using namespace LAMMPS_NS;
   {
       //NP this handles owned and ghost elements
       globalProperties_.reset(globalProperties_orig_);
-      //  error->all(FLERR,"Internal error");
+      /*NL*/ //fprintf(screen,"resetToOrig() called \n");
+      /*NL*/ //error->all(FLERR,"Internal resetToOrig called");
   }
 
   /* ----------------------------------------------------------------------

@@ -107,6 +107,8 @@
   template<int NUM_NODES>
   bool MultiNodeMeshParallel<NUM_NODES>::addElement(double **nodeToAdd)
   {
+    /*NL*/ //fprintf(this->screen,"MultiNodeMeshParallel<NUM_NODES>::addElement\n");
+
     if(MultiNodeMesh<NUM_NODES>::addElement(nodeToAdd))
     {
         nLocal_++;
@@ -226,6 +228,7 @@
   {
     /*NL*/ //this->error->all(FLERR,"useAsInsertionMesh() called");
     isInsertionMesh_ = true;
+    //NP because mesh would be parallel at this point already
     if(!parallelflag)
     {
         if(isParallel())

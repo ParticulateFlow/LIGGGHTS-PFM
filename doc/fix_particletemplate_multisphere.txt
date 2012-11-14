@@ -1,0 +1,67 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix particletemplate/multisphere command :h3
+
+[Syntax:]
+
+fix ID group-ID particletemplate/multisphere seed nspheres nspheresvalue keyword values ntry ntryvalue spheres values_spheres ... :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+particletemplate/multisphere = style name of this fix command  :l
+seed = random number generator seed (integer value) :l
+nspheres = obligatory keyword :l
+nspheresvalue = number of spheres in the template (integer value):l
+zero or more keyword/value pairs can be appended :l
+keyword, values are documented in "fix particletemplate/sphere"_fix_particletemplate_sphere.html command :l
+ntry = obligatory keyword :l
+ntryvalue: number of tries for Monte Carlo approach :l
+spheres = obligatory keyword :l
+option 1 for values_spheres = 'file' filename :l
+option 1 for values_spheres = {x1 y1 z1 r1 x2 y2 r2...} where x/y/z are sphere positions and r are the radii :l
+
+:ule
+
+[Examples:]
+
+fix pts1 all particletemplate/multisphere 1 nspheres 3 atom_type 1 density constant 2500 ntry 1000000 spheres 0. 0. 0. 0.005   0.005 0. 0. 0.005   0.01 0. 0. 0.005  
+fix pts2 all particletemplate/multisphere 1 nspheres 30 atom_type 1 density constant 2500 ntry 1000000 spheres file spherefile.txt :pre
+
+[LIGGGHTS vs. LAMMPS Info:]
+
+This command is not available in LAMMPS.
+
+[Description:]
+
+Define a multisphere particle template that is used as input for a "fix_particledistribution_discrete"_fix_particledistribution_discrete.html command. 
+The particle parameters (positions, radii) are either defined via this command or via a text file. The format of this text file is
+
+x1 y1 z1 r1
+x2 y2 z2 r2
+... :pre
+
+and the number of lines in this file has to be equal to n_spheres as defined in this command. Comments can be made in this file via the '#' character.
+
+After the spheres are read, a Monte Carlo procedure is used to assess everything that is needed for the motion integration: mass, center of mass, 
+and the inertia tensor including its eigensystem.
+
+IMPORTANT NOTE: As opposed to the number-based distributions used by "fix_pour_legacy"_fix_pour_legacy.html, this fix uses the more common 
+distribution based on mass-% for the radius distribution (as does "fix_particledistribution_discrete"_fix_particledistribution_discrete.html).
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+Information about the random state in this fix is written to "binary restart files"_restart.html so you can restart a simulation with the same particles being chosen for insertion. None of the "fix_modify"_fix_modify.html options are relevant to this fix. No global scalar or vector or per-atom quantities are stored by this fix for access by various "output commands"_Section_howto.html#4_15. No parameter of this fix can be used with the {start}/{stop} keywords of the "run"_run.html command. This fix is not invoked during "energy minimization"_minimize.html. 
+
+[Restrictions:] none
+
+[Related commands:]
+
+"fix_particletemplate_sphere"_fix_particletemplate_sphere.html
+
+[Default:] radius = 1.0, density = 1.0, atom_type = 1 

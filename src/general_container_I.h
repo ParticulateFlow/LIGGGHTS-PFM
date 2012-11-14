@@ -190,6 +190,8 @@
           if(!decidePackUnpackOperation(OPERATION_RESTART, scale, translate, rotate))
             return;
 
+          /*NL*/ //printf("del restart for %s, numElem_ %d, n %d\n",this->id_,numElem_,n);
+
           numElem_--;
           if(numElem_ == n) return;
           for(int i=0;i<NUM_VEC;i++)
@@ -237,11 +239,13 @@
       /*NL*/// printf("container %s sizes %d %d nvec %d %d lenvec %d %d\n",
       /*NL*///        id_,size(),gcont->size(),nVec(),gcont->nVec(),lenVec(),gcont->lenVec());
 
+      /*NL*/// printf("TRYING set container %s, sizes %d %d \n",id_,size(), gcont->size());
+
       //NP only copy if identical
       if(size() != gcont->size() || nVec() != gcont->nVec() || lenVec() != gcont->lenVec())
         return false;
 
-      /*NL*/ //printf("SETTING container %s\n",id_);
+      /*NL*/// printf("SETTING container %s\n",id_);
 
       int len = size();
       for(int n = 0; n < len; n++)

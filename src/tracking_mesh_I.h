@@ -67,6 +67,8 @@
     // this function is always called in serial mode
     //NP so use sizeLocal()
 
+    /*NL*/ //fprintf(this->screen,"TrackingMesh<NUM_NODES>::addElement\n");
+
     if(MultiNodeMeshParallel<NUM_NODES>::addElement(nodeToAdd))
     {
         // tracking mesh add memory
@@ -113,7 +115,11 @@
   bool TrackingMesh<NUM_NODES>::resetToOrig()
   {
     if(MultiNodeMesh<NUM_NODES>::resetToOrig())
+    {
         customValues_.resetToOrig();
+        return true;
+    }
+    return false;
   }
 
   /* ----------------------------------------------------------------------
