@@ -19,24 +19,18 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
+//#include "math.h"
 #include "stdlib.h"
 #include "string.h"
 #include "fix_mesh_surface_stress_servo.h"
-#include "atom.h"
-#include "atom_vec.h"
 #include "force.h"
 #include "update.h"
-#include "comm.h"
+//#include "comm.h"
 #include "modify.h"
-#include "fix_gravity.h"
-#include "fix_rigid.h"
 #include "domain.h"
-#include "memory.h"
+#include "variable.h"
+//#include "memory.h"
 #include "error.h"
-#include "group.h"
-#include "neighbor.h"
-#include "mpi.h"
 #include "vector_liggghts.h"
 #include "fix_property_global.h"
 
@@ -44,6 +38,8 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 
 #define EPSILON 1.0e-7
+
+enum{NONE,CONSTANT,EQUAL,ATOM};
 
 /*NL*/ #define DEBUG_MESH_SURFACE_STRESS_SERVO false
 
@@ -77,6 +73,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
     // set defaults
 
     init_defaults();
+    fstr = NULL;
 
     // parse further args
 
@@ -104,7 +101,15 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
       } else if(strcmp(arg[iarg_],"f_servo") == 0) {
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'f_servo'");
           iarg_++;
-          f_servo_ = force->numeric(arg[iarg_++]);
+          if (strstr(arg[iarg_],"v_") == arg[iarg_]) {
+        	  int n = strlen(&arg[iarg_][2]) + 1;
+        	  fstr = new char[n];
+        	  strcpy(fstr,&arg[iarg_][2]);
+          } else {
+        	  f_servo_ = force->numeric(arg[iarg_]);
+        	  fstyle = CONSTANT;
+          }
+          iarg_++;
           hasargs = true;
       } else if(strcmp(arg[iarg_],"dim") == 0) {
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'forceflags'");
@@ -154,13 +159,12 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
         fflag_(0)[1] ? f_servo_ : 0.,
         fflag_(0)[2] ? f_servo_ : 0.
     );
-
     vectorNegate3D(f_servo_vec_); // my desired wall force points in opposite direction
 
     //NP TODO: Right scaling of the controller parameters?
-    kp_ = kp_/vectorMag3D(f_servo_vec_);// to normalize the error
-    ki_ = ki_/vectorMag3D(f_servo_vec_);
-    kd_ = kd_/vectorMag3D(f_servo_vec_);
+    //kp_ = kp_/vectorMag3D(f_servo_vec_);// to normalize the error
+    //ki_ = ki_/vectorMag3D(f_servo_vec_);
+    //kd_ = kd_/vectorMag3D(f_servo_vec_);
 
     /*NL*/ //if(screen) fprintf(screen,"f_servo_vec_ = %f %f %f\n",f_servo_vec_[0],f_servo_vec_[1],f_servo_vec_[2]);
 
@@ -172,6 +176,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
 
 FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
 {
+	delete [] fstr;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -202,7 +207,7 @@ void FixMeshSurfaceStressServo::error_checks()
 
     if(!xcm_.size())
         error->fix_error(FLERR,this,"please define 'com' for the mesh");
-    if(f_servo_ == 0.)
+    if(fstyle == CONSTANT && f_servo_ == 0.)
         error->fix_error(FLERR,this,"please define 'f_servo' for the mesh");
     if(vel_max_ == 0.)
         error->fix_error(FLERR,this,"please define 'vel_max' for the mesh");
@@ -216,7 +221,22 @@ void FixMeshSurfaceStressServo::init()
 {
     FixMeshSurfaceStress::init();
 
+    // get timestep
     reset_dt();
+
+    // check variables
+    if (fstr) {
+    	fvar = input->variable->find(fstr);
+    	if (fvar < 0)
+    		error->all(FLERR,"Variable name for fix mesh/surface/stress/servo does not exist");
+    	if (input->variable->equalstyle(fvar)) fstyle = EQUAL;
+    	else if (input->variable->atomstyle(fvar)) fstyle = ATOM;
+    	else error->all(FLERR,"Variable for fix mesh/surface/stress/servo is invalid style");
+    }
+
+    // final error checks
+    if (fstyle == ATOM)
+    	error->fix_error(FLERR,this,"Force variable of style ATOM does not make any sense");
 
     if (strcmp(update->integrate_style,"respa") == 0)
         error->fix_error(FLERR,this,"not respa-compatible");
@@ -249,9 +269,31 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 {
     double dX[3],dx[3],dfdt;
 
-    // simple PID-controller
+    // only if the wall should move
     if (int_flag_) {
 
+    	// variable force, wrap with clear/add
+    	if (fstyle == EQUAL) {
+
+    		modify->clearstep_compute();
+
+    		f_servo_ = input->variable->compute_equal(fvar);
+    		/*NL*/ //fprintf(screen,"f_servo_ = %e \n",f_servo_);
+
+    	    vectorConstruct3D
+    	    (
+    	        f_servo_vec_,
+    	        fflag_(0)[0] ? f_servo_ : 0.,
+    	        fflag_(0)[1] ? f_servo_ : 0.,
+    	        fflag_(0)[2] ? f_servo_ : 0.
+    	    );
+    	    vectorNegate3D(f_servo_vec_); // my desired wall force points in opposite direction
+
+    		modify->addstep_compute(update->ntimestep + 1);
+
+    	}
+
+    	// simple PID-controller
     	for (int i=0;i<3;i++) {
     		if(fflag_(0)[i]) {
 
