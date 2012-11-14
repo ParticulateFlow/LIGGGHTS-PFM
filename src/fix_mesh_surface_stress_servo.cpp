@@ -110,9 +110,9 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'forceflags'");
           iarg_++;
           bool flags[3] = {false,false,false};
-          if     (strcmp("x",arg[iarg_]) == 0) flags[0] = true;
-          else if(strcmp("y",arg[iarg_]) == 0) flags[1] = true;
-          else if(strcmp("z",arg[iarg_]) == 0) flags[2] = true;
+          if     (strcmp("x",arg[iarg_]) == 0) {flags[0] = true; dim_ = 0;}
+          else if(strcmp("y",arg[iarg_]) == 0) {flags[1] = true; dim_ = 1;}
+          else if(strcmp("z",arg[iarg_]) == 0) {flags[2] = true; dim_ = 2;}
           else error->fix_error(FLERR,this,"'x', 'y' or 'z' expected after keyword 'dim'");
           iarg_++;
           fflag_.add(flags);
@@ -166,12 +166,16 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
 
     //NP inform mesh of upcoming movement
     mesh()->registerMove(false,true,false);
+
+    // create modified andrew instance
+    mod_andrew_ = new ModifiedAndrew;
 }
 
 /* ---------------------------------------------------------------------- */
 
 FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
 {
+  delete mod_andrew_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -293,14 +297,21 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
     	/*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
     	/*NL*/ //printVec3D(screen,"xcm",xcm_(0));
     }
+
+    // for area calculation
+    // set vector of touching particles to zero
+    contacts_.clear();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStressServo::final_integrate()
 {
-    //NP update forces
-    FixMeshSurfaceStress::final_integrate();
+  // calcualte area
+  double area = mod_andrew_->area(contacts_);
+
+  //NP update forces
+  FixMeshSurfaceStress::final_integrate();
 
 }
 
@@ -385,3 +396,19 @@ double FixMeshSurfaceStressServo::compute_vector(int n)
   else      return xcm_(0)[n-6];
 }
 
+/* ----------------------------------------------------------------------
+  called during wall force calc
+
+  detected contacts are registered to contribute to the area of the servo
+------------------------------------------------------------------------- */
+
+void add_particle_contribution(int ip, double *frc,
+                            double *delta, int iTri, double *v_wall){
+
+double *x = atom->x[ip];
+double r = atom->radius[ip];
+
+Circle c = {x[(1+dim_)%3], x[(2+dim_)%3], r};
+contacts_.push_back(c);
+
+}
