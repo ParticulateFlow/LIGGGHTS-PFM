@@ -40,6 +40,8 @@ namespace LAMMPS_NS
         static const int NUM_NODES = 3;
 
         int generateRandomOwnedGhostWithin(double *pos,double delta);
+        bool locatePosition(double *pos,int &triID,double *bary,double &distance);
+        bool constructPositionFromBary(int triID,double *bary,double *pos);
 
       protected:
 
@@ -49,7 +51,7 @@ namespace LAMMPS_NS
 
         void buildEdgeLists();
 
-        //store nearest active edges
+        // store nearest active edges
         //NP need to store 2 nearest edges for each node at max for planar face
         //NP stores IDs of triangles and their edge index
         VectorContainer<int,2*NUM_NODES> &nearestActiveEdgeID_;

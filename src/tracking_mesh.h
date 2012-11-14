@@ -130,7 +130,7 @@ namespace LAMMPS_NS{
         ScalarContainer<int> &id_;
 
         // line where element was read
-        //NP ATTENTON is freed after initialSetup
+        //NP ATTENTON is free'd after initialSetup
         ScalarContainer<int> *lineNo_;
 
         // global-local lookup

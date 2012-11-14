@@ -247,6 +247,8 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         vectorAdd3D(x,delta,contactPoint);
         vectorAdd3D(f_total_,frc,f_total_);
         vectorSubtract3D(contactPoint,p_ref_(0),tmp);
+        /*NL*/ //fprintf(screen,"p_ref_ %f %f %f\n",p_ref_(0)[0],p_ref_(0)[1],p_ref_(0)[2]);
+        /*NL*/ //fprintf(screen,"tmp %f %f %f\n",tmp[0],tmp[1],tmp[2]);
         vectorCross3D(tmp,frc,tmp2); // tmp2 is torque contrib
         vectorAdd3D(torque_total_,tmp2,torque_total_);
     }

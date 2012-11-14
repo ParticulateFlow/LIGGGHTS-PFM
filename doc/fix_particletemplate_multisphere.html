@@ -1,0 +1,83 @@
+<HTML>
+<CENTER><A HREF = "http://www.cfdem.com">LIGGGHTS WWW Site</A> - <A HREF = "http://lammps.sandia.gov">LAMMPS WWW Site</A> - <A HREF = "Manual.html">LIGGGHTS Documentation</A> - <A HREF = "Section_commands.html#comm">LIGGGHTS Commands</A> 
+</CENTER>
+
+
+
+
+
+
+
+
+<HR>
+
+<H3>fix particletemplate/multisphere command 
+</H3>
+<P><B>Syntax:</B>
+</P>
+<PRE>fix ID group-ID particletemplate/multisphere seed nspheres nspheresvalue keyword values ntry ntryvalue spheres values_spheres ... 
+</PRE>
+<UL><LI>ID, group-ID are documented in <A HREF = "fix.html">fix</A> command 
+
+<LI>particletemplate/multisphere = style name of this fix command  
+
+<LI>seed = random number generator seed (integer value) 
+
+<LI>nspheres = obligatory keyword 
+
+<LI>nspheresvalue = number of spheres in the template (integer value):l
+zero or more keyword/value pairs can be appended 
+
+<LI>keyword, values are documented in <A HREF = "fix_particletemplate_sphere.html">fix particletemplate/sphere</A> command 
+
+<LI>ntry = obligatory keyword 
+
+<LI>ntryvalue: number of tries for Monte Carlo approach 
+
+<LI>spheres = obligatory keyword 
+
+<LI>option 1 for values_spheres = 'file' filename 
+
+<LI>option 1 for values_spheres = <I>x1 y1 z1 r1 x2 y2 r2...</I> where x/y/z are sphere positions and r are the radii 
+
+
+</UL>
+<P><B>Examples:</B>
+</P>
+<PRE>fix pts1 all particletemplate/multisphere 1 nspheres 3 atom_type 1 density constant 2500 ntry 1000000 spheres 0. 0. 0. 0.005   0.005 0. 0. 0.005   0.01 0. 0. 0.005  
+fix pts2 all particletemplate/multisphere 1 nspheres 30 atom_type 1 density constant 2500 ntry 1000000 spheres file spherefile.txt 
+</PRE>
+<P><B>LIGGGHTS vs. LAMMPS Info:</B>
+</P>
+<P>This command is not available in LAMMPS.
+</P>
+<P><B>Description:</B>
+</P>
+<P>Define a multisphere particle template that is used as input for a <A HREF = "fix_particledistribution_discrete.html">fix_particledistribution_discrete</A> command. 
+The particle parameters (positions, radii) are either defined via this command or via a text file. The format of this text file is
+</P>
+<PRE>x1 y1 z1 r1
+x2 y2 z2 r2
+... 
+</PRE>
+<P>and the number of lines in this file has to be equal to n_spheres as defined in this command. Comments can be made in this file via the '#' character.
+</P>
+<P>After the spheres are read, a Monte Carlo procedure is used to assess everything that is needed for the motion integration: mass, center of mass, 
+and the inertia tensor including its eigensystem.
+</P>
+<P>IMPORTANT NOTE: As opposed to the number-based distributions used by <A HREF = "fix_pour_legacy.html">fix_pour_legacy</A>, this fix uses the more common 
+distribution based on mass-% for the radius distribution (as does <A HREF = "fix_particledistribution_discrete.html">fix_particledistribution_discrete</A>).
+</P>
+<P><B>Restart, fix_modify, output, run start/stop, minimize info:</B>
+</P>
+<P>Information about the random state in this fix is written to <A HREF = "restart.html">binary restart files</A> so you can restart a simulation with the same particles being chosen for insertion. None of the <A HREF = "fix_modify.html">fix_modify</A> options are relevant to this fix. No global scalar or vector or per-atom quantities are stored by this fix for access by various <A HREF = "Section_howto.html#4_15">output commands</A>. No parameter of this fix can be used with the <I>start</I>/<I>stop</I> keywords of the <A HREF = "run.html">run</A> command. This fix is not invoked during <A HREF = "minimize.html">energy minimization</A>. 
+</P>
+<P><B>Restrictions:</B> none
+</P>
+<P><B>Related commands:</B>
+</P>
+<P><A HREF = "fix_particletemplate_sphere.html">fix_particletemplate_sphere</A>
+</P>
+<P><B>Default:</B> radius = 1.0, density = 1.0, atom_type = 1 
+</P>
+</HTML>
