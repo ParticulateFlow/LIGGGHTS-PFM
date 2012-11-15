@@ -33,6 +33,13 @@ FixStyle(mesh/surface/stress/servo,FixMeshSurfaceStressServo)
 #include "math.h"
 #include "fix_mesh_surface_stress.h"
 
+#include "modified_andrew.h"
+#include <vector>
+
+using MODIFIED_ANDREW_AUX::Circle;
+using MODIFIED_ANDREW_AUX::Line;
+using MODIFIED_ANDREW_AUX::Point;
+
 namespace LAMMPS_NS {
 
 class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
@@ -49,6 +56,8 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
 
       virtual void setup_pre_force(int vflag);
       void initial_integrate(int vflag);
+      void add_particle_contribution(int ip, double *frc,
+                            double *delta, int iTri, double *v_wall);
       void final_integrate();
 
       void reset_dt();
@@ -63,6 +72,8 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       void update_mass();
       void set_v_node();
 
+      int dim_;
+
       // properties of mesh
 
       VectorContainer<double,3> &xcm_;
@@ -73,8 +84,8 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
 
       double vel_max_, f_servo_;
       double f_servo_vec_[3];
-      char *fstr;
-      int fvar, fstyle;
+      char *fstr_;
+      int fvar_, fstyle_;
 
       // timesteps and flags for integration
 
@@ -98,6 +109,10 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
           return (T(0) < val) - (val < T(0));
       }
 
+      // for area calculation
+      // vector of touching particles
+      vector<Circle> contacts_;
+      ModifiedAndrew *mod_andrew_;
 
 }; //end class
 

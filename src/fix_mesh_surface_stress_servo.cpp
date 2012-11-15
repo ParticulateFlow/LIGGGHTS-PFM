@@ -19,17 +19,15 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-//#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "fix_mesh_surface_stress_servo.h"
+#include "atom.h"
 #include "force.h"
 #include "update.h"
-//#include "comm.h"
 #include "modify.h"
 #include "domain.h"
 #include "variable.h"
-//#include "memory.h"
 #include "error.h"
 #include "vector_liggghts.h"
 #include "fix_property_global.h"
@@ -73,7 +71,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
     // set defaults
 
     init_defaults();
-    fstr = NULL;
+    fstr_ = NULL;
 
     // parse further args
 
@@ -103,11 +101,11 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           iarg_++;
           if (strstr(arg[iarg_],"v_") == arg[iarg_]) {
         	  int n = strlen(&arg[iarg_][2]) + 1;
-        	  fstr = new char[n];
-        	  strcpy(fstr,&arg[iarg_][2]);
+        	  fstr_ = new char[n];
+        	  strcpy(fstr_,&arg[iarg_][2]);
           } else {
         	  f_servo_ = force->numeric(arg[iarg_]);
-        	  fstyle = CONSTANT;
+        	  fstyle_ = CONSTANT;
           }
           iarg_++;
           hasargs = true;
@@ -115,9 +113,9 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'forceflags'");
           iarg_++;
           bool flags[3] = {false,false,false};
-          if     (strcmp("x",arg[iarg_]) == 0) flags[0] = true;
-          else if(strcmp("y",arg[iarg_]) == 0) flags[1] = true;
-          else if(strcmp("z",arg[iarg_]) == 0) flags[2] = true;
+          if     (strcmp("x",arg[iarg_]) == 0) {flags[0] = true; dim_ = 0;}
+          else if(strcmp("y",arg[iarg_]) == 0) {flags[1] = true; dim_ = 1;}
+          else if(strcmp("z",arg[iarg_]) == 0) {flags[2] = true; dim_ = 2;}
           else error->fix_error(FLERR,this,"'x', 'y' or 'z' expected after keyword 'dim'");
           iarg_++;
           fflag_.add(flags);
@@ -170,13 +168,17 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
 
     //NP inform mesh of upcoming movement
     mesh()->registerMove(false,true,false);
+
+    // create modified andrew instance
+    mod_andrew_ = new ModifiedAndrew;
 }
 
 /* ---------------------------------------------------------------------- */
 
 FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
 {
-	delete [] fstr;
+	  delete [] fstr_;
+    delete mod_andrew_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -207,7 +209,7 @@ void FixMeshSurfaceStressServo::error_checks()
 
     if(!xcm_.size())
         error->fix_error(FLERR,this,"please define 'com' for the mesh");
-    if(fstyle == CONSTANT && f_servo_ == 0.)
+    if(fstyle_ == CONSTANT && f_servo_ == 0.)
         error->fix_error(FLERR,this,"please define 'f_servo' for the mesh");
     if(vel_max_ == 0.)
         error->fix_error(FLERR,this,"please define 'vel_max' for the mesh");
@@ -225,17 +227,17 @@ void FixMeshSurfaceStressServo::init()
     reset_dt();
 
     // check variables
-    if (fstr) {
-    	fvar = input->variable->find(fstr);
-    	if (fvar < 0)
+    if (fstr_) {
+    	fvar_ = input->variable->find(fstr_);
+    	if (fvar_ < 0)
     		error->all(FLERR,"Variable name for fix mesh/surface/stress/servo does not exist");
-    	if (input->variable->equalstyle(fvar)) fstyle = EQUAL;
-    	else if (input->variable->atomstyle(fvar)) fstyle = ATOM;
+    	if (input->variable->equalstyle(fvar_)) fstyle_ = EQUAL;
+    	else if (input->variable->atomstyle(fvar_)) fstyle_ = ATOM;
     	else error->all(FLERR,"Variable for fix mesh/surface/stress/servo is invalid style");
     }
 
     // final error checks
-    if (fstyle == ATOM)
+    if (fstyle_ == ATOM)
     	error->fix_error(FLERR,this,"Force variable of style ATOM does not make any sense");
 
     if (strcmp(update->integrate_style,"respa") == 0)
@@ -272,11 +274,11 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
     if (int_flag_) {
 
     	// variable force, wrap with clear/add
-    	if (fstyle == EQUAL) {
+    	if (fstyle_ == EQUAL) {
 
     		modify->clearstep_compute();
 
-    		f_servo_ = input->variable->compute_equal(fvar);
+    		f_servo_ = input->variable->compute_equal(fvar_);
     		/*NL*/ //fprintf(screen,"f_servo_ = %e \n",f_servo_);
 
     	    vectorConstruct3D
@@ -335,14 +337,21 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
     	/*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
     	/*NL*/ //printVec3D(screen,"xcm",xcm_(0));
     }
+
+    // for area calculation
+    // set vector of touching particles to zero
+    contacts_.clear();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStressServo::final_integrate()
 {
-    //NP update forces
-    FixMeshSurfaceStress::final_integrate();
+  // calcualte area
+  double area = mod_andrew_->area(contacts_);
+
+  //NP update forces
+  FixMeshSurfaceStress::final_integrate();
 
 }
 
@@ -427,3 +436,20 @@ double FixMeshSurfaceStressServo::compute_vector(int n)
   else      return xcm_(0)[n-6];
 }
 
+/* ----------------------------------------------------------------------
+  called during wall force calc
+
+  detected contacts are registered to contribute to the area of the servo
+------------------------------------------------------------------------- */
+
+void FixMeshSurfaceStressServo::add_particle_contribution(int ip, double *frc,
+                            double *delta, int iTri, double *v_wall)
+{
+
+double *x = atom->x[ip];
+double r = atom->radius[ip];
+
+Circle c = {x[(1+dim_)%3], x[(2+dim_)%3], r};
+contacts_.push_back(c);
+
+}
