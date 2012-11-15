@@ -40,6 +40,11 @@ ModifiedAndrew::~ModifiedAndrew(){}
 
 double ModifiedAndrew::area(vector<Circle> C){
 
+	//NP TODO: Size of 4 is good?
+	if (C.size() < 4){
+		return 0.0;
+	}
+
   vector<Circle> hull_c = convex_hull(C);
   vector<Point> hull_p = hull_points(hull_c);
 
