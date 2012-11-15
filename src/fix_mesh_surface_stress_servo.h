@@ -84,6 +84,8 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
 
       double vel_max_, f_servo_;
       double f_servo_vec_[3];
+      char *fstr;
+      int fvar, fstyle;
 
       // timesteps and flags for integration
 
