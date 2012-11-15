@@ -17,7 +17,6 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
-
 ------------------------------------------------------------------------- */
 
 #include <stdlib.h>
@@ -72,7 +71,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
     // set defaults
 
     init_defaults();
-    fstr = NULL;
+    fstr_ = NULL;
 
     // parse further args
 
@@ -102,11 +101,11 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           iarg_++;
           if (strstr(arg[iarg_],"v_") == arg[iarg_]) {
         	  int n = strlen(&arg[iarg_][2]) + 1;
-        	  fstr = new char[n];
-        	  strcpy(fstr,&arg[iarg_][2]);
+        	  fstr_ = new char[n];
+        	  strcpy(fstr_,&arg[iarg_][2]);
           } else {
         	  f_servo_ = force->numeric(arg[iarg_]);
-        	  fstyle = CONSTANT;
+        	  fstyle_ = CONSTANT;
           }
           iarg_++;
           hasargs = true;
@@ -178,7 +177,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
 
 FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
 {
-	  delete [] fstr;
+	  delete [] fstr_;
     delete mod_andrew_;
 }
 
@@ -211,7 +210,7 @@ void FixMeshSurfaceStressServo::error_checks()
 
     if(!xcm_.size())
         error->fix_error(FLERR,this,"please define 'com' for the mesh");
-    if(fstyle == CONSTANT && f_servo_ == 0.)
+    if(fstyle_ == CONSTANT && f_servo_ == 0.)
         error->fix_error(FLERR,this,"please define 'f_servo' for the mesh");
     if(vel_max_ == 0.)
         error->fix_error(FLERR,this,"please define 'vel_max' for the mesh");
@@ -229,17 +228,17 @@ void FixMeshSurfaceStressServo::init()
     reset_dt();
 
     // check variables
-    if (fstr) {
-    	fvar = input->variable->find(fstr);
-    	if (fvar < 0)
+    if (fstr_) {
+    	fvar_ = input->variable->find(fstr_);
+    	if (fvar_ < 0)
     		error->all(FLERR,"Variable name for fix mesh/surface/stress/servo does not exist");
-    	if (input->variable->equalstyle(fvar)) fstyle = EQUAL;
-    	else if (input->variable->atomstyle(fvar)) fstyle = ATOM;
+    	if (input->variable->equalstyle(fvar_)) fstyle_ = EQUAL;
+    	else if (input->variable->atomstyle(fvar_)) fstyle_ = ATOM;
     	else error->all(FLERR,"Variable for fix mesh/surface/stress/servo is invalid style");
     }
 
     // final error checks
-    if (fstyle == ATOM)
+    if (fstyle_ == ATOM)
     	error->fix_error(FLERR,this,"Force variable of style ATOM does not make any sense");
 
     if (strcmp(update->integrate_style,"respa") == 0)
@@ -276,11 +275,11 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
     if (int_flag_) {
 
     	// variable force, wrap with clear/add
-    	if (fstyle == EQUAL) {
+    	if (fstyle_ == EQUAL) {
 
     		modify->clearstep_compute();
 
-    		f_servo_ = input->variable->compute_equal(fvar);
+    		f_servo_ = input->variable->compute_equal(fvar_);
     		/*NL*/ //fprintf(screen,"f_servo_ = %e \n",f_servo_);
 
     	    vectorConstruct3D
