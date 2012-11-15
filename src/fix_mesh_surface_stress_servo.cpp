@@ -181,7 +181,6 @@ FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
     delete mod_andrew_;
 }
 
-
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStressServo::post_create()
