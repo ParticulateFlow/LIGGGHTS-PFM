@@ -177,7 +177,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
 
 FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
 {
-	  delete [] fstr_;
+	delete [] fstr_;
     delete mod_andrew_;
 }
 
@@ -312,6 +312,8 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
     			// save force for next timestep
     			old_f_total_[i] = f_total(i);
 
+    			/*NL*/ //fprintf(screen,"Vector: f_total = %f %f %f\n",f_total(0),f_total(1),f_total(2));
+
     		}
     	}
 
@@ -347,11 +349,11 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 
 void FixMeshSurfaceStressServo::final_integrate()
 {
-  // calcualte area
-  double area = mod_andrew_->area(contacts_);
-
   //NP update forces
   FixMeshSurfaceStress::final_integrate();
+
+  // calcualte area
+  double area = mod_andrew_->area(contacts_);
 
 }
 
@@ -445,6 +447,7 @@ double FixMeshSurfaceStressServo::compute_vector(int n)
 void FixMeshSurfaceStressServo::add_particle_contribution(int ip, double *frc,
                             double *delta, int iTri, double *v_wall)
 {
+	FixMeshSurfaceStress::add_particle_contribution(ip,frc,delta,iTri,v_wall);
 
 double *x = atom->x[ip];
 double r = atom->radius[ip];
@@ -453,3 +456,4 @@ Circle c = {x[(1+dim_)%3], x[(2+dim_)%3], r};
 contacts_.push_back(c);
 
 }
+
