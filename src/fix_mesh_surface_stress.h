@@ -60,8 +60,8 @@ namespace LAMMPS_NS
         virtual void add_particle_contribution(int ip, double *frc,
                             double *delta, int iTri, double *v_wall);
 
-        void add_external_contribution(double *frc);
-        void add_external_contribution(double *frc,double *trq);
+        void add_global_external_contribution(double *frc);
+        void add_global_external_contribution(double *frc,double *trq);
 
         // inline access
 

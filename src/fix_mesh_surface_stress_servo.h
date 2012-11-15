@@ -74,6 +74,8 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
 
       int dim_;
 
+      int dim_;
+
       // properties of mesh
 
       VectorContainer<double,3> &xcm_;
