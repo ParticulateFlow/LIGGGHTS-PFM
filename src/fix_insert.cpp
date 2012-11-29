@@ -484,6 +484,7 @@ void FixInsert::pre_exchange()
 
   // number of particles to insert this timestep
   ninsert_this = calc_ninsert_this();
+  /*NL*///fprintf(screen,"ninsert_this %d\n",ninsert_this);
 
   // limit to max number of particles that shall be inserted
   // to avoid that max # may be slightly exceeded by random processes
@@ -496,6 +497,7 @@ void FixInsert::pre_exchange()
 
   // distribute ninsert_this across processors
   ninsert_this_local = distribute_ninsert_this(ninsert_this);
+  /*NL*///fprintf(screen,"ninsert_this %d ninsert_this_local %d\n",ninsert_this,ninsert_this_local);
 
   /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 2\n");}
 
@@ -519,9 +521,8 @@ void FixInsert::pre_exchange()
   //NP list is the same on all processors with global
   //NP need to make the list global as
 
-  /*NL*///fprintf(screen,"fix %s inits distribution %s with ninsert_this %d\n",id,fix_distribution->id,ninsert_this);
-
   ninsert_this_local = fix_distribution->randomize_list(ninsert_this_local,groupbit,exact_number);
+  /*NL*///fprintf(screen,"fix %s inits distribution %s with ninsert_this_local %d\n",id,fix_distribution->id,ninsert_this_local);
 
   MPI_Sum_Scalar(ninsert_this_local,ninsert_this,world);
 
@@ -754,8 +755,8 @@ int FixInsert::load_xnear(int ninsert_this_local)
   int n = 4*nspheres_near;
 
   // xnear is for my atoms + atoms to be inserted
-  /*NL*/ //fprintf(screen,"ninsert_this : %d, nspheres_near %d, nspheres_near_all %d, total length %d\n",
-  /*NL*/ //                ninsert_this,nspheres_near,nspheres_near_all,nspheres_near_all + ninsert_this * fix_distribution->max_nspheres());
+  /*NL*/ //fprintf(screen,"ninsert_this_local : %d, nspheres_near_local %d, total length %d\n",
+  /*NL*/ //                ninsert_this_local,nspheres_near_local,nspheres_near_local + ninsert_this_local*fix_distribution->max_nspheres());
   memory->create(xnear,nspheres_near_local + ninsert_this_local*fix_distribution->max_nspheres(), 4, "FixInsert::xnear");
 
   // load up xnear array with local and ghosts

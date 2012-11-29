@@ -77,6 +77,8 @@ bool VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::addElement(double **nod
     //NP need to do this because some classes may access data before
     //NP setup() is called
     calcVolPropertiesOfNewElement();
+
+    return true;
 }
 
 template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>

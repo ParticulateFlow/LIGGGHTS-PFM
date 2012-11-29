@@ -22,6 +22,7 @@
 #ifdef FIX_CLASS
 
 FixStyle(heat/gran/conduction,FixHeatGranCond)
+FixStyle(heat/gran,FixHeatGranCond)
 
 #else
 

@@ -19,10 +19,17 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Stefan Amberger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #ifndef LMP_MODIFIED_ANDREW_H
 #define LMP_MODIFIED_ANDREW_H
 
 #include <vector>
+#include "pointers.h"
+
 using namespace std;
 
 namespace MODIFIED_ANDREW_AUX{
@@ -51,15 +58,19 @@ using MODIFIED_ANDREW_AUX::Line;
 
 namespace LAMMPS_NS{
 
-class ModifiedAndrew{
+class ModifiedAndrew : protected Pointers {
 
 public:
-  ModifiedAndrew();
+  ModifiedAndrew(LAMMPS *lmp);
   ~ModifiedAndrew();
 
-  double area(vector<Circle> C);
+  double area();
+
+  inline void add_contact(Circle c)
+  { contacts_.push_back(c); }
 
 private:
+
   double area(vector<Point> H);
   double area(Point &p, Point &m, Point &q);
   double turn(const Circle &O, const Circle &A, const Circle &B);
@@ -71,8 +82,13 @@ private:
 
   vector<Circle> convex_hull(vector<Circle> P);
   vector<Point> hull_points(vector<Circle> C);
+  vector<Circle> construct_hull_c_all(double *data0, int ndata0);
+  int construct_data(vector<Circle> hull_c, double *&data);
 
   void project_contancts();
+
+  // container for contacts: x, y, r
+  vector<Circle> contacts_;
 };
 
 }

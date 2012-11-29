@@ -25,6 +25,10 @@
 ------------------------------------------------------------------------- */
 
 #include "modified_andrew.h"
+#include "mpi_liggghts.h"
+#include "vector_liggghts.h"
+#include "error.h"
+#include "comm.h"
 
 #include <algorithm>
 #include <cmath>
@@ -35,21 +39,122 @@ using MODIFIED_ANDREW_AUX::Line;
 using MODIFIED_ANDREW_AUX::Point;
 using namespace LAMMPS_NS;
 
-ModifiedAndrew::ModifiedAndrew(){}
+/* ---------------------------------------------------------------------- */
+
+ModifiedAndrew::ModifiedAndrew(LAMMPS *lmp) : Pointers(lmp) {}
 ModifiedAndrew::~ModifiedAndrew(){}
 
-double ModifiedAndrew::area(vector<Circle> C){
+/* ---------------------------------------------------------------------- */
 
-	//NP TODO: Size of 4 is good?
-	if (C.size() < 4){
-		return 0.0;
-	}
+double ModifiedAndrew::area()
+{
+    double A;
+    vector<Circle> hull_c = convex_hull(contacts_);
 
-  vector<Circle> hull_c = convex_hull(C);
-  vector<Point> hull_p = hull_points(hull_c);
+    /*NL*/ //fprintf(screen,"hull_c size %d\n",hull_c.size());
+    /*NL*/ //for(int i = 0; i < hull_c.size(); i++)
+    /*NL*/ //  fprintf(screen,"element %d: %f %f %f\n",i,hull_c[i].x,hull_c[i].y,hull_c[i].r);
 
-  return area(hull_p);
+    // multi-proc case
+    if(1 < comm->nprocs) //(1)//
+    {
+        // perform allgather
+        double *data = 0,*data0 = 0;
+        int ndata = 0, ndata0 = 0;
+
+        //NP erase first element which is duplicate
+        if(hull_c.size() > 2)
+            hull_c.erase(hull_c.begin());
+
+        // copy from STL vector to C array to safely use MPI
+        ndata = construct_data(hull_c,data);
+        ndata0 = MPI_Gather0_Vector(data,ndata,data0,world);
+
+        /*NL*///printVecN(screen,"data",data,ndata);
+        /*NL*///printVecN(screen,"data0",data0,ndata0);
+
+        // proc0 calculates convex hull
+        if(0 == comm->me) {
+
+            vector<Circle> hull_c_allreduced = construct_hull_c_all(data0,ndata0);
+            vector<Circle> hull_c_global = convex_hull(hull_c_allreduced);
+
+            /*NL*/ //fprintf(screen,"hull_c_allreduced size %d\n",hull_c_allreduced.size());
+            /*NL*/ //for(int i = 0; i < hull_c_allreduced.size(); i++)
+            /*NL*/ //  fprintf(screen,"element %d: %f %f %f\n",i,hull_c_allreduced[i].x,hull_c_allreduced[i].y,hull_c_allreduced[i].r);
+
+            //NP TODO: Size of 4 is good?
+            if (hull_c_global.size() < 4)
+                A = 0.;
+            else {
+                vector<Point> hull_p = hull_points(hull_c_global);
+                A = area(hull_p);
+            }
+        }
+
+        if(data) delete []data;
+        if(data0) delete []data0;
+
+        // broadcast result
+        MPI_Bcast(&A,1,MPI_DOUBLE,0,world);
+    }
+    // single proc case
+    else
+    {
+        if (hull_c.size() < 4)
+           A = 0.;
+        else {
+            vector<Point> hull_p = hull_points(hull_c);
+            A = area(hull_p);
+        }
+    }
+
+    // clear contact data
+    contacts_.clear();
+
+    return A;
 }
+
+/* ---------------------------------------------------------------------- */
+
+int ModifiedAndrew::construct_data(vector<Circle> hull_c, double *&data)
+{
+    int size = hull_c.size();
+    int datasize = 3*size;
+    data = new double[datasize];
+
+    for(int i = 0; i < size; i++)
+    {
+        data[3*i+0] = hull_c[i].x;
+        data[3*i+1] = hull_c[i].y;
+        data[3*i+2] = hull_c[i].r;
+    }
+
+    return datasize;
+}
+
+/* ---------------------------------------------------------------------- */
+
+vector<Circle> ModifiedAndrew::construct_hull_c_all(double *data0, int ndata0)
+{
+    vector<Circle> result;
+
+    Circle c;
+
+    for(int i = 0; i < ndata0/3; i++)
+    {
+        c.x = data0[i*3+0];
+        c.y = data0[i*3+1];
+        c.r = data0[i*3+2];
+        result.push_back(c);
+    }
+
+    /*NL*/ fprintf(screen,"ndata0 %d result.size() %d\n",ndata0,result.size());
+
+    return result;
+}
+
+/* ---------------------------------------------------------------------- */
 
 // area of triangle spanned by three points p,m,q
 // based on cross product
@@ -57,6 +162,8 @@ double ModifiedAndrew::area(Point &p, Point &m, Point &q){
 return 0.5*(-(m.y*p.x) + m.x*p.y +
       m.y*q.x - p.y*q.x - m.x*q.y + p.x*q.y);
 }
+
+/* ---------------------------------------------------------------------- */
 
 // area of convex hull
 double ModifiedAndrew::area(vector<Point> H){
@@ -70,6 +177,8 @@ double ModifiedAndrew::area(vector<Point> H){
   return a;
 }
 
+/* ---------------------------------------------------------------------- */
+
 // 2D cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
 // Returns a positive value, if OAB makes a counter-clockwise turn,
 // negative for clockwise turn, and zero if the points are collinear.
@@ -81,6 +190,8 @@ double ModifiedAndrew::turn(const Circle &O, const Circle &A, const Circle &B)
 
   return (-l1.a) * (-l2.b) - (-l1.b) * (-l2.a);
 }
+
+/* ---------------------------------------------------------------------- */
 
 // find the right tangent of two circles
 Line ModifiedAndrew::find_right_tangent(const Circle &p1, const Circle &p2){
@@ -104,6 +215,8 @@ Line ModifiedAndrew::find_right_tangent(const Circle &p1, const Circle &p2){
   return l;
 }
 
+/* ---------------------------------------------------------------------- */
+
 // find intersection point of two lines that are not parallel
 Point ModifiedAndrew::intersectLines(Line &l, Line &j){
   double x,y;
@@ -117,6 +230,8 @@ Point ModifiedAndrew::intersectLines(Line &l, Line &j){
 
   return p;
 }
+
+/* ---------------------------------------------------------------------- */
 
 // find the mean of a vector of points (excluding the first)
 Point ModifiedAndrew::mean_point(vector<Point> P){
@@ -134,6 +249,8 @@ Point ModifiedAndrew::mean_point(vector<Point> P){
 
   return mean;
 }
+
+/* ---------------------------------------------------------------------- */
 
 // Returns a list of points on the convex hull in counter-clockwise order.
 // Note: the last circle in the returned list is the same as the first one.
@@ -161,13 +278,14 @@ vector<Circle> ModifiedAndrew::convex_hull(vector<Circle> P)
     return H;
 }
 
+/* ---------------------------------------------------------------------- */
 
 // find exterior points of convex hull, i.e. the points
 // that are outside the circles, such that their convex hull
 // includes all circles, and is the minimal polygon
 // with as many edges as hull-circles to do so.
 vector<Point> ModifiedAndrew::hull_points(vector<Circle> C){
-  double x,y;
+
   vector<Point> points(C.size());
   Line l1, l2;
 

@@ -77,6 +77,7 @@ int FixMultisphere::pack_comm(int n, int *list, double *buf, int pbc_flag, int *
     else if(fw_comm_flag_ == MS_COMM_FW_F_TORQUE)
         return pack_comm_f_torque(n,list,buf,pbc_flag,pbc);
     else error->fix_error(FLERR,this,"FixMultisphere::pack_comm internal error");
+    return 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -271,6 +272,7 @@ int FixMultisphere::pack_reverse_comm(int n, int first, double *buf)
     else if(rev_comm_flag_ == MS_COMM_REV_V_OMEGA)
         return pack_reverse_comm_v_omega(n,first,buf);
     else error->fix_error(FLERR,this,"FixMultisphere::pack_reverse_comm internal error");
+    return 0;
 }
 
 /* ---------------------------------------------------------------------- */

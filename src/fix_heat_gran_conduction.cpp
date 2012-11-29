@@ -37,12 +37,13 @@ using namespace FixConst;
 
 /* ---------------------------------------------------------------------- */
 
-FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg){
-	int iarg = 5;
+FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg)
+{
+  int iarg = 5;
 
-	area_correction_flag = 0;
+  area_correction_flag = 0;
 
-	bool hasargs = true;
+  bool hasargs = true;
   while(iarg < narg && hasargs)
   {
     hasargs = false;
@@ -66,7 +67,8 @@ FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) : FixH
 
 /* ---------------------------------------------------------------------- */
 
-FixHeatGranCond::~FixHeatGranCond(){
+FixHeatGranCond::~FixHeatGranCond()
+{
 
 	//NP could delete fixes with no callbacks here since FixHeatGran has no callbacks
 
@@ -80,7 +82,8 @@ FixHeatGranCond::~FixHeatGranCond(){
 
 /* ---------------------------------------------------------------------- */
 
-void FixHeatGranCond::pre_delete(bool unfixflag){
+void FixHeatGranCond::pre_delete(bool unfixflag)
+{
 
   // tell cpl that this fix is deleted
   if(cpl && unfixflag) cpl->reference_deleted();
@@ -89,7 +92,8 @@ void FixHeatGranCond::pre_delete(bool unfixflag){
 
 /* ---------------------------------------------------------------------- */
 
-int FixHeatGranCond::setmask(){
+int FixHeatGranCond::setmask()
+{
   int mask = 0;
   mask |= POST_FORCE;
   return mask;
@@ -97,8 +101,8 @@ int FixHeatGranCond::setmask(){
 
 /* ---------------------------------------------------------------------- */
 
-void FixHeatGranCond::init(){
-
+void FixHeatGranCond::init()
+{
   const double *Y, *nu, *Y_orig;
   double expo, Yeff_ij, Yeff_orig_ij, ratio;
   Fix *ymo_fix;
@@ -107,13 +111,13 @@ void FixHeatGranCond::init(){
     FixHeatGran::init();
   }
 
-	int max_type = pair_gran->mpg->max_type();
+  int max_type = pair_gran->mpg->max_type();
 
-	if (conductivity) delete []conductivity;
-	conductivity = new double[max_type];
-	fix_conductivity = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalConductivity","property/global","peratomtype",max_type,0,style));
+  if (conductivity) delete []conductivity;
+  conductivity = new double[max_type];
+  fix_conductivity = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalConductivity","property/global","peratomtype",max_type,0,style));
 
-	// pre-calculate conductivity for possible contact material combinations
+  // pre-calculate conductivity for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
       for(int j=1;j<max_type+1;j++)
       {
@@ -124,12 +128,13 @@ void FixHeatGranCond::init(){
   // calculate heat transfer correction
 
   ymo_fix = NULL;
-  if(area_correction_flag){
+  if(area_correction_flag)
+  {
     ymo_fix = modify->find_fix_property("youngsModulusOriginal","property/global","peratomtype",0,0,style);
 
     if(force->pair_match("gran/hooke",0)) expo = 1.;
     else if(force->pair_match("gran/hertz",0)) expo = 2./3.;
-    else error->all(FLERR,"Fix heat/gran/conduction with area correction could not identify the granular pair style you are using, supported are hooke and hertz types");
+    else error->fix_error(FLERR,this,"area correction could not identify the granular pair style you are using, supported are hooke and hertz types");
 
     Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
     nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
@@ -153,7 +158,7 @@ void FixHeatGranCond::init(){
 
     // get reference to deltan_ratio
     deltan_ratio = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulusOriginal","property/global","peratomtype",max_type,0,style))->get_array_modified();
-	}
+  }
 
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
@@ -290,8 +295,6 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
   if(newton_pair) fix_heatFlux->do_reverse_comm();
 }
 
-/* ---------------------------------------------------------------------- */
-
 /* ----------------------------------------------------------------------
    register and unregister callback to compute
 ------------------------------------------------------------------------- */
@@ -312,19 +315,3 @@ void FixHeatGranCond::unregister_compute_pair_local(ComputePairGranLocal *ptr)
        error->all(FLERR,"Illegal situation in FixHeatGranCond::unregister_compute_pair_local");
    cpl = NULL;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

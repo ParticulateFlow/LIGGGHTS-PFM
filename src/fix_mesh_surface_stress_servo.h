@@ -19,6 +19,12 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Andreas Aigner (JKU Linz)
+------------------------------------------------------------------------- */
+
 #ifdef FIX_CLASS
 
 FixStyle(mesh/surface/stress/servo,FixMeshSurfaceStressServo)
@@ -33,12 +39,6 @@ FixStyle(mesh/surface/stress/servo,FixMeshSurfaceStressServo)
 #include "math.h"
 #include "fix_mesh_surface_stress.h"
 
-#include "modified_andrew.h"
-#include <vector>
-
-using MODIFIED_ANDREW_AUX::Circle;
-using MODIFIED_ANDREW_AUX::Line;
-using MODIFIED_ANDREW_AUX::Point;
 
 namespace LAMMPS_NS {
 
@@ -110,9 +110,7 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       }
 
       // for area calculation
-      // vector of touching particles
-      vector<Circle> contacts_;
-      ModifiedAndrew *mod_andrew_;
+      class ModifiedAndrew *mod_andrew_;
 
 }; //end class
 

@@ -39,7 +39,7 @@ fix		cylwalls all wall/gran/hertz/history primitive type 1  zcylinder 0.05 0. 0.
 #heat transfer
 fix 		ftco all property/global thermalConductivity peratomtype 100.
 fix 		ftca all property/global thermalCapacity peratomtype 10.
-fix             heattransfer all heat/gran/conduction initial_temperature 300.
+fix             heattransfer all heat/gran initial_temperature 300.
 
 #region of insertion
 region		bc cylinder z 0. 0. 0.045 0.00 0.15 units box

@@ -19,6 +19,12 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Andreas Aigner (JKU Linz)
+------------------------------------------------------------------------- */
+
 #include <stdlib.h>
 #include <string.h>
 #include "fix_mesh_surface_stress_servo.h"
@@ -31,9 +37,14 @@
 #include "error.h"
 #include "vector_liggghts.h"
 #include "fix_property_global.h"
+#include "modified_andrew.h"
+#include <vector>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using MODIFIED_ANDREW_AUX::Circle;
+using MODIFIED_ANDREW_AUX::Line;
+using MODIFIED_ANDREW_AUX::Point;
 
 #define EPSILON 1.0e-7
 
@@ -56,7 +67,8 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   int_flag_( true),
   kp_( 		 0.),
   ki_(       0.),
-  kd_(       0.)
+  kd_(       0.),
+  mod_andrew_(new ModifiedAndrew(lmp))
 {
     if(!trackStress())
         error->fix_error(FLERR,this,"stress = 'on' required");
@@ -169,8 +181,6 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
     //NP inform mesh of upcoming movement
     mesh()->registerMove(false,true,false);
 
-    // create modified andrew instance
-    mod_andrew_ = new ModifiedAndrew;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -340,9 +350,6 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
     	/*NL*/ //printVec3D(screen,"xcm",xcm_(0));
     }
 
-    // for area calculation
-    // set vector of touching particles to zero
-    contacts_.clear();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -353,7 +360,7 @@ void FixMeshSurfaceStressServo::final_integrate()
   FixMeshSurfaceStress::final_integrate();
 
   // calcualte area
-  double area = mod_andrew_->area(contacts_);
+  double area = mod_andrew_->area();
 
 }
 
@@ -447,13 +454,11 @@ double FixMeshSurfaceStressServo::compute_vector(int n)
 void FixMeshSurfaceStressServo::add_particle_contribution(int ip, double *frc,
                             double *delta, int iTri, double *v_wall)
 {
-	FixMeshSurfaceStress::add_particle_contribution(ip,frc,delta,iTri,v_wall);
+    FixMeshSurfaceStress::add_particle_contribution(ip,frc,delta,iTri,v_wall);
 
-double *x = atom->x[ip];
-double r = atom->radius[ip];
+    double *x = atom->x[ip];
+    double r = atom->radius[ip];
 
-Circle c = {x[(1+dim_)%3], x[(2+dim_)%3], r};
-contacts_.push_back(c);
-
+    Circle c = {x[(1+dim_)%3], x[(2+dim_)%3], r};
+    mod_andrew_->add_contact(c);
 }
-

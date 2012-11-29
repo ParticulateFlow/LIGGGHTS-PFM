@@ -239,6 +239,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
     if(trackStress())
     {
         /*NL*/ //if(strcmp(id,"servo")==0) printVec3D(screen,"added force",frc);
+        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT", added force %f %f %f\n",update->ntimestep,frc[0],frc[1],frc[2]);
 
         // add contribution to triangle force
         vectorAdd3D(f(iTri),frc,f(iTri));
@@ -306,15 +307,15 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
 void FixMeshSurfaceStress::add_global_external_contribution(double *frc)
 {
     if(0 == comm->me)
-    vectorAdd3D(f_total_,frc,f_total_);
+        vectorAdd3D(f_total_,frc,f_total_);
 }
 
 void FixMeshSurfaceStress::add_global_external_contribution(double *frc, double *trq)
 {
     if(0 == comm->me)
-{
-    vectorAdd3D(f_total_,frc,f_total_);
-    vectorAdd3D(torque_total_,trq,torque_total_);
+    {
+        vectorAdd3D(f_total_,frc,f_total_);
+        vectorAdd3D(torque_total_,trq,torque_total_);
     }
 }
 
