@@ -87,6 +87,10 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       char *fstr_;
       int fvar_, fstyle_;
 
+      //NP Test Aigner
+      bool mode_flag_;
+      double f_servo_inv_;
+
       // timesteps and flags for integration
 
       double dtf_,dtv_;
