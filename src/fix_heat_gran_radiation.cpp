@@ -122,7 +122,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
   raypoint = new double[3];
   binStencil = new int[27];
 
-  /*NL*/error->fix_error(FLERR,this,"Current implementation of binStencil does not cover big particles. use stencil defined in 'neigh_gran'!")
+  /*NL*/error->fix_error(FLERR,this,"Current implementation of binStencil does not cover big particles. use stencil defined in 'neigh_gran'!");
 }
 
 /* ---------------------------------------------------------------------- */
