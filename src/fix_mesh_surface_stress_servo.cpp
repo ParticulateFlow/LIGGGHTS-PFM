@@ -61,13 +61,25 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   xcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm","comm_none","frame_invariant","restart_yes",3)),
   vcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("vcm","comm_none","frame_invariant","restart_yes",1)),
   xcm_orig_( *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm_orig","comm_none","frame_invariant","restart_yes",3)),
+  mode_flag_(false),
   vel_max_(  0.),
-  int_flag_( true),
+  set_point_(0.),
+  set_point_inv_(0.),
+  sp_str_(	 NULL),
+  sp_var_(	 -1),
+  sp_style_( NONE),
+  control_output_( NULL),
+  process_value_( NULL),
+  pv_flag_(  -1),
+  err_(		   0.),
+  sum_err_(  0.),
+  old_process_value_(0.),
   kp_(			 0.),
   ki_(       0.),
   kd_(       0.),
-  mod_andrew_(new ModifiedAndrew(lmp)),
-  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_none","frame_invariant","restart_no",1))
+  int_flag_( true),
+  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_none","frame_invariant","restart_no",1)),
+  mod_andrew_(new ModifiedAndrew(lmp))
 {
     if(!trackStress())
         error->fix_error(FLERR,this,"stress = 'on' required");
@@ -82,10 +94,6 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
     // set defaults
 
     init_defaults();
-    sp_str_ = NULL;
-
-    //TEST AIGNER
-    mode_flag_ = false;
 
     // parse further args
 
@@ -204,6 +212,10 @@ void FixMeshSurfaceStressServo::init_defaults()
     vectorZeroize3D(zerovec);
     vcm_.add(zerovec);
 
+    sp_str_ = NULL;
+
+    //NP TEST AIGNER
+    mode_flag_ = false;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -346,12 +358,19 @@ void FixMeshSurfaceStressServo::final_integrate()
 
 			}
 
-			err_ = (set_point_ - *process_value_)*set_point_inv_;
+			err_ = (set_point_ - *process_value_) * set_point_inv_;
 
-			if (abs(err_) <= 0.5) {
-				*control_output_ = kp_ * err_;
+			// TODO: Valid or trash?
+			// Hard coded test for piecewise controller
+			// This setting works, but doesn't speed up most cases
+			double e_low,e_high;
+			e_low = 1.0;
+			e_high = 2.0;
+
+			if (abs(err_) <= e_low) {
+				*control_output_ = -vel_max_ * kp_ * err_;
 			} else {
-				*control_output_ = sgn(err_) * (kp_*0.5 + (2-kp_)*(abs(err_)-0.5));
+				*control_output_ = -vel_max_ * sgn(err_) * (kp_* e_low + (1-e_low*kp_)/(e_high-e_low)*(abs(err_)-e_low));
 			}
 
 		} else {
@@ -408,7 +427,7 @@ void FixMeshSurfaceStressServo::limit_vel()
 {
 
 	double vmag, factor;
-	vmag = *control_output_; //vectorMag3D(vcm_(0)); //NP TODO: Is this also okey?
+	vmag = abs(*control_output_); //vectorMag3D(vcm_(0)); //NP TODO: Is this also okey?
 
 	/*NL*/ //if(screen) fprintf(screen,"Test for velocity: vel_max_ = %g; vmag = %g\n",vel_max_,vmag);
 
