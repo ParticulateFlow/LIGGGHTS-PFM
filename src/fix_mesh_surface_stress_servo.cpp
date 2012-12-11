@@ -308,7 +308,8 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 
 	// for area calculation
 	// set vector of touching particles to zero
-	contacts_.clear();
+	//mod_andrew_.clear();
+	mod_andrew_->clear_contact();
 
 }
 
@@ -319,8 +320,6 @@ void FixMeshSurfaceStressServo::final_integrate()
 	//NP update forces
 	FixMeshSurfaceStress::final_integrate();
 
-	// calcualte area
-//	double area = mod_andrew_->area(contacts_);
   // calcualte area
   double area = mod_andrew_->area();
 
