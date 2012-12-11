@@ -80,24 +80,23 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       VectorContainer<double,3> &vcm_;
       VectorContainer<double,3> &xcm_orig_;
 
-      // servo settings
+      // servo settings and controller
 
-      double vel_max_, f_servo_;
-      double f_servo_vec_[3];
-      char *fstr_;
-      int fvar_, fstyle_;
+      bool mode_flag_;
+      double vel_max_,set_point_,set_point_inv_;
+      char *sp_str_;
+      int sp_var_, sp_style_;
+      double *control_output_,*process_value_;
+      int pv_flag_;
+      double err_, sum_err_, old_process_value_;
+      double kp_,ki_,kd_;
 
       // timesteps and flags for integration
 
       double dtf_,dtv_;
-      VectorContainer<bool,3> &fflag_;
 
       bool int_flag_;
       int modify_param(int, char **);
-
-      // controller
-      double kp_,ki_,kd_;
-      double sign_servo_vec_[3],error_vec_[3],sum_error_vec_[3],old_f_total_[3];
 
       // velocity for each node
 

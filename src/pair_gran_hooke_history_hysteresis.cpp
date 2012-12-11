@@ -444,61 +444,51 @@ void PairGranHookeHistoryHysteresis::compute(int eflag, int vflag,int addflag)
 
 void PairGranHookeHistoryHysteresis::settings(int narg, char **arg) //NP modified C.K.
 {
-    iarg_ = 0;
+	iarg_ = 0;
 
-    // set defaults
-    dampflag = 1;
-    rollingflag = 0;
+	// set defaults
+	dampflag = 1;
+	rollingflag = 0;
 
-    // parse args
+	// parse args
 
-    bool hasargs = true;
-    while(iarg_ < narg && hasargs)
-    {
-        hasargs = false;
-        if (strcmp(arg[iarg_],"cohesion") == 0) {
-            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'cohesion'");
-            iarg_++;
-            if(strcmp(arg[iarg_],"lcm") == 0) {
-            	//kn2k2Max_ = force->numeric(arg[iarg_+1]);
-            	//kn2kc_ = force->numeric(arg[iarg_+2]);
-            	//phiF_ = force->numeric(arg[iarg_+3]);
-            	//iarg_ = iarg_+3;
-            }
-            else if(strcmp(arg[iarg_],"off") == 0)
-            	error->warning(FLERR,"This pair_style is designed for cohesion model. If you need not this feature, use another gran pair_style instead.");
-            else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'lcm' or 'off' after keyword 'cohesion'");
-            iarg_++;
-            hasargs = true;
-        } else if (strcmp(arg[iarg_],"rolling_friction") == 0) {
-            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'rolling_friction'");
-            iarg_++;
-            if(strcmp(arg[iarg_],"cdt") == 0)
-                rollingflag = 1;
-            else if(strcmp(arg[iarg_],"off") == 0)
-                rollingflag = 0;
-            else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'cdt' or 'off' after keyword 'rolling_friction'");
-            iarg_++;
-            hasargs = true;
-        } else if (strcmp(arg[iarg_],"tangential_damping") == 0) {
-            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'tangential_damping'");
-            iarg_++;
-            if(strcmp(arg[iarg_],"on") == 0)
-                dampflag = 1;
-            else if(strcmp(arg[iarg_],"off") == 0)
-                dampflag = 0;
-            else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'on' or 'off' after keyword 'dampflag'");
-            iarg_++;
-            hasargs = true;
-        } else if (force->pair_match("gran/hooke/history",1) || force->pair_match("gran/hertz/history",1))
-            error->all(FLERR,"Illegal pair_style gran command, illegal keyword");
-    }
+	bool hasargs = true;
+	while(iarg_ < narg && hasargs)
+	{
+		hasargs = false;
+		if (strcmp(arg[iarg_],"cohesion") == 0) {
+			if (narg < iarg_+1) error->all(FLERR,"Pair gran: not enough arguments for 'cohesion'");
+			error->warning(FLERR,"This pair_style is designed for cohesion model. No use for a keyword 'cohesion'. If you need not this feature, use another gran pair_style instead.");
+			iarg_++;
+			hasargs = true;
+		} else if (strcmp(arg[iarg_],"rolling_friction") == 0) {
+			if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'rolling_friction'");
+			iarg_++;
+			if(strcmp(arg[iarg_],"cdt") == 0)
+				rollingflag = 1;
+			else if(strcmp(arg[iarg_],"off") == 0)
+				rollingflag = 0;
+			else
+				error->all(FLERR,"Illegal pair_style gran command, expecting 'cdt' or 'off' after keyword 'rolling_friction'");
+			iarg_++;
+			hasargs = true;
+		} else if (strcmp(arg[iarg_],"tangential_damping") == 0) {
+			if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'tangential_damping'");
+			iarg_++;
+			if(strcmp(arg[iarg_],"on") == 0)
+				dampflag = 1;
+			else if(strcmp(arg[iarg_],"off") == 0)
+				dampflag = 0;
+			else
+				error->all(FLERR,"Illegal pair_style gran command, expecting 'on' or 'off' after keyword 'dampflag'");
+			iarg_++;
+			hasargs = true;
+		} else if (force->pair_match("gran/hooke/history",1) || force->pair_match("gran/hertz/history",1))
+			error->all(FLERR,"Illegal pair_style gran command, illegal keyword");
+	}
 
-    //NP Test parameters
-    //NP if (kn2k2Max_ < 0 || kn2kc_ < 0) error->all(FLERR,"kn2k2 or kn2kc is not set!");
+	//NP Test parameters
+	//NP if (kn2k2Max_ < 0 || kn2kc_ < 0) error->all(FLERR,"kn2k2 or kn2kc is not set!");
 }
 
 /* ----------------------------------------------------------------------
