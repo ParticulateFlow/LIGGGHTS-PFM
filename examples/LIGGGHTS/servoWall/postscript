@@ -3,10 +3,4 @@
 shopt -s expand_aliases
 cd post
 lpp dump*.servoWall_fA
-lpp dump*.servoWall_fB
-lpp dump*.servoWall_fC
-lpp dump*.servoWall_fD
-lpp dump*.servoWall_fE
-lpp dump*.servoWall_fF
-
 

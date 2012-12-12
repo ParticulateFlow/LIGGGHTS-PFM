@@ -5,11 +5,11 @@
 # ------------------------------
 
 # loop parameter
-variable    ctrlForce     index  -0.01 -0.1 -1 -10 -100 -1000
-variable    ctrlForceName index  A B C D E F
+variable    ctrlForce     index  -10
+variable    ctrlForceName index  A
 
 variable    ctrlKp      equal     1e-2
-variable    ctrlKi      equal     1e-5
+variable    ctrlKi      equal     0
 variable    ctrlKd      equal     0
 
 # Particle parameter
@@ -20,22 +20,18 @@ variable    radius    equal   2e-3
 variable    deltat  equal    5.0e-5
 
 # Internal variables
-variable    nStepsInit      equal   1.0/${deltat}
-variable    nStepsRun       equal   5/${deltat}
-variable    dumpfreq        equal   5.0e-2/${deltat}
-variable    dumpfreqForce   equal   1.0e-3/${deltat}
-
 variable    cylRadius       equal   0.025
 variable    cylDiameter     equal   2.0*${cylRadius}
-
-variable    skin            equal   0.5*${radius}
-
 variable    boxZMax         equal   2.0*${cylDiameter}
 
+variable    skin            equal   0.5*${radius}
 variable    velMax          equal   0.5*${skin}/${deltat}
-# ------------------------------
 
-processors  1 2 1
+variable    nStepsInit      equal   5.0e-2/${deltat}
+variable    nStepsRun       equal   ceil(${boxZMax}/(${velMax}*${ctrlKp}))/${deltat}
+variable    dumpfreq        equal   5.0e-2/${deltat}
+variable    dumpfreqForce   equal   1.0e-3/${deltat}
+# ------------------------------
 
 atom_style	granular
 atom_modify	map array
@@ -73,7 +69,7 @@ fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #import triangular mesh from cad; the syntax is as follows:
 #"fix customname all mesh/gran stl_filename wall_type scale_factor x_off y_off z_off"
-fix   cad1 all mesh/surface/stress/servo file plate.stl type 1 scale ${cylRadius} move 0. 0. ${boxZMax} com 0. 0. ${boxZMax} f_servo ${ctrlForce} vel_max ${velMax} dim z kp ${ctrlKp} ki ${ctrlKi} kd ${ctrlKd}
+fix   cad1 all mesh/surface/stress/servo file mesh/plate.stl type 1 scale ${cylRadius} move 0. 0. ${boxZMax} com 0. 0. ${boxZMax} ctrlPV force  dim z set_point ${ctrlForce} vel_max ${velMax} kp ${ctrlKp} ki ${ctrlKi} kd ${ctrlKd}
 
 fix_modify cad1 integrate stop
 
@@ -121,7 +117,10 @@ variable ForceZCad1 equal f_cad1[3]
 variable TorqueXCad1 equal f_cad1[4]
 variable TorqueYCad1 equal f_cad1[5]
 variable TorqueZCad1 equal f_cad1[6]
-fix DumpTextCad1 all print ${dumpfreqForce} "${ForceXCad1} ${ForceYCad1} ${ForceZCad1} ${TorqueXCad1} ${TorqueYCad1} ${TorqueZCad1}" screen no title "Fx Fy Fz Tx Ty Tz " file force_cad1_f${ctrlForceName}.txt
+variable PosXCad1 equal f_cad1[7]
+variable PosYCad1 equal f_cad1[8]
+variable PosZCad1 equal f_cad1[9]
+fix DumpTextCad1 all print ${dumpfreqForce} "${ForceXCad1} ${ForceYCad1} ${ForceZCad1} ${TorqueXCad1} ${TorqueYCad1} ${TorqueZCad1} ${PosXCad1} ${PosYCad1} ${PosZCad1}" screen no title "Fx Fy Fz Tx Ty Tz X Y Z" file force_cad1_f${ctrlForceName}.txt
 
 #insert particles
 run     ${nStepsInit}
@@ -133,7 +132,3 @@ fix_modify cad1 integrate start
 #run
 run     ${nStepsRun}
 
-# loop
-clear
-next    ctrlForce ctrlForceName
-jump    in.servoWall

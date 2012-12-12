@@ -48,8 +48,9 @@ using MODIFIED_ANDREW_AUX::Point;
 
 #define EPSILON 1.0e-7
 
-enum{NONE,CONSTANT,EQUAL,ATOM};
-enum{FORCE,TORQUE,SHEAR};
+// identifier for variable set point
+// identifier for controlled process value
+enum{NONE,CONSTANT,EQUAL,ATOM,FORCE,TORQUE,SHEAR};
 
 /*NL*/ #define DEBUG_MESH_SURFACE_STRESS_SERVO false
 
@@ -70,7 +71,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   sp_style_( NONE),
   control_output_( NULL),
   process_value_( NULL),
-  pv_flag_(  -1),
+  pv_flag_(  NONE),
   err_(		   0.),
   sum_err_(  0.),
   old_process_value_(0.),
@@ -224,6 +225,8 @@ void FixMeshSurfaceStressServo::error_checks()
 {
     /*NL*/ //fprintf(screen,"sizes xcm %d moi %d\n",xcm_.size(),moi_.size());
 
+	  if(pv_flag_ == NONE)
+	   	  error->fix_error(FLERR,this,"please define 'ctrlPV' for the mesh");
     if(!xcm_.size())
         error->fix_error(FLERR,this,"please define 'com' for the mesh");
     if(sp_style_ == CONSTANT && set_point_ == 0.)
