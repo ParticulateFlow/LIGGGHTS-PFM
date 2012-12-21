@@ -149,7 +149,7 @@ vector<Circle> ModifiedAndrew::construct_hull_c_all(double *data0, int ndata0)
         result.push_back(c);
     }
 
-    /*NL*/ fprintf(screen,"ndata0 %d result.size() %d\n",ndata0,result.size());
+    /*NL*/ //fprintf(screen,"ndata0 %d result.size() %d\n",ndata0,result.size());
 
     return result;
 }
