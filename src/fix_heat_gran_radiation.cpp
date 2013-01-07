@@ -620,7 +620,7 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
     return nextBinId;
   }
   else {
-    error->all(FLERR, "FixHeatGranRad::nextBin() did not find a suitable next bin.");
+    error->one(FLERR, "FixHeatGranRad::nextBin() did not find a suitable next bin.");
     return -1;
   }
 
