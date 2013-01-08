@@ -62,7 +62,7 @@ namespace LAMMPS_NS {
     int avgNRays;   // average number of rays per particle per timestep
     int maxBounces; // maximum number of bounces
     int nTimesteps, updateCounter;
-    double cutGhost;
+    double cutGhost, cutGhostsq;
     int seed;
 
     // physical parameters

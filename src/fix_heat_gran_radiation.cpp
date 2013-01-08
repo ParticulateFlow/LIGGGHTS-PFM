@@ -100,6 +100,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
     else if(strcmp(arg[iarg],"cutoff") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR, this,"not enough arguments for keyword 'cutoff'");
       cutGhost = atof(arg[iarg+1]);
+      cutGhostsq = cutGhost*cutGhost;
       iarg += 2;
       hasargs = true;
     }
@@ -626,8 +627,8 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
     distx = raypoint[0] - o[0];
     disty = raypoint[1] - o[1];
     distz = raypoint[2] - o[2];
-    dist = sqrt(distx*distx + disty*disty + distz*distz);
-    if (dist >= cutGhost){
+    dist = distx*distx + disty*disty + distz*distz;
+    if (dist >= cutGhostsq){
       return -1;
     }
   }
