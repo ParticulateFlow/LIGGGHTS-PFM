@@ -621,6 +621,15 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
       currentStencil = binStencilmdz;
       nstencil2D = stencilLength[5];
     }
+
+    // maximum radiation distance
+    distx = raypoint[0] - o[0];
+    disty = raypoint[1] - o[1];
+    distz = raypoint[2] - o[2];
+    dist = sqrt(distx*distx + disty*disty + distz*distz);
+    if (dist >= cutGhost){
+      return -1;
+    }
   }
 
   return -1;
