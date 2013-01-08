@@ -55,6 +55,7 @@ namespace LAMMPS_NS {
     void randOnSphere(double *, double, double *, double *);
     void reflect(int, int, int, double *, double *, double, double, int, double *);
     void updateQr();
+    void createStencils();
 
     // model parameters
     double Qr;      // energy of one ray
@@ -76,7 +77,14 @@ namespace LAMMPS_NS {
 
     // pre-allocate these for optimization
     double *raypoint;
-    int *binStencil;
+
+    int *stencilLength;
+    int *binStencildx;
+    int *binStencilmdx;
+    int *binStencildy;
+    int *binStencilmdy;
+    int *binStencildz;
+    int *binStencilmdz;
 	};
 }
 

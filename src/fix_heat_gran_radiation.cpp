@@ -115,14 +115,14 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
   if (seed == 0){
     error->fix_error(FLERR,this,"expecting keyword 'seed'");
   }
+  if (cutGhost == 0){
+    error->fix_error(FLERR, this, "expecting keyword cutoff");
+  }
 
   RGen = new RanMars(lmp, seed + comm->me);
 
   // for optimization of trace() preallocate these
   raypoint = new double[3];
-  binStencil = new int[27];
-
-  /*NL*/error->fix_error(FLERR,this,"Current implementation of binStencil does not cover big particles. use stencil defined in 'neigh_gran'!");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -132,7 +132,14 @@ FixHeatGranRad::~FixHeatGranRad(){
     delete [] emissivity;
   }
   delete [] raypoint;
-  delete [] binStencil;
+
+  delete [] stencilLength;
+  delete [] binStencildx;
+  delete [] binStencilmdx;
+  delete [] binStencildy;
+  delete [] binStencilmdy;
+  delete [] binStencildz;
+  delete [] binStencilmdz;
   delete RGen;
 }
 
@@ -187,6 +194,9 @@ void FixHeatGranRad::setup(int i){
 
   // forces algorithm to call updateQr() in post_force()
   Qr = 0.0;
+
+  // create the 2D binStencils needed for ray tracing
+  createStencils();
 
 }
 
@@ -380,6 +390,115 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double
 }
 
 /* ---------------------------------------------------------------------- */
+
+/*
+builds the 2d stencils that are stencils of the borders
+of the regular stencil neighbor->stencil when one moves
+in directions dx, -dx, dy, -dy, dz or -dz
+*/
+void FixHeatGranRad::createStencils(){
+
+  // stencil might need to be re-allocated, if bin-size
+  // has been updated
+  if(!stencilLength)
+    stencilLength = new int[6];
+
+  if(binStencildx)
+    delete [] binStencildx;
+  if(binStencilmdx)
+    delete [] binStencilmdx;
+  if(binStencildy)
+    delete [] binStencildy;
+  if(binStencilmdy)
+    delete [] binStencilmdy;
+  if(binStencildz)
+    delete [] binStencildz;
+  if(binStencilmdz)
+    delete [] binStencilmdz;
+
+  int mbinx = neighbor->mbinx;
+  int mbiny = neighbor->mbiny;
+  int mbinz = neighbor->mbinz;
+  int sx = neighbor->sx;
+  int sy = neighbor->sy;
+  int sz = neighbor->sz;
+  double cutneighmaxsq = cutneighmaxsq;
+
+  int n;
+  int i,j,k;
+  int nstencil;
+
+
+  // binStencildx
+  n = (2*sy+1)*(2*sz+1);
+  binStencildx = new int[n];
+  nstencil = 0;
+  i = sx;
+  for (k = -sz; k <= sz; k++)
+    for (j = -sy; j <= sy; j++)
+      if (neighbor->bin_distance(i,j,k) < cutneighmaxsq)
+        binStencildx[nstencil++] = k*mbiny*mbinx + j*mbinx + i;
+  stencilLength[0] = nstencil;
+
+  // binStencilmdx
+  n = (2*sy+1)*(2*sz+1);
+  binStencilmdx = new int[n];
+  nstencil = 0;
+  i = -sx;
+  for (k = -sz; k <= sz; k++)
+    for (j = -sy; j <= sy; j++)
+      if (neighbor->bin_distance(i,j,k) < cutneighmaxsq)
+        binStencilmdx[nstencil++] = k*mbiny*mbinx + j*mbinx + i;
+  stencilLength[1] = nstencil;
+
+  // binStencildy
+  n = (2*sx+1)*(2*sz+1);
+  binStencildy = new int[n];
+  nstencil = 0;
+  j = sy;
+  for (k = -sz; k <= sz; k++)
+    for (i = -sx; i <= sx; i++)
+      if (neighbor->bin_distance(i,j,k) < cutneighmaxsq)
+        binStencildy[nstencil++] = k*mbiny*mbinx + j*mbinx + i;
+  stencilLength[2] = nstencil;
+
+  // binStencilmdy
+  n = (2*sx+1)*(2*sz+1);
+  binStencilmdy = new int[n];
+  nstencil = 0;
+  j = -sy;
+  for (k = -sz; k <= sz; k++)
+    for (i = -sx; i <= sx; i++)
+      if (neighbor->bin_distance(i,j,k) < cutneighmaxsq)
+        binStencilmdy[nstencil++] = k*mbiny*mbinx + j*mbinx + i;
+  stencilLength[3] = nstencil;
+
+  // binStencildz
+  n = (2*sx+1)*(2*sy+1);
+  binStencildz = new int[n];
+  nstencil = 0;
+  k = sz;
+  for (j = -sy; j <= sy; j++)
+    for (i = -sx; i <= sx; i++)
+      if (neighbor->bin_distance(i,j,k) < cutneighmaxsq)
+        binStencildz[nstencil++] = k*mbiny*mbinx + j*mbinx + i;
+  stencilLength[4] = nstencil;
+
+  // binStencilmdz
+  n = (2*sx+1)*(2*sy+1);
+  binStencilmdz = new int[n];
+  nstencil = 0;
+  k = -sz;
+  for (j = -sy; j <= sy; j++)
+    for (i = -sx; i <= sx; i++)
+      if (neighbor->bin_distance(i,j,k) < cutneighmaxsq)
+        binStencilmdz[nstencil++] = k*mbiny*mbinx + j*mbinx + i;
+  stencilLength[4] = nstencil;
+
+}
+
+
+/* ---------------------------------------------------------------------- */
 /*
   orig_id .. input - id of particle that radiated
   ibin .. input - bin within which tracing starts
@@ -403,6 +522,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
   double rad; // radius of particle i
 
   // individual ray data
+  double dist, distx, disty, distz;
   bool hit;
   double t;
 
@@ -417,35 +537,34 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
 
   int i, j;
   int currentBin = neighbor->coord2bin(o);
-  int dx, dy, dz;
+  int dx = 0;
+  int dy = 0;
+  int dz = 0;
 
-  // initialize binStencil
-  for (i = 0; i < 27; i++)
-    binStencil[i] = -1;
-  j = 0;
-  for (int ix = -1; ix <= 1; ix++){
-    for (int iy = -1; iy <= 1; iy++){
-      for (int iz = -1; iz <= 1; iz++){
-        binStencil[j++] = neighbor->binHop(currentBin, ix, iy, iz);
-      }
-    }
-  }
+  int var_nstencil;
+  int *stencil = pair_gran->list->stencil;
+  int nstencil = pair_gran->list->nstencil;
+  int nstencil2D;
+
+  int *currentStencil;
+
+  // at first interation all bins of the full stencil need to be checked
+  bool check_boundary_only = false;
+  currentStencil = stencil;
 
   while ((currentBin != -1) && (hitFlag == false)){
 
+    // number of new bins in direction of bin-hop
+    var_nstencil = check_boundary_only ? nstencil2D : nstencil;
+
     // walk the stencil of bins related to this bin, check all of their atoms
-    for (int k = 0; k < 27; k++){
-      if (binStencil[k] == -1){
-        continue;
-      }
-      // first atom in this bin
-      i = binhead[binStencil[k]];
+    for (int k = 0; k < var_nstencil; k++){
 
       // walk all atoms in this bin
-      while (i != -1){
+      for (i = binhead[currentBin + currentStencil[k]]; i >= 0; i = bins[i]){
+
         // do not intersect with reflecting particle
         if (i == orig_id){
-          i = bins[i];
           continue;
         }
 
@@ -462,9 +581,6 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
             hitId = i;
           }
         }
-
-        // next atom
-        i = bins[i];
       }
     }
 
@@ -474,31 +590,36 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
       add3(o, buffer3, hitp);
       return hitId;
     }
+
     // find the next bin, since in this bin there was no intersection found
     ibin       = currentBin;
     currentBin = nextBin(ibin, o, d, raypoint, dx, dy, dz);
-    o[0] = raypoint[0];
-    o[1] = raypoint[1];
-    o[2] = raypoint[2];
 
-    // update binStencil, only bins that are in the direction currentBin was
-    // moved to are set to non-negative, old ones are not checked again.
-    j = 0;
-    for (int ix = -1; ix <= 1; ix++){
-      for (int iy = -1; iy <= 1; iy++){
-        for (int iz = -1; iz <= 1; iz++){
-          if (
-            (dx != 0 && ix == dx) ||
-            (dy != 0 && iy == dy) ||
-            (dz != 0 && iz == dz)
-            ){ // set the stencil to non-negative only for new bins
-            binStencil[j] = neighbor->binHop(ibin, ix, iy, iz);
-          }
-          else
-            binStencil[j] = -1;
-          j++;
-        }
-      }
+    // from now on only check the boundary any more
+    check_boundary_only = true;
+    if (dx == 1){
+      currentStencil = binStencildx;
+      nstencil2D = stencilLength[0];
+    }
+    else if(dx == -1){
+      currentStencil = binStencilmdx;
+      nstencil2D = stencilLength[1];
+    }
+    else if(dy == 1){
+      currentStencil = binStencildy;
+      nstencil2D = stencilLength[2];
+    }
+    else if(dy == -1){
+      currentStencil = binStencilmdy;
+      nstencil2D = stencilLength[3];
+    }
+    else if(dz == 1){
+      currentStencil = binStencildz;
+      nstencil2D = stencilLength[4];
+    }
+    else{
+      currentStencil = binStencilmdz;
+      nstencil2D = stencilLength[5];
     }
   }
 
