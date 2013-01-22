@@ -37,7 +37,7 @@ void Neighbor::bin2XYZ(int bin, int &ix, int &iy, int &iz){
 	these are indices for local bins
 */
 int Neighbor::XYZ2bin(int ix, int iy, int iz){
-	return (iz-mbinzlo)*mbiny*mbinx + (iy-mbinylo)*mbinx + (ix-mbinzlo);
+	return (iz-mbinzlo)*mbiny*mbinx + (iy-mbinylo)*mbinx + (ix-mbinxlo);
 }
 
 /* ---------------------------------------------------------------------- */
