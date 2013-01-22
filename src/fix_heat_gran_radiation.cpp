@@ -312,7 +312,7 @@ void FixHeatGranRad::post_force(int vflag){
 
     } else { // if a ray does not hit a particle we assume radiation from the background
       //NP TODO DEBUG ERROR
-      // heatFlux[i] += (areai * emisi * Sigma * TB * TB * TB * TB);
+      heatFlux[i] += (areai * emisi * Sigma * TB * TB * TB * TB);
     }
   }
 
@@ -332,6 +332,8 @@ orig_id ... id of particle whereupon the ray was reflected (source of ray)
 ---------------------------------------------------------------------- */
 void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double *d,
   double flux, double accum_eps, int n, double *buffer3){
+
+  /*NL*/ bool debugflag = false;
 
   double ratio;
   double sendflux;
@@ -364,18 +366,29 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double
 
   double radArea, radRad, radEmis;
 
+  /*NL*/ if(debugflag) printf("generating random direction...\n");
+
   // generate random (diffuse) direction
   randDir(d, dd);
 
-  // /*NL*/ printf("before trace (reflect)\n");
+  /*NL*/ if(debugflag) printf("tracing...\n");
+  /*NL*/ if(debugflag) printf("orig_id: %d\n", orig_id);
+  /*NL*/ if(debugflag) printf("ibin: %d\n", ibin);
+  /*NL*/ if(debugflag) printf("o: [%f %f %f]\n", o[0],o[1],o[2]);
+
+  // /*NL*/ if(debugflag) printf("before trace (reflect)\n");
   hitId = trace(orig_id, ibin, o, dd, buffer3, hitp);
-  // /*NL*/ printf("after trace (reflect)\n");
+  // /*NL*/ if(debugflag) printf("after trace (reflect)\n");
 
   if (hitId != -1){ // ray hit a particle
+
+    /*NL*/ if(debugflag) printf("ray hit a particle...\n");
 
     // update heat flux for particle
     hitEmis = emissivity[type[hitId]-1];
     heatFlux[hitId] += hitEmis * sendflux;
+
+    /*NL*/ if(debugflag) printf("calculating new starting point for reflected ray...\n");
 
     // calculate new starting point for reflected ray
     hitBin = neighbor->coord2bin(x[hitId]);
@@ -387,16 +400,23 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double
     sub3(hitp, x[hitId], buffer3);
     normalize3(buffer3, nextNormal);
 
+    /*NL*/ if(debugflag) printf("reflecting ray (recursive call)...\n");
+
     // reflect ray at the hitpoint.
     reflect(radID, hitId, hitBin, nextO, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
   }
   else {
+
+    /*NL*/ if(debugflag) printf("ambient heat flux...\n");
+
     radRad  = radius[radID];
     radArea = MY_4PI * radRad * radRad;
     radEmis = emissivity[type[radID]-1];
     //NP TODO ERROR DEBUG
-    // heatFlux[radID] += (radArea * radEmis * accum_eps * Sigma * TB * TB * TB * TB);
+    heatFlux[radID] += (radArea * radEmis * accum_eps * Sigma * TB * TB * TB * TB);
   }
+
+  /*NL*/ if(debugflag) printf("deleting local arrays...\n");
 
   delete [] dd;
   delete [] hitp;
@@ -577,13 +597,39 @@ void FixHeatGranRad::createStencils(){
   // /*NL*/ printf("created all stencils.\n");
   // /*NL*/ printf("global stencil:\n");
   // /*NL*/ for (int i = 0; i < pair_gran->list->nstencil; i++){
-    // /*NL*/ printf("stencil[%d]: %d\n", i, pair_gran->list->stencil[i]);
+  //   /*NL*/ printf("stencil[%d]: %d\n", i, pair_gran->list->stencil[i]);
   // /*NL*/ }
 
   // /*NL*/ printf("stencilLength:\n");
   // /*NL*/ for (int i = 0; i < 6; i++){
-    // /*NL*/ printf("stencilLength[%d]: %d\n", i, stencilLength[i]);
+  //   /*NL*/ printf("stencilLength[%d]: %d\n", i, stencilLength[i]);
   // /*NL*/ }
+
+  // /*NL*/ printf("2D stencils:\n");
+  // /*NL*/ for (int i = 0; i < stencilLength[0]; i++){
+  //   /*NL*/ printf("binStencildx[%d] %d\n", i, binStencildx[i]);
+  // /*NL*/ }
+  // printf("\n");
+  // /*NL*/ for (int i = 0; i < stencilLength[1]; i++){
+  //   /*NL*/ printf("binStencilmdx[%d] %d\n", i, binStencilmdx[i]);
+  // /*NL*/ }
+  // printf("\n");
+  // /*NL*/ for (int i = 0; i < stencilLength[2]; i++){
+  //   /*NL*/ printf("binStencildy[%d] %d\n", i, binStencildy[i]);
+  // /*NL*/ }
+  // printf("\n");
+  // /*NL*/ for (int i = 0; i < stencilLength[3]; i++){
+  //   /*NL*/ printf("binStencilmdy[%d] %d\n", i, binStencilmdy[i]);
+  // /*NL*/ }
+  // printf("\n");
+  // /*NL*/ for (int i = 0; i < stencilLength[4]; i++){
+  //   /*NL*/ printf("binStencildz[%d] %d\n", i, binStencildz[i]);
+  // /*NL*/ }
+  // printf("\n");
+  // /*NL*/ for (int i = 0; i < stencilLength[5]; i++){
+  //   /*NL*/ printf("binStencilmdz[%d] %d\n", i, binStencilmdz[i]);
+  // /*NL*/ }
+  // printf("\n");
   // /*NL*/ error->all(FLERR,"stop right there...");
 }
 
@@ -603,6 +649,8 @@ void FixHeatGranRad::createStencils(){
   particle id that has been hit, or -1
 */
 int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *buffer3, double *hitp){
+
+  /*NL*/ bool debugflag = false;
 
   int *binhead = neighbor->binhead;
   int *bins = neighbor->bins;
@@ -634,41 +682,58 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
   int var_nstencil;
   int *stencil = pair_gran->list->stencil;
   int nstencil = pair_gran->list->nstencil;
-  int nstencil2D;
+  int nstencil2D = 0;
 
   int *currentStencil;
+
+  /*NL*/ // for (long iii = 0; iii < neighbor->mbins; iii++){
+  /*NL*/ //   printf("binhead[%d]: %d\n", iii, binhead[iii]);
+  /*NL*/ // }
+  /*NL*/ if (debugflag) printf("mbins: %d\n", neighbor->mbins);
 
   // at first interation all bins of the full stencil need to be checked
   bool check_boundary_only = false;
   currentStencil = stencil;
-
   // /*NL*/ printf("before while loop (trace)\n");
   while ((currentBin != -1) && (hitFlag == false)){
+  /*NL*/ if (debugflag) printf("currentBin: %d\n", currentBin);
 
     // number of new bins in direction of bin-hop
+    // /*DEBUG*/var_nstencil = nstencil;
+    // /*DEBUG*/ if (debugflag) printf("var_nstencil: %d\n", var_nstencil);
     var_nstencil = check_boundary_only ? nstencil2D : nstencil;
+
+    // /*NL*/ DEBUG
+    /*NL*/ if (var_nstencil == 0){
+      /*NL*/ printf("WARNING: uninitialized usage of var_nstencil\n");
+    /*NL*/ }
 
     // /*NL*/ printf("check_boundary_only: %s\n", check_boundary_only ? "true" : "false");
     // /*NL*/ printf("stencil:\n");
     // /*NL*/ for (int iii = 0; iii < var_nstencil; iii++){
       // /*NL*/ printf("stencil[%d]: %d\n", iii, currentStencil[iii]);
     // /*NL*/ }
-    // /*NL*/ printf("before binwalk (trace)\n");
+    /*NL*/ if(debugflag) printf("before binwalk (trace)\n");
     // walk the stencil of bins related to this bin, check all of their atoms
     for (int k = 0; k < var_nstencil; k++){
 
-      // /*NL*/ printf("before atomwalk (trace)\n");
+      // /*NL*/ if(debugflag) printf("before atomwalk (trace)\n");
       // walk all atoms in this bin
+      // /*NL*/ if (debugflag) printf("accessing binhead[%d]\n", currentBin + currentStencil[k]);
       for (i = binhead[currentBin + currentStencil[k]]; i >= 0; i = bins[i]){
+        /*NL*/ if (debugflag) printf("atom id: %d\n", i);
 
         // do not intersect with reflecting particle
         if (i == orig_id){
           continue;
         }
 
+        /*NL*/ if (debugflag) printf("accessing atom: %d\n", i);
         // center and radius
         c = x[i];
         rad = radius[i];
+
+        /*NL*/ if (debugflag) printf("check if atom intersects ray...\n");
 
         // check if atom intersects ray
         hit = intersectRaySphere(o, d, c, rad, t, buffer3);
@@ -682,7 +747,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
       }
     }
 
-    // /*NL*/ printf("before hitflag check (trace)\n");
+    /*NL*/ if(debugflag) printf("before hitflag check (trace)\n");
     if (hitFlag){
       // calculate hit point 'hitp'
       snormalize3(hitT, d, buffer3);
@@ -696,31 +761,32 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
 
     // from now on only check the boundary any more
     // /*NL*/ printf("before stencil assignment (trace)\n");
-    check_boundary_only = true;
-    if (dx == 1){
-      currentStencil = binStencildx;
-      nstencil2D = stencilLength[0];
-    }
-    else if(dx == -1){
-      currentStencil = binStencilmdx;
-      nstencil2D = stencilLength[1];
-    }
-    else if(dy == 1){
-      currentStencil = binStencildy;
-      nstencil2D = stencilLength[2];
-    }
-    else if(dy == -1){
-      currentStencil = binStencilmdy;
-      nstencil2D = stencilLength[3];
-    }
-    else if(dz == 1){
-      currentStencil = binStencildz;
-      nstencil2D = stencilLength[4];
-    }
-    else{
-      currentStencil = binStencilmdz;
-      nstencil2D = stencilLength[5];
-    }
+    // /*DEBUG*/ currentStencil = stencil;
+    /*ORIGINAL*/ check_boundary_only = true;
+    /*ORIGINAL*/ if (dx == 1){
+    /*ORIGINAL*/   currentStencil = binStencildx;
+    /*ORIGINAL*/   nstencil2D = stencilLength[0];
+    /*ORIGINAL*/ }
+    /*ORIGINAL*/ else if(dx == -1){
+    /*ORIGINAL*/   currentStencil = binStencilmdx;
+    /*ORIGINAL*/   nstencil2D = stencilLength[1];
+    /*ORIGINAL*/ }
+    /*ORIGINAL*/ else if(dy == 1){
+    /*ORIGINAL*/   currentStencil = binStencildy;
+    /*ORIGINAL*/   nstencil2D = stencilLength[2];
+    /*ORIGINAL*/ }
+    /*ORIGINAL*/ else if(dy == -1){
+    /*ORIGINAL*/   currentStencil = binStencilmdy;
+    /*ORIGINAL*/   nstencil2D = stencilLength[3];
+    /*ORIGINAL*/ }
+    /*ORIGINAL*/ else if(dz == 1){
+    /*ORIGINAL*/   currentStencil = binStencildz;
+    /*ORIGINAL*/   nstencil2D = stencilLength[4];
+    /*ORIGINAL*/ }
+    /*ORIGINAL*/ else{
+    /*ORIGINAL*/   currentStencil = binStencilmdz;
+    /*ORIGINAL*/   nstencil2D = stencilLength[5];
+    /*ORIGINAL*/ }
 
     // /*NL*/ printf("before maximum radiation distance (trace)\n");
     // maximum radiation distance
