@@ -10,9 +10,13 @@ using namespace LAMMPS_NS;
 */
 void Neighbor::bin2XYZ(int bin, int &ix, int &iy, int &iz){
 
-	ix = (bin % (mbiny*mbinx)) % mbinx + mbinxlo;
-    iy = static_cast<int>(round(static_cast<double>(((bin - mbinxlo) % (mbiny*mbinx)))/static_cast<double>(mbinx))) + mbinylo;
-    iz = static_cast<int>(round(static_cast<double>((bin - mbinxlo - mbinylo*mbinx))/static_cast<double>((mbiny*mbinx))))+ mbinzlo;
+	ix = mbinxlo + (bin % mbinx);
+	iy = mbinylo + (((bin - (ix-mbinxlo))/(mbinx)) % mbiny);
+	iz = mbinzlo + (bin - (ix-mbinxlo) - (iy-mbinylo)*mbinx)/(mbinx*mbiny);
+
+	/*NL*/ //CHRISTOPH ix = (bin % (mbiny*mbinx)) % mbinx + mbinxlo;
+    /*NL*/ //CHRISTOPH iy = static_cast<int>(round(static_cast<double>(((bin - mbinxlo) % (mbiny*mbinx)))/static_cast<double>(mbinx))) + mbinylo;
+    /*NL*/ //CHRISTOPH iz = static_cast<int>(round(static_cast<double>((bin - mbinxlo - mbinylo*mbinx))/static_cast<double>((mbiny*mbinx))))+ mbinzlo;
 
 
 	//NP int yzpart;
@@ -43,16 +47,21 @@ int Neighbor::XYZ2bin(int ix, int iy, int iz){
 /* ---------------------------------------------------------------------- */
 
 void Neighbor::binBorders(int ibin, double &xlo, double &xhi, double &ylo, double &yhi, double &zlo, double &zhi){
+	/*NL*/ bool debugflag = false;
 	int ix, iy, iz;
 
 	bin2XYZ(ibin, ix, iy, iz);
 
-	xlo = bboxlo[0] + (mbinxlo + ix)*binsizex;
-	xhi = bboxlo[0] + (mbinxlo + ix + 1)*binsizex;
-	ylo = bboxlo[1] + (mbinylo + iy)*binsizey;
-	yhi = bboxlo[1] + (mbinylo + iy + 1)*binsizey;
-	zlo = bboxlo[2] + (mbinzlo + iz)*binsizez;
-	zhi = bboxlo[2] + (mbinzlo + iz + 1)*binsizez;
+	xlo = bboxlo[0] + (ix)*binsizex;
+	xhi = bboxlo[0] + (ix + 1)*binsizex;
+	ylo = bboxlo[1] + (iy)*binsizey;
+	yhi = bboxlo[1] + (iy + 1)*binsizey;
+	zlo = bboxlo[2] + (iz)*binsizez;
+	zhi = bboxlo[2] + (iz + 1)*binsizez;
+
+	/*NL*/ if(debugflag) printf("xrange: [%f %f]\n", xlo,xhi);
+	/*NL*/ if(debugflag) printf("yrange: [%f %f]\n", ylo,yhi);
+	/*NL*/ if(debugflag) printf("zrange: [%f %f]\n", zlo,zhi);
 }
 
 
@@ -63,17 +72,25 @@ void Neighbor::binBorders(int ibin, double &xlo, double &xhi, double &ylo, doubl
 */
 
 int Neighbor::binHop(int i, int x, int y, int z){
+	/*NL*/ bool debugflag = false;
 	int ix, iy, iz;
 
 	bin2XYZ(i, ix, iy, iz);
+	/*NL*/ if(debugflag) printf("current bin: %d: %d %d %d\n", i,ix,iy,iz);
+	/*NL*/ if(debugflag) printf("x,y,z: %d %d %d\n", x,y,z);
+	/*NL*/ if(debugflag) printf("mbinx, mbinxlo: %d %d\n", mbinx,mbinxlo);
+	/*NL*/ if(debugflag) printf("mbiny, mbinylo: %d %d\n", mbiny,mbinylo);
+	/*NL*/ if(debugflag) printf("mbinz, mbinzlo: %d %d\n", mbinz,mbinzlo);
 
-	/*ORIGINAL*/// if (ix + x < 0 || ix + x >= mbinx || 0 > iy + y || iy + y >= mbiny || 0 > iz + z || iz + z >= mbinz)
-	if (ix + x < mbinxlo || (ix + x - mbinxlo) >= mbinx || iy + y < mbinylo || (iy + y - mbinylo) >= mbiny || iz + z < mbinzlo || (iz + z - mbinzlo) >= mbinz)
+	/*NL*/ /*ORIGINAL*/// if (ix + x < 0 || ix + x >= mbinx || 0 > iy + y || iy + y >= mbiny || 0 > iz + z || iz + z >= mbinz)
+	/*NL*/ /*SECOND*///if ((ix + x < mbinxlo) || ((ix + x - mbinxlo) >= mbinx) || (iy + y < mbinylo) || ((iy + y - mbinylo) >= mbiny) || (iz + z < mbinzlo) || ((iz + z - mbinzlo) >= mbinz))
+	if ((ix + x - sx < mbinxlo) || ((ix + x + sx - mbinxlo) >= mbinx) || (iy + y - sy < mbinylo) || ((iy + y + sy - mbinylo) >= mbiny) || (iz + z - sz < mbinzlo) || ((iz + z + sz - mbinzlo) >= mbinz))
+
 		return -1;
 
 	ix += x;
 	iy += y;
 	iz += z;
-
+	/*NL*/ if(debugflag) printf("next bin: %d: %d %d %d\n", XYZ2bin(ix, iy, iz),ix,iy,iz);
 	return XYZ2bin(ix, iy, iz);
 }

@@ -678,6 +678,12 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
   int dx = 0;
   int dy = 0;
   int dz = 0;
+  /*NL*/ if(debugflag) printf("tracing...\n");
+  /*NL*/ if(debugflag) printf("calculating current bin: %d\n",currentBin);
+  /*NL*/ double xlo,xhi,ylo,yhi,zlo,zhi;
+  /*NL*/ if(debugflag) neighbor->binBorders(currentBin,xlo,xhi,ylo,yhi,zlo,zhi);
+  /*NL*/ if(debugflag) printf("origin: [%f %f %f]\n", o[0],o[1],o[2]);
+  // /*NL*/ error->one(FLERR, "stop...\n");
 
   int var_nstencil;
   int *stencil = pair_gran->list->stencil;
@@ -761,32 +767,32 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
 
     // from now on only check the boundary any more
     // /*NL*/ printf("before stencil assignment (trace)\n");
-    // /*DEBUG*/ currentStencil = stencil;
-    /*ORIGINAL*/ check_boundary_only = true;
-    /*ORIGINAL*/ if (dx == 1){
-    /*ORIGINAL*/   currentStencil = binStencildx;
-    /*ORIGINAL*/   nstencil2D = stencilLength[0];
-    /*ORIGINAL*/ }
-    /*ORIGINAL*/ else if(dx == -1){
-    /*ORIGINAL*/   currentStencil = binStencilmdx;
-    /*ORIGINAL*/   nstencil2D = stencilLength[1];
-    /*ORIGINAL*/ }
-    /*ORIGINAL*/ else if(dy == 1){
-    /*ORIGINAL*/   currentStencil = binStencildy;
-    /*ORIGINAL*/   nstencil2D = stencilLength[2];
-    /*ORIGINAL*/ }
-    /*ORIGINAL*/ else if(dy == -1){
-    /*ORIGINAL*/   currentStencil = binStencilmdy;
-    /*ORIGINAL*/   nstencil2D = stencilLength[3];
-    /*ORIGINAL*/ }
-    /*ORIGINAL*/ else if(dz == 1){
-    /*ORIGINAL*/   currentStencil = binStencildz;
-    /*ORIGINAL*/   nstencil2D = stencilLength[4];
-    /*ORIGINAL*/ }
-    /*ORIGINAL*/ else{
-    /*ORIGINAL*/   currentStencil = binStencilmdz;
-    /*ORIGINAL*/   nstencil2D = stencilLength[5];
-    /*ORIGINAL*/ }
+    /*NL*/ // /*DEBUG*/ currentStencil = stencil;
+    check_boundary_only = true;
+    if (dx == 1){
+      currentStencil = binStencildx;
+      nstencil2D = stencilLength[0];
+    }
+    else if(dx == -1){
+      currentStencil = binStencilmdx;
+      nstencil2D = stencilLength[1];
+    }
+    else if(dy == 1){
+      currentStencil = binStencildy;
+      nstencil2D = stencilLength[2];
+    }
+    else if(dy == -1){
+      currentStencil = binStencilmdy;
+      nstencil2D = stencilLength[3];
+    }
+    else if(dz == 1){
+      currentStencil = binStencildz;
+      nstencil2D = stencilLength[4];
+    }
+    else{
+      currentStencil = binStencilmdz;
+      nstencil2D = stencilLength[5];
+    }
 
     // /*NL*/ printf("before maximum radiation distance (trace)\n");
     // maximum radiation distance
@@ -819,6 +825,7 @@ dy ... bin hopped in y direction? (-1/0/1)
 dz ... bin hopped in z direction? (-1/0/1)
 */
 int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, int &dy, int &dz){
+  bool debugflag = false;
   double s;
   double smax = 0.0;
   double xlo, xhi, ylo, yhi, zlo, zhi;
@@ -828,6 +835,9 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
 
   // calculate borders of this bin
   neighbor->binBorders(ibin, xlo, xhi, ylo, yhi, zlo, zhi);
+
+  /*NL*/ if(debugflag) printf("o: [%f %f %f]\n", o[0],o[1],o[2]);
+  /*NL*/ if(debugflag) printf("d: [%f %f %f]\n", d[0],d[1],d[2]);
 
   // xlo, xhi
   if (d[0] != 0.0){
@@ -839,6 +849,7 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
       smax = s;
       dy = dz = 0;
       dx = -1;
+      /*NL*/ if(debugflag) printf("hop in direction -x possible\n");
     }
 
     s = (xhi - o[0]) / d[0];
@@ -851,6 +862,7 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
       smax = s;
       dy = dz = 0;
       dx = 1;
+      /*NL*/ if(debugflag) printf("hop in direction x possible\n");
     }
   }
 
@@ -866,6 +878,7 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
       smax = s;
       dx = dz = 0;
       dy = -1;
+      /*NL*/ if(debugflag) printf("hop in direction -y possible\n");
     }
 
     s = (yhi - o[1]) / d[1];
@@ -878,6 +891,7 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
       smax = s;
       dx = dz = 0;
       dy = 1;
+      /*NL*/ if(debugflag) printf("hop in direction y possible\n");
     }
   }
 
@@ -893,6 +907,7 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
       smax = s;
       dx = dy = 0;
       dz = -1;
+      /*NL*/ if(debugflag) printf("hop in direction -z possible\n");
     }
 
     s = (zhi - o[2]) / d[2];
@@ -905,6 +920,7 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
       smax = s;
       dx = dy = 0;
       dz = 1;
+      /*NL*/ if(debugflag) printf("hop in direction z possible\n");
     }
   }
 
@@ -912,7 +928,14 @@ int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, 
   p[1] = o[1] + smax*d[1];
   p[2] = o[2] + smax*d[2];
 
+  /*NL*/ if(debugflag) printf("p: [%f %f %f]\n", p[0], p[1], p[2]);
+
   nextBinId = neighbor->binHop(ibin,dx,dy,dz);
+  /*NL*/ /*BEGINDEBUG*/
+  /*NL*/ if(debugflag) if (dx == 0 && dy == 0 && dz == 0 && nextBinId != ibin){
+  /*NL*/   printf("ERROR in nextBin\n");
+  /*NL*/ }
+  /*NL*/ /*ENDDEBUG*/
   if (nextBinId != ibin){
     return nextBinId;
   }
