@@ -115,10 +115,10 @@ class FixMultisphere : public Fix
       double max_r_bound();
 
       // public inline access
-
+/*
       inline void set_v_integrate(double *v)
       { vectorCopy3D(v,v_integrate_); }
-
+*/
       inline class MultisphereParallel& data()
       { return multisphere_;}
 
@@ -130,6 +130,9 @@ class FixMultisphere : public Fix
 
       inline int tag_max_body()
       { return data().tag_max_body(); }
+
+      inline void set_v_body_from_atom_index(int iatom,double *vel)
+      { multisphere_.set_v_body(body_[iatom],vel); }
 
       inline void set_body_displace(int i,double *_displace,int body_id)
       { body_[i] = body_id; vectorCopy3D(_displace,displace_[i]); }
@@ -163,9 +166,6 @@ class FixMultisphere : public Fix
       // per-atom properties handled by this fix
       int *body_;                // which body each atom is part of (-1 if none)
       double **displace_;        // displacement of each atom in body coords
-
-      //NP constant integration for fix insert/stream
-      double v_integrate_[3];
 
       double dtv,dtf,dtq;
 };

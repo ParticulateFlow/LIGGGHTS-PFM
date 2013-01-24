@@ -73,7 +73,6 @@ FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
   body_(NULL),
   displace_(NULL)
 {
-  vectorZeroize3D(v_integrate_);
 
   //NP check if style is molecular
   if(atom->molecular == 1)
@@ -332,6 +331,7 @@ void FixMultisphere::initial_integrate(int vflag)
   double **inertia = multisphere_.inertia_.begin();
   double *masstotal = multisphere_.masstotal_.begin();
   int *start_step = multisphere_.start_step_.begin();
+  double **v_integrate = multisphere_.v_integrate_.begin();
   bool **fflag = multisphere_.fflag_.begin();
   bool **tflag = multisphere_.tflag_.begin();
   int nbody = multisphere_.n_body();
@@ -340,7 +340,7 @@ void FixMultisphere::initial_integrate(int vflag)
 
     if(timestep < start_step[ibody])
     {
-        vectorCopy3D(v_integrate_,vcm[ibody]);
+        vectorCopy3D(v_integrate[ibody],vcm[ibody]);
 
         // update xcm by full step
         xcm[ibody][0] += dtv * vcm[ibody][0];

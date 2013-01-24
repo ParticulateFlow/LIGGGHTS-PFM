@@ -49,7 +49,7 @@ PairGranHooke::PairGranHooke(LAMMPS *lmp) : PairGranHookeHistory(lmp)
 
 /* ---------------------------------------------------------------------- */
 
-void PairGranHooke::compute(int eflag, int vflag,int addflag)
+void PairGranHooke::compute_force(int eflag, int vflag,int addflag)
 {
   //calculated from the material properties //NP modified C.K.
   double kn,kt,gamman,gammat,xmu,rmu; //NP modified C.K.
@@ -162,7 +162,7 @@ void PairGranHooke::compute(int eflag, int vflag,int addflag)
         if (mask[i] & freeze_group_bit) meff = mj;
         if (mask[j] & freeze_group_bit) meff = mi;
 
-        deriveContactModelParams(i,j,meff,deltan,kn,kt,gamman,gammat,xmu,rmu);         //NP modified C.K.
+        deriveContactModelParams(i,j,meff,deltan,kn,kt,gamman,gammat,xmu,rmu,vnnr);         //NP modified C.K.
 
         damp = gamman*vnnr*rsqinv;    //NP modified C.K.
         ccel = kn*(radsum-r)*rinv - damp;
@@ -201,7 +201,6 @@ void PairGranHooke::compute(int eflag, int vflag,int addflag)
         fy = dely*ccel + fs2;
         fz = delz*ccel + fs3;
 
-
         tor1 = rinv * (dely*fs3 - delz*fs2);
         tor2 = rinv * (delz*fs1 - delx*fs3);
         tor3 = rinv * (delx*fs2 - dely*fs1);
@@ -228,7 +227,7 @@ void PairGranHooke::compute(int eflag, int vflag,int addflag)
             }
         }
 
-        if(addflag)
+        if(computeflag)
         {
             f[i][0] += fx;
             f[i][1] += fy;
@@ -238,7 +237,7 @@ void PairGranHooke::compute(int eflag, int vflag,int addflag)
             torque[i][2] -= cri*tor3 + r_torque[2];
         }
 
-        if (addflag && (newton_pair || j < nlocal)) {
+        if (computeflag && (newton_pair || j < nlocal)) {
           f[j][0] -= fx;
           f[j][1] -= fy;
           f[j][2] -= fz;
@@ -247,7 +246,7 @@ void PairGranHooke::compute(int eflag, int vflag,int addflag)
           torque[j][2] -= crj*tor3 - r_torque[2];
         }
         //NP call to compute_pair_gran_local
-        if(cpl && !addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,NULL);
+        if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,NULL);
 
         if (evflag) ev_tally_xyz(i,j,nlocal,newton_pair, 0.0,0.0,fx,fy,fz,delx,dely,delz);
       }

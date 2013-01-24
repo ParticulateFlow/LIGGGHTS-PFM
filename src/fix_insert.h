@@ -47,6 +47,7 @@ class FixInsert : public Fix {
   void write_restart(FILE *);
   virtual void restart(char *);
 
+  virtual double min_rad(int);  //NP modified C.K.
   virtual double max_rad(int);  //NP modified C.K.
   virtual double max_r_bound();  //NP modified C.K.
   int min_type();
@@ -102,8 +103,8 @@ class FixInsert : public Fix {
   // max and min type to be inserted
   int type_max,type_min;
 
-  // maximum radius to be inserted
-  double maxrad;
+  // minmum/maximum radius to be inserted
+  double minrad, maxrad;
 
   // flag if overlap is checked upon insertion (via all-to-all comm)
   int check_ol_flag;

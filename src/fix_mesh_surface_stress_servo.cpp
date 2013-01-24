@@ -324,7 +324,7 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
 	// for area calculation
 	// set vector of touching particles to zero
 	//mod_andrew_.clear();
-	mod_andrew_->clear_contact();
+	mod_andrew_->clear_contacts();
 
 }
 

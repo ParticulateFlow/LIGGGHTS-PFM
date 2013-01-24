@@ -70,8 +70,13 @@ PairGranHookeHistory::PairGranHookeHistory(LAMMPS *lmp) : PairGran(lmp)
     coeffRestLog = NULL;
     coeffFrict = NULL;
     coeffRollFrict = NULL;
+    coeffMu = NULL;
+    coeffRestMax = NULL;
+    coeffStc = NULL;
 
     charVelflag = 1;
+
+    force_off = false;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -86,6 +91,10 @@ PairGranHookeHistory::~PairGranHookeHistory()
     memory->destroy(coeffRestLog);
     memory->destroy(coeffFrict);
     memory->destroy(coeffRollFrict);
+
+    memory->destroy(coeffMu);
+    memory->destroy(coeffRestMax);
+    memory->destroy(coeffStc);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -110,26 +119,38 @@ inline void PairGranHookeHistory::addCohesionForce(int &ip, int &jp,double &r, d
     //r is the distance between the sphere's centeres
     double ri = atom->radius[ip];
     double rj = atom->radius[jp];
-    double Acont = - M_PI/4 * ( (r-ri-rj)*(r+ri-rj)*(r-ri+rj)*(r+ri+rj) )/(r*r); //contact area of the two spheres
+    double Acont;
+    if(cohesionflag == 1)
+     Acont = - M_PI/4 * ( (r-ri-rj)*(r+ri-rj)*(r-ri+rj)*(r+ri+rj) )/(r*r); //contact area of the two spheres
+    else  Acont = M_PI * 2. * (2.*ri*rj/(ri+rj)) * (ri + rj - r);
     /*NL*/ //double Acont = 0.5*sqrt( -(r-ri-rj)*(r+ri-rj)*(r-ri+rj)*(r+ri+rj) )/r; //contact are of the two spheres
     Fn_coh=cohEnergyDens[atom->type[ip]][atom->type[jp]]*Acont;
 }
 
-
 /* ---------------------------------------------------------------------- */
 
 //NP modified C.K.
-inline void PairGranHookeHistory::deriveContactModelParams(int &ip, int &jp,double &meff,double &deltan, double &kn, double &kt, double &gamman, double &gammat, double &xmu, double &rmu) //NP modified C.K.
+inline void PairGranHookeHistory::deriveContactModelParams(int &ip, int &jp,double &meff,double &deltan, double &kn, double &kt, double &gamman, double &gammat, double &xmu, double &rmu, double &vnnr) //NP modified C.K.
 {
     int itype = atom->type[ip];
     int jtype = atom->type[jp];
     double rj = atom->radius[jp];
     double ri = atom->radius[ip];
     double reff=ri*rj/(ri+rj);
+    double stokes, coeffRestLogChosen;
+
+    if (viscousflag)  {
+       // Stokes Number from MW Schmeeckle (2001)
+       stokes=meff*vnnr/(6.0*3.1416*coeffMu[itype][jtype]*reff*reff);
+       // Empirical from Legendre (2006)
+       coeffRestLogChosen=log(coeffRestMax[itype][jtype])+coeffStc[itype][jtype]/stokes;
+    } else {
+       coeffRestLogChosen=coeffRestLog[itype][jtype];
+    }
 
     kn = 16./15.*sqrt(reff)*(Yeff[itype][jtype])*pow(15.*meff*charVel*charVel/(16.*sqrt(reff)*Yeff[itype][jtype]),0.2);
     kt = kn;
-    gamman=sqrt(4.*meff*kn/(1.+(M_PI/coeffRestLog[itype][jtype])*(M_PI/coeffRestLog[itype][jtype])));
+    gamman=sqrt(4.*meff*kn/(1.+(M_PI/coeffRestLogChosen)*(M_PI/coeffRestLogChosen)));
     gammat=gamman;
     xmu=coeffFrict[itype][jtype];
     if(rollingflag)rmu=coeffRollFrict[itype][jtype];
@@ -144,7 +165,7 @@ inline void PairGranHookeHistory::deriveContactModelParams(int &ip, int &jp,doub
 
 /* ---------------------------------------------------------------------- */
 
-void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
+void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
 {
   //calculated from the material properties //NP modified C.K.
   double kn,kt,gamman,gammat,xmu,rmu; //NP modified C.K.
@@ -156,7 +177,7 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
   double vr1,vr2,vr3,vnnr,vn1,vn2,vn3,vt1,vt2,vt3,wr_roll[3],wr_rollmag;
   double wr1,wr2,wr3;
   double vtr1,vtr2,vtr3,vrel;
-  double meff,damp,ccel,tor1,tor2,tor3,r_torque[3],r_torque_n[3];
+  double mi,mj,meff,damp,ccel,tor1,tor2,tor3,r_torque[3],r_torque_n[3];
   double fn,fs,fs1,fs2,fs3;
   double shrmag,rsht, cri, crj;
   int *ilist,*jlist,*numneigh,**firstneigh;
@@ -165,6 +186,8 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
 
   if (eflag || vflag) ev_setup(eflag,vflag);
   else evflag = vflag_fdotr = 0;
+
+  //NP update for fix rigid done in PairGran
 
   double **x = atom->x;
   double **v = atom->v;
@@ -184,9 +207,6 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
   firstneigh = list->firstneigh;
   firsttouch = listgranhistory->firstneigh;
   firstshear = listgranhistory->firstdouble;
-
-  if (update->ntimestep > laststep) shearupdate = 1;
-  else shearupdate = 0;
 
   // loop over neighbors of my atoms
 
@@ -257,8 +277,10 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
 
         // normal forces = Hookian contact + normal velocity damping
 
-        //NP modified C.K.   account for rigid body
-        double mi,mj;
+        // meff = effective mass of pair of particles
+        // if I or J part of rigid body, use body mass
+        // if I or J is frozen, meff is other particle
+
         if (rmass) {
           mi = rmass[i];
           mj = rmass[j];
@@ -278,7 +300,9 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
         if (mask[i] & freeze_group_bit) meff = mj;
         if (mask[j] & freeze_group_bit) meff = mi;
 
-        deriveContactModelParams(i,j,meff,deltan,kn,kt,gamman,gammat,xmu,rmu);         //modified C.K
+        deriveContactModelParams(i,j,meff,deltan,kn,kt,gamman,gammat,xmu,rmu,vnnr);         //NP modified C.K
+
+        // normal forces = Hookian contact + normal velocity damping
 
         damp = gamman*vnnr*rsqinv;  //NP modified C.K.
         ccel = kn*(radsum-r)*rinv - damp;
@@ -308,7 +332,9 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
 
         shear = &allshear[dnum_pairgran*jj];
 
-        if (shearupdate && addflag)
+        /*NL*///printVec3D(screen,"shear",shear);
+
+        if (shearupdate && computeflag)
         {
             shear[0] += vtr1*dt;
             shear[1] += vtr2*dt;
@@ -413,7 +439,7 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
             }
         }
 
-        if(addflag)
+        if(computeflag)
         {
             f[i][0] += fx;
             f[i][1] += fy;
@@ -423,7 +449,7 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
             torque[i][2] -= cri*tor3 + r_torque[2];
         }
 
-        if (j < nlocal && addflag) {
+        if (j < nlocal && computeflag) {
           f[j][0] -= fx;
           f[j][1] -= fy;
           f[j][2] -= fz;
@@ -433,7 +459,7 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
         }
 
         //NP call to compute_pair_gran_local
-        if(cpl && !addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
+        if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
 
         /*NL*/ //if(update->ntimestep > 33000 && (atom->tag[i] == 1 || atom->tag[i] == 37) && (atom->tag[j] == 1 || atom->tag[j] == 37)) fprintf(screen,"contact at %d, overlap %f\n",update->ntimestep,deltan);
         /*NL*/ //fprintf(screen,"contact at step %d, force %f %f %f tags %d %d\n",update->ntimestep,fx,fy,fz,atom->tag[i],atom->tag[j]);
@@ -444,9 +470,7 @@ void PairGranHookeHistory::compute(int eflag, int vflag,int addflag)
     }
   }
 
-  laststep = update->ntimestep;
 }
-
 
 /* ----------------------------------------------------------------------
    global settings
@@ -460,6 +484,8 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
     dampflag = 1;
     rollingflag = 0;
     cohesionflag = 0;
+    viscousflag = 0;
+    force_off = false;
 
     // parse args
 
@@ -472,10 +498,23 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
             iarg_++;
             if(strcmp(arg[iarg_],"sjkr") == 0)
                 cohesionflag = 1;
+            else if(strcmp(arg[iarg_],"sjkr2") == 0)
+                cohesionflag = 2;
             else if(strcmp(arg[iarg_],"off") == 0)
                 cohesionflag = 0;
             else
                 error->all(FLERR,"Illegal pair_style gran command, expecting 'sjkr' or 'off' after keyword 'cohesion'");
+            iarg_++;
+            hasargs = true;
+        } else if (strcmp(arg[iarg_],"force") == 0) {
+            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'force'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"on") == 0)
+                force_off = false;
+            else if(strcmp(arg[iarg_],"off") == 0)
+                force_off = true;
+            else
+                error->all(FLERR,"Illegal pair_style gran command, expecting 'on' or 'off' after keyword 'force'");
             iarg_++;
             hasargs = true;
         } else if (strcmp(arg[iarg_],"rolling_friction") == 0) {
@@ -497,7 +536,18 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
             else if(strcmp(arg[iarg_],"off") == 0)
                 dampflag = 0;
             else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'on' or 'off' after keyword 'dampflag'");
+                error->all(FLERR,"Illegal pair_style gran command, expecting 'on' or 'off' after keyword 'tangential_damping'");
+            iarg_++;
+            hasargs = true;
+        } else if (strcmp(arg[iarg_],"viscous") == 0) {
+            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'viscous'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"stokes") == 0)
+                viscousflag = 1;
+            else if(strcmp(arg[iarg_],"off") == 0)
+                viscousflag = 0;
+            else
+                error->all(FLERR,"Illegal pair_style gran command, expecting 'stokes' or 'off' after keyword 'viscous'");
             iarg_++;
             hasargs = true;
         } else if (force->pair_match("gran/hooke/history",1) || force->pair_match("gran/hertz/history",1))
@@ -530,6 +580,13 @@ void PairGranHookeHistory::init_granular()
 
   if(rollingflag)
     coeffRollFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingFriction","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+  if(viscousflag)
+  {
+    coeffMu1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("FluidViscosity","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+    coeffRestMax1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("MaximumRestitution","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+    coeffStc1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("CriticalStokes","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+  }
+
   if(cohesionflag)
     cohEnergyDens1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("cohesionEnergyDensity","property/global","peratomtypepair",max_type,max_type,force->pair_style));
 
@@ -549,6 +606,13 @@ void PairGranHookeHistory::init_granular()
           Geff[i][j] = 1./(2.*(2.-vi)*(1.+vi)/Yi+2.*(2.-vj)*(1.+vj)/Yj);
 
           coeffRestLog[i][j] = log(coeffRest1->compute_array(i-1,j-1));
+
+         if(viscousflag)
+         {
+           coeffMu[i][j] = coeffMu1->compute_array(i-1,j-1);
+           coeffRestMax[i][j] = coeffRestMax1->compute_array(i-1,j-1);
+           coeffStc[i][j] = coeffStc1->compute_array(i-1,j-1);
+         }
 
           betaeff[i][j] =coeffRestLog[i][j] /sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
 
@@ -581,6 +645,10 @@ void PairGranHookeHistory::allocate_properties(int size)
     memory->destroy(coeffRestLog);
     memory->destroy(coeffFrict);
     memory->destroy(coeffRollFrict);
+    memory->destroy(coeffMu);
+    memory->destroy(coeffRestMax);
+    memory->destroy(coeffStc);
+
     memory->create(Yeff,size+1,size+1,"Yeff");
     memory->create(Geff,size+1,size+1,"Geff");
     memory->create(betaeff,size+1,size+1,"betaeff");
@@ -589,6 +657,10 @@ void PairGranHookeHistory::allocate_properties(int size)
     memory->create(coeffRestLog,size+1,size+1,"coeffRestLog");
     memory->create(coeffFrict,size+1,size+1,"coeffFrict");
     memory->create(coeffRollFrict,size+1,size+1,"coeffRollFrict");
+    memory->create(coeffMu,size+1,size+1,"coeffMu");
+    memory->create(coeffRestMax,size+1,size+1,"coeffRestMax");
+    memory->create(coeffStc,size+1,size+1,"coeffStc");
+
 }
 
 /* ----------------------------------------------------------------------
@@ -600,6 +672,7 @@ void PairGranHookeHistory::write_restart_settings(FILE *fp) //NP modified C.K.
   int writeflag = dampflag + rollingflag * 2;
   fwrite(&writeflag,sizeof(int),1,fp);
   fwrite(&cohesionflag,sizeof(int),1,fp);
+  fwrite(&viscousflag,sizeof(int),1,fp);
 }
 
 /* ----------------------------------------------------------------------
@@ -612,10 +685,12 @@ void PairGranHookeHistory::read_restart_settings(FILE *fp) //NP modified C.K.
     int readflag;
     fread(&readflag,sizeof(int),1,fp);
     fread(&cohesionflag,sizeof(int),1,fp);
+    fread(&viscousflag,sizeof(int),1,fp);
     dampflag = readflag & 1;
     rollingflag = readflag & 2;
   }
   MPI_Bcast(&dampflag,1,MPI_INT,0,world);
   MPI_Bcast(&cohesionflag,1,MPI_INT,0,world);
   MPI_Bcast(&rollingflag,1,MPI_INT,0,world);
+  MPI_Bcast(&viscousflag,1,MPI_INT,0,world);
 }

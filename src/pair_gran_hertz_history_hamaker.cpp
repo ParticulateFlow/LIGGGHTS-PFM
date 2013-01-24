@@ -69,7 +69,7 @@ PairGranHertzHistoryHamaker::~PairGranHertzHistoryHamaker()
 
 /* ---------------------------------------------------------------------- */
 
-void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
+void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag)
 {
   //calculated from the material properties
   double kn,kt,gamman,gammat,xmu,rmu;
@@ -109,9 +109,6 @@ void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
   firstneigh = list->firstneigh;
   firsttouch = listgranhistory->firstneigh;
   firstshear = listgranhistory->firstdouble;
-
-  if (update->ntimestep > laststep) shearupdate = 1;
-  else shearupdate = 0;
 
   // loop over neighbors of my atoms
 
@@ -162,20 +159,20 @@ void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
           fy = dely*ccel;
           fz = delz*ccel;
 
-          if(addflag)
+          if(computeflag)
           {
               f[i][0] += fx;
               f[i][1] += fy;
               f[i][2] += fz;
           }
 
-          if (j < nlocal && addflag) {
+          if (j < nlocal && computeflag) {
             f[j][0] -= fx;
             f[j][1] -= fy;
             f[j][2] -= fz;
           }
           // TODO: also for cohesion?!; NULL?!
-          if(cpl && !addflag) cpl->add_pair(i,j,fx,fy,fz,0.0,0.0,0.0,NULL);
+          if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,0.0,0.0,0.0,NULL);
 
           if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
         }
@@ -235,7 +232,7 @@ void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
         if (mask[i] & freeze_group_bit) meff = mj;
         if (mask[j] & freeze_group_bit) meff = mi;
 
-        deriveContactModelParams(i,j,meff,deltan,kn,kt,gamman,gammat,xmu,rmu);   //modified C.K
+        deriveContactModelParams(i,j,meff,deltan,kn,kt,gamman,gammat,xmu,rmu,vnnr);   //modified C.K
 
         damp = gamman*vnnr*rsqinv;
         ccel = kn*(radsum-r)*rinv - damp;
@@ -260,7 +257,7 @@ void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
 
         shear = &allshear[dnum_pairgran*jj];
 
-        if (shearupdate && addflag)
+        if (shearupdate && computeflag)
         {
             shear[0] += vtr1*dt;
             shear[1] += vtr2*dt;
@@ -339,7 +336,7 @@ void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
             }
         }
 
-        if(addflag)
+        if(computeflag)
         {
             f[i][0] += fx;
             f[i][1] += fy;
@@ -349,7 +346,7 @@ void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
             torque[i][2] -= cri*tor3 + r_torque[2];
         }
 
-        if (j < nlocal && addflag) {
+        if (j < nlocal && computeflag) {
           f[j][0] -= fx;
           f[j][1] -= fy;
           f[j][2] -= fz;
@@ -358,14 +355,13 @@ void PairGranHertzHistoryHamaker::compute(int eflag, int vflag,int addflag)
           torque[j][2] -= crj*tor3 - r_torque[2];
         }
 
-        if(cpl && !addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
+        if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
 
         if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
       }
     }
   }
 
-  laststep = update->ntimestep;
 }
 
 /* ----------------------------------------------------------------------
@@ -397,7 +393,7 @@ inline double PairGranHertzHistoryHamaker::addCohesionForce(int ip, int jp,doubl
 void PairGranHertzHistoryHamaker::settings(int narg, char **arg)
 {
 
-  PairGranHertzHistory::settings(narg, arg);
+    PairGranHertzHistory::settings(narg, arg);
 
     iarg_ = 0;
 

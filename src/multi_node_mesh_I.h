@@ -316,7 +316,7 @@
           /*NL*/// fprintf(this->screen,"allocating for %d elements\n",nall);
 
           double **tmp;
-          this->memory->create<double>(tmp,NUM_NODES,3,"MultiNodeMesh:tmp");
+          this->memory->template create<double>(tmp,NUM_NODES,3,"MultiNodeMesh:tmp");
 
           if(node_orig_)
             error->one(FLERR,"Illegal situation in MultiNodeMesh<NUM_NODES>::registerMove");

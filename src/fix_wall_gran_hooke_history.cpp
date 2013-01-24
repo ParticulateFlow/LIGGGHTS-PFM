@@ -70,6 +70,7 @@ FixWallGranHookeHistory::FixWallGranHookeHistory(LAMMPS *lmp, int narg, char **a
     dampflag = 1;
     cohesionflag = 0;
     rollingflag = 0;
+    viscousflag= 0;
 
     bool hasargs = true;
     while(iarg_ < narg && hasargs)
@@ -79,6 +80,8 @@ FixWallGranHookeHistory::FixWallGranHookeHistory(LAMMPS *lmp, int narg, char **a
             iarg_++;
             if(strcmp(arg[iarg_],"sjkr") == 0)
                 cohesionflag = 1;
+            else if(strcmp(arg[iarg_],"sjkr2") == 0)
+                cohesionflag = 2;
             else if(strcmp(arg[iarg_],"off") == 0)
                 cohesionflag = 0;
             else
@@ -93,6 +96,17 @@ FixWallGranHookeHistory::FixWallGranHookeHistory(LAMMPS *lmp, int narg, char **a
                 rollingflag = 0;
             else
                 error->fix_error(FLERR,this,"expecting 'cdt' or 'off' after keyword 'rolling_friction'");
+            iarg_++;
+            hasargs = true;
+        } else if (strcmp(arg[iarg_],"viscous") == 0) {
+            if (narg < iarg_+2) error->all(FLERR,"Pair gran: not enough arguments for 'viscous'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"stokes") == 0)
+                viscousflag = 1;
+            else if(strcmp(arg[iarg_],"off") == 0)
+                viscousflag = 0;
+            else
+                error->all(FLERR,"Illegal pair_style gran command, expecting 'stokes' or 'off' after keyword 'viscous'");
             iarg_++;
             hasargs = true;
         } else if (strcmp(arg[iarg_],"tangential_damping") == 0) {
@@ -145,18 +159,27 @@ void FixWallGranHookeHistory::init_granular()
   coeffRestLog = ((PairGranHookeHistory*)pairgran_)->coeffRestLog;
   coeffFrict = ((PairGranHookeHistory*)pairgran_)->coeffFrict;
   coeffRollFrict = ((PairGranHookeHistory*)pairgran_)->coeffRollFrict;
+  coeffMu = ((PairGranHookeHistory*)pairgran_)->coeffMu;
+  coeffRestMax = ((PairGranHookeHistory*)pairgran_)->coeffRestMax;
+  coeffStc = ((PairGranHookeHistory*)pairgran_)->coeffStc;
   charVel = ((PairGranHookeHistory*)pairgran_)->charVel;
 
-  //need to check properties for rolling friction and cohesion energy density here
-  //since these models may not be active in the pair style
+  // need to check properties for rolling friction and cohesion energy density here
+  // since these models may not be active in the pair style
   //NP yet we write into the memory of the pair style
+
   int max_type = pairgran_->mpg->max_type();
-  FixPropertyGlobal *coeffRollFrict1, *cohEnergyDens1;
+  FixPropertyGlobal *coeffRollFrict1, *cohEnergyDens1,*coeffMu1,*coeffRestMax1,*coeffStc1;
   if(rollingflag)
     coeffRollFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingFriction","property/global","peratomtypepair",max_type,max_type,style));
   if(cohesionflag)
     cohEnergyDens1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("cohesionEnergyDensity","property/global","peratomtypepair",max_type,max_type,style));
-
+  if(viscousflag)
+  {
+    coeffMu1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("FluidViscosity","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+    coeffRestMax1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("MaximumRestitution","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+    coeffStc1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("CriticalStokes","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+  }
   //pre-calculate parameters for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
   {
@@ -164,6 +187,12 @@ void FixWallGranHookeHistory::init_granular()
       {
           if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
           if(cohesionflag) cohEnergyDens[i][j] = cohEnergyDens1->compute_array(i-1,j-1);
+          if(viscousflag)
+          {
+            coeffMu[i][j] = coeffMu1->compute_array(i-1,j-1);
+            coeffRestMax[i][j] = coeffRestMax1->compute_array(i-1,j-1);
+            coeffStc[i][j] = coeffStc1->compute_array(i-1,j-1);
+          }
       }
   }
 
@@ -232,9 +261,8 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
 
   /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_compute_force 0\n");
   /*NL*///printVec3D(screen,"shear history",c_history);
-
-  //get the parameters needed to resolve the contact
-  deriveContactModelParams(ip,deltan,meff_wall,kn,kt,gamman,gammat,xmu,rmu);
+  /*NL*///printVec3D(screen,"v",v);
+  /*NL*///printVec3D(screen,"vwall",vwall);
 
   r = sqrt(rsq);
   rinv = 1.0/r;
@@ -268,6 +296,9 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
 
   /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_compute_force 1\n");
 
+  //get the parameters needed to resolve the contact
+  deriveContactModelParams(ip,deltan,meff_wall,kn,kt,gamman,gammat,xmu,rmu,vnnr);
+
   // normal forces = Hookian contact + normal velocity damping
 
   damp = gamman*vnnr*rsqinv;       //NP modified C.K.
@@ -295,7 +326,7 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
   /*NL*///if(atom->tag[ip] == 2044)fprintf(screen,"step %d: vrel %f, vp %f %f %f vw %f %f %f\n",update->ntimestep,vrel,v[0],v[1],v[2],vwall[0],vwall[1],vwall[2]);
 
   // shear history effects
-  if (shearupdate_ && addflag_)
+  if (shearupdate_ && computeflag_)
   {
       c_history[0] += vtr1*dt_;
       c_history[1] += vtr2*dt_;
@@ -377,7 +408,7 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
   fy = dy*ccel + fs2;
   fz = dz*ccel + fs3;
 
-  if(addflag_)
+  if(computeflag_)
   {
       f[0] += fx*area_ratio;
       f[1] += fy*area_ratio;
@@ -410,13 +441,13 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
             }
   }
 
-  if(addflag_)
+  if(computeflag_)
   {
       torque[0] -= cr*tor1*area_ratio + r_torque[0];
       torque[1] -= cr*tor2*area_ratio + r_torque[1];
       torque[2] -= cr*tor3*area_ratio + r_torque[2];
   }
-  else if(cwl_)
+  if(cwl_ && addflag_)
     cwl_->add_wall_2(ip,fx,fy,fz,tor1*area_ratio,tor2*area_ratio,tor3*area_ratio,c_history,rsq);
 }
 
@@ -452,12 +483,12 @@ void FixWallGranHookeHistory::addHeatFlux(TriMesh *mesh,int ip, double delta_n, 
     if ((fabs(tcop) < SMALL) || (fabs(tcowall) < SMALL)) hc = 0.;
     else hc = 4.*tcop*tcowall/(tcop+tcowall)*sqrt(Acont);
 
-    if(addflag_)
+    if(computeflag_)
     {
         heatflux[ip] += (Temp_wall-Temp_p[ip]) * hc;
         Q_add += (Temp_wall-Temp_p[ip]) * hc * update->dt;
     }
-    else if(cwl_)
+    if(cwl_ && addflag_)
         cwl_->add_heat_wall(ip,(Temp_wall-Temp_p[ip]) * hc);
     /*NL*/ //fprintf(screen,"adding heat flux of %g to particle %d, wall %f Part %f hc %f\n",(Temp_wall-Temp_p[ip]) * hc,ip,Temp_wall,Temp_p[ip],hc);
     /*NL*/ //fprintf(screen,"tcop %f tcowall %f Acont %f reff_wall %f r %f\n",tcop,tcowall,Acont,reff_wall,r);
@@ -469,7 +500,11 @@ inline void FixWallGranHookeHistory::addCohesionForce(int &ip, double &r, double
 {
     //r is the distance between the sphere center and wall
     double reff_wall = atom->radius[ip];
-    double Acont = (reff_wall*reff_wall-r*r)*M_PI; //contact area sphere-wall
+    double Acont;
+    if(cohesionflag == 1)
+       Acont = (reff_wall*reff_wall-r*r)*M_PI; //contact area sphere-wall
+    else
+       Acont = M_PI * 2. * reff_wall * (reff_wall - r);
     int itype = atom->type[ip];
     Fn_coh=cohEnergyDens[itype][atom_type_wall_]*Acont*area_ratio;
 }
@@ -477,7 +512,7 @@ inline void FixWallGranHookeHistory::addCohesionForce(int &ip, double &r, double
 /* ---------------------------------------------------------------------- */
 
 //NP modified C.K.
-inline void FixWallGranHookeHistory::deriveContactModelParams(int ip, double deltan,double meff_wall, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu) //NP modified C.K.
+inline void FixWallGranHookeHistory::deriveContactModelParams(int ip, double deltan,double meff_wall, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu,double &vnnr) //NP modified C.K.
 {
     /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_deriveContactModelParams 0\n");
     /*NP char *testmsg=new char[200];
@@ -489,13 +524,22 @@ inline void FixWallGranHookeHistory::deriveContactModelParams(int ip, double del
 
     double sqrtval = sqrt(atom->radius[ip]);
     int itype = atom->type[ip];
+    double stokes,coeffRestLogChosen;
+
+    if (viscousflag)  {
+       double reff=atom->radius[ip];
+       stokes=meff_wall*vnnr/(6.0*3.1416*coeffMu[itype][atom_type_wall_]*reff*reff);//Stokes Number from MW Schmeeckle (2001)
+       coeffRestLogChosen=log(coeffRestMax[itype][atom_type_wall_])+coeffStc[itype][atom_type_wall_]/stokes;// Empirical from Legendre (2006)
+    } else {
+       coeffRestLogChosen=coeffRestLog[itype][atom_type_wall_];
+    }
 
     kn=16./15.*sqrtval*Yeff[itype][atom_type_wall_]*pow(15.*meff_wall*charVel*charVel/(16.*sqrtval*Yeff[itype][atom_type_wall_]),0.2);
     kt=kn;
 
     /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_deriveContactModelParams 10\n");
 
-    gamman=sqrt(4.*meff_wall*kn/(1.+(M_PI/coeffRestLog[itype][atom_type_wall_])*(M_PI/coeffRestLog[itype][atom_type_wall_])));
+    gamman=sqrt(4.*meff_wall*kn/(1.+(M_PI/coeffRestLogChosen)*(M_PI/coeffRestLogChosen)));
     gammat=gamman;
 
     /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_deriveContactModelParams 11\n");

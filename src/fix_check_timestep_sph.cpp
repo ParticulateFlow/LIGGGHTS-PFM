@@ -264,7 +264,7 @@ void FixCheckTimestepSph::calc_courant_estims_eval()
   }
 
   MPI_Max_Scalar(vmax,world);
-  MPI_Min_Scalar(courant_time,world);
+  MPI_Max_Scalar(courant_time,world);
   /*
   // get vmax of geometry
   FixMeshSurface ** mesh_list;

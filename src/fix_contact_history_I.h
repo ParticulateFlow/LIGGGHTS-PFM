@@ -100,7 +100,8 @@
     {
       /*NL*/// fprintf(screen," step %d: iP %d, partner %d: %d, coplanar %s delflag %s, mesh_->map(tri[i]) %d\n",
       /*NL*///                update->ntimestep,iP,i,tri[i],mesh_->areCoplanarNodeNeighs(tri[i],idTri)?"y":"n",delflag[iP][i]?"y":"n",mesh_->map(tri[i]));
-
+      /*NL*/ //fprintf(screen,"ip %d i %d idTri %d tri[i] %d\n",iP,i,idTri,tri[i]);
+      /*NL*/ if(tri[i] == -1) {fprintf(screen,"atom %d\n",atom->tag[iP]);error->one(FLERR,"catch");}
       //NP do only if old partner owned or ghost on this proc
       if(tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanarNodeNeighs(tri[i],idTri))
       {

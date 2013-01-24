@@ -166,6 +166,7 @@ void Verlet::setup()
   /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting output->setup\n");__debug__(lmp);}
   output->setup(1);
   /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: finished\n");__debug__(lmp);}
+  update->setupflag = 0;
 }
 
 /* ----------------------------------------------------------------------

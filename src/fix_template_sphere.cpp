@@ -354,8 +354,16 @@ void FixTemplateSphere::randomize_ptilist(int n_random,int distribution_groupbit
 
 /* ----------------------------------------------------------------------*/
 
+double FixTemplateSphere::min_rad()
+{
+    return pdf_min(pdf_radius);
+}
+
+/* ----------------------------------------------------------------------*/
+
 double FixTemplateSphere::max_rad()
 {
+    /*NL*/ //fprintf(screen, "MAXRAD %f\n",pdf_max(pdf_radius));
     return pdf_max(pdf_radius);
 }
 

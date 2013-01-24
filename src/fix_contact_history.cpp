@@ -105,10 +105,6 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
   restart_global = 1; //NP modified C.K.
   create_attribute = 1;
 
-  // set time_depend so that history will be preserved correctly
-  // across multiple runs via laststep setting in granular pair styles
-  time_depend = 1;
-
   //NP modified C.K.
   if(is_pair)
     maxtouch = DELTA_MAXTOUCH_PAIR;
@@ -134,8 +130,6 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
       int nlocal = atom->nlocal;
       for (int i = 0; i < nlocal; i++) npartner[i] = 0;
   }
-
-  laststep = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -156,6 +150,7 @@ FixContactHistory::~FixContactHistory()
     atom->delete_callback(id,1);
 
     // delete locally stored arrays
+
     memory->destroy(npartner);
     memory->destroy(partner);
     memory->destroy(contacthistory);
@@ -177,8 +172,31 @@ FixContactHistory::~FixContactHistory()
 int FixContactHistory::setmask()
 {
   int mask = 0;
+  mask |= INITIAL_INTEGRATE;
   mask |= PRE_EXCHANGE;
+  mask |= MIN_PRE_EXCHANGE;
   return mask;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixContactHistory::initial_integrate(int dummy)
+{
+    /*NP
+    int nlocal = atom->nlocal;
+
+    if(is_pair)
+        return;
+
+    for(int i = 0; i < nlocal; i++)
+    {
+        if(atom->tag[i] == 2723)
+        {
+            fprintf(screen,"tag 2723 ilocal %d  npartner %d\n",i,npartner[i]);
+            for(int j = 0; j < npartner[i]; j++)
+                fprintf(screen,"    partner %d: tri id %d\n",j,partner[i][j]);
+        }
+    }*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -193,16 +211,55 @@ void FixContactHistory::init()
         if(!force->pair_match("gran", 0))
             error->fix_error(FLERR,this,"Please use a granular pair style for fix contacthistory");
         pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+        int dim;
+        computeflag = (int *) pair_gran->extract("computeflag",dim);
     }
     else if(!mesh_)
         error->fix_error(FLERR,this,"illegal");
 }
 
-/* ---------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------
+   called by setup of run or minimize
+   called by write_restart as input script command
+   only invoke pre_exchange() if neigh list stores more current history info
+     than npartner/partner arrays in this fix
+   that will only be case if pair->compute() has been invoked since
+     upate of npartner/npartner
+   this logic avoids 2 problems:
+     run 100; write_restart; run 100
+       setup_pre_exchange is called twice (by write_restart and 2nd run setup)
+       w/out a neighbor list being created in between
+     read_restart; run 100
+       setup_pre_exchange called by run setup whacks restart shear history info
+------------------------------------------------------------------------- */
 
 void FixContactHistory::setup_pre_exchange()
 {
-  if(laststep > 0) pre_exchange();
+  if(is_pair)
+  {
+    /*NL*/ //fprintf(screen,"(*computeflag) %d\n",(*computeflag));
+    if (*computeflag) pre_exchange();
+    *computeflag = 0;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixContactHistory::min_setup_pre_exchange()
+{
+  if(is_pair)
+  {
+    /*NL*/ //fprintf(screen,"(*computeflag) %d\n",(*computeflag));
+    if (*computeflag) pre_exchange();
+    *computeflag = 0;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixContactHistory::min_pre_exchange()
+{
+  pre_exchange();
 }
 
 /* ----------------------------------------------------------------------
@@ -216,8 +273,6 @@ void FixContactHistory::pre_exchange()
         pre_exchange_pair();
 
     check_grow();
-
-    laststep = update->ntimestep;
 }
 
 /* ----------------------------------------------------------------------
@@ -234,24 +289,14 @@ void FixContactHistory::pre_exchange_pair()
 
   /*NL*/ //fprintf(screen,"FixContactHistory::pre_exchange() start, dnum %d\n",dnum);
   // zero npartners for all current atoms
-  // do not do this if inum = 0, since will wipe out npartner counts
-  // inum is 0 when pre_exchange() is called from integrate->setup()
-  //   before first run when no neighbor lists yet exist
-  //   partner info may have just been read from restart file
-  //     and won't be used until granular neighbor lists are built
-  //   if nothing read from restart file, constructor sets npartner = 0
 
-  NeighList *list = pair_gran->list;
   int nlocal = atom->nlocal;
-
-  if (list->inum)
-    for (i = 0; i < nlocal; i++)
-      npartner[i] = 0;
+  for (i = 0; i < nlocal; i++) npartner[i] = 0;
 
   // copy contact info from neighbor list atoms to atom arrays
 
   int *tag = atom->tag;
-
+  NeighList *list = pair_gran->list;
   inum = list->inum;
   ilist = list->ilist;
   numneigh = list->numneigh;
@@ -270,7 +315,7 @@ void FixContactHistory::pre_exchange_pair()
       if (touch[jj]) {
         hist = &allhist[dnum*jj]; //NP modified C.K.
         j = jlist[jj];
-            j &= NEIGHMASK;
+        j &= NEIGHMASK;
 
         if (npartner[i] >= maxtouch) grow_arrays_maxtouch(atom->nmax); //NP modified C.K.
         m = npartner[i];
@@ -288,7 +333,7 @@ void FixContactHistory::pre_exchange_pair()
                if(newtonflag[d]) contacthistory[j][m][d] = -hist[d]; //NP modified C.K.
                else              contacthistory[j][m][d] =  hist[d]; //NP modified C.K.
             }
-          npartner[j]++;
+            npartner[j]++;
         }
       }
     }
@@ -399,6 +444,7 @@ void FixContactHistory::grow_arrays_maxtouch(int nmax)
 
 void FixContactHistory::copy_arrays(int i, int j)
 {
+  /*NL*///fprintf(screen,"copy, %d %d\n",i,j);
   npartner[j] = npartner[i];
   for (int m = 0; m < npartner[j]; m++) {
     partner[j][m] = partner[i][m];
@@ -415,7 +461,7 @@ void FixContactHistory::copy_arrays(int i, int j)
 
 void FixContactHistory::set_arrays(int i)
 {
-    /*NL*///fprintf(screen,"style %s, id %s, i=%d\n",style,id,i);
+    /*NL*///fprintf(screen,"set_arrays, %d\n",i);
     npartner[i] = 0;
 }
 
@@ -464,6 +510,7 @@ void FixContactHistory::write_restart(FILE *fp)
   int n = 0;
   double list[6];
   list[n++] = static_cast<double>(dnum);
+  list[n++] = static_cast<double>(maxtouch);
 
   if (comm->me == 0) {
     int size = n * sizeof(double);
@@ -484,10 +531,12 @@ void FixContactHistory::restart(char *buf)
   int n = 0;
   double *list = (double *) buf;
 
-  int pack_dnum = static_cast<int> (list[n++]);
-  if(pack_dnum != dnum)
+  int unpack_dnum = static_cast<int> (list[n++]);
+  int unpack_maxtouch = static_cast<int> (list[n++]);
+  if(unpack_dnum != dnum)
     error->all(FLERR,"Saved simulation state used different contact history model - can not restart");
-
+  while(unpack_maxtouch > maxtouch)
+    grow_arrays_maxtouch(atom->nmax);
 }
 
 /* ----------------------------------------------------------------------
@@ -568,7 +617,7 @@ void FixContactHistory::cleanUpContacts()
             // delete and copy values
             if(delflag[i][j])
             {
-                /*NL*/ //fprintf(screen,"deleting contact\n");
+                /*NL*/ //fprintf(screen,"deleting contact for i %d, npartner %d\n",i,npartner[i]);
 
                 // swap with last contact if more than 1
                 if(npartner[i] > 1)

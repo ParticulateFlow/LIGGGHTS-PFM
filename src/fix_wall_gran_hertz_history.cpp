@@ -96,7 +96,7 @@ void FixWallGranHertzHistory::init_granular()
 ------------------------------------------------------------------------- */
 
 inline void FixWallGranHertzHistory::deriveContactModelParams(int ip, double deltan,
-    double meff_wall, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu)  //NP modified C.K.
+    double meff_wall, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu, double &vnnr)  //NP modified C.K.
 {
 /*NP
     char testmsg[200];

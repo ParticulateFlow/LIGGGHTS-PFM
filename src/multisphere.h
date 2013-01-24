@@ -38,7 +38,7 @@ namespace LAMMPS_NS {
       void add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_ins, double r_bound_ins,
                     double *v_ins, double *omega_ins, double mass_ins, double dens_ins,
                     double *inertia_ins, double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
-                    double **displace_ins, int start_step_ins = -1);
+                    double **displace_ins, int start_step_ins = -1, double *v_integrate_ins = NULL);
 
       void grow_arrays_per_body_local(int);
       void grow_arrays_per_body_global(int);
@@ -82,6 +82,9 @@ namespace LAMMPS_NS {
       inline void xcm(double *x_cm,int i)
       { vectorCopy3D(xcm_(i),x_cm); }
 
+      inline void vcm(double *v_cm,int i)
+      { vectorCopy3D(vcm_(i),v_cm); }
+
       inline void x_bound(double *x_bnd,int i)
       {
         vectorZeroize3D(x_bnd);
@@ -98,6 +101,9 @@ namespace LAMMPS_NS {
 
       inline double density(int i)
       { return density_(i); }
+
+      inline void set_v_body(int ibody,double *vel)
+      { vcm_.set(ibody,vel); }
 
     protected:
 
@@ -157,6 +163,7 @@ namespace LAMMPS_NS {
 
       //NP step to start from for integration
       ScalarContainer<int> &start_step_;
+      VectorContainer<double,3> &v_integrate_;
 
       // bounding radius for each body
       // vector from xcm to center of bound sphere

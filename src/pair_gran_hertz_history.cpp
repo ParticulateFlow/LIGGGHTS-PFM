@@ -52,7 +52,7 @@ PairGranHertzHistory::PairGranHertzHistory(LAMMPS *lmp) :
    contact model parameters derived for hertz model //NP modified C.K.
 ------------------------------------------------------------------------- */
 
-inline void PairGranHertzHistory::deriveContactModelParams(int &ip, int &jp,double &meff, double &deltan, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu) //NP modified C.K.
+inline void PairGranHertzHistory::deriveContactModelParams(int &ip, int &jp,double &meff, double &deltan, double &kn, double &kt, double &gamman, double &gammat, double &xmu,double &rmu,double &vnnr) //NP modified C.K.
 {
     /*NL*/ //sprintf(testmsg,"Y=%f, v=%f, cr=%f, cf=%f\n",Y->compute_vector(0),v->compute_vector(0),coeffRest->compute_array(0,0),coeffFrict->compute_array(0,0));
  /*NP   char *testmsg=new char[200];

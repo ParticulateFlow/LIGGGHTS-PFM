@@ -114,20 +114,22 @@ void ComputePairGranLocal::post_create()
   // check if wall data requested
   if(strcmp(style,"wall/gran/local") == 0) wall = 1;
 
-  // initialize once as dump parses in constructor
-  init_cpgl();
+  // initialize once as dump parses in constructor for length of per-atom data
+  //NP take care to avoid two requests which would mess up neigh lists
+  init_cpgl(false);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void ComputePairGranLocal::init()
 {
-    init_cpgl();
+    init_cpgl(true);
+    /*NL*/ //fprintf(screen,"ComputePairGranLocal::init()\n");
 }
 
 /* ---------------------------------------------------------------------- */
 
-void ComputePairGranLocal::init_cpgl()
+void ComputePairGranLocal::init_cpgl(bool requestflag)
 {
   int ifix, n_wall_fixes;
   FixWallGran *fwg;
@@ -163,19 +165,24 @@ void ComputePairGranLocal::init_cpgl()
       if (pairgran == NULL)
         error->all(FLERR,"No valid granular pair style found for use with compute pair/gran/local");
 
-      if (pairgran->cpl_enable == 0)
+      if (pairgran->cplenable() == 0)
         error->all(FLERR,"Pair style does not support compute pair/gran/local");
 
       //NP register with the pair style
+      //NP is done twice before first run, out of post_create() + init()
+      //NP no problem since always unregister when init_cpgl() called
       pairgran->register_compute_pair_local(this,dnum);
 
-      //NP need an occasional gran neighbor list
-      int irequest = neighbor->request((void *) this);
-      neighbor->requests[irequest]->pair = 0;
-      neighbor->requests[irequest]->compute = 1;
-      neighbor->requests[irequest]->half = 0;
-      neighbor->requests[irequest]->gran = 1;
-      neighbor->requests[irequest]->occasional = 0;
+      if(requestflag)
+      {
+          //NP need an occasional gran neighbor list
+          int irequest = neighbor->request((void *) this);
+          neighbor->requests[irequest]->pair = 0;
+          neighbor->requests[irequest]->compute = 1;
+          neighbor->requests[irequest]->half = 0;
+          neighbor->requests[irequest]->gran = 1;
+          neighbor->requests[irequest]->occasional = 1;
+      }
 
       // register heat transfer fix if applicable
       if(hfflag)
@@ -252,7 +259,7 @@ void ComputePairGranLocal::compute_local()
   if(wall == 0) ncount = count_pairs();        // # pairs is ensured to be the same for pair and heat
   else          ncount = count_wallcontacts(); // # wall contacts ensured to be same for wall/gran and heat
 
-  /*NL*/ //fprintf(screen,"ncount %d\n",ncount);
+  /*NL*/ fprintf(screen,"ncount %d\n",ncount);
 
   if (ncount > nmax) reallocate(ncount);
   size_local_rows = ncount;
@@ -265,7 +272,7 @@ void ComputePairGranLocal::compute_local()
   {
       ipair = 0;
       if(pairgran == NULL) error->one(FLERR,"null");
-      pairgran->compute(0,0,0);
+      pairgran->compute_pgl(0,0);
 
       // get heat flux data
       if(fixheat)
@@ -279,7 +286,7 @@ void ComputePairGranLocal::compute_local()
   {
       ipair = 0;
       // this also calls heat transfer if necessary
-      fixwall->post_force(0,0);
+      fixwall->post_force_pgl();
   }
 }
 

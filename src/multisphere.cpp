@@ -70,6 +70,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   tflag_ (*customValues_.addElementProperty< VectorContainer<bool,3> >("tflag","comm_exchange_borders","frame_invariant", "restart_yes")),
 
   start_step_ (*customValues_.addElementProperty< ScalarContainer<int> >("start_step","comm_exchange_borders","frame_invariant", "restart_yes")),
+  v_integrate_(*customValues_.addElementProperty< VectorContainer<double,3> >("v_integrate","comm_exchange_borders","frame_invariant", "restart_yes")),
 
   r_bound_       (*customValues_.addElementProperty< ScalarContainer<double> >("r_bound","comm_exchange_borders","frame_invariant", "restart_yes")),
   xcm_to_xbound_ (*customValues_.addElementProperty< VectorContainer<double,3> >("xcm_to_xbound","comm_exchange_borders","frame_invariant", "restart_yes"))
@@ -92,7 +93,7 @@ Multisphere::~Multisphere()
 void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_ins,
                double r_bound_ins, double *v_ins, double *omega_ins, double mass_ins,double dens_ins,
                double *inertia_ins, double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
-               double **displace_ins, int start_step_ins)
+               double **displace_ins, int start_step_ins,double *v_integrate_ins)
 {
     int n = nbody_;
 
@@ -102,6 +103,7 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
     id_.add(-1);
 
     bool flags[3] = {true,true,true};
+    double zerovec[3] = {0.,0.,0.};
 
     xcm_.add(xcm_ins);
     vcm_.add(v_ins);
@@ -128,6 +130,10 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
     tflag_.add(flags);
 
     start_step_.add(start_step_ins);
+    if(v_integrate_ins)
+        v_integrate_.add(v_integrate_ins);
+    else
+        v_integrate_.add(zerovec);
 
     r_bound_.add(r_bound_ins);
     xcm_to_xbound_.add(xcm_to_xbound_ins);

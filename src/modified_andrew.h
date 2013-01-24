@@ -68,7 +68,8 @@ public:
 
   inline void add_contact(Circle c)
   { contacts_.push_back(c); }
-  inline void clear_contact()
+
+  inline void clear_contacts()
   { contacts_.clear(); }
 
 private:

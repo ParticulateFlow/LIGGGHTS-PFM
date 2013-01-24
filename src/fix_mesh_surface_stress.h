@@ -127,7 +127,7 @@ namespace LAMMPS_NS
         // STRESS
 
         // stress flag in FixMeshSurface
-        // reference point
+        // reference point, total force and total torque
         VectorContainer<double,3> &p_ref_;
 
         // per-element force and torque

@@ -117,6 +117,7 @@ inline int Multisphere::calc_n_steps(int iatom,int body,double *p_ref,double *no
     dist_normal = vectorDot3D(pos_rel,normalvec);
     n_steps = static_cast<int>(dist_normal/(vectorMag3D(v_normal)*dt));
     start_step_(ibody) = n_steps + timestep;
+    v_integrate_.set(ibody,v_normal);
 
     /*NL*///fprintf(screen,"set step for body %d to %d\n",ibody,start_step_(ibody));
     /*NL*///error->all(FLERR,"set step");
