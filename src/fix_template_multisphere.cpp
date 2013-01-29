@@ -57,8 +57,8 @@ using namespace FixConst;
 #define EPSILON 1.0e-7
 #define TOLERANCE 1.0e-6
 
-#define MIN(A,B) ((A) < (B)) ? (A) : (B)
-#define MAX(A,B) ((A) > (B)) ? (A) : (B)
+#define MIN(A,B) (((A) < (B)) ? (A) : (B))
+#define MAX(A,B) (((A) > (B)) ? (A) : (B))
 
 #define MAXJACOBI 50
 #define BIG 1.e20
