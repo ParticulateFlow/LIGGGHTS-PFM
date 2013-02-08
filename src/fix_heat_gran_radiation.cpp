@@ -651,6 +651,7 @@ void FixHeatGranRad::createStencils(){
 int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *buffer3, double *hitp){
 
   /*NL*/ bool debugflag = false;
+  /*NL*/ if (comm->me == 8 || comm->me == 10) debugflag = true;
 
   int *binhead = neighbor->binhead;
   int *bins = neighbor->bins;
@@ -678,11 +679,11 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
   int dx = 0;
   int dy = 0;
   int dz = 0;
-  /*NL*/ if(debugflag) printf("tracing...\n");
-  /*NL*/ if(debugflag) printf("calculating current bin: %d\n",currentBin);
+  /*NL*/ if(debugflag) printf("me:%d tracing...\n",comm->me);
+  /*NL*/ if(debugflag) printf("me:%d calculating current bin: %d\n",comm->me,currentBin);
   /*NL*/ double xlo,xhi,ylo,yhi,zlo,zhi;
   /*NL*/ if(debugflag) neighbor->binBorders(currentBin,xlo,xhi,ylo,yhi,zlo,zhi);
-  /*NL*/ if(debugflag) printf("origin: [%f %f %f]\n", o[0],o[1],o[2]);
+  /*NL*/ if(debugflag) printf("me:%d origin: [%f %f %f]\n",comm->me, o[0],o[1],o[2]);
   // /*NL*/ error->one(FLERR, "stop...\n");
 
   int var_nstencil;
@@ -695,14 +696,19 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
   /*NL*/ // for (long iii = 0; iii < neighbor->mbins; iii++){
   /*NL*/ //   printf("binhead[%d]: %d\n", iii, binhead[iii]);
   /*NL*/ // }
-  /*NL*/ if (debugflag) printf("mbins: %d\n", neighbor->mbins);
+  /*NL*/ if (debugflag) printf("me:%d mbins: %d\n",comm->me, neighbor->mbins);
 
   // at first interation all bins of the full stencil need to be checked
   bool check_boundary_only = false;
   currentStencil = stencil;
   // /*NL*/ printf("before while loop (trace)\n");
   while ((currentBin != -1) && (hitFlag == false)){
-  /*NL*/ if (debugflag) printf("currentBin: %d\n", currentBin);
+  /*NL*/ if (debugflag) printf("me:%d currentBin: %d\n",comm->me, currentBin);
+  /*NL*/   int aa,bb,cc;
+  /*NL*/ if (debugflag)  neighbor->bin2XYZ(currentBin,aa,bb,cc);
+  /*NL*/ if(debugflag)  printf("me:%d currentBin: %d %d %d\n", comm->me,aa,bb,cc);
+
+
 
     // number of new bins in direction of bin-hop
     // /*DEBUG*/var_nstencil = nstencil;
@@ -711,7 +717,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
 
     // /*NL*/ DEBUG
     /*NL*/ if (var_nstencil == 0){
-      /*NL*/ printf("WARNING: uninitialized usage of var_nstencil\n");
+      /*NL*/ printf("me:%d WARNING: uninitialized usage of var_nstencil\n",comm->me);
     /*NL*/ }
 
     // /*NL*/ printf("check_boundary_only: %s\n", check_boundary_only ? "true" : "false");
@@ -719,27 +725,36 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
     // /*NL*/ for (int iii = 0; iii < var_nstencil; iii++){
       // /*NL*/ printf("stencil[%d]: %d\n", iii, currentStencil[iii]);
     // /*NL*/ }
-    /*NL*/ if(debugflag) printf("before binwalk (trace)\n");
+    /*NL*/ if(debugflag) printf("me:%d before binwalk (trace)\n",comm->me);
+
+    /*NL*/ if (debugflag) printf("me:%d stencil:\n",comm->me);
+    /*NL*/ if (debugflag)
+    /*NL*/ for (int ii = 0; ii < var_nstencil; ii++){
+    /*NL*/   int aa,bb,cc;
+    /*NL*/   neighbor->bin2XYZ(currentBin+currentStencil[ii],aa,bb,cc);
+    /*NL*/   printf("me:%d stencil[%d]: %d %d %d\n",comm->me, ii,aa,bb,cc);
+    /*NL*/ }
+
     // walk the stencil of bins related to this bin, check all of their atoms
     for (int k = 0; k < var_nstencil; k++){
 
       // /*NL*/ if(debugflag) printf("before atomwalk (trace)\n");
       // walk all atoms in this bin
-      // /*NL*/ if (debugflag) printf("accessing binhead[%d]\n", currentBin + currentStencil[k]);
+      /*NL*/ if (debugflag) printf("me:%d accessing binhead[%d]\n",comm->me, currentBin + currentStencil[k]);
       for (i = binhead[currentBin + currentStencil[k]]; i >= 0; i = bins[i]){
-        /*NL*/ if (debugflag) printf("atom id: %d\n", i);
+        /*NL*/ if (debugflag) printf("me:%d atom id: %d\n",comm->me, i);
 
         // do not intersect with reflecting particle
         if (i == orig_id){
           continue;
         }
 
-        /*NL*/ if (debugflag) printf("accessing atom: %d\n", i);
+        /*NL*/ if (debugflag) printf("me:%d accessing atom: %d\n",comm->me, i);
         // center and radius
         c = x[i];
         rad = radius[i];
 
-        /*NL*/ if (debugflag) printf("check if atom intersects ray...\n");
+        /*NL*/ if (debugflag) printf("me:%d check if atom intersects ray...\n",comm->me);
 
         // check if atom intersects ray
         hit = intersectRaySphere(o, d, c, rad, t, buffer3);
@@ -753,7 +768,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
       }
     }
 
-    /*NL*/ if(debugflag) printf("before hitflag check (trace)\n");
+    /*NL*/ if(debugflag) printf("me:%d before hitflag check (trace)\n",comm->me);
     if (hitFlag){
       // calculate hit point 'hitp'
       snormalize3(hitT, d, buffer3);
@@ -763,7 +778,9 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
 
     // find the next bin, since in this bin there was no intersection found
     ibin       = currentBin;
+    /*NL*/ if (debugflag) printf("me:%d ibin: %d\n",comm->me, ibin);
     currentBin = nextBin(ibin, o, d, raypoint, dx, dy, dz);
+    /*NL*/ if (debugflag) printf("me:%d nextBin: %d\n",comm->me, currentBin);
 
     // from now on only check the boundary any more
     // /*NL*/ printf("before stencil assignment (trace)\n");
@@ -772,26 +789,32 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
     if (dx == 1){
       currentStencil = binStencildx;
       nstencil2D = stencilLength[0];
+      /*NL*/ if (debugflag) printf("me:%d using binStencildx\n",comm->me);
     }
     else if(dx == -1){
       currentStencil = binStencilmdx;
       nstencil2D = stencilLength[1];
+      /*NL*/ if (debugflag) printf("me:%d using binStencilmdx\n",comm->me);
     }
     else if(dy == 1){
       currentStencil = binStencildy;
       nstencil2D = stencilLength[2];
+      /*NL*/ if (debugflag) printf("me:%d using binStencildy\n",comm->me);
     }
     else if(dy == -1){
       currentStencil = binStencilmdy;
       nstencil2D = stencilLength[3];
+      /*NL*/ if (debugflag) printf("me:%d using binStencilmdy\n",comm->me);
     }
     else if(dz == 1){
       currentStencil = binStencildz;
       nstencil2D = stencilLength[4];
+      /*NL*/ if (debugflag) printf("me:%d using binStencildz\n",comm->me);
     }
     else{
       currentStencil = binStencilmdz;
       nstencil2D = stencilLength[5];
+      /*NL*/ if (debugflag) printf("me:%d using binStencilmdz\n",comm->me);
     }
 
     // /*NL*/ printf("before maximum radiation distance (trace)\n");
@@ -801,6 +824,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
     distz = raypoint[2] - o[2];
     dist = distx*distx + disty*disty + distz*distz;
     if (dist >= cutGhostsq){
+      /*NL*/ if(debugflag)printf("me:%d returning due to cutoff distance\n", comm->me);
       return -1;
     }
   }
