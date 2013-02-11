@@ -72,7 +72,7 @@ void Neighbor::binBorders(int ibin, double &xlo, double &xhi, double &ylo, doubl
 */
 
 int Neighbor::binHop(int i, int x, int y, int z){
-	/*NL*/ bool debugflag = true;
+	/*NL*/ bool debugflag = false;
 	int ix, iy, iz;
 
 	bin2XYZ(i, ix, iy, iz);
@@ -85,7 +85,8 @@ int Neighbor::binHop(int i, int x, int y, int z){
 
 	/*NL*/ /*ORIGINAL*/// if (ix + x < 0 || ix + x >= mbinx || 0 > iy + y || iy + y >= mbiny || 0 > iz + z || iz + z >= mbinz)
 	/*NL*/ /*SECOND*///if ((ix + x < mbinxlo) || ((ix + x - mbinxlo) >= mbinx) || (iy + y < mbinylo) || ((iy + y - mbinylo) >= mbiny) || (iz + z < mbinzlo) || ((iz + z - mbinzlo) >= mbinz))
-	if ((ix + x - sx < mbinxlo) || ((ix + x + sx - mbinxlo) >= mbinx) || (iy + y - sy < mbinylo) || ((iy + y + sy - mbinylo) >= mbiny) || (iz + z - sz < mbinzlo) || ((iz + z + sz - mbinzlo) >= mbinz))
+	/*NL*/ /*THIRD*/// if ((ix + x - sx < mbinxlo) || ((ix + x + sx - mbinxlo) >= mbinx) || (iy + y - sy < mbinylo) || ((iy + y + sy - mbinylo) >= mbiny) || (iz + z - sz < mbinzlo) || ((iz + z + sz - mbinzlo) >= mbinz))
+	if ((ix + x < mbinxlo) || ((ix + x - mbinxlo) >= mbinx) || (iy + y < mbinylo) || ((iy + y - mbinylo) >= mbiny) || (iz + z < mbinzlo) || ((iz + z - mbinzlo) >= mbinz))
 		return -1;
 
 	ix += x;

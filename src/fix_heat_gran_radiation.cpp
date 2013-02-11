@@ -650,11 +650,21 @@ void FixHeatGranRad::createStencils(){
 */
 int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *buffer3, double *hitp){
 
+
   /*NL*/ bool debugflag = false;
-  /*NL*/ if (comm->me == 8 || comm->me == 10) debugflag = true;
+  /*NL*/ if (comm->me == 8 || comm->me == 10 || comm->me == 20) debugflag = false;
+
+  /*NL*/ if(debugflag) printf("me:%d orig_id: %d\n", comm->me,orig_id);
+  /*NL*/ if(debugflag) printf("me:%d nlocal: %d\n", comm->me,atom->nlocal);
 
   int *binhead = neighbor->binhead;
   int *bins = neighbor->bins;
+  int stencilbin, stbX, stbY, stbZ;
+  int currX, currY, currZ;
+  int sx = neighbor->sx;
+  int sy = neighbor->sy;
+  int sz = neighbor->sz;
+  int mbins = neighbor->mbins;
 
   // individual particle data
   double *c;  // center of particle i
@@ -698,7 +708,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
   /*NL*/ // }
   /*NL*/ if (debugflag) printf("me:%d mbins: %d\n",comm->me, neighbor->mbins);
 
-  // at first interation all bins of the full stencil need to be checked
+  // at first iteration all bins of the full stencil need to be checked
   bool check_boundary_only = false;
   currentStencil = stencil;
   // /*NL*/ printf("before while loop (trace)\n");
@@ -738,10 +748,17 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
     // walk the stencil of bins related to this bin, check all of their atoms
     for (int k = 0; k < var_nstencil; k++){
 
+      // check if bin is inside domain of comm->me
+      stencilbin = currentBin + currentStencil[k];
+      neighbor->bin2XYZ(stencilbin, stbX, stbY, stbZ);
+      neighbor->bin2XYZ(currentBin, currX, currY, currZ);
+      if (stencilbin < 0 || stencilbin >= mbins || abs(stbX - currX) > sx || abs(stbY - currY) > sy || abs(stbZ - currZ) > sz)
+        continue;
+
       // /*NL*/ if(debugflag) printf("before atomwalk (trace)\n");
       // walk all atoms in this bin
       /*NL*/ if (debugflag) printf("me:%d accessing binhead[%d]\n",comm->me, currentBin + currentStencil[k]);
-      for (i = binhead[currentBin + currentStencil[k]]; i >= 0; i = bins[i]){
+      for (i = binhead[stencilbin]; i >= 0; i = bins[i]){
         /*NL*/ if (debugflag) printf("me:%d atom id: %d\n",comm->me, i);
 
         // do not intersect with reflecting particle
