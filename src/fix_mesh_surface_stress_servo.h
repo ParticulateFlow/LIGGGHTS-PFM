@@ -71,19 +71,22 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       void limit_vel();
       void update_mass();
       void set_v_node();
+      void set_v_node_rotate();
 
       int dim_;
+      double axis_[3],totalPhi_;
 
       // properties of mesh
 
       VectorContainer<double,3> &xcm_;
       VectorContainer<double,3> &vcm_;
+      VectorContainer<double,3> &omegacm_;
       VectorContainer<double,3> &xcm_orig_;
 
       // servo settings and controller
 
       bool mode_flag_;
-      double vel_max_,set_point_,set_point_inv_;
+      double vel_max_,set_point_,set_point_inv_,ctrl_output_max_;
       char *sp_str_;
       int sp_var_, sp_style_;
       double *control_output_,*process_value_;
@@ -98,8 +101,9 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       bool int_flag_;
       int modify_param(int, char **);
 
-      // velocity for each node
+      // position and velocity for each node
 
+      double*** nodes_;
       MultiVectorContainer<double,3,3> &v_;
 
       //NP TODO: Is somewhere a better place for this function?!
@@ -110,6 +114,9 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
 
       // for area calculation
       class ModifiedAndrew *mod_andrew_;
+
+      // get max distance axis-node
+      double getMaxRad();
 
 }; //end class
 
