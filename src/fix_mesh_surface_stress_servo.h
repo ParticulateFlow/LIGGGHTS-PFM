@@ -72,6 +72,7 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       void update_mass();
       void set_v_node();
       void set_v_node_rotate();
+      double getMaxRad();
 
       int dim_;
       double axis_[3],totalPhi_;
@@ -115,8 +116,7 @@ class FixMeshSurfaceStressServo : public FixMeshSurfaceStress {
       // for area calculation
       class ModifiedAndrew *mod_andrew_;
 
-      // get max distance axis-node
-      double getMaxRad();
+
 
 }; //end class
 

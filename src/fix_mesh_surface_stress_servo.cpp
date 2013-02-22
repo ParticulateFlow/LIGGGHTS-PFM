@@ -594,7 +594,9 @@ void FixMeshSurfaceStressServo::add_particle_contribution(int ip, double *frc,
     mod_andrew_->add_contact(c);
 }
 
-/* ---------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------
+  get maximal distance rotation axis - mesh nodes
+------------------------------------------------------------------------- */
 
 double FixMeshSurfaceStressServo::getMaxRad()
 {
