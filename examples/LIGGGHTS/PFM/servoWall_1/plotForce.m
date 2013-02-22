@@ -9,10 +9,9 @@ deltat = 5e-5;
 dumpfreq = 1e-3/deltat;
 
 dirfile = '.';
-filepattern = 'force_cad*_f*';
+filepattern = 'force.cad*';
 
 % column in the force matrix
-col_fX = 1;
 col_fZ = 3;
 col_X = 7;
 col_Z = 9;
@@ -20,21 +19,14 @@ col_Z = 9;
 % get from file name: 
 %           fieldname after underscore (lower case)
 %           Number of case (Upper case or number)
-expr = '((?<=_)[a-z]*)|((?<=_[a-z]*)[A-Z0-9]*)';
+expr = '((?<=[_.])[a-z]*)|((?<=[_.][a-z]*)([A-Z0-9]*(\.[e\-0-9]+)?))';
 
-% cylinder area
+
+% area size according in.shearCell
 cylArea = 0.025 .^2 * pi;
 
 % ATTENTION: Fieldnames are hardcoded. If filepattern changes, you have to
 % adapt the code.
-
-% compare experimental data
-exp_flag = false;
-exp_area = 0.05*0.05*pi;
-exp_dir = '/media/sdb1/Projekte/_intern/materialProperties/poorManShearCell/experiment/500mue_material';
-exp_file = 'Versuch06_500mue_1374g';%'Versuch04_500mue_484g';
-
-testFlag = false;
 
 % #########################################################################
 
@@ -68,11 +60,12 @@ end
 % init figures
 hFig(1) = figure; % position
 hFig(2) = figure; % z-force
+hFig(3) = figure; % x-force
 
 % legend parameters
-leg = cell(4,1); % 4 figures
+leg = cell(2,1); % 2 figures
 
-cmap = colormap(lines(nFiles+2));
+cmap = colormap(lines(nFiles));
 
 for ii=1:nFiles
     
@@ -83,13 +76,8 @@ for ii=1:nFiles
     if size(data(ii).values,2)>=col_Z && ...
             strcmp(data(ii).cad,'1')
         
-        if strcmp(data(ii).cad,'2')
-            pos = data(ii).values(:,col_X);
-            vel = (data(ii).values(2:end,col_X)-data(ii).values(1:end-1,col_X))/(dumpfreq*deltat);    
-        else
-            pos = data(ii).values(:,col_Z);
-            vel = (data(ii).values(2:end,col_Z)-data(ii).values(1:end-1,col_Z))/(dumpfreq*deltat);
-        end
+        pos = data(ii).values(:,col_Z);
+        vel = (data(ii).values(2:end,col_Z)-data(ii).values(1:end-1,col_Z))/(dumpfreq*deltat);
         
         figure(hFig(1));
         subplot(2,1,1); hold on
@@ -112,21 +100,8 @@ for ii=1:nFiles
         
         % legend for postion plot
         leg{2} = [leg{2}; fname];
-        
-        disp([fname,': Mean for z direction = ',num2str(mean_fZ)]);
     end
-    
-end
-
-%% load experimental data
-if (exp_flag)
-    load(fullfile(exp_dir,exp_file), 'Fr', 't');
-    exp_shear = Fr./exp_area;
-
-    figure(hFig(3)); hold on
-    plot(t,exp_shear,'Color',cmap(nFiles+1,:),'LineWidth',2);
-    
-    %leg{3} = [leg{3}; exp_file];
+       
 end
 
 %% settings for figures
@@ -138,13 +113,12 @@ title('Position and Velocity','Interpreter','none','FontSize',16);
 ylabel('position in m','FontSize',16);
 
 subplot(2,1,2);
-xlabel('time in s'); %xlabel('timesteps');
+xlabel('time in s');
 ylabel('velocity in m/s');
 
 figure(hFig(2));
 hLeg = legend(leg{2});
 set(hLeg,'Interpreter','none','Location','SouthEast');
 title('Prinzipal stress in z-direction','Interpreter','none');
-xlabel('time in s'); %xlabel('timesteps');
+xlabel('time in s');
 ylabel('sigma_{z} in Pa');
-

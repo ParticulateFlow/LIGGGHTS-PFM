@@ -53,7 +53,7 @@ total force (for {ctrlPV} = force)  or a total torque (for {ctrlPV} = torque) is
 The target value is defined via keyword {target_val}. The servo can act in any dimension 
 (as specified by the {dim} keyword), but only in one dimension at a time. The user has to specify 
 the center of mass (keyword {com}) and the maximum velocity allowed for the servo wall by keyword {vel_max}.
-Note that {vel_max} < "skin"_neighbor.html/(2*"timestep"_timestep.html) is required.
+Note that {vel_max} < "skin"_neighbor.html /(2* "timestep"_timestep.html) is required.
 
 The controller itself is a proportional-integral-derivative (PID) controller which is controlled by
 3 constants kp, ki, kd:

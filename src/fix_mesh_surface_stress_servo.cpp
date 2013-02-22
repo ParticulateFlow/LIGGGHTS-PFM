@@ -77,7 +77,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   err_(       0.),
   sum_err_(   0.),
   old_process_value_(0.),
-  kp_(			 0.),
+  kp_(			 0.01),
   ki_(       0.),
   kd_(       0.),
   int_flag_( true),
@@ -87,6 +87,10 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
 {
     if(!trackStress())
         error->fix_error(FLERR,this,"stress = 'on' required");
+
+    if(manipulated())
+        error->warning(FLERR,"Mesh has been scaled, moved, or rotated.\n"
+                             "Please note that values for 'com', 'vel' refer to the scaled, moved, or rotated configuration");
 
     // override default from base
     size_vector = 9;
@@ -114,7 +118,6 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           hasargs = true;
       } else if(strcmp(arg[iarg_],"ctrlPV") == 0) {
       	  if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'ctrlPV'");
-      	  //iarg_++;
       	  if 			(strcmp(arg[iarg_+1],"force") == 0) pv_flag_ = FORCE;
       	  else if (strcmp(arg[iarg_+1],"torque") == 0) pv_flag_ = TORQUE;
       	  else error->fix_error(FLERR,this,"only 'force', 'torque' are valid arguments for ctrlPV");
@@ -127,8 +130,8 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           if(vel_max_ <= 0.)
             error->fix_error(FLERR,this,"vel_max > 0 required");
           hasargs = true;
-      } else if(strcmp(arg[iarg_],"set_point") == 0) {
-          if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'set_point'");
+      } else if(strcmp(arg[iarg_],"target_val") == 0) {
+          if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'target_val'");
           iarg_++;
           if (strstr(arg[iarg_],"v_") == arg[iarg_]) {
         	  int n = strlen(&arg[iarg_][2]) + 1;
@@ -136,7 +139,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
         	  strcpy(sp_str_,&arg[iarg_][2]);
           } else {
     				set_point_ = -force->numeric(arg[iarg_]); // the resultant force/torque/shear acts in opposite direction --> negative value
-    				if (set_point_ == 0.) error->fix_error(FLERR,this,"Set point (desired force/torque/shear) has to be != 0.0");
+    				if (set_point_ == 0.) error->fix_error(FLERR,this,"'target_val' (desired force/torque) has to be != 0.0");
     				set_point_inv_ = 1./set_point_;
         	  sp_style_ = CONSTANT;
           }
@@ -520,7 +523,7 @@ void FixMeshSurfaceStressServo::set_v_node()
 
 void FixMeshSurfaceStressServo::set_v_node_rotate()
 {
-	  double node[3],rPA[3],vRot[3];
+	double node[3],rPA[3],vRot[3];
 
     int nall = mesh()->size();
     int nnodes = mesh()->numNodes();
