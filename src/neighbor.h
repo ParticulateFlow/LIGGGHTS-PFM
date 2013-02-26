@@ -133,6 +133,7 @@ class Neighbor : protected Pointers {
 
   int *binhead;                    // ptr to 1st atom in each bin
   int maxhead;                     // size of binhead array
+  class MultiLevelGrid* mlg;       //NP modified C.K.
 
   int mbins;                       // # of local bins and offset
   int mbinx,mbiny,mbinz;

@@ -165,7 +165,7 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
           mesh_->prop().setGlobalProperty< ScalarContainer<double> >("heatFlux",0.);
           mesh_->prop().addGlobalProperty< ScalarContainer<double> >("heatFluxTotal","comm_none","frame_invariant","restart_yes");
           mesh_->prop().setGlobalProperty< ScalarContainer<double> >("heatFluxTotal",0.);
-          /*NL*///ScalarContainer<double> &test = *mesh_->prop().getMeshProperty< ScalarContainer<double> >("Temp");
+          /*NL*///ScalarContainer<double> &test = *mesh_->prop().getGlobalProperty< ScalarContainer<double> >("Temp");
           /*NL*///fprintf(screen,"test %f\n",test(0));
           /*NL*///error->all(FLERR,"end");
           hasargs = true;

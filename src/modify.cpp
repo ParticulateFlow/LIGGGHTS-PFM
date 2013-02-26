@@ -35,6 +35,7 @@
 #include "domain.h"
 #include "memory.h"
 #include "error.h"
+/*NL*/#include "debug_liggghts.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -308,7 +309,12 @@ void Modify::setup_pre_force(int vflag)
 void Modify::initial_integrate(int vflag)
 {
   for (int i = 0; i < n_initial_integrate; i++)
+  {
+    /*NL*/// if(20962 == update->ntimestep) {fprintf(screen,"proc %d executing initial_integrate for %s\n",
+    /*NL*///                                      comm->me,fix[list_initial_integrate[i]]->style);
+    /*NL*/// __debug__(lmp);}
     fix[list_initial_integrate[i]]->initial_integrate(vflag);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -344,7 +350,7 @@ void Modify::pre_neighbor()
   for (int i = 0; i < n_pre_neighbor; i++)
   {
     /*NL*/ //(update->ntimestep == 1254) fprintf(screen,"proc %d executing pre_neigh for %s\n",
-    /*NL*/ //                                    comm->me,fix[list_pre_exchange[i]]->style);
+    /*NL*/ //                                    comm->me,fix[list_pre_neighbor[i]]->style);
     fix[list_pre_neighbor[i]]->pre_neighbor();
   }
 }
@@ -370,7 +376,12 @@ void Modify::pre_force(int vflag)
 void Modify::post_force(int vflag)
 {
   for (int i = 0; i < n_post_force; i++)
+  {
+    /*NL*/// if(20950 < update->ntimestep) {fprintf(screen,"proc %d executing post_force for %s\n",
+    /*NL*///                                      comm->me,fix[list_post_force[i]]->style);
+    /*NL*/// __debug__(lmp);}
     fix[list_post_force[i]]->post_force(vflag);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -718,7 +729,7 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
 #undef FixStyle
 #undef FIX_CLASS
 
-    else {fprintf(screen,"adding %s\n",arg[2]);error->all(FLERR,"Invalid fix style");}
+    else {fprintf(screen,"adding fix %s\n",arg[2]);error->all(FLERR,"Invalid fix style");}
   }
 
   // set fix mask values and increment nfix (if new)
@@ -904,10 +915,14 @@ void Modify::modify_compute(int narg, char **arg)
    delete a Compute from list of Computes
 ------------------------------------------------------------------------- */
 
-void Modify::delete_compute(const char *id)
+void Modify::delete_compute(const char *id,bool uncomputeflag)
 {
   int icompute = find_compute(id);
   if (icompute < 0) error->all(FLERR,"Could not find compute ID to delete");
+
+  //NP modified C.K.
+  compute[icompute]->pre_delete(uncomputeflag);
+
   delete compute[icompute];
 
   // move other Computes down in list one slot

@@ -1462,3 +1462,20 @@ int Domain::is_periodic_ghost(int i) //NP modified C.K.
     }
     return 0;
 }
+
+int Domain::is_periodic_ghost_of_owned(int i) //NP modified C.K.
+{
+    int idim;
+    int nlocal = atom->nlocal;
+    double *x = atom->x[i];
+
+    if(i < nlocal) return 0;
+
+    else
+    {
+        for(idim = 0; idim < 3; idim++)
+            if ((x[idim] < boxlo[idim] || x[idim] > boxhi[idim]) && periodicity[idim] && 1 == comm->procgrid[idim])
+                return 1;
+    }
+    return 0;
+}

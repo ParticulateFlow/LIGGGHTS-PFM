@@ -36,19 +36,19 @@
 
   /* ---------------------------------------------------------------------- */
 
-  inline double TriMesh::resolveTriSphereContact(int nTri, double rSphere, double *cSphere, double *delta)
+  inline double TriMesh::resolveTriSphereContact(int iPart,int nTri, double rSphere, double *cSphere, double *delta)
   {
     // this is the overlap algorithm, neighbor list build is
     // coded in resolveTriSphereNeighbuild
 
     //NP test of new algorithm
     double bary[3];
-    return resolveTriSphereContactBary(nTri,rSphere,cSphere,delta,bary);
+    return resolveTriSphereContactBary(iPart,nTri,rSphere,cSphere,delta,bary);
   }
 
   /* ---------------------------------------------------------------------- */
 
-  inline double TriMesh::resolveTriSphereContactBary(int nTri, double rSphere,
+  inline double TriMesh::resolveTriSphereContactBary(int iPart, int nTri, double rSphere,
                                    double *cSphere, double *delta, double *bary)
   {
     double **n = node_(nTri);
@@ -113,6 +113,14 @@
       d = resolveFaceContactBary(nTri,cSphere,node0ToSphereCenter,delta);
       break;
     default:
+      /*NL*/ fprintf(screen,"barySign %d bary %f %f %f tag %d tri id %d\n",barySign,bary[0],bary[1],bary[2],this->atom->tag[iPart],id(nTri));
+      /*NL*/ //printVec3D(screen,"node0ToSphereCenter",node0ToSphereCenter);
+      /*NL*/ //printVec3D(screen,"cSphere",cSphere);
+      /*NL*/ //printVec3D(screen,"n[0]",n[0]);
+      /*NL*/ //printVec3D(screen,"edgeLen(nTri)",edgeLen(nTri));
+      /*NL*/ //printVec3D(screen,"edgeVec(nTri)[0]",edgeVec(nTri)[0]);
+      /*NL*/ //printVec3D(screen,"edgeVec(nTri)[1]",edgeVec(nTri)[1]);
+      /*NL*/ //printVec3D(screen,"edgeVec(nTri)[2]",edgeVec(nTri)[2]);
       this->error->one(FLERR,"Internal error");
       d = 1.; // doesn't exist, just to satisfy the compiler
       break;
@@ -202,13 +210,13 @@
               //NP contact at "previous" edge ipp
               if(!edgeActive(iTri)[ipp])
                 return LARGE_TRIMESH;
-              
+
               vectorAddMultiple3D(n,distFromNode,edge[ipp],closestPoint);
-              
+
               bary[ip] = 0.;
               bary[iNode] = 1. + distFromNode/edgeLen(iTri)[ipp];
               bary[ipp] = 1. - bary[iNode];
-        
+
               return calcDist(p,closestPoint,delta);
             } else{
               //NP corner contact at "previous" node ipp
@@ -227,22 +235,22 @@
               //NP contact at "current" edge with index iNode
               if(!edgeActive(iTri)[iNode])
                 return LARGE_TRIMESH;
-              
+
               vectorAddMultiple3D(n,distFromNode,edge[ipp],closestPoint);
-              
+
               bary[ipp] = 0.;
               bary[iNode] = 1. - distFromNode/edgeLen(iTri)[iNode];
               bary[ip] = 1. - bary[iNode];
-              
+
               return calcDist(p,closestPoint,delta);
             } else{
               //NP corner contact at "next" node ip
               if(!cornerActive(iTri)[ip])
                 return LARGE_TRIMESH;
-              
+
               bary[ip] = 1.; bary[iNode] = bary[ipp] = 0.;
               return calcDist(p,node_(iTri)[ip],delta);
-              
+
             }
           }
       }

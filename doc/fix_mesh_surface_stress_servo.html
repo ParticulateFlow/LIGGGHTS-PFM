@@ -11,7 +11,7 @@
 
 <HR>
 
-<H3>fix mesh/servo command 
+<H3>fix mesh/surface/stress/servo command 
 </H3>
 <P><B>Syntax:</B>
 </P>
@@ -62,7 +62,7 @@ total force (for <I>ctrlPV</I> = force)  or a total torque (for <I>ctrlPV</I> = 
 The target value is defined via keyword <I>target_val</I>. The servo can act in any dimension 
 (as specified by the <I>dim</I> keyword), but only in one dimension at a time. The user has to specify 
 the center of mass (keyword <I>com</I>) and the maximum velocity allowed for the servo wall by keyword <I>vel_max</I>.
-Note that <I>vel_max</I> < <A HREF = "neighbor.html">skin</A> /(2* <A HREF = "timestep.html">timestep</A>) is required.
+Note that <I>vel_max</I> < <A HREF = "neighbor.html">skin</A> /(2* <A HREF = "timestep.html">timestep</A> ) is required.
 </P>
 <P>The controller itself is a proportional-integral-derivative (PID) controller which is controlled by
 3 constants kp, ki, kd:

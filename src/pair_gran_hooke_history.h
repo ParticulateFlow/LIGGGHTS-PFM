@@ -100,6 +100,9 @@ class PairGranHookeHistory : public PairGran {
 
   // option to turn off all force computations
   bool force_off;
+
+  // option to do some sanity checks
+  bool sanity_checks;
 };
 
 }

@@ -261,8 +261,6 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
 
   /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_compute_force 0\n");
   /*NL*///printVec3D(screen,"shear history",c_history);
-  /*NL*///printVec3D(screen,"v",v);
-  /*NL*///printVec3D(screen,"vwall",vwall);
 
   r = sqrt(rsq);
   rinv = 1.0/r;
@@ -415,7 +413,13 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
       f[2] += fz*area_ratio;
   }
 
-  /*NL*///if(atom->tag[ip] == 3)fprintf(screen,"step %d: force %e %e %e, delta %f %f %f, area_ratio %f\n",update->ntimestep,fx*area_ratio,fy*area_ratio,fz*area_ratio,dx,dy,dz,area_ratio);
+  /*NL*///if(atom->tag[ip] == 206) {
+  /*NL*///    fprintf(screen,"step %d: force %e %e %e, delta %f %f %f, area_ratio %f\n",update->ntimestep,fx*area_ratio,fy*area_ratio,fz*area_ratio,dx,dy,dz,area_ratio);
+  /*NL*///    printVec3D(screen,"v",v);
+  /*NL*///    printVec3D(screen,"vwall",vwall);
+  /*NL*///    printVec3D(screen,"c_history",c_history);
+  /*NL*/// }
+
 
   tor1 = rinv * (dy*fs3 - dz*fs2);
   tor2 = rinv * (dz*fs1 - dx*fs3);

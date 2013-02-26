@@ -105,7 +105,9 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
       hasargs = true;
     } else if (strcmp(arg[iarg],"nparticles") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
-      ninsert = atof(arg[iarg+1]);
+      if(strcmp(arg[iarg+1],"INF") == 0)
+        ninsert_exists = 0;
+      else ninsert = atof(arg[iarg+1]);
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"mass") == 0) {
@@ -221,9 +223,6 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
     else if(strcmp(style,"insert") == 0) error->fix_error(FLERR,this,"unknown keyword");
   }
 
-  // default is that total # of particles to insert by this command is known
-  ninsert_exists = 1;
-
   // memory not allocated initially
   ninsert_this_max_local = 0;
 
@@ -244,6 +243,9 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
   force_reneighbor = 1;
   next_reneighbor = first_ins_step;
   most_recent_ins_step = -1;
+
+  vector_flag = 1;
+  size_vector = 2;
 
   print_stats_start_flag = 1;
 
@@ -288,11 +290,16 @@ void FixInsert::setup(int vflag)
       if(ninsert < ninsert_per)
         final_ins_step = first_ins_step;
       else
-        final_ins_step = first_ins_step + static_cast<int>(static_cast<double>(ninsert)/ninsert_per *  static_cast<double>(insert_every));
+        final_ins_step = first_ins_step +
+                static_cast<int>(static_cast<double>(ninsert)/ninsert_per *  static_cast<double>(insert_every));
 
       /*NL*/ //fprintf(screen,"ninsert %d, ninsert_per %f insert_every %d first_ins_step %d\n",ninsert,ninsert_per,insert_every,first_ins_step);
-      if(final_ins_step < 0) error->fix_error(FLERR,this,"Particle insertion: Overflow - need too long for particle insertion");
-      if(ninsert < 0) error->fix_error(FLERR,this,"Particle insertion: Overflow - too many particles for particle insertion");
+      if(final_ins_step < 0)
+        error->fix_error(FLERR,this,"Particle insertion: Overflow - need too long for particle insertion. "
+                                    "Please decrease # particles to insert or increase insertion rate");
+      if(ninsert < 0)
+        error->fix_error(FLERR,this,"Particle insertion: Overflow - too many particles for particle insertion. "
+                                    "Please decrease # particles to insert.");
   }
   else
     final_ins_step = -1;
@@ -306,6 +313,9 @@ void FixInsert::setup(int vflag)
 
 void FixInsert::init_defaults()
 {
+  // default is that total # of particles to insert by this command is known
+  ninsert_exists = 1;
+
   ninsert = ninserted = 0;
   massinsert = massinserted = 0.;
   nflowrate = massflowrate = 0.;
@@ -351,14 +361,30 @@ void FixInsert::sanity_check()
 
 void FixInsert::print_stats_start()
 {
-  if (me == 0 && print_stats_start_flag && ninsert_exists) {
-    if (screen)
-        fprintf(screen ,"INFO: Particle insertion: %f particles every %d steps - particle rate %f  (mass rate %f)\n   %d particles (mass %f) within %d steps\n",
-            ninsert_per,insert_every,nflowrate,massflowrate,ninsert,massinsert,final_ins_step-first_ins_step);
+  if (me == 0 && print_stats_start_flag) {
 
-    if (logfile)
-        fprintf(logfile,"INFO: Particle insertion: %f particles every %d steps - particle rate %f, (mass rate %f)\n   %d particles (mass %f) within %d steps\n",
-            ninsert_per,insert_every,nflowrate,massflowrate,ninsert,massinsert,final_ins_step-first_ins_step);
+    if(ninsert_exists)
+    {
+        if (screen)
+            fprintf(screen ,"INFO: Particle insertion: %f particles every %d steps - particle rate %f  (mass rate %f)\n"
+                            "      %d particles (mass %f) within %d steps\n",
+                ninsert_per,insert_every,nflowrate,massflowrate,ninsert,massinsert,final_ins_step-first_ins_step);
+
+        if (logfile)
+            fprintf(logfile,"INFO: Particle insertion: %f particles every %d steps - particle rate %f, (mass rate %f)\n"
+                            "      %d particles (mass %f) within %d steps\n",
+                ninsert_per,insert_every,nflowrate,massflowrate,ninsert,massinsert,final_ins_step-first_ins_step);
+    }
+    else
+    {
+        if (screen)
+            fprintf(screen ,"INFO: Particle insertion: %f particles every %d steps - particle rate %f  (mass rate %f)\n",
+                ninsert_per,insert_every,nflowrate,massflowrate);
+
+        if (logfile)
+            fprintf(logfile,"INFO: Particle insertion: %f particles every %d steps - particle rate %f, (mass rate %f)\n",
+                ninsert_per,insert_every,nflowrate,massflowrate);
+    }
   }
 }
 
@@ -682,13 +708,13 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
     //NP so have to normalize here
     if(me == 0)
     {
-        // remove fractions < 3%
+        // remove fractions < 1%
         // normalize fraction_local_all so sum across processors is 1
 
         fraction_local_all_sum = 0.;
         for(int iproc = 0; iproc < nprocs; iproc++)
         {
-            if(fraction_local_all[iproc] < 0.03)
+            if(fraction_local_all[iproc] < 0.01)
                 fraction_local_all[iproc] = 0.;
             fraction_local_all_sum += fraction_local_all[iproc];
         }
@@ -702,8 +728,8 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
             ninsert_this_local_all[iproc] = static_cast<int>(fraction_local_all[iproc]*static_cast<double>(ninsert_this));
             remainder[iproc] = fraction_local_all[iproc]*static_cast<double>(ninsert_this) - ninsert_this_local_all[iproc];
             rsum += remainder[iproc];
-            /*NL*/// fprintf(screen,"proc %d (fraction_local %f): ninsert_this_local %d, remainder %f \n",
-            /*NL*///                 iproc,fraction_local_all[iproc],ninsert_this_local_all[iproc],remainder[iproc]);
+            /*NL*/ //fprintf(screen,"proc %d (fraction_local %f): ninsert_this_local %d, remainder %f \n",
+            /*NL*/ //                iproc,fraction_local_all[iproc],ninsert_this_local_all[iproc],remainder[iproc]);
         }
 
         ngap = round(rsum);
@@ -727,7 +753,7 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
     MPI_Bcast(ninsert_this_local_all,nprocs, MPI_INT,0,world);
     ninsert_this_local = ninsert_this_local_all[me];
 
-    /*NL*/// fprintf(screen,"proc %d: fraction_local %f ninsert_this_local %d ninsert_this %d\n",me,fraction_local,ninsert_this_local,ninsert_this);
+    /*NL*/ //fprintf(screen,"proc %d: fraction_local %f ninsert_this_local %d ninsert_this %d\n",me,fraction_local,ninsert_this_local,ninsert_this);
 
     delete []fraction_local_all;
     delete []remainder;
@@ -835,4 +861,14 @@ void FixInsert::restart(char *buf)
   // in order to be able to continue pouring with increased number of particles
   // if insert was already finished in run to be restarted
   if(next_reneighbor_re != 0 && ninserted < ninsert) next_reneighbor = next_reneighbor_re;
+}
+
+/* ----------------------------------------------------------------------
+   output
+------------------------------------------------------------------------- */
+
+double FixInsert::compute_vector(int index)
+{
+    if(index == 0) return static_cast<double>(ninserted);
+    if(index == 1) return massinserted;
 }

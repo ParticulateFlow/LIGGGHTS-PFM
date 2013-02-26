@@ -42,7 +42,7 @@ class FixAdapt : public Fix {
   ~FixAdapt();
   int setmask();
   void post_create(); //NP modified C.K.
-  void pre_delete(); //NP modified C.K.
+  void pre_delete(bool unfixflag); //NP modified C.K.
   void init();
   void setup_pre_force(int);
   void pre_force(int);

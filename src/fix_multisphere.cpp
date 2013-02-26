@@ -934,7 +934,8 @@ int FixMultisphere::dof(int igroup)
 {
     int n = 0;
 
-    error->warning(FLERR,"Energy calculated for multisphere particles is currently not correct");
+    if(0 == comm->me)
+        error->warning(FLERR,"Energy calculated for multisphere particles is currently not correct");
     //error->all(FLERR,"For multisphere particles, please use compute ke and instead of the thermo keyword ke");
 
     return n;

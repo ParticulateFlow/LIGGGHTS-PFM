@@ -11,7 +11,7 @@ fix particletemplate/multisphere command :h3
 
 [Syntax:]
 
-fix ID group-ID particletemplate/multisphere seed nspheres nspheresvalue keyword values ntry ntryvalue spheres values_spheres ... :pre
+fix ID group-ID particletemplate/multisphere seed nspheres nspheresvalue keyword values ntry ntryvalue spheres values_spheres type mt :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 particletemplate/multisphere = style name of this fix command  :l
@@ -23,8 +23,12 @@ keyword, values are documented in "fix particletemplate/sphere"_fix_particletemp
 ntry = obligatory keyword :l
 ntryvalue: number of tries for Monte Carlo approach :l
 spheres = obligatory keyword :l
-option 1 for values_spheres = 'file' filename :l
-option 1 for values_spheres = {x1 y1 z1 r1 x2 y2 r2...} where x/y/z are sphere positions and r are the radii :l
+values_spheres = one out of the following options :l
+    option 1 = {file} {filename}
+    option 2 = {file} {filename} {scale} {scalefactor}
+    option 3 = {x1 y1 z1 r1 x2 y2 r2...} where x/y/z are sphere positions and r are the radii :pre
+type = obligatory keyword :l
+mt = multisphere type of the template :l
 
 :ule
 
@@ -39,24 +43,48 @@ This command is not available in LAMMPS.
 
 [Description:]
 
-Define a multisphere particle template that is used as input for a "fix_particledistribution_discrete"_fix_particledistribution_discrete.html command. 
-The particle parameters (positions, radii) are either defined via this command or via a text file. The format of this text file is
+Define a multisphere particle template that is used as input for a 
+"fix_particledistribution_discrete"_fix_particledistribution_discrete.html 
+command. The particle parameters (positions, radii) are either defined 
+manually as arguments to this command or via a text file, via the keyword
+{file}. The format of this text file is
 
 x1 y1 z1 r1
 x2 y2 z2 r2
 ... :pre
 
-and the number of lines in this file has to be equal to n_spheres as defined in this command. Comments can be made in this file via the '#' character.
+and the number of lines in this file has to be equal to n_spheres as 
+defined in this command. Comments can be made in this file via the '#' 
+character. Optionally, when a file is used for defining the multi-sphere 
+template, keyword {scale} can be used to define a {scalefactor} to scale 
+up or down the particle positions and radii. 
 
-After the spheres are read, a Monte Carlo procedure is used to assess everything that is needed for the motion integration: mass, center of mass, 
+After the spheres are read, a Monte Carlo procedure is used to assess 
+everything that is needed for the motion integration: mass, center of mass, 
 and the inertia tensor including its eigensystem.
 
-IMPORTANT NOTE: As opposed to the number-based distributions used by "fix_pour_legacy"_fix_pour_legacy.html, this fix uses the more common 
-distribution based on mass-% for the radius distribution (as does "fix_particledistribution_discrete"_fix_particledistribution_discrete.html).
+The multisphere type or shape type as defined via the {type} keyword must 
+be unique integer given to each fix particletemplate/multisphere 
+command by the user (starting with 1), the list of all multisphere types
+in the simulation must be consecutive. At the moment, the multisphere type
+is not used, but will be used to implement orientation-dependant drag
+for CFD-DEM simulations in the future.
+
+IMPORTANT NOTE: As opposed to the number-based distributions used by 
+"fix_pour_legacy"_fix_pour_legacy.html, this fix uses the more common 
+distribution based on mass-% for the radius distribution (as does 
+"fix_particledistribution_discrete"_fix_particledistribution_discrete.html).
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
-Information about the random state in this fix is written to "binary restart files"_restart.html so you can restart a simulation with the same particles being chosen for insertion. None of the "fix_modify"_fix_modify.html options are relevant to this fix. No global scalar or vector or per-atom quantities are stored by this fix for access by various "output commands"_Section_howto.html#4_15. No parameter of this fix can be used with the {start}/{stop} keywords of the "run"_run.html command. This fix is not invoked during "energy minimization"_minimize.html. 
+Information about the random state in this fix is written to 
+"binary restart files"_restart.html so you can restart a simulation with 
+the same particles being chosen for insertion. None of the 
+"fix_modify"_fix_modify.html options are relevant to this fix. No global 
+scalar or vector or per-atom quantities are stored by this fix for access 
+by various "output commands"_Section_howto.html#4_15. No parameter of this 
+fix can be used with the {start}/{stop} keywords of the "run"_run.html 
+command. This fix is not invoked during "energy minimization"_minimize.html. 
 
 [Restrictions:] none
 

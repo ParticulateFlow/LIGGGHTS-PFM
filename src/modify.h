@@ -103,6 +103,7 @@ class Modify : protected Pointers {
   class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char * );//NP modified C.K.
   class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char *,bool );//NP modified C.K.
   class Fix* find_fix_id(const char *id);//NP modified C.K.
+  class Fix* find_fix_id_style(const char *id,const char *style);//NP modified C.K.
   class Fix* find_fix_style(const char *style, int rank);//NP modified C.K.
   class Fix* find_fix_style_strict(const char *style, int rank);//NP modified C.K.
   int n_fixes_style(const char *style); //NP modified C.K.
@@ -114,7 +115,7 @@ class Modify : protected Pointers {
 
   void add_compute(int, char **, char *suffix = NULL);
   void modify_compute(int, char **);
-  void delete_compute(const char *);
+  void delete_compute(const char *,bool uncomputeflag = false); //NP modified C.K.
   int find_compute(const char *);
   void clearstep_compute();
   void addstep_compute(bigint);

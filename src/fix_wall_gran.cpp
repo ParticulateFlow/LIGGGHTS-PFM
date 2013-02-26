@@ -54,9 +54,9 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace LAMMPS_NS::PRIMITIVE_WALL_DEFINITIONS;
 
-/*NL*/ #define DEBUGMODE_LMP_FIX_WALL_GRAN false //(update->ntimestep>15400 && comm->me ==1)
-/*NL*/ #define DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID 1
-/*NL*/ #define DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID 560
+/*NL*/ #define DEBUGMODE_LMP_FIX_WALL_GRAN false //(20950 < update->ntimestep) //(comm->me ==1)
+/*NL*/ #define DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID 774
+/*NL*/ #define DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID 206
 
 /* ---------------------------------------------------------------------- */
 
@@ -294,7 +294,7 @@ void FixWallGran::post_create()
    // also create contact tracker
    for(int i=0;i<n_FixMesh_;i++)
    {
-      FixMesh_list_[i]->createNeighList(igroup);
+      FixMesh_list_[i]->createWallNeighList(igroup);
       if(dnum()>0)FixMesh_list_[i]->createContactHistory(dnum());
    }
 }
@@ -303,7 +303,8 @@ void FixWallGran::post_create()
 
 void FixWallGran::pre_delete(bool unfixflag)
 {
-    if(store_force_) modify->delete_fix(fix_wallforce_->id);
+    if(unfixflag && store_force_)
+        modify->delete_fix(fix_wallforce_->id);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -572,10 +573,11 @@ void FixWallGran::post_force_mesh(int vflag)
             int idTri = mesh->id(iTri);
 
             /*NL*/// if(!radius_) error->one(FLERR,"need to revise this for SPH");
-            deltan = mesh->resolveTriSphereContactBary(iTri,radius_ ? radius_[iPart]:r0_ ,x_[iPart],delta,bary);
+            deltan = mesh->resolveTriSphereContactBary(iPart,iTri,radius_ ? radius_[iPart]:r0_ ,x_[iPart],delta,bary);
 
-            /*NL*/// if(atom->tag[iPart] == 624)// && mesh->id(iTri) == 4942)
-            /*NL*///   fprintf(screen,"particle 624 step %d moving mesh %d Tri %d iCont %d numNeigh %d 2, deltan %f\n",update->ntimestep,iMesh,mesh->id(iTri),iCont,numNeigh[iTri],deltan);
+            /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
+            /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
+            /*NL*/  fprintf(screen,"step %"BIGINT_FORMAT": handling (moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             if(deltan > 0.)
             {
@@ -626,14 +628,14 @@ void FixWallGran::post_force_mesh(int vflag)
             if(iPart >= nlocal) continue;
 
             int idTri = mesh->id(iTri);
-            deltan = mesh->resolveTriSphereContact(iTri,radius_ ? radius_[iPart]:r0_,x_[iPart],delta);
+            deltan = mesh->resolveTriSphereContact(iPart,iTri,radius_ ? radius_[iPart]:r0_,x_[iPart],delta);
 
             /*NL*/// if(atom->tag[iPart] == 624)// && mesh->id(iTri) == 4942)
             /*NL*///   fprintf(screen,"particle 624 step %d nonmoving mesh %d Tri %d iCont %d numNeigh %d 2, deltan %f\n",update->ntimestep,iMesh,mesh->id(iTri),iCont,numNeigh[iTri],deltan);
 
-            /*NL*/// if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
-            /*NL*///    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-            /*NL*///  fprintf(screen,"step %d: handling tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
+            /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
+            /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
+            /*NL*/  fprintf(screen,"step %"BIGINT_FORMAT": handling (non-moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             //NP hack for SPH
             if(deltan > 0.)

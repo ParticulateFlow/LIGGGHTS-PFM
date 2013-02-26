@@ -387,7 +387,7 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
 
         if (rsq <= cutsq) {
           neighptr[n] = j;
-
+          /*NL*/ //fprintf(screen,"found %d %d\n",i,j);
           if (fix_history) {
             if (rsq < radsum*radsum) {
               for (m = 0; m < npartner[i]; m++)

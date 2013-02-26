@@ -402,11 +402,13 @@ void Multisphere::check_lost_atoms(int *body, double *atom_delflag)
     for(i = 0; i < nall; i++)
     {
         body_tag = body[i];
-        /*NL*///if((body_tag==39||body_tag==40)&&update->ntimestep==39941) fprintf(screen,"proc %d step %d particle id %d, local %d (nlocal %d nghost %d) body_tag %d map(body_tag) %d\n",
-        /*NL*///                comm->me,update->ntimestep,atom->tag[i],i,atom->nlocal,atom->nghost,body_tag,map(body_tag));
+        /*NL*///fprintf(screen,"proc %d step %d particle id %d, local %d (nlocal %d nghost %d) body_tag %d map(body_tag) %d is_periodic_ghost_of_owned %d\n",
+        /*NL*///                comm->me,update->ntimestep,atom->tag[i],i,atom->nlocal,atom->nghost,body_tag,map(body_tag),domain->is_periodic_ghost_of_owned(i));
 
         //NP if particle belongs to a rigid body and the body is owned on this proc
-        if(body_tag >= 0 && map(body_tag) >= 0)
+        //NP specific case if ghost in periodic system with procgrid[idim] == 1
+        //NP have to exclude double counts for this case
+        if(body_tag >= 0 && map(body_tag) >= 0 && 0 == domain->is_periodic_ghost_of_owned(i))
             nrigid_current[map(body_tag)]++;
     }
 
@@ -477,7 +479,34 @@ void Multisphere::check_lost_atoms(int *body, double *atom_delflag)
 
 void *Multisphere::extract(char *name, int &len1, int &len2)
 {
-    error->one(FLERR,"TODO");
+    // scalars
+
+    len1 = len2 = 1;
+
+    if (strcmp(name,"nbody") == 0) return (void *) &nbody_;
+    if (strcmp(name,"nbody_all") == 0) return (void *) &nbody_all_;
+
+    // per-body properties
+
+    len1 = atom->tag_max();
+    ContainerBase *cb = customValues_.getElementPropertyBase(name);
+
+    if(NULL == cb)
+    {
+        len1 = len2 = -1;
+        return NULL;
+        /*
+        fprintf(screen,"ERROR: Property %s not found, which is required for multi-sphere\n",name);
+        error->all(FLERR,"Property required for multi-sphere not found");
+        */
+    }
+
+    len1 = cb->lenVec();
+    if(cb->nVec() != 1)
+       error->all(FLERR,"Internal error");
+    return cb->begin_slow_dirty();
+}
+
 
 /*
   len1 = len2 = 1;
@@ -507,6 +536,7 @@ void *Multisphere::extract(char *name, int &len1, int &len2)
   if (strcmp(name,"ez_space") == 0) return (void *) ez_space;
 
   len1 = len2 = -1;
-*/
+
   return NULL;
 }
+*/

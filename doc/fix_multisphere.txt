@@ -75,6 +75,10 @@ This fix is not invoked during "energy minimization"_minimize.html.
 [Restrictions:]
 
 Only one fix multisphere at a time is allowed. 
+Currently, restarting a simulation using fix multisphere is not 
+possible.
+Currently, using fix multisphere requires "newton"_newton.html = off and 
+"dimension"_dimension.html = 3.
 
 [Related commands:]
 
