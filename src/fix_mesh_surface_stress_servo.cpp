@@ -323,6 +323,7 @@ void FixMeshSurfaceStressServo::setup_pre_force(int vflag)
 
     // set xcm_orig_
     xcm_orig_.set(0,xcm_(0));
+    totalPhi_ = 0;
 }
 
 /* ---------------------------------------------------------------------- */
