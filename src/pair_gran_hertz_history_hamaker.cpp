@@ -138,7 +138,7 @@ void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag
 
       if (rsq >= radsum*radsum) {
 
-  // unset non-touching neighbors
+        // unset non-touching neighbors
 
         touch[jj] = 0;
         shear = &allshear[dnum_pairgran*jj];
@@ -146,36 +146,35 @@ void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag
         shear[1] = 0.0;
         shear[2] = 0.0;
 
-        if (cohesionflag) { //(cohesionflag && rsq < (radsum+hMaxEff[itype][jtype])*(radsum+hMaxEff[itype][jtype])) {
-          r = sqrt(rsq);
-          rinv = 1.0/r;
+        r = sqrt(rsq);
+        rinv = 1.0/r;
 
-          Fn_coh = addCohesionForce(i,j,r);
-          ccel = - Fn_coh*rinv;
+        Fn_coh = addCohesionForce(i,j,r);
+        ccel = - Fn_coh*rinv;
 
-          // forces & torques
+        // forces & torques
 
-          fx = delx*ccel;
-          fy = dely*ccel;
-          fz = delz*ccel;
+        fx = delx*ccel;
+        fy = dely*ccel;
+        fz = delz*ccel;
 
-          if(computeflag)
-          {
-              f[i][0] += fx;
-              f[i][1] += fy;
-              f[i][2] += fz;
-          }
-
-          if (j < nlocal && computeflag) {
-            f[j][0] -= fx;
-            f[j][1] -= fy;
-            f[j][2] -= fz;
-          }
-          // TODO: also for cohesion?!; NULL?!
-          if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,0.0,0.0,0.0,NULL);
-
-          if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
+        if(computeflag)
+        {
+          f[i][0] += fx;
+          f[i][1] += fy;
+          f[i][2] += fz;
         }
+
+        if (j < nlocal && computeflag) {
+          f[j][0] -= fx;
+          f[j][1] -= fy;
+          f[j][2] -= fz;
+        }
+        // TODO: also for cohesion?!; NULL?!
+        if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,0.0,0.0,0.0,NULL);
+
+        if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
+
 
       } else {
         r = sqrt(rsq);
@@ -224,8 +223,8 @@ void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag
         }
         if (fix_rigid)
         {
-           if(body[i] >= 0) mi = masstotal[body[i]];
-           if(body[j] >= 0) mj = masstotal[body[j]];
+          if(body[i] >= 0) mi = masstotal[body[i]];
+          if(body[j] >= 0) mj = masstotal[body[j]];
         }
 
         meff = mi*mj/(mi+mj);
@@ -237,11 +236,8 @@ void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag
         damp = gamman*vnnr*rsqinv;
         ccel = kn*(radsum-r)*rinv - damp;
 
-        if (cohesionflag) {
-            // double tmp_r = 0.0; // TODO: Is there no better way?
-            Fn_coh = addCohesionForce(i,j,0.0); // r = 0.0, because particles are in contact
-            ccel -= Fn_coh*rinv;
-        }
+        Fn_coh = addCohesionForce(i,j,0.0); // r = 0.0, because particles are in contact
+        ccel -= Fn_coh*rinv;
 
         // relative velocities
 
@@ -259,17 +255,17 @@ void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag
 
         if (shearupdate && computeflag)
         {
-            shear[0] += vtr1*dt;
-            shear[1] += vtr2*dt;
-            shear[2] += vtr3*dt;
+          shear[0] += vtr1*dt;
+          shear[1] += vtr2*dt;
+          shear[2] += vtr3*dt;
 
-            // rotate shear displacements
+          // rotate shear displacements
 
-            rsht = shear[0]*delx + shear[1]*dely + shear[2]*delz;
-            rsht *= rsqinv;
-            shear[0] -= rsht*delx;
-            shear[1] -= rsht*dely;
-            shear[2] -= rsht*delz;
+          rsht = shear[0]*delx + shear[1]*dely + shear[2]*delz;
+          rsht *= rsqinv;
+          shear[0] -= rsht*delx;
+          shear[1] -= rsht*dely;
+          shear[2] -= rsht*delz;
         }
 
         shrmag = sqrt(shear[0]*shear[0] + shear[1]*shear[1] +  shear[2]*shear[2]);
@@ -281,27 +277,26 @@ void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag
         fs3 = - (kt*shear[2]);
 
         // rescale frictional displacements and forces if needed
-        // TODO: cohesion.. is done?
         fs = sqrt(fs1*fs1 + fs2*fs2 + fs3*fs3);
         fn = xmu * fabs(ccel*r);
 
         // energy loss from sliding or damping
         if (fs > fn) {
-            if (shrmag != 0.0) {
-                fs1 *= fn/fs;
-                fs2 *= fn/fs;
-                fs3 *= fn/fs;
-                shear[0] = -fs1/kt;
-                shear[1] = -fs2/kt;
-                shear[2] = -fs3/kt;
-            }
-            else fs1 = fs2 = fs3 = 0.0;
+          if (shrmag != 0.0) {
+            fs1 *= fn/fs;
+            fs2 *= fn/fs;
+            fs3 *= fn/fs;
+            shear[0] = -fs1/kt;
+            shear[1] = -fs2/kt;
+            shear[2] = -fs3/kt;
+          }
+          else fs1 = fs2 = fs3 = 0.0;
         }
         else
         {
-            fs1 -= (gammat*vtr1);
-            fs2 -= (gammat*vtr2);
-            fs3 -= (gammat*vtr3);
+          fs1 -= (gammat*vtr1);
+          fs2 -= (gammat*vtr2);
+          fs3 -= (gammat*vtr3);
         }
 
         // forces & torques
@@ -318,32 +313,32 @@ void PairGranHertzHistoryHamaker::compute_force(int eflag, int vflag,int addflag
         vectorZeroize3D(r_torque);
         if(rollingflag)
         {
-            vectorSubtract3D(omega[i],omega[j],wr_roll);
-            wr_rollmag = vectorMag3D(wr_roll);
+          vectorSubtract3D(omega[i],omega[j],wr_roll);
+          wr_rollmag = vectorMag3D(wr_roll);
 
-            if(wr_rollmag > 0.)
-            {
-                // calculate torque
-                reff=radi*radj/(radi+radj);
-                vectorScalarMult3D(wr_roll,rmu*kn*deltan*reff/wr_rollmag,r_torque);
+          if(wr_rollmag > 0.)
+          {
+            // calculate torque
+            reff=radi*radj/(radi+radj);
+            vectorScalarMult3D(wr_roll,rmu*kn*deltan*reff/wr_rollmag,r_torque);
 
-                // remove normal (torsion) part of torque
-                double rtorque_dot_delta = r_torque[0]*delx + r_torque[1]*dely + r_torque[2]*delz;
-                r_torque_n[0] = delx * rtorque_dot_delta * rsqinv;
-                r_torque_n[1] = dely * rtorque_dot_delta * rsqinv;
-                r_torque_n[2] = delz * rtorque_dot_delta * rsqinv;
-                vectorSubtract3D(r_torque,r_torque_n,r_torque);
-            }
+            // remove normal (torsion) part of torque
+            double rtorque_dot_delta = r_torque[0]*delx + r_torque[1]*dely + r_torque[2]*delz;
+            r_torque_n[0] = delx * rtorque_dot_delta * rsqinv;
+            r_torque_n[1] = dely * rtorque_dot_delta * rsqinv;
+            r_torque_n[2] = delz * rtorque_dot_delta * rsqinv;
+            vectorSubtract3D(r_torque,r_torque_n,r_torque);
+          }
         }
 
         if(computeflag)
         {
-            f[i][0] += fx;
-            f[i][1] += fy;
-            f[i][2] += fz;
-            torque[i][0] -= cri*tor1 + r_torque[0];
-            torque[i][1] -= cri*tor2 + r_torque[1];
-            torque[i][2] -= cri*tor3 + r_torque[2];
+          f[i][0] += fx;
+          f[i][1] += fy;
+          f[i][2] += fz;
+          torque[i][0] -= cri*tor1 + r_torque[0];
+          torque[i][1] -= cri*tor2 + r_torque[1];
+          torque[i][2] -= cri*tor3 + r_torque[2];
         }
 
         if (j < nlocal && computeflag) {
@@ -393,35 +388,25 @@ inline double PairGranHertzHistoryHamaker::addCohesionForce(int ip, int jp,doubl
 void PairGranHertzHistoryHamaker::settings(int narg, char **arg)
 {
 
-    PairGranHertzHistory::settings(narg, arg);
+	PairGranHertzHistory::settings(narg, arg);
 
-    iarg_ = 0;
+	iarg_ = 0;
 
-    // set defaults
-    cohesionflag = 0;
+	// set defaults
+	cohesionflag = 1;
 
-    // parse args
+	// parse args
 
-    bool hasargs = true;
-    while(iarg_ < narg && hasargs)
-    {
-        hasargs = false;
-        if (strcmp(arg[iarg_],"cohesion") == 0) {
-            iarg_++;
-            if(strcmp(arg[iarg_],"sjkr") == 0)
-                cohesionflag = 1;
-            else if(strcmp(arg[iarg_],"off") == 0)
-                cohesionflag = 0;
-            else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'sjkr' or 'off' after keyword 'cohesion'");
-            iarg_++;
-            hasargs = true;
-        } else if (force->pair_match("gran/hooke/history",1) || force->pair_match("gran/hertz/history",1))
-            error->all(FLERR,"Illegal pair_style gran command, illegal keyword");
-    }
+	bool hasargs = true;
+	while(iarg_ < narg && hasargs)
+	{
+		hasargs = false;
+		if (force->pair_match("gran/hooke/history",1) || force->pair_match("gran/hertz/history",1))
+			error->all(FLERR,"Illegal pair_style gran command, illegal keyword");
+	}
 
-    if(cohesionflag && domain->dimension!=3)
-        error->all(FLERR,"Cohesion model valid for 3d simulations only");
+	if(cohesionflag && domain->dimension!=3)
+		error->all(FLERR,"Cohesion model valid for 3d simulations only");
 
 }
 
@@ -437,41 +422,33 @@ void PairGranHertzHistoryHamaker::init_granular()
 
   PairGranHertzHistory::init_granular();
 
-  // XXX: test output
-  //if(screen) fprintf(screen,"TEST: skin = %f and maxhMaxEff = %f\n",skin,maxhMaxEff);
-
   allocate_properties(max_type);
 
   //Get pointer to the fixes that have the material properties
 
-  if(cohesionflag) {
-    aHamaker_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("hamakerConstant","property/global","peratomtypepair",max_type,max_type,force->pair_style));
-    hCut_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("minParticleDist","property/global","peratomtypepair",max_type,max_type,force->pair_style));
-  }
+  aHamaker_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("hamakerConstant","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+  hCut_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("minParticleDist","property/global","peratomtypepair",max_type,max_type,force->pair_style));
 
   //pre-calculate parameters for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
   {
-      for(int j=1;j<max_type+1;j++)
-      {
+  	for(int j=1;j<max_type+1;j++)
+  	{
 
-          if(cohesionflag) {
-            aHamakerEff[i][j] = aHamaker_->compute_array(i-1,j-1);
-            hCutEff[i][j] = hCut_->compute_array(i-1,j-1);
-            hMaxEff[i][j] = hCutEff[i][j]*100; // force f(hMax)/f(hCut) = 0.0001
+  		aHamakerEff[i][j] = aHamaker_->compute_array(i-1,j-1);
+  		hCutEff[i][j] = hCut_->compute_array(i-1,j-1);
+  		hMaxEff[i][j] = hCutEff[i][j]*100; // force f(hMax)/f(hCut) = 0.0001
 
-            maxhMaxEff = MAX(maxhMaxEff,hMaxEff[i][j]); // get maximum hMaxEff for skin check
-          }
+  		maxhMaxEff = MAX(maxhMaxEff,hMaxEff[i][j]); // get maximum hMaxEff for skin check
 
-      }
+
+  	}
   }
 
   // check skin
-  if(cohesionflag) {
-    if(skin < maxhMaxEff) {
-      if(screen) fprintf(screen,"Maximum cutoff distance (~ minParticleDist) = %f. Skin = %f\n",maxhMaxEff,skin);
-      error->all(FLERR,"Skin is too small for Hamaker model.\n");
-    }
+  if(skin < maxhMaxEff) {
+  	if(screen) fprintf(screen,"Maximum cutoff distance (~ minParticleDist) = %f. Skin = %f\n",maxhMaxEff,skin);
+  	error->all(FLERR,"Skin is too small for Hamaker model.\n");
   }
 }
 
@@ -481,12 +458,12 @@ void PairGranHertzHistoryHamaker::init_granular()
 
 void PairGranHertzHistoryHamaker::allocate_properties(int size)
 {
-    memory->destroy(aHamakerEff);
-    memory->destroy(hCutEff);
-    memory->destroy(hMaxEff);
-    memory->create(aHamakerEff,size+1,size+1,"aHamakerEff");
-    memory->create(hCutEff,size+1,size+1,"hCutEff");
-    memory->create(hMaxEff,size+1,size+1,"hMaxEff");
+	memory->destroy(aHamakerEff);
+	memory->destroy(hCutEff);
+	memory->destroy(hMaxEff);
+	memory->create(aHamakerEff,size+1,size+1,"aHamakerEff");
+	memory->create(hCutEff,size+1,size+1,"hCutEff");
+	memory->create(hMaxEff,size+1,size+1,"hMaxEff");
 }
 
 /* ---------------------------------------------------------------------- */
