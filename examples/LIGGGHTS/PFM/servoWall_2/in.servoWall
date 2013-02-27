@@ -154,3 +154,7 @@ run     ${nStepsSettle}
 #run
 run     ${nStepsRun}
 
+fix_modify cad1 target_val -10
+
+run     ${nStepsRun}
+

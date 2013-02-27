@@ -585,6 +585,8 @@ int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
       set_point_inv_ = 1./set_point_;
       sp_style_ = CONSTANT;
     }
+
+    return 2;
   }
 
   return 0;
