@@ -51,7 +51,7 @@ This fix implements the functionality of "fix mesh/surface/stress"_fix_mesh_surf
 it additionally assumes the mesh being a servo wall that compacts a particle packing until either a 
 total force (for {ctrlPV} = force)  or a total torque (for {ctrlPV} = torque) is acting on the mesh.
 The target value is defined via keyword {target_val}. The servo can act in any dimension 
-(as specified by the {dim} keyword), but only in one dimension at a time. The user has to specify 
+(as specified by the {dim} keyword), but only in one dimension at a time. A negative value for {target_val} leads to a wall motion towards negative {dim}-direction and vice versa. The user has to specify 
 the center of mass (keyword {com}) and the maximum velocity allowed for the servo wall by keyword {vel_max}.
 Note that {vel_max} < "skin"_neighbor.html /(2* "timestep"_timestep.html ) is required.
 
