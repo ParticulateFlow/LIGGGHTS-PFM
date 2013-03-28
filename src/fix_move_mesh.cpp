@@ -177,6 +177,7 @@ void FixMoveMesh::initial_integrate(int dummy)
     //NP reset velocity if I am first fix move/mesh on this mesh
     //NP first fix will always be first as it cant be deleted without
     //NP deleting all other fixes
+
     if(move_->isFirst())
     {
         v = mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v");
@@ -185,7 +186,7 @@ void FixMoveMesh::initial_integrate(int dummy)
 
     // integration
     //NP need to pass time since set up b/c node is copied to node_orig_ upon setup
-    move_->initial_integrate(time_since_setup_,dt);
+    move_->initial_integrate(time_,time_since_setup_,dt);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -196,7 +197,7 @@ void FixMoveMesh::final_integrate()
 
     // useful only if accelerations are known
     //NP need to pass time since set up b/c node is copied to node_orig_ upon setup
-    move_->final_integrate(time_since_setup_,dt);
+    move_->final_integrate(time_,time_since_setup_,dt);
 }
 
 /* ----------------------------------------------------------------------
@@ -208,6 +209,7 @@ void FixMoveMesh::write_restart(FILE *fp)
   int n = 0;
   double list[1 + move_->n_restart()];
   list[n++] = time_;
+  /*NL*///fprintf(screen,"time %f\n",time_);
 
   move_->write_restart(&(list[n]));
   n += move_->n_restart();
@@ -228,8 +230,10 @@ void FixMoveMesh::restart(char *buf)
   int n = 0;
   double *list = (double *) buf;
 
-  time_ = static_cast<int> (list[n++]);
+  time_ = static_cast<double> (list[n++]);
   move_->read_restart(&(list[n]));
+
+  /*NL*///fprintf(screen,"time %f\n",time_);
 }
 
 /* ----------------------------------------------------------------------

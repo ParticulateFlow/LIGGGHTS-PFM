@@ -206,6 +206,8 @@ void FixMeshSurfaceStress::pre_force(int vflag)
         vectorZeroize3D(f_total_);
         vectorZeroize3D(torque_total_);
     }
+
+    /*NL*/ //fprintf(screen,"force on tri0: %f %f %f\n",f(0)[0],f(0)[2],f(0)[2]);
 }
 
 /* ---------------------------------------------------------------------- */

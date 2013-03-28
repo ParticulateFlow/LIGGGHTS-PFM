@@ -627,8 +627,8 @@ void PairGranHookeHistory::init_granular()
               if(vi < 0. || vi > 0.5)
                 error->all(FLERR,"0 <= poissonsRatio <= 0.5 required");
 
-              if(cor <= 0. || cor > 1)
-                error->all(FLERR,"0 < coefficientRestitution <= 1 required");
+              if(cor <= 0.05 || cor > 1)
+                error->all(FLERR,"0.05 < coefficientRestitution <= 1 required");
           }
 
 

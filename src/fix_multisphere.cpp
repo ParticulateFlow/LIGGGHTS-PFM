@@ -100,6 +100,10 @@ FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
   // fix handles properties that need to be initialized at particle creation
   create_attribute = 1;
 
+  //NP this fix can force reneighboring
+  force_reneighbor = 1;
+  next_reneighbor = -1;
+
   //NP modified C.K.
   // is now local data, not global
   local_flag = 1;
@@ -833,6 +837,9 @@ void FixMultisphere::pre_exchange()
 {
     AtomVec *avec = atom->avec;
 
+    // reset last trigger for re-neigh
+    next_reneighbor = -1;
+
     //NP have to do this here, b/c deletion at other place in code would
     //NP mess up paralleliztion
 
@@ -843,9 +850,10 @@ void FixMultisphere::pre_exchange()
     {
         //NP important to use round() here
         //NP never check if(double_variable) !!!!
+        /*NL*/ //fprintf(screen,"delfag particle %d: %f\n",atom->tag[i],delflag[i]);
         if(round(delflag[i]) == 1)
         {
-            /*NL*///if(atom->tag[i]==1909)fprintf(screen,"step %d proc %d deleting particle tag %d,delflag %f\n",update->ntimestep,comm->me,atom->tag[i],delflag[i]);
+            /*NL*/// fprintf(screen,"step %d proc %d deleting particle tag %d,delflag %f\n",update->ntimestep,comm->me,atom->tag[i],delflag[i]);
             avec->copy(atom->nlocal-1,i,1);
             atom->nlocal--;
         }
@@ -907,9 +915,12 @@ void FixMultisphere::pre_neighbor()
 
     double *delflag = fix_delflag_->vector_atom;
 
-    // re-set deletion flag
+    // set deletion flag
+    // if any deleted atoms, do re-neigh in 100 steps at latest to remove
+    // remainder particles
     vectorZeroizeN(delflag,atom->nlocal+atom->nghost);
-    multisphere_.check_lost_atoms(body_,delflag);
+    if(multisphere_.check_lost_atoms(body_,delflag))
+        next_reneighbor = update->ntimestep + 100;
 
     //NP need to send deletion flag from ghosts to owners
     fix_delflag_->do_reverse_comm();
@@ -972,11 +983,11 @@ void FixMultisphere::grow_arrays(int nmax)
 /* ----------------------------------------------------------------------
    extract values
 ------------------------------------------------------------------------- */
-
+/*
 void * FixMultisphere::extract(char *name, int &len1, int &len2)
 {
     return multisphere_.extract(name,len1,len2);
-}
+}*/
 
 /* ----------------------------------------------------------------------
    return attributes of a rigid body
@@ -987,26 +998,5 @@ void * FixMultisphere::extract(char *name, int &len1, int &len2)
 double** FixMultisphere::get_dump_ref(int &nb, int &nprop, char* prop)
 {
     error->one(FLERR,"TODO");
-    /*
-  nb = nbody;
-  nprop = 3;
-
-  if      (strcmp(prop,"xcm") == 0) return xcm;
-  else if (strcmp(prop,"vcm") == 0) return vcm;
-  else if (strcmp(prop,"omega") == 0) return omega;
-  else if (strcmp(prop,"fcm") == 0) return fcm;
-  else if (strcmp(prop,"tcm") == 0) return torque;
-  else if (strcmp(prop,"dragforce_cm") == 0) return dragforce_cm;
-  else if (strcmp(prop,"quat") == 0)
-  {
-      nprop = 4;
-      return quat;
-  }
-  else if (strcmp(prop,"mass") == 0)
-  {
-      nprop = 1;
-      return &masstotal;
-  }
-  else error->one(FLERR,"Attempt to dump unknown property from fix rigid...");*/
   return NULL;
 }

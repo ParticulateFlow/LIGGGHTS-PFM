@@ -520,6 +520,7 @@ each style or click on the style itself for a full description:
 "rdf/gran"_compute_rdf.html,
 "reduce"_compute_reduce.html,
 "reduce/region"_compute_reduce.html,
+"rigid"_compute_rigid.html,
 "slice"_compute_slice.html,
 "stress/atom"_compute_stress_atom.html,
 "temp"_compute_temp.html,
@@ -727,6 +728,7 @@ of each style or click on the style itself for a full description:
 "wall/piston"_fix_wall_piston.html,
 "wall/reflect"_fix_wall_reflect.html,
 "wall/region"_fix_wall_region.html,
+"wall/region/sph"_fix_wall_region_sph.html,
 "wall/srd"_fix_wall_srd.html :tb(c=4,ea=c)
 
 These are accelerated fix styles, which can be used if LAMMPS is

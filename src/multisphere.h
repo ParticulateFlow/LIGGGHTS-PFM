@@ -53,7 +53,7 @@ namespace LAMMPS_NS {
       void id_extend_body_extend(int *body);
 
       void calc_nbody_all();
-      void check_lost_atoms(int *body, double *atom_delflag);
+      bool check_lost_atoms(int *body, double *atom_delflag);
       int calc_n_steps(int iatom,int body,double *p_ref,double *normalvec,double *v_normal);
 
       double max_r_bound();
@@ -61,6 +61,9 @@ namespace LAMMPS_NS {
       void reset_forces(bool extflag);
 
       void* extract(char *name, int &, int &);
+
+      double *extract_double_scalar(char *name);
+      double **extract_double_vector(char *name);
 
       // inline access functions
 
@@ -78,6 +81,9 @@ namespace LAMMPS_NS {
 
       inline int tag(int i)
       { return id_(i); }
+
+      inline bool has_tag(int _tag)
+      { return mapArray_[_tag] == -1 ? false : true;}
 
       inline void xcm(double *x_cm,int i)
       { vectorCopy3D(xcm_(i),x_cm); }
@@ -104,6 +110,9 @@ namespace LAMMPS_NS {
 
       inline void set_v_body(int ibody,double *vel)
       { vcm_.set(ibody,vel); }
+
+      inline class CustomValueTracker& prop()
+      { return customValues_; }
 
     protected:
 

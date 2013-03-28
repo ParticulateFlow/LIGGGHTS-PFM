@@ -43,8 +43,6 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using MODIFIED_ANDREW_AUX::Circle;
-using MODIFIED_ANDREW_AUX::Line;
-using MODIFIED_ANDREW_AUX::Point;
 
 #define EPSILON 1.0e-7
 
@@ -82,7 +80,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   kd_(       0.),
   int_flag_( true),
   nodes_(    mesh()->nodePtr()),
-  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_none","frame_invariant","restart_no",1)),
+  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_exchange_borders","frame_invariant","restart_no",1)),
   mod_andrew_(new ModifiedAndrew(lmp))
 {
     if(!trackStress())
@@ -134,14 +132,14 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'target_val'");
           iarg_++;
           if (strstr(arg[iarg_],"v_") == arg[iarg_]) {
-            int n = strlen(&arg[iarg_][2]) + 1;
-            sp_str_ = new char[n];
-            strcpy(sp_str_,&arg[iarg_][2]);
+        	  int n = strlen(&arg[iarg_][2]) + 1;
+        	  sp_str_ = new char[n];
+        	  strcpy(sp_str_,&arg[iarg_][2]);
           } else {
-            set_point_ = -force->numeric(arg[iarg_]); // the resultant force/torque/shear acts in opposite direction --> negative value
-            if (set_point_ == 0.) error->fix_error(FLERR,this,"'target_val' (desired force/torque) has to be != 0.0");
-            set_point_inv_ = 1./set_point_;
-            sp_style_ = CONSTANT;
+    				set_point_ = -force->numeric(arg[iarg_]); // the resultant force/torque/shear acts in opposite direction --> negative value
+    				if (set_point_ == 0.) error->fix_error(FLERR,this,"'target_val' (desired force/torque) has to be != 0.0");
+    				set_point_inv_ = 1./set_point_;
+        	  sp_style_ = CONSTANT;
           }
           iarg_++;
           hasargs = true;
@@ -549,11 +547,11 @@ int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
     if (narg < 2) error->all(FLERR,"Illegal fix_modify command");
 
     if (strcmp(arg[1],"start") == 0) {
-      int_flag_ = true;
+    	int_flag_ = true;
     } else if (strcmp(arg[1],"stop") == 0) {
-      int_flag_ = false;
+    	int_flag_ = false;
     } else
-      error->all(FLERR,"Illegal fix_modify command");
+    	error->all(FLERR,"Illegal fix_modify command");
 
     return 2;
 

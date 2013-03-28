@@ -64,7 +64,7 @@ MeshMoverLinear::~MeshMoverLinear()
 
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverLinear::initial_integrate(double dT,double dt)
+void MeshMoverLinear::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double dX[3],dx[3];
 
@@ -74,7 +74,7 @@ void MeshMoverLinear::initial_integrate(double dT,double dt)
     double ***v_node = get_v();
 
     // calculate total and incremental displacement
-    vectorScalarMult3D(vel_,dT,dX);
+    vectorScalarMult3D(vel_,dTSetup,dX);
     vectorScalarMult3D(vel_,dt,dx);
 
     // apply move
@@ -168,7 +168,7 @@ void MeshMoverLinearVariable::setup()
 
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverLinearVariable::initial_integrate(double dT,double dt)
+void MeshMoverLinearVariable::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double dx[3];
 
@@ -228,11 +228,16 @@ MeshMoverWiggle::~MeshMoverWiggle()
 
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverWiggle::initial_integrate(double dT,double dt)
+void MeshMoverWiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
+
     double dX[3],dx[3],vNode[3];
-    double sine = sin(omega_ * dT);
-    double cosine = cos(omega_ * dT);
+    double sine =   sin(omega_ * dTAbs) - sin(omega_ * (dTAbs-dTSetup));
+    double cosine = cos(omega_ * dTAbs) - cos(omega_ * (dTAbs-dTSetup));
+
+    /*NL*///if(15001 == update->ntimestep) {
+    /*NL*///  fprintf(screen,"dTAbs %f dTSetup %f sine %f cosine %f omega_ %f\n",dTAbs,dTSetup,sine,cosine,omega_);
+    /*NL*///  error->all(FLERR,"end"); }
 
     //NP size includes owned and ghost elements
     int size = mesh_->size();
@@ -240,7 +245,7 @@ void MeshMoverWiggle::initial_integrate(double dT,double dt)
     double ***v_node = get_v();
 
     // calculate velocity, same for all nodes
-    vectorScalarMult3D(amplitude_,omega_*cosine,vNode);
+    vectorScalarMult3D(amplitude_,omega_*cos(omega_ * dTAbs),vNode);
 
     // calculate total and incremental displacement
     vectorScalarMult3D(amplitude_,sine,dX);
@@ -294,11 +299,11 @@ MeshMoverRotate::~MeshMoverRotate()
 
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverRotate::initial_integrate(double dT,double dt)
+void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double xOld[3],node[3],vRot[3],omegaVec[3],rPA[3];
     double reference_point[3];
-    double totalPhi = omega_*dT;
+    double totalPhi = omega_*dTSetup;
     double incrementalPhi = omega_*dt;
 
     //NP get reference point which might have been
@@ -408,7 +413,7 @@ void MeshMoverRotateVariable::setup()
 
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverRotateVariable::initial_integrate(double dT,double dt)
+void MeshMoverRotateVariable::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double xOld[3],node[3],vRot[3],omegaVec[3],rPA[3];
     double reference_point[3];
@@ -489,14 +494,12 @@ MeshMoverRiggle::~MeshMoverRiggle()
 
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverRiggle::initial_integrate(double dT,double dt)
+void MeshMoverRiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double xOld[3],node[3],vRot[3],omegaVec[3],rPA[3];
 
-    double sine = amplitude_*sin(omega_ * dT);
-    double cosine = amplitude_*cos(omega_ * dT);
-
-    double vel_prefactor = cosine*omega_;
+    double sine =   amplitude_*(sin(omega_ * dTAbs)-sin(omega_ * (dTAbs-dTSetup)));
+    double vel_prefactor = omega_*amplitude_*cos(omega_ * dTAbs);
 
     //NP size includes owned and ghost elements
     int size = mesh_->size();
@@ -506,7 +509,7 @@ void MeshMoverRiggle::initial_integrate(double dT,double dt)
 
     // calculate total and incremental angle
     double totalPhi = sine;
-    double incrementalPhi = cosine*omega_*dt;
+    double incrementalPhi = vel_prefactor*dt;
 
     // rotate the mesh
     mesh_->rotate(totalPhi,incrementalPhi,axis_,point_);
@@ -562,7 +565,7 @@ MeshMoverVibLin::~MeshMoverVibLin()
 }
 
 /* ---------------------------------------------------------------------- */
-void MeshMoverVibLin::initial_integrate(double dT,double dt)
+void MeshMoverVibLin::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double dX[3],dx[3],vNode[3];
     int size = mesh_->size();
@@ -573,10 +576,10 @@ void MeshMoverVibLin::initial_integrate(double dT,double dt)
     double vA = 0;
 
     for (int j=0;j<ord; j++)
-        {
-        arg = arg+ampl[j]*cos(omega_*(j+1)*dT+phi[j]);
-        vA= vA-ampl[j]*(j+1)*omega_*sin(omega_*(j+1)*dT+phi[j]);
-        }
+    {
+        arg = arg+ampl[j]*(cos(omega_*(j+1)*dTAbs+phi[j]) - cos(omega_*(j+1)*(dTAbs-dTSetup)+phi[j]));
+        vA= vA-ampl[j]*(j+1)*omega_*sin(omega_*(j+1)*dTAbs+phi[j]);
+    }
 
     // calculate velocity, same for all nodes
     vectorScalarMult3D(axis_,vA,vNode);
@@ -634,9 +637,10 @@ MeshMoverVibRot::~MeshMoverVibRot()
 {
 
 }
+
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverVibRot::initial_integrate(double dT,double dt)
+void MeshMoverVibRot::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double xOld[3],node[3],omegaVec[3],rPA[3],vRot[3];
 
@@ -644,10 +648,10 @@ void MeshMoverVibRot::initial_integrate(double dT,double dt)
     double vR = 0;
 
     for (int j=0;j<ord; j++)
-        {
-        arg =arg+ampl[j]*cos(omega_*(j+1)*dT+phi[j]);
-        vR= vR-ampl[j]*(j+1)*omega_*sin(omega_*(j+1)*dT+phi[j]);
-        }
+    {
+        arg = arg+ampl[j]* ( cos(omega_*(j+1)*dTAbs+phi[j]) - cos(omega_*(j+1)*(dTAbs-dTSetup)+phi[j]) );
+        vR = vR-ampl[j]*(j+1)*omega_*sin(omega_*(j+1)*dTAbs+phi[j]);
+    }
 
     int size = mesh_->size();
     int numNodes = mesh_->numNodes();

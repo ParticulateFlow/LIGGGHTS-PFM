@@ -111,14 +111,21 @@ class FixMultisphere : public Fix
 
       int dof(int);
       double ** get_dump_ref(int &nb, int &nprop, char* prop);
-      void *extract(char *name, int &len1, int &len2);
       double max_r_bound();
 
       // public inline access
-/*
-      inline void set_v_integrate(double *v)
-      { vectorCopy3D(v,v_integrate_); }
-*/
+
+      void *extract(char *name, int &len1, int &len2)
+      {
+          if (strcmp(name,"body") == 0)
+          {
+              len1 = atom->tag_max();
+              len2 = 1;
+              return (void *) body_;
+          }
+          return multisphere_.extract(name,len1,len2);
+      }
+
       inline class MultisphereParallel& data()
       { return multisphere_;}
 

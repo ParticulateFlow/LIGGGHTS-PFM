@@ -259,7 +259,7 @@ void ComputePairGranLocal::compute_local()
   if(wall == 0) ncount = count_pairs();        // # pairs is ensured to be the same for pair and heat
   else          ncount = count_wallcontacts(); // # wall contacts ensured to be same for wall/gran and heat
 
-  /*NL*/ fprintf(screen,"ncount %d\n",ncount);
+  /*NL*/ //fprintf(screen,"ncount %d\n",ncount);
 
   if (ncount > nmax) reallocate(ncount);
   size_local_rows = ncount;

@@ -48,7 +48,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   vcm_          (*customValues_.addElementProperty< VectorContainer<double,3> >("vcm","comm_exchange_borders","frame_invariant", "restart_yes")),
   fcm_          (*customValues_.addElementProperty< VectorContainer<double,3> >("fcm","comm_none","frame_invariant", "restart_no")),
   torquecm_     (*customValues_.addElementProperty< VectorContainer<double,3> >("torque","comm_none","frame_invariant", "restart_no")),
-  dragforce_cm_ (*customValues_.addElementProperty< VectorContainer<double,3> >("dragforce_cm","comm_none","frame_invariant", "restart_no")),
+  dragforce_cm_ (*customValues_.addElementProperty< VectorContainer<double,3> >("dragforce","comm_none","frame_invariant", "restart_no")),
 
   angmom_ (*customValues_.addElementProperty< VectorContainer<double,3> >("angmom","comm_exchange_borders","frame_invariant", "restart_yes")),
   omega_  (*customValues_.addElementProperty< VectorContainer<double,3> >("omega","comm_exchange_borders","frame_invariant", "restart_yes")),
@@ -383,10 +383,11 @@ void Multisphere::generate_map()
    check for lost atoms
 ------------------------------------------------------------------------- */
 
-void Multisphere::check_lost_atoms(int *body, double *atom_delflag)
+bool Multisphere::check_lost_atoms(int *body, double *atom_delflag)
 {
     int body_tag,ibody,i;
     int nall = atom->nlocal + atom->nghost;
+    int deleted = 0;
 
     int *nrigid_current = new int[nbody_];
     int *delflag = new int[nbody_];
@@ -424,8 +425,8 @@ void Multisphere::check_lost_atoms(int *body, double *atom_delflag)
         }
         if(nrigid_current[ibody] != nrigid_(ibody))
         {
-            /*NL*/fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step "BIGINT_FORMAT", nrigid_current %d nrigid %d\n",
-            /*NL*/                comm->me,tag(ibody),ibody,update->ntimestep,nrigid_current[ibody],nrigid_(ibody));
+            /*NL*///fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step "BIGINT_FORMAT", nrigid_current %d nrigid %d\n",
+            /*NL*///                comm->me,tag(ibody),ibody,update->ntimestep,nrigid_current[ibody],nrigid_(ibody));
             delflag[ibody] = 1;
             /*NL*///error->one(FLERR,"end");
         }
@@ -447,6 +448,7 @@ void Multisphere::check_lost_atoms(int *body, double *atom_delflag)
            /*NL*///fprintf(screen,"step %d: proc %d deleting atom %d, belongs to body %d\n",update->ntimestep,comm->me,atom->tag[i],body_tag);
            atom_delflag[i] = 1.;
            body[i] = -1;
+           deleted = 1;
         }
     }
 
@@ -465,8 +467,13 @@ void Multisphere::check_lost_atoms(int *body, double *atom_delflag)
 
     calc_nbody_all();
 
+    MPI_Max_Scalar(deleted,world);
+
     delete []nrigid_current;
     delete []delflag;
+
+    if(deleted == 1) return true;
+    return false;
 }
 
 /* ----------------------------------------------------------------------
@@ -474,7 +481,7 @@ void Multisphere::check_lost_atoms(int *body, double *atom_delflag)
    if don't recognize name, return NULL
 
    important: returns GLOBAL lengths (tag_max)
-              this is kind of an inconsistency
+              because this is required by CfdDatacouplingMPI
 ------------------------------------------------------------------------- */
 
 void *Multisphere::extract(char *name, int &len1, int &len2)
@@ -488,7 +495,7 @@ void *Multisphere::extract(char *name, int &len1, int &len2)
 
     // per-body properties
 
-    len1 = atom->tag_max();
+    len1 = mapTagMax_;
     ContainerBase *cb = customValues_.getElementPropertyBase(name);
 
     if(NULL == cb)
@@ -501,42 +508,34 @@ void *Multisphere::extract(char *name, int &len1, int &len2)
         */
     }
 
-    len1 = cb->lenVec();
+    len2 = cb->lenVec();
     if(cb->nVec() != 1)
-       error->all(FLERR,"Internal error");
+       error->all(FLERR,"Internal error, cannot use multi-vector containers");
     return cb->begin_slow_dirty();
 }
 
+/* ----------------------------------------------------------------------
+   return a pointer to a named internal variable
+   only return if data of type double**
+   if don't recognize name or not double ** data, return NULL
+------------------------------------------------------------------------- */
 
-/*
-  len1 = len2 = 1;
-
-  if (strcmp(name,"nbody") == 0) return (void *) &nbody;
-  if (strcmp(name,"nbody_all") == 0) return (void *) &nbody_all;
-
-  len1 = atom->tag_max();
-  len2 = 1;
-
-  if (strcmp(name,"body") == 0) return (void *) body;
-
-  len1 = tag_max; //NP as bodies can be deleted
-  len2 = 1;
-  if (strcmp(name,"nrigid") == 0) return (void *) nrigid;
-
-  len1 = tag_max;
-  len2 = 3;
-
-  if (strcmp(name,"xcm") == 0) return (void *) xcm;
-  if (strcmp(name,"vcm") == 0) return (void *) vcm;
-  if (strcmp(name,"omega") == 0) return (void *) omega;
-  if (strcmp(name,"dragforce_cm") == 0) return (void *) dragforce_cm;
-
-  if (strcmp(name,"ex_space") == 0) return (void *) ex_space;
-  if (strcmp(name,"ey_space") == 0) return (void *) ey_space;
-  if (strcmp(name,"ez_space") == 0) return (void *) ez_space;
-
-  len1 = len2 = -1;
-
-  return NULL;
+double** Multisphere::extract_double_vector(char *name)
+{
+    VectorContainer<double,3> *cb = customValues_.getElementProperty<VectorContainer<double,3> >(name);
+    if(!cb) return 0;
+    return cb->begin();
 }
-*/
+
+/* ----------------------------------------------------------------------
+   return a pointer to a named internal variable
+   only return if data of type double*
+   if don't recognize name or not double * data, return NULL
+------------------------------------------------------------------------- */
+
+double* Multisphere::extract_double_scalar(char *name)
+{
+    ScalarContainer<double> *cb = customValues_.getElementProperty<ScalarContainer<double> >(name);
+    if(!cb) return 0;
+    return cb->begin();
+}
