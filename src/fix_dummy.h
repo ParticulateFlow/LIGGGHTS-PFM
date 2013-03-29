@@ -5,7 +5,7 @@
 
 namespace LAMMPS_NS {
 
-class Multisphere {
+class MultisphereParallel {
 
  public:
   int n_body() {return 0;}
@@ -49,7 +49,7 @@ class FixMultisphere : public Fix {
   int calc_n_steps(int iatom,double *p_ref,double *normalvec,double *v_normal)
   { return 0; }
 
-  inline class Multisphere& data()
+  inline class MultisphereParallel& data()
   { return (*multisphere_);}
 
   inline int n_body()
@@ -58,7 +58,7 @@ class FixMultisphere : public Fix {
   inline int tag_max_body()
   { return data().tag_max_body(); }
 
-  class Multisphere *multisphere_;
+  class MultisphereParallel *multisphere_;
 
 };
 }

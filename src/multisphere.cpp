@@ -37,7 +37,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
 
   nbody_(0),
   nbody_all_(0),
-  mapTagMax_(0),
+  mapTagMax_(0), //NP this makes tags start at 1!!!
   mapArray_(0),
 
   //NP have all with "comm_none" here since no ghosts for bodies
@@ -261,6 +261,7 @@ void Multisphere::id_extend_body_extend(int *body)
   MPI_Max_Scalar(idmax,idmax_all,this->world);
 
   // mapTagMax_ cannot get smaller - so ensure IDs are given only once
+  //NP initialially mapTagMax_=0 --> so tags start at 1
 
   mapTagMax_ = MathExtraLiggghts::max(mapTagMax_,idmax_all);
 
@@ -358,13 +359,13 @@ void Multisphere::generate_map()
 
     // get max ID of all proc
     idmax = id_.max();
-    MPI_Max_Scalar(idmax,idmax_all,this->world);
+    MPI_Max_Scalar(idmax,idmax_all,world);
     mapTagMax_ = MathExtraLiggghts::max(mapTagMax_,idmax_all);
 
     /*NL*/ //fprintf(this->screen,"generate_map proc %d: idmax %d, mapTagMax_ %d nbody_ %d\n",comm->me,idmax,mapTagMax_,nbody_);
 
     // alocate and initialize new array
-    // IDs start at 0, so have to use mapTagMax_+1
+    // IDs start at 1, have to go up to (inclusive) mapTagMax_
     //NP mapTagMax_ can be -1 if only newly inserted bodies are present
     //NP in this case, nothing happens here
     memory->create(mapArray_,mapTagMax_+1,"Multisphere:mapArray_");

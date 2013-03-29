@@ -905,6 +905,7 @@ void FixMultisphere::pre_neighbor()
     multisphere_.calc_nbody_all();
 
     //NP need to re-set map as well
+    //NP as exchange has happened
     /*NL*/ //fprintf(screen,"generating map after exchange");
     multisphere_.generate_map();
 

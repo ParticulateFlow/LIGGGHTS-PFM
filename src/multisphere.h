@@ -79,6 +79,8 @@ namespace LAMMPS_NS {
       inline int map(int i)
       { return mapArray_[i]; }
 
+      //NP IDs start at 1
+
       inline int tag(int i)
       { return id_(i); }
 
@@ -126,6 +128,7 @@ namespace LAMMPS_NS {
       int nbody_, nbody_all_;
 
       // ID of rigid body
+      //NP IDs start with 1
       ScalarContainer<int> &id_;
 
       // global-local lookup

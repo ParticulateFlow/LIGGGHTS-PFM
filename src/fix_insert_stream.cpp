@@ -707,7 +707,7 @@ void FixInsertStream::finalize_insertion(int ninserted_spheres_this_local)
 
     double **release_data = fix_release->array_atom;
 
-    Multisphere *multisphere = NULL;
+    MultisphereParallel *multisphere = NULL;
     if(fix_multisphere) multisphere = &fix_multisphere->data();
 
     /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::finalize_insertion() start, ilo %d, ihi %d, nlocal %d v_normal %f %f %f\n",ilo,ihi,atom->nlocal,v_normal[0],v_normal[1],v_normal[2]);
