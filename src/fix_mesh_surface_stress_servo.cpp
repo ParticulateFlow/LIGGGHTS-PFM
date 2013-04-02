@@ -592,7 +592,7 @@ int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
     ki_ = force->numeric(arg[2]);
     kd_ = force->numeric(arg[3]);
 
-    return 2;
+    return 4;
   }
 
   return 0;
