@@ -544,14 +544,14 @@ void FixMeshSurfaceStressServo::set_v_node_rotate()
 int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
 {
   if (strcmp(arg[0],"integrate") == 0) {
-    if (narg < 2) error->all(FLERR,"Illegal fix_modify command");
+    if (narg < 2) error->fix_error(FLERR,this,"not enough arguments for fix_modify 'integrate'");
 
     if (strcmp(arg[1],"start") == 0) {
     	int_flag_ = true;
     } else if (strcmp(arg[1],"stop") == 0) {
     	int_flag_ = false;
     } else
-    	error->all(FLERR,"Illegal fix_modify command");
+      error->fix_error(FLERR,this,"wrong argument for fix_modify 'integrate'");
 
     return 2;
 
@@ -583,6 +583,14 @@ int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
       set_point_inv_ = 1./set_point_;
       sp_style_ = CONSTANT;
     }
+
+    return 2;
+  } else if (strcmp(arg[0],"ctrlParam") == 0) {
+    if (narg < 4) error->fix_error(FLERR,this,"not enough arguments for fix_modify 'ctrlParam'");
+
+    kp_ = force->numeric(arg[1]);
+    ki_ = force->numeric(arg[2]);
+    kd_ = force->numeric(arg[3]);
 
     return 2;
   }
