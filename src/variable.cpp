@@ -3149,7 +3149,7 @@ double Variable::evaluate_boolean(char *str)
 
   while (1) {
     onechar = str[i];
-
+    /*NL*/ //fprintf(screen,"onechar :%c\n",onechar);
     // whitespace: just skip
 
     if (isspace(onechar)) i++;

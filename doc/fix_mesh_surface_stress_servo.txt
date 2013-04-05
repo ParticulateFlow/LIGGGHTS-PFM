@@ -77,6 +77,8 @@ This fix supports "fix_modify"_fix_modify.html with option {integrate} = 'start'
 to start or stop the servo wall integration inbetween two runs.
 This fix also supports "fix_modify"_fix_modify.html with option {target_val} = val to
 change the target value inbetween two runs.
+This fix also supports "fix_modify"_fix_modify.html with option {ctrlParam} = kp ki kd
+to change the controller params inbetween two runs.
 
 [Restrictions:]
 

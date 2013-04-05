@@ -295,7 +295,7 @@ void FixInsert::setup(int vflag)
         final_ins_step = first_ins_step +
                 static_cast<int>(static_cast<double>(ninsert)/ninsert_per *  static_cast<double>(insert_every));
 
-      /*NL*/ //fprintf(screen,"ninsert %d, ninsert_per %f insert_every %d first_ins_step %d\n",ninsert,ninsert_per,insert_every,first_ins_step);
+      /*NL*/ //fprintf(screen,"ninsert %d, ninsert_per %f insert_every %d first_ins_step %d final_ins_step %d\n",ninsert,ninsert_per,insert_every,first_ins_step,final_ins_step);
       if(final_ins_step < 0)
         error->fix_error(FLERR,this,"Particle insertion: Overflow - need too long for particle insertion. "
                                     "Please decrease # particles to insert or increase insertion rate");

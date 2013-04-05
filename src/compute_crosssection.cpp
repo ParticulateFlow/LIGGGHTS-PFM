@@ -42,10 +42,11 @@ using MODIFIED_ANDREW_AUX::Circle;
 /* ---------------------------------------------------------------------- */
 
 ComputeCrosssection::ComputeCrosssection(LAMMPS *lmp, int narg, char **arg) :
-  ComputeContactAtom(lmp, narg, arg)
+  ComputeContactAtom(lmp, narg, arg),
+  file_(0)
 {
-  if (narg != 15)
-    error->all(FLERR,"Illegal compute crosssection command, need exactly 15 args");
+  if (narg != 15 && narg != 17)
+    error->all(FLERR,"Illegal compute crosssection command, need exactly 15 or 17 args");
 
   int iarg = 5;
 
@@ -80,13 +81,26 @@ ComputeCrosssection::ComputeCrosssection(LAMMPS *lmp, int narg, char **arg) :
     error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'cut_thickness'");
   cut_thickness_half_ = atof(arg[iarg++]) / 2.;
 
+  if(narg == 17)
+  {
+      if(strcmp(arg[iarg++],"file"))
+        error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'file'");
+      if(0 == comm->me)
+      {
+        file_ = fopen(arg[iarg++],"w");
+        if(!file_)
+            error->one(FLERR,"Illegal compute crosssection command, cannot open file");
+      }
+  }
+
   // calculate slices
   setup_cuts();
 
   vector_flag = 1;
+  vector_flag = 1;
   size_vector = n_cuts_;
 
-  vector = new double[3];
+  vector = new double[n_cuts_];
 }
 
 /* ---------------------------------------------------------------------- */
@@ -98,6 +112,8 @@ ComputeCrosssection::~ComputeCrosssection()
     delete [] mod_andrew_;
 
     delete [] vector;
+
+    if(file_) fclose(file_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -115,6 +131,9 @@ void ComputeCrosssection::setup_cuts()
 
 void ComputeCrosssection::compute_vector()
 {
+  if(invoked_vector == update->ntimestep)
+    return;
+
   invoked_vector = update->ntimestep;
 
   compute_peratom();
@@ -124,6 +143,8 @@ void ComputeCrosssection::compute_vector()
       //NP this also clears list of contacts in mod_andrew[i]
       vector[i] = mod_andrew_[i]->area();
   }
+
+  if(file_) write();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -179,4 +200,17 @@ void ComputeCrosssection::compute_convex_hull()
             }
         }
     }
+}
+
+
+/* ---------------------------------------------------------------------- */
+
+void ComputeCrosssection::write()
+{
+    for(int i = 0; i < n_cuts_; i++)
+    {
+        double coo = min_ + static_cast<double>(i)*2.*cut_thickness_half_;
+        fprintf(file_,"%f %f %f\n",coo,vector[i],sqrt(vector[i]/M_PI));
+    }
+    fflush(file_);
 }

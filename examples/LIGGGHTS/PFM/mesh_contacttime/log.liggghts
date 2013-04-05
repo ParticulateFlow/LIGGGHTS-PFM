@@ -1,0 +1,424 @@
+LIGGGHTS (Version LIGGGHTS-MASTER 2.3.2plusplus, compiled 2013-04-05-13:43:41 by ckloss based on LAMMPS 20 Apr 2012)
+#Simple chute wear test
+
+atom_style	granular
+atom_modify	map array
+boundary	f f f
+newton		off
+
+communicate	single vel yes
+
+units		si
+
+region		reg block -0.5 0.1 -0.2 0.2 -0.4 0.15 units box
+create_box	1 reg
+Created orthogonal box = (-0.5 -0.2 -0.4) to (0.1 0.2 0.15)
+  1 by 1 by 1 MPI processor grid
+
+neighbor	0.002 bin
+neigh_modify	delay 0
+
+
+#Material properties required for new pair styles
+
+fix 		m1 all property/global youngsModulus peratomtype 5.e6
+fix 		m2 all property/global poissonsRatio peratomtype 0.45
+fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.5
+fix 		m5 all property/global k_finnie peratomtypepair 1 1.0
+
+#New pair style
+pair_style 	gran/hertz/history #Hertzian without cohesion
+pair_coeff	* *
+
+timestep	0.00001
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+#the chute
+fix		cad all mesh/surface/stress/contact file simple_chute.stl type 1 wear finnie start_step_ave 20000
+fix		inface all mesh/surface file insertion_face.stl type 1
+fix		granwalls all wall/gran/hertz/history mesh n_meshes 1 meshes cad
+
+
+#distributions for insertion
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.0015
+fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.0025
+fix		pdd1 all particledistribution/discrete 1.  2 pts1 0.3 pts2 0.7
+
+#region and insertion
+group		nve_group region reg
+0 atoms in group nve_group
+region		bc cylinder z 0.0 0.0 0.015 0.05 0.12 units box
+
+#particle insertion
+fix			ins nve_group insert/stream seed 5330 distributiontemplate pdd1 				nparticles 6000 massrate 0.1 insert_every 1000 overlapcheck yes all_in no vel constant 0.0 0.0 -1.0 				insertion_face inface 
+
+#apply nve integration to all particles that are inserted as single particles
+fix		integr nve_group nve/sphere
+
+#output settings, include total thermal energy
+compute		1 all erotate/sphere
+thermo_style	custom step atoms ke c_1 vol
+thermo		1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+#insert the first particles so that dump is not empty
+run		1
+INFO: Particle insertion ins: 12.766349 particles every 1000 steps - particle rate 1276.634850, (mass rate 0.100000)
+      6000 particles (mass 0.469986) within 469985 steps
+Memory usage per processor = 24.1786 Mbytes
+Step Atoms KinEng 1 Volume 
+       0        0           -0            0        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 1
+ - a total of 12 particle templates (mass 0.000937) inserted so far.
+       1       12 0.0004686209            0        0.132 
+Loop time of 0.0143139 on 1 procs for 1 steps with 12 atoms
+
+Pair  time (%) = 2.14577e-06 (0.0149908)
+Neigh time (%) = 0.00261903 (18.2971)
+Comm  time (%) = 2.14577e-06 (0.0149908)
+Outpt time (%) = 2.90871e-05 (0.203208)
+Other time (%) = 0.0116615 (81.4698)
+
+Nlocal:    12 ave 12 max 12 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:    0 ave 0 max 0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:    2 ave 2 max 2 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 2
+Ave neighs/atom = 0.166667
+Neighbor list builds = 1
+Dangerous builds = 0
+dump		dmp all custom 200 post/dump*.chute id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_contacttime_cad
+dump 		dumpstress all mesh/gran/VTK 200 post/dump*.vtk stress wear cad contact_area contact_area_step
+
+#insert particles
+run		100000 upto
+Memory usage per processor = 25.0178 Mbytes
+Step Atoms KinEng 1 Volume 
+       1       12 0.0004686209            0        0.132 
+    1000       12 0.00050072975            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 1001
+ - a total of 25 particle templates (mass 0.001910) inserted so far.
+    2000       25 0.0011229892            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 2001
+ - a total of 38 particle templates (mass 0.003011) inserted so far.
+    3000       38  0.001921502            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 3001
+ - a total of 51 particle templates (mass 0.003983) inserted so far.
+    4000       51 0.0027794101            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 4001
+ - a total of 64 particle templates (mass 0.004956) inserted so far.
+    5000       64 0.0037826566            0        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 5001
+ - a total of 76 particle templates (mass 0.005893) inserted so far.
+    6000       76 0.0048990697            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 6001
+ - a total of 89 particle templates (mass 0.006866) inserted so far.
+    7000       89 0.0061867486            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 7001
+ - a total of 102 particle templates (mass 0.007967) inserted so far.
+    8000      102   0.00769137            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 8001
+ - a total of 115 particle templates (mass 0.009067) inserted so far.
+    9000      115 0.0093956135            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 9001
+ - a total of 128 particle templates (mass 0.010168) inserted so far.
+   10000      128  0.011274121            0        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 10001
+ - a total of 141 particle templates (mass 0.011141) inserted so far.
+   11000      141  0.012801033 1.8115537e-05        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 11001
+ - a total of 154 particle templates (mass 0.012113) inserted so far.
+   12000      154  0.012972908 7.5510558e-05        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 12001
+ - a total of 166 particle templates (mass 0.013051) inserted so far.
+   13000      166  0.013471083 0.00016682844        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 13001
+ - a total of 179 particle templates (mass 0.014023) inserted so far.
+   14000      179  0.013774334 0.00025418882        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 14001
+ - a total of 192 particle templates (mass 0.014996) inserted so far.
+   15000      192   0.01355461 0.00029156311        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 15001
+ - a total of 205 particle templates (mass 0.015968) inserted so far.
+   16000      205  0.014340166 0.00035371664        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 16001
+ - a total of 218 particle templates (mass 0.017069) inserted so far.
+   17000      218  0.014652148 0.00047973178        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 17001
+ - a total of 230 particle templates (mass 0.018007) inserted so far.
+   18000      230  0.015357043 0.00052976463        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 18001
+ - a total of 243 particle templates (mass 0.018979) inserted so far.
+   19000      243  0.015090826 0.00070267404        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 19001
+ - a total of 256 particle templates (mass 0.019952) inserted so far.
+   20000      256  0.015523387 0.00078530942        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 20001
+ - a total of 269 particle templates (mass 0.020924) inserted so far.
+   21000      269  0.015579481 0.00084698785        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 21001
+ - a total of 282 particle templates (mass 0.022025) inserted so far.
+   22000      282  0.015718099 0.00099394168        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 22001
+ - a total of 295 particle templates (mass 0.022998) inserted so far.
+   23000      295  0.016508705 0.0011081379        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 23001
+ - a total of 307 particle templates (mass 0.023935) inserted so far.
+   24000      307  0.016649308 0.0011693869        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 24001
+ - a total of 320 particle templates (mass 0.025036) inserted so far.
+INFO: more than 3 touching neighbor mesh elements found, growing contact history.
+   25000      320  0.017200229 0.0012949999        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 25001
+ - a total of 332 particle templates (mass 0.025973) inserted so far.
+   26000      332  0.017802548  0.001411213        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 26001
+ - a total of 345 particle templates (mass 0.026946) inserted so far.
+   27000      345  0.017983784 0.0015435578        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 27001
+ - a total of 358 particle templates (mass 0.028047) inserted so far.
+   28000      358    0.0185962 0.0016584203        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 28001
+ - a total of 371 particle templates (mass 0.029019) inserted so far.
+   29000      371  0.019053527 0.0018619342        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 29001
+ - a total of 384 particle templates (mass 0.030120) inserted so far.
+   30000      384  0.018881575 0.0020941342        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 30001
+ - a total of 397 particle templates (mass 0.031221) inserted so far.
+   31000      397  0.020360304 0.0021244132        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 31001
+ - a total of 410 particle templates (mass 0.032322) inserted so far.
+   32000      410  0.020949702  0.002328942        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 32001
+ - a total of 423 particle templates (mass 0.033294) inserted so far.
+   33000      423  0.020981686 0.0024179895        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 33001
+ - a total of 436 particle templates (mass 0.034267) inserted so far.
+   34000      436  0.021970451 0.0026086972        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 34001
+ - a total of 449 particle templates (mass 0.035368) inserted so far.
+   35000      449   0.02247581 0.0028231273        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 35001
+ - a total of 462 particle templates (mass 0.036340) inserted so far.
+   36000      462  0.022607455 0.0031337456        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 36001
+ - a total of 475 particle templates (mass 0.037313) inserted so far.
+   37000      475  0.023607552 0.0033236307        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 37001
+ - a total of 488 particle templates (mass 0.038414) inserted so far.
+   38000      488  0.024270112 0.0034840938        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 38001
+ - a total of 501 particle templates (mass 0.039515) inserted so far.
+   39000      501  0.024889603 0.0036785144        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 39001
+ - a total of 514 particle templates (mass 0.040487) inserted so far.
+   40000      514  0.025199281 0.0039557408        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 40001
+ - a total of 527 particle templates (mass 0.041460) inserted so far.
+   41000      527  0.025149955 0.0043691579        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.001066) at step 41001
+ - a total of 539 particle templates (mass 0.042525) inserted so far.
+   42000      539  0.026729386 0.0045385486        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 42001
+ - a total of 551 particle templates (mass 0.043463) inserted so far.
+   43000      551  0.026780876  0.004729071        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 43001
+ - a total of 564 particle templates (mass 0.044563) inserted so far.
+   44000      564  0.027225983 0.0049073577        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 44001
+ - a total of 577 particle templates (mass 0.045664) inserted so far.
+   45000      577  0.028251316 0.0050605334        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 45001
+ - a total of 590 particle templates (mass 0.046637) inserted so far.
+   46000      590  0.029226219 0.0053687574        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 46001
+ - a total of 603 particle templates (mass 0.047610) inserted so far.
+   47000      603  0.029737923 0.0056331569        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 47001
+ - a total of 616 particle templates (mass 0.048710) inserted so far.
+   48000      616  0.030596234 0.0057735826        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 48001
+ - a total of 628 particle templates (mass 0.049648) inserted so far.
+   49000      628  0.031754952 0.0059586512        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 49001
+ - a total of 641 particle templates (mass 0.050620) inserted so far.
+   50000      641  0.032230881 0.0061955008        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 50001
+ - a total of 654 particle templates (mass 0.051721) inserted so far.
+   51000      652  0.033189321   0.00637987        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 51001
+ - a total of 666 particle templates (mass 0.052658) inserted so far.
+   52000      663    0.0343571 0.0067381846        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 52001
+ - a total of 679 particle templates (mass 0.053631) inserted so far.
+   53000      676  0.035870414 0.0068637995        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 53001
+ - a total of 692 particle templates (mass 0.054603) inserted so far.
+   54000      686   0.03672498  0.006945873        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 54001
+ - a total of 705 particle templates (mass 0.055576) inserted so far.
+   55000      697  0.037297017 0.0072728269        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 55001
+ - a total of 718 particle templates (mass 0.056549) inserted so far.
+   56000      709  0.038559668 0.0073095891        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 56001
+ - a total of 731 particle templates (mass 0.057521) inserted so far.
+   57000      720  0.039426482 0.0074494313        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 57001
+ - a total of 743 particle templates (mass 0.058458) inserted so far.
+   58000      728  0.039630941 0.0077518213        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 58001
+ - a total of 756 particle templates (mass 0.059559) inserted so far.
+   59000      733  0.039591904 0.0076477477        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 59001
+ - a total of 768 particle templates (mass 0.060497) inserted so far.
+   60000      733  0.039128233 0.0075504157        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 60001
+ - a total of 781 particle templates (mass 0.061597) inserted so far.
+   61000      744  0.040613459 0.0076926147        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 61001
+ - a total of 794 particle templates (mass 0.062570) inserted so far.
+   62000      748   0.04036286 0.0076550318        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 62001
+ - a total of 807 particle templates (mass 0.063543) inserted so far.
+   63000      752  0.039742822 0.0075527811        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 63001
+ - a total of 820 particle templates (mass 0.064515) inserted so far.
+   64000      761  0.040589673 0.0076270863        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.001066) at step 64001
+ - a total of 832 particle templates (mass 0.065581) inserted so far.
+   65000      770  0.042111729 0.0076791361        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 65001
+ - a total of 845 particle templates (mass 0.066553) inserted so far.
+   66000      776  0.042366306 0.0077116723        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 66001
+ - a total of 858 particle templates (mass 0.067526) inserted so far.
+   67000      780  0.042906486  0.007567237        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 67001
+ - a total of 871 particle templates (mass 0.068499) inserted so far.
+   68000      784  0.043240447 0.0075820829        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 68001
+ - a total of 884 particle templates (mass 0.069599) inserted so far.
+   69000      788  0.043706556 0.0076484265        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 69001
+ - a total of 897 particle templates (mass 0.070572) inserted so far.
+   70000      790  0.044135572 0.0078345499        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 70001
+ - a total of 910 particle templates (mass 0.071545) inserted so far.
+   71000      795  0.044705939 0.0078480003        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 71001
+ - a total of 923 particle templates (mass 0.072517) inserted so far.
+   72000      796  0.043608798 0.0078549779        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 72001
+ - a total of 936 particle templates (mass 0.073490) inserted so far.
+   73000      801  0.044159489 0.0078964762        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 73001
+ - a total of 949 particle templates (mass 0.074591) inserted so far.
+   74000      807  0.044704981 0.0079623502        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 74001
+ - a total of 961 particle templates (mass 0.075528) inserted so far.
+   75000      809  0.045204886 0.0078867159        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 75001
+ - a total of 973 particle templates (mass 0.076465) inserted so far.
+   76000      812  0.046016262 0.0079301449        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 76001
+ - a total of 985 particle templates (mass 0.077402) inserted so far.
+   77000      816  0.046699027 0.0080112377        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 77001
+ - a total of 997 particle templates (mass 0.078340) inserted so far.
+   78000      813  0.045608912  0.007950906        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 78001
+ - a total of 1009 particle templates (mass 0.079277) inserted so far.
+   79000      808   0.04471529 0.0078278634        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 79001
+ - a total of 1022 particle templates (mass 0.080378) inserted so far.
+   80000      811  0.045144907 0.0079130538        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 80001
+ - a total of 1035 particle templates (mass 0.081479) inserted so far.
+   81000      813  0.045097095 0.0077399768        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 81001
+ - a total of 1047 particle templates (mass 0.082416) inserted so far.
+   82000      818  0.046004091 0.0077929393        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 82001
+ - a total of 1060 particle templates (mass 0.083388) inserted so far.
+   83000      820  0.046724849 0.0077626479        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 83001
+ - a total of 1072 particle templates (mass 0.084326) inserted so far.
+   84000      819  0.045307225 0.0075375599        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 84001
+ - a total of 1085 particle templates (mass 0.085426) inserted so far.
+   85000      817  0.044992271 0.0076039332        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 85001
+ - a total of 1098 particle templates (mass 0.086399) inserted so far.
+   86000      820  0.045860109 0.0074972953        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 86001
+ - a total of 1110 particle templates (mass 0.087336) inserted so far.
+   87000      823  0.046888597 0.0076755008        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 87001
+ - a total of 1123 particle templates (mass 0.088437) inserted so far.
+   88000      823  0.047782432 0.0077567141        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.001066) at step 88001
+ - a total of 1135 particle templates (mass 0.089503) inserted so far.
+   89000      820  0.048061285 0.0077924613        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 89001
+ - a total of 1147 particle templates (mass 0.090440) inserted so far.
+   90000      816  0.047095385 0.0076300576        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 90001
+ - a total of 1160 particle templates (mass 0.091412) inserted so far.
+   91000      821  0.047681922 0.0075613422        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 91001
+ - a total of 1173 particle templates (mass 0.092385) inserted so far.
+   92000      818  0.046069803 0.0073343698        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 92001
+ - a total of 1185 particle templates (mass 0.093322) inserted so far.
+   93000      818  0.046821219 0.0075718253        0.132 
+INFO: Particle insertion ins: inserted 12 particle templates (mass 0.000937) at step 93001
+ - a total of 1197 particle templates (mass 0.094260) inserted so far.
+   94000      819  0.047518339 0.0077464756        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 94001
+ - a total of 1210 particle templates (mass 0.095232) inserted so far.
+   95000      818  0.047452626 0.0078972691        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 95001
+ - a total of 1223 particle templates (mass 0.096333) inserted so far.
+   96000      816  0.046074184  0.007845176        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 96001
+ - a total of 1236 particle templates (mass 0.097306) inserted so far.
+   97000      824  0.047072368 0.0079948056        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.001101) at step 97001
+ - a total of 1249 particle templates (mass 0.098406) inserted so far.
+   98000      826  0.047364722 0.0079609669        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 98001
+ - a total of 1262 particle templates (mass 0.099379) inserted so far.
+   99000      827  0.047719631 0.0079670037        0.132 
+INFO: Particle insertion ins: inserted 13 particle templates (mass 0.000973) at step 99001
+ - a total of 1275 particle templates (mass 0.100352) inserted so far.
+  100000      833  0.048295508 0.0080706641        0.132 
+Loop time of 40.3331 on 1 procs for 99999 steps with 833 atoms
+
+Pair  time (%) = 1.16613 (2.89125)
+Neigh time (%) = 6.49456 (16.1023)
+Comm  time (%) = 0.617921 (1.53205)
+Outpt time (%) = 5.69854 (14.1287)
+Other time (%) = 26.3559 (65.3457)
+
+Nlocal:    833 ave 833 max 833 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:    0 ave 0 max 0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:    496 ave 496 max 496 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 496
+Ave neighs/atom = 0.595438
+Neighbor list builds = 2127
+Dangerous builds = 0
+unfix		ins
+
+ 

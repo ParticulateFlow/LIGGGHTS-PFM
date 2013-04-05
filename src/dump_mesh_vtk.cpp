@@ -459,21 +459,35 @@ void DumpMeshVTK::getGeneralRefs()
 
   for(int ib = 0; ib < n_container_bases_; ib++)
   {
-      bool found = false;
+      bool found_scalar = false, found_vector = false;
+
+      /*NL*/ fprintf(screen,"looking for container %s\n",container_args_[ib]);
 
       for(int i = 0; i < nMesh_; i++)
       {
           if(meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]))
-            scalar_containers_[n_scalar_containers_++][i] = meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]);
+          {
+              found_scalar = true;
+              scalar_containers_[n_scalar_containers_][i] = meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]);
+          }
+
           if(meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]))
-            vector_containers_[n_vector_containers_++][i] = meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]);
-          if(scalar_containers_[ib][i] || vector_containers_[ib][i])
-            found = true;
+          {
+              found_vector = true;
+              vector_containers_[n_vector_containers_][i] = meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]);
+          }
       }
 
-      if(!found)
+      if(found_scalar)
+        n_scalar_containers_++;
+      if(found_vector)
+        n_vector_containers_++;
+
+      if(!found_scalar && !found_vector)
         error->all(FLERR,"Illegal dump mesh/vtk command, unknown keyword or mesh");
   }
+
+  /*NL*/ fprintf(screen,"n_scalar_containers_ %d n_vector_containers_ %d\n",n_scalar_containers_,n_vector_containers_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -606,13 +620,13 @@ void DumpMeshVTK::pack(int *ids)
 
         for(int ib = 0; ib < n_scalar_containers_; ib++)
         {
-           cb1 = scalar_containers_[iMesh][ib];
+           cb1 = scalar_containers_[ib][iMesh];
            buf[m++] = cb1 ? (*cb1)(iTri) : 0.;
         }
 
         for(int ib = 0; ib < n_vector_containers_; ib++)
         {
-           cb2 = vector_containers_[iMesh][ib];
+           cb2 = vector_containers_[ib][iMesh];
            buf[m++] = cb2 ? (*cb2)(iTri)[0] : 0.;
            buf[m++] = cb2 ? (*cb2)(iTri)[1] : 0.;
            buf[m++] = cb2 ? (*cb2)(iTri)[2] : 0.;

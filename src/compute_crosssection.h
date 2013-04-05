@@ -42,6 +42,8 @@ class ComputeCrosssection : public ComputeContactAtom
   void compute_vector();
   void compute_peratom();
 
+  void write();
+
  private:
 
   void setup_cuts();
@@ -53,6 +55,8 @@ class ComputeCrosssection : public ComputeContactAtom
   double min_,max_;
   double cut_thickness_half_;
   double cut_dist_;
+
+  FILE *file_;
 };
 
 }

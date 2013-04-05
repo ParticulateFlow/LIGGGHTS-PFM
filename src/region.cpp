@@ -616,8 +616,8 @@ void Region::volume_mc(int n_test,double &vol_global, double &vol_local)
 }
 
 /* ---------------------------------------------------------------------- */
-
 //NP modified C.K.
+
 int Region::bbox_extends_outside_box()
 {
     double min[3],max[3];

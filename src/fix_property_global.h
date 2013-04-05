@@ -64,6 +64,8 @@ class FixPropertyGlobal : public Fix {
   void array_modify(int,int,double);
   void new_array(int l1,int l2);
 
+  void write(FILE* file);
+
   //bool checkCorrectness(int,char*,int,int);
 
   const double* get_values() {return values;}

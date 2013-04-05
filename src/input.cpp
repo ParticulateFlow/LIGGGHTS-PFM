@@ -580,8 +580,22 @@ void Input::ifthenelse()
   substitute(scopy,0);
 
   // evaluate Boolean expression for "if"
+  //NP modified C.K. extend
 
-  double btest = variable->evaluate_boolean(scopy);
+  double btest;
+
+  if(strncmp(scopy,"property_",9) == 0)
+  {
+      if(strlen(scopy) < 11)
+        error->all(FLERR,"Illegal if command, length of argument too short");
+      if(modify->find_fix_property(&(scopy[9]),"property/global","any",0,0,"if",false))
+        btest = 1.0;
+      else
+        btest = 0.0;
+  }
+  //NP standard case
+  else
+    btest = variable->evaluate_boolean(scopy);
 
   // bound "then" commands
 
