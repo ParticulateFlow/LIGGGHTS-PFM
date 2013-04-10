@@ -87,10 +87,15 @@ void FixMeshSurfaceStressContact::post_create()
 {
     FixMeshSurfaceStress::post_create();
 
-    mesh()->prop().addElementProperty<ScalarContainer<double> >("contact_area","comm_exchange_borders","frame_invariant","restart_yes");
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("contact_area",    "comm_exchange_borders","frame_invariant","restart_yes");
     mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area")->setAll(0.);
-    mesh()->prop().addElementProperty<ScalarContainer<double> >("contact_area_step","comm_reverse","frame_invariant","restart_no");
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("contact_area_abs","comm_exchange_borders","frame_invariant","restart_yes");
+    mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area_abs")->setAll(0.);
+
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("contact_area_step",    "comm_reverse","frame_invariant","restart_no");
     mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area_step")->setAll(0.);
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("contact_area_step_abs","comm_reverse","frame_invariant","restart_no");
+    mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area_step_abs")->setAll(0.);
 
     char *wallctime_name = new char[strlen(style)+1+12];
     strcpy(wallctime_name,"contacttime_");
@@ -129,9 +134,12 @@ void FixMeshSurfaceStressContact::init()
     init_area_correction();
 
     contact_area_ = mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area");
-    contact_area_step_ = mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area_step");
+    contact_area_abs_ = mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area_abs");
 
-    if(!contact_area_ || !contact_area_step_)
+    contact_area_step_ = mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area_step");
+    contact_area_step_abs_ = mesh()->prop().getElementProperty<ScalarContainer<double> >("contact_area_step_abs");
+
+    if(!contact_area_ || !contact_area_step_ || !contact_area_abs_ || !contact_area_step_abs_)
         error->one(FLERR,"internal error");
 
     if(force->cg() > 1.)
@@ -193,7 +201,10 @@ void FixMeshSurfaceStressContact::pre_force(int vflag)
     int nTri = mesh()->size();
 
     for(int i = 0; i < nTri; i++)
+    {
         contactAreaStep(i) = 0.;
+        contactAreaStepAbs(i) = 0.;
+    }
 }
 
 /* ----------------------------------------------------------------------
@@ -224,6 +235,7 @@ void FixMeshSurfaceStressContact::add_particle_contribution(int ip,double *frc,
     double Acont = (radius*radius-rsq)*M_PI; //contact area sphere-wall
 
     contactAreaStep(iTri) += Acont / triMesh()->areaElem(iTri);
+    contactAreaStepAbs(iTri) += Acont;
     fix_wallcontacttime_->vector_atom[ip] += dt;
 }
 
@@ -250,8 +262,10 @@ void FixMeshSurfaceStressContact::calc_contact_time_average()
     for(int i = 0; i < nTri; i++)
     {
         contactArea(i) = T_ * contactArea(i) + dt * contactAreaStep(i);
+        contactAreaAbs(i) = T_ * contactAreaAbs(i) + dt * contactAreaStepAbs(i);
         /*NL*/// if(contactArea(i) > 0.) fprintf(screen,"contactArea(i) %f\n",contactArea(i) );
-        contactArea(i) /= (T_+dt);
+        contactArea(i)    /= (T_+dt);
+        contactAreaAbs(i) /= (T_+dt);
     }
     T_ += dt;
 }

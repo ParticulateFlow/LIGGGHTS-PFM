@@ -56,8 +56,14 @@ namespace LAMMPS_NS
         inline double& contactAreaStep(int i)
         { return (*contact_area_step_)(i); }
 
+        inline double& contactAreaStepAbs(int i)
+        { return (*contact_area_step_abs_)(i); }
+
         inline double& contactArea(int i)
         { return (*contact_area_)(i); }
+
+        inline double& contactAreaAbs(int i)
+        { return (*contact_area_abs_)(i); }
 
       private:
 
@@ -66,7 +72,9 @@ namespace LAMMPS_NS
 
         class FixPropertyAtom *fix_wallcontacttime_;
         ScalarContainer<double> *contact_area_;
+        ScalarContainer<double> *contact_area_abs_;
         ScalarContainer<double> *contact_area_step_;
+        ScalarContainer<double> *contact_area_step_abs_;
 
         //NP time for averaging
         double T_;
