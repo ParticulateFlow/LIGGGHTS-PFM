@@ -238,7 +238,7 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
         // unset non-touching neighbors
 
         touch[jj] = 0;
-        shear = &allshear[dnum_pairgran*jj];
+        shear = &allshear[dnum()*jj];
         shear[0] = 0.0;
         shear[1] = 0.0;
         shear[2] = 0.0;
@@ -331,7 +331,7 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
         /*NL*///printVec3D(screen,"xj",x[j]);
         /*NL*///error->one(FLERR,"touch");
 
-        shear = &allshear[dnum_pairgran*jj];
+        shear = &allshear[dnum()*jj];
 
         /*NL*///printVec3D(screen,"shear",shear);
 

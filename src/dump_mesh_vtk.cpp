@@ -487,7 +487,7 @@ void DumpMeshVTK::getGeneralRefs()
         error->all(FLERR,"Illegal dump mesh/vtk command, unknown keyword or mesh");
   }
 
-  /*NL*/ fprintf(screen,"n_scalar_containers_ %d n_vector_containers_ %d\n",n_scalar_containers_,n_vector_containers_);
+  /*NL*/ //fprintf(screen,"n_scalar_containers_ %d n_vector_containers_ %d\n",n_scalar_containers_,n_vector_containers_);
 }
 
 /* ---------------------------------------------------------------------- */

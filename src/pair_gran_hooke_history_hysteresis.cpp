@@ -164,7 +164,7 @@ void PairGranHookeHistoryHysteresis::compute_force(int eflag, int vflag,int addf
         // unset non-touching neighbors
 
         touch[jj] = 0;
-        shear = &allshear[dnum_pairgran*jj];
+        shear = &allshear[dnum()*jj];
         shear[0] = 0.0;
         shear[1] = 0.0;
         shear[2] = 0.0;
@@ -236,7 +236,7 @@ void PairGranHookeHistoryHysteresis::compute_force(int eflag, int vflag,int addf
         itype = type[i];
         jtype = type[j];
 
-        shear = &allshear[dnum_pairgran*jj];
+        shear = &allshear[dnum()*jj];
         deltaMax = shear[3]; // the 4th value of the history array is deltaMax
         if (deltan > deltaMax) {
         	shear[3] = deltan;

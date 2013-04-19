@@ -231,7 +231,9 @@ void Variable::set(int narg, char **arg)
     which[nvar] = universe->iworld;
 
     if (universe->me == 0) {
-      FILE *fp = fopen("tmp.lammps.variable","w");
+      char filename[100]  ;
+      sprintf(filename,"tmp.lammps.variable%s",universe->universe_id?universe->universe_id:"");
+      FILE *fp = fopen(filename,"w");
       fprintf(fp,"%d\n",universe->nworlds);
       fclose(fp);
     }
@@ -387,17 +389,21 @@ int Variable::next(int narg, char **arg)
 
     int nextindex;
     if (me == 0) {
+      char filename_1[100],filename_2[100];
+      sprintf(filename_1,"tmp.lammps.variable%s",universe->universe_id?universe->universe_id:"");
+      sprintf(filename_2,"tmp.lammps.variable.lock%s",universe->universe_id?universe->universe_id:"");
       while (1) {
-        if (!rename("tmp.lammps.variable","tmp.lammps.variable.lock")) break;
+
+        if (!rename(filename_1,filename_2)) break;
         usleep(100000);
       }
-      FILE *fp = fopen("tmp.lammps.variable.lock","r");
+      FILE *fp = fopen(filename_2,"r");
       fscanf(fp,"%d",&nextindex);
       fclose(fp);
-      fp = fopen("tmp.lammps.variable.lock","w");
+      fp = fopen(filename_2,"w");
       fprintf(fp,"%d\n",nextindex+1);
       fclose(fp);
-      rename("tmp.lammps.variable.lock","tmp.lammps.variable");
+      rename(filename_2,filename_1);
       if (universe->uscreen)
         fprintf(universe->uscreen,
                 "Increment via next: value %d on partition %d\n",

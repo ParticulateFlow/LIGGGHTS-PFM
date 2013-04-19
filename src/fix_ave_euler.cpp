@@ -323,6 +323,7 @@ void FixAveEuler::bin_atoms()
 {
   int i,ibin;
   double **x = atom->x;
+  int *mask = atom->mask;
   int nall = atom->nlocal + atom->nghost;
 
   for (i = 0; i < ncells_max_; i++)
@@ -340,7 +341,9 @@ void FixAveEuler::bin_atoms()
 
   for (i = nall-1; i >= 0; i--)
   {
-    ibin = coord2bin(x[i]);
+      if(! (mask[i] & groupbit)) continue;
+
+      ibin = coord2bin(x[i]);
 
       // ghosts outside grid may return values ibin < 0 || ibin >= ncells_
       // lets ignore them
