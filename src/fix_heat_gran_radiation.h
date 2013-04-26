@@ -33,11 +33,11 @@ FixStyle(heat/gran/radiation,FixHeatGranRad)
 
 namespace LAMMPS_NS {
 
-	class FixHeatGranRad : public FixHeatGran {
+  class FixHeatGranRad : public FixHeatGran {
 
-	public:
-		FixHeatGranRad(class LAMMPS *, int, char **);
-		~FixHeatGranRad();
+  public:
+    FixHeatGranRad(class LAMMPS *, int, char **);
+    ~FixHeatGranRad();
     void pre_delete(bool){};
 
     double extend_cut_ghost();
@@ -46,7 +46,7 @@ namespace LAMMPS_NS {
     void post_force(int);
     void setup(int);
 
-	private:
+  private:
     bool intersectRaySphere(double *, double *, double *, double, double &, double *);
     bool trace(int, int, double *, double *, double, int, double *);
     int nextBin(int, double *, double *, double *, int &, int &, int &);
@@ -85,7 +85,7 @@ namespace LAMMPS_NS {
     int *binStencilmdy;
     int *binStencildz;
     int *binStencilmdz;
-	};
+  };
 }
 
 #endif

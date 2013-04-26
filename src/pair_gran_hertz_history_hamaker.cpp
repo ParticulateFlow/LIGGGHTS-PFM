@@ -388,25 +388,25 @@ inline double PairGranHertzHistoryHamaker::addCohesionForce(int ip, int jp,doubl
 void PairGranHertzHistoryHamaker::settings(int narg, char **arg)
 {
 
-	PairGranHertzHistory::settings(narg, arg);
+  PairGranHertzHistory::settings(narg, arg);
 
-	iarg_ = 0;
+  iarg_ = 0;
 
-	// set defaults
-	cohesionflag = 1;
+  // set defaults
+  cohesionflag = 1;
 
-	// parse args
+  // parse args
 
-	bool hasargs = true;
-	while(iarg_ < narg && hasargs)
-	{
-		hasargs = false;
-		if (force->pair_match("gran/hooke/history",1) || force->pair_match("gran/hertz/history",1))
-			error->all(FLERR,"Illegal pair_style gran command, illegal keyword");
-	}
+  bool hasargs = true;
+  while(iarg_ < narg && hasargs)
+  {
+    hasargs = false;
+    if (force->pair_match("gran/hooke/history",1) || force->pair_match("gran/hertz/history",1))
+      error->all(FLERR,"Illegal pair_style gran command, illegal keyword");
+  }
 
-	if(cohesionflag && domain->dimension!=3)
-		error->all(FLERR,"Cohesion model valid for 3d simulations only");
+  if(cohesionflag && domain->dimension!=3)
+    error->all(FLERR,"Cohesion model valid for 3d simulations only");
 
 }
 
@@ -432,23 +432,23 @@ void PairGranHertzHistoryHamaker::init_granular()
   //pre-calculate parameters for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
   {
-  	for(int j=1;j<max_type+1;j++)
-  	{
+    for(int j=1;j<max_type+1;j++)
+    {
 
-  		aHamakerEff[i][j] = aHamaker_->compute_array(i-1,j-1);
-  		hCutEff[i][j] = hCut_->compute_array(i-1,j-1);
-  		hMaxEff[i][j] = hCutEff[i][j]*100; // force f(hMax)/f(hCut) = 0.0001
+      aHamakerEff[i][j] = aHamaker_->compute_array(i-1,j-1);
+      hCutEff[i][j] = hCut_->compute_array(i-1,j-1);
+      hMaxEff[i][j] = hCutEff[i][j]*100; // force f(hMax)/f(hCut) = 0.0001
 
-  		maxhMaxEff = MAX(maxhMaxEff,hMaxEff[i][j]); // get maximum hMaxEff for skin check
+      maxhMaxEff = MAX(maxhMaxEff,hMaxEff[i][j]); // get maximum hMaxEff for skin check
 
 
-  	}
+    }
   }
 
   // check skin
   if(skin < maxhMaxEff) {
-  	if(screen) fprintf(screen,"Maximum cutoff distance (~ minParticleDist) = %f. Skin = %f\n",maxhMaxEff,skin);
-  	error->all(FLERR,"Skin is too small for Hamaker model.\n");
+    if(screen) fprintf(screen,"Maximum cutoff distance (~ minParticleDist) = %f. Skin = %f\n",maxhMaxEff,skin);
+    error->all(FLERR,"Skin is too small for Hamaker model.\n");
   }
 }
 
@@ -458,12 +458,12 @@ void PairGranHertzHistoryHamaker::init_granular()
 
 void PairGranHertzHistoryHamaker::allocate_properties(int size)
 {
-	memory->destroy(aHamakerEff);
-	memory->destroy(hCutEff);
-	memory->destroy(hMaxEff);
-	memory->create(aHamakerEff,size+1,size+1,"aHamakerEff");
-	memory->create(hCutEff,size+1,size+1,"hCutEff");
-	memory->create(hMaxEff,size+1,size+1,"hMaxEff");
+  memory->destroy(aHamakerEff);
+  memory->destroy(hCutEff);
+  memory->destroy(hMaxEff);
+  memory->create(aHamakerEff,size+1,size+1,"aHamakerEff");
+  memory->create(hCutEff,size+1,size+1,"hCutEff");
+  memory->create(hMaxEff,size+1,size+1,"hMaxEff");
 }
 
 /* ---------------------------------------------------------------------- */

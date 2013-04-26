@@ -56,7 +56,7 @@ using namespace LAMMPS_NS;
 PairGranHertzHistoryLiquid::PairGranHertzHistoryLiquid(LAMMPS *lmp) : PairGranHertzHistory(lmp)
 {
 
-    dnum_pairgran = 4;	//NP Modified D.N.
+    dnum_pairgran = 4;  //NP Modified D.N.
 }
 
 /* ---------------------------------------------------------------------- */
@@ -288,7 +288,7 @@ void PairGranHertzHistoryLiquid::compute_force(int eflag, int vflag,int addflag)
 
         deriveContactModelParams(i,j,meff,deltan,kn,kt,gamman,gammat,xmu,rmu);*/         //modified C.K
 
-	// normal forces = Hookian contact + normal velocity damping
+  // normal forces = Hookian contact + normal velocity damping
 
         // meff = effective mass of pair of particles
         // if I or J part of rigid body, use body mass
@@ -488,7 +488,7 @@ void PairGranHertzHistoryLiquid::settings(int narg, char **arg)
                 cohesionflag = 1;
             else if(strcmp(arg[iarg_],"sjkr2") == 0)
                 cohesionflag = 2;
-	    else if(strcmp(arg[iarg_],"capillary") == 0)	//capillary
+      else if(strcmp(arg[iarg_],"capillary") == 0)  //capillary
                 capillaryflag = 1;
             else if(strcmp(arg[iarg_],"off") == 0)
                 cohesionflag = 0;
@@ -626,8 +626,8 @@ void PairGranHertzHistoryLiquid::init_granular()
 
   if(charVelflag) charVel = charVel1->compute_scalar();
   if(capillaryflag) {
-  	liquidVolume = liquidVolume1->compute_scalar();
-  	surfaceTension = surfaceTension1->compute_scalar();
+    liquidVolume = liquidVolume1->compute_scalar();
+    surfaceTension = surfaceTension1->compute_scalar();
   }
 
 }

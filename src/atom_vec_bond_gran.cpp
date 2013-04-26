@@ -103,9 +103,9 @@ void AtomVecBondGran::grow(int n)
   
   num_bond = memory->grow(atom->num_bond,nmax,"atom:num_bond");
   bond_type = memory->grow(atom->bond_type,nmax,atom->bond_per_atom,
-			   "atom:bond_type");
+         "atom:bond_type");
   bond_atom = memory->grow(atom->bond_atom,nmax,atom->bond_per_atom,
-			   "atom:bond_atom");
+         "atom:bond_atom");
 
   if(atom->n_bondhist)
   {
@@ -179,7 +179,7 @@ void AtomVecBondGran::copy(int i, int j, int delflag)
 /* ---------------------------------------------------------------------- */
 
 int AtomVecBondGran::pack_comm(int n, int *list, double *buf,
-			   int pbc_flag, int *pbc)
+         int pbc_flag, int *pbc)
 {
   int i,j,m;
   double dx,dy,dz;
@@ -215,7 +215,7 @@ int AtomVecBondGran::pack_comm(int n, int *list, double *buf,
 /* ---------------------------------------------------------------------- */
 
 int AtomVecBondGran::pack_comm_vel(int n, int *list, double *buf,
-			       int pbc_flag, int *pbc)
+             int pbc_flag, int *pbc)
 {
   int i,j,m;
   double dx,dy,dz;
@@ -321,7 +321,7 @@ void AtomVecBondGran::unpack_reverse(int n, int *list, double *buf)
 /* ---------------------------------------------------------------------- */
 
 int AtomVecBondGran::pack_border(int n, int *list, double *buf,
-			     int pbc_flag, int *pbc)
+           int pbc_flag, int *pbc)
 {
   int i,j,m;
   double dx,dy,dz;
@@ -365,7 +365,7 @@ int AtomVecBondGran::pack_border(int n, int *list, double *buf,
 /* ---------------------------------------------------------------------- */
 
 int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
-				 int pbc_flag, int *pbc)
+         int pbc_flag, int *pbc)
 {
   int i,j,m;
   double dx,dy,dz;
@@ -565,7 +565,7 @@ int AtomVecBondGran::unpack_exchange(double *buf)
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
       m += modify->fix[atom->extra_grow[iextra]]->
-	unpack_exchange(nlocal,&buf[m]);
+  unpack_exchange(nlocal,&buf[m]);
 
   atom->nlocal++;
   return m;
@@ -592,7 +592,7 @@ int AtomVecBondGran::size_restart()
   if (atom->nextra_restart)
     for (int iextra = 0; iextra < atom->nextra_restart; iextra++)
       for (i = 0; i < nlocal; i++)
-	n += modify->fix[atom->extra_restart[iextra]]->size_restart(i);
+  n += modify->fix[atom->extra_restart[iextra]]->size_restart(i);
 
   return n;
 }
