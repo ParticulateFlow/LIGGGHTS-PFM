@@ -277,14 +277,14 @@ void FixMeshSurfaceStressServo::init()
     	process_value_ = &torque_total_[dim_];
     	control_output_ = &omegacm_(0)[dim_];
 
-  	  // find maximum distance axis-node
-  	  rPaMax = getMaxRad();
-  	  if (rPaMax == 0)
-  	  	error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
+    	// find maximum distance axis-node
+    	rPaMax = getMaxRad();
+    	if (rPaMax == 0)
+    	  error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
 
-      // maximum angular velocity
-      ctrl_output_max_ = vel_max_/rPaMax;
-      break;
+    	// maximum angular velocity
+    	ctrl_output_max_ = vel_max_/rPaMax;
+    	break;
     default:
     	error->fix_error(FLERR,this,"This may not happen!");
     	break;
