@@ -74,6 +74,9 @@ namespace LAMMPS_NS
         bool manipulated()
         { return manipulated_; }
 
+        bool verbose()
+        { return verbose_; }
+
       protected:
 
         // mesh manipulation upon creation
