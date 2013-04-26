@@ -455,7 +455,7 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
             // spring
             vectorZeroize3D(dr_torque);
             reff=radi*radj/(radi+radj);
-            kr = 3*kn*rmu*rmu*reff*reff;
+            kr = 3*kn*rmu*rmu*reff*reff*M_PI; //NP modified A.A.; Not sure if kr is right for 3D; *M_PI;
             vectorSubtract3D(omega[i],omega[j],wr_roll);
             vectorScalarMult3D(wr_roll,update->dt*kr,dr_torque);
             r_torque[0] = shear[3] - dr_torque[0];
