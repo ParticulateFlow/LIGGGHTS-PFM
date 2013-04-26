@@ -49,12 +49,15 @@ class ComputeCrosssection : public ComputeContactAtom
   void setup_cuts();
   void compute_convex_hull();
   inline int mod(double coo);
+  double calc_ang();
 
   class ModifiedAndrew **mod_andrew_;
   int dim_, n_cuts_;
   double min_,max_;
   double cut_thickness_half_;
   double cut_dist_;
+
+  bool angle_;
 
   FILE *file_;
 };

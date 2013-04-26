@@ -35,6 +35,7 @@
 #include "memory.h"
 #include "error.h"
 #include "modified_andrew.h"
+#include "math_extra_liggghts.h"
 
 using namespace LAMMPS_NS;
 using MODIFIED_ANDREW_AUX::Circle;
@@ -43,6 +44,7 @@ using MODIFIED_ANDREW_AUX::Circle;
 
 ComputeCrosssection::ComputeCrosssection(LAMMPS *lmp, int narg, char **arg) :
   ComputeContactAtom(lmp, narg, arg),
+  angle_(0),
   file_(0)
 {
   if (narg != 15 && narg != 17)
@@ -97,10 +99,13 @@ ComputeCrosssection::ComputeCrosssection(LAMMPS *lmp, int narg, char **arg) :
   setup_cuts();
 
   vector_flag = 1;
-  vector_flag = 1;
-  size_vector = n_cuts_;
 
-  vector = new double[n_cuts_];
+  if(file_)
+    size_vector = n_cuts_+1;
+  else
+    size_vector = n_cuts_;
+
+  vector = new double[n_cuts_+1];
 }
 
 /* ---------------------------------------------------------------------- */
@@ -144,7 +149,12 @@ void ComputeCrosssection::compute_vector()
       vector[i] = mod_andrew_[i]->area();
   }
 
-  if(file_) write();
+  if(file_)
+  {
+      vector[n_cuts_] = calc_ang();
+      //fprintf(file_,"%f\n",ang);
+      write();
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -202,15 +212,88 @@ void ComputeCrosssection::compute_convex_hull()
     }
 }
 
-
 /* ---------------------------------------------------------------------- */
 
 void ComputeCrosssection::write()
 {
+    //NP write to text file
+    //NP format: coordinate area r*
+    //NP where r* is the radius of area-equivalent cricle
+
     for(int i = 0; i < n_cuts_; i++)
     {
-        double coo = min_ + static_cast<double>(i)*2.*cut_thickness_half_;
+        double coo = min_ + static_cast<double>(i)*cut_dist_;
         fprintf(file_,"%f %f %f\n",coo,vector[i],sqrt(vector[i]/M_PI));
     }
     fflush(file_);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double ComputeCrosssection::calc_ang()
+{
+    //NP calculates angle assuming areas are forming a cone
+
+    int ilo = 0;
+    int ihi = n_cuts_-1;
+    int imid, ilomid, ihimid, idelta;
+    double rhimid, rlomid, del, ang;
+
+    //NP calc ilo,ihi
+
+    for(int i = 0; i < n_cuts_; i++)
+    {
+        if(MathExtraLiggghts::compDouble(vector[i],0.,1e-6))
+            ilo += 1;
+        else
+            break;
+    }
+
+    for(int i = n_cuts_-1; i >= 0; i--)
+    {
+        if(MathExtraLiggghts::compDouble(vector[i],0.,1e-6))
+            ihi -= 1;
+        else
+            break;
+    }
+
+    //NP error checks ilo,ihi
+
+    if(ilo == ihi)
+        error->one(FLERR,"Compute crossection could not calculate angle (1)");
+
+    for(int i = ilo; i <= ihi; i++)
+    {
+        if(MathExtraLiggghts::compDouble(vector[i],0.,1e-6))
+            error->one(FLERR,"Compute crossection could not calculate angle - internal error");
+    }
+
+    //NP calc ilomid,ihimid
+
+
+    imid = static_cast<int>(0.5*static_cast<double>(ilo+ihi));
+    idelta = static_cast<int>(0.25*static_cast<double>(ihi-ilo));
+
+    ilomid = imid-idelta;
+    ihimid = imid+idelta;
+
+    //NP error checks ilomid,ihimid
+
+    if(ilomid == ihimid || ilomid == ilo || ihimid == ihi)
+        error->one(FLERR,"Compute crossection could not calculate angle (2)");
+
+    //NP calc angle
+
+    rlomid = sqrt(vector[ilomid]/M_PI);
+    rhimid = sqrt(vector[ihimid]/M_PI);
+    del = (ihimid-ilomid)*cut_dist_;
+
+    if(rhimid > rlomid)
+        ang = 90. + 180./M_PI*atan((rhimid-rlomid)/del);
+    else
+        ang = 180./M_PI*atan(del/(rlomid-rhimid));
+
+    /*NL*/ fprintf(screen,"rlomid %f rhimid %f del %f ang %f\n",rlomid,rhimid,del,ang);
+
+    return ang;
 }

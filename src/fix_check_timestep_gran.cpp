@@ -92,9 +92,12 @@ void FixCheckTimestepGran::init()
   pg = (PairGranHookeHistory*)force->pair_match("gran/hooke/history",1);
   if(!pg) pg = (PairGranHookeHistory*)force->pair_match("gran/hertz/history",1);
   if(!pg) pg = (PairGranHookeHistory*)force->pair_match("gran/hooke",1);
+  if(!pg) pg = (PairGranHookeHistory*)force->pair_match("gran/hertz/history/liquid",1); //NP mod JOKER
 
   if (!pg)
-    error->all(FLERR,"Fix check/timestep/gran can only be used together with: gran/hooke/history, gran/hooke, gran/hertz/history, gran/hooke/history/stiffness");
+    error->all(FLERR,"Fix check/timestep/gran can only be used together with: gran/hooke/history, "
+                      "gran/hooke, gran/hertz/history, gran/hooke/history/stiffness, gran/hertz/history/liquid"); //NP mod JOKER
+
 
   //NP get material properties
   mpg = pg->mpg;

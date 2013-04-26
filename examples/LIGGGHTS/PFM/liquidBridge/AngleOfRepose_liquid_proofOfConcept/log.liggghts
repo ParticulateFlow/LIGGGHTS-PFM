@@ -1,0 +1,422 @@
+LIGGGHTS (Version LIGGGHTS-MASTER 2.3.2plusplus, compiled 2013-04-19-15:06:00 by ckloss based on LAMMPS 20 Apr 2012)
+echo both
+#Contact model example
+
+#########################################################################################
+#                               user defined settings: settings                         #
+#########################################################################################
+variable    rad     equal 0.00025          		# particle radius
+variable    dens    equal 2500           		# particle density
+variable    ym      equal 5e6            		# Young's modulus
+variable    pr      equal 0.45	   		        # Poisson ratio
+variable    fric    equal 0.2			        # coefficient of friction
+variable    rest    equal 0.9       		    # coefficient of resitution
+variable    rf      equal 0.15	                # coefficient of rolling friction
+variable    dt      equal 1e-5       		    # time step width
+variable    cg      equal 1                     # coarse graining
+
+variable    VLiqu   equal 0.384                 #0.000001 #0.0128(real)*30                # liquid volume/particle volume
+variable    sigma   equal 0.07197               # surfaceTension
+#########################################################################################
+#                               internal settings - do not touch                        #
+#########################################################################################
+variable	stlDiam         equal 0.025          	                        # diam of orig. geometry
+variable	scale           equal (30*${rad}*${cg})/${stlDiam}   	        # scaling factor for geometry
+variable	scale           equal (30*0.00025*${cg})/${stlDiam}   	        variable	scale           equal (30*0.00025*1)/${stlDiam}   	        variable	scale           equal (30*0.00025*1)/0.025   	        variable	cylinderRad     equal ${scale}*${stlDiam}/2.
+variable	cylinderRad     equal 0.3*${stlDiam}/2.
+variable	cylinderRad     equal 0.3*0.025/2.
+variable	cylinderHeight  equal ${scale}*0.017
+variable	cylinderHeight  equal 0.3*0.017
+variable 	mParticles      equal ${cylinderRad}*${cylinderRad}*3.1415*${cylinderHeight}*0.7*${dens}    # mass of parcels
+variable 	mParticles      equal 0.00375*${cylinderRad}*3.1415*${cylinderHeight}*0.7*${dens}    variable 	mParticles      equal 0.00375*0.00375*3.1415*${cylinderHeight}*0.7*${dens}    variable 	mParticles      equal 0.00375*0.00375*3.1415*0.0051*0.7*${dens}    variable 	mParticles      equal 0.00375*0.00375*3.1415*0.0051*0.7*2500    
+atom_style		granular
+atom_modify		map array
+boundary		f f f
+newton			off
+processors      2 2 1
+
+communicate		single vel yes
+
+units			si
+
+region			reg block -0.01 0.01 -0.01 0.01 -0.01 0.01 units box
+create_box		2 reg
+Created orthogonal box = (-0.01 -0.01 -0.01) to (0.01 0.01 0.01)
+  2 by 2 by 1 MPI processor grid
+
+neighbor		${rad}*${cg} bin
+neighbor		0.00025*${cg} bin
+neighbor		0.00025*1 bin
+neigh_modify    delay 0
+
+
+#Material properties required for new pair styles
+
+fix 		m1 all property/global youngsModulus peratomtype ${ym} ${ym}
+fix 		m1 all property/global youngsModulus peratomtype 5000000 ${ym}
+fix 		m1 all property/global youngsModulus peratomtype 5000000 5000000
+fix 		m2 all property/global poissonsRatio peratomtype ${pr} ${pr}
+fix 		m2 all property/global poissonsRatio peratomtype 0.45 ${pr}
+fix 		m2 all property/global poissonsRatio peratomtype 0.45 0.45
+fix 		m3 all property/global coefficientRestitution peratomtypepair 2 ${rest} ${rest} ${rest} ${rest} 
+fix 		m3 all property/global coefficientRestitution peratomtypepair 2 0.9 ${rest} ${rest} ${rest} 
+fix 		m3 all property/global coefficientRestitution peratomtypepair 2 0.9 0.9 ${rest} ${rest} 
+fix 		m3 all property/global coefficientRestitution peratomtypepair 2 0.9 0.9 0.9 ${rest} 
+fix 		m3 all property/global coefficientRestitution peratomtypepair 2 0.9 0.9 0.9 0.9 
+fix 		m4 all property/global coefficientFriction peratomtypepair 2 ${fric} ${fric} ${fric} ${fric}
+fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.2 ${fric} ${fric} ${fric}
+fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.2 0.2 ${fric} ${fric}
+fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.2 0.2 0.2 ${fric}
+fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.2 0.2 0.2 0.2
+#fix 		m5 all property/global characteristicVelocity scalar 2.
+fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 ${rf} ${rf} ${rf} ${rf}
+fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 0.15 ${rf} ${rf} ${rf}
+fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 0.15 0.15 ${rf} ${rf}
+fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 0.15 0.15 0.15 ${rf}
+fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 0.15 0.15 0.15 0.15
+#fix		m6 all property/global cohesionEnergyDensity peratomtypepair 1 30000
+fix 		m6 all property/global liquidVolume scalar ${VLiqu}
+fix 		m6 all property/global liquidVolume scalar 0.384
+fix		    m7 all property/global surfaceTension scalar ${sigma}
+fix		    m7 all property/global surfaceTension scalar 0.07197
+
+#New pair style
+pair_style 	gran/hertz/history/liquid cohesion capillary rolling_friction cdt #Hertzian with cohesion
+#pair_style 	gran/hertz/history/liquid rolling_friction cdt #Hertzian with cohesion
+pair_coeff	* *
+
+timestep	${dt}
+timestep	1e-05
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix		pt1 all mesh/surface/stress file bottomBig.stl type 1 scale ${scale}
+fix		pt1 all mesh/surface/stress file bottomBig.stl type 1 scale 0.3
+fix		pt2 all mesh/surface/stress file compFace.stl type 1 scale ${scale} move 0. 0. 0.002
+fix		pt2 all mesh/surface/stress file compFace.stl type 1 scale 0.3 move 0. 0. 0.002
+fix		pt3 all mesh/surface/stress file cylinder.stl type 2 scale ${scale}
+fix		pt3 all mesh/surface/stress file cylinder.stl type 2 scale 0.3
+fix		granwalls all wall/gran/hertz/history mesh n_meshes 3 meshes pt1 pt2 pt3 store_force yes
+
+#region for insertion
+fix		inface all mesh/surface file entry.stl type 2 scale ${scale} move 0. 0. 0 
+fix		inface all mesh/surface file entry.stl type 2 scale 0.3 move 0. 0. 0 
+
+
+#distributions for insertion
+variable rad2 equal ${rad}*1.05
+variable rad2 equal 0.00025*1.05
+variable rad3 equal ${rad}*0.95
+variable rad3 equal 0.00025*0.95
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad}
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant ${rad}
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.00025
+fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad2}
+fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant ${rad2}
+fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.0002625
+fix		pts3 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad3}
+fix		pts3 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant ${rad3}
+fix		pts3 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.0002375
+fix		pdd1 all particledistribution/discrete 1. 3 pts1 0.4 pts2 0.3 pts3 0.3
+
+#particle insertion
+group		nve_group region reg
+0 atoms in group nve_group
+
+region	bc cylinder z 0. 0. ${cylinderRad} 0 ${cylinderHeight} units box
+region	bc cylinder z 0. 0. 0.00375 0 ${cylinderHeight} units box
+region	bc cylinder z 0. 0. 0.00375 0 0.0051 units box
+fix 	ins nve_group insert/pack seed 100001 distributiontemplate pdd1 insert_every once overlapcheck yes all_in yes mass_in_region ${mParticles} region bc
+fix 	ins nve_group insert/pack seed 100001 distributiontemplate pdd1 insert_every once overlapcheck yes all_in yes mass_in_region 0.000394282793 region bc
+
+
+#apply nve integration to all particles that are inserted as single particles
+fix		integr nve_group nve/sphere
+
+#output settings, include total thermal energy
+fix		ts all check/timestep/gran 20000 0.1 0.1
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
+thermo		    1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+
+#insert the first particles so that dump is not empty
+run		1
+INFO: Particle insertion ins: 0.000000 particles every 0 steps - particle rate 0.000000, (mass rate 0.000000)
+Memory usage per processor = 14.5666 Mbytes
+Step Atoms KinEng rke Volume 
+       0        0           -0            0        8e-06 
+INFO: Particle insertion ins: inserted 872 particle templates (mass 0.000159) at step 1
+ - a total of 872 particle templates (mass 0.000159) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (fix_insert.cpp:668)
+       1      872 1.1333165e-10            0        8e-06 
+Loop time of 0.0162394 on 4 procs for 1 steps with 872 atoms
+
+Pair  time (%) = 2.55108e-05 (0.157092)
+Neigh time (%) = 0.000443757 (2.73259)
+Comm  time (%) = 6.92606e-05 (0.426497)
+Outpt time (%) = 2.64645e-05 (0.162964)
+Other time (%) = 0.0156744 (96.5209)
+
+Nlocal:    218 ave 223 max 213 min
+Histogram: 1 0 0 1 0 0 0 1 0 1
+Nghost:    114 ave 116 max 111 min
+Histogram: 1 0 0 0 1 0 0 0 0 2
+Neighs:    779 ave 815 max 744 min
+Histogram: 1 0 0 0 2 0 0 0 0 1
+
+Total # of neighbors = 3116
+Ave neighs/atom = 3.57339
+Neighbor list builds = 1
+Dangerous builds = 0
+dump		dmp all custom 1000 post/dump*.cohesion id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_force_granwalls[1] f_force_granwalls[2] f_force_granwalls[3]
+dump 		dumpstress all mesh/gran/VTK 1000 post/dump*.vtk stress pt1 pt2 pt3 inface
+dump 		inface all mesh/gran/VTK 1000 post/dump_inface*.vtk stress inface
+
+#insert particles
+run		5000
+Memory usage per processor = 15.4091 Mbytes
+Step Atoms KinEng rke Volume 
+       1      872 1.1333165e-10            0        8e-06 
+    1000      872 5.6364599e-07 5.6937817e-09        8e-06 
+INFO: more than 3 touching neighbor mesh elements found, growing contact history.
+    2000      872 3.793653e-07 1.8234576e-08        8e-06 
+    3000      872 6.0676372e-09 8.313705e-10        8e-06 
+    4000      872 9.3933776e-10 4.1997757e-11        8e-06 
+    5000      872 9.5324733e-11 3.0923104e-12        8e-06 
+    5001      872 9.5575532e-11 3.0925243e-12        8e-06 
+Loop time of 2.67675 on 4 procs for 5000 steps with 872 atoms
+
+Pair  time (%) = 0.948614 (35.439)
+Neigh time (%) = 0.0137969 (0.515436)
+Comm  time (%) = 0.0771708 (2.88301)
+Outpt time (%) = 0.113539 (4.24166)
+Other time (%) = 1.52363 (56.9209)
+
+Nlocal:    218 ave 222 max 215 min
+Histogram: 1 1 0 0 0 1 0 0 0 1
+Nghost:    129 ave 134 max 124 min
+Histogram: 1 0 1 0 0 0 0 0 1 1
+Neighs:    1350.5 ave 1390 max 1318 min
+Histogram: 1 0 1 0 0 1 0 0 0 1
+
+Total # of neighbors = 5402
+Ave neighs/atom = 6.19495
+Neighbor list builds = 35
+Dangerous builds = 0
+
+##################################################
+variable vthre equal 0.001
+variable vcmx equal vcm(all,x)
+variable vcmy equal vcm(all,y)
+variable vcmz equal vcm(all,z)
+variable vave equal sqrt(v_vcmx*v_vcmx+v_vcmy*v_vcmy+v_vcmz*v_vcmz)
+label loop
+  print "-----> Checking Velocity..."
+-----> Checking Velocity...
+  if "${vave}<${vthre}" then "jump in.smallParticles endloop"
+jump in.smallParticles endloop
+#################################################
+
+# remove cylinder
+fix		movecyl all move/mesh mesh pt3 linear 0. 0. 0.02
+run		15000
+Memory usage per processor = 16.447 Mbytes
+Step Atoms KinEng rke Volume 
+    5001      872 9.5575532e-11 3.0925243e-12        8e-06 
+    6000      872 1.426279e-10 4.6882679e-12        8e-06 
+    7000      872 9.1693609e-11 2.4269206e-12        8e-06 
+    8000      872 4.5756221e-11 1.8582696e-12        8e-06 
+    9000      872 5.0254606e-11 3.2364435e-12        8e-06 
+   10000      872 4.0518838e-11 1.848829e-12        8e-06 
+   11000      872 5.7599837e-11 2.6047207e-12        8e-06 
+   12000      872 2.3967484e-10 4.2407054e-12        8e-06 
+   13000      872 2.0847803e-10 3.1360739e-12        8e-06 
+   14000      872 3.7924968e-10 1.5494558e-11        8e-06 
+   15000      872 6.4369517e-10 2.0663899e-11        8e-06 
+   16000      872 8.828637e-10 2.3218447e-11        8e-06 
+   17000      872 5.8047285e-10 2.8794503e-11        8e-06 
+   18000      872 9.851797e-10 2.7324049e-11        8e-06 
+   19000      872 2.6267436e-09 4.6189915e-11        8e-06 
+WARNING: time-step is 31.764896 % of rayleigh time
+   20000      872 1.6712937e-09 4.9293392e-11        8e-06 
+   20001      872 1.6739383e-09 4.9312614e-11        8e-06 
+Loop time of 10.1173 on 4 procs for 15000 steps with 872 atoms
+
+Pair  time (%) = 4.77091 (47.1561)
+Neigh time (%) = 0.0183537 (0.18141)
+Comm  time (%) = 0.243081 (2.40263)
+Outpt time (%) = 0.441495 (4.36378)
+Other time (%) = 4.64343 (45.8961)
+
+Nlocal:    218 ave 223 max 213 min
+Histogram: 1 1 0 0 0 0 0 0 0 2
+Nghost:    126 ave 130 max 121 min
+Histogram: 1 0 0 0 0 1 1 0 0 1
+Neighs:    1357 ave 1395 max 1330 min
+Histogram: 2 0 0 0 0 0 1 0 0 1
+
+Total # of neighbors = 5428
+Ave neighs/atom = 6.22477
+Neighbor list builds = 46
+Dangerous builds = 0
+unfix 	movecyl
+
+#compress cake
+#fix 		moveface all move/mesh mesh pt2 linear 0. 0. -0.001
+
+##################################################
+variable vthre equal 0.0005
+variable vcmx equal vcm(all,x)
+variable vcmy equal vcm(all,y)
+variable vcmz equal vcm(all,z)
+variable vave equal sqrt(v_vcmx*v_vcmx+v_vcmy*v_vcmy+v_vcmz*v_vcmz)
+label loop2
+  print "-----> Checking Velocity..."
+-----> Checking Velocity...
+  if "${vave}<${vthre}" then "jump in.smallParticles endloop2"
+  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
+-----> v ave 0.0008595107513, v threshold 0.0005, continuing run
+  set group all vx 0. vy 0. vz 0.
+  872 settings made for vx
+  872 settings made for vy
+  872 settings made for vz
+  run 1000
+Memory usage per processor = 16.447 Mbytes
+Step Atoms KinEng rke Volume 
+   20001      872            0 4.9312614e-11        8e-06 
+   21000      872 9.6460995e-10 4.0816836e-11        8e-06 
+   21001      872 9.6576585e-10 4.0573603e-11        8e-06 
+Loop time of 0.509491 on 4 procs for 1000 steps with 872 atoms
+
+Pair  time (%) = 0.316321 (62.0857)
+Neigh time (%) = 0.00109762 (0.215435)
+Comm  time (%) = 0.0136178 (2.67282)
+Outpt time (%) = 0.0225193 (4.41996)
+Other time (%) = 0.155935 (30.6061)
+
+Nlocal:    218 ave 223 max 213 min
+Histogram: 1 1 0 0 0 0 0 0 0 2
+Nghost:    126 ave 129 max 121 min
+Histogram: 1 0 0 0 0 0 0 2 0 1
+Neighs:    1355.25 ave 1394 max 1328 min
+Histogram: 2 0 0 0 0 1 0 0 0 1
+
+Total # of neighbors = 5421
+Ave neighs/atom = 6.21674
+Neighbor list builds = 3
+Dangerous builds = 0
+jump in.smallParticles loop2
+  print "-----> Checking Velocity..."
+-----> Checking Velocity...
+  if "${vave}<${vthre}" then "jump in.smallParticles endloop2"
+  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
+-----> v ave 0.0006625362904, v threshold 0.0005, continuing run
+  set group all vx 0. vy 0. vz 0.
+  872 settings made for vx
+  872 settings made for vy
+  872 settings made for vz
+  run 1000
+Memory usage per processor = 16.447 Mbytes
+Step Atoms KinEng rke Volume 
+   21001      872            0 4.0573603e-11        8e-06 
+   22000      872 1.658427e-09 1.7698343e-12        8e-06 
+   22001      872 1.6612103e-09 1.7713854e-12        8e-06 
+Loop time of 0.50682 on 4 procs for 1000 steps with 872 atoms
+
+Pair  time (%) = 0.315372 (62.2256)
+Neigh time (%) = 0.00109059 (0.215182)
+Comm  time (%) = 0.0134849 (2.66069)
+Outpt time (%) = 0.0225546 (4.45021)
+Other time (%) = 0.154318 (30.4483)
+
+Nlocal:    218 ave 223 max 213 min
+Histogram: 1 1 0 0 0 0 0 0 0 2
+Nghost:    126 ave 129 max 121 min
+Histogram: 1 0 0 0 0 0 0 2 0 1
+Neighs:    1352.25 ave 1387 max 1327 min
+Histogram: 2 0 0 0 0 0 1 0 0 1
+
+Total # of neighbors = 5409
+Ave neighs/atom = 6.20298
+Neighbor list builds = 3
+Dangerous builds = 0
+jump in.smallParticles loop2
+  print "-----> Checking Velocity..."
+-----> Checking Velocity...
+  if "${vave}<${vthre}" then "jump in.smallParticles endloop2"
+  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
+-----> v ave 0.0005974324722, v threshold 0.0005, continuing run
+  set group all vx 0. vy 0. vz 0.
+  872 settings made for vx
+  872 settings made for vy
+  872 settings made for vz
+  run 1000
+Memory usage per processor = 16.447 Mbytes
+Step Atoms KinEng rke Volume 
+   22001      872            0 1.7713854e-12        8e-06 
+   23000      872 1.3607876e-09 5.2567949e-12        8e-06 
+   23001      872 1.3296485e-09 5.4350816e-12        8e-06 
+Loop time of 0.508662 on 4 procs for 1000 steps with 872 atoms
+
+Pair  time (%) = 0.316915 (62.3038)
+Neigh time (%) = 0.000763834 (0.150165)
+Comm  time (%) = 0.0135633 (2.66648)
+Outpt time (%) = 0.0225984 (4.44273)
+Other time (%) = 0.15482 (30.4368)
+
+Nlocal:    218 ave 223 max 213 min
+Histogram: 1 1 0 0 0 0 0 0 0 2
+Nghost:    125.5 ave 129 max 121 min
+Histogram: 1 0 0 0 0 0 2 0 0 1
+Neighs:    1351 ave 1386 max 1319 min
+Histogram: 1 1 0 0 0 0 0 1 0 1
+
+Total # of neighbors = 5404
+Ave neighs/atom = 6.19725
+Neighbor list builds = 2
+Dangerous builds = 0
+jump in.smallParticles loop2
+  print "-----> Checking Velocity..."
+-----> Checking Velocity...
+  if "${vave}<${vthre}" then "jump in.smallParticles endloop2"
+  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
+-----> v ave 0.0008618405513, v threshold 0.0005, continuing run
+  set group all vx 0. vy 0. vz 0.
+  872 settings made for vx
+  872 settings made for vy
+  872 settings made for vz
+  run 1000
+Memory usage per processor = 16.447 Mbytes
+Step Atoms KinEng rke Volume 
+   23001      872            0 5.4350816e-12        8e-06 
+   24000      872 1.0568973e-10 9.4295718e-13        8e-06 
+   24001      872 1.0644266e-10 9.4344343e-13        8e-06 
+Loop time of 0.503593 on 4 procs for 1000 steps with 872 atoms
+
+Pair  time (%) = 0.31697 (62.9418)
+Neigh time (%) = 0 (0)
+Comm  time (%) = 0.0134341 (2.66764)
+Outpt time (%) = 0.0220736 (4.38323)
+Other time (%) = 0.151115 (30.0073)
+
+Nlocal:    218 ave 223 max 213 min
+Histogram: 1 1 0 0 0 0 0 0 0 2
+Nghost:    125.5 ave 129 max 121 min
+Histogram: 1 0 0 0 0 0 2 0 0 1
+Neighs:    1350.5 ave 1385 max 1318 min
+Histogram: 1 1 0 0 0 0 0 1 0 1
+
+Total # of neighbors = 5402
+Ave neighs/atom = 6.19495
+Neighbor list builds = 0
+Dangerous builds = 0
+jump in.smallParticles loop2
+  print "-----> Checking Velocity..."
+-----> Checking Velocity...
+  if "${vave}<${vthre}" then "jump in.smallParticles endloop2"
+jump in.smallParticles endloop2
+#################################################
+

@@ -557,10 +557,12 @@
     vectorCopy3D(axis,axisNorm);
     vectorScalarDiv3D(axisNorm,vectorMag3D(axisNorm));
 
+    /*NL*/ //printVec3D(this->screen,"axisNorm",axisNorm);
+
     // quat for rotation since last time-step
     dQ[0] = cos(dAngle*0.5);
     for(int i = 0; i < 3; i++)
-      dQ[i+1] = axis[i]*sin(dAngle*0.5);
+      dQ[i+1] = axisNorm[i]*sin(dAngle*0.5);
 
     vectorCopy3D(p,origin);
 

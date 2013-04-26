@@ -12,6 +12,7 @@
 #include "pair_gran.h"
 #include "pair_gran_hertz_history.h"
 #include "pair_gran_hertz_history_hamaker.h"
+#include "pair_gran_hertz_history_liquid.h"
 #include "pair_gran_hertz_history_simple.h"
 #include "pair_gran_hooke.h"
 #include "pair_gran_hooke_history.h"
