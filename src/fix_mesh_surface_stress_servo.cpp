@@ -86,7 +86,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
     if(!trackStress())
         error->fix_error(FLERR,this,"stress = 'on' required");
 
-    if(manipulated())
+    if(verbose() && manipulated())
         error->warning(FLERR,"Mesh has been scaled, moved, or rotated.\n"
                              "Please note that values for 'com', 'vel' refer to the scaled, moved, or rotated configuration");
 
