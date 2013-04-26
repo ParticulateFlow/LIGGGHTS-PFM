@@ -60,7 +60,7 @@ PairGranHookeHistory::PairGranHookeHistory(LAMMPS *lmp) : PairGran(lmp)
 {
     //flag that we intend to use contact history
     history = 1;
-    dnum_pairgran = 3;
+    dnum_pairgran = 6; //NP modified A.A.
 
     Yeff = NULL;
     Geff = NULL;
@@ -70,6 +70,7 @@ PairGranHookeHistory::PairGranHookeHistory(LAMMPS *lmp) : PairGran(lmp)
     coeffRestLog = NULL;
     coeffFrict = NULL;
     coeffRollFrict = NULL;
+    coeffRollVisc = NULL;
     coeffMu = NULL;
     coeffRestMax = NULL;
     coeffStc = NULL;
@@ -92,6 +93,7 @@ PairGranHookeHistory::~PairGranHookeHistory()
     memory->destroy(coeffRestLog);
     memory->destroy(coeffFrict);
     memory->destroy(coeffRollFrict);
+    memory->destroy(coeffRollVisc);
 
     memory->destroy(coeffMu);
     memory->destroy(coeffRestMax);
@@ -110,6 +112,12 @@ void PairGranHookeHistory::history_args(char** args)
     args[3] = (char *) "1";
     args[4] = (char *) "shearz";
     args[5] = (char *) "1";
+    args[6] = (char *) "r_torquex_old"; //NP modified A.A.
+    args[7] = (char *) "1";
+    args[8] = (char *) "r_torquey_old"; //NP modified A.A.
+    args[9] = (char *) "1";
+    args[10] = (char *) "r_torquez_old"; //NP modified A.A.
+    args[11] = (char *) "1";
 }
 
 /* ---------------------------------------------------------------------- */
@@ -169,7 +177,7 @@ inline void PairGranHookeHistory::deriveContactModelParams(int &ip, int &jp,doub
 void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
 {
   //calculated from the material properties //NP modified C.K.
-  double kn,kt,gamman,gammat,xmu,rmu; //NP modified C.K.
+  double kn,kt,kr,gamman,gammat,xmu,rmu; //NP modified C.K.
   double Fn_coh;//NP modified C.K.
 
   int i,j,ii,jj,inum,jnum,itype,jtype;
@@ -178,7 +186,7 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
   double vr1,vr2,vr3,vnnr,vn1,vn2,vn3,vt1,vt2,vt3,wr_roll[3],wr_rollmag;
   double wr1,wr2,wr3;
   double vtr1,vtr2,vtr3,vrel;
-  double mi,mj,meff,damp,ccel,tor1,tor2,tor3,r_torque[3],r_torque_n[3];
+  double mi,mj,meff,damp,ccel,tor1,tor2,tor3,r_torque[3],r_torque_n[3],dr_torque[3];
   double fn,fs,fs1,fs2,fs3;
   double shrmag,rsht, cri, crj;
   int *ilist,*jlist,*numneigh,**firstneigh;
@@ -242,6 +250,7 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
         shear[0] = 0.0;
         shear[1] = 0.0;
         shear[2] = 0.0;
+        shear[3] = 0.0; // this is the r_torque_old
 
       } else {
         r = sqrt(rsq);
@@ -422,6 +431,8 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
         vectorZeroize3D(r_torque);
         if(rollingflag)
         {
+          if(rollingflag == 1)
+          {
             vectorSubtract3D(omega[i],omega[j],wr_roll);
             wr_rollmag = vectorMag3D(wr_roll);
 
@@ -438,6 +449,53 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
                 r_torque_n[2] = delz * rtorque_dot_delta * rsqinv;
                 vectorSubtract3D(r_torque,r_torque_n,r_torque);
             }
+          }
+          else
+          {
+            // spring
+            vectorZeroize3D(dr_torque);
+            reff=radi*radj/(radi+radj);
+            kr = 3*kn*rmu*rmu*reff*reff;
+            vectorSubtract3D(omega[i],omega[j],wr_roll);
+            vectorScalarMult3D(wr_roll,update->dt*kr,dr_torque);
+            r_torque[0] = shear[3] - dr_torque[0];
+            r_torque[1] = shear[4] - dr_torque[1];
+            r_torque[2] = shear[5] - dr_torque[2];
+
+            // dashpot
+            double r_inertia;
+            if (domain->dimension == 2) r_inertia = 1/(1/(1.5*mi*radi*radi) + 1/(1.5*mj*radj*radj));
+            else  r_inertia = 1/(1/(1.4*mi*radi*radi) + 1/(1.4*mj*radj*radj));
+
+            double r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
+
+            // limit max. torque
+            double r_torque_mag = vectorMag3D(r_torque);
+            double r_torque_max = fabs(ccel*r)*reff*rmu;
+            if(r_torque_mag > r_torque_max)
+            {
+              double factor = r_torque_max / r_torque_mag;
+
+              r_torque[0] *= factor;
+              r_torque[1] *= factor;
+              r_torque[2] *= factor;
+
+              r_coef = 0.0; // no damping in case of full mobilisation rolling angle
+            }
+
+            // save rolling torque due to spring
+            shear[3] = r_torque[0];
+            shear[4] = r_torque[1];
+            shear[5] = r_torque[2];
+
+            // add damping torque
+            r_torque[0] += r_coef*wr_roll[0];
+            r_torque[1] += r_coef*wr_roll[1];
+            r_torque[2] += r_coef*wr_roll[2];
+
+
+          }
+
         }
 
         if(computeflag)
@@ -534,10 +592,12 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
             iarg_++;
             if(strcmp(arg[iarg_],"cdt") == 0)
                 rollingflag = 1;
+            else if(strcmp(arg[iarg_],"epsd") == 0)
+                rollingflag = 2;
             else if(strcmp(arg[iarg_],"off") == 0)
                 rollingflag = 0;
             else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'cdt' or 'off' after keyword 'rolling_friction'");
+                error->all(FLERR,"Illegal pair_style gran command, expecting 'cdt', 'epsd' or 'off' after keyword 'rolling_friction'");
             iarg_++;
             hasargs = true;
         } else if (strcmp(arg[iarg_],"tangential_damping") == 0) {
@@ -592,6 +652,8 @@ void PairGranHookeHistory::init_granular()
 
   if(rollingflag)
     coeffRollFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingFriction","property/global","peratomtypepair",max_type,max_type,force->pair_style));
+  if(rollingflag == 2) // epsd model
+    coeffRollVisc1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingViscousDamping","property/global","peratomtypepair",max_type,max_type,force->pair_style));
   if(viscousflag)
   {
     coeffMu1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("FluidViscosity","property/global","peratomtypepair",max_type,max_type,force->pair_style));
@@ -659,6 +721,7 @@ void PairGranHookeHistory::init_granular()
 
           coeffFrict[i][j] = coeffFrict1->compute_array(i-1,j-1);
           if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
+          if(rollingflag == 2) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
 
           /*NL*/ //fprintf(screen,"");
 
@@ -686,6 +749,7 @@ void PairGranHookeHistory::allocate_properties(int size)
     memory->destroy(coeffRestLog);
     memory->destroy(coeffFrict);
     memory->destroy(coeffRollFrict);
+    memory->destroy(coeffRollVisc);
     memory->destroy(coeffMu);
     memory->destroy(coeffRestMax);
     memory->destroy(coeffStc);
@@ -698,6 +762,7 @@ void PairGranHookeHistory::allocate_properties(int size)
     memory->create(coeffRestLog,size+1,size+1,"coeffRestLog");
     memory->create(coeffFrict,size+1,size+1,"coeffFrict");
     memory->create(coeffRollFrict,size+1,size+1,"coeffRollFrict");
+    memory->create(coeffRollVisc,size+1,size+1,"coeffRollVisc");
     memory->create(coeffMu,size+1,size+1,"coeffMu");
     memory->create(coeffRestMax,size+1,size+1,"coeffRestMax");
     memory->create(coeffStc,size+1,size+1,"coeffStc");
