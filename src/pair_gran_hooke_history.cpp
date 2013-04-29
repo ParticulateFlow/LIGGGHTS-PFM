@@ -193,6 +193,9 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
   int *touch,**firsttouch;
   double *shear,*allshear,**firstshear;
 
+  double r_inertia,r_coef,r_torque_mag,r_torque_max,factor;
+
+
   if (eflag || vflag) ev_setup(eflag,vflag);
   else evflag = vflag_fdotr = 0;
 
@@ -452,29 +455,33 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
           }
           else
           {
+            itype = type[i];
+            jtype = type[j];
+
             // spring
-            vectorZeroize3D(dr_torque);
             reff=radi*radj/(radi+radj);
-            kr = 3*kn*rmu*rmu*reff*reff*M_PI; //NP modified A.A.; Not sure if kr is right for 3D; *M_PI;
+            kr = 3*kn*rmu*rmu*reff*reff;//*M_PI; //NP modified A.A.; Not sure if kr is right for 3D; *M_PI;
+
             vectorSubtract3D(omega[i],omega[j],wr_roll);
-            vectorScalarMult3D(wr_roll,update->dt*kr,dr_torque);
-            r_torque[0] = shear[3] - dr_torque[0];
-            r_torque[1] = shear[4] - dr_torque[1];
-            r_torque[2] = shear[5] - dr_torque[2];
+            vectorScalarMult3D(wr_roll,update->dt*kr,dr_torque); //NP TODO: any transformation of the timestep needed for other unit systems?
+
+            r_torque[0] = shear[3] + dr_torque[0];
+            r_torque[1] = shear[4] + dr_torque[1];
+            r_torque[2] = shear[5] + dr_torque[2];
 
             // dashpot
-            double r_inertia;
             if (domain->dimension == 2) r_inertia = 1/(1/(1.5*mi*radi*radi) + 1/(1.5*mj*radj*radj));
             else  r_inertia = 1/(1/(1.4*mi*radi*radi) + 1/(1.4*mj*radj*radj));
 
-            double r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
+            /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
+            r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
 
             // limit max. torque
-            double r_torque_mag = vectorMag3D(r_torque);
-            double r_torque_max = fabs(ccel*r)*reff*rmu;
+            r_torque_mag = vectorMag3D(r_torque);
+            r_torque_max = fabs(ccel*r)*reff*rmu;
             if(r_torque_mag > r_torque_max)
             {
-              double factor = r_torque_max / r_torque_mag;
+              factor = r_torque_max / r_torque_mag;
 
               r_torque[0] *= factor;
               r_torque[1] *= factor;
@@ -669,67 +676,68 @@ void PairGranHookeHistory::init_granular()
   //pre-calculate parameters for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
   {
-      for(int j=1;j<max_type+1;j++)
+    for(int j=1;j<max_type+1;j++)
+    {
+      double Yi=Y1->compute_vector(i-1);
+      double Yj=Y1->compute_vector(j-1);
+      double vi=v1->compute_vector(i-1);
+      double vj=v1->compute_vector(j-1);
+      double cor = coeffRest1->compute_array(i-1,j-1);
+
+      // error checks on Y, v, e
+
+      if(sanity_checks)
       {
-          double Yi=Y1->compute_vector(i-1);
-          double Yj=Y1->compute_vector(j-1);
-          double vi=v1->compute_vector(i-1);
-          double vj=v1->compute_vector(j-1);
-          double cor = coeffRest1->compute_array(i-1,j-1);
+        if(strcmp(update->unit_style,"si") == 0  && Yi < 5e6)
+          error->all(FLERR,"youngsModulus >= 5e6 required for SI units");
+        if(strcmp(update->unit_style,"cgs") == 0 && Yi < 5e5)
+          error->all(FLERR,"youngsModulus >= 5e5 required for CGS units");
 
-          // error checks on Y, v, e
+        if(vi < 0. || vi > 0.5)
+          error->all(FLERR,"0 <= poissonsRatio <= 0.5 required");
 
-          if(sanity_checks)
-          {
-              if(strcmp(update->unit_style,"si") == 0  && Yi < 5e6)
-                 error->all(FLERR,"youngsModulus >= 5e6 required for SI units");
-              if(strcmp(update->unit_style,"cgs") == 0 && Yi < 5e5)
-                error->all(FLERR,"youngsModulus >= 5e5 required for CGS units");
-
-              if(vi < 0. || vi > 0.5)
-                error->all(FLERR,"0 <= poissonsRatio <= 0.5 required");
-
-              if(cor <= 0.05 || cor > 1)
-                error->all(FLERR,"0.05 < coefficientRestitution <= 1 required");
-          }
-
-
-          Yeff[i][j] = 1./((1.-pow(vi,2.))/Yi+(1.-pow(vj,2.))/Yj);
-          Geff[i][j] = 1./(2.*(2.-vi)*(1.+vi)/Yi+2.*(2.-vj)*(1.+vj)/Yj);
-
-          coeffRestLog[i][j] = log(coeffRest1->compute_array(i-1,j-1));
-
-         if(viscousflag)
-         {
-           coeffMu[i][j] = coeffMu1->compute_array(i-1,j-1);
-           coeffRestMax[i][j] = coeffRestMax1->compute_array(i-1,j-1);
-           coeffStc[i][j] = coeffStc1->compute_array(i-1,j-1);
-
-           // error check
-           if(sanity_checks)
-           {
-               if(coeffRestMax[i][j] <= 0. || coeffRestMax[i][j] > 1)
-                 error->all(FLERR,"0 < MaximumRestitution <= 1 required");
-               if(coeffMu[i][j] <= 0.)
-                 error->all(FLERR,"coeffMu > 0 required");
-               if(coeffStc[i][j] <= 0.)
-                 error->all(FLERR,"CriticalStokes > 0 required");
-           }
-         }
-
-          betaeff[i][j] =coeffRestLog[i][j] /sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
-
-          coeffFrict[i][j] = coeffFrict1->compute_array(i-1,j-1);
-          if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
-          if(rollingflag == 2) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
-
-          /*NL*/ //fprintf(screen,"");
-
-          if(cohesionflag) cohEnergyDens[i][j] = cohEnergyDens1->compute_array(i-1,j-1);
-          //omitting veff here
-
-          /*NL*/ //fprintf(screen,"coeff rest for %i %i : %f\n",i,j,coeffRest1->compute_array(i-1,j-1));
+        if(cor <= 0.05 || cor > 1)
+          error->all(FLERR,"0.05 < coefficientRestitution <= 1 required");
       }
+
+
+      Yeff[i][j] = 1./((1.-pow(vi,2.))/Yi+(1.-pow(vj,2.))/Yj);
+      Geff[i][j] = 1./(2.*(2.-vi)*(1.+vi)/Yi+2.*(2.-vj)*(1.+vj)/Yj);
+
+      coeffRestLog[i][j] = log(coeffRest1->compute_array(i-1,j-1));
+
+      if(viscousflag)
+      {
+        coeffMu[i][j] = coeffMu1->compute_array(i-1,j-1);
+        coeffRestMax[i][j] = coeffRestMax1->compute_array(i-1,j-1);
+        coeffStc[i][j] = coeffStc1->compute_array(i-1,j-1);
+
+        // error check
+        if(sanity_checks)
+        {
+          if(coeffRestMax[i][j] <= 0. || coeffRestMax[i][j] > 1)
+            error->all(FLERR,"0 < MaximumRestitution <= 1 required");
+          if(coeffMu[i][j] <= 0.)
+            error->all(FLERR,"coeffMu > 0 required");
+          if(coeffStc[i][j] <= 0.)
+            error->all(FLERR,"CriticalStokes > 0 required");
+        }
+      }
+
+      betaeff[i][j] =coeffRestLog[i][j] /sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
+
+      coeffFrict[i][j] = coeffFrict1->compute_array(i-1,j-1);
+      if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
+      if(rollingflag == 2) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
+      /*NL*/ //if(rollingflag == 2) fprintf(screen,"Init viscous coefficient: itype = %i and ytype = %i and coef = %f\n",i-1,j-1,coeffRollVisc[i][j]);
+
+      /*NL*/ //fprintf(screen,"");
+
+      if(cohesionflag) cohEnergyDens[i][j] = cohEnergyDens1->compute_array(i-1,j-1);
+      //omitting veff here
+
+      /*NL*/ //fprintf(screen,"coeff rest for %i %i : %f\n",i,j,coeffRest1->compute_array(i-1,j-1));
+    }
   }
 
   if(charVelflag) charVel = charVel1->compute_scalar();
