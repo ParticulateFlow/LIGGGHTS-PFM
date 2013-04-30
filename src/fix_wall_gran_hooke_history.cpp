@@ -474,7 +474,7 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
       if (domain->dimension == 2) r_inertia = 1.5*mass*radius*radius;
       else  r_inertia = 1.4*mass*radius*radius;
 
-      /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
+      /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,atom_type_wall_,coeffRollVisc[itype][atom_type_wall_],r_inertia,kr);
       r_coef = coeffRollVisc[itype][atom_type_wall_] * 2 * sqrt(r_inertia*kr);
 
       // limit max. torque
