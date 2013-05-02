@@ -59,7 +59,7 @@ for t=1:length(listFile)
                 %values = fscanf(fid,'%d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f \n',[21 n]);
                 
                 for i=0:length(tags)-1
-                    data{t,idx_prop+i,1} = tags(i+1);
+                    data{t,idx_prop+i,1} = tags{i+1};
                     data{t,idx_prop+i,2} = values(i+1,:);
                 end
                 

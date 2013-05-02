@@ -23,7 +23,8 @@ variable    rf      equal       0.2             # coefficient of rolling frictio
 variable    rvisc   equal       0.3             # coefficient of rolling viscous damping
 variable    dt      equal       1.0e-5          # time step width
 
-variable    rfStyle string      cdt
+variable    rfStyle string      epsd
+variable    rfSLog  string      EPSD
 
 #########################################################################################
 #                               internal settings - do not touch                        #
@@ -91,10 +92,10 @@ fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #walls
 fix		zwall all wall/gran/hertz/history   primitive type 1 zplane 0.0 rolling_friction ${rfStyle}
-fix   xwall1 all wall/gran/hertz/history   primitive type 1 xplane ${nx}
-fix   xwall2 all wall/gran/hertz/history   primitive type 1 xplane ${px}
-fix   ywall1 all wall/gran/hertz/history   primitive type 1 xplane ${ny}
-fix   ywall2 all wall/gran/hertz/history   primitive type 1 xplane ${py}
+#fix   xwall1 all wall/gran/hertz/history   primitive type 1 xplane ${nx}
+#fix   xwall2 all wall/gran/hertz/history   primitive type 1 xplane ${px}
+#fix   ywall1 all wall/gran/hertz/history   primitive type 1 xplane ${ny}
+#fix   ywall2 all wall/gran/hertz/history   primitive type 1 xplane ${py}
 
 #particle distributions
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad}
@@ -127,14 +128,6 @@ run		  1
 
 #run     1000
 
-# dump particle data
-#variable    x equal x[1]
-#variable    y equal y[1]
-#variable    z equal z[1]
-#variable    wx atom omegax
-#variable    tmp equal wx[1]
-#fix     dmpData all print 1 "$x $y $z ${tmp}" screen no title "X Y Z OmegaX OmegaY OmegaZ" file data.${rfStyle}_tc1.txt
-
 #run particle relaxation - check kinetic energy
 variable ke equal c_cke
 print "ke ${ke}"
@@ -152,7 +145,20 @@ label endloop
 velocity all zero linear
 velocity all zero angular
 
-dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius 
+# now save data
+# dump particle data
+variable    x equal x[1]
+variable    y equal y[1]
+variable    z equal z[1]
+variable    wx equal omegax[1]
+variable    wy equal omegay[1]
+variable    wz equal omegaz[1]
+variable    tqx equal tqx[1]
+variable    tqy equal tqy[1]
+variable    tqz equal tqz[1]
+fix     dmpData all print 1 "$x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc1.txt
+
+dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz tqx tqy tqz radius 
 
 run ${dumpfreq}
 
