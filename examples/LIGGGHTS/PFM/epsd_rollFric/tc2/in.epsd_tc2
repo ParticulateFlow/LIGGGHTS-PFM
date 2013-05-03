@@ -1,11 +1,11 @@
 #########################################################################################
-# title: in.epsd_tc1                                                                    #
+# title: in.epsd_tc2                                                                    #
 # additional files:                                                                     #
-# date: Apr. 2013                                                                       #
+# date: May 2013                                                                        #
 # authors: Aigner, A.                                                                   #
 # e-mail: andreas.aigner@jku.at                                                         #
-# short description: Testcase #1 for the EPSD rolling friction model                    #
-#  one particle at a horizontal plate                                                   #
+# short description: Testcase #2 for the EPSD rolling friction model                    #
+#  one particle at a slope                                                              #
 ##########################################################################################
 
 # Dump of particles is disabled. If animations needed, uncomment them. (Search # MARK:DUMPSTL)
@@ -23,8 +23,8 @@ variable    rf      equal       0.2             # coefficient of rolling frictio
 variable    rvisc   equal       0.3             # coefficient of rolling viscous damping
 variable    dt      equal       1.0e-5          # time step width
 
-variable    rfStyle string      epsd
-variable    rfSLog  string      EPSD
+variable    rfStyle string      cdt
+variable    rfSLog  string      CDT
 
 #########################################################################################
 #                               internal settings - do not touch                        #
@@ -135,11 +135,11 @@ variable kin_en_thre equal 10^-12
 
 label loop
   print "-----> Checking Kinetic Energy..."
-  if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc1 endloop"
+  if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc2 endloop"
   print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
   #set group all vx 0. vy 0. vz 0.
   run 1000
-jump in.epsd_tc1 loop
+jump in.epsd_tc2 loop
 label endloop
 
 velocity all zero linear
@@ -156,7 +156,7 @@ variable    wz equal omegaz[1]
 variable    tqx equal tqx[1]
 variable    tqy equal tqy[1]
 variable    tqz equal tqz[1]
-fix     dmpData all print 1 "$x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc1.txt
+fix     dmpData all print 1 "$x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc2.txt
 
 dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz tqx tqy tqz radius 
 
@@ -164,16 +164,21 @@ run ${dumpfreq}
 
 velocity all set 1 0.0 0.0 units box
 
+unfix gravi
+variable gravx equal sin(10*PI/180)
+variable gravz equal cos(10*PI/180)
+fix		gravi all gravity 9.81 vector -${gravx} 0.0 -${gravz}
+
 run ${nStepsRun}
 
 #variable kin_en_thre equal 10^-10
 #label loop2
 #  print "-----> Checking Kinetic Energy..."
-#  if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc1 endloop2"
+#  if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc2 endloop2"
 #  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
 #  #set group all vx 0. vy 0. vz 0.
 #  run 1000
-#jump in.epsd_tc1 loop2
+#jump in.epsd_tc2 loop2
 #label endloop2
 
 # start iteration of rolling friction $frf

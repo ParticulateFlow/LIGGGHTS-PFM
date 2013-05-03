@@ -440,7 +440,7 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
             wrmag = sqrt(wr1*wr1+wr2*wr2+wr3*wr3);
             if (wrmag > 0.)
             {
-                r_torque[0] = rmu*kn*(radius-r)*wr1/wrmag*cr;
+            r_torque[0] = rmu*kn*(radius-r)*wr1/wrmag*cr;
             r_torque[1] = rmu*kn*(radius-r)*wr2/wrmag*cr;
             r_torque[2] = rmu*kn*(radius-r)*wr3/wrmag*cr;
 
@@ -460,7 +460,7 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
       double dt = update->dt; //NP TODO: any transformation of the timestep needed for other unit systems?
 
       // spring
-      kr = 3*kn*rmu*rmu*radius*radius;//*M_PI; //NP modified A.A.; Not sure if kr is right for 3D; *M_PI;
+      kr = 2.25*kn*rmu*rmu*radius*radius; //NP modified A.A.; Not sure if kr is right for 3D;
 
       dr_torque[0] = kr * wr1 * dt;
       dr_torque[1] = kr * wr2 * dt;

@@ -4,7 +4,7 @@
 
 
 #target angle in degrees
-variable targetAngle equal 4
+variable targetAngle equal 25
 
 variable deltarf equal 0.5		# start step size of rolling friction
 variable i loop 8			# number of refinements, each refinement step size is divided by 5
@@ -17,12 +17,13 @@ variable Pi equal 3.14159
 variable ff equal 0.6
 variable frf equal 2.
 variable f_wall equal 0.46
-variable cor equal 0.2
+variable cor equal 0.8
 
-variable rfvisc equal 0.0001
+variable rfvisc equal 0.0
+variable rfStyle string epsd
 
 ####################################
-variable r0org equal 0.00025
+variable r0org equal 5e-3
 variable nParticles equal 100
 ####################################
 
@@ -34,7 +35,7 @@ variable    py  equal    100*${r0org} #0.2 #100*${r0org}        # pos. y-value
 variable    nz  equal   -20*${r0org} #-0.1 #-10*${r0org}          # neg. z-value
 variable    pz  equal    100*${r0org} #0.2 #100*${r0org}    # pos. z-value
 
-variable    pins equal   0.01 #4*${r0org}
+variable    pins equal   4*${r0org}#0.01 #4*${r0org}
 
 variable    skin equal   0.5*${r0org}
 
@@ -55,8 +56,8 @@ neighbor	${skin} bin
 neigh_modify	delay 0
 
 #Material properties required for new pair styles
-fix 		m1 all property/global youngsModulus peratomtype 1.e7 1.e7
-fix 		m2 all property/global poissonsRatio peratomtype 0.3 0.3 
+fix 		m1 all property/global youngsModulus peratomtype 40e6 40e6
+fix 		m2 all property/global poissonsRatio peratomtype 0.49 0.49
 fix 		m3 all property/global coefficientRestitution peratomtypepair 2 ${cor} ${cor} ${cor} ${cor} 
 fix 		m4 all property/global coefficientFriction peratomtypepair 2 ${ff} ${f_wall} ${f_wall} ${f_wall}
 fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 ${frf} ${frf} ${frf} ${frf}
@@ -64,7 +65,7 @@ fix 		m6 all property/global characteristicVelocity scalar 1.
 fix     m7 all property/global coefficientRollingViscousDamping peratomtypepair 2 ${rfvisc} ${rfvisc} ${rfvisc} ${rfvisc}
 
 #pair style
-pair_style 	gran/hooke/history rolling_friction epsd
+pair_style 	gran/hooke/history rolling_friction ${rfStyle}
 pair_coeff	* *
 
 #timestep, gravity
@@ -72,23 +73,23 @@ timestep	0.00001
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #walls
-fix		xwall1 all wall/gran/hooke/history   primitive type 2  xplane ${nx} rolling_friction epsd #cdt
-fix		xwall2 all wall/gran/hooke/history   primitive type 2  xplane ${px} rolling_friction epsd #cdt
-fix		ywall1 all wall/gran/hooke/history   primitive type 2  yplane ${ny} rolling_friction epsd #cdt
-fix		ywall2 all wall/gran/hooke/history   primitive type 2  yplane ${py} rolling_friction epsd #cdt
-fix		zwall1 all wall/gran/hooke/history   primitive type 2  zplane ${nz} rolling_friction epsd #cdt
-fix		zwall2 all wall/gran/hooke/history   primitive type 2  zplane ${pz} rolling_friction epsd #cdt
+fix		xwall1 all wall/gran/hooke/history   primitive type 2  xplane ${nx} rolling_friction ${rfStyle} #cdt
+fix		xwall2 all wall/gran/hooke/history   primitive type 2  xplane ${px} rolling_friction ${rfStyle} #cdt
+fix		ywall1 all wall/gran/hooke/history   primitive type 2  yplane ${ny} rolling_friction ${rfStyle} #cdt
+fix		ywall2 all wall/gran/hooke/history   primitive type 2  yplane ${py} rolling_friction ${rfStyle} #cdt
+fix		zwall1 all wall/gran/hooke/history   primitive type 2  zplane ${nz} rolling_friction ${rfStyle} #cdt
+fix		zwall2 all wall/gran/hooke/history   primitive type 2  zplane ${pz} rolling_friction ${rfStyle} #cdt
 
 #import mesh from cad
 #fix cad1 all mesh/surface file wall.stl type 2
 
 #particle distributions
-fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2505 radius constant ${r0org}
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 1056 radius constant ${r0org}
 fix		pdd all particledistribution/discrete 1. 1 pts1 1. 
 
 #particle insertion
 region		bc block 0 ${px} 0 ${py} 0. ${pins} units box
-fix		    ins all insert/pack seed 100001 distributiontemplate pdd vel constant 0. 0. -0.5 insert_every once overlapcheck no all_in yes particles_in_region ${nParticles} region bc
+fix		    ins all insert/pack seed 100001 distributiontemplate pdd vel constant 0. 0. -0.5 insert_every once overlapcheck yes all_in yes particles_in_region ${nParticles} region bc
 
 #apply integration
 fix		    integr all nve/sphere

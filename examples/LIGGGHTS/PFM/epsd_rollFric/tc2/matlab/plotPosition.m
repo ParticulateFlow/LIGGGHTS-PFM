@@ -95,7 +95,7 @@ for ii=1:nFiles
     set(get(AX(2),'Ylabel'),'String','ylabel2') 
     xlabel('xlabel');
     
-    saveas(hFig(3),['tc1_plot_',data(ii).rfstyle],'epsc');
+    saveas(hFig(3),['tc2_plot_',data(ii).rfstyle],'epsc');
 end
 
 
