@@ -460,7 +460,7 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
 
             // spring
             reff=radi*radj/(radi+radj);
-            kr = 3*kn*rmu*rmu*reff*reff;//*M_PI; //NP modified A.A.; Not sure if kr is right for 3D; *M_PI;
+            kr = 2.25*kn*rmu*rmu*reff*reff; //NP modified A.A.; Not sure if kr is right for 3D;
 
             vectorSubtract3D(omega[i],omega[j],wr_roll);
             vectorScalarMult3D(wr_roll,update->dt*kr,dr_torque); //NP TODO: any transformation of the timestep needed for other unit systems?

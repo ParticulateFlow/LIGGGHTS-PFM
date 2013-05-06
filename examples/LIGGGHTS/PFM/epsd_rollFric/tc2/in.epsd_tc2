@@ -36,7 +36,7 @@ variable    skin            equal   0.5*${rad}
 variable    nx  equal   -10*${rad}           # neg. x-value
 variable    px  equal    50*${rad}           # pos. x-value
 variable    ny  equal   -10*${rad}           # neg. y-value
-variable    py  equal    10*${rad}           # neg. y-value
+variable    py  equal    10*${rad}           # pos. y-value
 variable    nz  equal   -2*${rad}            # neg. z-value
 variable    pz  equal    10*${rad}           # pos. z-value
 
@@ -45,16 +45,10 @@ variable    dp    equal    2*${rad}
 variable    pzIns equal    2*${dp}
 
 # timesteps
-#variable    nStepsInit      equal   5.0e-2/${dt}
-#variable    nStepsSettle    equal   ceil(${pz}/(${velMax}*${ctrlKp})/${dt})
-#variable    runTime         equal   3e-3/${velWall} # move the cylinder 3 mm
 variable    nStepsRun       equal   ceil(0.8/${dt})
 variable    dumpfreq        equal   1.0e-2/${dt}
-#variable    dumpfreqForce   equal   1.0e-3/${dt}
 
 #########################################################################################
-
-#---------------------------------------------------
 
 atom_style	granular
 atom_modify	map array
@@ -72,12 +66,11 @@ neighbor	${skin} bin
 neigh_modify	delay 0
 
 #Material properties required for new pair styles
-fix 		m1 all property/global youngsModulus peratomtype ${ym}
-fix 		m2 all property/global poissonsRatio peratomtype ${pr}
-fix 		m3 all property/global coefficientRestitution peratomtypepair 1 ${rest}
-fix 		m4 all property/global coefficientFriction peratomtypepair 1 ${fric}
-fix 		m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf}
-#fix 		m6 all property/global characteristicVelocity scalar 1.
+fix     m1 all property/global youngsModulus peratomtype ${ym}
+fix     m2 all property/global poissonsRatio peratomtype ${pr}
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${rest}
+fix     m4 all property/global coefficientFriction peratomtypepair 1 ${fric}
+fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf}
 fix     m7 all property/global coefficientRollingViscousDamping peratomtypepair 1 ${rvisc}
 
 #pair style
@@ -92,10 +85,6 @@ fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #walls
 fix		zwall all wall/gran/hertz/history   primitive type 1 zplane 0.0 rolling_friction ${rfStyle}
-#fix   xwall1 all wall/gran/hertz/history   primitive type 1 xplane ${nx}
-#fix   xwall2 all wall/gran/hertz/history   primitive type 1 xplane ${px}
-#fix   ywall1 all wall/gran/hertz/history   primitive type 1 xplane ${ny}
-#fix   ywall2 all wall/gran/hertz/history   primitive type 1 xplane ${py}
 
 #particle distributions
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad}
@@ -137,7 +126,6 @@ label loop
   print "-----> Checking Kinetic Energy..."
   if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc2 endloop"
   print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
-  #set group all vx 0. vy 0. vz 0.
   run 1000
 jump in.epsd_tc2 loop
 label endloop
@@ -180,40 +168,4 @@ run ${nStepsRun}
 #  run 1000
 #jump in.epsd_tc2 loop2
 #label endloop2
-
-# start iteration of rolling friction $frf
-
-#compute vysum all reduce sum vy
-#variable vely equal c_vysum/${nParticles}
-
-#label rfLoop
-#  if "${i} > 7" then "jump in_inclinedWall.liggghts endrfLoop"
-#  variable frf equal ${frf}-${deltarf}
-
-#  if "${frf} < 0" then "jump in_inclinedWall.liggghts endrfLoop"
-
-#  unfix m5
-#  fix m5 all property/global coefficientRollingFriction peratomtypepair 2 ${frf} ${frf} ${frf} ${frf}
-
-#  run ${runInterv} every ${runInterv} "print 'velocity = ${vely}'"
-  
-#  if "${vely} < ${vyThresh}" then "jump in_inclinedWall.liggghts elseLbl"
-
-#    print "particles rolling -> RELOAD at rf ${frf}+${deltarf}"
-#    variable frf equal ${frf}+${deltarf}
-#    variable deltarf equal ${deltarf}/5.
-#    velocity all zero linear
-#    velocity all zero angular
-#    next i
-#  jump in_inclinedWall.liggghts rfLoop
-  
-#  label elseLbl
-#    print "particles not rolling, continuing run at rf ${frf}-${deltarf}"
-#    velocity all zero linear
-#    velocity all zero angular
-  
-# jump in_inclinedWall.liggghts rfLoop
-
-#label endrfLoop
-
 
