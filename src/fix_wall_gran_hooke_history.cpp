@@ -454,17 +454,27 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
     } else
     {
       double kr,r_inertia,r_coef,r_torque_mag,r_torque_max,factor;
-      double dr_torque[3];
+      double dr_torque[3],wr_n[3],wr_t[3];
 
       int itype = atom->type[ip];
       double dt = update->dt; //NP TODO: any transformation of the timestep needed for other unit systems?
 
+      // remove normal (torsion) part of relative rotation
+      // use only tangential parts for rolling torque
+      double wr_dot_delta = wr1*dx+ wr2*dy + wr3*dz;
+      wr_n[0] = dx * wr_dot_delta * rsqinv;
+      wr_n[1] = dy * wr_dot_delta * rsqinv;
+      wr_n[2] = dz * wr_dot_delta * rsqinv;
+      wr_t[0] = wr1 - wr_n[0];
+      wr_t[1] = wr2 - wr_n[1];
+      wr_t[2] = wr3 - wr_n[2];
+
       // spring
       kr = 2.25*kn*rmu*rmu*radius*radius; //NP modified A.A.; Not sure if kr is right for 3D;
 
-      dr_torque[0] = kr * wr1 * dt;
-      dr_torque[1] = kr * wr2 * dt;
-      dr_torque[2] = kr * wr3 * dt;
+      dr_torque[0] = kr * wr_t[0] * dt;
+      dr_torque[1] = kr * wr_t[1] * dt;
+      dr_torque[2] = kr * wr_t[2] * dt;
 
       r_torque[0] = c_history[3] + dr_torque[0];
       r_torque[1] = c_history[4] + dr_torque[1];
@@ -497,10 +507,9 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
       c_history[5] = r_torque[2];
 
       // add damping torque
-      r_torque[0] += r_coef*wr1;
-      r_torque[1] += r_coef*wr2;
-      r_torque[2] += r_coef*wr3;
-
+      r_torque[0] += r_coef*wr_t[0];
+      r_torque[1] += r_coef*wr_t[1];
+      r_torque[2] += r_coef*wr_t[2];
 
     }
   }

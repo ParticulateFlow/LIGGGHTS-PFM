@@ -455,22 +455,34 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
           }
           else
           {
+            double wr_roll_n[3],wr_roll_t[3];
+
             itype = type[i];
             jtype = type[j];
+
+            // relative rotational velocity
+            vectorSubtract3D(omega[i],omega[j],wr_roll);
+
+            // remove normal (torsion) part of relative rotation
+            // use only tangential parts for rolling torque
+            double wr_dot_delta = wr_roll[0]*delx+ wr_roll[1]*dely + wr_roll[2]*delz;
+            wr_roll_n[0] = delx * wr_dot_delta * rsqinv;
+            wr_roll_n[1] = dely * wr_dot_delta * rsqinv;
+            wr_roll_n[2] = delz * wr_dot_delta * rsqinv;
+            vectorSubtract3D(wr_roll,wr_roll_n,wr_roll_t);
 
             // spring
             reff=radi*radj/(radi+radj);
             kr = 2.25*kn*rmu*rmu*reff*reff; //NP modified A.A.; Not sure if kr is right for 3D;
 
-            vectorSubtract3D(omega[i],omega[j],wr_roll);
-            vectorScalarMult3D(wr_roll,update->dt*kr,dr_torque); //NP TODO: any transformation of the timestep needed for other unit systems?
+            vectorScalarMult3D(wr_roll_t,update->dt*kr,dr_torque); //NP TODO: any transformation of the timestep needed for other unit systems?
 
             r_torque[0] = shear[3] + dr_torque[0];
             r_torque[1] = shear[4] + dr_torque[1];
             r_torque[2] = shear[5] + dr_torque[2];
 
             // dashpot
-            if (domain->dimension == 2) r_inertia = 1/(1/(1.5*mi*radi*radi) + 1/(1.5*mj*radj*radj));
+            if (domain->dimension == 2) r_inertia = 1/(1/(1.5*mi*radi*radi) + 1/(1.5*mj*radj*radj)); //NP TODO: rewrite for faster computation?
             else  r_inertia = 1/(1/(1.4*mi*radi*radi) + 1/(1.4*mj*radj*radj));
 
             /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
@@ -496,10 +508,9 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
             shear[5] = r_torque[2];
 
             // add damping torque
-            r_torque[0] += r_coef*wr_roll[0];
-            r_torque[1] += r_coef*wr_roll[1];
-            r_torque[2] += r_coef*wr_roll[2];
-
+            r_torque[0] += r_coef*wr_roll_t[0];
+            r_torque[1] += r_coef*wr_roll_t[1];
+            r_torque[2] += r_coef*wr_roll_t[2];
 
           }
 
