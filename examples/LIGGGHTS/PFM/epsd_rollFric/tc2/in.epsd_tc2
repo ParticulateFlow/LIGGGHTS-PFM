@@ -23,14 +23,14 @@ variable    rf      equal       0.2             # coefficient of rolling frictio
 variable    rvisc   equal       0.3             # coefficient of rolling viscous damping
 variable    dt      equal       1.0e-5          # time step width
 
-variable    rfStyle string      cdt
-variable    rfSLog  string      CDT
+variable    rfStyle string      epsd
+variable    rfSLog  string      EPSD
 
 #########################################################################################
 #                               internal settings - do not touch                        #
 #########################################################################################
 
-variable    skin            equal   0.5*${rad}
+variable    skin equal   0.5*${rad}
 
 # dimensions of simulation domain
 variable    nx  equal   -10*${rad}           # neg. x-value
@@ -40,13 +40,14 @@ variable    py  equal    10*${rad}           # pos. y-value
 variable    nz  equal   -2*${rad}            # neg. z-value
 variable    pz  equal    10*${rad}           # pos. z-value
 
-# for insertation
+# for particle insertation
 variable    dp    equal    2*${rad}
 variable    pzIns equal    2*${dp}
 
 # timesteps
-variable    nStepsRun       equal   ceil(0.8/${dt})
-variable    dumpfreq        equal   1.0e-2/${dt}
+variable    dumpfreq   equal floor(1.0e-2/${dt})
+variable    nStepsRun  equal floor(0.8/${dt})
+
 
 #########################################################################################
 

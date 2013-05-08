@@ -499,12 +499,17 @@ void FixWallGranHookeHistory::compute_force(int ip, double deltan, double rsq,do
         r_torque[2] *= factor;
 
         r_coef = 0.0; // no damping in case of full mobilisation rolling angle
+
+        /*NL*/ //fprintf(screen,"Max. torque reached: %e %e %e \n",r_torque[0],r_torque[1],r_torque[2]);
       }
 
       // save rolling torque due to spring
       c_history[3] = r_torque[0];
       c_history[4] = r_torque[1];
       c_history[5] = r_torque[2];
+
+      /*NL*/ //fprintf(screen,"Spring rolling torque: %e %e %e \n",r_torque[0],r_torque[1],r_torque[2]);
+      /*NL*/ //fprintf(screen,"Max. torque: %e \n",r_torque_max);
 
       // add damping torque
       r_torque[0] += r_coef*wr_t[0];

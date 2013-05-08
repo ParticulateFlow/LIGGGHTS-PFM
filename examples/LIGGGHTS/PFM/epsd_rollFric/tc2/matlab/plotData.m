@@ -55,7 +55,8 @@ for ii=1:nFiles
     xpos = data(ii).values(:,col_X);
      
     figure(hFig(1)); hold on
-    plot(timesteps,xpos,'Color',cmap(ii,:));
+    hPlot(ii,1)=plot(timesteps,xpos,'Color',cmap(ii,:));
+    hPlot(ii,2)=line([0 0.8],[xpos(end) xpos(end)],'Color',cmap(ii,:),'LineStyle','-.');
     xlim([0 0.8]);
     % legend for postion plot
     leg{1,iCnt(1)} = fname;
@@ -87,9 +88,9 @@ end
 %% settings for plots
 
 figure(hFig(1));
-ylim([0.1046 0.10485]);
-xlim([0.2 0.6]);
-legend('CDT','EPSD','Location','SouthEast');
+ylim([0.1045 0.10485]);
+xlim([0.2 0.8]);
+legend(hPlot(:,1),'CDT','EPSD','Location','SouthEast');
 xlabel('xlabel');
 ylabel('ylabel');
 
