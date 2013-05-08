@@ -27,10 +27,12 @@
 #include "update.h"
 #include "modify.h"
 #include "neighbor.h"
+#include "domain.h"
 #include "neigh_list.h"
 #include "neigh_request.h"
 #include "force.h"
 #include "pair.h"
+#include "region.h"
 #include "comm.h"
 #include "memory.h"
 #include "error.h"
@@ -45,15 +47,17 @@ using MODIFIED_ANDREW_AUX::Circle;
 ComputeCrosssection::ComputeCrosssection(LAMMPS *lmp, int narg, char **arg) :
   ComputeContactAtom(lmp, narg, arg),
   angle_(0),
-  file_(0)
+  file_(0),
+  iregion_(-1),
+  idregion_(0)
 {
-  if (narg != 15 && narg != 17)
-    error->all(FLERR,"Illegal compute crosssection command, need exactly 15 or 17 args");
+  if (narg < 15)
+    error->compute_error(FLERR,this,"need at least 15 args");
 
   int iarg = 5;
 
   if(strcmp(arg[iarg++],"dim"))
-    error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'dim'");
+    error->compute_error(FLERR,this,"expecting keyword 'dim'");
 
   if(strcmp(arg[iarg],"x") == 0)
     dim_ = 0;
@@ -62,37 +66,56 @@ ComputeCrosssection::ComputeCrosssection(LAMMPS *lmp, int narg, char **arg) :
   else if(strcmp(arg[iarg],"z") == 0)
     dim_ = 2;
   else
-    error->all(FLERR,"Illegal compute crosssection command, expecting 'x', 'y' or 'z' after 'dim'");
+    error->compute_error(FLERR,this,"expecting 'x', 'y' or 'z' after 'dim'");
   iarg++;
 
   if(strcmp(arg[iarg++],"min"))
-    error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'min'");
+    error->compute_error(FLERR,this,"expecting keyword 'min'");
   min_ = atof(arg[iarg++]);
 
   if(strcmp(arg[iarg++],"max"))
-    error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'max'");
+    error->compute_error(FLERR,this,"expecting keyword 'max'");
   max_ = atof(arg[iarg++]);
 
   if(strcmp(arg[iarg++],"n_cuts"))
-    error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'n_cuts'");
+    error->compute_error(FLERR,this,"expecting keyword 'n_cuts'");
   n_cuts_ = atoi(arg[iarg++]);
   if(n_cuts_ < 2)
-    error->all(FLERR,"Illegal compute crosssection command, 'n_cuts' >= 2 required");
+    error->compute_error(FLERR,this,"'n_cuts' >= 2 required");
 
   if(strcmp(arg[iarg++],"cut_thickness"))
-    error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'cut_thickness'");
+    error->compute_error(FLERR,this,"expecting keyword 'cut_thickness'");
   cut_thickness_half_ = atof(arg[iarg++]) / 2.;
 
-  if(narg == 17)
+  // parse args
+  bool hasargs = true;
+  while(iarg < narg && hasargs)
   {
-      if(strcmp(arg[iarg++],"file"))
-        error->all(FLERR,"Illegal compute crosssection command, expecting keyword 'file'");
-      if(0 == comm->me)
-      {
-        file_ = fopen(arg[iarg++],"w");
-        if(!file_)
-            error->one(FLERR,"Illegal compute crosssection command, cannot open file");
+      hasargs = false;
+      if(strcmp(arg[iarg],"file") == 0) {
+          if(narg < iarg+2)
+              error->compute_error(FLERR,this,"not enough arguments for 'file'");
+          if(0 == comm->me)
+          {
+            file_ = fopen(arg[iarg+1],"w");
+            if(!file_)
+                error->one(FLERR,"Illegal compute crosssection command, cannot open file");
+          }
+          iarg += 2;
+          hasargs = true;
+      } else if(strcmp(arg[iarg],"region") == 0) {
+            if(narg < iarg+2)
+                error->compute_error(FLERR,this,"not enough arguments for 'region'");
+            int iregion = domain->find_region(arg[iarg+1]);
+            if (iregion == -1)
+                error->compute_error(FLERR,this,"region ID does not exist");
+            int n = strlen(arg[iarg+1]) + 1;
+            idregion_ = new char[n];
+            strcpy(idregion_,arg[iarg+1]);
+            iarg += 2;
+            hasargs = true;
       }
+      else error->compute_error(FLERR,this,"unknown keyword");
   }
 
   // calculate slices
@@ -119,6 +142,23 @@ ComputeCrosssection::~ComputeCrosssection()
     delete [] vector;
 
     if(file_) fclose(file_);
+
+    if(idregion_) delete []idregion_;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputeCrosssection::init()
+{
+  ComputeContactAtom::init();
+
+  // set index and check validity of region
+
+  if (idregion_) {
+    iregion_ = domain->find_region(idregion_);
+    if (iregion_ == -1)
+      error->compute_error(FLERR,this,"region ID does not exist");
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -200,6 +240,9 @@ void ComputeCrosssection::compute_convex_hull()
         coo = x[i][dim_];
         if(contact[i] >= 2 && coo > mi && coo < ma)
         {
+           if (iregion_ >= 0 && !domain->regions[iregion_]->match(x[i][0],x[i][1],x[i][2]))
+             continue;
+
             m = mod(coo);
             if(m >= 0)
             {
@@ -277,10 +320,17 @@ double ComputeCrosssection::calc_ang()
     ilomid = imid-idelta;
     ihimid = imid+idelta;
 
-    //NP error checks ilomid,ihimid
+    //NP check ilomid,ihimid
+    //NP in case of flat heap, just take ilo and ihi
 
     if(ilomid == ihimid || ilomid == ilo || ihimid == ihi)
+    {
+        //ilomid = ilo;
+        //ihimid = ihi;
+        /*NL*/ fprintf(screen,"ilo %d ilomid %d ihimid %d ihi %d\n",ilo,ilomid,ihimid,ihi);
         error->one(FLERR,"Compute crossection could not calculate angle (2)");
+    }
+
 
     //NP calc angle
 
