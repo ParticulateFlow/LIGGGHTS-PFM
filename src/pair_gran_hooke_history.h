@@ -80,6 +80,7 @@ class PairGranHookeHistory : public PairGran {
   class FixPropertyGlobal* coeffRest1; //coefficient of restitution
   class FixPropertyGlobal* coeffFrict1; //coefficient of (static) friction
   class FixPropertyGlobal* coeffRollFrict1; //characteristic velocity needed for Linear Spring Model
+  class FixPropertyGlobal* coeffRollVisc1; //coefficient of rolling viscous damping (epsd model)
 
   //NP these are general properties defined only once - thus scalars
   int charVelflag;
@@ -87,7 +88,7 @@ class PairGranHookeHistory : public PairGran {
 
   //NP here, pre-calculated contact parameters for all possible material combinations
   double **Yeff,**Geff,**betaeff,**veff,**cohEnergyDens,**coeffRestLog,**coeffFrict;
-  double charVel, **coeffRollFrict,**coeffMu,**coeffRestMax,**coeffStc;
+  double charVel, **coeffRollFrict,**coeffRollVisc,**coeffMu,**coeffRestMax,**coeffStc;
 
   //NP these values are now calculated from the material properties for each contact, they are thus not constant!
   //NP double kn,kt,gamman,gammat,xmu;

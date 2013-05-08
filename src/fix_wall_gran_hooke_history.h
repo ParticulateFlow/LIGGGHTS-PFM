@@ -60,7 +60,7 @@ class FixWallGranHookeHistory : public FixWallGran {
   virtual void pre_reset_history(int,double*) {}
 
   int dampflag,cohesionflag,rollingflag,viscousflag;
-  double **Yeff,**Geff,**betaeff,**veff,**cohEnergyDens,**coeffRestLog,**coeffFrict;
+  double **Yeff,**Geff,**betaeff,**veff,**cohEnergyDens,**coeffRestLog,**coeffFrict,**coeffRollVisc;
   double charVel,**coeffRollFrict,**coeffMu,**coeffRestMax,**coeffStc;
 
   // heat transfer
