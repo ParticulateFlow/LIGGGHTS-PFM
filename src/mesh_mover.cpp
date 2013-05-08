@@ -549,7 +549,7 @@ MeshMoverVibLin::MeshMoverVibLin(LAMMPS *lmp,AbstractMesh *_mesh,
     for (int j=0;j<order; j++) {
        phi[j] = phase[j];
        ampl[j] = amplitude[j];
-	   }
+     }
 
     isFirst_ = mesh_->registerMove(false,true,false);
 }
@@ -624,7 +624,7 @@ MeshMoverVibRot::MeshMoverVibRot(LAMMPS *lmp,AbstractMesh *_mesh,
     for (int j=0;j<order; j++) {
        phi[j] = phase[j];
        ampl[j] = amplitude[j];
-	   }
+     }
 
     isFirst_ = mesh_->registerMove(false,true,true);
 }

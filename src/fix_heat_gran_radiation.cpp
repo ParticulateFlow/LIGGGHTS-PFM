@@ -54,7 +54,7 @@ using MathExtra::sub3;
 // if background_temperature is not passed it is assumed that
 //    initial_temperature is the background temperature
 FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHeatGran(lmp, narg, arg){
-	int iarg = 5;
+  int iarg = 5;
 
   Qr            = 0.0;
   maxBounces    = 100;
@@ -81,8 +81,8 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
   //  - max_bounces
   //  - cutoff
   //  - seed
-	bool hasargs = true;
-	while(iarg < narg && hasargs)
+  bool hasargs = true;
+  while(iarg < narg && hasargs)
   {
     hasargs = false;
     if(strcmp(arg[iarg],"background_temperature") == 0) {
@@ -111,7 +111,7 @@ FixHeatGranRad::FixHeatGranRad(class LAMMPS *lmp, int narg, char **arg) : FixHea
       hasargs = true;
     }
     else if(strcmp(style,"heat/gran/radiation") == 0)
-      	error->fix_error(FLERR,this,"unknown keyword");
+        error->fix_error(FLERR,this,"unknown keyword");
   }
   if (seed == 0){
     error->fix_error(FLERR,this,"expecting keyword 'seed'");
@@ -171,9 +171,9 @@ double FixHeatGranRad::extend_cut_ghost(){
 
 void FixHeatGranRad::init(){
 
-	if (FHG_init_flag == false){
-		FixHeatGran::init();
-	}
+  if (FHG_init_flag == false){
+    FixHeatGran::init();
+  }
 
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();

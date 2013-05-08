@@ -57,7 +57,7 @@ FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) : FixH
       iarg += 2;
       hasargs = true;
     } else if(strcmp(style,"heat/gran/conduction") == 0)
-      	error->fix_error(FLERR,this,"unknown keyword");
+        error->fix_error(FLERR,this,"unknown keyword");
   }
 
   fix_conductivity = NULL;
@@ -70,10 +70,10 @@ FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) : FixH
 FixHeatGranCond::~FixHeatGranCond()
 {
 
-	//NP could delete fixes with no callbacks here since FixHeatGran has no callbacks
+  //NP could delete fixes with no callbacks here since FixHeatGran has no callbacks
 
-	if (conductivity)
-		delete []conductivity;
+  if (conductivity)
+    delete []conductivity;
 }
 
 /* ---------------------------------------------------------------------- */

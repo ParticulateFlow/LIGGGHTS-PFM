@@ -69,9 +69,9 @@ PairGranHookeHistoryHysteresis::PairGranHookeHistoryHysteresis(LAMMPS *lmp) : Pa
 
 PairGranHookeHistoryHysteresis::~PairGranHookeHistoryHysteresis()
 {
-	memory->destroy(kn2k2Max_);
-	memory->destroy(kn2kc_);
-	memory->destroy(phiF_);
+  memory->destroy(kn2k2Max_);
+  memory->destroy(kn2kc_);
+  memory->destroy(phiF_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -239,8 +239,8 @@ void PairGranHookeHistoryHysteresis::compute_force(int eflag, int vflag,int addf
         shear = &allshear[dnum()*jj];
         deltaMax = shear[3]; // the 4th value of the history array is deltaMax
         if (deltan > deltaMax) {
-        	shear[3] = deltan;
-        	deltaMax = deltan;
+          shear[3] = deltan;
+          deltaMax = deltan;
         }
 
         /*NL*/ //if(screen) fprintf(screen,"For types %d %d\n",itype,jtype);
@@ -258,17 +258,17 @@ void PairGranHookeHistoryHysteresis::compute_force(int eflag, int vflag,int addf
         /*NL*/ //if(screen) fprintf(screen,"k1 = kn = %f; k2 = %f; kc = %f \n",kn,k2,kc);
 
         //NP original version:
-        //NP 	delta0 = (1-kn/k2)*deltaMax;
-        //NP	fTmp = k2*(deltan-delta0);
+        //NP   delta0 = (1-kn/k2)*deltaMax;
+        //NP  fTmp = k2*(deltan-delta0);
         //NP bad, because division
 
         fTmp = k2*(deltan-deltaMax)+kn*deltaMax;//k2*(deltan-delta0);
         if (fTmp >= kn*deltan) {
-        	fHys = kn*deltan;
+          fHys = kn*deltan;
         } else {
-        	if (fTmp > -kc*deltan) {
-        		fHys = fTmp;
-        	} else fHys = -kc*deltan;
+          if (fTmp > -kc*deltan) {
+            fHys = fTmp;
+          } else fHys = -kc*deltan;
         }
 
         ccel = fHys*rinv - damp; //kn*(radsum-r)*rinv - damp;

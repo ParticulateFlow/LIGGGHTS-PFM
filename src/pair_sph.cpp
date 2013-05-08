@@ -180,8 +180,8 @@ void PairSph::coeff(int narg, char **arg)
 
 void PairSph::init_style()
 {
-	int i,j= 0;
-	int ntypes = atom->ntypes;
+  int i,j= 0;
+  int ntypes = atom->ntypes;
 
   // check for mass, rho
   if(!atom->rho_flag || !atom->p_flag) error->all(FLERR,"Pair sph requires atom_style sph");

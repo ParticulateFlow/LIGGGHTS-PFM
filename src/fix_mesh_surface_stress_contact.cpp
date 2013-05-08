@@ -70,7 +70,7 @@ FixMeshSurfaceStressContact::FixMeshSurfaceStressContact(LAMMPS *lmp, int narg, 
       iarg_ += 2;
       hasargs = true;
     } else if(strcmp(style,"mesh/surface/stress/contact") == 0)
-      	error->fix_error(FLERR,this,"unknown keyword");
+        error->fix_error(FLERR,this,"unknown keyword");
   }
 }
 

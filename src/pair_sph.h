@@ -39,7 +39,7 @@ namespace LAMMPS_NS {
 class PairSph : public Pair {
  public:
 
-	friend class FixSPH;
+  friend class FixSPH;
 
   PairSph(class LAMMPS *);
   ~PairSph();

@@ -1,0 +1,172 @@
+#########################################################################################
+# title: in.epsd_tc2                                                                    #
+# additional files:                                                                     #
+# date: May 2013                                                                        #
+# authors: Aigner, A.                                                                   #
+# e-mail: andreas.aigner@jku.at                                                         #
+# short description: Testcase #2 for the EPSD rolling friction model                    #
+#  one particle at a slope                                                              #
+##########################################################################################
+
+# Dump of particles is disabled. If animations needed, uncomment them. (Search # MARK:DUMPSTL)
+
+#########################################################################################
+#                               user defined settings: settings                         #
+#########################################################################################
+variable    rad     equal       5e-3            # particle radius
+variable    dens    equal       1056            # particle density
+variable    ym      equal       40e6            # Young's modulus
+variable    pr      equal       0.49            # Poisson ratio
+variable    rest    equal       0.9             # coefficient of resitution
+variable    fric    equal       0.8             # coefficient of friction
+variable    rf      equal       0.2             # coefficient of rolling friction
+variable    rvisc   equal       0.3             # coefficient of rolling viscous damping
+variable    dt      equal       1.0e-5          # time step width
+
+variable    rfStyle string      epsd
+variable    rfSLog  string      EPSD
+
+#########################################################################################
+#                               internal settings - do not touch                        #
+#########################################################################################
+
+variable    skin equal   0.5*${rad}
+
+# dimensions of simulation domain
+variable    nx  equal   -10*${rad}           # neg. x-value
+variable    px  equal    50*${rad}           # pos. x-value
+variable    ny  equal   -10*${rad}           # neg. y-value
+variable    py  equal    10*${rad}           # pos. y-value
+variable    nz  equal   -2*${rad}            # neg. z-value
+variable    pz  equal    10*${rad}           # pos. z-value
+
+# for particle insertation
+variable    dp    equal    2*${rad}
+variable    pzIns equal    2*${dp}
+
+# timesteps
+variable    dumpfreq   equal floor(1.0e-2/${dt})
+variable    nStepsRun  equal floor(0.8/${dt})
+
+
+#########################################################################################
+
+atom_style	granular
+atom_modify	map array
+communicate	single vel yes
+newton		off
+
+boundary	f f f
+
+units		si
+
+region		reg block ${nx} ${px} ${ny} ${py} ${nz} ${pz} units box
+create_box	1 reg
+
+neighbor	${skin} bin
+neigh_modify	delay 0
+
+#Material properties required for new pair styles
+fix     m1 all property/global youngsModulus peratomtype ${ym}
+fix     m2 all property/global poissonsRatio peratomtype ${pr}
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${rest}
+fix     m4 all property/global coefficientFriction peratomtypepair 1 ${fric}
+fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf}
+fix     m7 all property/global coefficientRollingViscousDamping peratomtypepair 1 ${rvisc}
+
+#pair style
+pair_style 	gran/hertz/history rolling_friction ${rfStyle}
+pair_coeff	* *
+
+#timestep
+timestep	${dt}
+
+#gravity
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+#walls
+fix		zwall all wall/gran/hertz/history   primitive type 1 zplane 0.0 rolling_friction ${rfStyle}
+
+#particle distributions
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad}
+fix		pdd all particledistribution/discrete 1. 1 pts1 1. 
+
+#particle insertion
+region		bc block -${dp} ${dp} -${dp} ${dp} 0.0 ${pzIns} units box
+fix		    ins all insert/pack seed 100001 distributiontemplate pdd vel constant 0. 0. -0.01 insert_every once overlapcheck no all_in yes particles_in_region 1 region bc
+
+#apply integration
+fix		    integr all nve/sphere
+
+#check timestep
+fix   ts all check/timestep/gran 1000 0.2 0.2
+
+#screen output
+compute		    cero all erotate/sphere
+compute       cke all ke
+thermo_style	custom step atoms ke c_cke c_cero f_ts[1] f_ts[2] cpu
+thermo		    1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+#insert the first particles so that dump is not empty
+run		  1
+#dump		dmp all custom 100 ./post/dump_*.liggghts id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius omegaz radius  #orig version
+
+# uncomment if needed
+#dump		dmp all custom ${dumpfreq} ./post/dump_*.liggghts id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius 
+
+#run     1000
+
+#run particle relaxation - check kinetic energy
+variable ke equal c_cke
+print "ke ${ke}"
+variable kin_en_thre equal 10^-12
+
+label loop
+  print "-----> Checking Kinetic Energy..."
+  if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc2 endloop"
+  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
+  run 1000
+jump in.epsd_tc2 loop
+label endloop
+
+velocity all zero linear
+velocity all zero angular
+
+# now save data
+# dump particle data
+variable    x equal x[1]
+variable    y equal y[1]
+variable    z equal z[1]
+variable    wx equal omegax[1]
+variable    wy equal omegay[1]
+variable    wz equal omegaz[1]
+variable    tqx equal tqx[1]
+variable    tqy equal tqy[1]
+variable    tqz equal tqz[1]
+fix     dmpData all print 1 "$x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc2.txt
+
+dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz tqx tqy tqz radius 
+
+run ${dumpfreq}
+
+velocity all set 1 0.0 0.0 units box
+
+unfix gravi
+variable gravx equal sin(10*PI/180)
+variable gravz equal cos(10*PI/180)
+fix		gravi all gravity 9.81 vector -${gravx} 0.0 -${gravz}
+
+run ${nStepsRun}
+
+#variable kin_en_thre equal 10^-10
+#label loop2
+#  print "-----> Checking Kinetic Energy..."
+#  if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc2 endloop2"
+#  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
+#  #set group all vx 0. vy 0. vz 0.
+#  run 1000
+#jump in.epsd_tc2 loop2
+#label endloop2
+
