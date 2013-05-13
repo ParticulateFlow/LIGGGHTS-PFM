@@ -1,3 +1,4 @@
+
 /* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
@@ -19,51 +20,34 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#ifdef COMPUTE_CLASS
 
-ComputeStyle(crosssection,ComputeCrosssection)
+#ifdef FIX_CLASS
+
+FixStyle(diam/max,FixDiamMax)
 
 #else
 
-#ifndef LMP_COMPUTE_CROSSSECTION_H
-#define LMP_COMPUTE_CROSSSECTION_H
+#ifndef LMP_FIX_DIAM_MAX_H
+#define LMP_FIX_DIAM_MAX_H
 
-#include "compute_contact_atom.h"
+#include "fix.h"
 
 namespace LAMMPS_NS {
 
-class ComputeCrosssection : public ComputeContactAtom
-{
+class FixDiamMax : public Fix {
  public:
 
-  ComputeCrosssection(class LAMMPS *, int, char **);
-  ~ComputeCrosssection();
+  FixDiamMax(class LAMMPS *, int, char **);
+  ~FixDiamMax();
 
+  int setmask();
   void init();
-
-  void compute_vector();
-  void compute_peratom();
-
-  void write();
+  double compute_scalar();
 
  private:
 
-  void setup_cuts();
-  void compute_convex_hull();
-  inline int mod(double coo);
-  double calc_ang();
-
-  class ModifiedAndrew **mod_andrew_;
-  int dim_, n_cuts_;
-  double min_,max_;
-  double cut_thickness_half_;
-  double cut_dist_;
-
-  bool angle_;
-
-  FILE *file_;
-  int iregion_;
-  char *idregion_;
+  // maximum bounding sphere radius
+  double maxrbound_;
 };
 
 }
