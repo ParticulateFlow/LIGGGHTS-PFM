@@ -60,7 +60,7 @@ PairGranHookeHistory::PairGranHookeHistory(LAMMPS *lmp) : PairGran(lmp)
 {
     //flag that we intend to use contact history
     history = 1;
-    dnum_pairgran = 6; //NP modified A.A.
+    dnum_pairgran = 3; //NP modified A.A.
 
     Yeff = NULL;
     Geff = NULL;
@@ -112,12 +112,15 @@ void PairGranHookeHistory::history_args(char** args)
     args[3] = (char *) "1";
     args[4] = (char *) "shearz";
     args[5] = (char *) "1";
-    args[6] = (char *) "r_torquex_old"; //NP modified A.A.
-    args[7] = (char *) "1";
-    args[8] = (char *) "r_torquey_old"; //NP modified A.A.
-    args[9] = (char *) "1";
-    args[10] = (char *) "r_torquez_old"; //NP modified A.A.
-    args[11] = (char *) "1";
+    if (rollingflag == 2)
+    {
+      args[6] = (char *) "r_torquex_old"; //NP modified A.A.
+      args[7] = (char *) "1";
+      args[8] = (char *) "r_torquey_old"; //NP modified A.A.
+      args[9] = (char *) "1";
+      args[10] = (char *) "r_torquez_old"; //NP modified A.A.
+      args[11] = (char *) "1";
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -253,7 +256,11 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
         shear[0] = 0.0;
         shear[1] = 0.0;
         shear[2] = 0.0;
-        shear[3] = 0.0; // this is the r_torque_old
+        if (rollingflag == 2) {
+          shear[3] = 0.0; // this is the r_torque_old
+          shear[4] = 0.0; // this is the r_torque_old
+          shear[5] = 0.0; // this is the r_torque_old
+        }
 
       } else {
         r = sqrt(rsq);
@@ -456,6 +463,7 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
           else
           {
             double wr_roll_n[3],wr_roll_t[3];
+            double r_inertia_red_i,r_inertia_red_j;
 
             itype = type[i];
             jtype = type[j];
@@ -482,8 +490,10 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
             r_torque[2] = shear[5] + dr_torque[2];
 
             // dashpot
-            if (domain->dimension == 2) r_inertia = 1/(1/(1.5*mi*radi*radi) + 1/(1.5*mj*radj*radj)); //NP TODO: rewrite for faster computation?
-            else  r_inertia = 1/(1/(1.4*mi*radi*radi) + 1/(1.4*mj*radj*radj));
+            r_inertia_red_i = mi*radi*radi;
+            r_inertia_red_j = mj*radj*radj;
+            if (domain->dimension == 2) r_inertia = 1.5 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
+            else  r_inertia = 1.4 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
 
             /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
             r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
@@ -610,9 +620,10 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
             iarg_++;
             if(strcmp(arg[iarg_],"cdt") == 0)
                 rollingflag = 1;
-            else if(strcmp(arg[iarg_],"epsd") == 0)
+            else if(strcmp(arg[iarg_],"epsd") == 0) {
                 rollingflag = 2;
-            else if(strcmp(arg[iarg_],"off") == 0)
+                dnum_pairgran = 6; //NP modified A.A.
+            } else if(strcmp(arg[iarg_],"off") == 0)
                 rollingflag = 0;
             else
                 error->all(FLERR,"Illegal pair_style gran command, expecting 'cdt', 'epsd' or 'off' after keyword 'rolling_friction'");
