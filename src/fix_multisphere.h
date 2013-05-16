@@ -79,10 +79,12 @@ class FixMultisphere : public Fix
       void set_arrays(int);
 
       // restart
-      int pack_restart(int, double *);
-      void unpack_restart(int, int);
-      int size_restart(int);
+      int pack_restart(int i, double *buf);
+      void unpack_restart(int nlocal, int nth);
+      int size_restart(int nlocal);
       int maxsize_restart();
+      void write_restart(FILE *fp);
+      void restart(char *buf);
 
       // communication
       int pack_exchange(int i, double *buf);

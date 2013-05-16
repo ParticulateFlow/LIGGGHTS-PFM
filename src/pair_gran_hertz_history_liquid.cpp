@@ -630,4 +630,8 @@ void PairGranHertzHistoryLiquid::init_granular()
     surfaceTension = surfaceTension1->compute_scalar();
   }
 
+  // error checks on coarsegraining
+  if((rollingflag || cohesionflag) && force->cg_active())
+    error->cg(FLERR,"Granular model with rolling friction and / or cohesion");
+
 }

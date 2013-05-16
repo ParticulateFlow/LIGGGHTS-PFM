@@ -96,7 +96,6 @@ FixSphDensityCorr::FixSphDensityCorr(LAMMPS *lmp, int narg, char **arg) :
     } else error->fix_error(FLERR,this,"Illegal fix sph/density/continuity command");
   }
 
-
   // init variables and set flags
 
   quantity_name = new char[strlen("corrKernel")+1];
@@ -136,8 +135,7 @@ void FixSphDensityCorr::pre_delete(bool unfixflag)
 int FixSphDensityCorr::setmask()
 {
   int mask = 0;
-  mask |= POST_INTEGRATE;
-  mask |= POST_INTEGRATE_RESPA;
+  mask |= PRE_FORCE;
   return mask;
 }
 
@@ -186,17 +184,17 @@ void FixSphDensityCorr::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixSphDensityCorr::post_integrate()
+void FixSphDensityCorr::pre_force(int vflag)
 {
   //template function for using per atom or per atomtype smoothing length
-  if (mass_type) post_integrate_eval<1>();
-  else post_integrate_eval<0>();
+  if (mass_type) pre_force_eval<1>();
+  else pre_force_eval<0>();
 }
 
 /* ---------------------------------------------------------------------- */
 
 template <int MASSFLAG>
-void FixSphDensityCorr::post_integrate_eval()
+void FixSphDensityCorr::pre_force_eval()
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,s,W;
@@ -293,7 +291,7 @@ void FixSphDensityCorr::post_integrate_eval()
           slCom = interpDist(sli,slj);
         }
 
-        cut = slCom*kernel_cut; //NP slCom*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
+        cut = slCom*kernel_cut; 
 
         delx = xtmp - x[j][0];
         dely = ytmp - x[j][1];
@@ -395,7 +393,7 @@ void FixSphDensityCorr::post_integrate_eval()
           slCom = interpDist(sli,slj);
         }
 
-        cut = slCom*kernel_cut; //NP slCom*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
+        cut = slCom*kernel_cut; 
 
         delx = xtmp - x[j][0];
         dely = ytmp - x[j][1];
@@ -437,9 +435,5 @@ void FixSphDensityCorr::post_integrate_eval()
     timer->stamp();
     comm->forward_comm();
     timer->stamp(TIME_COMM);
-
-    //NP fprintf(screen,"ts %d, particles are reinitialized. \n",update->ntimestep);
-
   }
-
 }

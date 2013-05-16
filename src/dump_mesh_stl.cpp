@@ -344,6 +344,6 @@ void DumpMeshSTL::write_data_ascii(int n, double *mybuf)
   //NP only do this once, for write_item is called multiple times on proc0
   //NP proc 0 pings other processors and recvs data
   //NP write footer after proc 0 has writen data of the last proc
-  if(n && n_calls_ == comm->nprocs)
+  if(multiproc || n_calls_ == comm->nprocs)
     fprintf(fp,"endsolid LIGGGHTS_STL_EXPORT\n");
 }

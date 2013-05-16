@@ -162,6 +162,10 @@ void FixHeatGranCond::init()
 
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
+
+  // error checks on coarsegraining
+  if(force->cg_active())
+    error->cg(FLERR,this->style);
 }
 
 /* ---------------------------------------------------------------------- */

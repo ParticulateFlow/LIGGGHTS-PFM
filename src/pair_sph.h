@@ -63,6 +63,7 @@ class PairSph : public Pair {
   /* PUBLIC ACCESS FUNCTIONS */
 
   int sph_kernel_id(){return kernel_id;}
+  int returnCalcMode(){return calcMode_; };
 
  protected:
 
@@ -85,6 +86,8 @@ class PairSph : public Pair {
   double *maxrad;
 
   int mass_type; // flag defined in atom_vec*
+
+  int calcMode_;
 
 };
 

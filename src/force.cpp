@@ -63,6 +63,7 @@ Force::Force(LAMMPS *lmp) : Pointers(lmp)
   dielectric = 1.0;
 
   coarsegraining = 1.0; //NP modified C.K.
+  error_coarsegraining = true; //NP modified C.K.
 
   pair = NULL;
   bond = NULL;

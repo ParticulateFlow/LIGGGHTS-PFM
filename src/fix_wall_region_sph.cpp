@@ -44,7 +44,6 @@ andreas.aigner@jku.at
 #include "force.h"
 #include "pair.h"
 
-
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
@@ -198,7 +197,6 @@ void FixWallRegionSph::post_force_eval(int vflag)
   Region *region = domain->regions[iregion];
   int onflag = 0;
 
-
   updatePtrs(); // get sl
 
   // TODO: mass_type dependent declaration?
@@ -207,7 +205,6 @@ void FixWallRegionSph::post_force_eval(int vflag)
   double *mass = atom->mass;
 
   double *rmass = atom->rmass;
-
 
   for (i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) {

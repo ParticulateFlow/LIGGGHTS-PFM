@@ -104,13 +104,13 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
 
     // calculate x_ins for this quaternion
     // do this in a "try" step since we do not know if we will succeed
+
+    if(!isUnitQuat4D(quat_ins)) error->one(FLERR,"quaternion rotation untested in ParticleToInsertMultisphere");
+    MathExtraLiggghts::vec_quat_rotate(ex_space,quat,ex_space_try);
+    MathExtraLiggghts::vec_quat_rotate(ey_space,quat,ey_space_try);
+    MathExtraLiggghts::vec_quat_rotate(ez_space,quat,ez_space_try);
     for(int j = 0; j < nspheres; j++)
     {
-        if(!isUnitQuat4D(quat_ins)) error->warning(FLERR,"quaternion rotation untested in ParticleToInsertMultisphere");
-        MathExtraLiggghts::vec_quat_rotate(ex_space,quat,ex_space_try);
-        MathExtraLiggghts::vec_quat_rotate(ey_space,quat,ey_space_try);
-        MathExtraLiggghts::vec_quat_rotate(ez_space,quat,ez_space_try);
-
         MathExtraLiggghts::local_coosys_to_cartesian(disp_glob,displace[j],ex_space_try,ey_space_try,ez_space_try);
         vectorAdd3D(x,disp_glob,x_ins[j]);
     }
@@ -147,7 +147,7 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
         nnear++;
     }
 
-        return nspheres;
+    return nspheres;
 }
 
 /* ---------------------------------------------------------------------- */

@@ -40,8 +40,6 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   mapTagMax_(0), //NP this makes tags start at 1!!!
   mapArray_(0),
 
-  //NP have all with "comm_none" here since no ghosts for bodies
-
   id_ (*customValues_.addElementProperty< ScalarContainer<int> >("id","comm_exchange_borders"/*ID does never change*/,"frame_invariant","restart_yes")),
 
   xcm_          (*customValues_.addElementProperty< VectorContainer<double,3> >("xcm","comm_exchange_borders","frame_invariant", "restart_yes")),

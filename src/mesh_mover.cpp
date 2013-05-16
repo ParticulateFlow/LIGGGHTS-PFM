@@ -317,8 +317,8 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
     double ***v_node = get_v();
     double ***nodes = get_nodes();
 
-    /*NL*///if(update->ntimestep > 9980) fprintf(screen,"time %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
-    /*NL*///                dT,totalPhi,incrementalPhi,reference_point[0],reference_point[1],reference_point[2]);
+    /*NL*/ //fprintf(screen,"dTAbs %f dTSetup %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
+    /*NL*/ //               dTAbs,dTSetup,totalPhi,incrementalPhi,reference_point[0],reference_point[1],reference_point[2]);
 
     // rotate the mesh
     mesh_->rotate(totalPhi,incrementalPhi,axis_,reference_point);

@@ -495,6 +495,8 @@ void Region::generate_random_shrinkby_cut(double *pos,double cut,bool subdomain_
         pos[0] = lo[0] + random->uniform()*diff[0];
         pos[1] = lo[1] + random->uniform()*diff[1];
         pos[2] = lo[2] + random->uniform()*diff[2];
+        /*NL*/// fprintf(screen,"cut %f\n",cut);
+        /*NL*/// printVec3D(screen,"diff",diff);
     }
     // pos has to be within region, but not within cut of region surface
     while(!match(pos[0],pos[1],pos[2]) || match_cut(pos,cut));
@@ -568,7 +570,7 @@ int Region::match_shrinkby_cut(double *pos,double cut)
 /* ---------------------------------------------------------------------- */
 
 //NP modified C.K.
-void Region::volume_mc(int n_test,double &vol_global, double &vol_local)
+void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,double &vol_local)
 {
     double pos[3],vol_bbox, vol_local_all;
     int n_in_local = 0, n_in_global = 0, n_in_global_all;
@@ -591,11 +593,23 @@ void Region::volume_mc(int n_test,double &vol_global, double &vol_local)
         // point is in region
         // assume every proc can evaluate this
         //NP assumption not valid for region tetmesh
-        if(match(pos[0],pos[1],pos[2]))
+        if(!cutflag)
         {
-            n_in_global++;
-            if(domain->is_in_subdomain(pos))
-                n_in_local++;
+            if(match(pos[0],pos[1],pos[2]))
+            {
+                n_in_global++;
+                if(domain->is_in_subdomain(pos))
+                    n_in_local++;
+            }
+        }
+        else
+        {
+            if(match(pos[0],pos[1],pos[2]) && !match_cut(pos,cut) )
+            {
+                n_in_global++;
+                if(domain->is_in_subdomain(pos))
+                    n_in_local++;
+            }
         }
     }
 

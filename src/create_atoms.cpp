@@ -27,6 +27,7 @@
 #include "create_atoms.h"
 #include "atom.h"
 #include "atom_vec.h"
+#include "force.h"
 #include "comm.h"
 #include "modify.h"
 #include "fix.h"
@@ -220,6 +221,11 @@ void CreateAtoms::command(int narg, char **arg)
       nspecial[i][2] = 0;
     }
   }
+
+  //NP modified C.K.
+  // error checks on coarsegraining
+  if(force->cg_active())
+    error->cg(FLERR,"create_atoms");
 }
 
 /* ----------------------------------------------------------------------
@@ -268,7 +274,6 @@ void CreateAtoms::add_single()
             if (modify->fix[j]->create_attribute) modify->fix[j]->set_arrays(atom->nlocal-1);
    }
 }
-
 
 /* ----------------------------------------------------------------------
    add Nrandom atoms at random locations

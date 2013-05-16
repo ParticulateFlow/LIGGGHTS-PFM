@@ -258,9 +258,9 @@ void FixMeshSurfaceStressServo::error_checks()
         error->fix_error(FLERR,this,"please define 'ratio' for the mesh, since you use the auto mode");
     } else {
       if(kp_ < 0. || ki_ < 0. || kd_ < 0.)
-        error->fix_error(FLERR,this,"kp, ki, and kp >= 0 required.");
+          error->fix_error(FLERR,this,"kp, ki, and kp >= 0 required.");
       if(kp_ == 0. && ki_ == 0. && kd_ == 0.)
-        error->fix_error(FLERR,this,"kp, ki, and kp are zero. Please set a valid configuration");
+          error->fix_error(FLERR,this,"kp, ki, and kp are zero. Please set a valid configuration");
     }
 }
 
@@ -285,7 +285,7 @@ void FixMeshSurfaceStressServo::init()
       else error->fix_error(FLERR,this,"Variable is invalid style");
     }
 
-    // get minimum radius and max velocity during particle contact
+    // set pointers for controller
     double r_min,r;
     int nlocal = atom->nlocal;
 
@@ -310,15 +310,15 @@ void FixMeshSurfaceStressServo::init()
       process_value_ = &torque_total_[dim_];
       control_output_ = &omegacm_(0)[dim_];
 
-    	// find maximum distance axis-node
-    	rPaMax = getMaxRad();
-    	if (rPaMax == 0)
-    	  error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
+      // find maximum distance axis-node
+      rPaMax = getMaxRad();
+      if (rPaMax == 0)
+        error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
 
-    	// maximum angular velocity
-    	ctrl_output_max_ = vel_max_/rPaMax;
+      // maximum angular velocity
+      ctrl_output_max_ = vel_max_/rPaMax;
     	ctrl_output_min_ = vel_min_/rPaMax;
-    	break;
+      break;
     default:
       error->fix_error(FLERR,this,"This may not happen!");
       break;
@@ -470,7 +470,6 @@ void FixMeshSurfaceStressServo::final_integrate()
         }
       }
 
-
       *control_output_ = -test_output * err_;
 
     } else {
@@ -539,7 +538,7 @@ void FixMeshSurfaceStressServo::limit_vel()
 
   /*NL*/ //if(screen) fprintf(screen,"Test for velocity: ctrl_output_max_ = %g; vmag = %g\n",ctrl_output_max_,vmag);
 
-  // change in auto mode the maximum velocity
+  // saturation of the velocity
   int totNumContacts = fix_mesh_neighlist_->getTotalNumContacts();
   if (mode_flag_ && totNumContacts > 0) {
     maxOutput = ctrl_output_min_;

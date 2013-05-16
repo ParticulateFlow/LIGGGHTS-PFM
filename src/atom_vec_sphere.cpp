@@ -730,7 +730,6 @@ void AtomVecSphere::unpack_border(int n, int first, double *buf)
   }
 }
 
-
 /* ---------------------------------------------------------------------- */
 
 void AtomVecSphere::unpack_border_vel(int n, int first, double *buf)

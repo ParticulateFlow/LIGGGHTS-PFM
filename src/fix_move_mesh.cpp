@@ -286,7 +286,7 @@ void FixMoveMesh::reset_reference_point()
 {
     //NP need to re-set reference point from local copy upon setup
     //NP this ensures orig value of reference_point for fix i has been
-    //NP handled by fixes i-1, i-2 only (not by i, i+1,...)
+    //NP handled by fixes i-1, i-2,... only (not by i, i+1,...)
 
     VectorContainer<double,3> *refpt;
     char refpt_id[200];
@@ -304,5 +304,5 @@ void FixMoveMesh::reset_reference_point()
     // set orig value for property
     mesh_->prop().storeGlobalPropOrig(refpt_id);
 
-    /*NL*/ //printVec3D(screen,"setting point",reference_point_);
+    /*NL*/ //printVec3D(screen,"re-setting point",reference_point_);
 }

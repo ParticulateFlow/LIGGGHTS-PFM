@@ -23,6 +23,10 @@
 Contributing author for SPH:
 Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
 andreas.aigner@jku.at
+-------------------------------------------------------------------------
+Contributing author for SPH:
+Andreas Eitzlmayr (Institute for Process and Particle Engineering, TU Graz)
+andreas.eitzlmayr@tugraz.at
 ------------------------------------------------------------------------- */
 
 #include "math.h"
@@ -71,8 +75,17 @@ FixSPHPressure::FixSPHPressure(LAMMPS *lmp, int narg, char **arg) :
       if (rho0 > 0) rho0inv = 1./rho0;
       else error->fix_error(FLERR,this," rho0 is zero or negativ \n");
       gamma = force->numeric(arg[iarg+3]);
+      if (narg < iarg+5) 
+      {      
+        P0 = 0;
+        iarg += 4;
+      }
+      else 
+      {
+        P0 = force->numeric(arg[iarg+4]);
+        iarg += 5;
+      }
       pressureStyle = PRESSURESTYLE_TAIT;
-      iarg += 4;
     }
     else if (strcmp(arg[iarg],"relativ") == 0)
     {
@@ -99,13 +112,11 @@ FixSPHPressure::~FixSPHPressure()
 int FixSPHPressure::setmask()
 {
   int mask = 0;
-  mask |= POST_INTEGRATE;
+  mask |= PRE_FORCE;
   return mask;
 }
 
 /* ---------------------------------------------------------------------- */
-
-//NP TODO: post_create with per atom property
 
 /* ---------------------------------------------------------------------- */
 
@@ -133,7 +144,7 @@ void FixSPHPressure::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixSPHPressure::post_integrate()
+void FixSPHPressure::pre_force(int vflag)
 {
   int *mask = atom->mask;
   double *rho = atom->rho;
@@ -143,16 +154,16 @@ void FixSPHPressure::post_integrate()
   // already have updated ghost positions due to regular communication
 
   // set pressure
-  //NP TODO: Switch case!
+  
   if (pressureStyle == PRESSURESTYLE_TAIT)
   {
     for (int i = 0; i < nlocal; i++)
     {
-      //NP XXX: mask and groupbit..?!
+      
       if (mask[i] & groupbit)
       {
-        //NP TODO: rho0 a atom type property?
-      p[i] = B*(pow(rho[i]*rho0inv,gamma) - 1); // Tait's equation
+        
+      p[i] = B*(pow(rho[i]*rho0inv,gamma) - 1) + P0; // Tait's equation
     }
     }
   }
@@ -172,7 +183,7 @@ void FixSPHPressure::post_integrate()
     {
       if (mask[i] & groupbit)
       {
-        p[i] = B * B * rho[i];//NP old version: 0.1 * rho[i] * rho[i];
+        p[i] = B * B * rho[i];
       }
     }
   }

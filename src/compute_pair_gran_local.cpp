@@ -446,6 +446,10 @@ void ComputePairGranLocal::add_heat(int i,int j,double hf)
 {
     if (newton_pair == 0 && j >= atom->nlocal && atom->tag[i] <= atom->tag[j]) return;
 
+    //NP return if pair not meant to be included (was not counted in the count() procedure
+    if (!(atom->mask[i] & groupbit)) return;
+    if (!(atom->mask[j] & groupbit)) return;
+
     if(hfflag)
     {
         // heat flux is always last value

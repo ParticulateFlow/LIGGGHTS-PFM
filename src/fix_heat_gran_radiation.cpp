@@ -31,6 +31,7 @@
 #include "mech_param_gran.h"
 #include "modify.h"
 #include "neigh_list.h"
+#include "force.h"
 #include "neighbor.h"
 #include "pair_gran.h"
 #include "random_mars.h"
@@ -198,6 +199,10 @@ void FixHeatGranRad::init(){
       error->all(FLERR,"Fix heat/gran/radiation: Thermal emissivity must not be < 0.0 or > 1.0.");
     }
   }
+
+  // error checks on coarsegraining
+  if(force->cg_active())
+    error->cg(FLERR,this->style);
 }
 
 void FixHeatGranRad::setup(int i){

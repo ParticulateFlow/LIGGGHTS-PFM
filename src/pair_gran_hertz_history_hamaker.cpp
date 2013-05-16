@@ -450,6 +450,10 @@ void PairGranHertzHistoryHamaker::init_granular()
     if(screen) fprintf(screen,"Maximum cutoff distance (~ minParticleDist) = %f. Skin = %f\n",maxhMaxEff,skin);
     error->all(FLERR,"Skin is too small for Hamaker model.\n");
   }
+
+  // error checks on coarsegraining
+  if((rollingflag || cohesionflag) && force->cg_active())
+    error->cg(FLERR,"Granular model with rolling friction and / or cohesion");
 }
 
 /* ----------------------------------------------------------------------

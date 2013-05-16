@@ -82,8 +82,10 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
   T_(0),
   min_active_edge_dist_(0),
   scalar_containers_(0),
+  scalar_container_names_(0),
   n_scalar_containers_(0),
   vector_containers_(0),
+  vector_container_names_(0),
   n_vector_containers_(0),
   container_args_(0),
   n_container_bases_(0)
@@ -246,11 +248,21 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
 
   //NP allocate container_bases_
   scalar_containers_ = new ScalarContainer<double>**[n_container_bases_];
+  scalar_container_names_ = new char*[n_container_bases_];
   vector_containers_ = new VectorContainer<double,3>**[n_container_bases_];
+  vector_container_names_ = new char*[n_container_bases_];
   for(int i = 0; i < n_container_bases_; i++)
   {
       scalar_containers_[i] = new ScalarContainer<double>*[nMesh_];
       vector_containers_[i] = new VectorContainer<double,3>*[nMesh_];
+      scalar_container_names_[i] = new char[200];
+      vector_container_names_[i] = new char[200];
+
+      for(int j = 0; j < nMesh_; j++)
+      {
+          scalar_containers_[i][j] = 0;
+          vector_containers_[i][j] = 0;
+      }
   }
 
   if(dump_what_ == 0 && n_container_bases_ == 0)
@@ -282,6 +294,9 @@ void DumpMeshVTK::init_style()
     error->all(FLERR,"Can not dump VTK files for triclinic box");
   if (binary)
     error->all(FLERR,"Can not dump VTK files in binary mode");
+
+  if(n_container_bases_ && dataMode_ == 1)
+    error->all(FLERR,"Dump mesh/vtk: Can not dump interpolated general properties");
 
   // nodes
   size_one = 9;
@@ -319,32 +334,11 @@ void DumpMeshVTK::init_style()
   //NP get refs so can compute size
   getGeneralRefs();
 
+  size_one += n_scalar_containers_*1;
+  size_one += n_vector_containers_*3;
+
   ScalarContainer<double> *cb1;
   VectorContainer<double,3> *cb2;
-
-  if(n_container_bases_ && dataMode_ == 1)
-    error->all(FLERR,"Dump mesh/vtk: Can not dump interpolated general properties");
-
-  //NP compute size
-  for(int ib = 0; ib < n_scalar_containers_; ib++)
-  {
-      for(int i = 0; i < nMesh_; i++)
-      {
-          cb1 = scalar_containers_[ib][i];
-          if(cb1)
-            size_one += 1;
-      }
-  }
-
-  for(int ib = 0; ib < n_vector_containers_; ib++)
-  {
-      for(int i = 0; i < nMesh_; i++)
-      {
-          cb2 = vector_containers_[ib][i];
-          if(cb2)
-            size_one += 3;
-      }
-  }
 
   delete [] format;
 }
@@ -456,6 +450,7 @@ void DumpMeshVTK::getGeneralRefs()
 
   n_scalar_containers_ = 0;
   n_vector_containers_ = 0;
+  char cid[200];
 
   for(int ib = 0; ib < n_container_bases_; ib++)
   {
@@ -467,14 +462,20 @@ void DumpMeshVTK::getGeneralRefs()
       {
           if(meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]))
           {
+              /*NL*/ //fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
               found_scalar = true;
               scalar_containers_[n_scalar_containers_][i] = meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]);
+              scalar_containers_[n_scalar_containers_][i]->id(cid);
+              strcpy(scalar_container_names_[n_scalar_containers_],cid);
           }
+          /*NL*/ //else  fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
 
           if(meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]))
           {
               found_vector = true;
               vector_containers_[n_vector_containers_][i] = meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]);
+              vector_containers_[n_vector_containers_][i]->id(cid);
+              strcpy(vector_container_names_[n_vector_containers_],cid);
           }
       }
 
@@ -1141,12 +1142,10 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
   //NP compute size
   for(int ib = 0; ib < n_scalar_containers_; ib++)
   {
-      char cid[100];
-      scalar_containers_[ib][0]->id(cid);
-
       //write owner data
-      fprintf(fp,"SCALARS %s float 1\nLOOKUP_TABLE default\n",cid);
+      fprintf(fp,"SCALARS %s float 1\nLOOKUP_TABLE default\n",scalar_container_names_[ib]);
       m = buf_pos;
+      /*NL*/ //fprintf(screen,"size_one %d\n",size_one);
       for (int i = 0; i < n; i++)
       {
           fprintf(fp,"%f\n",mybuf[m]);
@@ -1158,11 +1157,8 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
   //NP compute size
   for(int ib = 0; ib < n_vector_containers_; ib++)
   {
-      char cid[100];
-      vector_containers_[ib][0]->id(cid);
-
       //write vector data
-      fprintf(fp,"VECTORS %s float\n",cid);
+      fprintf(fp,"VECTORS %s float\n",vector_container_names_[ib]);
       m = buf_pos;
       for (int i = 0; i < n; i++)
       {

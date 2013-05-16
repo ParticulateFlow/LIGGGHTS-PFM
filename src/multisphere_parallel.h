@@ -39,6 +39,9 @@ namespace LAMMPS_NS {
       int pack_exchange_rigid(int i, double *buf);
       int unpack_exchange_rigid(double *buf);
 
+      void writeRestart(FILE *fp);
+      void restart(double *list);
+
     private:
 
       //NP buffers for body communication

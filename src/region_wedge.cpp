@@ -296,7 +296,6 @@ RegWedge::~RegWedge(){
   delete [] contact;
 }
 
-
 /* -----------------------------------------------------------------------------
  inside = 1 if x,y,z is inside or on surface
  inside = 0 if x,y,z is ouside and not on surface

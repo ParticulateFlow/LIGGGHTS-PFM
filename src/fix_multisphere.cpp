@@ -93,7 +93,9 @@ FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
   delete []modarg;
 
   //NP per atom creation and restart
+  restart_global = 1;
   restart_peratom = 1;
+  restart_pbc = 1;
   atom->add_callback(0);
   atom->add_callback(1);
 
@@ -131,6 +133,9 @@ FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
 
 FixMultisphere::~FixMultisphere()
 {
+    atom->delete_callback(id,0);
+    atom->delete_callback(id,1);
+
     delete &multisphere_;
 
     memory->destroy(displace_);
@@ -165,11 +170,18 @@ void FixMultisphere::post_create()
         fixarg[2]="property/atom";
         fixarg[3]="delflag";
         fixarg[4]="scalar";
-        fixarg[5]="yes";    // restart
-        fixarg[6]="no";     // communicate ghost
+        fixarg[5]="yes";     // restart
+        fixarg[6]="no";      // communicate ghost
         fixarg[7]="yes";     // communicate rev
         fixarg[8]="0.";
         fix_delflag_ = modify->add_fix_property_atom(9,fixarg,style);
+    }
+
+    //NP in case of restart: see comment in FixMultisphere::restart
+    if(modify->have_restart_data(this))
+    {
+        evflag = 0;
+        set_xv(LOOP_LOCAL);
     }
 }
 

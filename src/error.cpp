@@ -27,6 +27,7 @@
 #include "universe.h"
 #include "output.h"
 #include "fix.h" //NP modified C.K.
+#include "force.h" //NP modified C.K.
 #include "compute.h" //NP modified C.K.
 #include "string.h" //NP modified C.K.
 
@@ -168,6 +169,23 @@ void Error::compute_error(const char *file, int line, Compute *compute,const cha
   if (universe->nworlds > 1) MPI_Abort(universe->uworld,1);
   MPI_Finalize();
   exit(1);
+}
+
+//NP modified C.K.
+/* ----------------------------------------------------------------------
+   cg error and warnign message
+------------------------------------------------------------------------- */
+
+void Error::cg(const char *file, int line, const char *str)
+{
+    char *catstr = new char[strlen(str)+1+100];
+    strcpy(catstr,"The following model does not yield consistent results with coarse-graining: ");
+    strcat(catstr,str);
+    if(force->error_cg())
+      all(file,line,catstr);
+    else
+      warning(file,line,catstr,1);
+    delete []catstr;
 }
 
 /* ----------------------------------------------------------------------

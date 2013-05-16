@@ -73,12 +73,7 @@ inline void Multisphere::calc_nbody_all()
 
 inline void Multisphere::reset_forces(bool extflag)
 {
-    /*for(int i = 0; i < nbody_; i++)
-    {
-        vectorZeroize3D(fcm_(i));
-        vectorZeroize3D(torquecm_(i));
-        if(extflag) vectorZeroize3D(dragforce_cm_(i));
-    }*/
+    /*NL*/ //fprintf(screen,"resetting force nbody_ %d\n",nbody_);
 
     fcm_.setAll(nbody_,0.);
     torquecm_.setAll(nbody_,0.);

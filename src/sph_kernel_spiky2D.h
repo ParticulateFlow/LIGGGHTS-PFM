@@ -29,7 +29,6 @@ andreas.aigner@jku.at
 2D Spiky Kernel by Markus Schörgenhumer, mkschoe@gmail.com
 -------------------------------------------------------------------------*/
 
-
 #ifdef SPH_KERNEL_CLASS
 
     // kernel identifier (a unique integer >= 0)

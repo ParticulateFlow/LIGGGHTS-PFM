@@ -129,6 +129,9 @@ int FixMeshSurfaceStressContact::setmask()
 
 void FixMeshSurfaceStressContact::init()
 {
+    if(!trackStress())
+        error->fix_error(FLERR,this,"need 'stress' = 'on'");
+
     FixMeshSurfaceStress::init();
 
     init_area_correction();
@@ -154,11 +157,13 @@ void FixMeshSurfaceStressContact::init_area_correction()
     double expo, Yeff_ij, Yeff_orig_ij, ratio;
     Fix *ymo_fix;
 
-    PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
-    int max_type = pair_gran->mpg->max_type();
-
     if(area_correction_)
     {
+        PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+        if(!pair_gran)
+            error->fix_error(FLERR,this,"'area_correction' requires using a granular pair style");
+        int max_type = pair_gran->mpg->max_type();
+
         ymo_fix = modify->find_fix_property("youngsModulusOriginal","property/global","peratomtype",0,0,style);
 
         if(force->pair_match("gran/hooke",0)) expo = 1.;
