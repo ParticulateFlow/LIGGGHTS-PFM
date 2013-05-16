@@ -1,0 +1,184 @@
+#########################################################################################
+# title: in.servoWall                                                                   #
+# additional files: folder mesh, matlab                                                 #
+#                   postprocessing-script plotForce.m                                   #
+# date: Mai. 2013                                                                       #
+# authors: Aigner, A.                                                                   #
+# e-mail: andreas.aigner@jku.at                                                         #
+# short description: Test for controller of servo walls - simulation                    #
+#   Test of the 'auto' mode!
+#########################################################################################
+
+# Dump of particles is disabled. If animations needed, uncomment them. (Search # MARK:DUMP)
+
+#########################################################################################
+#                               user defined settings: settings                         #
+#########################################################################################
+variable    rad     equal       0.575e-3        # particle radius
+variable    dens    equal       2500            # particle density
+variable    ym      equal       65e9            # Young's modulus
+variable    pr      equal       0.45            # Poisson ratio
+variable    fric    equal       0.3             # coefficient of friction  # loop variable!!
+variable    rest    equal       0.9             # coefficient of resitution
+variable    rf      equal       0.104           # coefficient of rolling friction
+variable    dt      equal       1e-7          # time step width
+
+variable    dCylDp	equal       10			 # ratio cylinder diameter to particle diameter
+variable    hCylDp  equal       5        # ratio cylinder height to particle diameter
+
+variable    ratio   equal       0.001    
+# defines the maximum wall velocity in the vicinity of particles (only for the 'auto' mode)
+# v_max = ratio*MIN(rad)/dt
+
+#########################################################################################
+#                               internal settings - do not touch                        #
+#########################################################################################
+variable    ctrlStress      equal   -20000
+
+# generating slight polydispersity
+variable    rad1            equal   ${rad}*0.9
+variable    rad2            equal   ${rad}*1.1
+
+variable    skin            equal   0.5*${rad}
+variable    velMax          equal   0.499*${skin}/${dt}
+
+variable    cylDiameter     equal   ${dCylDp}*2*${rad} # 100 particle in cyl diameter
+variable    cylRadius       equal   0.5*${cylDiameter}
+variable    cylHeight       equal   ${hCylDp}*2*${rad}
+variable    cylArea         equal   ${cylRadius}*${cylRadius}*PI
+variable    desiredMass     equal   ${cylArea}*1*${cylHeight}*0.65*${dens}
+
+variable    ctrlForce       equal   ${ctrlStress}*${cylArea}
+
+variable    kin_en_thre     equal   1e-8
+
+# dimensions of simulation domain
+variable    nx  equal   -1.1*${cylRadius}         # neg. x-value
+variable    px  equal    1.1*${cylRadius}         # pos. x-value
+variable    ny  equal   -1.1*${cylRadius}         # neg. y-value
+variable    py  equal    1.1*${cylRadius}         # pos. y-value
+variable    nz  equal   -0.1*${cylHeight}         # neg. z-value
+variable    pz  equal    2.0*${cylHeight}         # pos. z-value
+variable    pz2 equal    10*${cylHeight}          # TEST: Very high simulation domain
+
+# timesteps
+variable    nStepsIter      equal   ceil(1e-1/${dt})
+variable    nStepsRun       equal   ceil(1e-1/${dt})
+variable    dumpfreq        equal   ceil(1.0e-2/${dt})
+variable    dumpfreqForce   equal   1 #ceil(1.0e-7/${dt})
+#########################################################################################
+
+# writing log file to log folder
+log     logs/log.shearCell_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}
+
+processors  1 2 1
+
+atom_style	granular
+atom_modify	map array
+boundary	f f f
+newton		off
+
+communicate	single vel yes
+
+units		si
+
+# definition of the simulation region
+region      reg block ${nx} ${px} ${ny} ${py} ${nz} ${pz2} units box
+create_box  1 reg
+
+neighbor	    ${skin} bin
+neigh_modify	delay 0
+
+#Material properties required for new pair styles
+fix     m1 all property/global youngsModulus peratomtype ${ym}
+fix     m2 all property/global poissonsRatio peratomtype ${pr}
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${rest}
+fix     m4 all property/global coefficientFriction peratomtypepair 1 ${fric}
+fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf}
+
+# pair style
+pair_style 	gran/hertz/history rolling_friction cdt #Hertzian without cohesion
+pair_coeff	* *
+
+#Timestep
+timestep	${dt}
+
+#Gravity
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+#import triangular mesh from cad
+fix   cad3 all mesh/surface/stress/servo file plate.stl type 1 scale ${cylRadius} move 0. 0. ${pz2} com 0. 0. ${pz2} target_val ${ctrlForce} vel_max ${velMax} dim z ctrlPV force ratio ${ratio} mode auto 
+
+#use the imported mesh as granular wall
+fix		meshWall all wall/gran/hertz/history mesh n_meshes 1 meshes cad3
+
+#additonal walls for particle insertion
+fix   wCylinder all wall/gran/hertz/history primitive type 1 zcylinder ${cylRadius} 0. 0.
+fix   wBottom all wall/gran/hertz/history primitive type 1 zplane 0.
+
+# define the material in use
+fix		pts1 all particletemplate/sphere 5330 atom_type 1 density constant ${dens} radius constant ${rad}
+fix		pdd  all particledistribution/discrete 5331  1 pts1 1.0
+
+#region and insertion
+region  bc cylinder z 0.0 0.0 ${cylRadius} 0.0 ${pz} units box
+fix     ins all insert/pack seed 5332 distributiontemplate pdd maxattempt 100 insert_every once overlapcheck yes all_in yes vel constant 0.0 0.0 -0.2 region bc mass_in_region ${desiredMass} ntry_mc 10000
+
+#apply nve integration to all particles that are inserted as single particles
+fix		integr all nve/sphere
+
+# load balancing
+fix     lb all balance 0 y 10 1.05
+
+#check timestep
+fix   ts all check/timestep/gran ${dumpfreq} 0.2 0.2
+
+#output settings, include total thermal energy
+compute		    1 all erotate/sphere
+thermo_style	custom step atoms ke c_1 vol cpu
+thermo		    ${dumpfreq}
+thermo_modify	lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+# --- runs ---
+# no movement of the plate at simulations start
+fix_modify cad3 integrate stop
+
+#insert the first particles so that dump is not empty
+run		  1
+#dump    dmp all custom ${dumpfreq} post/dump*.testServo id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius # MARK:DUMP
+#dump    dumpstl all mesh/stl ${dumpfreq} post/dumpStl.cad3_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}_*.stl cad3 # MARK:DUMP
+
+#insert particles
+unfix   ins
+
+#run particle relaxation - check kinetic energy
+variable ke equal ke
+print "ke ${ke}"
+
+label loop
+  print "-----> Checking Kinetic Energy..."
+  if "${ke} < ${kin_en_thre}" then "jump in.testServo endloop"
+  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
+  run ${nStepsIter}
+jump in.testServo loop
+label endloop
+
+# write stl-forces
+variable ForceXCad3 equal f_cad3[1]
+variable ForceYCad3 equal f_cad3[2]
+variable ForceZCad3 equal f_cad3[3]
+variable TorqueXCad3 equal f_cad3[4]
+variable TorqueYCad3 equal f_cad3[5]
+variable TorqueZCad3 equal f_cad3[6]
+variable PosX       equal f_cad3[7]
+variable PosY       equal f_cad3[8]
+variable PosZ       equal f_cad3[9]
+fix DumpTextCad3 all print ${dumpfreqForce} "${ForceXCad3} ${ForceYCad3} ${ForceZCad3} ${TorqueXCad3} ${TorqueYCad3} ${TorqueZCad3} ${PosX} ${PosY} ${PosZ}" screen no title "Fx Fy Fz Tx Ty Tz X Y Z" file force.cad3_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}.txt
+
+# now move cad3
+fix_modify cad3 integrate start
+
+#run
+run     ${nStepsRun}
+
