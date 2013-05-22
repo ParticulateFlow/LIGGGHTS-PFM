@@ -41,6 +41,10 @@
 #include "vector_liggghts.h"
 /*NL*/ #include "volume_mesh.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+double inline round(double d) {  return floor(d + 0.5); }
+#endif
+
 using namespace LAMMPS_NS;
 using namespace FixConst;
 

@@ -39,6 +39,10 @@
 #include "modified_andrew.h"
 #include "math_extra_liggghts.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+double inline round(double d);
+#endif
+
 using namespace LAMMPS_NS;
 using MODIFIED_ANDREW_AUX::Circle;
 

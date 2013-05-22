@@ -21,6 +21,13 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Philippe Seil (JKU Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -135,7 +142,7 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
            if(narg-iarg_ < nPrimitiveArgs)
             error->fix_error(FLERR,this,"not enough arguments for primitive wall");
 
-           double argVec[nPrimitiveArgs];
+           double * argVec = new double[nPrimitiveArgs];
            for(int i=0;i<nPrimitiveArgs;i++)
            {
              /*NL*/ //fprintf(screen,"primitive arg %s\n",arg[iarg_]);
@@ -155,6 +162,7 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
            }
            if(!setflag) error->fix_error(FLERR,this,"unknown primitive wall style");
            hasargs = true;
+	   delete[] argVec;
         } else if (strcmp(arg[iarg_],"mesh") == 0) {
            hasargs = true;
            meshwall_ = 1;

@@ -46,6 +46,10 @@
 #include "math_extra_liggghts.h"
 #include "math_const.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+double inline round(double d) {  return floor(d + 0.5); }
+#endif
+
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
