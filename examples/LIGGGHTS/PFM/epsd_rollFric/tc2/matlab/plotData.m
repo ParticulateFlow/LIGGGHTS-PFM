@@ -90,7 +90,7 @@ end
 figure(hFig(1));
 ylim([0.1045 0.10485]);
 xlim([0.2 0.8]);
-legend(hPlot(:,1),'CDT','EPSD','Location','SouthEast');
+legend(hPlot(:,1),'CDT','EPSD2','EPSD','Location','SouthEast');
 xlabel('xlabel');
 ylabel('ylabel');
 
