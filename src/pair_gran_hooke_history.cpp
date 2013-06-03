@@ -502,19 +502,6 @@ void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
             r_torque[1] = shear[4] + dr_torque[1];
             r_torque[2] = shear[5] + dr_torque[2];
 
-            if(ROLLINGFRICTION == 2) //NP dashpot only in case of original epsd model
-            {
-              // dashpot
-              r_inertia_red_i = mi*radi*radi;
-              r_inertia_red_j = mj*radj*radj;
-              if (domain->dimension == 2) r_inertia = 1.5 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
-              else  r_inertia = 1.4 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
-
-              /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
-              r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
-
-            }
-
             // limit max. torque
             r_torque_mag = vectorMag3D(r_torque);
             r_torque_max = fabs(ccel*r)*reff*rmu;
@@ -526,21 +513,38 @@ void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
               r_torque[1] *= factor;
               r_torque[2] *= factor;
 
+              // save rolling torque due to spring
+              shear[3] = r_torque[0];
+              shear[4] = r_torque[1];
+              shear[5] = r_torque[2];
+
+              // no damping / no dashpot in case of full mobilisation rolling angle
+              // r_coef = 0.0;
+
+            } else {
+
+              // save rolling torque due to spring before adding damping torque
+              shear[3] = r_torque[0];
+              shear[4] = r_torque[1];
+              shear[5] = r_torque[2];
+
+              // dashpot only for the original epsd model
               if(ROLLINGFRICTION == 2)
-                r_coef = 0.0; // no damping in case of full mobilisation rolling angle
-            }
+              {
+                // dashpot
+                r_inertia_red_i = mi*radi*radi;
+                r_inertia_red_j = mj*radj*radj;
+                if (domain->dimension == 2) r_inertia = 1.5 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
+                else  r_inertia = 1.4 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
 
-            // save rolling torque due to spring
-            shear[3] = r_torque[0];
-            shear[4] = r_torque[1];
-            shear[5] = r_torque[2];
+                /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
+                r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
 
-            if(ROLLINGFRICTION == 2)
-            {
-              // add damping torque //NP only in case of original epsd model
-              r_torque[0] += r_coef*wr_roll_t[0];
-              r_torque[1] += r_coef*wr_roll_t[1];
-              r_torque[2] += r_coef*wr_roll_t[2];
+                // add damping torque
+                r_torque[0] += r_coef*wr_roll_t[0];
+                r_torque[1] += r_coef*wr_roll_t[1];
+                r_torque[2] += r_coef*wr_roll_t[2];
+              }
             }
 
           }
