@@ -45,6 +45,7 @@ class ComputeRigid : public Compute {
 
   class MultisphereParallel* multisphere_;
   class ContainerBase *property_;
+  int len_;
 
 };
 

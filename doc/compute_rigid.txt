@@ -14,7 +14,7 @@ compute ID group-ID rigid property property_name :pre
 
 ID, group-ID are documented in "compute"_compute.html command :ulb,l
 property = obligatory keyword :l
-property_name = {xcm} or {vcm} or {fcm} or {torque} or {quat} or {angmom} or {omega} or {density} or {masstotal} or {inertia} or {ex_space} or {ey_space} or {ez_space} :l
+property_name = {xcm} or {vcm} or {fcm} or {torque} or {quat} or {angmom} or {omega} or {density} or {type} or {masstotal} or {inertia} or {ex_space} or {ey_space} or {ez_space} :l
   {xcm} = body position (based on center of mass) (3 values)
   {vcm} = body velocity (based on center of mass) (3 values)
   {fcm} = body force (based on center of mass) (3 values)
@@ -23,6 +23,7 @@ property_name = {xcm} or {vcm} or {fcm} or {torque} or {quat} or {angmom} or {om
   {angmom} = body angular momentum (based on center of mass) (3 values)
   {omega} = body angular velocity (based on center of mass) (3 values)
   {density} = body density (1 value)
+  {type} = multi-sphere type as defined in "fix paticleteplate/multisphere"_fix_particletemplate_multisphere.html (1 value)
   {masstotal} = body mass (1 value)
   {inertia} = body intertia (based on center of mass, around ex_space, ey_space, ez_space) (3 values)
   {ex_space}, {ey_space}, {ez_space} = eigensystem of the body (based on center of mass) (3 values each)  :pre

@@ -456,7 +456,7 @@ void DumpMeshVTK::getGeneralRefs()
   {
       bool found_scalar = false, found_vector = false;
 
-      /*NL*/ fprintf(screen,"looking for container %s\n",container_args_[ib]);
+      /*NL*/ //fprintf(screen,"looking for container %s\n",container_args_[ib]);
 
       for(int i = 0; i < nMesh_; i++)
       {

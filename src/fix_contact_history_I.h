@@ -130,7 +130,7 @@
           /*NL*/ if(!delflag[iP][i]) error->one(FLERR,"internal error");
 
           // copy contact history
-          vectorCopyN(contacthistory[iP][i],history,dnum);
+          if(dnum > 0) vectorCopyN(contacthistory[iP][i],history,dnum);
           /*NL*/// fprintf(screen,"Found coplanar contact, old contact hist %f %f %f\n",
           /*NL*///                   contacthistory[iP][i][0],contacthistory[iP][i][1],contacthistory[iP][i][2]);
           /*NL*/// fprintf(screen,"Found coplanar contact, new contact hist %f %f %f\n",

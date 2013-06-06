@@ -124,7 +124,7 @@ class Domain : protected Pointers {
   void delete_region(int, char **);
   int find_region(char *);
   void set_boundary(int, char **, int);
-  void print_box(const char *);
+  virtual void print_box(const char *); //NP modified C.K.
 
   //NP load balancing
   /*NL*/int decide_loadbalance();

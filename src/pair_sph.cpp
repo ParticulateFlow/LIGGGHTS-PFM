@@ -58,7 +58,8 @@ PairSph::PairSph(LAMMPS *lmp) : Pair(lmp)
     single_enable = 0;
  //   no_virial_compute = 1;
 
-    calcMode_ = 0;
+    pairStyle_ = 0;
+    viscosity_ = 0;
 
     kernel_style = NULL;
 
@@ -121,7 +122,6 @@ void PairSph::setKernelAndLength(int narg, char **arg)
   iarg += 2;
 
 }
-
 
 /* ---------------------------------------------------------------------- */
 

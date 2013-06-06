@@ -53,6 +53,7 @@ inline void Multisphere::remove_body(int ilocal)
 {
     /*NL*/// fprintf(screen,"deleting body tag %d ilocal %d\n",tag,ilocal);
     mapArray_[id_(ilocal)] = -1;
+    if(nbody_ > 1) mapArray_[id_(nbody_-1)] = ilocal;
 
     //NP do not copy the body if the last body in the array is deleted
     /*if(ilocal < nbody_-1)

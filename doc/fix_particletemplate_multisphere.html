@@ -15,7 +15,7 @@
 </H3>
 <P><B>Syntax:</B>
 </P>
-<PRE>fix ID group-ID particletemplate/multisphere seed nspheres nspheresvalue keyword values ntry ntryvalue spheres values_spheres type mt 
+<PRE>fix ID group-ID particletemplate/multisphere seed nspheres nspheresvalue keyword values ntry ntryvalue spheres values_spheres type mt opt_keyword opt_values 
 </PRE>
 <UL><LI>ID, group-ID are documented in <A HREF = "fix.html">fix</A> command 
 
@@ -46,6 +46,12 @@ zero or more keyword/value pairs can be appended
 
 <LI>mt = multisphere type of the template 
 
+<LI>opt_keyword = <I>mass</I> or <I>inertia_tensor</I> 
+
+<PRE><I>mass</I> value = mass assigned to this particle template
+<I>inertia_tensor</I> values = Ixx Ixy Ixz Iyy Iyz Izz
+  Ixx Ixy Ixz Iyy Iyz Izz = 6 independant components of the inertia tensor 
+</PRE>
 
 </UL>
 <P><B>Examples:</B>
@@ -78,6 +84,11 @@ up or down the particle positions and radii.
 <P>After the spheres are read, a Monte Carlo procedure is used to assess 
 everything that is needed for the motion integration: mass, center of mass, 
 and the inertia tensor including its eigensystem.
+</P>
+<P>As an alternative, the body's mass and inertia tensor can be specified
+directly via keywords <I>mass</I> and <I>inertia_tensor</I>. Note that you can
+use these keywords only together, i.e. defining only <I>mass</I> but not
+<I>inertia_tensor</I> will throw an error.
 </P>
 <P>The multisphere type or shape type as defined via the <I>type</I> keyword must 
 be unique integer given to each fix particletemplate/multisphere 

@@ -144,10 +144,8 @@ void FixMeshSurface::pre_delete(bool unfixflag)
     FixMesh::pre_delete(unfixflag);
 
     // contact tracker and neighlist are created via fix wall/gran
-    if(fix_contact_history_)
-      modify->delete_fix(fix_contact_history_->id);
-    if(fix_mesh_neighlist_)
-      modify->delete_fix(fix_mesh_neighlist_->id);
+    deleteWallNeighList();
+    deleteContactHistory();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -231,6 +229,12 @@ void FixMeshSurface::createWallNeighList(int igrp)
     */
 }
 
+void FixMeshSurface::deleteWallNeighList()
+{
+    if(fix_mesh_neighlist_)
+      modify->delete_fix(fix_mesh_neighlist_->id);
+}
+
 /* ----------------------------------------------------------------------
    called from fix messflow/mesh out of post_create()
 ------------------------------------------------------------------------- */
@@ -294,6 +298,13 @@ void FixMeshSurface::createContactHistory(int dnum)
     delete []fixarg;
     delete []contacthist_name;
     delete []my_id;
+}
+
+void FixMeshSurface::deleteContactHistory()
+{
+    // contact tracker and neighlist are created via fix wall/gran
+    if(fix_contact_history_)
+      modify->delete_fix(fix_contact_history_->id);
 }
 
 /* ----------------------------------------------------------------------

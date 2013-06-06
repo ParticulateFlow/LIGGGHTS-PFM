@@ -71,6 +71,7 @@ FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
   multisphere_(*(new MultisphereParallel(lmp))),
   fix_corner_ghost_(0),
   fix_delflag_(0),
+  fix_existflag_(0),
   fix_gravity_(0),
   fw_comm_flag_(MS_COMM_UNDEFINED),
   rev_comm_flag_(MS_COMM_UNDEFINED),
@@ -179,6 +180,21 @@ void FixMultisphere::post_create()
         fixarg[7]="yes";     // communicate rev
         fixarg[8]="0.";
         fix_delflag_ = modify->add_fix_property_atom(9,fixarg,style);
+    }
+    //NP register deletion flag
+    if(!fix_existflag_)
+    {
+        char* fixarg[9];
+        fixarg[0]="existflag";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="existflag";
+        fixarg[4]="scalar";
+        fixarg[5]="no";     // restart
+        fixarg[6]="no";      // communicate ghost
+        fixarg[7]="yes";     // communicate rev
+        fixarg[8]="1.";
+        fix_existflag_ = modify->add_fix_property_atom(9,fixarg,style);
     }
 
     //NP in case of restart: see comment in FixMultisphere::restart
@@ -356,6 +372,9 @@ void FixMultisphere::initial_integrate(int vflag)
   bool **tflag = multisphere_.tflag_.begin();
   int nbody = multisphere_.n_body();
 
+  /*NL*/ //fprintf(screen,"nbody_all %d\n",n_body_all());
+  /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d at step %d\n",comm->me,7833,update->ntimestep);
+
   for (int ibody = 0; ibody < nbody; ibody++) {
 
     if(timestep < start_step[ibody])
@@ -366,6 +385,7 @@ void FixMultisphere::initial_integrate(int vflag)
         xcm[ibody][0] += dtv * vcm[ibody][0];
         xcm[ibody][1] += dtv * vcm[ibody][1];
         xcm[ibody][2] += dtv * vcm[ibody][2];
+        /*NL*/ //fprintf(screen,"this should not be\n");
         continue;
     }
 
@@ -652,6 +672,8 @@ void FixMultisphere::set_xv(int ghostflag)
 
   for (int i = 0; i < nloop; i++) {
 
+    /*NL*/ //if(atom->tag[i] == 23497) fprintf(screen,"atom tag 23497 has body %d\n",body_[i]);
+
     if (body_[i] < 0) continue;
     ibody = map(body_[i]);
 
@@ -860,7 +882,11 @@ void FixMultisphere::pre_exchange()
     //NP mess up paralleliztion
 
     double *delflag = fix_delflag_->vector_atom;
+    double *existflag = fix_existflag_->vector_atom;
     int i = 0;
+
+    /*NL*/ //double sum = vectorSumN(existflag,atom->nlocal);
+    /*NL*/ //fprintf(screen,"sum pre_exchange %f nlocal %d\n",sum,atom->nlocal);
 
     while(i < atom->nlocal)
     {
@@ -869,7 +895,7 @@ void FixMultisphere::pre_exchange()
         /*NL*/ //fprintf(screen,"delfag particle %d: %f\n",atom->tag[i],delflag[i]);
         if(round(delflag[i]) == 1)
         {
-            /*NL*/// fprintf(screen,"step %d proc %d deleting particle tag %d,delflag %f\n",update->ntimestep,comm->me,atom->tag[i],delflag[i]);
+            /*NL*/ //fprintf(screen,"step %d proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
             avec->copy(atom->nlocal-1,i,1);
             atom->nlocal--;
         }
@@ -930,17 +956,26 @@ void FixMultisphere::pre_neighbor()
     //NP if atom is lost that belongs to rigid body, delete whole body
     //NP and mark other atoms belonging to this rigid body for deletion
 
-    double *delflag = fix_delflag_->vector_atom;
-
     // set deletion flag
     // if any deleted atoms, do re-neigh in 100 steps at latest to remove
     // remainder particles
+    double   *delflag =   fix_delflag_->vector_atom;
+    double *existflag = fix_existflag_->vector_atom;
     vectorZeroizeN(delflag,atom->nlocal+atom->nghost);
-    if(multisphere_.check_lost_atoms(body_,delflag))
+    vectorZeroizeN(existflag,atom->nlocal+atom->nghost);
+
+    if(multisphere_.check_lost_atoms(body_,delflag,existflag))
         next_reneighbor = update->ntimestep + 100;
+
+    /*NL*/ //double sum = vectorSumN(existflag,atom->nlocal);
+    /*NL*/ //fprintf(screen,"sum pre %f nlocal %d\n",sum,atom->nlocal);
 
     //NP need to send deletion flag from ghosts to owners
     fix_delflag_->do_reverse_comm();
+    fix_existflag_->do_reverse_comm();
+
+    /*NL*/ //sum = vectorSumN(existflag,atom->nlocal);
+    /*NL*/ //fprintf(screen,"sum post %f nlocal %d\n",sum,atom->nlocal);
 
     //NP fw comm image and displace
     //NP note that image has changed due to remap_bodies() call
@@ -952,6 +987,14 @@ void FixMultisphere::pre_neighbor()
     int nall = atom->nlocal + atom->nghost;
     double *corner_ghost = fix_corner_ghost_->vector_atom;
     vectorZeroizeN(corner_ghost,nall);
+
+    // merge delflag and existflag
+
+    int nlocal = atom->nlocal;
+    delflag =   fix_delflag_->vector_atom;
+    existflag = fix_existflag_->vector_atom;
+    for(int i = 0; i < nlocal; i++)
+        delflag[i] = (round(existflag[i]) == 0) ? 1. : delflag[i];
 }
 
 /* ----------------------------------------------------------------------

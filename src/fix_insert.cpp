@@ -213,16 +213,29 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
       } else error->fix_error(FLERR,this,"expecting keyword 'constant' after keyword 'omega'");
       iarg += 5;
       hasargs = true;
-    } else if (strcmp(arg[iarg],"quat") == 0) {
-      if (iarg+5 > narg) error->fix_error(FLERR,this,"");
-      if (strcmp(arg[iarg+1],"constant") == 0)
+    } else if (strcmp(arg[iarg],"orientation") == 0) {
+      if (iarg+2 > narg)
+        error->fix_error(FLERR,this,"not enough arguments for 'orientation'");
+      iarg++;
+      if(strcmp(arg[iarg],"random") == 0)
       {
-          quat_insert[0] = atof(arg[iarg+2]);
-          quat_insert[1] = atof(arg[iarg+3]);
-          quat_insert[2] = atof(arg[iarg+4]);
-          quat_insert[3] = atof(arg[iarg+5]);
-      } else error->fix_error(FLERR,this,"expecting keyword 'constant' after keyword 'quat'");
-      iarg += 6;
+          quat_random_ = true;
+          iarg++;
+      }
+      else if(strcmp(arg[iarg],"template") == 0)
+      {
+          quat_random_ = false;
+          iarg++;
+      }
+      else if (strcmp(arg[iarg],"constant") == 0)
+      {
+          iarg++;
+          if (iarg+4 > narg) error->fix_error(FLERR,this,"");
+          quat_insert[0] = atof(arg[iarg++]);
+          quat_insert[1] = atof(arg[iarg++]);
+          quat_insert[2] = atof(arg[iarg++]);
+          quat_insert[3] = atof(arg[iarg++]);
+      } else error->fix_error(FLERR,this,"expecting 'random', template' or 'constant' after keyword 'quat'");
       hasargs = true;
     }
     //NP throw error only if not derived class
@@ -346,6 +359,7 @@ void FixInsert::init_defaults()
 
   //NP initialize as unit maxtrix
   quatUnitize4D(quat_insert);
+  quat_random_ = false;
 
   print_stats_during_flag = 1;
 }
@@ -540,9 +554,11 @@ void FixInsert::pre_exchange()
   // limit to max number of particles that shall be inserted
   // to avoid that max # may be slightly exceeded by random processes
   // in fix_distribution->randomize_list, set exact_number to 1
-  if (ninsert_exists && ninserted + ninsert_this > ninsert)
+  if (ninsert_exists && ninserted + ninsert_this >= ninsert)
   {
       ninsert_this = ninsert - ninserted;
+      if(ninsert_this < 0)
+        ninsert_this = 0;
       exact_number = 1;
   }
 
@@ -853,6 +869,8 @@ void FixInsert::write_restart(FILE *fp)
   list[n++] = static_cast<double>(next_reneighbor);
   list[n++] = massinserted;
 
+  /*NL*/ //fprintf(screen,"next_reneighbor %d ninserted %d\n",next_reneighbor,ninserted);
+
   if (comm->me == 0) {
     int size = n * sizeof(double);
     fwrite(&size,sizeof(int),1,fp);
@@ -868,19 +886,22 @@ void FixInsert::restart(char *buf)
 {
   int n = 0;
   double *list = (double *) buf;
-  double next_reneighbor_re;
+  bigint next_reneighbor_re;
 
   seed = static_cast<int> (list[n++]) + comm->me;
   ninserted = static_cast<int> (list[n++]);
   first_ins_step = static_cast<int> (list[n++]);
-  next_reneighbor_re = static_cast<int> (list[n++]);
+  next_reneighbor_re = static_cast<bigint> (list[n++]);
   massinserted = list[n++];
 
   random->reset(seed);
 
   // in order to be able to continue pouring with increased number of particles
   // if insert was already finished in run to be restarted
-  if(next_reneighbor_re != 0 && ninserted < ninsert) next_reneighbor = next_reneighbor_re;
+  if(next_reneighbor_re != 0) next_reneighbor = next_reneighbor_re;
+
+  /*NL*/// fprintf(screen,"next_reneighbor "BIGINT_FORMAT", next_reneighbor_re "BIGINT_FORMAT"  "
+  /*NL*///       "ninserted %d ninsert %d\n",next_reneighbor,next_reneighbor_re,ninserted,ninsert);
 }
 
 /* ----------------------------------------------------------------------

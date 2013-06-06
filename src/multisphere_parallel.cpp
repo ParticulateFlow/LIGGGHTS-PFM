@@ -110,7 +110,7 @@ void MultisphereParallel::exchange()
 
   // loop over dimensions
 
-  /*NL*/// fprintf(screen,"step %d: proc %d has %d bodies\n",update->ntimestep,comm->me,nbody);
+  /*NL*/// fprintf(screen,"step %d: proc %d has %d bodies pre exchange\n",update->ntimestep,comm->me,nbody_);
   /*NL*/// if(nbody) fprintf(screen,"step %d: proc %d body 0: xcv %f vcm %f\n",update->ntimestep,comm->me,xcm[0][2],vcm[0][2]);
 
   for (int dim = 0; dim < 3; dim++) {
@@ -136,6 +136,8 @@ void MultisphereParallel::exchange()
             nsend += pack_exchange_rigid(i,&buf_send_[nsend]);
             /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
+            /*NL*/// fprintf(screen,"removing body %d: x %f xcm %f dim %d\n",
+            /*NL*///                  i,x[dim],xcm_(i)[dim],dim);
             remove_body(i);
             /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
@@ -197,6 +199,8 @@ void MultisphereParallel::exchange()
       else m += static_cast<int> (buf[m]);
     }
   }
+
+  /*NL*/ //fprintf(screen,"step %d: proc %d has %d bodies post exchange\n",update->ntimestep,comm->me,nbody_);
 }
 
 /* ----------------------------------------------------------------------
@@ -207,6 +211,7 @@ void MultisphereParallel::exchange()
 void MultisphereParallel::writeRestart(FILE *fp)
 {
     double *sendbuf = 0, *recvbuf = 0;
+    double xbnd[3];
     bool dummy = false;
     double nba = static_cast<double>(n_body_all());
 
@@ -214,6 +219,7 @@ void MultisphereParallel::writeRestart(FILE *fp)
     int sizeLocal = n_body() * (customValues_.elemBufSize(OPERATION_RESTART,dummy,dummy,dummy) + 4);
     int sizeGlobal = 0, sizeOne = 0;
 
+    /*NL*/ //fprintf(screen,"nba %f\n",nba);
     /*NL*/ //fprintf(screen,"sizeLocal %d\n",sizeLocal);
 
     // allocate send buffer and pack element data
@@ -224,11 +230,12 @@ void MultisphereParallel::writeRestart(FILE *fp)
     sizeLocal = 0;
     for(int i = 0; i < n_body(); i++)
     {
+        x_bound(xbnd,i);
         sizeOne = customValues_.pushElemToBuffer(i,&(sendbuf[sizeLocal+4]),OPERATION_RESTART,dummy,dummy,dummy);
         sendbuf[sizeLocal] = static_cast<double>(sizeOne+4);
-        sendbuf[sizeLocal+1] = xcm_(i)[0];
-        sendbuf[sizeLocal+2] = xcm_(i)[1];
-        sendbuf[sizeLocal+3] = xcm_(i)[2];
+        sendbuf[sizeLocal+1] = xbnd[0];
+        sendbuf[sizeLocal+2] = xbnd[1];
+        sendbuf[sizeLocal+3] = xbnd[2];
         /*NL*/// fprintf(screen,"sendbuf[%d] = %d\n",sizeLocal,sizeOne+4);
         sizeLocal += (sizeOne+4);
     }
@@ -258,7 +265,7 @@ void MultisphereParallel::writeRestart(FILE *fp)
         // write extra value
         fwrite(&nba,sizeof(double),1,fp);
 
-        // write per-element and mesh data
+        // write per-element data
         fwrite(recvbuf,sizeof(double),sizeGlobal,fp);
     }
 
@@ -292,9 +299,9 @@ void MultisphereParallel::restart(double *list)
         /*NL*///fprintf(screen,"nrecv_this %d\n",nrecv_this);
 
         //NP xcm is first in buffer
-        double *pos = &(list[m+1]);
+        double *x_bnd = &(list[m+1]);
         /*NL*/ //printVec3D(screen,"pos",pos);
-        if(domain->is_in_subdomain(pos))
+        if(domain->is_in_subdomain(x_bnd))
         {
             //NP addZero() creates all properties
             //NP also adds properties values for which restart data is available

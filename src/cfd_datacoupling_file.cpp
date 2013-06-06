@@ -39,11 +39,6 @@
 #include <fstream>
 #include <unistd.h>
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#define sleep Sleep
-#endif
-
 using namespace LAMMPS_NS;
 using namespace std;
 

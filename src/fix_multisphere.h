@@ -137,6 +137,9 @@ class FixMultisphere : public Fix
       inline int n_body()
       { return data().n_body(); }
 
+      inline int n_body_all()
+      { return data().n_body_all(); }
+
       inline int tag_max_body()
       { return data().tag_max_body(); }
 
@@ -165,6 +168,7 @@ class FixMultisphere : public Fix
       class MultisphereParallel &multisphere_;
       class FixPropertyAtom *fix_corner_ghost_;
       class FixPropertyAtom *fix_delflag_;
+      class FixPropertyAtom *fix_existflag_;
       class FixGravity *fix_gravity_;
 
       //NP flag stating that image and displace must be communicated to ghosts

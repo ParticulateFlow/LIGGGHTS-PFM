@@ -156,7 +156,6 @@ void FixWallSph::post_force(int vflag)
 
   double frac,frac2; // for penetration force
 
-
   // loop over all my atoms
   // rsq = distance from wall
   // dx,dy,dz = signed distance from wall

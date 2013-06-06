@@ -86,6 +86,7 @@ class FixTemplateSphere : public Fix {
   class LMP_PROBABILITY_NS::PDF *pdf_density;
   double volume_expect;
   double mass_expect;
+  double vol_limit;
 };
 
 }
