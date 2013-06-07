@@ -303,6 +303,8 @@ void PairGranJKRHistory::compute_force(int eflag, int vflag,int addflag)
 
         // area calculation //NP modified A.A.
         double area,areaOld,areaOld2,coef;
+        itype = type[i];
+        jtype = type[j];
         area = areaOld = reff;
         for (int k=0; k<10; k++) {
           areaOld = area;
