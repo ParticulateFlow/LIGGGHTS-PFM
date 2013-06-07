@@ -39,6 +39,7 @@ namespace LAMMPS_NS {
 class PairGranJKRHistory : public PairGran {
 
  friend class FixWallGranHookeHistory;
+ friend class FixWallGranJKRHistory;
  friend class FixCheckTimestepGran;
 
  public:
