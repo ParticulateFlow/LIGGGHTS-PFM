@@ -1,7 +1,7 @@
 INSTRUCTIONS FOR COMPILING LIGGGHTS WITH VISUAL STUDIO 2010/2012 
 (Ultimate, Professional or Express Versions)
 
-To compile LIGGGHTS open the LIGGGHTS_VS2012 Solution
+To compile LIGGGHTS open the LIGGGHTS-PUBLIC_VS2012 Solution
 
 The LIGGGHTS project has configurations to compile either with MPI 
 support or with MPI stubs. *
