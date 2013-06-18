@@ -71,7 +71,7 @@ end
 figure(hFig(1));
 %hLeg = legend(leg{1,1:iCnt(1)-1});
 %set(hLeg,'Interpreter','none');
-legend('CDT','EPSD','Location','SouthWest');
+legend('CDT','EPSD2','EPSD','Location','SouthWest');
 xlabel('xlabel');
 ylabel('ylabel');
 

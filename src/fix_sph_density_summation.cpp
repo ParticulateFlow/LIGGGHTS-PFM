@@ -128,7 +128,6 @@ void FixSPHDensitySum::init()
 
   if(me == -1 && pres >= 0) error->fix_error(FLERR,this,"Fix sph/pressure has to be defined after sph/density/summation \n");
   if(pres == -1) error->fix_error(FLERR,this,"Requires to define a fix sph/pressure also \n");
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -159,7 +158,7 @@ void FixSPHDensitySum::post_integrate_eval()
   double *mass = atom->mass;
   double *rmass = atom->rmass;
 
-  if (!MASSFLAG) updatePtrs(); // get sl
+  updatePtrs(); // get sl
 
   // reset and add rho contribution of self
 
@@ -192,7 +191,7 @@ void FixSPHDensitySum::post_integrate_eval()
   // need updated ghost positions and self contributions
   timer->stamp();
   comm->forward_comm();
-  //NP fppaSl->do_forward_comm();
+  
   timer->stamp(TIME_COMM);
 
   // loop over neighbors of my atoms
@@ -236,7 +235,7 @@ void FixSPHDensitySum::post_integrate_eval()
       }
 
       slComInv = 1./slCom;
-      cut = slCom*kernel_cut;//NP slCom*SPH_KERNEL_NS::sph_kernel_cut(kernel_id);
+      cut = slCom*kernel_cut;
 
       delx = xtmp - x[j][0];
       dely = ytmp - x[j][1];
@@ -273,6 +272,5 @@ void FixSPHDensitySum::post_integrate_eval()
   timer->stamp();
   comm->forward_comm();
   timer->stamp(TIME_COMM);
-
 
 }

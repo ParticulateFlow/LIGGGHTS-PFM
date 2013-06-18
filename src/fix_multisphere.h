@@ -79,10 +79,12 @@ class FixMultisphere : public Fix
       void set_arrays(int);
 
       // restart
-      int pack_restart(int, double *);
-      void unpack_restart(int, int);
-      int size_restart(int);
+      int pack_restart(int i, double *buf);
+      void unpack_restart(int nlocal, int nth);
+      int size_restart(int nlocal);
       int maxsize_restart();
+      void write_restart(FILE *fp);
+      void restart(char *buf);
 
       // communication
       int pack_exchange(int i, double *buf);
@@ -135,6 +137,9 @@ class FixMultisphere : public Fix
       inline int n_body()
       { return data().n_body(); }
 
+      inline int n_body_all()
+      { return data().n_body_all(); }
+
       inline int tag_max_body()
       { return data().tag_max_body(); }
 
@@ -163,6 +168,7 @@ class FixMultisphere : public Fix
       class MultisphereParallel &multisphere_;
       class FixPropertyAtom *fix_corner_ghost_;
       class FixPropertyAtom *fix_delflag_;
+      class FixPropertyAtom *fix_existflag_;
       class FixGravity *fix_gravity_;
 
       //NP flag stating that image and displace must be communicated to ghosts

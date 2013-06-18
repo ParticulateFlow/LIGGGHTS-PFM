@@ -36,7 +36,7 @@ namespace LAMMPS_NS {
     public:
 
       void add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_ins, double r_bound_ins,
-                    double *v_ins, double *omega_ins, double mass_ins, double dens_ins,
+                    double *v_ins, double *omega_ins, double mass_ins, double dens_ins,int type_ins,
                     double *inertia_ins, double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
                     double **displace_ins, int start_step_ins = -1, double *v_integrate_ins = NULL);
 
@@ -53,7 +53,7 @@ namespace LAMMPS_NS {
       void id_extend_body_extend(int *body);
 
       void calc_nbody_all();
-      bool check_lost_atoms(int *body, double *atom_delflag);
+      bool check_lost_atoms(int *body, double *atom_delflag,double *body_existflag);
       int calc_n_steps(int iatom,int body,double *p_ref,double *normalvec,double *v_normal);
 
       double max_r_bound();
@@ -155,6 +155,7 @@ namespace LAMMPS_NS {
       // density and total mass of each rigid body
       // 3 principal components of inertia of each
       // principal axes of each in space coords
+      ScalarContainer<int> &type_;
       ScalarContainer<double> &density_;
       ScalarContainer<double> &masstotal_;
       VectorContainer<double,3> &inertia_;

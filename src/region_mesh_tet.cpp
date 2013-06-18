@@ -353,7 +353,7 @@ void RegTetMesh::volume_mc(int n_test,double &vol_global, double &vol_local)
     MPI_Sum_Scalar(vol_local,vol_local_all,world);
     vol_local *= (vol_global/vol_local_all);
 
-    /*NL*/ fprintf(screen,"vol_global %f, vol_local %f\n",vol_global,vol_local);
+    /*NL*/ //fprintf(screen,"vol_global %f, vol_local %f\n",vol_global,vol_local);
 }
 
 /* ---------------------------------------------------------------------- */

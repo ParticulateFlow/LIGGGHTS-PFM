@@ -21,6 +21,13 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Philippe Seil (JKU Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -135,7 +142,7 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
            if(narg-iarg_ < nPrimitiveArgs)
             error->fix_error(FLERR,this,"not enough arguments for primitive wall");
 
-           double argVec[nPrimitiveArgs];
+           double * argVec = new double[nPrimitiveArgs];
            for(int i=0;i<nPrimitiveArgs;i++)
            {
              /*NL*/ //fprintf(screen,"primitive arg %s\n",arg[iarg_]);
@@ -155,6 +162,7 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
            }
            if(!setflag) error->fix_error(FLERR,this,"unknown primitive wall style");
            hasargs = true;
+           delete[] argVec;
         } else if (strcmp(arg[iarg_],"mesh") == 0) {
            hasargs = true;
            meshwall_ = 1;
@@ -296,7 +304,8 @@ void FixWallGran::post_create()
    for(int i=0;i<n_FixMesh_;i++)
    {
       FixMesh_list_[i]->createWallNeighList(igroup);
-      if(dnum()>0)FixMesh_list_[i]->createContactHistory(dnum());
+      //if(dnum()>0)FixMesh_list_[i]->createContactHistory(dnum());
+      FixMesh_list_[i]->createContactHistory(dnum());
    }
 
    // contact history for primitive wall
@@ -387,13 +396,16 @@ void FixWallGran::init()
 
         delete []pairstyle;
 
-        // re-initialize history if pair style has changed
+        // prohibit changing pair style with wall active
         if(pair_changed)
         {
             if(dnum_ != pairgran_->dnum_pair())
                 error->fix_error(FLERR,this,"Can not change to this pair style with fix wall/gran being active");
-        //    fix_contact_tracker_->reset_history();
         }
+
+        // re-initialize history if contact history was registered by fix with different # hist values
+        for(int i=0;i<n_FixMesh_;i++)
+            FixMesh_list_[i]->contactHistory()->reset_history(dnum_);
 
         // check if a fix rigid is registered - important for damp
         fix_rigid_ = pairgran_->fr_pair();
@@ -560,6 +572,8 @@ void FixWallGran::post_force_mesh(int vflag)
       TriMesh *mesh = FixMesh_list_[iMesh]->triMesh();
       nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
       FixContactHistory *fix_contact = FixMesh_list_[iMesh]->contactHistory();
+
+      /*NL*/ //fprintf(screen,"dnum chist %d\n",fix_contact->get_dnum());
 
       // mark all contacts for delettion at this point
       //NP all detected contacts will be un-marked by fix_contact->handleContact()

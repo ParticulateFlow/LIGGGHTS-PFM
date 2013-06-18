@@ -63,7 +63,7 @@ int ParticleToInsertMultisphere::set_x_v_omega(double *x, double *v, double *ome
     vectorCopy3D(v,v_ins);
     vectorCopy3D(omega,omega_ins);
 
-    if(!isUnitQuat4D(quat_ins)) error->warning(FLERR,"quaternion rotation untested in ParticleToInsertMultisphere");
+    //if(!isUnitQuat4D(quat_ins)) error->warning(FLERR,"quaternion rotation untested in ParticleToInsertMultisphere");
 
     /*NP test quaternion rotation
     double test[] = {1.,2.,3.},testr[3];
@@ -73,9 +73,9 @@ int ParticleToInsertMultisphere::set_x_v_omega(double *x, double *v, double *ome
     printVec3D(screen,"rotated vector",testr);
     */
 
-    MathExtraLiggghts::vec_quat_rotate(ex_space,quat_ins);
-    MathExtraLiggghts::vec_quat_rotate(ey_space,quat_ins);
-    MathExtraLiggghts::vec_quat_rotate(ez_space,quat_ins);
+    MathExtraLiggghts::vec_quat_rotate(ex_space,quat);
+    MathExtraLiggghts::vec_quat_rotate(ey_space,quat);
+    MathExtraLiggghts::vec_quat_rotate(ez_space,quat);
 
     for(int j = 0; j < nspheres; j++)
     {
@@ -102,18 +102,23 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
     double del[3],disp_glob[3], rsq, radsum;
     double ex_space_try[3], ey_space_try[3], ez_space_try[3];
 
+    // rotate if needed
+
+
     // calculate x_ins for this quaternion
     // do this in a "try" step since we do not know if we will succeed
+
+    //if(!isUnitQuat4D(quat_ins)) error->one(FLERR,"quaternion rotation untested in ParticleToInsertMultisphere");
+    MathExtraLiggghts::vec_quat_rotate(ex_space,quat,ex_space_try);
+    MathExtraLiggghts::vec_quat_rotate(ey_space,quat,ey_space_try);
+    MathExtraLiggghts::vec_quat_rotate(ez_space,quat,ez_space_try);
     for(int j = 0; j < nspheres; j++)
     {
-        if(!isUnitQuat4D(quat_ins)) error->warning(FLERR,"quaternion rotation untested in ParticleToInsertMultisphere");
-        MathExtraLiggghts::vec_quat_rotate(ex_space,quat,ex_space_try);
-        MathExtraLiggghts::vec_quat_rotate(ey_space,quat,ey_space_try);
-        MathExtraLiggghts::vec_quat_rotate(ez_space,quat,ez_space_try);
-
         MathExtraLiggghts::local_coosys_to_cartesian(disp_glob,displace[j],ex_space_try,ey_space_try,ez_space_try);
         vectorAdd3D(x,disp_glob,x_ins[j]);
     }
+
+    /*NL*/// int kk = 0;
 
     for(int i = 0; i < nnear; i++)
     {
@@ -122,6 +127,12 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
            vectorSubtract3D(x_ins[j],xnear[i],del);
            rsq = vectorMag3DSquared(del);
            radsum = radius_ins[j] + xnear[i][3];
+
+           /*NL*/// printVec3D(screen,"x_ins[j]",x_ins[j]);
+           /*NL*/// fprintf(screen,"rsq %f\n",rsq);
+           /*NL*/// fprintf(screen,"radsum %f\n",radsum);
+           /*NL*/// kk++; if (kk > 100) error->all(FLERR,"end");
+
            // no success in overlap
            if (rsq <= radsum*radsum) return 0;
         }
@@ -147,7 +158,7 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
         nnear++;
     }
 
-        return nspheres;
+    return nspheres;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -210,8 +221,8 @@ int ParticleToInsertMultisphere::insert()
     FixMultisphere *fix_multisphere = static_cast<FixMultisphere*>(modify->find_fix_style("multisphere",0));
 
     /*NL*///fprintf(screen,"inserting body at xcm position %f %f %f\n",xcm_ins[0],xcm_ins[1],xcm_ins[2]);
-    fix_multisphere->data().add_body(nspheres,xcm_ins,xcm_to_xbound,r_bound_ins, v_ins, omega_ins, mass_ins, density_ins,
-                                inertia,ex_space,ey_space,ez_space,displace);
+    fix_multisphere->data().add_body(nspheres,xcm_ins,xcm_to_xbound,r_bound_ins, v_ins, omega_ins, mass_ins,
+                                density_ins,type_ms,inertia,ex_space,ey_space,ez_space,displace);
 
     // set displace correctly, set body to -2
     //NP -2 means belongs to body, but does not know yet to which

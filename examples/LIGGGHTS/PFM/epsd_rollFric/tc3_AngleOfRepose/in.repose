@@ -38,10 +38,10 @@ variable    skin            equal   0.5*${rad}
 variable 	nParticles equal 2000   		# number of particles 
 variable	cylinderRad equal    ${rad}*15
 # dimensions of simulation domain
-variable	nx equal   -1.5*${cylinderRad} 		# neg. x-value
-variable	px equal    1.5*${cylinderRad} 		# pos. x-value
-variable	ny equal   -1.5*${cylinderRad} 		# neg. y-value
-variable	py equal    1.5*${cylinderRad} 		# pos. y-value
+variable	nx equal   -2*${cylinderRad} 		# neg. x-value
+variable	px equal    2*${cylinderRad} 		# pos. x-value
+variable	ny equal   -2*${cylinderRad} 		# neg. y-value
+variable	py equal    2*${cylinderRad} 		# pos. y-value
 variable	nz equal   -0.1*${cylinderRad} 		# neg. z-value
 variable	pz equal    1.5*${cylinderRad} 		# pos. z-value
 
@@ -51,7 +51,7 @@ variable  dumpfreq    equal ceil(0.1/${dt})
 #########################################################################################
 
 # writing log file to post folder
-log 		post/log.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rest${rest}_dens${dens}_rfstyle${rfSLog}.log
+log 		post/log.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.log
 
 atom_style	granular
 atom_modify	map array
@@ -121,7 +121,7 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run 1
-dump		dmp all custom ${dumpfreq} post/dump_*.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rest${rest}_dens${dens}.liggghts id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius	
+dump		dmp all custom ${dumpfreq} post/dump_*.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.liggghts id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius	
 
 # getting the simulation started - first values for ke are copmuted
 run		1000

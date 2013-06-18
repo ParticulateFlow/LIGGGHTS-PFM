@@ -138,6 +138,7 @@ void FixNeighlistMesh::pre_force(int vflag)
 
     contactList.empty();
     numContacts.empty();
+    numAllContacts_ = 0;
 
     x = atom->x;
     r = atom->radius;
@@ -184,6 +185,8 @@ void FixNeighlistMesh::pre_force(int vflag)
 
     for(int iTri = 0; iTri < nall; iTri++)
       handleTriangle(iTri);
+
+    MPI_Sum_Scalar(numAllContacts_,world);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -261,6 +264,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
     }
 
     numContacts.add(numContTmp);
+    numAllContacts_ += numContTmp;
     /*NL*/// fprintf(screen,"iTri %d numContacts %d\n",iTri,numContTmp);
     return;
 }

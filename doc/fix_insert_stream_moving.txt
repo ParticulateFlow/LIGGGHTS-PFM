@@ -1,0 +1,48 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix insert/stream/moving command :h3
+[Syntax:]
+
+fix ID group-ID insert/stream/moving seed seed_value distributiontemplate dist-ID general_keywords general_values stream_keywords stream_values ... :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+insert/stream/moving = style name of this fix command :l
+all other keywords/values are documented in "fix insert/stream"_fix_insert_stream.html command :l
+
+:ule
+
+[Examples:]
+
+fix ins all insert/stream/stream seed 1001 distributiontemplate pdd1 nparticles 5000 vel constant 0. -0.5 -2. particlerate 1000 overlapcheck yes insertion_face ins_mesh extrude_length 0.6
+
+[Description:]
+
+Insert particles into a granular run, identically to 
+the "fix insert/stream"_fix_insert_stream.html command.
+However, when using fix insert/stream/moving the insertion
+face can be moved spatially via a "fix move/mesh"_fix_move_mesh.html
+command
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+See "fix insert/stream"_fix_insert_stream.html command.
+
+[Restrictions:]
+
+See "fix insert/stream"_fix_insert_stream.html command.
+
+[Related commands:]
+
+"fix_insert_pack"_fix_insert_pack.html, "fix_insert_rate_region"_fix_insert_rate_region.html,
+"fix_deposit"_fix_deposit.html, "fix_pour_dev"_fix_pour_dev.html, "fix_pour"_fix_pour.html
+
+[Default:]
+
+See "fix insert/stream"_fix_insert_stream.html command.

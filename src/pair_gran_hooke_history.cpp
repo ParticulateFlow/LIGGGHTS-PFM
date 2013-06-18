@@ -60,7 +60,7 @@ PairGranHookeHistory::PairGranHookeHistory(LAMMPS *lmp) : PairGran(lmp)
 {
     //flag that we intend to use contact history
     history = 1;
-    dnum_pairgran = 6; //NP modified A.A.
+    dnum_pairgran = 3;
 
     Yeff = NULL;
     Geff = NULL;
@@ -112,12 +112,15 @@ void PairGranHookeHistory::history_args(char** args)
     args[3] = (char *) "1";
     args[4] = (char *) "shearz";
     args[5] = (char *) "1";
-    args[6] = (char *) "r_torquex_old"; //NP modified A.A.
-    args[7] = (char *) "1";
-    args[8] = (char *) "r_torquey_old"; //NP modified A.A.
-    args[9] = (char *) "1";
-    args[10] = (char *) "r_torquez_old"; //NP modified A.A.
-    args[11] = (char *) "1";
+    if (rollingflag == 2 || rollingflag == 3)
+    {
+      args[6] = (char *) "r_torquex_old"; //NP modified A.A.
+      args[7] = (char *) "1";
+      args[8] = (char *) "r_torquey_old"; //NP modified A.A.
+      args[9] = (char *) "1";
+      args[10] = (char *) "r_torquez_old"; //NP modified A.A.
+      args[11] = (char *) "1";
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -176,6 +179,17 @@ inline void PairGranHookeHistory::deriveContactModelParams(int &ip, int &jp,doub
 
 void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
 {
+    if     (rollingflag == 0) compute_force_eval<0>(eflag,vflag,addflag);
+    else if(rollingflag == 1) compute_force_eval<1>(eflag,vflag,addflag);
+    else if(rollingflag == 2) compute_force_eval<2>(eflag,vflag,addflag);
+    else if(rollingflag == 3) compute_force_eval<3>(eflag,vflag,addflag);
+}
+
+/* ---------------------------------------------------------------------- */
+
+template <int ROLLINGFRICTION>
+void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
+{
   //calculated from the material properties //NP modified C.K.
   double kn,kt,kr,gamman,gammat,xmu,rmu; //NP modified C.K.
   double Fn_coh;//NP modified C.K.
@@ -194,7 +208,6 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
   double *shear,*allshear,**firstshear;
 
   double r_inertia,r_coef,r_torque_mag,r_torque_max,factor;
-
 
   if (eflag || vflag) ev_setup(eflag,vflag);
   else evflag = vflag_fdotr = 0;
@@ -253,7 +266,11 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
         shear[0] = 0.0;
         shear[1] = 0.0;
         shear[2] = 0.0;
-        shear[3] = 0.0; // this is the r_torque_old
+        if (ROLLINGFRICTION == 2 || ROLLINGFRICTION == 3) {
+          shear[3] = 0.0; // this is the r_torque_old
+          shear[4] = 0.0; // this is the r_torque_old
+          shear[5] = 0.0; // this is the r_torque_old
+        }
 
       } else {
         r = sqrt(rsq);
@@ -432,9 +449,9 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
 
         // add rolling friction torque
         vectorZeroize3D(r_torque);
-        if(rollingflag)
+        if(ROLLINGFRICTION > 0)
         {
-          if(rollingflag == 1)
+          if(ROLLINGFRICTION == 1)
           {
             vectorSubtract3D(omega[i],omega[j],wr_roll);
             wr_rollmag = vectorMag3D(wr_roll);
@@ -453,9 +470,10 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
                 vectorSubtract3D(r_torque,r_torque_n,r_torque);
             }
           }
-          else
+          else // ROLLINGFRICTION == 2 || 3
           {
             double wr_roll_n[3],wr_roll_t[3];
+            double r_inertia_red_i,r_inertia_red_j;
 
             itype = type[i];
             jtype = type[j];
@@ -473,20 +491,16 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
 
             // spring
             reff=radi*radj/(radi+radj);
-            kr = 2.25*kn*rmu*rmu*reff*reff; //NP modified A.A.; Not sure if kr is right for 3D;
+            if(ROLLINGFRICTION == 2)
+              kr = 2.25*kn*rmu*rmu*reff*reff; //NP modified A.A.; Not sure if kr is right for 3D;
+            else
+              kr = kt*reff*reff; //NP other calculation of kr according to Iwashita and Oda (1998)
 
             vectorScalarMult3D(wr_roll_t,update->dt*kr,dr_torque); //NP TODO: any transformation of the timestep needed for other unit systems?
 
             r_torque[0] = shear[3] + dr_torque[0];
             r_torque[1] = shear[4] + dr_torque[1];
             r_torque[2] = shear[5] + dr_torque[2];
-
-            // dashpot
-            if (domain->dimension == 2) r_inertia = 1/(1/(1.5*mi*radi*radi) + 1/(1.5*mj*radj*radj)); //NP TODO: rewrite for faster computation?
-            else  r_inertia = 1/(1/(1.4*mi*radi*radi) + 1/(1.4*mj*radj*radj));
-
-            /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
-            r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
 
             // limit max. torque
             r_torque_mag = vectorMag3D(r_torque);
@@ -499,18 +513,39 @@ void PairGranHookeHistory::compute_force(int eflag, int vflag,int addflag)
               r_torque[1] *= factor;
               r_torque[2] *= factor;
 
-              r_coef = 0.0; // no damping in case of full mobilisation rolling angle
+              // save rolling torque due to spring
+              shear[3] = r_torque[0];
+              shear[4] = r_torque[1];
+              shear[5] = r_torque[2];
+
+              // no damping / no dashpot in case of full mobilisation rolling angle
+              // r_coef = 0.0;
+
+            } else {
+
+              // save rolling torque due to spring before adding damping torque
+              shear[3] = r_torque[0];
+              shear[4] = r_torque[1];
+              shear[5] = r_torque[2];
+
+              // dashpot only for the original epsd model
+              if(ROLLINGFRICTION == 2)
+              {
+                // dashpot
+                r_inertia_red_i = mi*radi*radi;
+                r_inertia_red_j = mj*radj*radj;
+                if (domain->dimension == 2) r_inertia = 1.5 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
+                else  r_inertia = 1.4 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
+
+                /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
+                r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
+
+                // add damping torque
+                r_torque[0] += r_coef*wr_roll_t[0];
+                r_torque[1] += r_coef*wr_roll_t[1];
+                r_torque[2] += r_coef*wr_roll_t[2];
+              }
             }
-
-            // save rolling torque due to spring
-            shear[3] = r_torque[0];
-            shear[4] = r_torque[1];
-            shear[5] = r_torque[2];
-
-            // add damping torque
-            r_torque[0] += r_coef*wr_roll_t[0];
-            r_torque[1] += r_coef*wr_roll_t[1];
-            r_torque[2] += r_coef*wr_roll_t[2];
 
           }
 
@@ -610,12 +645,16 @@ void PairGranHookeHistory::settings(int narg, char **arg) //NP modified C.K.
             iarg_++;
             if(strcmp(arg[iarg_],"cdt") == 0)
                 rollingflag = 1;
-            else if(strcmp(arg[iarg_],"epsd") == 0)
+            else if(strcmp(arg[iarg_],"epsd") == 0) {
                 rollingflag = 2;
-            else if(strcmp(arg[iarg_],"off") == 0)
+                dnum_pairgran = 6; //NP modified A.A.
+            } else if(strcmp(arg[iarg_],"epsd2") == 0) {
+                rollingflag = 3;
+                dnum_pairgran = 6;
+            } else if(strcmp(arg[iarg_],"off") == 0)
                 rollingflag = 0;
             else
-                error->all(FLERR,"Illegal pair_style gran command, expecting 'cdt', 'epsd' or 'off' after keyword 'rolling_friction'");
+                error->all(FLERR,"Illegal pair_style gran command, expecting 'cdt', 'epsd', 'epsd2' or 'off' after keyword 'rolling_friction'");
             iarg_++;
             hasargs = true;
         } else if (strcmp(arg[iarg_],"tangential_damping") == 0) {
@@ -670,7 +709,7 @@ void PairGranHookeHistory::init_granular()
 
   if(rollingflag)
     coeffRollFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingFriction","property/global","peratomtypepair",max_type,max_type,force->pair_style));
-  if(rollingflag == 2) // epsd model
+  if(rollingflag == 2 || rollingflag == 3) // epsd model
     coeffRollVisc1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingViscousDamping","property/global","peratomtypepair",max_type,max_type,force->pair_style));
   if(viscousflag)
   {
@@ -687,71 +726,79 @@ void PairGranHookeHistory::init_granular()
   //pre-calculate parameters for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
   {
-    for(int j=1;j<max_type+1;j++)
-    {
-      double Yi=Y1->compute_vector(i-1);
-      double Yj=Y1->compute_vector(j-1);
-      double vi=v1->compute_vector(i-1);
-      double vj=v1->compute_vector(j-1);
-      double cor = coeffRest1->compute_array(i-1,j-1);
-
-      // error checks on Y, v, e
-
-      if(sanity_checks)
+      for(int j=1;j<max_type+1;j++)
       {
-        if(strcmp(update->unit_style,"si") == 0  && Yi < 5e6)
-          error->all(FLERR,"youngsModulus >= 5e6 required for SI units");
-        if(strcmp(update->unit_style,"cgs") == 0 && Yi < 5e5)
-          error->all(FLERR,"youngsModulus >= 5e5 required for CGS units");
+          double Yi=Y1->compute_vector(i-1);
+          double Yj=Y1->compute_vector(j-1);
+          double vi=v1->compute_vector(i-1);
+          double vj=v1->compute_vector(j-1);
+          double cor = coeffRest1->compute_array(i-1,j-1);
 
-        if(vi < 0. || vi > 0.5)
-          error->all(FLERR,"0 <= poissonsRatio <= 0.5 required");
+          // error checks on Y, v, e
 
-        if(cor <= 0.05 || cor > 1)
-          error->all(FLERR,"0.05 < coefficientRestitution <= 1 required");
+          if(sanity_checks)
+          {
+              if(strcmp(update->unit_style,"si") == 0  && Yi < 5e6)
+                 error->all(FLERR,"youngsModulus >= 5e6 required for SI units");
+              if(strcmp(update->unit_style,"cgs") == 0 && Yi < 5e5)
+                error->all(FLERR,"youngsModulus >= 5e5 required for CGS units");
+
+              if(vi < 0. || vi > 0.5)
+                error->all(FLERR,"0 <= poissonsRatio <= 0.5 required");
+
+              if(cor <= 0.05 || cor > 1)
+                error->all(FLERR,"0.05 < coefficientRestitution <= 1 required");
+          }
+
+
+          Yeff[i][j] = 1./((1.-pow(vi,2.))/Yi+(1.-pow(vj,2.))/Yj);
+          Geff[i][j] = 1./(2.*(2.-vi)*(1.+vi)/Yi+2.*(2.-vj)*(1.+vj)/Yj);
+
+          coeffRestLog[i][j] = log(coeffRest1->compute_array(i-1,j-1));
+
+         if(viscousflag)
+         {
+           coeffMu[i][j] = coeffMu1->compute_array(i-1,j-1);
+           coeffRestMax[i][j] = coeffRestMax1->compute_array(i-1,j-1);
+           coeffStc[i][j] = coeffStc1->compute_array(i-1,j-1);
+
+           // error check
+           if(sanity_checks)
+           {
+               if(coeffRestMax[i][j] <= 0. || coeffRestMax[i][j] > 1)
+                 error->all(FLERR,"0 < MaximumRestitution <= 1 required");
+               if(coeffMu[i][j] <= 0.)
+                 error->all(FLERR,"coeffMu > 0 required");
+               if(coeffStc[i][j] <= 0.)
+                 error->all(FLERR,"CriticalStokes > 0 required");
+           }
+         }
+
+          betaeff[i][j] =coeffRestLog[i][j] /sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
+
+          coeffFrict[i][j] = coeffFrict1->compute_array(i-1,j-1);
+          if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
+          if(rollingflag == 2 || rollingflag == 3) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
+          /*NL*/ //if(rollingflag == 2) fprintf(screen,"Init viscous coefficient: itype = %i and ytype = %i and coef = %f\n",i-1,j-1,coeffRollVisc[i][j]);
+
+          /*NL*/ //fprintf(screen,"");
+
+          if(cohesionflag) cohEnergyDens[i][j] = cohEnergyDens1->compute_array(i-1,j-1);
+          //omitting veff here
+
+          /*NL*/ //fprintf(screen,"coeff rest for %i %i : %f\n",i,j,coeffRest1->compute_array(i-1,j-1));
       }
-
-
-      Yeff[i][j] = 1./((1.-pow(vi,2.))/Yi+(1.-pow(vj,2.))/Yj);
-      Geff[i][j] = 1./(2.*(2.-vi)*(1.+vi)/Yi+2.*(2.-vj)*(1.+vj)/Yj);
-
-      coeffRestLog[i][j] = log(coeffRest1->compute_array(i-1,j-1));
-
-      if(viscousflag)
-      {
-        coeffMu[i][j] = coeffMu1->compute_array(i-1,j-1);
-        coeffRestMax[i][j] = coeffRestMax1->compute_array(i-1,j-1);
-        coeffStc[i][j] = coeffStc1->compute_array(i-1,j-1);
-
-        // error check
-        if(sanity_checks)
-        {
-          if(coeffRestMax[i][j] <= 0. || coeffRestMax[i][j] > 1)
-            error->all(FLERR,"0 < MaximumRestitution <= 1 required");
-          if(coeffMu[i][j] <= 0.)
-            error->all(FLERR,"coeffMu > 0 required");
-          if(coeffStc[i][j] <= 0.)
-            error->all(FLERR,"CriticalStokes > 0 required");
-        }
-      }
-
-      betaeff[i][j] =coeffRestLog[i][j] /sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
-
-      coeffFrict[i][j] = coeffFrict1->compute_array(i-1,j-1);
-      if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
-      if(rollingflag == 2) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
-      /*NL*/ //if(rollingflag == 2) fprintf(screen,"Init viscous coefficient: itype = %i and ytype = %i and coef = %f\n",i-1,j-1,coeffRollVisc[i][j]);
-
-      /*NL*/ //fprintf(screen,"");
-
-      if(cohesionflag) cohEnergyDens[i][j] = cohEnergyDens1->compute_array(i-1,j-1);
-      //omitting veff here
-
-      /*NL*/ //fprintf(screen,"coeff rest for %i %i : %f\n",i,j,coeffRest1->compute_array(i-1,j-1));
-    }
   }
 
   if(charVelflag) charVel = charVel1->compute_scalar();
+
+  // error checks on coarsegraining
+  if((rollingflag || cohesionflag) && force->cg_active())
+    error->cg(FLERR,"Granular model with rolling friction and / or cohesion");
+
+  // error checks on coarsegraining
+  if((rollingflag || cohesionflag) && force->cg_active())
+    error->cg(FLERR,"Granular model with rolling friction and / or cohesion");
 }
 
 /* ----------------------------------------------------------------------

@@ -40,8 +40,6 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   mapTagMax_(0), //NP this makes tags start at 1!!!
   mapArray_(0),
 
-  //NP have all with "comm_none" here since no ghosts for bodies
-
   id_ (*customValues_.addElementProperty< ScalarContainer<int> >("id","comm_exchange_borders"/*ID does never change*/,"frame_invariant","restart_yes")),
 
   xcm_          (*customValues_.addElementProperty< VectorContainer<double,3> >("xcm","comm_exchange_borders","frame_invariant", "restart_yes")),
@@ -54,6 +52,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   omega_  (*customValues_.addElementProperty< VectorContainer<double,3> >("omega","comm_exchange_borders","frame_invariant", "restart_yes")),
   quat_   (*customValues_.addElementProperty< VectorContainer<double,4> >("quat","comm_exchange_borders","frame_invariant", "restart_yes")),
 
+  type_      (*customValues_.addElementProperty< ScalarContainer<int> >("type","comm_exchange_borders","frame_invariant","restart_yes")),
   density_   (*customValues_.addElementProperty< ScalarContainer<double> >("density","comm_exchange_borders","frame_invariant","restart_yes")),
   masstotal_ (*customValues_.addElementProperty< ScalarContainer<double> >("masstotal","comm_exchange_borders","frame_invariant","restart_yes")),
   inertia_   (*customValues_.addElementProperty< VectorContainer<double,3> >("inertia","comm_exchange_borders","frame_invariant", "restart_yes")),
@@ -92,7 +91,7 @@ Multisphere::~Multisphere()
 
 void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_ins,
                double r_bound_ins, double *v_ins, double *omega_ins, double mass_ins,double dens_ins,
-               double *inertia_ins, double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
+               int type_ins, double *inertia_ins, double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
                double **displace_ins, int start_step_ins,double *v_integrate_ins)
 {
     int n = nbody_;
@@ -116,6 +115,7 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
     quat_.addZero();
 
     density_.add(dens_ins);
+    type_.add(type_ins);
     masstotal_.add(mass_ins);
     inertia_.add(inertia_ins);
     ex_space_.add(ex_space_ins);
@@ -176,12 +176,18 @@ void Multisphere::remap_bodies(int *body)
 {
 
   int original,oldimage,newimage;
+  double xbnd[3],xbnd_old[3],xbnd_diff[3];
 
   // adjust body
 
   for (int ibody = 0; ibody < nbody_; ibody++) {
     original = imagebody_(ibody);
-    domain->remap(xcm_(ibody),imagebody_(ibody));
+
+    x_bound(xbnd,ibody);
+    vectorCopy3D(xbnd,xbnd_old);
+    domain->remap(xbnd,imagebody_(ibody));
+    vectorSubtract3D(xbnd,xbnd_old,xbnd_diff);
+    vectorAdd3D(xcm_(ibody),xbnd_diff,xcm_(ibody));
 
     if (original == imagebody_(ibody)) remapflag_(ibody)[3] = 0;
     else {
@@ -381,10 +387,10 @@ void Multisphere::generate_map()
 }
 
 /* ----------------------------------------------------------------------
-   check for lost atoms
+   check for lost atoms and bodies
 ------------------------------------------------------------------------- */
 
-bool Multisphere::check_lost_atoms(int *body, double *atom_delflag)
+bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body_existflag)
 {
     int body_tag,ibody,i;
     int nall = atom->nlocal + atom->nghost;
@@ -396,6 +402,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag)
     vectorZeroizeN(delflag,nbody_);
 
     /*NL*///fprintf(screen,"CHECKING lost atoms for %d bodies on proc %d\n",nbody_,comm->me);
+    /*NL*/ //if(map(7833) >= 0) fprintf(screen,"C proc %d has body %d\n",comm->me,7833);
 
     //NP check if nrigid is consistent for each body
     //NP   with atoms body data
@@ -410,8 +417,13 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag)
         //NP if particle belongs to a rigid body and the body is owned on this proc
         //NP specific case if ghost in periodic system with procgrid[idim] == 1
         //NP have to exclude double counts for this case
+
         if(body_tag >= 0 && map(body_tag) >= 0 && 0 == domain->is_periodic_ghost_of_owned(i))
+        {
             nrigid_current[map(body_tag)]++;
+            /*NL*/ //if(23497 == atom->tag[i]) fprintf(screen,"atom tag 23497 exists in body %d\n",body[i]);
+            body_existflag[i] = 1.;
+        }
     }
 
     //NP mark bodies for deletion
@@ -462,6 +474,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag)
             /*NL*///fprintf(screen,"DELETING body tag %d ibody %d on step %d\n",tag(ibody),ibody,update->ntimestep);
             delflag[ibody] = delflag[nbody_-1];
             remove_body(ibody);
+            /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d\n",comm->me,7833);
         }
         else ibody++;
     }

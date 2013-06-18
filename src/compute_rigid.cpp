@@ -38,11 +38,15 @@ using namespace LAMMPS_NS;
 
 ComputeRigid::ComputeRigid(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg),
-  multisphere_(0)
+  multisphere_(0),
+  len_(0)
 {
   if (narg != 5) error->compute_error(FLERR,this,"Illegal compute rigid command, expecting 5 arguments");
 
   local_flag = 1;
+
+  array_local = 0;
+  vector_local = 0;
 
   //NP get reference to fix rigid
 
@@ -61,8 +65,6 @@ ComputeRigid::ComputeRigid(LAMMPS *lmp, int narg, char **arg) :
 
   if(!property_)
     error->compute_error(FLERR,this,"illegal property name used");
-  if(!property_->isDoubleData())
-    error->compute_error(FLERR,this,"can only operate on data of type double");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -74,17 +76,58 @@ ComputeRigid::~ComputeRigid()
 
 void ComputeRigid::update_pointers()
 {
+    //NP this is a dirty hack
+    //NP no one should ever see this...
+
     size_local_rows = multisphere_->n_body();
 
     if(property_->lenVec() > 1)
     {
         size_local_cols = property_->lenVec();
-        array_local = (double**) property_->begin_slow_dirty();
+
+        if(len_ < size_local_rows)
+        {
+            len_ = size_local_rows;
+            memory->grow(array_local,len_,size_local_cols,"compute/rigid:array_local");
+        }
+
+        if(property_->isDoubleData())
+        {
+            double **ptr = (double**) property_->begin_slow_dirty();
+            for(int i = 0; i < size_local_rows; i++)
+                for(int j = 0; j < size_local_cols; j++)
+                    array_local[i][j] = static_cast<double>(ptr[i][j]);
+        }
+        else if(property_->isIntData())
+        {
+            int **ptr = (int**) property_->begin_slow_dirty();
+            for(int i = 0; i < size_local_rows; i++)
+                for(int j = 0; j < size_local_cols; j++)
+                    array_local[i][j] = static_cast<double>(ptr[i][j]);
+        }
     }
     else
     {
         size_local_cols  = 0;
-        vector_local = (double*) property_->begin_slow_dirty();
+
+        if(len_ < size_local_rows)
+        {
+            len_ = size_local_rows;
+            memory->grow(vector_local,len_,"compute/rigid:vector_local");
+        }
+
+        if(property_->isDoubleData())
+        {
+            double *ptr = (double*) property_->begin_slow_dirty();
+            for(int i = 0; i < size_local_rows; i++)
+                vector_local[i] = static_cast<double>(ptr[i]);
+        }
+        else if(property_->isIntData())
+        {
+            int *ptr = (int*) property_->begin_slow_dirty();
+            for(int i = 0; i < size_local_rows; i++)
+                vector_local[i] = static_cast<double>(ptr[i]);
+        }
     }
 }
 
@@ -114,5 +157,7 @@ void ComputeRigid::compute_local()
 
 double ComputeRigid::memory_usage()
 {
-  return 0;
+  if(size_local_cols == 0)
+    return size_local_rows;
+  return size_local_rows*size_local_cols;
 }

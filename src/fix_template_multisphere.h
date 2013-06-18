@@ -60,10 +60,14 @@ class FixTemplateMultisphere : public FixTemplateMultiplespheres {
   void calc_volumeweight();
   void calc_inertia();
   void calc_eigensystem();
+  void calc_displace_xcm_x_body();
   void print_info();
 
   // type of clump
   int type_;
+
+  // flags
+  bool mass_set_, moi_set_;
 
   // inertia of clump
   double moi_[3][3];      // 3x3 inertia tensor

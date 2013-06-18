@@ -19,7 +19,7 @@
 
 <LI>property = obligatory keyword 
 
-<LI>property_name = <I>xcm</I> or <I>vcm</I> or <I>fcm</I> or <I>torque</I> or <I>quat</I> or <I>angmom</I> or <I>omega</I> or <I>density</I> or <I>masstotal</I> or <I>inertia</I> or <I>ex_space</I> or <I>ey_space</I> or <I>ez_space</I> 
+<LI>property_name = <I>xcm</I> or <I>vcm</I> or <I>fcm</I> or <I>torque</I> or <I>quat</I> or <I>angmom</I> or <I>omega</I> or <I>density</I> or <I>type</I> or <I>masstotal</I> or <I>inertia</I> or <I>ex_space</I> or <I>ey_space</I> or <I>ez_space</I> 
 
 <PRE>  <I>xcm</I> = body position (based on center of mass) (3 values)
   <I>vcm</I> = body velocity (based on center of mass) (3 values)
@@ -29,6 +29,7 @@
   <I>angmom</I> = body angular momentum (based on center of mass) (3 values)
   <I>omega</I> = body angular velocity (based on center of mass) (3 values)
   <I>density</I> = body density (1 value)
+  <I>type</I> = multi-sphere type as defined in <A HREF = "fix_particletemplate_multisphere.html">fix paticleteplate/multisphere</A> (1 value)
   <I>masstotal</I> = body mass (1 value)
   <I>inertia</I> = body intertia (based on center of mass, around ex_space, ey_space, ez_space) (3 values)
   <I>ex_space</I>, <I>ey_space</I>, <I>ez_space</I> = eigensystem of the body (based on center of mass) (3 values each)  

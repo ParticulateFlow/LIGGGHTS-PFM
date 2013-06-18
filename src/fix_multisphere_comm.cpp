@@ -22,6 +22,7 @@
 #include "fix_multisphere.h"
 #include "comm.h"
 
+
 /* ----------------------------------------------------------------------
    pack values in local atom-based arrays for exchange with another proc
 ------------------------------------------------------------------------- */
@@ -409,11 +410,69 @@ void FixMultisphere::unpack_reverse_comm_v_omega(int n, int *list, double *buf)
 }
 
 /* ----------------------------------------------------------------------
-   restart functions
+   restart per-atom
 ------------------------------------------------------------------------- */
-//NP modified C.K.
 
-int FixMultisphere::pack_restart(int, double *) { error->all(FLERR,"restart not implemented yet for multi-sphere feature"); return 0;}
-void FixMultisphere::unpack_restart(int, int) {error->all(FLERR,"restart not implemented yet for multi-sphere feature");}
-int FixMultisphere::size_restart(int) {error->all(FLERR,"restart not implemented yet for multi-sphere feature");return 0;}
-int FixMultisphere::maxsize_restart() {error->all(FLERR,"restart not implemented yet for multi-sphere feature");return 0;}
+int FixMultisphere::pack_restart(int i, double *buf)
+{
+    int n = 1;
+
+    buf[n++] = static_cast<double>(body_[i]);
+    buf[n++] = displace_[i][0];
+    buf[n++] = displace_[i][1];
+    buf[n++] = displace_[i][2];
+    buf[0] = static_cast<double>(n);
+
+    return n;
+}
+
+void FixMultisphere::unpack_restart(int nlocal, int nth)
+{
+    double **extra = atom->extra;
+
+    // skip to Nth set of extra values
+
+    int m = 0;
+    for (int i = 0; i < nth; i++) m += static_cast<int> (extra[nlocal][m]);
+    m++;
+
+    body_[nlocal] = static_cast<int>(extra[nlocal][m++]);
+    displace_[nlocal][0] = extra[nlocal][m++];
+    displace_[nlocal][1] = extra[nlocal][m++];
+    displace_[nlocal][2] = extra[nlocal][m++];
+}
+
+/* ----------------------------------------------------------------------
+   size and maxsize of any atom's restart data
+------------------------------------------------------------------------- */
+
+int FixMultisphere::size_restart(int nlocal)
+{
+    return 4+1;
+}
+
+int FixMultisphere::maxsize_restart()
+{
+    return 4+1;
+}
+
+/* ----------------------------------------------------------------------
+   restart global
+------------------------------------------------------------------------- */
+
+void FixMultisphere::write_restart(FILE *fp)
+{
+    multisphere_.writeRestart(fp);
+}
+
+void FixMultisphere::restart(char *buf)
+{
+    double *list = (double *) buf;
+
+    //NP have to perform all tasks from add_body_finalize()
+    //NP   id_extend_body_extend() not necessary since in restart data
+    //NP   multisphere_.restart(list) calls generate_map() and reset_forces(true)
+    //NP   set_xv(LOOP_LOCAL) called out of post_create since requires
+    //NP    restart of per-atom properties first
+    multisphere_.restart(list);
+}

@@ -56,6 +56,7 @@ PairSphArtviscTenscorr::PairSphArtviscTenscorr(LAMMPS *lmp) : PairSph(lmp)
 {
   respa_enable = 0;
   single_enable = 0;
+  pairStyle_ = 1;
 
   csmean = NULL;
   wDeltaPTypeinv = NULL;
@@ -131,6 +132,7 @@ void PairSphArtviscTenscorr::settings(int narg, char **arg)
       if (iarg+4 > narg) error->all(FLERR, "Illegal pair_style sph command");
       artVisc_flag = 1;
       alpha = force->numeric(arg[iarg+1]);
+      viscosity_ = alpha;
       beta = force->numeric(arg[iarg+2]);
       eta = force->numeric(arg[iarg+3]);
       iarg += 4;
@@ -204,7 +206,6 @@ void PairSphArtviscTenscorr::init_substyle()
   if (artVisc_flag) {
     cs=static_cast<FixPropertyGlobal*>(modify->find_fix_property("speedOfSound","property/global","peratomtype",max_type,0,force->pair_style));
     if(!cs) error->all(FLERR, "Pairstyle sph/artVisc/tensCorr only works with a fix property/global that defines speedOfSound");
-
 
     double csi,csj;
 
@@ -416,7 +417,6 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
     updatePtrs(); // get sl
   }
 
-
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
     itype = type[i];
@@ -529,7 +529,6 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
 
         // calculate the force
         fpair = - rinv * imass * jmass * (pi/(rhoi*rhoi) + pj/(rhoj*rhoj) + rAB*fAB4 + artVisc) * gradWmag; // mass[i] for integration.. check fix_nve.cpp
-
 
         // apply the force
 

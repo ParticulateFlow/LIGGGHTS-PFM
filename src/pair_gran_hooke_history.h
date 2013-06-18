@@ -51,6 +51,9 @@ class PairGranHookeHistory : public PairGran {
 
   virtual void compute_force(int eflag, int vflag, int addflag);
 
+  template <int ROLLINGFRICTION>
+  void compute_force_eval(int eflag, int vflag, int addflag);
+
   virtual void write_restart_settings(FILE *);
   virtual void read_restart_settings(FILE *);
 

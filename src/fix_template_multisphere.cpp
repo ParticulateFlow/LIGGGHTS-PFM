@@ -68,7 +68,9 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg) :
-  FixTemplateMultiplespheres(lmp, narg, arg)
+  FixTemplateMultiplespheres(lmp, narg, arg),
+  mass_set_(false),
+  moi_set_(false)
 {
     delete pti;
     pti = new ParticleToInsertMultisphere(lmp,nspheres);
@@ -79,6 +81,15 @@ FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg
 
     type_ = 0;
 
+    mass_expect = 0;
+    vectorZeroize3D(inertia_);
+    vectorZeroize3D(ex_space_);
+    vectorZeroize3D(ey_space_);
+    vectorZeroize3D(ez_space_);
+    vectorZeroize3D(moi_[0]);
+    vectorZeroize3D(moi_[1]);
+    vectorZeroize3D(moi_[2]);
+
     // parse args
     // should have the possibility to parse inertia tensor here
     // TODO: should parse cross section area matrix here
@@ -88,31 +99,73 @@ FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg
     {
         hasargs = false;
 
-        if (strcmp(arg[iarg],"type") == 0)
-        {
-            hasargs = true;
+        if (strcmp(arg[iarg],"type") == 0) {
+            if (iarg+2 > narg)
+                error->fix_error(FLERR,this,"not enough arguments for 'type'");
             iarg++;
             type_ = atoi(arg[iarg++]);
-        }
-        else if(strcmp(style,"particletemplate/multisphere") == 0)
+            hasargs = true;
+        } else if(strcmp(arg[iarg],"mass") == 0) {
+            if (iarg+2 > narg)
+                error->fix_error(FLERR,this,"not enough arguments for 'mass'");
+            iarg++;
+            mass_expect = atof(arg[iarg++]);
+            mass_set_ = true;
+            hasargs = true;
+        } else if(strcmp(arg[iarg],"inertia_tensor") == 0) {
+            if (iarg+7 > narg)
+                error->fix_error(FLERR,this,"not enough arguments for 'inertia_tensor'");
+            iarg++;
+            moi_[0][0] = atof(arg[iarg++]);
+            moi_[0][1] = atof(arg[iarg++]);
+            moi_[0][2] = atof(arg[iarg++]);
+            moi_[1][1] = atof(arg[iarg++]);
+            moi_[1][2] = atof(arg[iarg++]);
+            moi_[2][2] = atof(arg[iarg++]);
+
+            moi_[1][0] = moi_[0][1];
+            moi_[2][0] = moi_[0][2];
+            moi_[2][1] = moi_[1][2];
+            moi_set_ = true;
+            hasargs = true;
+        } else if(strcmp(style,"particletemplate/multisphere") == 0)
             error->fix_error(FLERR,this,"unknown keyword");
     }
 
     // check if type has been defined
     if(type_ < 1)
         error->fix_error(FLERR,this,"have to provide a type >=1");
+
+    if(mass_set_ && !moi_set_ || !mass_set_ && moi_set_)
+        error->fix_error(FLERR,this,"have to define either both 'mass' and 'inertia_tensor' or none of the two");
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixTemplateMultisphere::post_create()
 {
-  // bounding sphere, center of mass calculations
-  FixTemplateMultiplespheres::post_create();
-
+  // bounding sphere, center of mass calculations in mother class
   // calculate inertia_ tensor and its eigensystem
-  calc_inertia();
-  calc_eigensystem();
+
+  if(!mass_set_)
+  {
+      FixTemplateMultiplespheres::post_create();
+      calc_inertia();
+      calc_eigensystem();
+      calc_displace_xcm_x_body();
+  }
+
+  else
+  {
+      calc_bounding_sphere();
+
+      calc_eigensystem();
+      calc_displace_xcm_x_body();
+
+      // calc expectancy values
+      volume_expect = mass_expect / expectancy(pdf_density);
+      r_equiv = pow(6.*mass_expect/(8.*expectancy(pdf_density)*M_PI),1./3.);
+  }
 
   print_info();
 }
@@ -321,7 +374,14 @@ void FixTemplateMultisphere::calc_eigensystem()
   if (dot < 0.) vectorScalarMult3D(ez_space_,-1.);
 
   //NP test for valid principal moments & axes like in fix_rigid.cpp init() omitted here
+}
 
+/* ----------------------------------------------------------------------
+   calc displace and xcm_to_xb_body_
+------------------------------------------------------------------------- */
+
+void FixTemplateMultisphere::calc_displace_xcm_x_body()
+{
   // calculate displace_
   double del[3];
   for(int i = 0; i < nspheres; i++)
@@ -356,6 +416,9 @@ void FixTemplateMultisphere::print_info()
     fprintf(logfile,"     Eigenvector: %e, %e, %e\n",ex_space_[0],ex_space_[1],ex_space_[2]);
     fprintf(logfile,"     Eigenvector: %e, %e, %e\n",ey_space_[0],ey_space_[1],ey_space_[2]);
     fprintf(logfile,"     Eigenvector: %e, %e, %e\n",ez_space_[0],ez_space_[1],ez_space_[2]);
+    fprintf(logfile,"     Inertia tensor: %e, %e, %e\n",moi_[0][0],moi_[1][0],moi_[2][0]);
+    fprintf(logfile,"     Inertia tensor: %e, %e, %e\n",moi_[1][0],moi_[1][1],moi_[2][1]);
+    fprintf(logfile,"     Inertia tensor: %e, %e, %e\n",moi_[2][0],moi_[2][1],moi_[2][2]);
   }
 }
 
@@ -377,13 +440,15 @@ void FixTemplateMultisphere::randomize_single()
   //NP displace_, ex,ey,ez are for reference orientation
 
   pti->nspheres = nspheres;
-  pti->density_ins = expectancy(pdf_density);
+  pti->density_ins = expectancy(pdf_density);;
   pti->volume_ins = volume_expect;
   pti->mass_ins = mass_expect;
   pti->r_bound_ins = r_bound;
   pti->atom_type = atom_type;
 
   ParticleToInsertMultisphere *pti_m = static_cast<ParticleToInsertMultisphere*>(pti);
+
+  pti_m->type_ms = type_;
 
   for(int j = 0; j < nspheres; j++)
   {
@@ -458,6 +523,7 @@ void FixTemplateMultisphere::randomize_ptilist(int n_random,int distribution_gro
 
           pti_m->nspheres = nspheres;
           pti_m->density_ins = expectancy(pdf_density);
+          pti_m->type_ms = type_;
           pti_m->volume_ins = volume_expect;
           pti_m->mass_ins = mass_expect;
           pti_m->r_bound_ins = r_bound;

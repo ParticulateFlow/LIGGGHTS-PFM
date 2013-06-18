@@ -73,14 +73,14 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
   dnum = atoi(arg[iarg++]);
   /*NL*/ //fprintf(screen,"dnum is %s\n",arg[3]);
 
-  if(dnum < 1)
-    error->all(FLERR,"dnum must be >=1 in fix contacthistory");
+  if(dnum < 0)
+    error->all(FLERR,"dnum must be >=0 in fix contacthistory");
   if(dnum > 10)
     error->warning(FLERR,"dnum >10 in fix contacthistory - are you really sure you intend this?");
 
   newtonflag = NULL;
   history_id = NULL;
-  if(is_pair)
+  if(is_pair && dnum > 0)
   {
       //read newtonflag
       if(narg-iarg < 2*dnum)
@@ -101,21 +101,21 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
       }
   }
 
+  // perform initial allocation of atom-based arrays
+  // register with atom class
+
   restart_peratom = 1;
   restart_global = 1; //NP modified C.K.
   create_attribute = 1;
+
+  atom->add_callback(0);
+  atom->add_callback(1);
 
   //NP modified C.K.
   if(is_pair)
     maxtouch = DELTA_MAXTOUCH_PAIR;
   else
     maxtouch = DELTA_MAXTOUCH_MESH;
-
-  // perform initial allocation of atom-based arrays
-  // register with atom class
-
-  atom->add_callback(0);
-  atom->add_callback(1);
 
   npartner = NULL;
   partner = NULL;
@@ -146,6 +146,7 @@ void FixContactHistory::post_create()
 FixContactHistory::~FixContactHistory()
 {
     // unregister this fix so atom class doesn't invoke it any more
+
     atom->delete_callback(id,0);
     atom->delete_callback(id,1);
 
@@ -373,8 +374,31 @@ void FixContactHistory::grow_arrays(int nmax)
   /*NL*///fprintf(screen,"style %s, id %s, nmax=%d, maxtouch=%d\n",style,id,nmax,maxtouch);
   memory->grow(npartner,nmax,"contacthistory:npartner");
   memory->grow(partner,nmax,maxtouch,"contacthistory:partner");
-  memory->grow(contacthistory,nmax,maxtouch,dnum,"contact_history:contacthistory");
+  if(dnum > 0) memory->grow(contacthistory,nmax,maxtouch,dnum,"contact_history:contacthistory");
   memory->grow(delflag,nmax,maxtouch,"contact_history:delflag");
+}
+
+/* ----------------------------------------------------------------------
+   allocate local atom-based arrays
+------------------------------------------------------------------------- */
+//NP modified C.K.
+void FixContactHistory::reset_history(int dnum_wall)
+{
+  /*NL*///fprintf(screen,"style %s, id %s, nmax=%d, maxtouch=%d\n",style,id,nmax,maxtouch);
+  if(dnum_wall > dnum)
+  {
+      contacthistory = 0;
+      memory->grow(contacthistory,atom->nmax,maxtouch,dnum_wall,"contact_history:contacthistory");
+
+      // initialize npartner to 0 so neighbor list creation is OK the 1st time
+      if(atom->nmax > 0)
+      {
+          int nlocal = atom->nlocal;
+          for (int i = 0; i < nlocal; i++) npartner[i] = 0;
+      }
+
+      dnum = dnum_wall;
+  }
 }
 
 /* ----------------------------------------------------------------------

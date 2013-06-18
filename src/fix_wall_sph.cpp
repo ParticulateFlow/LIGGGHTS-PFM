@@ -40,7 +40,6 @@ andreas.aigner@jku.at
 #include "sph_kernels.h"
 #include "fix_wall_sph.h"
 
-
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
@@ -157,7 +156,6 @@ void FixWallSph::post_force(int vflag)
 
   double frac,frac2; // for penetration force
 
-
   // loop over all my atoms
   // rsq = distance from wall
   // dx,dy,dz = signed distance from wall
@@ -170,8 +168,6 @@ void FixWallSph::post_force(int vflag)
   double **f = atom->f;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-
-
 
   for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) {

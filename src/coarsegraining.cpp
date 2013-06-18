@@ -74,5 +74,23 @@ void Coarsegraining::command(int narg, char **arg)
   if(cg < 1.)
     error->all(FLERR,"Illegal coarsegraining command, cg > 1 expected");
 
-  force->set_coarsegraining(cg);
+  // set coarsegraining in force class
+  force->coarsegraining = cg;
+
+  while(iarg < narg)
+  {
+      if(strcmp(arg[iarg],"model_check") == 0) {
+          if (narg < iarg+2)
+            error->all(FLERR,"Illegal coarsegraining command, not enough arguments");
+          if(strcmp(arg[iarg+1],"error") == 0)
+            force->error_coarsegraining = true;
+          else if(strcmp(arg[iarg+1],"warn") == 0)
+            force->error_coarsegraining = false;
+          else
+            error->all(FLERR,"Illegal coarsegraining command, expecting 'error' or 'warn' after 'model_check'");
+          iarg += 2;
+      }
+      else
+        error->all(FLERR,"Illegal coarsegraining command, unknown keyword");
+  }
 }

@@ -83,7 +83,7 @@
     {
         if(tri[i] == idTri)
         {
-            history = contacthistory[iP][i];
+            if(dnum > 0) history = contacthistory[iP][i];
             delflag[iP][i] = false;
             return true;
         }
@@ -130,7 +130,7 @@
           /*NL*/ if(!delflag[iP][i]) error->one(FLERR,"internal error");
 
           // copy contact history
-          vectorCopyN(contacthistory[iP][i],history,dnum);
+          if(dnum > 0) vectorCopyN(contacthistory[iP][i],history,dnum);
           /*NL*/// fprintf(screen,"Found coplanar contact, old contact hist %f %f %f\n",
           /*NL*///                   contacthistory[iP][i][0],contacthistory[iP][i][1],contacthistory[iP][i][2]);
           /*NL*/// fprintf(screen,"Found coplanar contact, new contact hist %f %f %f\n",
@@ -150,7 +150,9 @@
 
       partner[iP][numCont] = idTri;
       delflag[iP][numCont] = false;
-      history = contacthistory[iP][numCont];
+
+      if(dnum > 0)
+        history = contacthistory[iP][numCont];
       for(int i = 0; i < dnum; i++)
         history[i] = 0.;
 

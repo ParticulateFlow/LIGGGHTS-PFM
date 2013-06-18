@@ -127,7 +127,7 @@
       int sizeMesh, sizeElements, sizeElements_all;
 
       sizeMesh = sizeRestartMesh();
-      sizeElements = nlocal * (sizeRestartElement() + 1); //NP need 1 extra space for pre-element buffer length
+      sizeElements = nlocal * (sizeRestartElement() + 1); //NP need 1 extra space for per-element buffer length
 
       double *bufMesh = NULL, *sendbufElems = NULL, *recvbufElems = NULL;
       bool dummy = false;
@@ -153,7 +153,7 @@
           sizeElements += (size_this+1);
       }
 
-      // gather the pre-element data
+      // gather the per-element data
       //NP send from all to proc 0
       sizeElements_all = MPI_Gather0_Vector(sendbufElems,sizeElements,recvbufElems,this->world);
 
@@ -200,8 +200,8 @@
   }
 
   /* ----------------------------------------------------------------------
-   restart functionality - write all required data into restart buffer
-   executed on all processes, but only proc 0 writes into writebuf
+   restart functionality - read all required data from restart buffer
+   executed on all processes
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>

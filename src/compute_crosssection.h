@@ -39,6 +39,8 @@ class ComputeCrosssection : public ComputeContactAtom
   ComputeCrosssection(class LAMMPS *, int, char **);
   ~ComputeCrosssection();
 
+  void init();
+
   void compute_vector();
   void compute_peratom();
 
@@ -60,6 +62,8 @@ class ComputeCrosssection : public ComputeContactAtom
   bool angle_;
 
   FILE *file_;
+  int iregion_;
+  char *idregion_;
 };
 
 }

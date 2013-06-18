@@ -1,0 +1,106 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+coarsegraining command :h3
+
+[Syntax:]
+
+coarsegraining cg_factor args :pre
+
+cg_factor = coarse-graining factor to be applied (dimensionless) :ulb,l
+args = {model_check} :l
+  {model_check} = error or warn :pre
+:ule
+
+[Examples:]
+
+coarsegraining 2.0  :pre
+
+[Description:]
+
+Coarsegraining is a methodology to reduce the computational effort of a DEM
+calculation by scaling up the particle size by a coarse-graining factor
+(cg_factor). Thereby, the model size decreases by factor cg-factor^3.
+
+However, changing particle size will change the physics of the model. 
+On the particle scale, this change is obviously inevitable. However,
+in many cases model constants can be adapted so that on the bulk scale
+the change of the physics caused by the coarse-graining model is acceptable. 
+See e.g. "(Radl)"_#Radl and "(Bierwisch)"_#Bierwisch for details.
+
+Some of the models in LIGGGHTS support scaling of the model constants
+to counteract this change in physics on the bulk scale. Moreover,
+some commands (such as insertion commands or the neighbor command) re-scale
+some of their length scales. Using {model_check} = error will throw an error 
+if a model/command does not yield constistent results with coarse-graining.
+Using {model_check} = warn will issue a warning if a model/command does not 
+yield constistent results with coarse-graining.
+
+[Model overview:]
+
+This table provides an overview of how different models behave when
+coarsegraining is used. Some models scale lengthscales, other models
+scale model parameters to make results more coarse-graining consistent.
+Models that are not mentioned here are not affected by using the 
+coarsegraining command
+
+"create_atoms"_create_atoms.html |  | not supported |
+"fix addforce"_fix_addforce.html |  | not supported / inconsistent |
+"fix drag"_fix_drag.html |  | not supported / inconsistent |
+fix dragforce |  | downscaling of A, Re; upscaling of dragforce  |
+"fix efield"_fix_efield.html |  | not supported / inconsistent |
+"fix heat/gran/conduction"_fix_heat_gran_conduction.html | | not supported / inconsistent |
+"fix mesh/surface/stress"_fix_mesh_surface_stress.html | Finnie wear model | inherently compatible |
+"fix particletemplate/sphere"_fix_particletemplate_sphere.html | | radius -> cg_factor*radius |
+"fix particletemplate/multisphere"_fix_particletemplate_multisphere.html | | radius -> cg_factor*radius |
+"fix spring"_fix_spring.html | | not supported / inconsistent |
+"fix spring/rg"_fix_spring_rg.html | | not supported / inconsistent |
+"fix spring/self"_fix_spring_self.html | | not supported / inconsistent |
+"fix viscous"_fix_viscous.html | | not supported / inconsistent |
+"neighbor"_read_data.html | | skin -> cg_factor*skin |
+"pair gran/*"_pair_gran.html | any cohesion or rolling friction model | not supported / inconsistent |
+"pair gran/hertz/history"_pair_gran.html | base model | inherently compatible |
+"pair gran/hooke/history base model"_pair_gran.html | base model | inherently compatible |
+"pair gran/hooke  base model"_pair_gran.html | base model | inherently compatible |
+"pair gran/hertz/history/stiffness"_pair_gran.html | | not supported / inconsistent |
+"pair gran/hooke/history/stiffness"_pair_gran.html | base model with damp_massflag=0 | kn -> cg_factor*kn, gamman -> cg_factor^2*gamman |
+"pair gran/hooke/history/stiffness"_pair_gran.html | base model with damp_massflag=1 | kn -> cg_factor*kn, gamman -> gamman/cg_factor  |
+"pair gran/hooke/stiffness"_pair_gran.html | base model with damp_massflag=0 | kn -> cg_factor*kn, gamman -> cg_factor^2*gamman |
+"pair gran/hooke/stiffness"_pair_gran.html | base model with damp_massflag=1 | kn -> cg_factor*kn, gamman -> gamman/cg_factor  |
+"set"_set.html | | diameter -> cg_factor*diameter :tb(c=3,s=|)
+
+IMPORTANT NOTE: Even if a model does not support proper coarse graining, in many cases
+it will still be possible to calibrate the model constant manually to capture the
+bulk scale physics with a coarse-grained model.
+
+[Restrictions:]
+
+General warning: Coarse graining is an approximative method and
+will _never_ deliver exactly the same results than a fine-grained
+simulation.
+
+One natural restriction is that the ratio of geometry length scale to 
+particle length scale should be >> 1 when coarse graining is applied.
+
+See description above the fact that not all LIGGGHTS models will
+deliver consistent results with coarse-graining ratios > 1.
+
+[Related commands:] 
+see table above
+
+[Default:] 
+cg_factor = 1 (no coarse-graining applied)
+
+:line
+
+:link(Radl)
+[(Radl)] S. Radl et. al., PARCEL-BASED APPROACH FOR THE SIMULATION OF GAS-PARTICLE FLOWS, Proc. 8th International Conference on CFD in Oil & Gas, Metallurgical and Process Industries, 2011 
+
+:link(Bierwisch)
+[(Bierwisch)] Journal of the Mechanics and Physics of Solids, Volume 57, Issue 1, January 2009, Pages 10ff

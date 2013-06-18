@@ -110,7 +110,7 @@ void MultisphereParallel::exchange()
 
   // loop over dimensions
 
-  /*NL*/// fprintf(screen,"step %d: proc %d has %d bodies\n",update->ntimestep,comm->me,nbody);
+  /*NL*/// fprintf(screen,"step %d: proc %d has %d bodies pre exchange\n",update->ntimestep,comm->me,nbody_);
   /*NL*/// if(nbody) fprintf(screen,"step %d: proc %d body 0: xcv %f vcm %f\n",update->ntimestep,comm->me,xcm[0][2],vcm[0][2]);
 
   for (int dim = 0; dim < 3; dim++) {
@@ -136,6 +136,8 @@ void MultisphereParallel::exchange()
             nsend += pack_exchange_rigid(i,&buf_send_[nsend]);
             /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
+            /*NL*/// fprintf(screen,"removing body %d: x %f xcm %f dim %d\n",
+            /*NL*///                  i,x[dim],xcm_(i)[dim],dim);
             remove_body(i);
             /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
@@ -197,4 +199,128 @@ void MultisphereParallel::exchange()
       else m += static_cast<int> (buf[m]);
     }
   }
+
+  /*NL*/ //fprintf(screen,"step %d: proc %d has %d bodies post exchange\n",update->ntimestep,comm->me,nbody_);
+}
+
+/* ----------------------------------------------------------------------
+   restart functionality - write all required data into restart buffer
+   executed on all processes, but only proc 0 writes into writebuf
+------------------------------------------------------------------------- */
+
+void MultisphereParallel::writeRestart(FILE *fp)
+{
+    double *sendbuf = 0, *recvbuf = 0;
+    double xbnd[3];
+    bool dummy = false;
+    double nba = static_cast<double>(n_body_all());
+
+    //NP need 1 extra space for per-element buffer length
+    int sizeLocal = n_body() * (customValues_.elemBufSize(OPERATION_RESTART,dummy,dummy,dummy) + 4);
+    int sizeGlobal = 0, sizeOne = 0;
+
+    /*NL*/ //fprintf(screen,"nba %f\n",nba);
+    /*NL*/ //fprintf(screen,"sizeLocal %d\n",sizeLocal);
+
+    // allocate send buffer and pack element data
+    // all local elements are in list
+    //NP manually add xcm to test against
+
+    memory->create(sendbuf,sizeLocal,"MultiNodeMeshParallel::writeRestart:sendbuf");
+    sizeLocal = 0;
+    for(int i = 0; i < n_body(); i++)
+    {
+        x_bound(xbnd,i);
+        sizeOne = customValues_.pushElemToBuffer(i,&(sendbuf[sizeLocal+4]),OPERATION_RESTART,dummy,dummy,dummy);
+        sendbuf[sizeLocal] = static_cast<double>(sizeOne+4);
+        sendbuf[sizeLocal+1] = xbnd[0];
+        sendbuf[sizeLocal+2] = xbnd[1];
+        sendbuf[sizeLocal+3] = xbnd[2];
+        /*NL*/// fprintf(screen,"sendbuf[%d] = %d\n",sizeLocal,sizeOne+4);
+        sizeLocal += (sizeOne+4);
+    }
+
+    /*NL*/ //fprintf(screen,"sizeLocal %d\n",sizeLocal);
+
+    // gather the per-element data
+    //NP send from all to proc 0
+
+    sizeGlobal = MPI_Gather0_Vector(sendbuf,sizeLocal,recvbuf,world);
+
+
+    /*NL*/ //fprintf(screen,"id index %d, xcm index %d\n",customValues_.getElementPropertyIndex("id"),customValues_.getElementPropertyIndex("xcm"));
+    /*NL*/ //printVecN(screen,"recvbuf",recvbuf,1248);
+
+    // write data to file
+    if(comm->me == 0)
+    {
+        /*NL*/ //fprintf(screen,"sizeGlobal %d\n",sizeGlobal);
+
+        // size with 1 extra value (nba)
+        int size = (1+sizeGlobal) * sizeof(double);
+
+        // write size
+        fwrite(&size,sizeof(int),1,fp);
+
+        // write extra value
+        fwrite(&nba,sizeof(double),1,fp);
+
+        // write per-element data
+        fwrite(recvbuf,sizeof(double),sizeGlobal,fp);
+    }
+
+    // clean up
+
+    memory->destroy(sendbuf);
+    //NP need to use simple delete [] b/c MPI_Gather0_Vector uses new
+    if(recvbuf)
+      delete []recvbuf;
+}
+
+/* ----------------------------------------------------------------------
+   restart functionality - read all required data from restart buffer
+   executed on all processes
+------------------------------------------------------------------------- */
+
+void MultisphereParallel::restart(double *list)
+{
+    bool dummy = false;
+    int m = 0, nrecv_this;
+
+    int nbody_all_old = static_cast<int> (list[m++]);
+
+    nbody_ = nbody_all_ = 0;
+
+    /*NL*/ //printVecN(screen,"list",list,1248);
+
+    for(int i = 0; i < nbody_all_old; i++)
+    {
+        nrecv_this = static_cast<int>(list[m]);
+        /*NL*///fprintf(screen,"nrecv_this %d\n",nrecv_this);
+
+        //NP xcm is first in buffer
+        double *x_bnd = &(list[m+1]);
+        /*NL*/ //printVec3D(screen,"pos",pos);
+        if(domain->is_in_subdomain(x_bnd))
+        {
+            //NP addZero() creates all properties
+            //NP also adds properties values for which restart data is available
+            //NP these are then cleared and re-created with correct restart data
+
+            customValues_.addZeroElement();
+            customValues_.deleteRestartElement(nbody_,dummy,dummy,dummy);
+            customValues_.popElemFromBuffer(&(list[m+4]),OPERATION_RESTART,dummy,dummy,dummy);
+
+            nbody_++;
+        }
+        m += nrecv_this;
+    }
+
+    // do initialization tasks
+
+    MPI_Sum_Scalar(nbody_,nbody_all_,world);
+    generate_map();
+    reset_forces(true);
+
+    /*NL*/ //fprintf(screen,"BLABLA nbody_ %d nbody_all %d nbody_all_old %d\n",nbody_,nbody_all_,nbody_all_old);
 }

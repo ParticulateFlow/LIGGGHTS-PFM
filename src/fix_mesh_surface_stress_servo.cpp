@@ -45,6 +45,9 @@ using namespace FixConst;
 using MODIFIED_ANDREW_AUX::Circle;
 
 #define EPSILON 1.0e-7
+#define BIG 1000000.
+
+//#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 // identifier for variable set point
 // identifier for controlled process value
@@ -64,8 +67,12 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
   xcm_orig_( *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm_orig","comm_none","frame_invariant","restart_yes",3)),
   mode_flag_(false),
   vel_max_(  0.),
+  vel_min_(  0.),
   set_point_(0.),
   set_point_inv_(0.),
+  ctrl_output_max_(0.),
+  ctrl_output_min_(0.),
+  ratio_(0.),
   sp_str_(   NULL),
   sp_var_(   -1),
   sp_style_( NONE),
@@ -174,6 +181,13 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
         if (strcmp("auto",arg[iarg_]) == 0) {
           mode_flag_ = true;
         }  else error->fix_error(FLERR,this,"mode supports only auto");
+        iarg_++;
+        hasargs = true;
+      } else if(strcmp(arg[iarg_],"ratio") == 0) { //NP Test Aigner
+        if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
+        ratio_ = force->numeric(arg[iarg_+1]);
+        iarg_ = iarg_+2;
+        hasargs = true;
       } else if(strcmp(style,"mesh/surface/stress/servo") == 0) {
           char *errmsg = new char[strlen(arg[iarg_])+30];
           sprintf(errmsg,"unknown keyword or wrong keyword order: %s", arg[iarg_]);
@@ -239,10 +253,15 @@ void FixMeshSurfaceStressServo::error_checks()
         error->fix_error(FLERR,this,"please define 'set_point' for the mesh");
     if(vel_max_ == 0.)
         error->fix_error(FLERR,this,"please define 'vel_max' for the mesh");
-    if(kp_ < 0. || ki_ < 0. || kd_ < 0.)
-        error->fix_error(FLERR,this,"kp, ki, and kp >= 0 required.");
-    if(kp_ == 0. && ki_ == 0. && kd_ == 0.)
-        error->fix_error(FLERR,this,"kp, ki, and kp are zero. Please set a valid configuration");
+    if(mode_flag_) {
+      if(ratio_ == 0.)
+        error->fix_error(FLERR,this,"please define 'ratio' for the mesh, since you use the auto mode");
+    } else {
+      if(kp_ < 0. || ki_ < 0. || kd_ < 0.)
+          error->fix_error(FLERR,this,"kp, ki, and kp >= 0 required.");
+      if(kp_ == 0. && ki_ == 0. && kd_ == 0.)
+          error->fix_error(FLERR,this,"kp, ki, and kp are zero. Please set a valid configuration");
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -267,24 +286,39 @@ void FixMeshSurfaceStressServo::init()
     }
 
     // set pointers for controller
+    double r_min,r;
+    int nlocal = atom->nlocal;
+
+    r = r_min = BIG;
+    for (int ii = 0; ii < nlocal; ii++) {
+      r = atom->radius[ii];
+      r_min = MIN(r_min,r);
+    }
+    MPI_Min_Scalar(r_min,world);
+    vel_min_ = ratio_*r_min/dtv_;
+    /*NL*/// fprintf(screen,"TEST: vel_min_ = %e and r_min = %e\n",vel_min_,r_min);
+
+    // set pointers for controller
     switch (pv_flag_) {
     case FORCE:
       process_value_ = &f_total_[dim_];
       control_output_ = &vcm_(0)[dim_];
       ctrl_output_max_ = vel_max_;
+      ctrl_output_min_ = vel_min_;
       break;
     case TORQUE:
       process_value_ = &torque_total_[dim_];
       control_output_ = &omegacm_(0)[dim_];
 
-    	// find maximum distance axis-node
-    	rPaMax = getMaxRad();
-    	if (rPaMax == 0)
-    	  error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
+      // find maximum distance axis-node
+      rPaMax = getMaxRad();
+      if (rPaMax == 0)
+        error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
 
-    	// maximum angular velocity
-    	ctrl_output_max_ = vel_max_/rPaMax;
-    	break;
+      // maximum angular velocity
+      ctrl_output_max_ = vel_max_/rPaMax;
+    	ctrl_output_min_ = vel_min_/rPaMax;
+      break;
     default:
       error->fix_error(FLERR,this,"This may not happen!");
       break;
@@ -415,15 +449,28 @@ void FixMeshSurfaceStressServo::final_integrate()
       // TODO: Valid or trash?
       // Hard coded test for piecewise controller
       // This setting works, but doesn't speed up most cases
-      double e_low,e_high;
-      e_low = 1.0;
-      e_high = 2.0;
+      double e_low,e_high,test_output,tmp_scale;
+      e_low = 0.9;
+      e_high = 1.0;
+      tmp_scale = 0.1;
 
-      if (abs(err_) <= e_low) {
-        *control_output_ = -ctrl_output_max_ * kp_ * err_;
+      int totNumContacts = fix_mesh_neighlist_->getTotalNumContacts();
+      /*NL*/// fprintf(screen,"TESTOUTPUT: total number of contacts = %d \n",totNumContacts);
+
+      if (totNumContacts == 0) {
+        // cruise mode
+        test_output = ctrl_output_max_;
       } else {
-        *control_output_ = -ctrl_output_max_ * sgn(err_) * (kp_* e_low + (1-e_low*kp_)/(e_high-e_low)*(abs(err_)-e_low));
+        if (abs(err_) <= e_low) {
+          test_output = tmp_scale*ctrl_output_min_;
+        } else if(abs(err_) >= e_high) {
+          test_output = ctrl_output_min_;
+        } else { // linear interpolation
+          test_output = tmp_scale*ctrl_output_min_ + ((1-tmp_scale)*ctrl_output_min_) * (abs(err_)-e_low)/(e_high-e_low);
+        }
       }
+
+      *control_output_ = -test_output * err_;
 
     } else {
 
@@ -486,14 +533,23 @@ void FixMeshSurfaceStressServo::final_integrate()
 void FixMeshSurfaceStressServo::limit_vel()
 {
 
-  double vmag, factor;
+  double vmag, factor, maxOutput;
   vmag = abs(*control_output_);
 
   /*NL*/ //if(screen) fprintf(screen,"Test for velocity: ctrl_output_max_ = %g; vmag = %g\n",ctrl_output_max_,vmag);
 
   // saturation of the velocity
-  if(vmag > ctrl_output_max_ && vmag != 0) {
-    factor = ctrl_output_max_ / vmag;
+  int totNumContacts = fix_mesh_neighlist_->getTotalNumContacts();
+  if (mode_flag_ && totNumContacts > 0) {
+    maxOutput = ctrl_output_min_;
+  } else {
+    maxOutput = ctrl_output_max_;
+  }
+
+  // saturation of the velocity
+
+  if(vmag > maxOutput && vmag != 0) {
+    factor = maxOutput / vmag;
 
     *control_output_ *= factor;
 

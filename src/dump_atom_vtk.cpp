@@ -137,7 +137,6 @@ void DumpATOMVTK::pack(int *ids)
       buf[m++] = f[i][1];
       buf[m++] = f[i][2];
 
-
       buf[m++] = static_cast<double>(me);
     }
   }

@@ -51,6 +51,8 @@ namespace LAMMPS_NS {
 
            double inertia[3];
 
+           int type_ms;
+
            int insert();
            int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
            int set_x_v_omega(double *,double *,double *, double *);

@@ -53,6 +53,7 @@ inline void Multisphere::remove_body(int ilocal)
 {
     /*NL*/// fprintf(screen,"deleting body tag %d ilocal %d\n",tag,ilocal);
     mapArray_[id_(ilocal)] = -1;
+    if(nbody_ > 1) mapArray_[id_(nbody_-1)] = ilocal;
 
     //NP do not copy the body if the last body in the array is deleted
     /*if(ilocal < nbody_-1)
@@ -73,12 +74,7 @@ inline void Multisphere::calc_nbody_all()
 
 inline void Multisphere::reset_forces(bool extflag)
 {
-    /*for(int i = 0; i < nbody_; i++)
-    {
-        vectorZeroize3D(fcm_(i));
-        vectorZeroize3D(torquecm_(i));
-        if(extflag) vectorZeroize3D(dragforce_cm_(i));
-    }*/
+    /*NL*/ //fprintf(screen,"resetting force nbody_ %d\n",nbody_);
 
     fcm_.setAll(nbody_,0.);
     torquecm_.setAll(nbody_,0.);
