@@ -104,7 +104,6 @@ void FixCheckTimestepGran::init()
     error->all(FLERR,"Fix check/timestep/gran can only be used together with: gran/hooke/history, "
                       "gran/hooke, gran/hertz/history, gran/hooke/history/stiffness, gran/hertz/history/liquid"); //NP mod JOKER
 
-
   //NP get material properties
   mpg = pg->mpg;
   int max_type = mpg->max_type();
@@ -179,7 +178,6 @@ void FixCheckTimestepGran::calc_rayleigh_hertz_estims()
   int *type = atom->type;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-
 
   int max_type = mpg->max_type();
   int min_type = 1;

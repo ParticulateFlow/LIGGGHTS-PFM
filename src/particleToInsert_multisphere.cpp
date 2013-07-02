@@ -222,7 +222,7 @@ int ParticleToInsertMultisphere::insert()
 
     /*NL*///fprintf(screen,"inserting body at xcm position %f %f %f\n",xcm_ins[0],xcm_ins[1],xcm_ins[2]);
     fix_multisphere->data().add_body(nspheres,xcm_ins,xcm_to_xbound,r_bound_ins, v_ins, omega_ins, mass_ins,
-                                density_ins,type_ms,inertia,ex_space,ey_space,ez_space,displace);
+                                density_ins,atom_type,type_ms,inertia,ex_space,ey_space,ez_space,displace);
 
     // set displace correctly, set body to -2
     //NP -2 means belongs to body, but does not know yet to which

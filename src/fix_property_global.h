@@ -89,6 +89,8 @@ class FixPropertyGlobal : public Fix {
   double **array_recomputed;
 
   char *filename;
+  char *grpname;
+  int me;
 
 }; //end class
 

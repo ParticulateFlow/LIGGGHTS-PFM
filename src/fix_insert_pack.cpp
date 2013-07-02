@@ -40,6 +40,7 @@
 #include "mpi_liggghts.h"
 #include "particleToInsert.h"
 #include "fix_multisphere.h"
+#include "math_extra_liggghts.h"
 
 #define SEED_OFFSET 12
 

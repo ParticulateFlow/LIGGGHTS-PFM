@@ -292,7 +292,8 @@ void BondGran::compute(int eflag, int vflag)
     {
         if(r > 2. * r_break[type])
         {
-            //NP fprintf(screen,"r %f, 2. * r_break[type] %f \n",r,2. * r_break[type]);
+            /*NL*/// fprintf(screen,"step "BIGINT_FORMAT" broke bond between atom tags %d %d r %f, 2. * r_break[type] %f \n",
+            /*NL*///         update->ntimestep,atom->tag[i1],atom->tag[i2],r,2. * r_break[type]);
             bondlist[n][3] = 1;
             //NP error->all(FLERR,"broken");
         }
@@ -304,8 +305,8 @@ void BondGran::compute(int eflag, int vflag)
         double ntorque_mag = vectorMag3D(&bondhistlist[n][6]);
         double ttorque_mag = vectorMag3D(&bondhistlist[n][9]);
 
-        bool nstress = sigman_break[type] < (-nforce_mag/A + 2.*ttorque_mag/J*rb[type]);
-        bool tstress = tau_break[type]    < (-tforce_mag/A +    ntorque_mag/J*rb[type]);
+        bool nstress = sigman_break[type] < (nforce_mag/A + 2.*ttorque_mag/J*rb[type]);
+        bool tstress = tau_break[type]    < (tforce_mag/A +    ntorque_mag/J*rb[type]);
         bool toohot = false;
 
         if(breakmode == BREAKSTYLE_STRESS_TEMP)

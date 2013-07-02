@@ -800,6 +800,7 @@ void Atom::data_atoms(int n, char *buf)
   int nwords = count_words(buf);
   *next = '\n';
 
+  /*NL*/ //fprintf(screen,"nwords %d avec->size_data_atom %d \n",nwords,avec->size_data_atom);
   if (nwords != avec->size_data_atom && nwords != avec->size_data_atom + 3)
     error->all(FLERR,"Incorrect atom format in data file");
 
@@ -884,6 +885,7 @@ void Atom::data_atoms(int n, char *buf)
       coord = lamda;
     } else coord = xdata;
 
+    /*NL*/ //printVec3D(screen,"coords",coord);
     if (coord[0] >= sublo[0] && coord[0] < subhi[0] &&
         coord[1] >= sublo[1] && coord[1] < subhi[1] &&
         coord[2] >= sublo[2] && coord[2] < subhi[2])

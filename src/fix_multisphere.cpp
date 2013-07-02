@@ -285,11 +285,20 @@ void FixMultisphere::init() //NP modified C.K.
   if(modify->n_fixes_style("rigid") + modify->n_fixes_style("multisphere") > 1)
     error->warning(FLERR,"More than one fix rigid / fix multisphere");
 
+  fix_remove_.clear();
+
   // timestep info
 
   dtv = update->dt;
   dtf = 0.5 * update->dt * force->ftm2v;
   dtq = 0.5 * update->dt;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMultisphere::add_remove_callback(FixRemove *ptr)
+{
+    fix_remove_.push_back(ptr);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -937,6 +946,13 @@ void FixMultisphere::pre_neighbor()
     fw_comm_flag_ = MS_COMM_FW_BODY;
     forward_comm();
 
+    //NP callback to fix remove
+    //NP need this here before exchange()
+    //NP since then the removal list generated at
+    //NP FixRemove::pre_exchange() is still up-to-date
+    for(int irem = 0; irem < fix_remove_.size(); irem++)
+        (fix_remove_[irem])->delete_bodies();
+
     //NP re-map bodies, then exchange with stencil procs
     //NP need to do that here because body and atom data
     //NP must be sync'd before checking for lost atoms
@@ -947,7 +963,7 @@ void FixMultisphere::pre_neighbor()
     multisphere_.calc_nbody_all();
 
     //NP need to re-set map as well
-    //NP as exchange has happened
+    //NP as exchange has happened so bodies deleted and added
     /*NL*/ //fprintf(screen,"generating map after exchange");
     multisphere_.generate_map();
 

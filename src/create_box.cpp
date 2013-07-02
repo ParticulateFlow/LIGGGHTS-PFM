@@ -124,11 +124,13 @@ void CreateBox::command(int narg, char **arg)
   comm->set_proc_grid();
   domain->set_local_box();
 
-  if(narg ==2) return;
+  if(narg == 2) return;
 
   //NP modified C.K. bonds
   if(strcmp(arg[2],"bonds") || narg < 5) error->all(FLERR,"Illegal create_box command");
   atom->nbondtypes = atoi(arg[3]);
   atom->bond_per_atom = atoi(arg[4]);
+
+  /*NL*/ fprintf(screen,"atom->nbondtypes %d atom->bond_per_atom %d\n",atom->nbondtypes,atom->bond_per_atom);
 
 }

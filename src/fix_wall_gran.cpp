@@ -80,6 +80,7 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
     stress_flag_ = false;
     n_FixMesh_ = 0;
     dnum_ = 0;
+    skinDistance_ = 0.0;
 
     r0_ = 0.;
 
@@ -627,7 +628,7 @@ void FixWallGran::post_force_mesh(int vflag)
             /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
             /*NL*/  fprintf(screen,"step %"BIGINT_FORMAT": handling (moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
-            if(deltan > 0.)
+            if(deltan > skinDistance_) //allow force calculation away from the wall
             {
               /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
               /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d 3a\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
@@ -686,7 +687,7 @@ void FixWallGran::post_force_mesh(int vflag)
             /*NL*/  fprintf(screen,"step %"BIGINT_FORMAT": handling (non-moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             //NP hack for SPH
-            if(deltan > 0.)
+            if(deltan > skinDistance_) //allow force calculation away from the wall
             {
               //NP OLD  if(fix_contact) fix_contact->handleNoContact(iPart,idTri);
             }
@@ -744,7 +745,7 @@ void FixWallGran::post_force_primitive(int vflag)
     /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
     /*NL*/    fprintf(screen,"handling primitive wall with particle id %d, deltan %f\n",atom->tag[iPart],deltan);
 
-    if(deltan > 0.)
+    if(deltan > skinDistance_) //allow force calculation away from the wall
     {
       if(c_history) vectorZeroizeN(c_history[iPart],dnum_);
     }

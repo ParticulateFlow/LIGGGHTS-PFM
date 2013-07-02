@@ -26,6 +26,7 @@
 #include "custom_value_tracker.h"
 #include "mpi_liggghts.h"
 #include "update.h"
+#include <vector>
 
 namespace LAMMPS_NS {
 
@@ -35,15 +36,16 @@ namespace LAMMPS_NS {
 
     public:
 
-      void add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_ins, double r_bound_ins,
-                    double *v_ins, double *omega_ins, double mass_ins, double dens_ins,int type_ins,
+      void add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_ins,
+                    double r_bound_ins, double *v_ins, double *omega_ins,
+                    double mass_ins, double dens_ins, int atomtype_ins, int type_ins,
                     double *inertia_ins, double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
                     double **displace_ins, int start_step_ins = -1, double *v_integrate_ins = NULL);
 
       void grow_arrays_per_body_local(int);
       void grow_arrays_per_body_global(int);
 
-      void remove_body(int);
+      void remove_body(int ilocal);
       void copy_body(int from_local, int to_local);
 
       void remap_bodies(int *body);
@@ -77,7 +79,7 @@ namespace LAMMPS_NS {
       { return mapTagMax_; }
 
       inline int map(int i)
-      { return mapArray_[i]; }
+      { return mapArray_?mapArray_[i]:-1; }
 
       //NP IDs start at 1
 
@@ -86,6 +88,9 @@ namespace LAMMPS_NS {
 
       inline bool has_tag(int _tag)
       { return mapArray_[_tag] == -1 ? false : true;}
+
+      inline int atomtype(int i)
+      { return atomtype_(i); }
 
       inline void xcm(double *x_cm,int i)
       { vectorCopy3D(xcm_(i),x_cm); }
@@ -155,6 +160,7 @@ namespace LAMMPS_NS {
       // density and total mass of each rigid body
       // 3 principal components of inertia of each
       // principal axes of each in space coords
+      ScalarContainer<int> &atomtype_;
       ScalarContainer<int> &type_;
       ScalarContainer<double> &density_;
       ScalarContainer<double> &masstotal_;

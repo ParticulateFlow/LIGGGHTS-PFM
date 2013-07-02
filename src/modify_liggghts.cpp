@@ -179,6 +179,21 @@ bool Modify::i_am_first_of_style(Fix *fix_to_check)
 /* ----------------------------------------------------------------------
    //NP modified C.K.
 
+   returns the index of first fix of specified style
+------------------------------------------------------------------------- */
+
+int Modify::index_first_fix_of_style(const char *style)
+{
+    for(int ifix = 0; ifix < nfix; ifix++)
+        if(strcmp(fix[ifix]->style,style) == 0)
+            return ifix;
+
+    return -1;
+}
+
+/* ----------------------------------------------------------------------
+   //NP modified C.K.
+
    returns the index of first fix that implements a specified function
 ------------------------------------------------------------------------- */
 
@@ -207,7 +222,6 @@ int Modify::index_first_fix_with_function(const int FUNCTION, bool integrate)
 
     return -1;
 }
-
 
 /* ----------------------------------------------------------------------
    //NP modified C.K.
