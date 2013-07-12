@@ -335,6 +335,9 @@ void FixMeshSurfaceStressServo::init()
 
     if (strcmp(update->integrate_style,"respa") == 0)
         error->fix_error(FLERR,this,"not respa-compatible");
+
+    if (!fix_mesh_neighlist_)
+      error->fix_error(FLERR,this,"The servo-wall has to be a granular wall");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -536,7 +539,7 @@ void FixMeshSurfaceStressServo::limit_vel()
   double vmag, factor, maxOutput;
   vmag = abs(*control_output_);
 
-  /*NL*/ //if(screen) fprintf(screen,"Test for velocity: ctrl_output_max_ = %g; vmag = %g\n",ctrl_output_max_,vmag);
+  /*NL*/ //if(screen) fprintf(screen,"Test for velocity: ctrl_output_max_ = %g; vmag = %g; control_output_ = %g\n",ctrl_output_max_,vmag,*control_output_);
 
   // saturation of the velocity
   int totNumContacts = fix_mesh_neighlist_->getTotalNumContacts();

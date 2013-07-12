@@ -48,7 +48,8 @@ using namespace FixConst;
 FixNeighlistMesh::FixNeighlistMesh(LAMMPS *lmp, int narg, char **arg)
 : Fix(lmp,narg,arg),
   buildNeighList(false),
-  movingMesh(false)
+  movingMesh(false),
+  numAllContacts_(0)
 {
     if(!modify->find_fix_id(arg[3]) || !dynamic_cast<FixMeshSurface*>(modify->find_fix_id(arg[3])))
         error->fix_error(FLERR,this,"illegal caller");
