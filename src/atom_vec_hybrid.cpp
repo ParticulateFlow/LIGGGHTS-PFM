@@ -816,6 +816,7 @@ void AtomVecHybrid::data_atom(double *coord, int imagetmp, char **values)
   if (type[nlocal] <= 0 || type[nlocal] > atom->ntypes)
     error->one(FLERR,"Invalid atom type in Atoms section of data file");
 
+  /*NL*/ //printVec3D(screen,"coords",coord);
   x[nlocal][0] = coord[0];
   x[nlocal][1] = coord[1];
   x[nlocal][2] = coord[2];

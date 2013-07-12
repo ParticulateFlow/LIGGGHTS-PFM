@@ -52,6 +52,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   omega_  (*customValues_.addElementProperty< VectorContainer<double,3> >("omega","comm_exchange_borders","frame_invariant", "restart_yes")),
   quat_   (*customValues_.addElementProperty< VectorContainer<double,4> >("quat","comm_exchange_borders","frame_invariant", "restart_yes")),
 
+  atomtype_  (*customValues_.addElementProperty< ScalarContainer<int> >("atomtype","comm_exchange_borders","frame_invariant","restart_yes")),
   type_      (*customValues_.addElementProperty< ScalarContainer<int> >("type","comm_exchange_borders","frame_invariant","restart_yes")),
   density_   (*customValues_.addElementProperty< ScalarContainer<double> >("density","comm_exchange_borders","frame_invariant","restart_yes")),
   masstotal_ (*customValues_.addElementProperty< ScalarContainer<double> >("masstotal","comm_exchange_borders","frame_invariant","restart_yes")),
@@ -91,7 +92,8 @@ Multisphere::~Multisphere()
 
 void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_ins,
                double r_bound_ins, double *v_ins, double *omega_ins, double mass_ins,double dens_ins,
-               int type_ins, double *inertia_ins, double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
+               int atomtype_ins, int type_ins, double *inertia_ins,
+               double *ex_space_ins, double *ey_space_ins, double *ez_space_ins,
                double **displace_ins, int start_step_ins,double *v_integrate_ins)
 {
     int n = nbody_;
@@ -115,6 +117,7 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
     quat_.addZero();
 
     density_.add(dens_ins);
+    atomtype_.add(atomtype_ins);
     type_.add(type_ins);
     masstotal_.add(mass_ins);
     inertia_.add(inertia_ins);
@@ -309,7 +312,7 @@ void Multisphere::id_extend_body_extend(int *body)
   // itag = 1st new tag that my untagged bodies should use
   // give atoms body ID as well
   //NP assume all new particles are at the end of the list
-  //NP body === -2 means means belongs to body, but does not know yet to which
+  //NP body == -2 means means belongs to body, but does not know yet to which
   //NP important to differentiate between -1 (does not belong to any body)
   //NP and -2 - in case spheres and multi-spheres are mixed
 
@@ -411,6 +414,8 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     for(i = 0; i < nall; i++)
     {
         body_tag = body[i];
+        /*NL*/ //fprintf(screen,"body_tag %d\n",body_tag);
+        /*NL*/ //fprintf(screen,"map(body_tag) %d\n",map(body_tag));
         /*NL*///fprintf(screen,"proc %d step %d particle id %d, local %d (nlocal %d nghost %d) body_tag %d map(body_tag) %d is_periodic_ghost_of_owned %d\n",
         /*NL*///                comm->me,update->ntimestep,atom->tag[i],i,atom->nlocal,atom->nghost,body_tag,map(body_tag),domain->is_periodic_ghost_of_owned(i));
 

@@ -65,6 +65,8 @@ ComputeRigid::ComputeRigid(LAMMPS *lmp, int narg, char **arg) :
 
   if(!property_)
     error->compute_error(FLERR,this,"illegal property name used");
+
+  update_pointers();
 }
 
 /* ---------------------------------------------------------------------- */

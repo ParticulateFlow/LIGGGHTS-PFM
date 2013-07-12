@@ -30,10 +30,16 @@ FixStyle(remove,FixRemove)
 #define LMP_FIX_REMOVE_H
 
 #include "fix.h"
+#include <vector>
+
+using namespace std;
 
 namespace LAMMPS_NS {
 
 class FixRemove : public Fix {
+
+ friend class FixMultisphere;
+
  public:
 
   FixRemove(class LAMMPS *, int, char **);
@@ -47,22 +53,42 @@ class FixRemove : public Fix {
 
  private:
 
+  bool count_eligible(double &mass_eligible_me,double &mass_eligible,
+              double &mass_shrink_me,double &mass_to_remove_me,
+              double &ratio_ms_to_remove_me);
+  void delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
+              double &mass_removed_this_me,int &nremoved_this_me);
+  void shrink(double &mass_to_remove_me,double mass_shrink_me,
+              double &mass_removed_this_me,int &nremoved_this_me);
+  void delete_partial_particles(double &mass_to_remove_me,
+              double &mass_removed_this_me,int &nremoved_this_me);
+  void delete_partial_particles_bodies(double &mass_to_remove_me,
+              double &mass_removed_this_me,int &nremoved_this_me,
+              double ratio_ms_to_remove_me);
+
   void delete_particle(int);
+  void delete_bodies();
 
-  class RanPark *random;
+  class RanPark *random_;
 
-  int type_remove; //NP atom type of particles to remove
-  int iregion, *inflag;
-  int style;
-  double delete_below;
-  double rate_remove; //NP in kg per sec
-  int nremoved_this_me;
-  int seed;
+  int type_remove_;                 //NP atom type of particles to remove
+  int iregion_;
+  int style_;
+  double delete_below_;
+  double rate_remove_;              //NP in kg per sec
+  int seed_;
 
-  double mass_removed,mass_to_remove;
-  int time_origin;
-  double dt;
+  double mass_removed_,mass_to_remove_;
+  int time_origin_;
+  double dt_;
 
+  class FixMultisphere *fix_ms_;
+  class MultisphereParallel *ms_;
+
+  //NP list of bodies to remove
+  vector<int> atom_tags_eligible_;
+  vector<int> body_tags_eligible_;
+  vector<int> body_tags_delete_;
 };
 
 }

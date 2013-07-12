@@ -153,7 +153,9 @@ void ReadData::command(int narg, char **arg)
         delete [] file;
     }
   }
-  header(1);
+  //NP would add natoms_add twice to atom->natoms because
+  //NP header function already called above for molecular systems
+  header(1,atom->molecular?0:1);
 
   if (!domain->box_exist) domain->box_exist = 1; //NP modified C.K.
 
@@ -356,7 +358,7 @@ void ReadData::command(int narg, char **arg)
      else line has first keyword line for rest of file
 ------------------------------------------------------------------------- */
 
-void ReadData::header(int flag)
+void ReadData::header(int flag, int add)
 {
   int n;
   char *ptr;
@@ -462,8 +464,8 @@ void ReadData::header(int flag)
         if (strstr(line,"atoms"))
         {
             sscanf(line,BIGINT_FORMAT,&natoms_add);
-            atom->natoms += natoms_add;
-            /*NL*///fprintf(screen,"natoms_add %d, atom->natoms %f\n",natoms_add,atom->natoms);
+            if(add == 1) atom->natoms += natoms_add;
+            /*NL*///fprintf(screen,"natoms_add "BIGINT_FORMAT", atom->natoms "BIGINT_FORMAT"\n",natoms_add,atom->natoms);
             /*NL*///error->all("end");
         }
         else if (strstr(line,"atom types"))
@@ -481,25 +483,27 @@ void ReadData::header(int flag)
                 error->all(FLERR,"Data file contains more bond types than defined in the input script");
             sscanf(line,"%d",&atom->nbondtypes);
         }
+        else if (strstr(line,"extra bond per atom"))
+          sscanf(line,"%d",&atom->extra_bond_per_atom);
         else if (strstr(line,"xlo xhi"))
         {
             double lo,hi;
             sscanf(line,"%lg %lg",&lo,&hi);
-            if(lo < domain->boxlo[0] || hi > domain->boxhi[0])
+            if(lo < domain->boxlo[0] && domain->boundary[0][0] == 1 || hi > domain->boxhi[0] && domain->boundary[0][1] == 1)
                 error->all(FLERR,"Atom coordinates in data file extend outside simulation domain");
         }
         else if (strstr(line,"ylo yhi"))
         {
             double lo,hi;
             sscanf(line,"%lg %lg",&lo,&hi);
-            if(lo < domain->boxlo[1] || hi > domain->boxhi[1])
+            if(lo < domain->boxlo[1] && domain->boundary[1][0] == 1 || hi > domain->boxhi[1] && domain->boundary[1][1] == 1)
                 error->all(FLERR,"Atom coordinates in data file extend outside simulation domain");
         }
         else if (strstr(line,"zlo zhi"))
         {
             double lo,hi;
             sscanf(line,"%lg %lg",&lo,&hi);
-            if(lo < domain->boxlo[2] || hi > domain->boxhi[2])
+            if(lo < domain->boxlo[2] && domain->boundary[2][0] == 1 || hi > domain->boxhi[2] && domain->boundary[2][1] == 1)
                 error->all(FLERR,"Atom coordinates in data file extend outside simulation domain");
         }
         else if( (strstr(line,"bonds")) ||
@@ -510,7 +514,6 @@ void ReadData::header(int flag)
                  (strstr(line,"angle types")) ||
                  (strstr(line,"diahedral types")) ||
                  (strstr(line,"improper types")) ||
-                 (strstr(line,"extra bond per atom")) ||
                  (strstr(line,"ellipsoids")) ||
                  (strstr(line,"lines")) ||
                  (strstr(line,"triangles"))
@@ -582,7 +585,7 @@ void ReadData::atoms()
   bigint natoms = atom->natoms;
   int nlocal_old = atom->nlocal;
   int tag_max_old = atom->tag_max();
-  if (add_to_existing ) natoms = natoms_add; //NP modified C.K.
+  if (add_to_existing) natoms = natoms_add; //NP modified C.K.
 
   while (nread < natoms) {
     if (natoms-nread > CHUNK) nchunk = CHUNK;
@@ -604,8 +607,16 @@ void ReadData::atoms()
     nread += nchunk;
 
     //NP modified C.K. add hook to set_arrays
-    for (int j = 0; j < modify->nfix; j++)
-        if (modify->fix[j]->create_attribute) modify->fix[j]->set_arrays(atom->nlocal-1);
+    int nlocal_new = atom->nlocal;
+    for(int ii = nlocal_old; ii < nlocal_new; ii++)
+    {
+        for (int j = 0; j < modify->nfix; j++)
+        {
+            /*NL*///fprintf(screen,"checking id %s\n",modify->fix[j]->id);
+            if (modify->fix[j]->create_attribute)
+                modify->fix[j]->set_arrays(ii);
+        }
+    }
   }
 
   // check that all atoms were assigned correctly

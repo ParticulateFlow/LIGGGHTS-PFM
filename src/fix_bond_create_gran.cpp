@@ -186,14 +186,14 @@ FixBondCreateGran::~FixBondCreateGran()
 void FixBondCreateGran::post_create()
 {
     //NP register a fix to propagate granular bonds across processors
-    char* fixarg[4];
+    //NP this is already done in constructor of atom_vec_bond_gran.cpp
+    /*NPchar* fixarg[4];
 
     fixarg[0]="propagate_bonds_gran";
     fixarg[1]="all";
     fixarg[2]="bond/propagate/gran";
-    modify->add_fix(3,fixarg);
+    modify->add_fix(3,fixarg);*/
 }
-
 
 /* ---------------------------------------------------------------------- */
 

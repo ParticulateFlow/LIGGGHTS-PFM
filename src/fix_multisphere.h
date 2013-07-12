@@ -32,8 +32,11 @@ FixStyle(multisphere,FixMultisphere)
 #include "math_extra_liggghts.h"
 #include "multisphere_parallel.h"
 #include "fix_property_atom.h"
+#include "fix_remove.h"
 #include "atom.h"
 #include "comm.h"
+
+using namespace std;
 
 namespace LAMMPS_NS {
 
@@ -115,6 +118,8 @@ class FixMultisphere : public Fix
       double ** get_dump_ref(int &nb, int &nprop, char* prop);
       double max_r_bound();
 
+      void add_remove_callback(class FixRemove *ptr);
+
       // public inline access
 
       void *extract(char *name, int &len1, int &len2)
@@ -130,6 +135,9 @@ class FixMultisphere : public Fix
 
       inline class MultisphereParallel& data()
       { return multisphere_;}
+
+      inline class FixPropertyAtom* fix_delflag()
+      { return fix_delflag_; }
 
       inline int belongs_to(int i)
       { return body_[i]; }
@@ -181,6 +189,8 @@ class FixMultisphere : public Fix
       double **displace_;        // displacement of each atom in body coords
 
       double dtv,dtf,dtq;
+
+      vector<FixRemove*> fix_remove_;
 };
 
 }

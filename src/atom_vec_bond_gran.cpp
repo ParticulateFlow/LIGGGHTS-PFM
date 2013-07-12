@@ -51,7 +51,7 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp, int narg, char **arg) :
 
   size_border = 7;
   size_velocity = 3;
-  size_data_atom = 6;
+  size_data_atom = 5; //NP 6 with molecule ID
   size_data_vel = 4;
   xcol_data = 4;
 
@@ -64,7 +64,7 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp, int narg, char **arg) :
 
 void AtomVecBondGran::init()
 {
-  
+
   if(fbpg == NULL)
   {
       char **fixarg = new char*[3];
@@ -88,7 +88,7 @@ void AtomVecBondGran::grow(int n)
   else nmax = n;
   atom->nmax = nmax;
 
-    tag = memory->grow(atom->tag,nmax,"atom:tag");
+  tag = memory->grow(atom->tag,nmax,"atom:tag");
   type = memory->grow(atom->type,nmax,"atom:type");
   mask = memory->grow(atom->mask,nmax,"atom:mask");
   image = memory->grow(atom->image,nmax,"atom:image");
@@ -100,16 +100,21 @@ void AtomVecBondGran::grow(int n)
 
   nspecial = memory->grow(atom->nspecial,nmax,3,"atom:nspecial");
   special = memory->grow(atom->special,nmax,atom->maxspecial,"atom:special");
-  
+
   num_bond = memory->grow(atom->num_bond,nmax,"atom:num_bond");
   bond_type = memory->grow(atom->bond_type,nmax,atom->bond_per_atom,
          "atom:bond_type");
   bond_atom = memory->grow(atom->bond_atom,nmax,atom->bond_per_atom,
          "atom:bond_atom");
 
+  /*NL*/ //fprintf(screen,"grow nmax %d, atom->bond_per_atom %d, atom->n_bondhist %d\n",nmax,atom->bond_per_atom,atom->n_bondhist);
+
+  if(0 == atom->bond_per_atom)
+    error->all(FLERR,"Bonded particles need bond_per_atom > 0");
+
   if(atom->n_bondhist)
   {
-     bond_hist = atom->bond_hist =
+     bond_hist =
         memory->grow(atom->bond_hist,nmax,atom->bond_per_atom,atom->n_bondhist,"atom:bond_hist");
   }
 
@@ -479,7 +484,7 @@ int AtomVecBondGran::unpack_border_one(int i, double *buf)
 int AtomVecBondGran::pack_exchange(int i, double *buf)
 {
   int k,l;
-  
+
   int m = 1;
   buf[m++] = x[i][0];
   buf[m++] = x[i][1];
@@ -739,9 +744,9 @@ void AtomVecBondGran::data_atom(double *coord, int imagetmp, char **values)
   if (tag[nlocal] <= 0)
     error->one(FLERR,"Invalid atom ID in Atoms section of data file");
 
-  molecule[nlocal] = atoi(values[1]);
+  molecule[nlocal] = 0; //NP atoi(values[1]);
 
-  type[nlocal] = atoi(values[2]);
+  type[nlocal] = atoi(values[1]);//NP atoi(values[2]);
   if (type[nlocal] <= 0 || type[nlocal] > atom->ntypes)
     error->one(FLERR,"Invalid atom type in Atoms section of data file");
 
@@ -767,7 +772,7 @@ void AtomVecBondGran::data_atom(double *coord, int imagetmp, char **values)
 
 int AtomVecBondGran::data_atom_hybrid(int nlocal, char **values)
 {
-  molecule[nlocal] = atoi(values[0]);
+  molecule[nlocal] = 0; //NP atoi(values[0]);
 
   num_bond[nlocal] = 0;
 
@@ -799,6 +804,6 @@ bigint AtomVecBondGran::memory_usage()
   if (atom->memcheck("bond_atom")) bytes += memory->usage(bond_atom,nmax,atom->bond_per_atom);
 // P.F. not too sure about atom->n_bondhist
   if(atom->n_bondhist) bytes += nmax*sizeof(int);
-  
+
 return bytes;
 }
