@@ -145,7 +145,7 @@ FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char
           } else {
             set_point_ = -force->numeric(arg[iarg_]); // the resultant force/torque/shear acts in opposite direction --> negative value
             if (set_point_ == 0.) error->fix_error(FLERR,this,"'target_val' (desired force/torque) has to be != 0.0");
-            set_point_inv_ = 1./set_point_;
+            set_point_inv_ = 1./abs(set_point_);
             sp_style_ = CONSTANT;
           }
           iarg_++;
@@ -335,9 +335,6 @@ void FixMeshSurfaceStressServo::init()
 
     if (strcmp(update->integrate_style,"respa") == 0)
         error->fix_error(FLERR,this,"not respa-compatible");
-
-    if (!fix_mesh_neighlist_)
-      error->fix_error(FLERR,this,"The servo-wall has to be a granular wall");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -440,7 +437,7 @@ void FixMeshSurfaceStressServo::final_integrate()
 
         set_point_ = -input->variable->compute_equal(sp_var_);
         if (set_point_ == 0.) error->fix_error(FLERR,this,"Set point (desired force/torque/shear) has to be != 0.0");
-        set_point_inv_ = 1./set_point_;
+        set_point_inv_ = 1./abs(set_point_);
         /*NL*/ //fprintf(screen,"set_point_ = %e \n",set_point_);
 
         modify->addstep_compute(update->ntimestep + 1);
@@ -475,7 +472,7 @@ void FixMeshSurfaceStressServo::final_integrate()
 
       *control_output_ = -test_output * err_;
 
-    } else {
+    } else { // mode_flag == 0
 
 
       // variable force, wrap with clear/add
@@ -485,7 +482,7 @@ void FixMeshSurfaceStressServo::final_integrate()
 
         set_point_ = -input->variable->compute_equal(sp_var_);
         if (set_point_ == 0.) error->fix_error(FLERR,this,"Set point (desired force/torque/shear) has to be != 0.0");
-        set_point_inv_ = 1./set_point_;
+        set_point_inv_ = 1./abs(set_point_);
         /*NL*/ //fprintf(screen,"set_point_ = %e \n",set_point_);
 
         modify->addstep_compute(update->ntimestep + 1);
@@ -508,8 +505,9 @@ void FixMeshSurfaceStressServo::final_integrate()
       // save process value for next timestep
       old_process_value_ = *process_value_;
 
-      /*NL*/ //fprintf(screen,"TEST: process_value_ = %g and f_total_ = %g\n",*process_value_,f_total(2));
-      /*NL*/ //fprintf(screen,"TEST: control_output_ = %g and vcm_(0)[2] = %g \n",*control_output_,vcm_(0)[2]);
+      /*NL*/ //fprintf(screen,"TEST: set_point_ = %g and process_value_ = %g\n",set_point_,*process_value_);
+      /*NL*/ //fprintf(screen,"TEST: process_value_ = %g and f_total_ = %g\n",*process_value_,f_total(1));
+      /*NL*/ //fprintf(screen,"TEST: control_output_ = %g and vcm_(0)[1] = %g \n",*control_output_,vcm_(0)[1]);
 
       /*NL*/ //fprintf(screen,"Vector: f_total = %f %f %f\n",f_total(0),f_total(1),f_total(2));
       /*NL*/ //fprintf(screen,"Vector: vcm_(0)[%d] = %g \n",i,vcm_(0)[i]);
@@ -539,7 +537,7 @@ void FixMeshSurfaceStressServo::limit_vel()
   double vmag, factor, maxOutput;
   vmag = abs(*control_output_);
 
-  /*NL*/ //if(screen) fprintf(screen,"Test for velocity: ctrl_output_max_ = %g; vmag = %g; control_output_ = %g\n",ctrl_output_max_,vmag,*control_output_);
+  /*NL*/ //if(screen) fprintf(screen,"Test for velocity: ctrl_output_max_ = %g; vmag = %g\n",ctrl_output_max_,vmag);
 
   // saturation of the velocity
   int totNumContacts = fix_mesh_neighlist_->getTotalNumContacts();
@@ -639,7 +637,7 @@ int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
     } else {
       set_point_ = -force->numeric(arg[1]); // the resultant force/torque/shear acts in opposite direction --> negative value
       if (set_point_ == 0.) error->fix_error(FLERR,this,"'target_val' (desired force/torque) has to be != 0.0");
-      set_point_inv_ = 1./set_point_;
+      set_point_inv_ = 1./abs(set_point_);
       sp_style_ = CONSTANT;
     }
 
