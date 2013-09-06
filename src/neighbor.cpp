@@ -1249,6 +1249,10 @@ int Neighbor::check_distance()
         rsq = delx*delx + dely*dely + delz*delz;
         if (rsq > deltasq) flag = 1;
         /*NL*///fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
+        /*NL*///if(1==flag)
+        /*NL*///{fprintf(screen,"tag %d r %f rhold %f delr %f x %f %f %f, xhold %f %f %f rsq %f delta %f deltasq %f\n",
+        /*NL*///             atom->tag[i],radius[i],rhold[i],delr,x[i][0],x[i][1],x[i][2],xhold[i][0],xhold[i][1],xhold[i][2],rsq,delta,deltasq);
+        /*NL*/// error->one(FLERR,"end");}
       }
   }
   //NP standard: |dx| > delta
@@ -1271,7 +1275,6 @@ int Neighbor::check_distance()
       }
       /*NL*///fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
   }
-
 
   int flagall;
   MPI_Allreduce(&flag,&flagall,1,MPI_INT,MPI_MAX,world);
@@ -1695,6 +1698,11 @@ void Neighbor::modify_params(int narg, char **arg)
       delay = atoi(arg[iarg+1]);
       if (delay < 0) error->all(FLERR,"Illegal neigh_modify command");
       iarg += 2;
+    } else if (strcmp(arg[iarg],"contactHistoryDistanceFactor") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal neigh_modify command");
+      contactHistoryDistanceFactor = atof(arg[iarg+1]);
+      if (contactHistoryDistanceFactor < 1.0) error->all(FLERR,"Illegal neigh_modify command. Please set contactHistoryDistanceFactor value >=1");
+      iarg +=2; 
     } else if (strcmp(arg[iarg],"check") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal neigh_modify command");
       if (strcmp(arg[iarg+1],"yes") == 0) dist_check = 1;

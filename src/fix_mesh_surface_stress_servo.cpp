@@ -472,7 +472,7 @@ void FixMeshSurfaceStressServo::final_integrate()
 
       *control_output_ = -test_output * err_;
 
-    } else { // mode_flag == 0
+    } else {
 
 
       // variable force, wrap with clear/add
@@ -505,9 +505,8 @@ void FixMeshSurfaceStressServo::final_integrate()
       // save process value for next timestep
       old_process_value_ = *process_value_;
 
-      /*NL*/ //fprintf(screen,"TEST: set_point_ = %g and process_value_ = %g\n",set_point_,*process_value_);
-      /*NL*/ //fprintf(screen,"TEST: process_value_ = %g and f_total_ = %g\n",*process_value_,f_total(1));
-      /*NL*/ //fprintf(screen,"TEST: control_output_ = %g and vcm_(0)[1] = %g \n",*control_output_,vcm_(0)[1]);
+      /*NL*/ //fprintf(screen,"TEST: process_value_ = %g and f_total_ = %g\n",*process_value_,f_total(2));
+      /*NL*/ //fprintf(screen,"TEST: control_output_ = %g and vcm_(0)[2] = %g \n",*control_output_,vcm_(0)[2]);
 
       /*NL*/ //fprintf(screen,"Vector: f_total = %f %f %f\n",f_total(0),f_total(1),f_total(2));
       /*NL*/ //fprintf(screen,"Vector: vcm_(0)[%d] = %g \n",i,vcm_(0)[i]);

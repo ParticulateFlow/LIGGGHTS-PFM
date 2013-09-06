@@ -144,7 +144,7 @@ class Domain : protected Pointers {
   inline int is_in_extended_subdomain(double* pos); //NP modified C.K.
   inline double dist_subbox_borders(double* pos); //NP modified C.K.
   int is_periodic_ghost(int i); //NP modified C.K.
-  int is_periodic_ghost_of_owned(int i); //NP modified C.K.
+  bool is_owned_or_first_ghost(int i); //NP modified C.K.
 
  private:
   double small[3];                  // fractions of box lengths

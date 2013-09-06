@@ -81,11 +81,11 @@
   {
       // return true for manual communication, such as for node_, node_orig_
       // etc in MultiNodeMeshParallel
-      if(communicationType_ == COMM_TYPE_MANUAL)
+      if(COMM_TYPE_MANUAL == communicationType_)
         return true;
 
       //NP check for restart
-      if(operation == OPERATION_RESTART)
+      if(OPERATION_RESTART == operation)
       {
           if(restartType_ == RESTART_TYPE_YES)
             return true;
@@ -93,24 +93,24 @@
       }
 
       //NP communication in exchange() and borders() steps is always performed
-      if(operation == OPERATION_COMM_BORDERS ||
-         operation == OPERATION_COMM_EXCHANGE )
+      if(OPERATION_COMM_BORDERS == operation ||
+         OPERATION_COMM_EXCHANGE == operation )
         return true;
 
       //NP no fw or reverse comm for COMM_TYPE_NONE, but do exchange or borders
-      if(communicationType_ == COMM_TYPE_NONE)
+      if(COMM_TYPE_NONE == communicationType_)
         return false;
 
-      if(operation == OPERATION_COMM_REVERSE &&
-         communicationType_ == COMM_TYPE_REVERSE)
+      if(OPERATION_COMM_REVERSE == operation &&
+         COMM_TYPE_REVERSE == communicationType_)
         return true;
 
-      if(operation == OPERATION_COMM_FORWARD &&
-         communicationType_ == COMM_TYPE_FORWARD)
+      if(OPERATION_COMM_FORWARD == operation &&
+         COMM_TYPE_FORWARD == communicationType_)
         return true;
 
-      if(operation == OPERATION_COMM_FORWARD &&
-         communicationType_ == COMM_TYPE_FORWARD_FROM_FRAME)
+      if(OPERATION_COMM_FORWARD == operation &&
+         COMM_TYPE_FORWARD_FROM_FRAME == communicationType_)
       {
          if(scale && !isScaleInvariant())
            return true;

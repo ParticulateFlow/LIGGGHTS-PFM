@@ -528,7 +528,7 @@ void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
               shear[4] = r_torque[1];
               shear[5] = r_torque[2];
 
-              // dashpot for the original epsd model only
+              // dashpot only for the original epsd model
               if(ROLLINGFRICTION == 2)
               {
                 // dashpot
@@ -573,9 +573,15 @@ void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
         //NP call to compute_pair_gran_local
         if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
 
-        /*NL*/ //if(update->ntimestep > 33000 && (atom->tag[i] == 1 || atom->tag[i] == 37) && (atom->tag[j] == 1 || atom->tag[j] == 37)) fprintf(screen,"contact at %d, overlap %f\n",update->ntimestep,deltan);
-        /*NL*/ //fprintf(screen,"contact at step %d, force %f %f %f tags %d %d\n",update->ntimestep,fx,fy,fz,atom->tag[i],atom->tag[j]);
-        /*NL*/ //error->one(FLERR,"end");
+        /*NL*/ //if(3173 == update->ntimestep && (atom->tag[i] == 262 || atom->tag[j] == 262)) {
+        /*NL*/ //    fprintf(screen,"contact at step "BIGINT_FORMAT", proc %d overlap %f force %f %f %f fs %f %f %f tags %d %d\n",
+        /*NL*/ //    update->ntimestep,comm->me,deltan, fx,fy,fz,fs1,fs2,fs3,atom->tag[i],atom->tag[j]);
+        /*NL*/ //}//error->one(FLERR,"end");      if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
+
+        /*NL*/ //if(18201 == update->ntimestep && (atom->tag[i] == 714 || atom->tag[j] == 714)) {
+        /*NL*/ //    fprintf(screen,"contact at step "BIGINT_FORMAT", shear %f %f %f vtr %f %f %f gammat*vtr %f %f %f tags %d %d\n",
+        /*NL*/ //                   update->ntimestep,shear[0],shear[1],shear[2],vtr1,vtr2,vtr3,gammat*vtr1,gammat*vtr2,gammat*vtr3,atom->tag[i],atom->tag[j]);}
+        /*NL*/ //error->one(FLERR,"end");}
 
         if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
       }
@@ -780,6 +786,8 @@ void PairGranHookeHistory::init_granular()
           if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
           if(rollingflag == 2) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
           /*NL*/ //if(rollingflag == 2) fprintf(screen,"Init viscous coefficient: itype = %i and ytype = %i and coef = %f\n",i-1,j-1,coeffRollVisc[i][j]);
+
+          /*NL*/ //fprintf(screen,"");
 
           if(cohesionflag) cohEnergyDens[i][j] = cohEnergyDens1->compute_array(i-1,j-1);
           //omitting veff here

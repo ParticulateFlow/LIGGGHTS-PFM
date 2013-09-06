@@ -31,7 +31,7 @@
 using namespace LAMMPS_NS;
 
 //NP modified C.K. changed shearpartner to contacthistory throughout file
-//NP modified C.K. added contactHistoryDistanceFactor 
+//NP modified C.K. added contactHistoryDistanceFactor
 
 /* ----------------------------------------------------------------------
    granular particles
@@ -75,6 +75,8 @@ void Neighbor::granular_nsq_no_newton(NeighList *list)
   int *numneigh = list->numneigh;
   int **firstneigh = list->firstneigh;
   int **pages = list->pages;
+
+  double contactHistoryDistanceFactorSqr = contactHistoryDistanceFactor*contactHistoryDistanceFactor;
 
   FixContactHistory *fix_history = list->fix_history; //NP modified C.K.
   if (fix_history) {
@@ -137,8 +139,8 @@ void Neighbor::granular_nsq_no_newton(NeighList *list)
         neighptr[n] = j;
 
         if (fix_history) {
-            if (rsq < radsum*radsum*contactHistoryDistanceFactor) 
-                {
+          if (rsq < radsum*radsum*contactHistoryDistanceFactorSqr)
+          {
             for (m = 0; m < npartner[i]; m++)
               if (partner[i][m] == tag[j]) break;
             if (m < npartner[i]) {
@@ -303,6 +305,8 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
   double **pages_shear;
   int dnum; //NP modified C.K.
 
+  double contactHistoryDistanceFactorSqr = contactHistoryDistanceFactor*contactHistoryDistanceFactor;
+
   // bin local & ghost atoms
 
   bin_atoms();
@@ -391,7 +395,7 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
           neighptr[n] = j;
           /*NL*/ //fprintf(screen,"found %d %d\n",i,j);
           if (fix_history) {
-            if (rsq < radsum*radsum*contactHistoryDistanceFactor) 
+            if (rsq < radsum*radsum*contactHistoryDistanceFactorSqr)
                 {
               for (m = 0; m < npartner[i]; m++)
                 if (partner[i][m] == tag[j]) break;

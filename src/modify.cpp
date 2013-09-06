@@ -745,6 +745,10 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
   fmask[ifix] = fix[ifix]->setmask();
   if (newflag) nfix++;
 
+  //NP some things have to be done before restarting, e.g. register per-mesh-element
+  //NP properties, e.g. wear
+  fix[ifix]->post_create_pre_restart(); //NP modified C.K.
+
   // check if Fix is in restart_global list
   // if yes, pass state info to the Fix so it can reset itself
 

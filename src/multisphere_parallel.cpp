@@ -136,8 +136,8 @@ void MultisphereParallel::exchange()
             nsend += pack_exchange_rigid(i,&buf_send_[nsend]);
             /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
-            /*NL*/// fprintf(screen,"removing body %d: x %f xcm %f dim %d\n",
-            /*NL*///                  i,x[dim],xcm_(i)[dim],dim);
+            /*NL*/// if(60  == id_(i)) fprintf(screen,"removing body id %d: x %f xcm %f dim %d\n",
+            /*NL*///                  id_(i),x[dim],xcm_(i)[dim],dim);
             remove_body(i);
             /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);

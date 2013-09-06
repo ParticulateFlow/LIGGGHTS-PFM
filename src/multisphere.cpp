@@ -192,6 +192,8 @@ void Multisphere::remap_bodies(int *body)
     vectorSubtract3D(xbnd,xbnd_old,xbnd_diff);
     vectorAdd3D(xcm_(ibody),xbnd_diff,xcm_(ibody));
 
+    /*NL*/ //if(tag(ibody) == 1) fprintf(screen,"step "BIGINT_FORMAT" OLD %f %f %f NEW %f %f %f\n",update->ntimestep,xbnd_old[0],xbnd_old[1],xbnd_old[2],xbnd[0],xbnd[1],xbnd[2]);
+
     if (original == imagebody_(ibody)) remapflag_(ibody)[3] = 0;
     else {
       oldimage = original & 1023;
@@ -216,6 +218,12 @@ void Multisphere::remap_bodies(int *body)
 
   for (int i = 0; i < nlocal+nghost; i++)
   {
+
+    /*NL*/ //if(1 == atom->tag[i] || 2 == atom->tag[i] || 3 == atom->tag[i]) { //){(ibody) == 1125 && eval) {
+    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d atom tag %d ghost %s, imageflag_y before %d\n",
+    /*NL*/ //                                      update->ntimestep,comm->me,atom->tag[i],i>=nlocal?"yes":"no",(atomimage[i] >> 10 & 1023) - 512);
+    /*NL*/ //}
+
     if(body[i] < 0) continue;
     ibody = map(body[i]);
 
@@ -407,6 +415,14 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     /*NL*///fprintf(screen,"CHECKING lost atoms for %d bodies on proc %d\n",nbody_,comm->me);
     /*NL*/ //if(map(7833) >= 0) fprintf(screen,"C proc %d has body %d\n",comm->me,7833);
 
+    //NP 2 ways of deleting:
+    //NP (1) particles exit and are deleted, but body is stil in domain
+    //NP     --> delete body and remaining associated particles
+    //NP     --> remove body right here, delete atoms via atom_delflag
+    //NP (2) body and some of the particles exit
+    //NP     --> have to loop particles to check if owning body still exists
+    //NP     --> delete atoms via body_existflag
+
     //NP check if nrigid is consistent for each body
     //NP   with atoms body data
     //NP if inconstistent, delete body and particles
@@ -416,19 +432,22 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
         body_tag = body[i];
         /*NL*/ //fprintf(screen,"body_tag %d\n",body_tag);
         /*NL*/ //fprintf(screen,"map(body_tag) %d\n",map(body_tag));
-        /*NL*///fprintf(screen,"proc %d step %d particle id %d, local %d (nlocal %d nghost %d) body_tag %d map(body_tag) %d is_periodic_ghost_of_owned %d\n",
-        /*NL*///                comm->me,update->ntimestep,atom->tag[i],i,atom->nlocal,atom->nghost,body_tag,map(body_tag),domain->is_periodic_ghost_of_owned(i));
+        /*NL*///fprintf(screen,"proc %d step %d particle id %d, local %d (nlocal %d nghost %d) body_tag %d map(body_tag) %d is_unique_on_this_proc %d\n",
+        /*NL*///                comm->me,update->ntimestep,atom->tag[i],i,atom->nlocal,atom->nghost,body_tag,map(body_tag),domain->is_unique_on_this_proc(i));
 
         //NP if particle belongs to a rigid body and the body is owned on this proc
         //NP specific case if ghost in periodic system with procgrid[idim] == 1
         //NP have to exclude double counts for this case
 
-        if(body_tag >= 0 && map(body_tag) >= 0 && 0 == domain->is_periodic_ghost_of_owned(i))
+        if(body_tag >= 0 && map(body_tag) >= 0 && domain->is_owned_or_first_ghost(i))
         {
             nrigid_current[map(body_tag)]++;
-            /*NL*/ //if(23497 == atom->tag[i]) fprintf(screen,"atom tag 23497 exists in body %d\n",body[i]);
+            /*NL*/// if(38 == body_tag) fprintf(screen,"step "BIGINT_FORMAT" atom tag %d exists in body %d i %d nlocal %d\n",
+            /*NL*///                             update->ntimestep,atom->tag[i],body_tag,i,atom->nlocal);
             body_existflag[i] = 1.;
         }
+        else if (-1 == body_tag)
+            body_existflag[i] = 1.;
     }
 
     //NP mark bodies for deletion
@@ -476,7 +495,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     {
         if(delflag[ibody] == 1)
         {
-            /*NL*///fprintf(screen,"DELETING body tag %d ibody %d on step %d\n",tag(ibody),ibody,update->ntimestep);
+            /*NL*/fprintf(screen,"DELETING body tag %d ibody %d on step "BIGINT_FORMAT"\n",tag(ibody),ibody,update->ntimestep);
             delflag[ibody] = delflag[nbody_-1];
             remove_body(ibody);
             /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d\n",comm->me,7833);

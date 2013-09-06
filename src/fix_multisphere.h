@@ -48,7 +48,8 @@ enum
     MS_COMM_FW_V_OMEGA,
     MS_COMM_FW_F_TORQUE,
     MS_COMM_REV_X_V_OMEGA,
-    MS_COMM_REV_V_OMEGA
+    MS_COMM_REV_V_OMEGA,
+    MS_COMM_REV_IMAGE
 };
 
 class FixMultisphere : public Fix
@@ -110,15 +111,17 @@ class FixMultisphere : public Fix
       int pack_reverse_comm(int, int, double*);
       int pack_reverse_comm_x_v_omega(int, int, double*);
       int pack_reverse_comm_v_omega(int, int, double*);
+      int pack_reverse_comm_image(int n, int first, double *buf);
       void unpack_reverse_comm(int, int*, double*);
       void unpack_reverse_comm_x_v_omega(int, int*, double*);
       void unpack_reverse_comm_v_omega(int, int*, double*);
+      void unpack_reverse_comm_image(int n, int *list, double *buf);
 
       int dof(int);
       double ** get_dump_ref(int &nb, int &nprop, char* prop);
       double max_r_bound();
 
-      void add_remove_callback(class FixRemove *ptr);
+      void add_remove_callback(FixRemove *ptr);
 
       // public inline access
 
