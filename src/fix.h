@@ -101,7 +101,9 @@ class Fix : protected Pointers {
   virtual void post_create_pre_restart() {} //NP modified C.K.
   virtual void post_create() {} //NP modified C.K.
   virtual void pre_delete(bool) {} //NP modified C.K.
-  virtual void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi) {} //NP modified C.K.
+  virtual void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi) {
+    UNUSED(xlo); UNUSED(xhi); UNUSED(ylo); UNUSED(yhi); UNUSED(zlo); UNUSED(zhi); //NP modified R.B.
+  } //NP modified C.K.
   virtual void init() {}
   virtual void init_list(int, class NeighList *) {}
   virtual void setup(int) {}
@@ -178,7 +180,7 @@ class Fix : protected Pointers {
   virtual int max_type() {return 0;} //NP modified C.K.
   virtual double extend_cut_ghost() {return 0.0;} //NP modified C.K.
   virtual int n_history_extra() {return 0;} //NP modified C.K.
-  virtual bool history_args(char** args) {return false;} //NP modified C.K.
+  virtual bool history_args(char** args) { UNUSED(args); return false;} //NP modified C.K.
 
  protected:
   int evflag;
