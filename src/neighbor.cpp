@@ -1231,7 +1231,10 @@ int Neighbor::check_distance()
       delta = 0.5 * (skin - (delta1+delta2));
       deltasq = delta*delta;
     }
-  } else deltasq = triggersq;
+  } else {
+    deltasq = triggersq;
+    delta = sqrt(deltasq);
+  }
 
   double **x = atom->x;
   double *radius = atom->radius; //NP modified C.K.
@@ -1266,7 +1269,7 @@ int Neighbor::check_distance()
         delr = radius[i] - rhold[i];
         rsq = delx*delx + dely*dely + delz*delz;
         delrsq = delr*delr;
-        if (delrsq > deltasq || rsq > deltasq - 2.*delr*delta + delr*delr)
+        if (delrsq > deltasq || rsq > deltasq - 2.*delr*delta + delrsq)
             flag = 1;
         /*NL*///if(1==flag)
         /*NL*///{fprintf(screen,"r %f rhold %f delr %f x %f %f %f, xhold %f %f %f rsq %f delta %f deltasq %f\n",
