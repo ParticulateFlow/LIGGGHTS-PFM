@@ -753,6 +753,8 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
   // if yes, pass state info to the Fix so it can reset itself
 
   for (int i = 0; i < nfix_restart_global; i++)
+  {
+    /*NL*/ //fprintf(screen,"----this is fix id %s style %s, checking vs fix id %s style %s\n",fix[ifix]->id,fix[ifix]->style,id_restart_global[i],style_restart_global[i]);
     if (strcmp(id_restart_global[i],fix[ifix]->id) == 0 &&
         strcmp(style_restart_global[i],fix[ifix]->style) == 0) {
           fix[ifix]->restart(state_restart_global[i]);
@@ -764,6 +766,7 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
             if (logfile) fprintf(logfile,str,fix[ifix]->id,fix[ifix]->style);
       }
     }
+  }
 
   // check if Fix is in restart_peratom list
   // if yes, loop over atoms so they can extract info from atom->extra array

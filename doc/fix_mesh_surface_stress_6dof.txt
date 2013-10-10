@@ -1,0 +1,102 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix mesh/6dof command :h3
+
+[Syntax:]
+
+fix ID group-ID mesh/surface/stress/6dof file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keyword surface_values stress_keywords stress_values 6dof_keywords 6dof_values :pre
+
+ID, is documented in "fix"_fix.html command, the group-ID is ignored for this command. :ulb,l
+mesh/gran/6dof = style name of this fix command  :l
+file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keyword surface_values stress_keywords stress_values are documented in "fix mesh/surface/stress"_fix_mesh_surface_stress.html. :l
+zero or more 6dof_keyword/value pairs may be appended 
+6dof keywords = {mass} (obligatory) or {com} (obligatory) or {moi} (obligatory) or {vcm} or {angmom} or {suspension}  or {forceflags} or {torqueflags} :l
+{mass} value = mass
+   mass = mass of the rigid body (mass units)
+{com} values = x, y, z
+    x, y, z = coordinates of the center of mass of the body (distance units)
+{moi} values = Ixx, Iyy, Izz, Ixy, Ixz, Iyz
+    Ixx, Iyy, Izz, Ixy, Ixz, Iyz = moments of inertia around the given axis
+{vel} values = vx, vy, vz
+    vx, vy, vz = velocities of the center of mass of the body (velocity units)
+{angmom} values = ax, ay, az
+    ax, ay, az = initial angular momentum around x-, y-, and z-axis
+{suspension} values = k_t kt c_t ct k_r kr c_r cr
+    k_t = obligatory keyword
+    kt = stiffness for translational spring
+    c_t = obligatory keyword
+    ct = damper coefficient for translational damper
+    k_r = obligatory keyword
+    kr = stiffness for rotational spring
+    c_r = obligatory keyword
+    cr = damper coefficient for rotational damper
+{forceflags} values = f1 f2 f3
+    f1,f2,f3 = flags for x,y,z which can be 0 or 1
+{torqueflags} values = t1 t2 t3
+    t1,t2,t3 = flags for x,y,z which can be 0 or 1 :pre
+:ule
+
+[Examples:]
+
+fix	cube all mesh/surface/stress/6dof file cube.stl type 1 com 0. 0. 0. vel 0. 0. -0.5 mass 40 moi 0.266666 0.266666 0.266666 0. 0. 0.
+
+[LIGGGHTS vs. LAMMPS Info:]
+
+This command is not available in LAMMPS.
+
+[Description:]
+
+This fix implements the functionality of "fix mesh/surface/stress"_fix_mesh_surface_stress.html but it additionally 
+integrates the motion of the mesh assuming it to be a rigid body with the given {com} (center of mass) 
+and {moi} (moments of inertia). Optionally, you can specify an initial velocity and angular momentum of 
+the rigid body. Please note the difference between angular velocity omega and angular momentum (which is I*omega)
+
+Note that if a "fix gravity"_fix_gravity.html is used, the gravitational force acts on the center of mass
+of the body
+
+With the optional {suspension} keyword, an additional suspension force and torque is activated 
+which tries to pull the body back into its original position (which is the {com} as defined by 
+this command) and its original orientation. The force and torque consist of translational and 
+rotational spring/damping parts and write
+
+f = kt * dx - ct * vel
+t = kr * dalpha * axis - cr * omega
+
+where vec and omega are the body velocity and rotational velocity. dx represents the translational 
+displacement of the body from its original position. dalpha and axis represent the rotational
+displacement of the body from its original orientation, where dalpha is the the angle
+and axis is the the corresponding rotation (unit) axis.
+
+With the optional {forceflags} and {torqueflags} keywords, motion integration can be turned of
+separately for the x-, y-, and z-axis.
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+This fix stores a global vector with 6 components for access by various "output commands"_Section_howto.html#4_15. 
+The first 3 components are equal to the total force on the mesh, the last 3 components store the total torque 
+on the body. Please note that as opposed to "fix mesh/surface/stress"_fix_mesh_surface_stress.html, 
+the total force and torque contain the contributions of the particles, gravity and the suspension
+model (if activated). 
+Furthermore, this fix writes the state of the rigid body (translational and rotational) to binary restart files so 
+that a simulation can continue correctly.
+
+[Restrictions:]
+
+When using this fix, along with scaling or rotate the body, all the 6dof_keyword/value pairs have to represent
+the state after scaling/rotation.
+Mesh elements may not be deleted in case due to leaving the simulation box for a fixed boundary. 
+In this case, an error is generated. See "boundary"_boundary.html command for details.
+
+[Related commands:]
+
+"fix mesh/surface/stress"_fix_mesh_surface_stress.html, "fix wall/gran"_fix_wall_gran.html
+
+[Default:] 
+{vel} = 0 0 0, {angmom} = 0 0 0, {forceflags} = 1 1 1, {torqueflags} = 1 1 1 , {suspension} = off

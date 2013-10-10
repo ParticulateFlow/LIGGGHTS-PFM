@@ -331,7 +331,7 @@ double ComputeCrosssection::calc_ang()
     {
         //ilomid = ilo;
         //ihimid = ihi;
-        /*NL*/ fprintf(screen,"ilo %d ilomid %d ihimid %d ihi %d\n",ilo,ilomid,ihimid,ihi);
+        /*NL*/ if(screen) fprintf(screen,"ilo %d ilomid %d ihimid %d ihi %d\n",ilo,ilomid,ihimid,ihi);
         error->one(FLERR,"Compute crossection could not calculate angle (2)");
     }
 
@@ -347,7 +347,7 @@ double ComputeCrosssection::calc_ang()
     else
         ang = 180./M_PI*atan(del/(rlomid-rhimid));
 
-    /*NL*/ fprintf(screen,"rlomid %f rhimid %f del %f ang %f\n",rlomid,rhimid,del,ang);
+    /*NL*/ if(screen) fprintf(screen,"rlomid %f rhimid %f del %f ang %f\n",rlomid,rhimid,del,ang);
 
     return ang;
 }

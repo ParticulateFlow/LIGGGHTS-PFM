@@ -180,7 +180,7 @@ class Fix : protected Pointers {
   virtual int max_type() {return 0;} //NP modified C.K.
   virtual double extend_cut_ghost() {return 0.0;} //NP modified C.K.
   virtual int n_history_extra() {return 0;} //NP modified C.K.
-  virtual bool history_args(char** args) { UNUSED(args); return false;} //NP modified C.K.
+  virtual bool history_args(char** args) {return false;} //NP modified C.K.
 
  protected:
   int evflag;

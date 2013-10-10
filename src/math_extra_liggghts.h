@@ -111,7 +111,7 @@ Matrix determinant
 
 double MathExtraLiggghts::mdet(const double m[3][3],LAMMPS_NS::Error *error)
 {
-  UNUSED(error);
+    UNUSED(error);
     return ( -m[0][2]*m[1][1]*m[2][0] + m[0][1]*m[1][2]*m[2][0] + m[0][2]*m[1][0]*m[2][1] - m[0][0]*m[1][2]*m[2][1] - m[0][1]*m[1][0]*m[2][2] + m[0][0]*m[1][1]*m[2][2] );
 
 }
@@ -316,7 +316,6 @@ void MathExtraLiggghts::local_coosys_to_cartesian(double *global,double *local, 
 void MathExtraLiggghts::cartesian_coosys_to_local(double *local,double *global, double *ex_local, double *ey_local, double *ez_local,LAMMPS_NS::Error *error)
 {
   UNUSED(error);
-
   double M[3][3] = {{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}};
   double Mt[3][3] = {{0.,0.,0.},{0.,0.,0.},{0.,0.,0.}};
 

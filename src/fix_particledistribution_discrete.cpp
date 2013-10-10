@@ -369,7 +369,7 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
 {
     if(ntotal > n_pti_max)
     {
-        /*NL*/fprintf(screen," fix %s, ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
+        /*NL*/if(screen) fprintf(screen," fix %s, ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
         error->one(FLERR,"Faulty implementation: FixParticledistributionDiscrete::randomize_list() called for more particles than defined in random_init_list()");
     }
 

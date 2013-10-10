@@ -130,6 +130,17 @@ class Comm : protected Pointers {
   virtual void allocate_multi(int);         // allocate multi arrays
   virtual void free_swap();                 // free swap arrays
   virtual void free_multi();                // free multi arrays
+
+  //NP modified C.K.
+  bool decide(int i,int dim,double lo,double hi,int ineed);
+  bool decide_wedge(int i,int dim,double lo,double hi,int ineed);
+
+  //NP modified C.K.
+  class DomainWedge *dw_;
+  int ia,iphi;
+  //NP normal vetors and points defining plane equation
+  //NP plane shifted half cut ghost in negative normal dir
+  double nleft[2],nright[2],pleft[2],pright[2],c[2];
 };
 
 }

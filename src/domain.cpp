@@ -97,6 +97,7 @@ Domain::Domain(LAMMPS *lmp) : Pointers(lmp)
   regions = NULL;
 
   /*NL*/ lbalance = NULL;
+  is_wedge = false; //NP modified C.K.
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1442,67 +1443,3 @@ void Domain::box_corners()
   lamda2x(corners[7],corners[7]);
 }
 
-//NP modified C.K.
-/* ----------------------------------------------------------------------
-   domain check - not used very often, so not inlined
-------------------------------------------------------------------------- */
-
-int Domain::is_periodic_ghost(int i) //NP modified C.K.
-{
-    int idim;
-    int nlocal = atom->nlocal;
-    double *x = atom->x[i];
-    double halfskin = 0.5*neighbor->skin;
-
-    //NP add/substract halfskin so account for ghosts having moved into owned region since last reneigh
-    //NP TODO still has some inaccuracies at corners: particle may be ghost in one dimension
-    //NP and move near periodic border in other direction
-    if(i < nlocal) return 0;
-    else
-    {
-        for(idim = 0; idim < 3; idim++)
-             if ((x[idim] < (boxlo[idim]+halfskin) || x[idim] > (boxhi[idim]-halfskin)) && periodicity[idim])
-             //NP this is crap if ((abs(x[idim]-boxlo[idim]) < skin || abs(x[idim]-boxhi[idim]) < skin) && periodicity[idim])
-                return 1;
-    }
-    return 0;
-}
-
-/*NP
-int Domain::is_periodic_ghost_of_owned(int i) //NP modified C.K.
-{
-    if(!atom->tag_enable)
-        error->one(FLERR,"The current simulation setup requires to define an atom map via 'atom_modify map'");
-
-    int nlocal = atom->nlocal;
-
-                (i < nlocal) && (atom->map(atom->tag[i]) < nlocal) && (1 == is_periodic_ghost(i)));
-
-    if(i < nlocal) return 0;
-    else if ((atom->map(atom->tag[i]) < nlocal) && (1 == is_periodic_ghost(i)))
-        return 1;
-    else return 0;
-}
-*/
-    /*NL*///if(0 == comm->me && update->ntimestep > 12400)
-    /*NL*///  fprintf(screen,"i %d tag %d atom->map(atom->tag[i]) %d nlocal %d is_periodic_ghost %d, result %d\n",
-    /*NL*///                  i,atom->tag[i],atom->map(atom->tag[i]),nlocal,is_periodic_ghost(i),
-    /*NL*///
-
-/* ----------------------------------------------------------------------
-   check if atom is unique on this subdomain
-   used when tallying stats across owned and ghost particles
-------------------------------------------------------------------------- */
-
-bool Domain::is_owned_or_first_ghost(int i) //NP modified C.K.
-{
-    if(!atom->tag_enable)
-        error->one(FLERR,"The current simulation setup requires atoms to have tags");
-    if(0 == atom->map_style)
-        error->one(FLERR,"The current simulation setup requires an 'atom_modify map' command to allocate an atom map");
-
-    //NP to avoid multiple ghosts / corner ghosts
-    if(i == atom->map(atom->tag[i]))
-        return true;
-    return false;
-}

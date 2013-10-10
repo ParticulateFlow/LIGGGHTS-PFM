@@ -67,6 +67,9 @@ namespace LAMMPS_NS {
       double *extract_double_scalar(char *name);
       double **extract_double_vector(char *name);
 
+      double extract_ke();
+      double extract_rke();
+
       // inline access functions
 
       inline int n_body()

@@ -136,6 +136,7 @@ class FixMultisphere : public Fix
           return multisphere_.extract(name,len1,len2);
       }
 
+
       inline class MultisphereParallel& data()
       { return multisphere_;}
 
@@ -153,6 +154,12 @@ class FixMultisphere : public Fix
 
       inline int tag_max_body()
       { return data().tag_max_body(); }
+
+      inline double extract_ke()
+      { return data().extract_ke(); }
+
+      inline double extract_rke()
+      { return data().extract_rke(); }
 
       inline void set_v_body_from_atom_index(int iatom,double *vel)
       { multisphere_.set_v_body(body_[iatom],vel); }

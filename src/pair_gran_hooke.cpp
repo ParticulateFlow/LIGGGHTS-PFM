@@ -29,6 +29,7 @@
 #include "pair_gran_hooke.h"
 #include "atom.h"
 #include "force.h"
+#include "update.h"
 #include "neigh_list.h"
 #include "error.h"
 #include "vector_liggghts.h"
@@ -183,7 +184,6 @@ void PairGranHooke::compute_force(int eflag, int vflag,int addflag)
         if (cohesionflag) { //NP modified C.K.
             addCohesionForce(i,j,r,Fn_coh);
             ccel-=Fn_coh*rinv;
-
         }
 
         // relative velocities
@@ -238,6 +238,15 @@ void PairGranHooke::compute_force(int eflag, int vflag,int addflag)
                 vectorSubtract3D(r_torque,r_torque_n,r_torque);
             }
         }
+
+        /*NL*/ //fprintf(screen,"PAIR tags %d %d at step "BIGINT_FORMAT"\n",atom->tag[i],atom->tag[j],update->ntimestep);
+        /*NL*/ //printVec3D(screen,"xi",x[i]);
+        /*NL*/ //printVec3D(screen,"vi",v[i]);
+        /*NL*/ //printVec3D(screen,"omegai",omega[i]);
+        /*NL*/ //printVec3D(screen,"xj",x[j]);
+        /*NL*/ //printVec3D(screen,"vj",v[j]);
+        /*NL*/ //printVec3D(screen,"omegaj",omega[j]);
+        /*NL*/ //fprintf(screen,"   force %f %f %f\n",fx,fy,fz);
 
         if(computeflag)
         {

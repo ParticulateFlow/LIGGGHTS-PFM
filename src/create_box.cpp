@@ -131,6 +131,6 @@ void CreateBox::command(int narg, char **arg)
   atom->nbondtypes = atoi(arg[3]);
   atom->bond_per_atom = atoi(arg[4]);
 
-  /*NL*/ fprintf(screen,"atom->nbondtypes %d atom->bond_per_atom %d\n",atom->nbondtypes,atom->bond_per_atom);
+  /*NL*/ if(screen) fprintf(screen,"atom->nbondtypes %d atom->bond_per_atom %d\n",atom->nbondtypes,atom->bond_per_atom);
 
 }

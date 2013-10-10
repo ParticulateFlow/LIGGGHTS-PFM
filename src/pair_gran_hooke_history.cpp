@@ -354,11 +354,15 @@ void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
 
         touch[jj] = 1;
 
-        /*NL*///fprintf(screen,"PAIR tags %d %d, mol %d %d, \n",atom->tag[i],atom->tag[j],atom->molecule[i],atom->molecule[j]);
-        /*NL*///fprintf(screen,"radii %f, %f, rsq %f, radsum*radsum %f\n",radius[i],radius[j],rsq,radsum*radsum);
-        /*NL*///printVec3D(screen,"xi",x[i]);
-        /*NL*///printVec3D(screen,"xj",x[j]);
-        /*NL*///error->one(FLERR,"touch");
+        /*NL*///if(j > atom->nlocal) {
+        /*NL*///  fprintf(screen,"PAIR tags %d %d at step "BIGINT_FORMAT"\n",atom->tag[i],atom->tag[j],update->ntimestep);
+        /*NL*/  //fprintf(screen,"radii %f, %f, rsq %f, radsum*radsum %f\n",radius[i],radius[j],rsq,radsum*radsum);
+        /*NL*///  printVec3D(screen,"xi",x[i]);
+        /*NL*///  printVec3D(screen,"vi",v[i]);
+        /*NL*///  printVec3D(screen,"xj",x[j]);
+        /*NL*///  printVec3D(screen,"vj",v[j]);
+        /*NL*///  error->one(FLERR,"touch");
+        /*NL*///}
 
         shear = &allshear[dnum()*jj];
 
@@ -727,7 +731,8 @@ void PairGranHookeHistory::init_granular()
   if(cohesionflag)
     cohEnergyDens1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("cohesionEnergyDensity","property/global","peratomtypepair",max_type,max_type,force->pair_style));
 
-  if(charVelflag) charVel1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,force->pair_style));
+  if(charVelflag)
+      charVel1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,force->pair_style));
 
   //pre-calculate parameters for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
@@ -796,7 +801,15 @@ void PairGranHookeHistory::init_granular()
       }
   }
 
-  if(charVelflag) charVel = charVel1->compute_scalar();
+  if(charVelflag)
+  {
+      charVel = charVel1->compute_scalar();
+      if(sanity_checks)
+      {
+            if(strcmp(update->unit_style,"si") == 0  && charVel < 1e-2)
+                 error->all(FLERR,"characteristicVelocity >= 1e-2 required for SI units");
+      }
+  }
 
   // error checks on coarsegraining
   if((rollingflag || cohesionflag) && force->cg_active())

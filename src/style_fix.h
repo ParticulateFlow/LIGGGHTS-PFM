@@ -44,6 +44,7 @@
 #include "fix_mesh.h"
 #include "fix_mesh_surface.h"
 #include "fix_mesh_surface_stress.h"
+#include "fix_mesh_surface_stress_6dof.h"
 #include "fix_mesh_surface_stress_contact.h"
 #include "fix_mesh_surface_stress_servo.h"
 #include "fix_minimize.h"
@@ -122,3 +123,4 @@
 #include "fix_wall_region.h"
 #include "fix_wall_region_sph.h"
 #include "fix_wall_sph.h"
+#include "fix_wall_sph_general_simple.h"

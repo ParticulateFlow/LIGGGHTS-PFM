@@ -77,27 +77,12 @@ void VerletImplicit::run(int n)
     ntimestep = ++update->ntimestep;
     /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"starting time-step " BIGINT_FORMAT "\n",update->ntimestep);__debug__(lmp);}
 
-    do
-    {
-        ev_set(ntimestep);
+    // neigh list build if required
 
-        // initial time integration
+    /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing neigh stuff\n");__debug__(lmp);}
+    nflag = neighbor->decide();
 
-        /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing initial integrate\n");__debug__(lmp);}
-        modify->initial_integrate(vflag);
-        /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing post integrate\n");__debug__(lmp);}
-        if (n_post_integrate) modify->post_integrate();
-
-        // regular communication vs neighbor list rebuild
-
-        /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing neigh stuff\n");__debug__(lmp);}
-        nflag = neighbor->decide();
-
-        if (nflag == 0) {
-          timer->stamp();
-          comm->forward_comm();
-          timer->stamp(TIME_COMM);
-        } else {
+    if (nflag == 1) {
           /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre_exchange\n");__debug__(lmp);}
           if (n_pre_exchange) modify->pre_exchange();
           /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pbc, reset_box, comm setup\n");__debug__(lmp);}
@@ -122,7 +107,24 @@ void VerletImplicit::run(int n)
           /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing neigh\n");__debug__(lmp);}
           neighbor->build();
           timer->stamp(TIME_NEIGHBOR);
-        }
+    }
+
+    do
+    {
+        ev_set(ntimestep);
+
+        // initial time integration
+
+        /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing initial integrate\n");__debug__(lmp);}
+        modify->initial_integrate(vflag);
+        /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing post integrate\n");__debug__(lmp);}
+        if (n_post_integrate) modify->post_integrate();
+
+        // regular communication here
+
+        timer->stamp();
+        comm->forward_comm();
+        timer->stamp(TIME_COMM);
 
         // force computations
         /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre force\n");__debug__(lmp);}
@@ -163,9 +165,9 @@ void VerletImplicit::run(int n)
         if (n_post_force) modify->post_force(vflag);
         /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing final integrate\n");__debug__(lmp);}
         modify->final_integrate();
-
     }
     while(modify->iterate_implicitly());
+
 
 
     /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing end of step\n");__debug__(lmp);}

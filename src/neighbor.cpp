@@ -1231,7 +1231,7 @@ int Neighbor::check_distance()
       delta = 0.5 * (skin - (delta1+delta2));
       deltasq = delta*delta;
     }
-  } else {
+  } else { //NP modified C.K.
     deltasq = triggersq;
     delta = sqrt(deltasq);
   }

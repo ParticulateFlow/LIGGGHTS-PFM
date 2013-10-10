@@ -79,9 +79,14 @@ This fix is not invoked during <A HREF = "minimize.html">energy minimization</A>
 <P><B>Restrictions:</B>
 </P>
 <P>Only one fix multisphere at a time is allowed. 
-Currently, restarting a simulation using fix multisphere is not 
-possible.
-Currently, using fix multisphere requires <A HREF = "newton.html">newton</A> = off and 
+Heat transfer simulations are not possible when using this fix 
+(e.g. <A HREF = "fix_heat_gran_conduction.html">fix heat/gran/conduction</A>)
+</P>
+<P>IMPORTANT NOTE: All fixes or computes gathering statistical output 
+(such as e.g. <A HREF = "compute_com.html">compute com</A> or <A HREF = "fix_ave_time.html">fix ave/time</A> 
+operate on a per-sphere rather than on a per-body basis.
+</P>
+<P>Currently, using fix multisphere requires <A HREF = "newton.html">newton</A> = off and 
 <A HREF = "dimension.html">dimension</A> = 3.
 </P>
 <P><B>Related commands:</B>

@@ -51,7 +51,7 @@ class FixBalance : public Fix {
 
  private:
   int nevery,nitermax;
-  char bstr[3];
+  char bstr[4];
   double thresh;
   FILE *fp;
 

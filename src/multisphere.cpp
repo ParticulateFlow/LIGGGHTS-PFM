@@ -23,6 +23,7 @@
 
 #include "multisphere.h"
 #include "domain.h"
+#include "force.h"
 #include "atom.h"
 #include "atom_vec.h"
 #include "vector_liggghts.h"
@@ -456,7 +457,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     {
         if(nrigid_current[ibody] > nrigid_(ibody))
         {
-            /*NL*/fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step "BIGINT_FORMAT", nrigid_current %d nrigid %d\n",
+            /*NL*/if(screen) fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step "BIGINT_FORMAT", nrigid_current %d nrigid %d\n",
             /*NL*/                comm->me,tag(ibody),ibody,update->ntimestep,nrigid_current[ibody],nrigid_(ibody));
             error->one(FLERR,"Internal error in multisphere method");
         }
@@ -495,7 +496,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     {
         if(delflag[ibody] == 1)
         {
-            /*NL*/fprintf(screen,"DELETING body tag %d ibody %d on step "BIGINT_FORMAT"\n",tag(ibody),ibody,update->ntimestep);
+            /*NL*/if(screen) fprintf(screen,"DELETING body tag %d ibody %d on step "BIGINT_FORMAT"\n",tag(ibody),ibody,update->ntimestep);
             delflag[ibody] = delflag[nbody_-1];
             remove_body(ibody);
             /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d\n",comm->me,7833);
@@ -576,4 +577,56 @@ double* Multisphere::extract_double_scalar(char *name)
     ScalarContainer<double> *cb = customValues_.getElementProperty<ScalarContainer<double> >(name);
     if(!cb) return 0;
     return cb->begin();
+}
+
+
+/* ----------------------------------------------------------------------
+   return translational KE for all rigid bodies
+   KE = 1/2 M Vcm^2
+------------------------------------------------------------------------- */
+
+double Multisphere::extract_ke()
+{
+  double ke = 0.0;
+  double mvv2e = force->mvv2e;
+
+  for (int i = 0; i < nbody_; i++)
+    ke += masstotal_(i)*vectorMag3DSquared(vcm_(i));
+
+  MPI_Sum_Scalar(ke,world);
+
+  /*NL*/ fprintf(screen,"calculated ke of %f\n",0.5*ke);
+  return 0.5*mvv2e*ke;
+}
+
+/* ----------------------------------------------------------------------
+   return rotational KE for all rigid bodies
+   Erotational = 1/2 I wbody^2
+------------------------------------------------------------------------- */
+
+double Multisphere::extract_rke()
+{
+  double wbody[3],rot[3][3];
+
+  double rke = 0.0;
+  for (int i = 0; i < nbody_; i++) {
+
+    // wbody = angular velocity in body frame
+
+    MathExtra::quat_to_mat(quat_(i),rot);
+    MathExtra::transpose_matvec(rot,angmom_(i),wbody);
+    if (inertia_(i)[0] == 0.0) wbody[0] = 0.0;
+    else wbody[0] /= inertia_(i)[0];
+    if (inertia_(i)[1] == 0.0) wbody[1] = 0.0;
+    else wbody[1] /= inertia_(i)[1];
+    if (inertia_(i)[2] == 0.0) wbody[2] = 0.0;
+    else wbody[2] /= inertia_(i)[2];
+
+    rke += inertia_(i)[0]*wbody[0]*wbody[0] +
+      inertia_(i)[1]*wbody[1]*wbody[1] + inertia_(i)[2]*wbody[2]*wbody[2];
+  }
+
+  MPI_Sum_Scalar(rke,world);
+
+  return 0.5*rke;
 }

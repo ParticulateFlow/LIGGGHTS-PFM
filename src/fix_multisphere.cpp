@@ -269,6 +269,9 @@ void FixMultisphere::init() //NP modified C.K.
   if(domain->dimension != 3)
     error->fix_error(FLERR,this,"works with 3D simulations only");
 
+  if(modify->n_fixes_style("heat/gran") > 0)
+    error->fix_error(FLERR,this,"is not compatible with heat transfer simulations");
+
   if(domain->triclinic || dynamic_cast<DomainWedge*>(domain))
     error->fix_error(FLERR,this,"does not work with triclinic or wedge box");
 

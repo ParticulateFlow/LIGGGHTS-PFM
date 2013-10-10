@@ -28,6 +28,8 @@
 #include "error.h" //NP modified C.K.
 #include "comm.h" //NP modified C.K.
 #include "vector_liggghts.h" //NP modified C.K.
+#include "neighbor.h" //NP modified C.K.
+#include "atom.h" //NP modified C.K.
 
 #define SMALL_DMBRDR 1.0e-8 //NP modified C.K.
 
@@ -123,7 +125,7 @@ class Domain : protected Pointers {
   void add_region(int, char **);
   void delete_region(int, char **);
   int find_region(char *);
-  void set_boundary(int, char **, int);
+  virtual void set_boundary(int, char **, int); //NP modified C.K.
   virtual void print_box(const char *); //NP modified C.K.
 
   //NP load balancing
@@ -139,110 +141,29 @@ class Domain : protected Pointers {
   void bbox(double *, double *, double *, double *);
   void box_corners();
 
-  inline int is_in_domain(double* pos); //NP modified C.K.
-  inline int is_in_subdomain(double* pos); //NP modified C.K.
-  inline int is_in_extended_subdomain(double* pos); //NP modified C.K.
-  inline double dist_subbox_borders(double* pos); //NP modified C.K.
+  //NP modified C.K in domain_I.h
+  int is_in_domain(double* pos); //NP modified C.K.
+  int is_in_subdomain(double* pos); //NP modified C.K.
+  int is_in_extended_subdomain(double* pos); //NP modified C.K.
+  double dist_subbox_borders(double* pos); //NP modified C.K.
   int is_periodic_ghost(int i); //NP modified C.K.
   bool is_owned_or_first_ghost(int i); //NP modified C.K.
+
+  //NP modified C.K for wedge
+  virtual int is_in_domain_wedge(double* pos) {return 0;} //NP modified C.K.
+  virtual int is_in_subdomain_wedge(double* pos) {return 0;} //NP modified C.K.
+  virtual int is_in_extended_subdomain_wedge(double* pos) {return 0;} //NP modified C.K.
+  virtual double dist_subbox_borders_wedge(double* pos) {return 0.;} //NP modified C.K.
+  virtual int is_periodic_ghost_wedge(int i) {return 0;} //NP modified C.K.
+
+  bool is_wedge; //NP modified C.K.
 
  private:
   double small[3];                  // fractions of box lengths
 };
 
-/* ----------------------------------------------------------------------
-   check if coordinate in domain, subdomain or extended subdomain
-   need to test with <= and >= for domain, and < and >= for subdomain
-   inlined for performance
-------------------------------------------------------------------------- */
-
-inline int Domain::is_in_domain(double* pos) //NP modified C.K.
-{
-    if
-    (
-        pos[0] >= boxlo[0] && pos[0] <= boxhi[0] &&
-        pos[1] >= boxlo[1] && pos[1] <= boxhi[1] &&
-        pos[2] >= boxlo[2] && pos[2] <= boxhi[2]
-    )   return 1;
-    return 0;
-}
-
-inline int Domain::is_in_subdomain(double* pos) //NP modified C.K.
-{
-    double checkhi[3];
-
-    // need to test with and < and >= for subdomain
-    // but need to ensure elements right at boxhi
-    // are tested correctly
-    if(subhi[0] == boxhi[0])
-        checkhi[0] = boxhi[0] + SMALL_DMBRDR;
-    else
-        checkhi[0] = subhi[0];
-
-    if(subhi[1] == boxhi[1])
-        checkhi[1] = boxhi[1] + SMALL_DMBRDR;
-    else
-        checkhi[1] = subhi[1];
-
-    if(subhi[2] == boxhi[2])
-        checkhi[2] = boxhi[2] + SMALL_DMBRDR;
-    else
-        checkhi[2] = subhi[2];
-
-    if ( pos[0] >= sublo[0] && pos[0] < checkhi[0] &&
-         pos[1] >= sublo[1] && pos[1] < checkhi[1] &&
-         pos[2] >= sublo[2] && pos[2] < checkhi[2])
-        return 1;
-    return 0;
-}
-
-inline int Domain::is_in_extended_subdomain(double* pos) //NP modified C.K.
-{
-    // called on insertion
-    // yields true if particle would be in subdomain after box extension
-    //NP from fix_pour_legacy
-    if (is_in_subdomain(pos))
-        return 1;
-    else if (dimension == 2)
-        error->all(FLERR,"Domain::is_in_extended_subdomain() not implemented for 2d");
-    else //NP dimension 3 but not in subdomain - can be in extended subdomain or not
-    {
-        bool flag = true;
-        for(int idim = 0; idim < 3; idim++)
-        {
-            //NP last or first proc in this dimension
-            if (comm->procgrid[idim] == 1) {}
-            else if(comm->myloc[idim] == comm->procgrid[idim]-1)
-                flag = flag && (pos[idim] >= sublo[idim]);
-            else if(comm->myloc[idim] == 0)
-                flag = flag && (pos[idim] <= subhi[idim]);
-            //NP other proc - standard condition
-            else
-                flag = flag && (pos[idim] >= sublo[idim] && pos[idim] < subhi[idim]);
-        }
-        if(flag) return 1;
-        return 0;
-    }
-    return 0;
-}
-
-inline double Domain::dist_subbox_borders(double* pos) //NP modified C.K.
-{
-    double deltalo[3], deltahi[3], dlo, dhi;
-
-    vectorSubtract3D(sublo,pos,deltalo);
-    vectorSubtract3D(subhi,pos,deltahi);
-    vectorAbs3D(deltalo);
-    vectorAbs3D(deltahi);
-
-    dlo = vectorMin3D(deltalo);
-    dhi = vectorMin3D(deltahi);
-
-    if(dlo < dhi)
-        return dlo;
-    return dhi;
-}
-
+//NP modified C.K.
+#include "domain_I.h"
 
 }
 

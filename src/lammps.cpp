@@ -100,7 +100,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
         universe->add_world(arg[iarg]);
         iarg++;
       }
-    } else if (strcmp(arg[iarg],"-uid") == 0) {
+    } else if (strcmp(arg[iarg],"-uid") == 0) { //NP modified C.K.
       if (iarg+2 > narg)
         error->universe_all(FLERR,"Invalid command-line argument");
       universe->id(arg[iarg+1]);
@@ -486,6 +486,7 @@ void LAMMPS::create()
   if (cuda) domain = new DomainCuda(this);
   else if (wedgeflag) domain = new DomainWedge(this); //NP modified C.K.
   else domain = new Domain(this);
+  domain->is_wedge = wedgeflag; //NP modified C.K.
 
   group = new Group(this);
   force = new Force(this);    // must be after group, to create temperature

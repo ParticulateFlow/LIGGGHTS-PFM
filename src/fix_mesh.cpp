@@ -117,10 +117,8 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
     }
 
     // construct a mesh - can be surface or volume mesh
-    //NP need to do this in post_create() so can call virtual function
-
     // just create object and return if reading data from restart file
-    //NP do not parse further args or
+    //NP do not parse further args
     if(modify->have_restart_data(this)) create_mesh_restart();
     else create_mesh(mesh_fname);
 
@@ -326,7 +324,7 @@ void FixMesh::initialSetup()
 
 void FixMesh::pre_exchange()
 {
-    // flag parallel operations on this step
+    //NP flag parallel operations on this step
     //NP pre_exchange() is called on re-neigh steps only
     pOpFlag_ = true;
 }
@@ -337,9 +335,6 @@ void FixMesh::pre_exchange()
 
 void FixMesh::pre_force(int vflag)
 {
-    //NP TODO invoke reverse comm later if needed
-    //NP should do this in final_integrate since post_force calculates values
-
     // case re-neigh step
     if(pOpFlag_)
     {
@@ -371,6 +366,9 @@ void FixMesh::pre_force(int vflag)
 
 void FixMesh::final_integrate()
 {
+    //NP invoke reverse comm if needed
+    //NP do this in here since post_force typically calculates field values
+
     mesh_->reverseComm();
 }
 
