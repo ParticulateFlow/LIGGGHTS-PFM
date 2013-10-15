@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "fix_mesh_surface_stress_servo.h"
+#include "fix_wall_gran.h"
 #include "atom.h"
 #include "force.h"
 #include "update.h"
@@ -270,7 +271,28 @@ void FixMeshSurfaceStressServo::init()
 {
     FixMeshSurfaceStress::init();
 
-    double rPaMax;
+    // check if this servo wall is used as a granular wall (gran/wall/...)
+    FixWallGran *fix_wall;
+    FixMeshSurface **FixMesh_list;
+    int found = 0;
+    for (int ifix = 0; ifix < modify->n_fixes_style("wall/gran"); ifix++) {
+      fix_wall = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+      if (fix_wall && fix_wall->is_mesh_wall()) { // wall/gran/.. fix was found and is mesh-style
+        /*NL*/ //fprintf(screen,"Searching for my id (%s) in the wall/gran/... fix with id: %s\n",id,fix_wall->id);
+        FixMesh_list = fix_wall->mesh_list();
+        for (int imesh = 0; imesh < fix_wall->n_meshes(); imesh++) {
+          if (strcmp(FixMesh_list[imesh]->id,id) == 0) {
+            found = 1;
+            break;
+          }
+        }
+        if (found) // leave also the outer loop if fix was already found
+          break;
+      }
+    }
+    if (!found)
+      error->fix_error(FLERR,this,"Servo wall is not used as a fix wall/gran/...");
+
 
     // get timestep
     reset_dt();
@@ -299,6 +321,7 @@ void FixMeshSurfaceStressServo::init()
     /*NL*/// fprintf(screen,"TEST: vel_min_ = %e and r_min = %e\n",vel_min_,r_min);
 
     // set pointers for controller
+    double rPaMax;
     switch (pv_flag_) {
     case FORCE:
       process_value_ = &f_total_[dim_];
