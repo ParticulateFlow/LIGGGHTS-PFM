@@ -263,7 +263,7 @@ void PairSphArtviscTenscorr::write_restart(FILE *fp)
 void PairSphArtviscTenscorr::read_restart(FILE *fp)
 {
   read_restart_settings(fp);
-  PairSph::allocate();
+  allocate();
 
   int i,j;
   int me = comm->me;
