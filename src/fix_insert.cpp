@@ -265,6 +265,7 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
 
   vector_flag = 1;
   size_vector = 2;
+  global_freq = 1;
 
   print_stats_start_flag = 1;
 
@@ -306,13 +307,14 @@ void FixInsert::setup(int vflag)
   // calc last step of insertion
   if(ninsert_exists)
   {
-      if(ninsert < ninsert_per)
+      if(ninsert <= ninsert_per)
         final_ins_step = first_ins_step;
       else
         final_ins_step = first_ins_step +
-                static_cast<int>(static_cast<double>(ninsert)/ninsert_per *  static_cast<double>(insert_every));
+                static_cast<int>(static_cast<double>(ninsert)/ninsert_per) *  static_cast<double>(insert_every);
 
-      /*NL*/ //fprintf(screen,"ninsert %d, ninsert_per %f insert_every %d first_ins_step %d final_ins_step %d\n",ninsert,ninsert_per,insert_every,first_ins_step,final_ins_step);
+      /*NL*/ //if (screen) fprintf(screen,"ninsert %d, ninsert_per %f insert_every %d first_ins_step %d final_ins_step %d\n",ninsert,ninsert_per,insert_every,first_ins_step,final_ins_step);
+
       if(final_ins_step < 0)
         error->fix_error(FLERR,this,"Particle insertion: Overflow - need too long for particle insertion. "
                                     "Please decrease # particles to insert or increase insertion rate");
@@ -460,10 +462,6 @@ void FixInsert::init()
     fix_multisphere = static_cast<FixMultisphere*>(modify->find_fix_style("multisphere", 0));
     if(!fix_multisphere) multisphere = NULL;
     else multisphere = &fix_multisphere->data();
-
-    //NP need to ensure particles are added to the fix rigid group
-    if(fix_multisphere && fix_multisphere->igroup != igroup)
-        error->fix_error(FLERR,this,"Fix insert command and fix multisphere command are not compatible, must be same group");
 
     // in case of new fix insert in a restarted simulation, have to add current time-step
     if(next_reneighbor > 0 && next_reneighbor < ntimestep)

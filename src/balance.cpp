@@ -630,7 +630,7 @@ int Balance::dynamic()
     //NP in case irregular is disallowed, take care borders are not shifted too far
     if(disallow_irregular())
     {
-        //NP skin in lamda coords
+        //NP skin and cut in lamda coords
         double skin = neighbor->skin / (domain->boxhi[bdim[idim]]-domain->boxlo[bdim[idim]]);
         double cut = force->pair->cutforce / (domain->boxhi[bdim[idim]]-domain->boxlo[bdim[idim]]);
         for (i = 1; i < np; i++)

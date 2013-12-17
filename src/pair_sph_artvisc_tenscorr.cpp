@@ -263,7 +263,7 @@ void PairSphArtviscTenscorr::write_restart(FILE *fp)
 void PairSphArtviscTenscorr::read_restart(FILE *fp)
 {
   read_restart_settings(fp);
-  PairSph::allocate();
+  allocate();
 
   int i,j;
   int me = comm->me;
@@ -472,6 +472,10 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
 
         // get distance and normalized distance
         r = sqrt(rsq);
+        if (r == 0.) {
+          printf("Particle %i and %i are at same position (%f, %f, %f)",i,j,xtmp,ytmp,ztmp);
+          error->one(FLERR,"Zero distance between SPH particles!");
+        }
         rinv = 1./r;
         s = r * slComInv;
 
@@ -488,7 +492,7 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
 
           dotDelVDelR = ( (v[i][0]-v[j][0])*delx + (v[i][1]-v[j][1])*dely + (v[i][2]-v[j][2])*delz );
 
-          if ( dotDelVDelR < 0.0 ) {
+          if ( dotDelVDelR < 0.0 ) { //NP Direction really important?!
             muAB = slCom * dotDelVDelR / (rsq + eta);
             rhoMeanInv = 2/(rhoi+rhoj);
             artVisc = ((- alpha * csmean[itype][jtype] * muAB + beta * muAB * muAB) * rhoMeanInv);

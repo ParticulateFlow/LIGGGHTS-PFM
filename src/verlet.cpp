@@ -46,7 +46,7 @@
 
 using namespace LAMMPS_NS;
 
-/*NL*/ #define DEBUG_VERLET false //(update->ntimestep>54500) //false  true //
+/*NL*/ #define DEBUG_VERLET false // (update->ntimestep>30000) //(update->ntimestep>54500) //false  true //
 
 /* ---------------------------------------------------------------------- */
 

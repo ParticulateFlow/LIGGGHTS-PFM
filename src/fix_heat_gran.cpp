@@ -55,7 +55,6 @@ FixHeatGran::FixHeatGran(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg
   peratom_flag = 1;      //NP 0/1 if per-atom data is stored
   size_peratom_cols = 0; //NP 0 = scalar, N = columns in peratom array
   peratom_freq = 1;
-  time_depend = 1;
 
   scalar_flag = 1; //NP total thermal energy computed
   global_freq = 1; //NP available always

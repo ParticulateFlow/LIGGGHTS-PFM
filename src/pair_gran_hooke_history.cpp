@@ -354,11 +354,15 @@ void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
 
         touch[jj] = 1;
 
-        /*NL*///fprintf(screen,"PAIR tags %d %d, mol %d %d, \n",atom->tag[i],atom->tag[j],atom->molecule[i],atom->molecule[j]);
-        /*NL*///fprintf(screen,"radii %f, %f, rsq %f, radsum*radsum %f\n",radius[i],radius[j],rsq,radsum*radsum);
-        /*NL*///printVec3D(screen,"xi",x[i]);
-        /*NL*///printVec3D(screen,"xj",x[j]);
-        /*NL*///error->one(FLERR,"touch");
+        /*NL*///if(j > atom->nlocal) {
+        /*NL*///  fprintf(screen,"PAIR tags %d %d at step "BIGINT_FORMAT"\n",atom->tag[i],atom->tag[j],update->ntimestep);
+        /*NL*/  //fprintf(screen,"radii %f, %f, rsq %f, radsum*radsum %f\n",radius[i],radius[j],rsq,radsum*radsum);
+        /*NL*///  printVec3D(screen,"xi",x[i]);
+        /*NL*///  printVec3D(screen,"vi",v[i]);
+        /*NL*///  printVec3D(screen,"xj",x[j]);
+        /*NL*///  printVec3D(screen,"vj",v[j]);
+        /*NL*///  error->one(FLERR,"touch");
+        /*NL*///}
 
         shear = &allshear[dnum()*jj];
 
@@ -573,9 +577,15 @@ void PairGranHookeHistory::compute_force_eval(int eflag, int vflag,int addflag)
         //NP call to compute_pair_gran_local
         if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
 
-        /*NL*/ //if(update->ntimestep > 33000 && (atom->tag[i] == 1 || atom->tag[i] == 37) && (atom->tag[j] == 1 || atom->tag[j] == 37)) fprintf(screen,"contact at %d, overlap %f\n",update->ntimestep,deltan);
-        /*NL*/ //fprintf(screen,"contact at step %d, force %f %f %f tags %d %d\n",update->ntimestep,fx,fy,fz,atom->tag[i],atom->tag[j]);
-        /*NL*/ //error->one(FLERR,"end");
+        /*NL*/ //if(3173 == update->ntimestep && (atom->tag[i] == 262 || atom->tag[j] == 262)) {
+        /*NL*/ //    fprintf(screen,"contact at step "BIGINT_FORMAT", proc %d overlap %f force %f %f %f fs %f %f %f tags %d %d\n",
+        /*NL*/ //    update->ntimestep,comm->me,deltan, fx,fy,fz,fs1,fs2,fs3,atom->tag[i],atom->tag[j]);
+        /*NL*/ //}//error->one(FLERR,"end");      if(cpl && addflag) cpl->add_pair(i,j,fx,fy,fz,tor1,tor2,tor3,shear);
+
+        /*NL*/ //if(18201 == update->ntimestep && (atom->tag[i] == 714 || atom->tag[j] == 714)) {
+        /*NL*/ //    fprintf(screen,"contact at step "BIGINT_FORMAT", shear %f %f %f vtr %f %f %f gammat*vtr %f %f %f tags %d %d\n",
+        /*NL*/ //                   update->ntimestep,shear[0],shear[1],shear[2],vtr1,vtr2,vtr3,gammat*vtr1,gammat*vtr2,gammat*vtr3,atom->tag[i],atom->tag[j]);}
+        /*NL*/ //error->one(FLERR,"end");}
 
         if (evflag) ev_tally_xyz(i,j,nlocal,0,0.0,0.0,fx,fy,fz,delx,dely,delz);
       }
@@ -709,7 +719,7 @@ void PairGranHookeHistory::init_granular()
 
   if(rollingflag)
     coeffRollFrict1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingFriction","property/global","peratomtypepair",max_type,max_type,force->pair_style));
-  if(rollingflag == 2 || rollingflag == 3) // epsd model
+  if(rollingflag == 2) // damping for original epsd model only
     coeffRollVisc1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRollingViscousDamping","property/global","peratomtypepair",max_type,max_type,force->pair_style));
   if(viscousflag)
   {
@@ -721,7 +731,8 @@ void PairGranHookeHistory::init_granular()
   if(cohesionflag)
     cohEnergyDens1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("cohesionEnergyDensity","property/global","peratomtypepair",max_type,max_type,force->pair_style));
 
-  if(charVelflag) charVel1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,force->pair_style));
+  if(charVelflag)
+      charVel1=static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,force->pair_style));
 
   //pre-calculate parameters for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
@@ -778,7 +789,7 @@ void PairGranHookeHistory::init_granular()
 
           coeffFrict[i][j] = coeffFrict1->compute_array(i-1,j-1);
           if(rollingflag) coeffRollFrict[i][j] = coeffRollFrict1->compute_array(i-1,j-1);
-          if(rollingflag == 2 || rollingflag == 3) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
+          if(rollingflag == 2) coeffRollVisc[i][j] = coeffRollVisc1->compute_array(i-1,j-1);
           /*NL*/ //if(rollingflag == 2) fprintf(screen,"Init viscous coefficient: itype = %i and ytype = %i and coef = %f\n",i-1,j-1,coeffRollVisc[i][j]);
 
           /*NL*/ //fprintf(screen,"");
@@ -790,7 +801,15 @@ void PairGranHookeHistory::init_granular()
       }
   }
 
-  if(charVelflag) charVel = charVel1->compute_scalar();
+  if(charVelflag)
+  {
+      charVel = charVel1->compute_scalar();
+      if(sanity_checks)
+      {
+            if(strcmp(update->unit_style,"si") == 0  && charVel < 1e-2)
+                 error->all(FLERR,"characteristicVelocity >= 1e-2 required for SI units");
+      }
+  }
 
   // error checks on coarsegraining
   if((rollingflag || cohesionflag) && force->cg_active())

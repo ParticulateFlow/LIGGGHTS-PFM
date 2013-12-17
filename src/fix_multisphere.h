@@ -48,7 +48,8 @@ enum
     MS_COMM_FW_V_OMEGA,
     MS_COMM_FW_F_TORQUE,
     MS_COMM_REV_X_V_OMEGA,
-    MS_COMM_REV_V_OMEGA
+    MS_COMM_REV_V_OMEGA,
+    MS_COMM_REV_IMAGE
 };
 
 class FixMultisphere : public Fix
@@ -110,15 +111,17 @@ class FixMultisphere : public Fix
       int pack_reverse_comm(int, int, double*);
       int pack_reverse_comm_x_v_omega(int, int, double*);
       int pack_reverse_comm_v_omega(int, int, double*);
+      int pack_reverse_comm_image(int n, int first, double *buf);
       void unpack_reverse_comm(int, int*, double*);
       void unpack_reverse_comm_x_v_omega(int, int*, double*);
       void unpack_reverse_comm_v_omega(int, int*, double*);
+      void unpack_reverse_comm_image(int n, int *list, double *buf);
 
       int dof(int);
       double ** get_dump_ref(int &nb, int &nprop, char* prop);
       double max_r_bound();
 
-      void add_remove_callback(class FixRemove *ptr);
+      void add_remove_callback(FixRemove *ptr);
 
       // public inline access
 
@@ -132,6 +135,7 @@ class FixMultisphere : public Fix
           }
           return multisphere_.extract(name,len1,len2);
       }
+
 
       inline class MultisphereParallel& data()
       { return multisphere_;}
@@ -150,6 +154,12 @@ class FixMultisphere : public Fix
 
       inline int tag_max_body()
       { return data().tag_max_body(); }
+
+      inline double extract_ke()
+      { return data().extract_ke(); }
+
+      inline double extract_rke()
+      { return data().extract_rke(); }
 
       inline void set_v_body_from_atom_index(int iatom,double *vel)
       { multisphere_.set_v_body(body_[iatom],vel); }

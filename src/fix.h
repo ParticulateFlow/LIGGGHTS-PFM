@@ -98,9 +98,12 @@ class Fix : protected Pointers {
 
   virtual int setmask() = 0;
 
+  virtual void post_create_pre_restart() {} //NP modified C.K.
   virtual void post_create() {} //NP modified C.K.
   virtual void pre_delete(bool) {} //NP modified C.K.
-  virtual void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi) {} //NP modified C.K.
+  virtual void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi) {
+    UNUSED(xlo); UNUSED(xhi); UNUSED(ylo); UNUSED(yhi); UNUSED(zlo); UNUSED(zhi); //NP modified R.B.
+  } //NP modified C.K.
   virtual void init() {}
   virtual void init_list(int, class NeighList *) {}
   virtual void setup(int) {}

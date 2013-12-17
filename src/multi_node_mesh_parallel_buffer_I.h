@@ -293,7 +293,7 @@
 
       int nsend = 0;
 
-      if(operation == OPERATION_COMM_EXCHANGE || operation == OPERATION_COMM_BORDERS)
+      if(OPERATION_COMM_EXCHANGE == operation || OPERATION_COMM_BORDERS == operation)
       {
           //NP push center first to test against
           nsend += MultiNodeMesh<NUM_NODES>::center_.pushElemListToBuffer(n,list,&(buf[nsend]),operation);
@@ -304,7 +304,7 @@
           return nsend;
       }
 
-      if(operation == OPERATION_COMM_FORWARD)
+      if(OPERATION_COMM_FORWARD == operation)
       {
           /*NL*///fprintf(this->screen,"comm forward, translate is %s\n",translate?"yes":"no");
           //NP node_orig cannot change during a run
@@ -333,7 +333,7 @@
 
       //NP OPERATION_RESTART not implemented, is per-element operation, not a list operation
 
-      if(operation == OPERATION_COMM_EXCHANGE || operation == OPERATION_COMM_BORDERS)
+      if(OPERATION_COMM_EXCHANGE == operation || OPERATION_COMM_BORDERS == operation)
       {
           nrecv += MultiNodeMesh<NUM_NODES>::center_.popElemListFromBuffer(first,n,&(buf[nrecv]),operation);
           nrecv += MultiNodeMesh<NUM_NODES>::node_.popElemListFromBuffer(first,n,&(buf[nrecv]),operation);
@@ -343,7 +343,7 @@
           return nrecv;
       }
 
-      if(operation == OPERATION_COMM_FORWARD)
+      if(OPERATION_COMM_FORWARD == operation)
       {
           //NP node_orig cannot change during a run
           //NP currently proc updates owned and ghost elements for moving mesh
@@ -367,7 +367,7 @@
   {
       int nsend = 0;
 
-      if(operation == OPERATION_COMM_REVERSE)
+      if(OPERATION_COMM_REVERSE == operation)
       {
         //NP no reverse comm here
         return nsend;
@@ -389,7 +389,7 @@
   {
       int nrecv = 0;
 
-      if(operation == OPERATION_COMM_REVERSE)
+      if(OPERATION_COMM_REVERSE == operation)
       {
         //NP no reverse comm here
         return nrecv;
@@ -415,13 +415,13 @@
       //NP need to implement for per-element and per-list calls here
       //NP since per-list = n * per_element
 
-      if(operation == OPERATION_RESTART)
+      if(OPERATION_RESTART == operation)
       {
           size_buf += MultiNodeMesh<NUM_NODES>::node_.elemBufSize();
           return size_buf;
       }
 
-      if(operation == OPERATION_COMM_EXCHANGE || operation == OPERATION_COMM_BORDERS)
+      if(OPERATION_COMM_EXCHANGE == operation || OPERATION_COMM_BORDERS == operation)
       {
           size_buf += MultiNodeMesh<NUM_NODES>::center_.elemBufSize();
           size_buf += MultiNodeMesh<NUM_NODES>::node_.elemBufSize();
@@ -433,7 +433,7 @@
 
       //NP OPERATION_COMM_FORWARD, OPERATION_COMM_REVSERSE are list operations, not per-element operations
       //NP need to implement this here since elemListBufSize() refers to here
-      if(operation == OPERATION_COMM_FORWARD)
+      if(OPERATION_COMM_FORWARD == operation)
       {
           //NP node_orig cannot change during a run
           //NP if(translate || rotate || scale)
@@ -441,7 +441,7 @@
           return size_buf;
       }
 
-      if(operation == OPERATION_COMM_REVERSE)
+      if(OPERATION_COMM_REVERSE == operation)
       {
         //NP nothing todo here
         //NP need to implement this
@@ -465,14 +465,14 @@
 
       //NP OPERATION_COMM_REVERSE is a list operation, not per-element operation
 
-      if(operation == OPERATION_RESTART)
+      if(OPERATION_RESTART == operation)
       {
           nsend += MultiNodeMesh<NUM_NODES>::node_.pushElemToBuffer(i,&(buf[nsend]),operation);
 
           return nsend;
       }
 
-      if(operation == OPERATION_COMM_EXCHANGE || operation == OPERATION_COMM_BORDERS)
+      if(OPERATION_COMM_EXCHANGE == operation || OPERATION_COMM_BORDERS == operation)
       {
           //NP push center first to test against
           nsend += MultiNodeMesh<NUM_NODES>::center_.pushElemToBuffer(i,&(buf[nsend]),operation);
@@ -502,9 +502,9 @@
 
       //NP OPERATION_COMM_REVERSE is a list operation, not per-element operation
 
-      if(operation == OPERATION_RESTART)
+      if(OPERATION_RESTART == operation)
       {
-          MultiVectorContainer<double,NUM_NODES,3> nodeTmp;
+          MultiVectorContainer<double,NUM_NODES,3> nodeTmp("nodeTmp");
           //NP pop node info from buffer and call addElement so everything is initialized correctly
           nrecv += nodeTmp.popElemFromBuffer(&(buf[nrecv]),operation);
           this->addElement(nodeTmp.begin()[0],-1);
@@ -518,7 +518,7 @@
           return nrecv;
       }
 
-      if(operation == OPERATION_COMM_EXCHANGE || operation == OPERATION_COMM_BORDERS)
+      if(OPERATION_COMM_EXCHANGE == operation || OPERATION_COMM_BORDERS == operation)
       {
           nrecv += MultiNodeMesh<NUM_NODES>::center_.popElemFromBuffer(&(buf[nrecv]),operation);
           nrecv += MultiNodeMesh<NUM_NODES>::node_.popElemFromBuffer(&(buf[nrecv]),operation);

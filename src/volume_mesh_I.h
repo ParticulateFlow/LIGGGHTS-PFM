@@ -379,7 +379,7 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::buildNeighbours()
       {
         //NP continue of do not share any node
         int iNode(0), jNode(0), iEdge(0), jEdge(0);
-        if(!this->shareNode(i,j,iNode,jNode)) continue;
+        if(0 == this->nSharedNodes(i,j)) continue;
 
         if(shareFace(i,j,iFace,jFace))
         {

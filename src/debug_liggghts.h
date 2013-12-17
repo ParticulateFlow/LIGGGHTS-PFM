@@ -28,16 +28,30 @@
 #include "style_fix.h"
 #include "vector_liggghts.h"
 #include "container.h"
+#include "atom.h"
 
 namespace LAMMPS_NS {
 
 inline void __debug__(LAMMPS* lmp)
 {
     /*NL*///fprintf(lmp->screen,"bond_hist %d bond_per_atom %d\n",lmp->atom->bond_hist,lmp->atom->bond_per_atom);
-    /*NL*///fprintf(lmp->screen,"test");
+    /*NL*///fprintf(lmp->screen,"step "BIGINT_FORMAT" nparticles %d \n",lmp->update->ntimestep,lmp->atom->nlocal);
     /*NL*///printVec3D(lmp->screen,"pos for tag 206",lmp->atom->x[lmp->atom->map(206)]);
     /*NL*///printVec3D(lmp->screen,"vel for tag 206",lmp->atom->v[lmp->atom->map(206)]);
     /*NL*///printVec3D(lmp->screen,"f for tag 206",lmp->atom->f[lmp->atom->map(206)]);
+     /*NL*/Atom *atom = lmp->atom;
+     /*NL*/int nlocal = atom->nlocal;
+     /*NL*///int nghost = atom->nghost;
+     /*NL*///int nall = atom->nlocal+atom->nghost;
+
+     /*NL*/for(int i = 0; i < nlocal; i++)
+     /*NL*/{
+     /*NL*/  printVec3D(lmp->screen,"pos",atom->x[i]);
+     /*NL*/  //if(atom->tag[i] == 25 || atom->tag[i] == 30 )fprintf(lmp->screen,"tag %d vel %f %f %f \n",atom->tag[i],atom->v[i][0],atom->v[i][1],atom->v[i][2]);
+     /*NL*/  //if(atom->map(atom->tag[i]) >= nlocal)
+     /*NL*/   //lmp->error->all(FLERR,"catch");
+     /*NL*/}
+
 /*NP
     for(int i = 0; i < lmp->modify->nfix; i++)
     {

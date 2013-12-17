@@ -205,6 +205,7 @@ void FixMultisphere::unpack_comm_image_displace(int n, int first, double *buf)
     {
         aimage[i] = static_cast<int>(buf[m++]);
         bufToVector3D(displace_[i],buf,m);
+        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" proc %d COMM: atom tag %d has image %d\n",update->ntimestep,comm->me,atom->tag[i],aimage[i]);
     }
 }
 
@@ -272,6 +273,8 @@ int FixMultisphere::pack_reverse_comm(int n, int first, double *buf)
         return pack_reverse_comm_x_v_omega(n,first,buf);
     else if(rev_comm_flag_ == MS_COMM_REV_V_OMEGA)
         return pack_reverse_comm_v_omega(n,first,buf);
+    else if(rev_comm_flag_ == MS_COMM_REV_IMAGE)
+        return pack_reverse_comm_image(n,first,buf);
     else error->fix_error(FLERR,this,"FixMultisphere::pack_reverse_comm internal error");
     return 0;
 }
@@ -338,6 +341,34 @@ int FixMultisphere::pack_reverse_comm_v_omega(int n, int first, double *buf)
     return 7;
 }
 
+/* ---------------------------------------------------------------------- */
+
+int FixMultisphere::pack_reverse_comm_image(int n, int first, double *buf)
+{
+    int i,m,last,tag,flag;
+
+    int  *image = atom->image;
+    double *corner_ghost = fix_corner_ghost_->vector_atom;
+
+    m = 0;
+    last = first + n;
+    for (i = first; i < last; i++) {
+
+        //NP flag = 0 if single particle or body NOT owned
+        //NP flag = 1 if body owned
+        tag = body_[i];
+
+        if(tag < 0) flag = 0;
+        else if(multisphere_.map(tag) >= 0) flag = 1;
+        else if(corner_ghost[i] == 1.) flag = 1;
+        else flag = 0;
+
+        buf[m++] = static_cast<double>(flag);
+        buf[m++] = static_cast<double>(image[i]);
+    }
+    return 2;
+}
+
 /* ----------------------------------------------------------------------
    unpack reverse comm
 ------------------------------------------------------------------------- */
@@ -348,6 +379,8 @@ void FixMultisphere::unpack_reverse_comm(int n, int *list, double *buf)
         unpack_reverse_comm_x_v_omega(n,list,buf);
     else if(rev_comm_flag_ == MS_COMM_REV_V_OMEGA)
         unpack_reverse_comm_v_omega(n,list,buf);
+    else if(rev_comm_flag_ == MS_COMM_REV_IMAGE)
+        unpack_reverse_comm_image(n,list,buf);
     else error->fix_error(FLERR,this,"FixMultisphere::unpack_reverse_comm internal error");
 }
 
@@ -406,6 +439,33 @@ void FixMultisphere::unpack_reverse_comm_v_omega(int n, int *list, double *buf)
                 corner_ghost[j] = 1.;
         }
         else m += 6;
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMultisphere::unpack_reverse_comm_image(int n, int *list, double *buf)
+{
+    int i,j,flag,m = 0;
+
+    int nlocal = atom->nlocal;
+    int *image = atom->image;
+    double *corner_ghost = fix_corner_ghost_->vector_atom;
+
+    for (i = 0; i < n; i++) {
+        j = list[i];
+
+        flag = static_cast<int>(buf[m++]);
+        if(flag)
+        {
+            image[j] = static_cast<int>(buf[m++]);
+
+            //NP if unpacking at ghost, its a 'corner ghost', need to ensure that
+            //NP information is transported across corners
+            if(j >= nlocal)
+                corner_ghost[j] = 1.;
+        }
+        else m += 1;
     }
 }
 

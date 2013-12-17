@@ -462,7 +462,7 @@ void FixBondCreateGran::post_integrate()
         int found = 0;
         for(int jp = 0; jp < npartner[j]; jp++)
             if(partner[j][jp] == tag[i]) found = 1;
-        if (!found) error->all(FLERR,"Internal fix bond/create error");
+        if (!found) error->one(FLERR,"Internal fix bond/create error");
 
         // apply probability constraint
         // MIN,MAX insures values are added in same order on different procs

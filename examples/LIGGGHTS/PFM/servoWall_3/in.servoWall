@@ -107,7 +107,7 @@ timestep	${dt}
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #import triangular mesh from cad
-fix   cad3 all mesh/surface/stress/servo file plate.stl type 1 scale ${cylRadius} move 0. 0. ${pz2} com 0. 0. ${pz2} target_val ${ctrlForce} vel_max ${velMax} dim z ctrlPV force ratio ${ratio} mode auto 
+fix   cad3 all mesh/surface/stress/servo file mesh/plate.stl type 1 scale ${cylRadius} move 0. 0. ${pz2} com 0. 0. ${pz2} target_val ${ctrlForce} vel_max ${velMax} dim z ctrlPV force ratio ${ratio} mode auto 
 
 #use the imported mesh as granular wall
 fix		meshWall all wall/gran/hertz/history mesh n_meshes 1 meshes cad3

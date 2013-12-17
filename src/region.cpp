@@ -592,7 +592,7 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
 
         // point is in region
         // assume every proc can evaluate this
-        //NP assumption not valid for region tetmesh
+        //NP assumption not valid for region tetmesh?
         if(!cutflag)
         {
             if(match(pos[0],pos[1],pos[2]))
@@ -604,10 +604,10 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
         }
         else
         {
-            if(match(pos[0],pos[1],pos[2]) && !match_cut(pos,cut) )
+            if(match(pos[0],pos[1],pos[2]))
             {
                 n_in_global++;
-                if(domain->is_in_subdomain(pos))
+                if(domain->is_in_subdomain(pos) && !match_cut(pos,cut) )
                     n_in_local++;
             }
         }
@@ -626,10 +626,13 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
     vol_global = static_cast<double>(n_in_global_all)/static_cast<double>(n_test*comm->nprocs) * vol_bbox;
     vol_local  = static_cast<double>(n_in_local )/static_cast<double>(n_test) * vol_bbox;
 
-    // sum of local volumes will not be equal to global volume because of
-    // different random generator states - correct this now
+    //NP sum of local volumes will not be equal to global volume because of
+    //NP different random generator states and in case of all in yes
+    //NP correct this now
     MPI_Sum_Scalar(vol_local,vol_local_all,world);
     vol_local *= (vol_global/vol_local_all);
+    /*NL*/ //fprintf(screen,"local vol %f global vol %f n_test %d n_in_global_all %d\n",vol_local,vol_global,n_test,n_in_global_all);
+    /*NL*/ //fprintf(screen,"bbox extend x %f %f y %f %f z % f %f\n",extent_xlo,extent_xhi,extent_ylo,extent_yhi,extent_zlo,extent_zhi);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -113,7 +113,7 @@
       d = resolveFaceContactBary(nTri,cSphere,node0ToSphereCenter,delta);
       break;
     default:
-      /*NL*/ fprintf(screen,"barySign %d bary %f %f %f tag %d tri id %d\n",barySign,bary[0],bary[1],bary[2],this->atom->tag[iPart],id(nTri));
+      /*NL*/ if(screen) fprintf(screen,"barySign %d bary %f %f %f tag %d tri id %d\n",barySign,bary[0],bary[1],bary[2],this->atom->tag[iPart],id(nTri));
       /*NL*/ //printVec3D(screen,"node0ToSphereCenter",node0ToSphereCenter);
       /*NL*/ //printVec3D(screen,"cSphere",cSphere);
       /*NL*/ //printVec3D(screen,"n[0]",n[0]);
@@ -409,7 +409,7 @@
 
     if(chosen >= nTri || chosen < 0)
     {
-        /*NL*/ fprintf(this->screen,"mesh id %s chosen %d nTri %d\n",mesh_id_,chosen,nTri);
+        /*NL*/ if(screen) fprintf(this->screen,"mesh id %s chosen %d nTri %d\n",mesh_id_,chosen,nTri);
         error->one(FLERR,"TriMesh::generate_random error");
         return -1;
     }

@@ -44,6 +44,7 @@
 #include "math_const.h"
 #include "memory.h"
 #include "error.h"
+#include "neighbor.h"
 //NP modified C.K.
 /*NL*/#include "lbalance.h"
 
@@ -96,6 +97,7 @@ Domain::Domain(LAMMPS *lmp) : Pointers(lmp)
   regions = NULL;
 
   /*NL*/ lbalance = NULL;
+  is_wedge = false; //NP modified C.K.
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1441,41 +1443,3 @@ void Domain::box_corners()
   lamda2x(corners[7],corners[7]);
 }
 
-//NP modified C.K.
-/* ----------------------------------------------------------------------
-   domain checks - not used very often, so not inlined
-------------------------------------------------------------------------- */
-
-int Domain::is_periodic_ghost(int i) //NP modified C.K.
-{
-    int idim;
-    int nlocal = atom->nlocal;
-    double *x = atom->x[i];
-
-    if(i < nlocal) return 0;
-
-    else
-    {
-        for(idim = 0; idim < 3; idim++)
-            if ((x[idim] < boxlo[idim] || x[idim] > boxhi[idim]) && periodicity[idim])
-                return 1;
-    }
-    return 0;
-}
-
-int Domain::is_periodic_ghost_of_owned(int i) //NP modified C.K.
-{
-    int idim;
-    int nlocal = atom->nlocal;
-    double *x = atom->x[i];
-
-    if(i < nlocal) return 0;
-
-    else
-    {
-        for(idim = 0; idim < 3; idim++)
-            if ((x[idim] < boxlo[idim] || x[idim] > boxhi[idim]) && periodicity[idim] && 1 == comm->procgrid[idim])
-                return 1;
-    }
-    return 0;
-}

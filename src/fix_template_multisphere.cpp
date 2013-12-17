@@ -204,6 +204,11 @@ void FixTemplateMultisphere::init()
     // types are consecutive if no double usage and min/max is met
     if(type_min != 1 || type_max != n_fixes)
         error->fix_error(FLERR,this,"multisphere template types have to be consecutive starting from 1");
+
+    //NP need to ensure particles are added to the fix rigid group
+    FixMultisphere *fix_multisphere = static_cast<FixMultisphere*>(modify->find_fix_style("multisphere", 0));
+    if(fix_multisphere && fix_multisphere->igroup != igroup)
+        error->fix_error(FLERR,this,"Fix particletemplate/multisphere command and fix multisphere command are not compatible, must be same group");
 }
 
 /* ----------------------------------------------------------------------

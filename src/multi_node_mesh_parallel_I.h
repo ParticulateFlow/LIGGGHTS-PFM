@@ -589,7 +589,7 @@
 
       if(sizeGlobal() != sizeGlobalOrig())
       {
-        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
+        /*NL*/ if(this->screen) fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
         char errstr[500];
         sprintf(errstr,"Mesh (id %s): Mesh elements have been lost / left the domain. Please use "
                        "'boundary m m m' or scale/translate/rotate the mesh or change its dynamics",
@@ -671,7 +671,7 @@
 
       if(sizeGlobal() != sizeGlobalOrig())
       {
-        /*NL*/ fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
+        /*NL*/ if(this->screen) fprintf(this->screen,"orig %d now %d\n", sizeGlobalOrig(),sizeGlobal());
         this->error->all(FLERR,"Mesh elements have been lost");
       }
 
@@ -894,7 +894,7 @@
                   // find elements within slab boundaries lo/hi using <= and >=
                   //NP   for first swaps in a dim, check owned and ghost
                   //NP   for later swaps in a dim, only check newly arrived ghosts
-                  //NP store sent atom indices in list for use in future timesteps
+                  //NP store sent element indices in list for use in future timesteps
 
                   if (ineed % 2 == 0)
                   {

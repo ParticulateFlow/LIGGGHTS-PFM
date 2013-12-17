@@ -466,10 +466,11 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::buildNeighbours()
     {
       for(int j = i+1; j < nall; j++)
       {
-        //NP continue of do not share any node
+        //NP continue of do not share any node so can not share an edge
         int iNode(0), jNode(0), iEdge(0), jEdge(0);
-        if(!this->shareNode(i,j,iNode,jNode)) continue;
 
+        //NP assumption: 2 surface elements only share 1 edge at maximum
+        //NP so for duplicate elements, only 1 edge is handled here!!
         if(shareEdge(i,j,iEdge,jEdge))
           handleSharedEdge(i,iEdge,j,jEdge, areCoplanar(TrackingMesh<NUM_NODES>::id(i),TrackingMesh<NUM_NODES>::id(j)));
       }
@@ -513,8 +514,8 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
     int nall = this->sizeLocal()+this->sizeGhost();
     int me = this->comm->me;
 
-    // check duplicate elements, n^2 operation
-    //NP doing here makes it a local n^2 operation
+    // check duplicate elements, n^2/2 operation
+    //NP doing here makes it a local n^2/2 operation
     //NP checking local elements only is ok, since if they are
     //NP duplicate, they must be owned by same proc
     for(int i = 0; i < nlocal; i++)
@@ -565,7 +566,8 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
         //NP no error there because could be caused by duplicate faces
         fprintf(this->screen,"Mesh %s: %d mesh elements have more than %d neighbors \n",
                 this->mesh_id_,this->nTooManyNeighs(),NUM_NEIGH_MAX);
-        this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. Possibly corrupt elements with too many neighbors");
+        this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. Possibly corrupt elements with too many neighbors.\n"
+                                "If you know what you're doing, you can try to change the definition of SurfaceMeshBase in tri_mesh.h and recompile");
     }
 
     if(nOverlapping() > 0)
@@ -656,14 +658,14 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanar(int tag_a, int tag_b)
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
     /*NL*/ //if(127 == tag_a || 127 == tag_b){
-    /*NL*/ // fprintf(this->screen,"a %d b %d  dot %f\n",tag_a,tag_b, dot);
+    /*NL*/ // fprintf(this->screen,"a %d b %d  dot %f curvature_ %f\n",tag_a,tag_b, dot,curvature_);
     /*NL*/ // printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
     /*NL*/ // printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
     /*NL*/ // if(fabs(dot) > curvature_) fprintf(this->screen,"tag_a %d tag_b %d  are coplanar \n",tag_a,tag_b);
     /*NL*/ //}
 
     // need fabs in case surface normal is other direction
-    if(fabs(dot) > curvature_) return true;
+    if(fabs(dot) >= curvature_) return true;
     else return false;
 }
 
@@ -754,6 +756,8 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::coplanarNeighsOverlap(int iSrf,int iE
     dot1 = vectorDot3D(vecI,edgeN);
     dot2 = vectorDot3D(vecJ,edgeN);
 
+    /*NL*///fprintf(this->screen,"surfaces %d %d dot1*dot2 %f\n",iSrf,jSrf,dot1*dot2);
+
     if(dot1*dot2 > 0.)
     {
         if(TrackingMesh<NUM_NODES>::verbose())
@@ -773,7 +777,7 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::coplanarNeighsOverlap(int iSrf,int iE
         }
 
         nOverlapping_++;
-        /*NL*///int a,b;fprintf(this->screen,"i %d j %d share node: %s\n",iSrf,jSrf,MultiNodeMesh<NUM_NODES>::shareNode(iSrf,jSrf,a,b)?"yes":"no");
+        /*NL*///fprintf(this->screen,"i %d j %d share node: %s\n",iSrf,jSrf,MultiNodeMesh<NUM_NODES>::shareNode(iSrf,jSrf,a,b)?"yes":"no");
         //this->error->warning(FLERR,"Fix mesh: Check overlapping mesh elements");
         return true;
     }
@@ -814,23 +818,29 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::growSurface(int iSrf, double by)
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::shareEdge(int iSrf, int jSrf, int &iEdge, int &jEdge)
 {
-    int i,j;
-    if(this->shareNode(iSrf,jSrf,i,j)){
+    int iNode1,jNode1,iNode2,jNode2;
+    if(this->share2Nodes(iSrf,jSrf,iNode1,jNode1,iNode2,jNode2)){
       // following implementation of shareNode(), the only remaining option to
-      // share an edge is that the next node of iSrf is equal to the previous
+      // share an edge is that the next node of iSrf is equal to the next or previous
       // node if jSrf
-      if(i==0 && MultiNodeMesh<NUM_NODES>::nodesAreEqual(iSrf,NUM_NODES-1,jSrf,(j+1)%NUM_NODES)){
-        iEdge = NUM_NODES-1;
-        jEdge = j;
-        return true;
-      }
-      if(MultiNodeMesh<NUM_NODES>::nodesAreEqual
-            (iSrf,(i+1)%NUM_NODES,jSrf,(j-1+NUM_NODES)%NUM_NODES)){
-        iEdge = i;//(ii-1+NUM_NODES)%NUM_NODES;
-        jEdge = (j-1+NUM_NODES)%NUM_NODES;
-        return true;
-      }
+      /*NL*/ //fprintf(this->screen,"surfaces %d %d do share nodes %d %d\n",iSrf,jSrf,i,j);
+
+      //NP if nodes are 0 and 2, then edge index is 2
+      if(2 == iNode1+iNode2)
+        iEdge = 2;
+      //NP otherwise them minimum node index is the edge index
+      else
+        iEdge = MathExtraLiggghts::min(iNode1,iNode2);
+
+      //NP same for j
+      if(2 == jNode1+jNode2)
+        jEdge = 2;
+      else
+        jEdge = MathExtraLiggghts::min(jNode1,jNode2);
+
+      return true;
     }
+    /*NL*/ //fprintf(this->screen,"surfaces %d %d do not share edge\n",iSrf,jSrf);
     iEdge = -1; jEdge = -1;
     return false;
 }
@@ -841,6 +851,9 @@ template<int NUM_NODES, int NUM_NEIGH_MAX>
 void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge, int jSrf, int jEdge,
                                             bool coplanar, bool neighflag)
 {
+    //NP neighflag = true: build both neighbors and edge activity
+    //NP neighflag = false: build edge activity only
+
     if(neighflag)
     {
         if(nNeighs_(iSrf) == NUM_NEIGH_MAX || nNeighs_(jSrf) == NUM_NEIGH_MAX)
@@ -886,7 +899,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge,
             edgeActive(jSrf)[jEdge] = false;
         }
     }
-    else
+    else // coplanar
     {
         if(!coplanar) this->error->one(FLERR,"internal error");
         /*NL*/ //if(127 == TrackingMesh<NUM_NODES>::id(iSrf) || 127 == TrackingMesh<NUM_NODES>::id(jSrf))fprintf(this->screen,"Coplanar %d and %d\n",TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
@@ -936,14 +949,14 @@ int SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleCorner(int iSrf, int iNode,
     /*NL*/ //       TrackingMesh<NUM_NODES>::id(iSrf) == maxId?"yes":"no",
     /*NL*/ //       ((hasTwoColinearEdges || !anyActiveEdge)||(TrackingMesh<NUM_NODES>::id(iSrf) != maxId))?"deact":"act");
 
-    //NP deactiveate if
+    //NP deactiveate all "incarnations" of a corner if
     //NP (a) any 2 colinear edges OR
     //NP (b) all edges deactivated
 
-    // deactivate all
+    //NP deactivate all
     if(hasTwoColinearEdges || !anyActiveEdge)
         cornerActive(iSrf)[iNode] = false;
-    // let the highest ID live
+    //NP deactivate all but one, let the highest ID live
     else if(TrackingMesh<NUM_NODES>::id(iSrf) == maxId)
         cornerActive(iSrf)[iNode] = true;
     else
@@ -953,6 +966,9 @@ int SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleCorner(int iSrf, int iNode,
 }
 
 /* ---------------------------------------------------------------------- */
+
+//NP recursive algorithm returns anyActiveEdge
+//NP anyActiveEdge = true if any of the edges ending at the node is active
 
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::checkNodeRecursive(int iSrf,double *nodeToCheck,

@@ -35,6 +35,10 @@
   template<int NUM_NODES>
   MultiNodeMesh<NUM_NODES>::MultiNodeMesh(LAMMPS *lmp)
   : AbstractMesh(lmp),
+    node_("node"),
+    nodesLastRe_("nodesLastRe"),
+    center_("center"),
+    rBound_("rBound"),
     node_orig_(0),
     precision_(EPSILON_PRECISION),
     autoRemoveDuplicates_(false),
@@ -231,20 +235,25 @@
   }
 
   /* ----------------------------------------------------------------------
-   return the lowest iNode/jNode combination that is shared
+   return if elemens share node, returns lowest iNode and corresponding jNode
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  bool MultiNodeMesh<NUM_NODES>::shareNode(int iElem, int jElem, int &iNode, int &jNode)
+  bool MultiNodeMesh<NUM_NODES>::share2Nodes(int iElem, int jElem,
+        int &iNode1, int &jNode1, int &iNode2, int &jNode2)
   {
     // broad phase
     double dist[3], radsum;
+    int nShared = 0;
     vectorSubtract3D(center_(iElem),center_(jElem),dist);
     radsum = rBound_(iElem) + rBound_(jElem);
+
+    /*NL*/ //fprintf(this->screen,"shareNode indices %d %d\n",iElem,jElem);
+
     if(vectorMag3DSquared(dist) > radsum*radsum)
     {
-        iNode = -1; jNode = -1;
-        /*NL*/ //fprintf(this->screen,"shareNode broad phase false\n");
+        iNode1 = jNode1 = iNode2 = jNode2 = -1;
+        /*NL*/ //fprintf(this->screen,"  shareNode broad phase false\n");
         return false;
     }
 
@@ -252,14 +261,25 @@
     for(int i=0;i<NUM_NODES;i++){
       for(int j=0;j<NUM_NODES;j++){
         if(MultiNodeMesh<NUM_NODES>::nodesAreEqual(iElem,i,jElem,j)){
-          iNode = i; jNode = j;
-          /*NL*/ //fprintf(this->screen,"shareNode narrow phase true\n");
-          return true;
+          if(0 == nShared)
+          {
+              iNode1 = i;
+              jNode1 = j;
+          }
+          else
+          {
+              iNode2 = i;
+              jNode2 = j;
+              /*NL*/ //fprintf(this->screen,"  shareNode narrow phase true\n");
+              return true;
+          }
+          nShared++;
         }
       }
     }
-    iNode = -1; jNode = -1;
-    /*NL*/ //fprintf(this->screen,"shareNode narrow phase false\n");
+
+    iNode1 = jNode1 = iNode2 = jNode2 = -1;
+    /*NL*/ //fprintf(this->screen,"  shareNode narrow phase false\n");
     return false;
   }
 
@@ -321,7 +341,7 @@
           if(node_orig_)
             error->one(FLERR,"Illegal situation in MultiNodeMesh<NUM_NODES>::registerMove");
 
-          node_orig_ = new MultiVectorContainer<double,NUM_NODES,3>;
+          node_orig_ = new MultiVectorContainer<double,NUM_NODES,3>("node_orig");
           for(int i = 0; i < nall; i++)
           {
             for(int j = 0; j < NUM_NODES; j++)

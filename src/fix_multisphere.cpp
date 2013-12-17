@@ -260,11 +260,17 @@ void FixMultisphere::init() //NP modified C.K.
 {
   // lots of error checks and warnings
 
+  if(0 == atom->map_style)
+      error->fix_error(FLERR,this,"requires an 'atom_modify map' command to allocate an atom map");
+
   if(!atom->rmass_flag || !atom->omega_flag)
     error->fix_error(FLERR,this,"need per-atom mass and omega");
 
   if(domain->dimension != 3)
     error->fix_error(FLERR,this,"works with 3D simulations only");
+
+  if(modify->n_fixes_style("heat/gran") > 0)
+    error->fix_error(FLERR,this,"is not compatible with heat transfer simulations");
 
   if(domain->triclinic || dynamic_cast<DomainWedge*>(domain))
     error->fix_error(FLERR,this,"does not work with triclinic or wedge box");
@@ -432,6 +438,20 @@ void FixMultisphere::initial_integrate(int vflag)
                           inertia[ibody],dtq);
     MathExtra::q_to_exyz(quat[ibody],
                          ex_space[ibody],ey_space[ibody],ez_space[ibody]);
+
+    /*NL*/ //bool eval =  true; //13500 < update->ntimestep && 14000 > update->ntimestep;
+
+    /*NL*/ //if(tag(ibody) == 88 && eval) {
+    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
+    /*NL*/ //                                      update->ntimestep,comm->me,
+    /*NL*/ //                                     xcm[ibody][0],xcm[ibody][1],xcm[ibody][2],
+    /*NL*/ //                                      vcm[ibody][0],vcm[ibody][1],vcm[ibody][2],
+    /*NL*/ //                                      data().omega_(ibody)[0],data().omega_(ibody)[1],data().omega_(ibody)[2]);
+    /*NL*/ //    fprintf(screen,"step "BIGINT_FORMAT" proc %d, fcm %f %f %f torquecm %f %f %f\n",
+    /*NL*/ //                                     update->ntimestep,comm->me,
+    /*NL*/ //                                      fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],
+    /*NL*/ //                                      torquecm[ibody][0],torquecm[ibody][1],torquecm[ibody][2]);
+    /*NL*/ //}
   }
 
   // virial setup before call to set_xv
@@ -491,6 +511,15 @@ void FixMultisphere::final_integrate()
   {
     if(timestep < start_step[ibody]) continue;
 
+    /*NL*/ //bool eval =  13500 < update->ntimestep && 14000 > update->ntimestep;
+
+    /*NL*/ //if(tag(ibody) == 60 && eval) {
+    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" final integrate proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
+    /*NL*/ //                                      update->ntimestep,comm->me,
+    /*NL*/ //                                     xcm[ibody][0],xcm[ibody][1],xcm[ibody][2],
+    /*NL*/ //                                      vcm[ibody][0],vcm[ibody][1],vcm[ibody][2],
+    /*NL*/ //                                      data().omega_(ibody)[0],data().omega_(ibody)[1],data().omega_(ibody)[2]);}
+
     // update vcm by 1/2 step
 
     dtfm = dtf / masstotal[ibody];
@@ -532,6 +561,7 @@ void FixMultisphere::calc_force()
 {
   int ibody;
   int *image = atom->image;
+  int *atag = atom->tag;
   double **x = atom->x;
   double **f = atom->f;
   double **torque_one = atom->torque;
@@ -575,6 +605,11 @@ void FixMultisphere::calc_force()
     //NP skip if body not owned by this proc
     if (ibody < 0) continue;
 
+    //NP skip if periodic ghost of owned particle
+    //NP since would double-count forces in this case
+    if(!domain->is_owned_or_first_ghost(i))
+        continue;
+
     /*NL*///fprintf(screen,"A step %d,body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
 
     fcm[ibody][0] += f[i][0];
@@ -593,13 +628,38 @@ void FixMultisphere::calc_force()
     dy = yunwrap - xcm[ibody][1];
     dz = zunwrap - xcm[ibody][2];
 
+    //NP modified C.K.
+    //NP make sure
+    //NP this is important for ghost atoms across periodic boundaries
+    if(i >= nlocal)
+        domain->minimum_image(dx,dy,dz);
+
     //NP torque due to atom force and torque
     torquecm[ibody][0] += dy*f[i][2] - dz*f[i][1] + torque_one[i][0];
     torquecm[ibody][1] += dz*f[i][0] - dx*f[i][2] + torque_one[i][1];
     torquecm[ibody][2] += dx*f[i][1] - dy*f[i][0] + torque_one[i][2];
 
+    /*NL*/ //bool eval = 3100 < update->ntimestep && 3175 > update->ntimestep;
+
+    /*NL*/ //if((tag(ibody) == 88) && eval) {
+    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d atom tag %d, ghost %s,pos %f %f %f f %f %f %f torque_one %f %f %f, dx %f dy %f dz %f\n",
+    /*NL*/ //                                      update->ntimestep,comm->me,atag[i],i>=nlocal?"yes":"no",
+    /*NL*/ //                                      x[i][0],x[i][1],x[i][2],
+    /*NL*/ //                                      f[i][0],f[i][1],f[i][2],
+    /*NL*/ //                                      torque_one[i][0],torque_one[i][1],torque_one[i][2],dx,dy,dz);
+    /*NL*/ //}
+
     /*NL*///fprintf(screen,"B step %d,body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
   }
+
+  /*NL*/ //bool eval = 18000 < update->ntimestep && 20000 > update->ntimestep;
+  /*NL*/ //ibody = map(238);
+  /*NL*/ //if(ibody >= 0 && eval) {
+  /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" fcm on body after summation (proc %d) %f %f %f torquecm %f %f %f\n",
+  /*NL*/ //                                      update->ntimestep,comm->me,
+  /*NL*/ //                                      fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],
+  /*NL*/ //                                      torquecm[ibody][0],torquecm[ibody][1],torquecm[ibody][2]);
+  /*NL*/ //}
 
   // add external forces on bodies, such as gravity, dragforce
 
@@ -647,6 +707,7 @@ void FixMultisphere::set_xv(int ghostflag)
   double ione[3],exone[3],eyone[3],ezone[3],vr[6],p[3][3];
 
   int *image = atom->image;
+  int *atag = atom->tag;
   double **x = atom->x;
   double **v = atom->v;
   double **f = atom->f;
@@ -723,6 +784,15 @@ void FixMultisphere::set_xv(int ghostflag)
     omega_one[i][0] = omega[ibody][0];
     omega_one[i][1] = omega[ibody][1];
     omega_one[i][2] = omega[ibody][2];
+
+    /*NL*/ //bool eval = true; //50000 < update->ntimestep && 55000 > update->ntimestep;
+
+    /*NL*/ //if(tag(ibody) == 1 && eval) {
+    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d atom tag %d ghost %s, boxes %d %d %d \n",
+    /*NL*/ //                                      update->ntimestep,comm->me,atag[i],i>=nlocal?"yes":"no",
+    /*NL*/ //                                      xbox,ybox,zbox);
+    /*NL*/ //}
+
 
     /*NL*///if(!domain->is_in_domain(x[i]))
     /*NL*///{
@@ -904,7 +974,7 @@ void FixMultisphere::pre_exchange()
         /*NL*/ //fprintf(screen,"delfag particle %d: %f\n",atom->tag[i],delflag[i]);
         if(round(delflag[i]) == 1)
         {
-            /*NL*/ //fprintf(screen,"step %d proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
+            /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
             avec->copy(atom->nlocal-1,i,1);
             atom->nlocal--;
         }
@@ -934,6 +1004,12 @@ void FixMultisphere::pre_exchange()
 
 void FixMultisphere::pre_neighbor()
 {
+    //NP reset corner ghost flag
+
+    int nall = atom->nlocal + atom->nghost;
+    double *corner_ghost = fix_corner_ghost_->vector_atom;
+    vectorZeroizeN(corner_ghost,nall);
+
     /*NL*/// fprintf(screen,"step %d on proc %d: x-sublo %f x-subhi %f\n",update->ntimestep,comm->me,domain->sublo[0],domain->subhi[0]);
     /*NL*/ //fprintf(screen,"step %d proc %d: nbody %d, nall %d\n",update->ntimestep,comm->me,n_body(),atom->nlocal+atom->nghost);
 
@@ -956,7 +1032,19 @@ void FixMultisphere::pre_neighbor()
     //NP re-map bodies, then exchange with stencil procs
     //NP need to do that here because body and atom data
     //NP must be sync'd before checking for lost atoms
+
+    //NP   need  fw comm of image since not communicated on
+    //NP   reneighboring steps in Comm::borders()
+
+    //NP   need reverse comm of atom image flag since
+    //NP   changed on ghosts by remap_bodies
+    //NP fw comm image and displace
+    //NP note that image has changed due to remap_bodies() call
+    fw_comm_flag_ = MS_COMM_FW_IMAGE_DISPLACE;
+    forward_comm();
     multisphere_.remap_bodies(body_);
+    rev_comm_flag_ = MS_COMM_REV_IMAGE;
+    reverse_comm();
     multisphere_.exchange();
 
     //NP after all bodies are communicated, need to find out how many we have
@@ -998,19 +1086,15 @@ void FixMultisphere::pre_neighbor()
     fw_comm_flag_ = MS_COMM_FW_IMAGE_DISPLACE;
     forward_comm();
 
-    //NP reset corner ghost flag
-
-    int nall = atom->nlocal + atom->nghost;
-    double *corner_ghost = fix_corner_ghost_->vector_atom;
-    vectorZeroizeN(corner_ghost,nall);
-
     // merge delflag and existflag
 
     int nlocal = atom->nlocal;
     delflag =   fix_delflag_->vector_atom;
     existflag = fix_existflag_->vector_atom;
     for(int i = 0; i < nlocal; i++)
-        delflag[i] = (round(existflag[i]) == 0) ? 1. : delflag[i];
+    {
+            delflag[i] = (round(existflag[i]) == 0) ? 1. : delflag[i];
+    }
 }
 
 /* ----------------------------------------------------------------------

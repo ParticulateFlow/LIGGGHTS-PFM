@@ -37,10 +37,10 @@
 #include "fix_property_global.h"
 #include "fix_gravity.h"
 
-#define EPSILON 0.001
-
 using namespace LAMMPS_NS;
 using namespace FixConst;
+
+#define EPSILON 0.0001
 
 /* ---------------------------------------------------------------------- */
 
@@ -120,13 +120,10 @@ FixMeshSurfaceStress::~FixMeshSurfaceStress()
 {
 
 }
-
 /* ---------------------------------------------------------------------- */
 
-void FixMeshSurfaceStress::post_create()
+void FixMeshSurfaceStress::post_create_pre_restart()
 {
-    FixMeshSurface::post_create();
-
     if(stress_flag_)
         initStress();
 
@@ -134,6 +131,12 @@ void FixMeshSurfaceStress::post_create()
         initWear();
 }
 
+/* ---------------------------------------------------------------------- */
+
+void FixMeshSurfaceStress::post_create()
+{
+    FixMeshSurface::post_create();
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -227,7 +230,7 @@ void FixMeshSurfaceStress::final_integrate()
 void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
                                 double *delta,int iTri,double *v_wall)
 {
-    double E,c[3],v_rel[3],cmag,vmag,cos_gamma,sin_gamma,sin_2gamma,tan_gamma;
+    double E,c[3],v_rel[3],cmag,v_rel_mag,cos_gamma,sin_gamma,sin_2gamma,tan_gamma;
     double contactPoint[3],surfNorm[3], tmp[3], tmp2[3];
 
     // do not include if not in fix group
@@ -270,29 +273,49 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         //NP this ensures only the approach is taken into acctount
         //NP not the rebound
         if(vectorDot3D(c,v_rel) < 0.) return;
-        vmag = vectorMag3D(v_rel);
+        v_rel_mag = vectorMag3D(v_rel);
 
         // get surface normal
+        //NP surface normal is normalized
         triMesh()->surfaceNorm(iTri,surfNorm);
 
-        sin_gamma = MathExtraLiggghts::abs(vectorDot3D(v_rel,surfNorm)) / (vmag);
-        //NP fprintf(screen," sin_gamma %f, stl normal mag %f ",sin_gamma,vectorMag3D(STLdata->facenormal[iTri]));
-        if(sin_gamma > 1.) sin_gamma = 1.;
-        if(sin_gamma < -1.) sin_gamma = -1.;
+        // return if no relative velocity
+        if(0.0000001 > v_rel_mag)
+            return;
 
-        cos_gamma = sqrt(1. - sin_gamma * sin_gamma);
-        if(cos_gamma > EPSILON || (sin_gamma < 3. * cos_gamma))
+        //NP exchange sin and cos because
+        //NP vectorDot/cross will give angle to surface normal
+        //NP not to wall plane
+        //NP cos(gamma) = sin(90-gamma)
+        //NP sin(gamma) = cos(90-gamma)
+        //NP need abs so that can cover surfNorm pointing in any direction
+
+        sin_gamma = MathExtraLiggghts::abs(vectorDot3D(v_rel,surfNorm)) / (v_rel_mag);
+        cos_gamma = MathExtraLiggghts::abs(vectorCrossMag3D(v_rel,surfNorm)) / (v_rel_mag);
+
+        //NP both angles from 0..90 degree
+        //NP both sin and cos will be > 0
+        if(cos_gamma > 1.) cos_gamma = 1.;
+        if(sin_gamma > 1.) sin_gamma = 1.;
+
+        /*NL*/ //fprintf(screen,"sin_gamma %e cos_gamma %e, stl normal mag %f ",sin_gamma,cos_gamma,vectorMag3D(surfNorm));
+
+        //NP http://www1.ansys.com/customer/content/documentation/120/cfx/xthry.pdf
+        //NP Eqn 5.70
+
+        //NP cos_gamma cannot be < 0
+        if(cos_gamma < EPSILON || 3.*sin_gamma > cos_gamma)
         {
             E = 0.33333 * cos_gamma * cos_gamma;
-            //NP fprintf(screen," wear1 %f",E);
+            /*NL*///fprintf(screen," wear1 %e\n",E);
         }
         else
         {
             sin_2gamma = 2. * sin_gamma * cos_gamma;
             E = sin_2gamma - 3. * sin_gamma * sin_gamma;
-            //NP      fprintf(screen," wear2 %f",E);
+            /*NL*///fprintf(screen," wear2 %e\n",E);
         }
-        E *= 2.*k_finnie_[atomTypeWall()-1][atom->type[ip]-1] * vmag * vectorMag3D(frc);
+        E *= 2.*k_finnie_[atomTypeWall()-1][atom->type[ip]-1] * v_rel_mag * vectorMag3D(frc);
         //NP fprintf(screen," k_finnie %f, vmag%f, frcmag %f ,wear %1.15f\n",k_finnie[atom_type_wall-1][atom->type[ip]-1],vmag,vectorMag3D(frc),E);
         //NP error->all("wear");
 

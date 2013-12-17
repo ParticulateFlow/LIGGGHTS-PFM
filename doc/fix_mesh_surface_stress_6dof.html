@@ -1,0 +1,113 @@
+<HTML>
+<CENTER><A HREF = "http://www.cfdem.com">LIGGGHTS WWW Site</A> - <A HREF = "http://lammps.sandia.gov">LAMMPS WWW Site</A> - <A HREF = "Manual.html">LIGGGHTS Documentation</A> - <A HREF = "Section_commands.html#comm">LIGGGHTS Commands</A> 
+</CENTER>
+
+
+
+
+
+
+
+
+<HR>
+
+<H3>fix mesh/6dof command 
+</H3>
+<P><B>Syntax:</B>
+</P>
+<PRE>fix ID group-ID mesh/surface/stress/6dof file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keyword surface_values stress_keywords stress_values 6dof_keywords 6dof_values 
+</PRE>
+<UL><LI>ID, is documented in <A HREF = "fix.html">fix</A> command, the group-ID is ignored for this command. 
+
+<LI>mesh/gran/6dof = style name of this fix command  
+
+<LI>file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keyword surface_values stress_keywords stress_values are documented in <A HREF = "fix_mesh_surface_stress.html">fix mesh/surface/stress</A>. 
+
+<LI>zero or more 6dof_keyword/value pairs may be appended 
+6dof keywords = <I>mass</I> (obligatory) or <I>com</I> (obligatory) or <I>moi</I> (obligatory) or <I>vcm</I> or <I>angmom</I> or <I>suspension</I>  or <I>forceflags</I> or <I>torqueflags</I> 
+
+<PRE><I>mass</I> value = mass
+   mass = mass of the rigid body (mass units)
+<I>com</I> values = x, y, z
+    x, y, z = coordinates of the center of mass of the body (distance units)
+<I>moi</I> values = Ixx, Iyy, Izz, Ixy, Ixz, Iyz
+    Ixx, Iyy, Izz, Ixy, Ixz, Iyz = moments of inertia around the given axis
+<I>vel</I> values = vx, vy, vz
+    vx, vy, vz = velocities of the center of mass of the body (velocity units)
+<I>angmom</I> values = ax, ay, az
+    ax, ay, az = initial angular momentum around x-, y-, and z-axis
+<I>suspension</I> values = k_t kt c_t ct k_r kr c_r cr
+    k_t = obligatory keyword
+    kt = stiffness for translational spring
+    c_t = obligatory keyword
+    ct = damper coefficient for translational damper
+    k_r = obligatory keyword
+    kr = stiffness for rotational spring
+    c_r = obligatory keyword
+    cr = damper coefficient for rotational damper
+<I>forceflags</I> values = f1 f2 f3
+    f1,f2,f3 = flags for x,y,z which can be 0 or 1
+<I>torqueflags</I> values = t1 t2 t3
+    t1,t2,t3 = flags for x,y,z which can be 0 or 1 
+</PRE>
+
+</UL>
+<P><B>Examples:</B>
+</P>
+<P>fix	cube all mesh/surface/stress/6dof file cube.stl type 1 com 0. 0. 0. vel 0. 0. -0.5 mass 40 moi 0.266666 0.266666 0.266666 0. 0. 0.
+</P>
+<P><B>LIGGGHTS vs. LAMMPS Info:</B>
+</P>
+<P>This command is not available in LAMMPS.
+</P>
+<P><B>Description:</B>
+</P>
+<P>This fix implements the functionality of <A HREF = "fix_mesh_surface_stress.html">fix mesh/surface/stress</A> but it additionally 
+integrates the motion of the mesh assuming it to be a rigid body with the given <I>com</I> (center of mass) 
+and <I>moi</I> (moments of inertia). Optionally, you can specify an initial velocity and angular momentum of 
+the rigid body. Please note the difference between angular velocity omega and angular momentum (which is I*omega)
+</P>
+<P>Note that if a <A HREF = "fix_gravity.html">fix gravity</A> is used, the gravitational force acts on the center of mass
+of the body
+</P>
+<P>With the optional <I>suspension</I> keyword, an additional suspension force and torque is activated 
+which tries to pull the body back into its original position (which is the <I>com</I> as defined by 
+this command) and its original orientation. The force and torque consist of translational and 
+rotational spring/damping parts and write
+</P>
+<P>f = kt * dx - ct * vel
+t = kr * dalpha * axis - cr * omega
+</P>
+<P>where vec and omega are the body velocity and rotational velocity. dx represents the translational 
+displacement of the body from its original position. dalpha and axis represent the rotational
+displacement of the body from its original orientation, where dalpha is the the angle
+and axis is the the corresponding rotation (unit) axis.
+</P>
+<P>With the optional <I>forceflags</I> and <I>torqueflags</I> keywords, motion integration can be turned of
+separately for the x-, y-, and z-axis.
+</P>
+<P><B>Restart, fix_modify, output, run start/stop, minimize info:</B>
+</P>
+<P>This fix stores a global vector with 6 components for access by various <A HREF = "Section_howto.html#4_15">output commands</A>. 
+The first 3 components are equal to the total force on the mesh, the last 3 components store the total torque 
+on the body. Please note that as opposed to <A HREF = "fix_mesh_surface_stress.html">fix mesh/surface/stress</A>, 
+the total force and torque contain the contributions of the particles, gravity and the suspension
+model (if activated). 
+Furthermore, this fix writes the state of the rigid body (translational and rotational) to binary restart files so 
+that a simulation can continue correctly.
+</P>
+<P><B>Restrictions:</B>
+</P>
+<P>When using this fix, along with scaling or rotate the body, all the 6dof_keyword/value pairs have to represent
+the state after scaling/rotation.
+Mesh elements may not be deleted in case due to leaving the simulation box for a fixed boundary. 
+In this case, an error is generated. See <A HREF = "boundary.html">boundary</A> command for details.
+</P>
+<P><B>Related commands:</B>
+</P>
+<P><A HREF = "fix_mesh_surface_stress.html">fix mesh/surface/stress</A>, <A HREF = "fix_wall_gran.html">fix wall/gran</A>
+</P>
+<P><B>Default:</B> 
+<I>vel</I> = 0 0 0, <I>angmom</I> = 0 0 0, <I>forceflags</I> = 1 1 1, <I>torqueflags</I> = 1 1 1 , <I>suspension</I> = off
+</P>
+</HTML>
