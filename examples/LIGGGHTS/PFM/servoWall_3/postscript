@@ -2,4 +2,4 @@
 
 shopt -s expand_aliases
 cd post
-lpp dump*.testServo
+lpp dump*.servoWall

@@ -51,11 +51,11 @@ void Neighbor::granular_nsq_no_newton(NeighList *list)
 
   NeighList *listgranhistory;
   int *npartner,**partner;
-  double ***contacthistory;
+  double **contacthistory; //NP modified C.K.
   int **firsttouch;
   double **firstshear;
-  int **pages_touch;
-  double **pages_shear;
+  MyPage<int> *ipage_touch;
+  MyPage<double> *dpage_shear;
   int dnum; //NP modified C.K.
 
   double **x = atom->x;
@@ -74,47 +74,35 @@ void Neighbor::granular_nsq_no_newton(NeighList *list)
   int *ilist = list->ilist;
   int *numneigh = list->numneigh;
   int **firstneigh = list->firstneigh;
-  int **pages = list->pages;
-
-  double contactHistoryDistanceFactorSqr = contactHistoryDistanceFactor*contactHistoryDistanceFactor;
+  MyPage<int> *ipage = list->ipage;
 
   FixContactHistory *fix_history = list->fix_history; //NP modified C.K.
   if (fix_history) {
-    npartner = fix_history->npartner;
-    partner = fix_history->partner;
-    contacthistory = fix_history->contacthistory;
+    npartner = fix_history->npartner_; //NP modified C.K.
+    partner = fix_history->partner_; //NP modified C.K.
+    contacthistory = fix_history->contacthistory_; //NP modified C.K.
     listgranhistory = list->listgranhistory;
     firsttouch = listgranhistory->firstneigh;
     firstshear = listgranhistory->firstdouble;
-    pages_touch = listgranhistory->pages;
-    pages_shear = listgranhistory->dpages;
+    ipage_touch = listgranhistory->ipage;
+    dpage_shear = listgranhistory->dpage;
     dnum = listgranhistory->dnum; //NP modified C.K.
   }
 
   int inum = 0;
-  int npage = 0;
-  int npnt = 0;
+  ipage->reset();
+  if (fix_history) {
+    ipage_touch->reset();
+    dpage_shear->reset();
+  }
 
   for (i = 0; i < nlocal; i++) {
-
-    if (pgsize - npnt < oneatom) {
-      npnt = 0;
-      npage++;
-      if (npage == list->maxpage) {
-        pages = list->add_pages();
-        if (fix_history) {
-          pages_touch = listgranhistory->add_pages();
-          pages_shear = listgranhistory->dpages;
-        }
-      }
-    }
-
     n = 0;
-    neighptr = &pages[npage][npnt];
+    neighptr = ipage->vget();
     if (fix_history) {
       nn = 0;
-      touchptr = &pages_touch[npage][npnt];
-      shearptr = &pages_shear[npage][dnum*npnt]; //NP modified C.K.
+      touchptr = ipage_touch->vget();
+      shearptr = dpage_shear->vget();
     }
 
     xtmp = x[i][0];
@@ -132,21 +120,21 @@ void Neighbor::granular_nsq_no_newton(NeighList *list)
       dely = ytmp - x[j][1];
       delz = ztmp - x[j][2];
       rsq = delx*delx + dely*dely + delz*delz;
-      radsum = radi + radius[j];
+      radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
       cutsq = (radsum+skin) * (radsum+skin);
 
       if (rsq <= cutsq) {
         neighptr[n] = j;
 
         if (fix_history) {
-          if (rsq < radsum*radsum*contactHistoryDistanceFactorSqr)
+          if (rsq < radsum*radsum)
           {
             for (m = 0; m < npartner[i]; m++)
               if (partner[i][m] == tag[j]) break;
             if (m < npartner[i]) {
               touchptr[n] = 1;
               for (d = 0; d < dnum; d++) {  //NP modified C.K.
-                shearptr[nn++] = contacthistory[i][m][d];
+                shearptr[nn++] = contacthistory[i][m*dnum+d];
               }
             } else {
               touchptr[n] = 0;
@@ -169,13 +157,15 @@ void Neighbor::granular_nsq_no_newton(NeighList *list)
     ilist[inum++] = i;
     firstneigh[i] = neighptr;
     numneigh[i] = n;
+    ipage->vgot(n);
+    if (ipage->status())
+      error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
     if (fix_history) {
       firsttouch[i] = touchptr;
       firstshear[i] = shearptr;
+      ipage_touch->vgot(n);
+      dpage_shear->vgot(nn);
     }
-    npnt += n;
-    if (n > oneatom)
-      error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
   }
 
   list->inum = inum;
@@ -213,22 +203,15 @@ void Neighbor::granular_nsq_newton(NeighList *list)
   int *ilist = list->ilist;
   int *numneigh = list->numneigh;
   int **firstneigh = list->firstneigh;
-  int **pages = list->pages;
+  MyPage<int> *ipage = list->ipage;
 
   int inum = 0;
-  int npage = 0;
-  int npnt = 0;
+  ipage->reset();
 
   for (i = 0; i < nlocal; i++) {
 
-    if (pgsize - npnt < oneatom) {
-      npnt = 0;
-      npage++;
-      if (npage == list->maxpage) pages = list->add_pages();
-    }
-
     n = 0;
-    neighptr = &pages[npage][npnt];
+    neighptr = ipage->vget();
 
     itag = tag[i];
     xtmp = x[i][0];
@@ -262,7 +245,7 @@ void Neighbor::granular_nsq_newton(NeighList *list)
       dely = ytmp - x[j][1];
       delz = ztmp - x[j][2];
       rsq = delx*delx + dely*dely + delz*delz;
-      radsum = radi + radius[j];
+      radsum = (radi + radius[j]) * contactDistanceFactor;
       cutsq = (radsum+skin) * (radsum+skin);
 
       if (rsq <= cutsq) neighptr[n++] = j;
@@ -271,8 +254,8 @@ void Neighbor::granular_nsq_newton(NeighList *list)
     ilist[inum++] = i;
     firstneigh[i] = neighptr;
     numneigh[i] = n;
-    npnt += n;
-    if (n > oneatom)
+    ipage->vgot(n);
+    if (ipage->status())
       error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
   }
 
@@ -298,14 +281,12 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
 
   NeighList *listgranhistory;
   int *npartner,**partner;
-  double ***contacthistory;
+  double **contacthistory;
   int **firsttouch;
   double **firstshear;
-  int **pages_touch;
-  double **pages_shear;
+  MyPage<int> *ipage_touch;
+  MyPage<double> *dpage_shear;
   int dnum; //NP modified C.K.
-
-  double contactHistoryDistanceFactorSqr = contactHistoryDistanceFactor*contactHistoryDistanceFactor;
 
   // bin local & ghost atoms
 
@@ -325,47 +306,37 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
   int *ilist = list->ilist;
   int *numneigh = list->numneigh;
   int **firstneigh = list->firstneigh;
-  int **pages = list->pages;
   int nstencil = list->nstencil;
   int *stencil = list->stencil;
+  MyPage<int> *ipage = list->ipage;
 
   FixContactHistory *fix_history = list->fix_history; //NP modified C.K.
   if (fix_history) {
-    npartner = fix_history->npartner;
-    partner = fix_history->partner;
-    contacthistory = fix_history->contacthistory;
+    npartner = fix_history->npartner_; //NP modified C.K.
+    partner = fix_history->partner_; //NP modified C.K.
+    contacthistory = fix_history->contacthistory_; //NP modified C.K.
     listgranhistory = list->listgranhistory;
     firsttouch = listgranhistory->firstneigh;
     firstshear = listgranhistory->firstdouble;
-    pages_touch = listgranhistory->pages;
-    pages_shear = listgranhistory->dpages;
+    ipage_touch = listgranhistory->ipage;
+    dpage_shear = listgranhistory->dpage;
     dnum = listgranhistory->dnum; //NP modified C.K.
   }
 
   int inum = 0;
-  int npage = 0;
-  int npnt = 0;
-
-  for (i = 0; i < nlocal; i++) {
-
-    if (pgsize - npnt < oneatom) {
-      npnt = 0;
-      npage++;
-      if (npage == list->maxpage) {
-        pages = list->add_pages();
+  ipage->reset();
         if (fix_history) {
-          pages_touch = listgranhistory->add_pages();
-          pages_shear = listgranhistory->dpages;
-        }
-      }
+    ipage_touch->reset();
+    dpage_shear->reset();
     }
 
+  for (i = 0; i < nlocal; i++) {
     n = 0;
-    neighptr = &pages[npage][npnt];
+    neighptr = ipage->vget();
     if (fix_history) {
       nn = 0;
-      touchptr = &pages_touch[npage][npnt];
-      shearptr = &pages_shear[npage][dnum*npnt]; //NP modified C.K.
+      touchptr = ipage_touch->vget();
+      shearptr = dpage_shear->vget();
     }
 
     xtmp = x[i][0];
@@ -390,7 +361,7 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
         dely = ytmp - x[j][1];
         delz = ztmp - x[j][2];
         rsq = delx*delx + dely*dely + delz*delz;
-        radsum = radi + radius[j];
+        radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
         cutsq = (radsum+skin) * (radsum+skin);
         /*NL*/ //fprintf(screen,"checking local indices %d %d\n",i,j);
 
@@ -400,19 +371,19 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
           /*NL*/ //printVec3D(screen,"  xi",x[i]);
           /*NL*/ //printVec3D(screen,"  xj",x[j]);
           if (fix_history) {
-            if (rsq < radsum*radsum*contactHistoryDistanceFactorSqr)
+            if (rsq < radsum*radsum)
                 {
               for (m = 0; m < npartner[i]; m++)
                 if (partner[i][m] == tag[j]) break;
               if (m < npartner[i]) {
                 touchptr[n] = 1;
                 for (d = 0; d < dnum; d++) { //NP modified C.K.
-                  shearptr[nn++] = contacthistory[i][m][d];
+                  shearptr[nn++] = contacthistory[i][m*dnum+d];
                 }
               } else {
                  touchptr[n] = 0;
                  for (d = 0; d < dnum; d++) { //NP modified C.K.
-                         shearptr[nn++] = 0.0;
+                   shearptr[nn++] = 0.0;
                  }
               }
             } else {
@@ -431,13 +402,15 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
     ilist[inum++] = i;
     firstneigh[i] = neighptr;
     numneigh[i] = n;
+    ipage->vgot(n);
+    if (ipage->status())
+      error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
     if (fix_history) {
       firsttouch[i] = touchptr;
       firstshear[i] = shearptr;
+      ipage_touch->vgot(n);
+      dpage_shear->vgot(nn);
     }
-    npnt += n;
-    if (n > oneatom)
-      error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
   }
 
   list->inum = inum;
@@ -475,24 +448,17 @@ void Neighbor::granular_bin_newton(NeighList *list)
   int *ilist = list->ilist;
   int *numneigh = list->numneigh;
   int **firstneigh = list->firstneigh;
-  int **pages = list->pages;
   int nstencil = list->nstencil;
   int *stencil = list->stencil;
+  MyPage<int> *ipage = list->ipage;
 
   int inum = 0;
-  int npage = 0;
-  int npnt = 0;
+  ipage->reset();
 
   for (i = 0; i < nlocal; i++) {
 
-    if (pgsize - npnt < oneatom) {
-      npnt = 0;
-      npage++;
-      if (npage == list->maxpage) pages = list->add_pages();
-    }
-
     n = 0;
-    neighptr = &pages[npage][npnt];
+    neighptr = ipage->vget();
 
     xtmp = x[i][0];
     ytmp = x[i][1];
@@ -518,7 +484,7 @@ void Neighbor::granular_bin_newton(NeighList *list)
       dely = ytmp - x[j][1];
       delz = ztmp - x[j][2];
       rsq = delx*delx + dely*dely + delz*delz;
-      radsum = radi + radius[j];
+      radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
       cutsq = (radsum+skin) * (radsum+skin);
 
       if (rsq <= cutsq) neighptr[n++] = j;
@@ -545,8 +511,8 @@ void Neighbor::granular_bin_newton(NeighList *list)
     ilist[inum++] = i;
     firstneigh[i] = neighptr;
     numneigh[i] = n;
-    npnt += n;
-    if (n > oneatom)
+    ipage->vgot(n);
+    if (ipage->status())
       error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
   }
 
@@ -585,24 +551,17 @@ void Neighbor::granular_bin_newton_tri(NeighList *list)
   int *ilist = list->ilist;
   int *numneigh = list->numneigh;
   int **firstneigh = list->firstneigh;
-  int **pages = list->pages;
   int nstencil = list->nstencil;
   int *stencil = list->stencil;
+  MyPage<int> *ipage = list->ipage;
 
   int inum = 0;
-  int npage = 0;
-  int npnt = 0;
+  ipage->reset();
 
   for (i = 0; i < nlocal; i++) {
 
-    if (pgsize - npnt < oneatom) {
-      npnt = 0;
-      npage++;
-      if (npage == list->maxpage) pages = list->add_pages();
-    }
-
     n = 0;
-    neighptr = &pages[npage][npnt];
+    neighptr = ipage->vget();
 
     xtmp = x[i][0];
     ytmp = x[i][1];
@@ -633,7 +592,7 @@ void Neighbor::granular_bin_newton_tri(NeighList *list)
         dely = ytmp - x[j][1];
         delz = ztmp - x[j][2];
         rsq = delx*delx + dely*dely + delz*delz;
-        radsum = radi + radius[j];
+        radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
         cutsq = (radsum+skin) * (radsum+skin);
 
         if (rsq <= cutsq) neighptr[n++] = j;
@@ -643,8 +602,8 @@ void Neighbor::granular_bin_newton_tri(NeighList *list)
     ilist[inum++] = i;
     firstneigh[i] = neighptr;
     numneigh[i] = n;
-    npnt += n;
-    if (n > oneatom)
+    ipage->vgot(n);
+    if (ipage->status())
       error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
   }
 

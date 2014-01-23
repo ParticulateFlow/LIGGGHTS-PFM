@@ -384,23 +384,26 @@ void BondGran::coeff(int narg, char **arg)
 {
   if(narg < 4)  error->all(FLERR,"Incorrect args for bond coefficients");
 
-  double rb_one = force->numeric(arg[1]);
-  double Sn_one = force->numeric(arg[2]);
-  double St_one = force->numeric(arg[3]);
+  double rb_one = force->numeric(FLERR,arg[1]);
+  double Sn_one = atof(arg[2]);
+  double St_one = atof(arg[3]);
+
+  if(Sn_one < 0. || St_one < 0.)
+    error->all(FLERR,"Sn, St must be > 0 (if values > 0 were provided, they are probably too large)");
 
   /*NL*///fprintf(screen,"Sn %f, St%f\n",Sn_one,St_one);
 
-  if(force->numeric(arg[4]) == 0. )
+  if(force->numeric(FLERR,arg[4]) == 0. )
   {
       breakmode = BREAKSTYLE_SIMPLE;
       if (narg != 6) error->all(FLERR,"Incorrect args for bond coefficients");
   }
-  else if(force->numeric(arg[4]) == 1. )
+  else if(force->numeric(FLERR,arg[4]) == 1. )
   {
       breakmode = BREAKSTYLE_STRESS;
       if (narg != 7) error->all(FLERR,"Incorrect args for bond coefficients");
   }
-  else if(force->numeric(arg[4]) == 2. )
+  else if(force->numeric(FLERR,arg[4]) == 2. )
   {
       breakmode = BREAKSTYLE_STRESS_TEMP;
       if (narg != 8) error->all(FLERR,"Incorrect args for bond coefficients");
@@ -411,15 +414,16 @@ void BondGran::coeff(int narg, char **arg)
 
   double r_break_one,sigman_break_one,tau_break_one,T_break_one;
 
-  if(breakmode == BREAKSTYLE_SIMPLE) r_break_one = force->numeric(arg[5]);
+  if(breakmode == BREAKSTYLE_SIMPLE) r_break_one = force->numeric(FLERR,arg[5]);
   else
   {
-      sigman_break_one = force->numeric(arg[5]);
-      tau_break_one = force->numeric(arg[6]);
-      if(breakmode == BREAKSTYLE_STRESS_TEMP) T_break_one = force->numeric(arg[7]);
+      sigman_break_one = force->numeric(FLERR,arg[5]);
+      tau_break_one = force->numeric(FLERR,arg[6]);
+      if(breakmode == BREAKSTYLE_STRESS_TEMP) T_break_one = force->numeric(FLERR,arg[7]);
   }
 
   int ilo,ihi;
+  /*NL*/ //fprintf(screen,"atom->nbondtypes %d\n",atom->nbondtypes);
   force->bounds(arg[0],atom->nbondtypes,ilo,ihi);
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -483,14 +487,27 @@ void BondGran::read_restart(FILE *fp)
   for (int i = 1; i <= atom->nbondtypes; i++) setflag[i] = 1;
 }
 
+/* ----------------------------------------------------------------------
+   proc 0 writes to data file
+------------------------------------------------------------------------- */
+
+void BondGran::write_data(FILE *fp)
+{
+  //NP needs revision
+  error->all(FLERR,"Bond granular does not support this feature");
+  //for (int i = 1; i <= atom->nbondtypes; i++)
+  //  fprintf(fp,"%d %g %g %g %g %g\n",i,k[i],b1[i],b2[i],rc[i],u0[i]);
+}
+
 /* ---------------------------------------------------------------------- */
 
-double BondGran::single(int type, double rsq, int i, int j)
+double BondGran::single(int type, double rsq, int i, int j,double &fforce)
 {
   error->all(FLERR,"Bond granular does not support this feature");
   /*double r = sqrt(rsq);
   double dr = r - r0[type];
   double rk = k[type] * dr;
+  fforce = ????
   return rk*dr;*/
   return 0.;
 }

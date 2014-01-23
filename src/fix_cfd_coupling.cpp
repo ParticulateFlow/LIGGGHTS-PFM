@@ -209,7 +209,7 @@ void FixCfdCoupling::min_setup(int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void FixCfdCoupling::post_force_respa(int vflag, int ilevel, int iloop)
+void FixCfdCoupling::post_force_respa(int vflag, int ilevel, int)
 {
     if (ilevel == nlevels_respa-1) post_force(vflag);
 }
@@ -223,14 +223,14 @@ void FixCfdCoupling::min_post_force(int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void FixCfdCoupling::add_push_property(char *name,char *type)
+void FixCfdCoupling::add_push_property(const char *name, const char *type)
 {
     dc_->add_push_property(name,type);
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixCfdCoupling::add_pull_property(char *name,char *type)
+void FixCfdCoupling::add_pull_property(const char *name, const char *type)
 {
     dc_->add_pull_property(name,type);
 }

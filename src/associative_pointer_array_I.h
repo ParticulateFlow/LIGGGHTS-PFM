@@ -55,7 +55,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T> template<typename U>
-  U* AssociativePointerArray<T>::add(char *_id, char* _comm, char* _ref,char *_restart,int _scalePower)
+  U* AssociativePointerArray<T>::add(const char *_id, const char* _comm, const char* _ref, const char *_restart, int _scalePower)
   {
     if(numElem_ == maxElem_)
       growArrays();
@@ -75,7 +75,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T>
-  void AssociativePointerArray<T>::remove(char *_id)
+  void AssociativePointerArray<T>::remove(const char *_id)
   {
     int index = idToIndex(_id);
     if(index == -1) return;
@@ -93,7 +93,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T> template<typename U>
-  U* AssociativePointerArray<T>::getPointerById(char *_id)
+  U* AssociativePointerArray<T>::getPointerById(const char *_id)
   {
     int ind = idToIndex(_id);
     if(ind != -1)
@@ -103,7 +103,7 @@
   }
 
   template<typename T>
-  T* AssociativePointerArray<T>::getBasePointerById(char *_id)
+  T* AssociativePointerArray<T>::getBasePointerById(const char *_id)
   {
     int ind = idToIndex(_id);
     if(ind != -1)
@@ -245,7 +245,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T>
-  int AssociativePointerArray<T>::idToIndex(char *_id)
+  int AssociativePointerArray<T>::idToIndex(const char *_id)
   {
     for(int i=0;i<numElem_;i++)
       if(content_[i]->matches_id(_id))
@@ -271,7 +271,7 @@
   }
 
   template<typename T>
-  void AssociativePointerArray<T>::storeOrig(char *_id,AssociativePointerArray &orig)
+  void AssociativePointerArray<T>::storeOrig(const char *_id, AssociativePointerArray &orig)
   {
       /*NL*/ //printf("storeOrig called for %s \n",_id);
       for(int i = 0; i < numElem_; i++)
@@ -295,7 +295,7 @@
   }
 
   template<typename T>
-  bool AssociativePointerArray<T>::reset(char *_id,AssociativePointerArray &orig)
+  bool AssociativePointerArray<T>::reset(const char *_id, AssociativePointerArray &orig)
   {
       /*NL*/ //printf("numElem_ %d\n",numElem_);
 

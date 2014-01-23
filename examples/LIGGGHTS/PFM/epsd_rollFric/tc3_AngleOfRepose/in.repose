@@ -32,11 +32,11 @@ variable    rfSLog  string      EPSD
 variable	rad1 equal ${rad}*0.99
 variable	rad2 equal ${rad}*1.01
 
-variable    skin            equal   0.5*${rad}
+variable	skin equal 0.5*${rad}
 
 
-variable 	nParticles equal 2000   		# number of particles 
-variable	cylinderRad equal    ${rad}*15
+variable 	nParticles equal 2000			# number of particles 
+variable	cylinderRad equal ${rad}*15
 # dimensions of simulation domain
 variable	nx equal   -2*${cylinderRad} 		# neg. x-value
 variable	px equal    2*${cylinderRad} 		# pos. x-value
@@ -51,7 +51,7 @@ variable  dumpfreq    equal ceil(0.1/${dt})
 #########################################################################################
 
 # writing log file to post folder
-log 		post/log.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.log
+#log 		post/log.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.log
 
 atom_style	granular
 atom_modify	map array
@@ -64,7 +64,7 @@ processors	2 1 1
 units		si
 
 # definition of the simulation region
-region          reg block ${nx} ${px} ${ny} ${py} ${nz} ${pz} units box
+region		reg block ${nx} ${px} ${ny} ${py} ${nz} ${pz} units box
 create_box	1 reg
 
 neighbor	${skin} bin
@@ -79,7 +79,7 @@ fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf
 fix     m7 all property/global coefficientRollingViscousDamping peratomtypepair 1 ${rvisc}
 
 #pair style
-pair_style 	gran/hertz/history rolling_friction ${rfStyle}
+pair_style gran model hertz tangential history rolling_friction ${rfStyle}
 pair_coeff	* *
 
 #timestep
@@ -89,10 +89,9 @@ timestep	${dt}
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #walls
-fix		zwallBot all wall/gran/hertz/history  primitive type 1 zplane 0.0 rolling_friction ${rfStyle}
-fix		zwallTop all wall/gran/hertz/history  primitive type 1 zplane ${pz} rolling_friction ${rfStyle}
-fix		zCylWall all wall/gran/hertz/history primitive type 1 zcylinder ${cylinderRad} 0. 0. 
-
+fix zwallBot all wall/gran model hertz tangential history rolling_friction ${rfStyle} primitive type 1 zplane 0.0
+fix zwallTop all wall/gran model hertz tangential history rolling_friction ${rfStyle} primitive type 1 zplane ${pz}
+fix zCylWall all wall/gran model hertz tangential history primitive type 1 zcylinder ${cylinderRad} 0. 0.
 
 # define the material in use
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad1}
@@ -103,7 +102,7 @@ fix		pdd all particledistribution/discrete 1.  3 pts1 0.33 pts2 0.34 pts3 0.33
 #region and insertion
 region		bc cylinder z 0. 0. ${cylinderRad} 0 ${pz} units box
 fix 		ins all insert/pack seed 100001 distributiontemplate pdd &
- insert_every once overlapcheck yes all_in yes particles_in_region ${nParticles} region bc
+		insert_every once overlapcheck yes all_in yes particles_in_region ${nParticles} region bc
 
 #apply nve integration to all particles that are inserted as single particles
 fix		integr all nve/sphere
@@ -112,16 +111,16 @@ fix		integr all nve/sphere
 fix   ts all check/timestep/gran 1000 0.2 0.2
 
 #screen output
-compute		    cero all erotate/sphere
-compute       cke all ke
+compute		cero all erotate/sphere
+compute		cke all ke
 thermo_style	custom step atoms ke c_cke c_cero f_ts[1] f_ts[2] cpu
-thermo		    1000
+thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run 1
-dump		dmp all custom ${dumpfreq} post/dump_*.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.liggghts id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius	
+dump		dmp all custom ${dumpfreq} post/dump_*.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.liggghts id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 
 # getting the simulation started - first values for ke are copmuted
 run		1000
@@ -132,9 +131,9 @@ variable	kin_en_thre equal 1e-8
 
 # loop terminates when particles are settled in the cylinder
 label loop
-  print "-----> Checking Kinetic Energy..." 
-  if "${ke} < ${kin_en_thre}" then "jump in.repose endloop" 
-  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run" 
+  print "-----> Checking Kinetic Energy..."
+  if "${ke} < ${kin_en_thre}" then "jump in.repose endloop"
+  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"
   run 10000
 jump in.repose loop
 label endloop
@@ -144,25 +143,27 @@ unfix		ins
 
 # now save data
 # dump particle data
-variable    outKe equal ke #c_cke
-fix         dmpData all print 1 "${outKe}" screen no title "ke" file data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc3.txt
+variable	rke equal c_cero
+variable	stepsrun equal step
+variable	stepsrun equal ${stepsrun}-1
+variable	time equal (step-v_stepsrun)*dt
+fix		dmpData all print 100 "${time} ${ke} ${rke}" screen no title "t ke rke" file post/data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc3.txt
 
 #removing outer cylinder and the remaining walls
 unfix 		zCylWall
 unfix 		zwallTop
 
-run       ${nStepsRun}
+run 		${nStepsRun}
 
 
-#run 		10000 
+#run 		10000
 
 # loop terminates when the angle of repose reaches a stable state
 #label loop2
-#  print "-----> Checking Kinetic Energy..." 
-#  if "${ke} < ${kin_en_thre}" then "jump in.repose endloop2" 
-#  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run" 
+#  print "-----> Checking Kinetic Energy..."
+#  if "${ke} < ${kin_en_thre}" then "jump in.repose endloop2"
+#  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"
 #  run 10000
 #jump in.repose loop2
 #label endloop2
-
 

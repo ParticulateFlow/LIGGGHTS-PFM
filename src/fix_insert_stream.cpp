@@ -397,11 +397,20 @@ void FixInsertStream::init()
 
 /* ---------------------------------------------------------------------- */
 
+void FixInsertStream::setup_pre_exchange()
+{
+
+}
+
+/* ---------------------------------------------------------------------- */
+
 double FixInsertStream::insertion_fraction()
 {
     /*NL*/ if(0 == comm->me && ins_face->isMoving()) fprintf(screen,"Ins face MOVING\n");
     // have to re-calculate insertion fraction for my subbox
-    // in case simulation box is changing
+    // in case subdomains of simulation box are changing
+    //NP ATTENTION domain->box_change_domain is false even if box is changing size, i.e.
+    //NP subboxes are changing size
     if(domain->box_change || do_ins_fraction_calc || ins_face->isMoving())
         calc_ins_fraction();
 
@@ -856,7 +865,7 @@ void FixInsertStream::end_of_step()
             // integrate with constant vel
             else
             {
-                //NP dont for multisphere particles as well
+                //NP do for multisphere particles as well
                 //NP but is overridden by set_xv()
 
                 time_elapsed = (step - i_step) * dt;
@@ -878,4 +887,42 @@ void FixInsertStream::end_of_step()
     }
 
     /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::end_of_step() end\n");
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsertStream::reset_timestep(bigint newstep,bigint oldstep)
+{
+    //NP have to reset release data in case time step
+    //NP is changed
+    reset_releasedata(newstep,oldstep);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsertStream::reset_releasedata(bigint newstep,bigint oldstep)
+{
+  //NP need to reset releasedata in case of restart, since
+  //NP reset_timestep might have been called
+
+  int nlocal = atom->nlocal;
+  double **x = atom->x;
+  double **release_data = fix_release->array_atom;
+
+  for(int i = 0; i < nlocal; i++)
+  {
+        /*NL*/ //fprintf(screen,"release_data[i][4]-release_data[i][3] %f\n",release_data[i][4]-release_data[i][3]);
+
+        // first 3 values is original position to integrate
+        vectorCopy3D(x[i],release_data[i]);
+
+        // 4th value is insertion step
+        release_data[i][3] -= static_cast<double>(oldstep-newstep);
+
+        // 5th value is step to release
+        release_data[i][4] -= static_cast<double>(oldstep-newstep);
+
+        // 6-8th value is integration velocity
+        vectorCopy3D(v_normal,&release_data[i][5]);
+  }
 }

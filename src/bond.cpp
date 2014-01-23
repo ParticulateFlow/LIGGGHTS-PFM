@@ -16,9 +16,10 @@
 #include "atom.h"
 #include "comm.h"
 #include "force.h"
+#include "suffix.h"
+#include "atom_masks.h"
 #include "memory.h"
 #include "error.h"
-#include "suffix.h"
 
 using namespace LAMMPS_NS;
 
@@ -30,6 +31,7 @@ using namespace LAMMPS_NS;
 Bond::Bond(LAMMPS *lmp) : Pointers(lmp)
 {
   energy = 0.0;
+  writedata = 1;
 
   allocated = 0;
   suffix_flag = Suffix::NONE;
@@ -37,6 +39,10 @@ Bond::Bond(LAMMPS *lmp) : Pointers(lmp)
   maxeatom = maxvatom = 0;
   eatom = NULL;
   vatom = NULL;
+  setflag = NULL;
+
+  datamask = ALL_MASK;
+  datamask_ext = ALL_MASK;
 
   ngranhistory = 0; //NP modified C.K.
 }
@@ -55,7 +61,8 @@ Bond::~Bond()
 
 void Bond::init()
 {
-  if (!allocated) error->all(FLERR,"Bond coeffs are not set");
+  if (!allocated && atom->nbondtypes)
+    error->all(FLERR,"Bond coeffs are not set");
   for (int i = 1; i <= atom->nbondtypes; i++)
     if (setflag[i] == 0) error->all(FLERR,"All bond coeffs are not set");
   init_style();
@@ -71,7 +78,8 @@ void Bond::n_granhistory(int nhist)
     atom->n_bondhist = ngranhistory;
 
     //NP error check necessary because n_bondhist influences avec grow
-    if(atom->nmax) error->all(FLERR,"This bond style must be defined before any atoms are added to the system");
+    //NP do not check this here since is already set before in AtomVecBondGran::settings()
+    //if(atom->nmax) error->all(FLERR,"This bond style must be defined before any atoms are added to the system");
 }
 
 /* ----------------------------------------------------------------------

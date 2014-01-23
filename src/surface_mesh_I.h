@@ -723,6 +723,8 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNodeNeighs(int tag_a, int 
         if(neighFaces_(a)[i] == tag_b)
             areNeighs = true;
 
+    //NP explicity calculate nSharedNodes here
+    //NP could be pre-calculated, but is a rare case
     if(!areNeighs && MultiNodeMesh<NUM_NODES>::nSharedNodes(a,b) == 0) return false;
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));

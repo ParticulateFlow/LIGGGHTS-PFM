@@ -133,7 +133,7 @@ void Balance::command(int narg, char **arg)
         user_xsplit[0] = 0.0;
         iarg++;
         for (int i = 1; i < procgrid[0]; i++)
-          user_xsplit[i] = force->numeric(arg[iarg++]);
+          user_xsplit[i] = force->numeric(FLERR,arg[iarg++]);
         user_xsplit[procgrid[0]] = 1.0;
       }
     } else if (strcmp(arg[iarg],"y") == 0) {
@@ -151,7 +151,7 @@ void Balance::command(int narg, char **arg)
         user_ysplit[0] = 0.0;
         iarg++;
         for (int i = 1; i < procgrid[1]; i++)
-          user_ysplit[i] = force->numeric(arg[iarg++]);
+          user_ysplit[i] = force->numeric(FLERR,arg[iarg++]);
         user_ysplit[procgrid[1]] = 1.0;
       }
     } else if (strcmp(arg[iarg],"z") == 0) {
@@ -169,7 +169,7 @@ void Balance::command(int narg, char **arg)
         user_zsplit[0] = 0.0;
         iarg++;
         for (int i = 1; i < procgrid[2]; i++)
-          user_zsplit[i] = force->numeric(arg[iarg++]);
+          user_zsplit[i] = force->numeric(FLERR,arg[iarg++]);
         user_zsplit[procgrid[2]] = 1.0;
       }
 
@@ -182,9 +182,9 @@ void Balance::command(int narg, char **arg)
       if (dimension == 3) zflag = DYNAMIC;
       if (strlen(arg[iarg+1]) > 3) error->all(FLERR,"Illegal balance command");
       strcpy(bstr,arg[iarg+1]);
-      nitermax = atoi(arg[iarg+2]);
+      nitermax = force->inumeric(FLERR,arg[iarg+2]);
       if (nitermax <= 0) error->all(FLERR,"Illegal balance command");
-      thresh = atof(arg[iarg+3]);
+      thresh = force->numeric(FLERR,arg[iarg+3]);
       if (thresh < 1.0) error->all(FLERR,"Illegal balance command");
       iarg += 4;
 
@@ -531,10 +531,11 @@ int Balance::dynamic()
     np = procgrid[bdim[idim]];
     tally(bdim[idim],np,split);
 
-    //NP modified C.K.
+    //NP modified C.K. begin
     memory->destroy(split_old);
     memory->create(split_old,np+1,"balance:split_old");
     vectorCopyN(split,split_old,np+1);
+    //NP modified C.K. end
 
     // target[i] = desired sum at split I
 
@@ -626,7 +627,7 @@ int Balance::dynamic()
       }
     }
 
-    //NP modified C.K.
+    //NP modified C.K. begin
     //NP in case irregular is disallowed, take care borders are not shifted too far
     if(disallow_irregular())
     {
@@ -647,6 +648,7 @@ int Balance::dynamic()
             /*NL*/ //fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
         }
     }
+    //NP modified C.K. end
 
     // sanity check on bad duplicate or inverted splits
     // zero or negative width sub-domains will break Comm class
@@ -672,8 +674,7 @@ int Balance::dynamic()
     if (imbfactor <= thresh) break;
   }
 
-  //NP modified C.K.
-  memory->destroy(split_old);
+  memory->destroy(split_old);   //NP modified C.K.
 
   // restore real coords
 
@@ -1015,7 +1016,7 @@ void Balance::dumpout(bigint tstep, FILE *bfp)
           fprintf(bfp,"%d %d %g %g %g\n",m+1,1,
                   boxlo[0] + prd[0]*comm->xsplit[i],
                   boxlo[1] + prd[1]*comm->ysplit[j],
-                  boxlo[2] + prd[2]*comm->zsplit[j]);
+                  boxlo[2] + prd[2]*comm->zsplit[k]);
           m++;
       }
   }

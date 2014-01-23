@@ -38,9 +38,7 @@ class FixWallSphGeneralSimple : public FixWallGran {
       FixWallSphGeneralSimple(class LAMMPS *, int, char **);
       ~FixWallSphGeneralSimple();
 
-      void compute_force(int ip,double deltan,double rsq,double meff_wall,
-                            double dx,double dy,double dz,double *vwall,
-                            double *c_history,double area_ratio);
+      void compute_force(CollisionData & cdata, double *vwall);
 
     protected:
 

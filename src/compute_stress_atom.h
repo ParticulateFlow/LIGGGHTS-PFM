@@ -44,7 +44,7 @@ class ComputeStressAtom : public Compute {
   void unpack_reverse_comm(int, int *, double *);
   double memory_usage();
 
-  //NP modified C.K.
+  //NP modified C.K. to be able to send to ghosts
   int pack_comm(int n, int *list, double *buf, int pbc_flag, int *pbc);
   void unpack_comm(int n, int first, double *buf);
 

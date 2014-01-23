@@ -260,9 +260,6 @@ per balancing-step is limited, and (c) the fix balance command must
 come after all particle insertion commands in the input script. 
 In practice, these should not be severe restrictions.
 
-The fix balance command cannot yet be used with the long-range
-Coulombic PPPM solver invoked by "kspace_style pppm"_kspace_style,html.
-
 [Related commands:]
 
 "processors"_processors.html, "balance"_balance.html

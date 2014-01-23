@@ -36,7 +36,8 @@ namespace LAMMPS_NS {
 
 class AtomVecBondGran : public AtomVec {
  public:
-  AtomVecBondGran(class LAMMPS *, int, char **);
+  AtomVecBondGran(class LAMMPS *);
+  void settings(int narg, char **arg);
   void init();
   void grow(int);
   void grow_reset();
@@ -59,8 +60,12 @@ class AtomVecBondGran : public AtomVec {
   int pack_restart(int, double *);
   int unpack_restart(double *);
   void create_atom(int, double *);
-  void data_atom(double *, int, char **);
+  void data_atom(double *, tagint, char **);
   int data_atom_hybrid(int, char **);
+  void pack_data(double **);
+  int pack_data_hybrid(int, double *);
+  void write_data(FILE *, int, double **);
+  int write_data_hybrid(FILE *, double *);
   bigint memory_usage();
 
  private:

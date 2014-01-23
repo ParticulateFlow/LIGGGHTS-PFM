@@ -62,10 +62,10 @@ namespace LAMMPS_NS {
 
       void reset_forces(bool extflag);
 
-      void* extract(char *name, int &, int &);
+      void* extract(const char *name, int &, int &);
 
-      double *extract_double_scalar(char *name);
-      double **extract_double_vector(char *name);
+      double *extract_double_scalar(const char *name);
+      double **extract_double_vector(const char *name);
 
       double extract_ke();
       double extract_rke();
@@ -135,13 +135,13 @@ namespace LAMMPS_NS {
       // # of local rigid bodies, and global # bodies on all procs
       int nbody_, nbody_all_;
 
-      // ID of rigid body
-      //NP IDs start with 1
-      ScalarContainer<int> &id_;
-
       // global-local lookup
       int mapTagMax_;
       int *mapArray_;
+
+      // ID of rigid body
+      //NP IDs start with 1
+      ScalarContainer<int> &id_;
 
       // basic body properties
 

@@ -43,7 +43,7 @@ class FixCheckTimestepGran : public Fix {
 
  private:
   class MechParamGran* mpg;
-  class PairGranHookeHistory* pg;
+  class PairGran* pg;
   class FixWallGran* fwg;
   class FixPropertyGlobal* Y;
   class FixPropertyGlobal* nu;
@@ -54,6 +54,7 @@ class FixCheckTimestepGran : public Fix {
   double vmax; //max relative velocity
   double r_min;
   bool warnflag;
+  double ** Yeff;
 };
 
 }

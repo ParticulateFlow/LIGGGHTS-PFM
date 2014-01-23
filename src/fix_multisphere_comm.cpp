@@ -449,7 +449,7 @@ void FixMultisphere::unpack_reverse_comm_image(int n, int *list, double *buf)
     int i,j,flag,m = 0;
 
     int nlocal = atom->nlocal;
-    int *image = atom->image;
+    tagint *image = atom->image;
     double *corner_ghost = fix_corner_ghost_->vector_atom;
 
     for (i = 0; i < n; i++) {

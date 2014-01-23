@@ -33,8 +33,8 @@ timestep	0.00001
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #the chute
-fix		cad all mesh/surface/stress/contact file simple_chute.stl type 1 wear finnie start_step_ave 20000
-fix		inface all mesh/surface file insertion_face.stl type 1
+fix		cad all mesh/surface/stress/contact file meshes/simple_chute.stl type 1 wear finnie start_step_ave 20000
+fix		inface all mesh/surface file meshes/insertion_face.stl type 1
 fix		granwalls all wall/gran/hertz/history mesh n_meshes 1 meshes cad
 
 

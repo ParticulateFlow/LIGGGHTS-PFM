@@ -92,7 +92,7 @@ fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${fr
 fix     m7 all property/global coefficientRollingViscousDamping peratomtypepair 1 ${rvisc}
 
 #pair style
-pair_style 	gran/hertz/history rolling_friction ${rfStyle}
+pair_style gran model hertz tangential history rolling_friction ${rfStyle}
 pair_coeff	* *
 
 #timestep
@@ -102,7 +102,7 @@ timestep	${dt}
 fix		gravi all gravity 9.81 vector 0.0 0.0 ${gravz}
 
 #walls
-fix		zwall all wall/gran/hertz/history   primitive type 1  zplane ${nz} rolling_friction ${rfStyle}
+fix zwall all wall/gran model hertz tangential history rolling_friction ${rfStyle} primitive type 1 zplane ${nz}
 
 #particle insertion
 region    bc block 0 ${aBox} 0 ${aBox} 0. ${lat} units box
@@ -203,4 +203,6 @@ label rfLoop
 label endrfLoop
 
 print "final rf ${frf}"
+fix DumpText all print 1 "final coefficient of rolling friction: ${frf}" screen no title "" file post/rollFric.txt
+run 1
 

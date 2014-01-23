@@ -45,6 +45,8 @@ class FixInsertStreamMoving : public FixInsertStream {
   virtual int release_step_index()
   { return 6; }
 
+  void reset_releasedata(bigint newstep,bigint oldstep);
+
  private:
 
   virtual void finalize_insertion(int);

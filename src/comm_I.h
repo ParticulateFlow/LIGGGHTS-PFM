@@ -28,6 +28,17 @@
 using namespace LAMMPS_NS;
 
 /* ----------------------------------------------------------------------
+   decide if use comm optimizations for granular systems
+   don't use for triclinic (current implementation not valid for triclinic,
+   would have to translate radius into triclinic coordinates)
+------------------------------------------------------------------------- */
+
+inline bool Comm::use_gran_opt()
+{
+    return (0 == domain->triclinic && atom->radius);
+}
+
+/* ----------------------------------------------------------------------
    decide if border element, optimization for granular
 ------------------------------------------------------------------------- */
 
@@ -41,8 +52,8 @@ inline bool Comm::decide(int i,int dim,double lo,double hi,int ineed)
     //NP only extracted half cutghost before in setup()
     //NP so account for radius here
     //NP going left first line / going right second line
-    if( ((ineed % 2 == 0) && x[i][dim] >= lo && x[i][dim] <= (hi + (radius? (radius[i]) : 0.)) ) ||
-        ((ineed % 2 == 1) && x[i][dim] >= (lo - (radius? radius[i] : 0.)) && x[i][dim] <= hi )   )
+    if( ((ineed % 2 == 0) && x[i][dim] >= lo && x[i][dim] <= (hi + (use_gran_opt()? (radius[i]) : 0.)) ) ||
+        ((ineed % 2 == 1) && x[i][dim] >= (lo - (use_gran_opt()? radius[i] : 0.)) && x[i][dim] <= hi )   )
         return true;
 
     return false;
@@ -68,7 +79,7 @@ inline bool Comm::decide_wedge(int i,int dim,double lo,double hi,int ineed)
     if (ineed % 2 == 0)
     {
         vectorSubtract2D(coo,pleft,d);
-        if(vectorDot2D(d,nleft) >= -(radius? radius[i] : 0.))
+        if(vectorDot2D(d,nleft) >= -(use_gran_opt()? radius[i] : 0.))
         {
             /*NL*/ //fprintf(screen,"particle tag %d: left YES, vectorDot2D(d,nleft) %f ineed %d\n",atom->tag[i],vectorDot2D(d,nleft),ineed);
             /*NL*/ //printVec3D(screen," x",atom->x[i]);
@@ -82,7 +93,7 @@ inline bool Comm::decide_wedge(int i,int dim,double lo,double hi,int ineed)
     else if (ineed % 2 == 1)
     {
         vectorSubtract2D(coo,pright,d);
-        if(vectorDot2D(d,nright) >= -(radius? radius[i] : 0.))
+        if(vectorDot2D(d,nright) >= -(use_gran_opt()? radius[i] : 0.))
         {
             /*NL*/ //fprintf(screen,"particle tag %d: right YES, vectorDot2D(d,nright) %f ineed %d\n",atom->tag[i],vectorDot2D(d,nright),ineed);
             /*NL*/ //printVec3D(screen," x",atom->x[i]);

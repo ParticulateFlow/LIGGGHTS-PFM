@@ -45,7 +45,7 @@ FixBalance::FixBalance(LAMMPS *lmp, int narg, char **arg) :
 {
   if (narg < 7) error->all(FLERR,"Illegal fix balance command");
 
-  box_change = 1;
+  box_change_domain = 1;
   scalar_flag = 1;
   extscalar = 0;
   vector_flag = 1;
@@ -57,11 +57,11 @@ FixBalance::FixBalance(LAMMPS *lmp, int narg, char **arg) :
 
   int dimension = domain->dimension;
 
-  nevery = atoi(arg[3]);
+  nevery = force->inumeric(FLERR,arg[3]);
   if (strlen(arg[4]) > 3) error->all(FLERR,"Illegal fix balance command");
   strcpy(bstr,arg[4]);
-  nitermax = atoi(arg[5]);
-  thresh = atof(arg[6]);
+  nitermax = force->inumeric(FLERR,arg[5]);
+  thresh = force->numeric(FLERR,arg[6]);
 
   if (nevery < 0 || nitermax <= 0 || thresh < 1.0)
     error->all(FLERR,"Illegal fix balance command");
@@ -148,10 +148,8 @@ int FixBalance::setmask()
 
 void FixBalance::init()
 {
-  // don't allow PPPM for now
-
-  if (force->kspace && strstr(force->kspace_style,"pppm"))
-    error->all(FLERR,"Cannot yet use fix balance with PPPM");
+  if (force->kspace) kspace_flag = 1;
+  else kspace_flag = 0;
 
   //NP modified C.K.
   //NP all fixes that insert particles must come before this fix
@@ -291,9 +289,9 @@ void FixBalance::rebalance()
   }
   if (domain->triclinic) domain->lamda2x(atom->nlocal);
 
-  // NOTE: still to be implemented
-  // check that new sub-domains are valid with KSpace constraints
-  // if (kspace_flag) force->kspace->check();
+  // invoke KSpace setup_grid() to adjust to new proc sub-domains
+
+  if (kspace_flag) force->kspace->setup_grid();
 
   // pending triggers pre_neighbor() to compute final imbalance factor
   // can only be done after atoms migrate in caller's comm->exchange()

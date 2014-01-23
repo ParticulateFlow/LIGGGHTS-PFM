@@ -657,7 +657,7 @@ void FixBondCreateGran::grow_arrays(int nmax)
    copy values within local atom-based arrays
 ------------------------------------------------------------------------- */
 
-void FixBondCreateGran::copy_arrays(int i, int j)
+void FixBondCreateGran::copy_arrays(int i, int j, int delflag)
 {
   bondcount[j] = bondcount[i];
 }

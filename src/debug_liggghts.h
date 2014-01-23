@@ -41,16 +41,17 @@ inline void __debug__(LAMMPS* lmp)
     /*NL*///printVec3D(lmp->screen,"f for tag 206",lmp->atom->f[lmp->atom->map(206)]);
      /*NL*/Atom *atom = lmp->atom;
      /*NL*/int nlocal = atom->nlocal;
+     /*NL*/fprintf(lmp->screen,"nlocal %d\n",nlocal);
      /*NL*///int nghost = atom->nghost;
      /*NL*///int nall = atom->nlocal+atom->nghost;
 
-     /*NL*/for(int i = 0; i < nlocal; i++)
-     /*NL*/{
-     /*NL*/  printVec3D(lmp->screen,"pos",atom->x[i]);
+     /*NL*///for(int i = 0; i < nlocal; i++)
+     /*NL*///{
+     /*NL*///  printVec3D(lmp->screen,"pos",atom->x[i]);
      /*NL*/  //if(atom->tag[i] == 25 || atom->tag[i] == 30 )fprintf(lmp->screen,"tag %d vel %f %f %f \n",atom->tag[i],atom->v[i][0],atom->v[i][1],atom->v[i][2]);
      /*NL*/  //if(atom->map(atom->tag[i]) >= nlocal)
      /*NL*/   //lmp->error->all(FLERR,"catch");
-     /*NL*/}
+     /*NL*///}
 
 /*NP
     for(int i = 0; i < lmp->modify->nfix; i++)

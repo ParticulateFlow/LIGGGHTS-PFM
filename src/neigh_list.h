@@ -15,6 +15,7 @@
 #define LMP_NEIGH_LIST_H
 
 #include "pointers.h"
+#include "my_page.h"
 
 namespace LAMMPS_NS {
 
@@ -22,6 +23,7 @@ class NeighList : protected Pointers {
  public:
   int index;                       // index of which neigh list it is
                                    // needed when a class invokes it directly
+                                   // also indexes the request it came from
 
   int buildflag;                   // 1 if pair_build invoked every reneigh
   int growflag;                    // 1 if stores atom-based arrays & pages
@@ -38,10 +40,10 @@ class NeighList : protected Pointers {
   double **firstdouble;            // ptr to 1st J double value of each I atom
 
   int pgsize;                      // size of each page
-  int maxpage;                     // # of pages currently allocated
-  int **pages;                     // neighbor list pages for ints
-  double **dpages;                 // neighbor list pages for doubles
-  int dnum;                        // # of doubles for each pair (0 if none)
+  int oneatom;                     // max size for one atom
+  int dnum;                        // # of doubles per neighbor, 0 if none
+  MyPage<int> *ipage;              // pages of neighbor indices
+  MyPage<double> *dpage;           // pages of neighbor doubles, if dnum > 0
 
   // atom types to skip when building list
   // iskip,ijskip are just ptrs to corresponding request
@@ -78,17 +80,18 @@ class NeighList : protected Pointers {
   //NP min and max radius for each level
   double *rmin_multigran, *rmax_multigran;
 
+  //NP modified C.K.
   //int maxstencil_multigran same as maxstencil_multi;
   int **nstencil_multigran;       // # bins in each level-based multi stencil
   int ***stencil_multigran;        // list of bin offsets in each stencil
 
   class CudaNeighList *cuda_list;  // CUDA neighbor list
 
-  NeighList(class LAMMPS *, int);
+  NeighList(class LAMMPS *);
   ~NeighList();
+  void setup_pages(int, int, int);      // setup page data structures
   void grow(int);                       // grow maxlocal
   void stencil_allocate(int, int);      // allocate stencil arrays
-  int **add_pages(int howmany=1);       // add pages to neigh list
   void copy_skip_info(int *, int **);   // copy skip info from a neigh request
   void print_attributes();              // debug routine
   int get_maxlocal() {return maxatoms;}

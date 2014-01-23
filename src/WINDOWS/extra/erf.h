@@ -1,7 +1,8 @@
 # ifndef ERF_H
 # define ERF_H
 
-# ifdef _WIN32
+# if((_WIN32 || _WIN64) && _MSC_VER <= 1700)  //1800=Visual Studio 2013 has already erf and erfc
+
 
 # ifdef __cplusplus
 extern "C" {

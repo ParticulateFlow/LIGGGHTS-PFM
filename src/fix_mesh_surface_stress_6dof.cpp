@@ -105,9 +105,9 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
           if (narg < iarg_+4) error->fix_error(FLERR,this,"not enough arguments for 'com'");
           iarg_++;
           double _com[3];
-          _com[0] = force->numeric(arg[iarg_++]);
-          _com[1] = force->numeric(arg[iarg_++]);
-          _com[2] = force->numeric(arg[iarg_++]);
+          _com[0] = force->numeric(FLERR,arg[iarg_++]);
+          _com[1] = force->numeric(FLERR,arg[iarg_++]);
+          _com[2] = force->numeric(FLERR,arg[iarg_++]);
           xcm_.add(_com);
           set_p_ref(xcm_(0));
           hasargs = true;
@@ -115,24 +115,24 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
           if (narg < iarg_+4) error->fix_error(FLERR,this,"not enough arguments for 'vel'");
           iarg_++;
           double _vel[3];
-          _vel[0] = force->numeric(arg[iarg_++]);
-          _vel[1] = force->numeric(arg[iarg_++]);
-          _vel[2] = force->numeric(arg[iarg_++]);
+          _vel[0] = force->numeric(FLERR,arg[iarg_++]);
+          _vel[1] = force->numeric(FLERR,arg[iarg_++]);
+          _vel[2] = force->numeric(FLERR,arg[iarg_++]);
           vcm_.set(0,_vel);
           hasargs = true;
       } else if(strcmp(arg[iarg_],"angmom") == 0) {
           if (narg < iarg_+4) error->fix_error(FLERR,this,"not enough arguments for 'angmom'");
           iarg_++;
           double _angmom[3];
-          _angmom[0] = force->numeric(arg[iarg_++]);
-          _angmom[1] = force->numeric(arg[iarg_++]);
-          _angmom[2] = force->numeric(arg[iarg_++]);
+          _angmom[0] = force->numeric(FLERR,arg[iarg_++]);
+          _angmom[1] = force->numeric(FLERR,arg[iarg_++]);
+          _angmom[2] = force->numeric(FLERR,arg[iarg_++]);
           angmom_.set(0,_angmom);
           hasargs = true;
       } else if (strcmp(arg[iarg_],"mass") == 0) {
           if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
           iarg_++;
-          double _mass = force->numeric(arg[iarg_++]);
+          double _mass = force->numeric(FLERR,arg[iarg_++]);
           if(_mass <= 0.)
             error->fix_error(FLERR,this,"mass > 0 required");
           mass_.add(_mass);
@@ -142,12 +142,12 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
           iarg_++;
           double **_moi;
           memory->create<double>(_moi,3,3,"6dof:_moi");
-          _moi[0][0] = force->numeric(arg[iarg_++]);
-          _moi[1][1] = force->numeric(arg[iarg_++]);
-          _moi[2][2] = force->numeric(arg[iarg_++]);
-          _moi[0][1] = force->numeric(arg[iarg_++]);
-          _moi[0][2] = force->numeric(arg[iarg_++]);
-          _moi[1][2] = force->numeric(arg[iarg_++]);
+          _moi[0][0] = force->numeric(FLERR,arg[iarg_++]);
+          _moi[1][1] = force->numeric(FLERR,arg[iarg_++]);
+          _moi[2][2] = force->numeric(FLERR,arg[iarg_++]);
+          _moi[0][1] = force->numeric(FLERR,arg[iarg_++]);
+          _moi[0][2] = force->numeric(FLERR,arg[iarg_++]);
+          _moi[1][2] = force->numeric(FLERR,arg[iarg_++]);
           _moi[1][0] = _moi[0][1];
           _moi[2][0] = _moi[0][2];
           _moi[2][1] = _moi[1][2];
@@ -185,7 +185,7 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
           if(strcmp(arg[iarg_++], "angle"))
             error->fix_error(FLERR,this,"expecting keyword 'angle'");
           else
-            rot_flip_angle_ = force->numeric(arg[iarg_++]);
+            rot_flip_angle_ = force->numeric(FLERR,arg[iarg_++]);
           if(rot_flip_angle_ < 0. || rot_flip_angle_ > 90.)
             error->fix_error(FLERR,this,"0° < angle < 90° required");
           rot_flip_angle_ = rot_flip_angle_ * M_PI / 180.;
@@ -196,22 +196,22 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
           suspension_flag_ = true;
           if(strcmp(arg[iarg_++], "k_t"))
             error->fix_error(FLERR,this,"expecting keyword 'k_t'");
-          k_t_ = force->numeric(arg[iarg_++]);
+          k_t_ = force->numeric(FLERR,arg[iarg_++]);
           if(k_t_ < 0.)
             error->fix_error(FLERR,this,"k_t >= 0 required");
           if(strcmp(arg[iarg_++], "c_t"))
             error->fix_error(FLERR,this,"expecting keyword 'c_t'");
-          c_t_ = force->numeric(arg[iarg_++]);
+          c_t_ = force->numeric(FLERR,arg[iarg_++]);
           if(c_t_ < 0.)
             error->fix_error(FLERR,this,"c_t >= 0 required");
           if(strcmp(arg[iarg_++], "k_r"))
             error->fix_error(FLERR,this,"expecting keyword 'k_r'");
-          k_r_ = force->numeric(arg[iarg_++]);
+          k_r_ = force->numeric(FLERR,arg[iarg_++]);
           if(k_r_ < 0.)
             error->fix_error(FLERR,this,"k_r >= 0 required");
           if(strcmp(arg[iarg_++], "c_r"))
             error->fix_error(FLERR,this,"expecting keyword 'c_r'");
-          c_r_ = force->numeric(arg[iarg_++]);
+          c_r_ = force->numeric(FLERR,arg[iarg_++]);
           if(c_r_ < 0.)
             error->fix_error(FLERR,this,"c_r >= 0 required");
           hasargs = true;

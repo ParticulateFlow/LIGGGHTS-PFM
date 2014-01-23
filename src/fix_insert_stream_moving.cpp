@@ -325,3 +325,41 @@ void FixInsertStreamMoving::end_of_step()
 
     /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStreamMoving::end_of_step() end\n");
 }
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsertStreamMoving::reset_releasedata(bigint newstep,bigint oldstep)
+{
+  //NP need to reset releasedata in case of restart, since
+  //NP reset_timeste might have been called
+
+  int nlocal = atom->nlocal;
+  double **x = atom->x;
+  double **release_data = fix_release->array_atom;
+  double x_ins[3], bary[3], dist_normal;
+  int tri_id;
+
+  for(int i = 0; i < nlocal; i++)
+  {
+        // calculate relevant information
+        ins_face_planar->locatePosition(x[i],tri_id,bary,dist_normal);
+
+        // 0 = tri ID
+        release_data[i][0] = static_cast<double>(tri_id);
+
+        // 1,2,3 = bary coos
+        vectorCopy3D(bary,&(release_data[i][1]));
+
+        // 4 = normal dist
+        release_data[i][4] = dist_normal;
+
+        // 5 = insertion step
+        release_data[i][5] -= static_cast<double>(oldstep-newstep);
+
+        // 6 = step to release
+        release_data[i][6] -= static_cast<double>(oldstep-newstep);
+
+        // 7,8,9 = integration velocity
+        vectorCopy3D(v_normal,&release_data[i][7]);
+  }
+}
