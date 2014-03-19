@@ -466,7 +466,10 @@ void Input::substitute(char *&str, char *&str2, int &max, int &max2, int flag)
         beyond = ptr + 2;
         value = variable->retrieve(var);
       }
-      if (value == NULL) error->one(FLERR,"Substitution for illegal variable");
+      if (value == NULL) {
+          /*NL*/ fprintf(screen,"Illegal variable: the unknown variable name is '%s'\n",var);
+          error->one(FLERR,"Substitution for illegal variable");
+      }
 
       // check if storage in str2 needs to be expanded
       // re-initialize ptr and ptr2 to the point beyond the variable.
