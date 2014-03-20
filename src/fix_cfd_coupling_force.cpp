@@ -41,9 +41,11 @@ using namespace FixConst;
 
 FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fix(lmp,narg,arg),
     fix_dragforce_(0),
+    fix_hdtorque_(0),
     fix_coupling_(0),
     fix_volumeweight_(0),
     use_force_(true),
+    use_torque_(true),                                                                              
     use_dens_(false),
     use_type_(false)
 {
@@ -78,8 +80,9 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_type'");
             iarg++;
             hasargs = true;
-        } else if (strcmp(this->style,"couple/cfd/force") == 0)
+        } else if (strcmp(this->style,"couple/cfd/force") == 0){
             error->fix_error(FLERR,this,"unknown keyword");
+        }
     }
 
     // flags for vector output
@@ -118,6 +121,23 @@ void FixCfdCouplingForce::post_create()
         fix_dragforce_ = modify->add_fix_property_atom(11,fixarg,style);
     }
 
+    // register hydrodynamic torque
+    if(!fix_hdtorque_ && use_torque_)
+    {
+        char* fixarg[11];
+        fixarg[0]="hdtorque";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="hdtorque";
+        fixarg[4]="vector"; // 1 vector per particle to be registered
+        fixarg[5]="yes";    // restart
+        fixarg[6]="no";     // communicate ghost
+        fixarg[7]="no";     // communicate rev
+        fixarg[8]="0.";
+        fixarg[9]="0.";
+        fixarg[10]="0.";
+        fix_hdtorque_ = modify->add_fix_property_atom(11,fixarg,style);
+    }
     // register volume weight for volume fraction calculation if not present
     // is 1 per default
     fix_volumeweight_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("volumeweight","property/atom","scalar",0,0,style,false));
@@ -142,6 +162,7 @@ void FixCfdCouplingForce::post_create()
 void FixCfdCouplingForce::pre_delete(bool unfixflag)
 {
     if(unfixflag && fix_dragforce_) modify->delete_fix("dragforce");
+    if(unfixflag && fix_hdtorque_) modify->delete_fix("dragforce");
     if(unfixflag && fix_volumeweight_) modify->delete_fix("volumeweight");
 }
 
@@ -178,6 +199,7 @@ void FixCfdCouplingForce::init()
 
     // values to come from OF
     if(use_force_) fix_coupling_->add_pull_property("dragforce","vector-atom");
+    if(use_torque_) fix_coupling_->add_pull_property("hdtorque","vector-atom");
 
     vectorZeroize3D(dragforce_total);
 }
@@ -188,9 +210,11 @@ void FixCfdCouplingForce::post_force(int vflag)
 {
   double **x = atom->x;
   double **f = atom->f;
+  double **torque = atom->torque;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double **dragforce = fix_dragforce_->array_atom;
+  double **hdtorque = fix_hdtorque_->array_atom;
 
   vectorZeroize3D(dragforce_total);
 
@@ -201,6 +225,7 @@ void FixCfdCouplingForce::post_force(int vflag)
     if (mask[i] & groupbit)
     {
         vectorAdd3D(f[i],dragforce[i],f[i]);
+        vectorAdd3D(torque[i],hdtorque[i],torque[i]);
         vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
     }
   }
