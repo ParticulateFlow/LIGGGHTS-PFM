@@ -57,7 +57,7 @@ set           group all meso_rho 1000
 # for c=20 --> B~60000
 fix		        pressure all sph/pressure Tait 60000. 1000. 7.
 
-fix			plate all mesh/surface file test.stl type 1
+fix			plate all mesh/surface file meshes/test.stl type 1
 
 #box wall
 region        boxw block 0. 0.5  0. 0.1  0. 0.5 units box
@@ -82,7 +82,16 @@ thermo_style	custom step atoms ke vol cpu
 thermo          500
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
-dump	      dmp all custom 500 post/dump*.sph id type type x y z ix iy iz vx vy vz fx fy fz vx vy vz p rho f_force_meshwall[1] f_force_meshwall[2] f_force_meshwall[3]
+dump			dmp all custom 500 post/dump*.sph id type type x y z ix iy iz vx vy vz fx fy fz vx vy vz p rho f_force_meshwall[1] f_force_meshwall[2] f_force_meshwall[3]
+
+compute forceXave all reduce ave f_force_meshwall[1]
+compute forceYave all reduce ave f_force_meshwall[2]
+compute forceZave all reduce ave f_force_meshwall[3]
+variable forceX equal c_forceXave
+variable forceY equal c_forceYave
+variable forceZ equal c_forceZave
+variable time equal step*dt
+fix				dmpTH all print 500 "${time} ${forceX} ${forceY} ${forceZ}" screen no title "t Fx Fy Fz" file post/force_meshwall.txt
 
 run           50000
 

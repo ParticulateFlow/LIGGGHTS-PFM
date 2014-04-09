@@ -75,7 +75,7 @@ fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf
 fix     m7 all property/global coefficientRollingViscousDamping peratomtypepair 1 ${rvisc}
 
 #pair style
-pair_style 	gran/hertz/history rolling_friction ${rfStyle}
+pair_style gran model hertz tangential history rolling_friction ${rfStyle}
 pair_coeff	* *
 
 #timestep
@@ -85,38 +85,38 @@ timestep	${dt}
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #walls
-fix		zwall all wall/gran/hertz/history   primitive type 1 zplane 0.0 rolling_friction ${rfStyle}
+fix zwall all wall/gran model hertz tangential history rolling_friction ${rfStyle} primitive type 1 zplane 0.0
 
 #particle distributions
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad}
-fix		pdd all particledistribution/discrete 1. 1 pts1 1. 
+fix		pdd all particledistribution/discrete 1. 1 pts1 1.
 
 #particle insertion
 region		bc block -${dp} ${dp} -${dp} ${dp} 0.0 ${pzIns} units box
-fix		    ins all insert/pack seed 100001 distributiontemplate pdd vel constant 0. 0. -0.01 insert_every once overlapcheck no all_in yes particles_in_region 1 region bc
+fix		ins all insert/pack seed 100001 distributiontemplate pdd vel constant 0. 0. -0.01 insert_every once overlapcheck no all_in yes particles_in_region 1 region bc
 
 #apply integration
-fix		    integr all nve/sphere
+fix		integr all nve/sphere
 
 #check timestep
-fix   ts all check/timestep/gran 1000 0.2 0.2
+fix		ts all check/timestep/gran 1000 0.2 0.2
 
 #screen output
-compute		    cero all erotate/sphere
-compute       cke all ke
+compute		cero all erotate/sphere
+compute		cke all ke
 thermo_style	custom step atoms ke c_cke c_cero f_ts[1] f_ts[2] cpu
-thermo		    1000
+thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
-run		  1
+run		1
 #dump		dmp all custom 100 ./post/dump_*.liggghts id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius omegaz radius  #orig version
 
 # uncomment if needed
-#dump		dmp all custom ${dumpfreq} ./post/dump_*.liggghts id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius 
+#dump		dmp all custom ${dumpfreq} ./post/dump_*.liggghts id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 
-#run     1000
+#run		1000
 
 #run particle relaxation - check kinetic energy
 variable ke equal c_cke
@@ -126,7 +126,7 @@ variable kin_en_thre equal 10^-12
 label loop
   print "-----> Checking Kinetic Energy..."
   if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc2 endloop"
-  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
+  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"
   run 1000
 jump in.epsd_tc2 loop
 label endloop
@@ -145,9 +145,12 @@ variable    wz equal omegaz[1]
 variable    tqx equal tqx[1]
 variable    tqy equal tqy[1]
 variable    tqz equal tqz[1]
-fix     dmpData all print 1 "$x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc2.txt
+variable    stepsrun equal step
+variable    stepsrun equal ${stepsrun}-1
+variable    time equal (step-v_stepsrun)*dt
+fix		dmpData all print 5 "${time} $x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "t X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file post/data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc2.txt
 
-dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz tqx tqy tqz radius 
+dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz tqx tqy tqz radius
 
 run ${dumpfreq}
 
@@ -164,7 +167,7 @@ run ${nStepsRun}
 #label loop2
 #  print "-----> Checking Kinetic Energy..."
 #  if "${ke} < ${kin_en_thre}" then "jump in.epsd_tc2 endloop2"
-#  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
+#  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"
 #  #set group all vx 0. vy 0. vz 0.
 #  run 1000
 #jump in.epsd_tc2 loop2

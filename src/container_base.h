@@ -45,17 +45,17 @@ namespace LAMMPS_NS
   {
       public:
 
-          ContainerBase(char *_id);
+          ContainerBase(const char *_id);
 
           //NP need to make this virtual to have the correct destructor of derived class
           //NP called via delete in AssociativePointerArray class
           virtual ~ContainerBase();
 
-          void setProperties(char *_id, char* _comm, char* _ref, char *_restart,int _scalePower = 1);
+          void setProperties(const char *_id, const char* _comm, const char* _ref, const char *_restart,int _scalePower = 1);
           bool propertiesSetCorrectly();
 
           inline void id(char *_id);
-          inline bool matches_id(char *_id);
+          inline bool matches_id(const char *_id);
 
           virtual bool isDoubleData() = 0;
           virtual bool isIntData() = 0;
@@ -109,7 +109,7 @@ namespace LAMMPS_NS
 
      protected:
 
-          ContainerBase(char *_id, char* _comm, char* _ref, char *_restart,int _scalePower);
+          ContainerBase(const char *_id, const char* _comm, const char* _ref, const char *_restart,int _scalePower);
           ContainerBase(ContainerBase const &orig);
 
           inline bool isScaleInvariant();

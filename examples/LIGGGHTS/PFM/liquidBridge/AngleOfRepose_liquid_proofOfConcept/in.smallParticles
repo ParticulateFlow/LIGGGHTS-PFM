@@ -38,7 +38,7 @@ units			si
 region			reg block -0.01 0.01 -0.01 0.01 -0.01 0.01 units box
 create_box		2 reg
 
-neighbor		${rad}*${cg} bin
+neighbor		${rad} bin
 neigh_modify    delay 0
 
 
@@ -55,21 +55,20 @@ fix 		m6 all property/global liquidVolume scalar ${VLiqu}
 fix		    m7 all property/global surfaceTension scalar ${sigma}
 
 #New pair style
-pair_style 	gran/hertz/history/liquid cohesion capillary rolling_friction cdt #Hertzian with cohesion
-#pair_style 	gran/hertz/history/liquid rolling_friction cdt #Hertzian with cohesion
+pair_style 	gran model hertz tangential history cohesion capillary rolling_friction cdt #Hertzian with cohesion
 pair_coeff	* *
 
 timestep	${dt}
 
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
-fix		pt1 all mesh/surface/stress file bottomBig.stl type 1 scale ${scale}
-fix		pt2 all mesh/surface/stress file compFace.stl type 1 scale ${scale} move 0. 0. 0.002
-fix		pt3 all mesh/surface/stress file cylinder.stl type 2 scale ${scale}
-fix		granwalls all wall/gran/hertz/history mesh n_meshes 3 meshes pt1 pt2 pt3 store_force yes
+fix		pt1 all mesh/surface/stress file meshes/bottomBig.stl type 1 scale ${scale}
+fix		pt2 all mesh/surface/stress file meshes/compFace.stl type 1 scale ${scale} move 0. 0. 0.002
+fix		pt3 all mesh/surface/stress file meshes/cylinder.stl type 2 scale ${scale}
+fix		granwalls all wall/gran model hertz tangential history mesh n_meshes 3 meshes pt1 pt2 pt3 store_force yes
 
 #region for insertion
-fix		inface all mesh/surface file entry.stl type 2 scale ${scale} move 0. 0. 0 
+fix		inface all mesh/surface file meshes/entry.stl type 2 scale ${scale} move 0. 0. 0 
 
 
 #distributions for insertion
@@ -114,6 +113,8 @@ variable vcmx equal vcm(all,x)
 variable vcmy equal vcm(all,y)
 variable vcmz equal vcm(all,z)
 variable vave equal sqrt(v_vcmx*v_vcmx+v_vcmy*v_vcmy+v_vcmz*v_vcmz)
+variable time equal step*dt
+fix			dmpTH all print 100 "${time} ${vave}" screen no title "t vave" file post/vave.txt
 label loop
   print "-----> Checking Velocity..."
   if "${vave}<${vthre}" then "jump in.smallParticles endloop"
@@ -133,7 +134,7 @@ unfix 	movecyl
 #fix 		moveface all move/mesh mesh pt2 linear 0. 0. -0.001
 
 ##################################################
-variable vthre equal 0.0005
+variable vthre equal 0.00005
 variable vcmx equal vcm(all,x)
 variable vcmy equal vcm(all,y)
 variable vcmz equal vcm(all,z)

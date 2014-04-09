@@ -83,7 +83,7 @@ inline void Multisphere::reset_forces(bool extflag)
 
 /* ---------------------------------------------------------------------- */
 
-inline int Multisphere::calc_n_steps(int iatom,int body,double *p_ref,double *normalvec,double *v_normal)
+inline int Multisphere::calc_n_steps(int, int body, double *p_ref, double *normalvec, double *v_normal)
 {
     double pos_rel[3],dt,dist_normal;
     int ibody,timestep,n_steps;

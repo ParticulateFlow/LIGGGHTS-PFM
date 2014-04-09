@@ -29,8 +29,11 @@ namespace LAMMPS_NS {
 
 class CfdRegionmodel : protected Pointers {
  public:
-  CfdRegionmodel(class LAMMPS *lmp, int jarg,int narg, char **arg,class FixCfdCoupling* fc) : Pointers(lmp)
+  CfdRegionmodel(class LAMMPS *lmp, int jarg, int narg, char **arg,class FixCfdCoupling* fc) : Pointers(lmp)
   {
+    UNUSED(narg);
+    UNUSED(jarg);
+    UNUSED(arg);
       this->fc = fc;
   }
   ~CfdRegionmodel() {}
@@ -45,12 +48,12 @@ class CfdRegionmodel : protected Pointers {
   int iarg;
   class FixCfdCoupling *fc;
 
-  void add_push_property(char *name,char *type)
+  void add_push_property(const char *name, const char *type)
   {
      fc->add_push_property(name,type);
   }
 
-  void add_pull_property(char *name,char *type)
+  void add_pull_property(const char *name, const char *type)
   {
      fc->add_pull_property(name,type);
   }

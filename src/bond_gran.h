@@ -43,7 +43,8 @@ class BondGran : public Bond {
   double equilibrium_distance(int);
   void write_restart(FILE *);
   void read_restart(FILE *);
-  double single(int, double, int, int);
+  void write_data(FILE *fp);
+  double single(int, double, int, int,double&);
 
  protected:
   int breakmode;

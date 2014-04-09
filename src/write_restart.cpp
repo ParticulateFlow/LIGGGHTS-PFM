@@ -40,6 +40,7 @@
 #include "neighbor.h"
 #include "domain.h"
 #include "modify.h"
+#include "fix.h"
 #include "universe.h"
 #include "comm.h"
 #include "output.h"
@@ -121,16 +122,11 @@ void WriteRestart::command(int narg, char **arg)
   lmp->init();
 
   // move atoms to new processors before writing file
-  // do pre_exchange so FixContactHistory will store
-  //   current neigh info with atoms
+  // do setup_pre_exchange to force update of per-atom info if needed
   // enforce PBC in case atoms are outside box
   // call borders() to rebuild atom map since exchange() destroys map
 
-   if (modify->n_pre_exchange) modify->pre_exchange();
-   if (domain->triclinic) domain->x2lamda(atom->nlocal);
-   domain->pbc();
-   domain->reset_box();
-
+  modify->setup_pre_exchange();
 
   if (domain->triclinic) domain->x2lamda(atom->nlocal);
   domain->pbc();
@@ -352,6 +348,12 @@ void WriteRestart::write(char *file)
   }
 
   memory->destroy(buf);
+
+  // invoke any fixes that write their own restart file
+
+  for (int ifix = 0; ifix < modify->nfix; ifix++)
+    if (modify->fix[ifix]->restart_file)
+      modify->fix[ifix]->write_restart_file(file);
 }
 
 /* ----------------------------------------------------------------------
@@ -386,6 +388,7 @@ void WriteRestart::header()
   // atom_style must be written before atom class values
   // so read_restart can create class before reading class values
   // if style = hybrid, also write sub-class styles
+  // avec->write_restart() writes atom_style specific info
 
   write_char(ATOM_STYLE,atom->atom_style);
 
@@ -400,6 +403,8 @@ void WriteRestart::header()
       fwrite(keywords[i],sizeof(char),n,fp);
     }
   }
+
+  if (me == 0) atom->avec->write_restart_settings(fp);
 
   write_bigint(NATOMS,natoms);
   write_int(NTYPES,atom->ntypes);

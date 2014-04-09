@@ -50,6 +50,8 @@ void CreateBox::command(int narg, char **arg)
   if (domain->regions[iregion]->bboxflag == 0)
     error->all(FLERR,"Create_box region does not support a bounding box");
 
+  domain->regions[iregion]->init();
+
   // if region not prism:
   //   setup orthogonal domain
   //   set simulation domain from region extent
@@ -93,7 +95,9 @@ void CreateBox::command(int narg, char **arg)
   // if molecular, zero out topology info
 
   if (atom->molecular) {
-    atom->bond_per_atom = 0;
+    //NP need to uncomment this since AtomVecBondGran sets this before
+    //NP since needed for mem allocation
+    //NP atom->bond_per_atom = 0;
     atom->angle_per_atom = 0;
     atom->dihedral_per_atom = 0;
     atom->improper_per_atom = 0;
@@ -105,8 +109,10 @@ void CreateBox::command(int narg, char **arg)
 
   // set atom and topology type quantities
 
-  atom->ntypes = atoi(arg[0]);
-  atom->nbondtypes = 0;
+  atom->ntypes = force->inumeric(FLERR,arg[0]);
+  //NP need to uncomment this since AtomVecBondGran sets this before
+  //NP since needed for mem allocation
+  //NP atom->nbondtypes = 0;
   atom->nangletypes = 0;
   atom->ndihedraltypes = 0;
   atom->nimpropertypes = 0;
@@ -127,10 +133,6 @@ void CreateBox::command(int narg, char **arg)
   if(narg == 2) return;
 
   //NP modified C.K. bonds
-  if(strcmp(arg[2],"bonds") || narg < 5) error->all(FLERR,"Illegal create_box command");
-  atom->nbondtypes = atoi(arg[3]);
-  atom->bond_per_atom = atoi(arg[4]);
-
-  /*NL*/ if(screen) fprintf(screen,"atom->nbondtypes %d atom->bond_per_atom %d\n",atom->nbondtypes,atom->bond_per_atom);
-
+  if(strcmp(arg[2],"bonds") == 0)
+    error->all(FLERR,"Illegal create_box command, 'bonds' keyword moved to atom_style bond/gran command");
 }

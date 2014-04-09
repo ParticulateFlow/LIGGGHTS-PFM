@@ -76,7 +76,7 @@ class FixMultisphere : public Fix
 
       double memory_usage();
       void grow_arrays(int);
-      void copy_arrays(int i, int j);
+      void copy_arrays(int i, int j, int delflag);
 
       void pre_exchange();
       void pre_neighbor();
@@ -125,7 +125,7 @@ class FixMultisphere : public Fix
 
       // public inline access
 
-      void *extract(char *name, int &len1, int &len2)
+      void *extract(const char *name, int &len1, int &len2)
       {
           if (strcmp(name,"body") == 0)
           {

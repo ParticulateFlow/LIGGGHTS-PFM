@@ -157,7 +157,9 @@ void FixMoveMesh::setup(int vflag)
 
     if(!mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v"))
     {
-        mesh_->prop().addElementProperty<MultiVectorContainer<double,3,3> >("v","comm_none","frame_invariant","restart_no");
+        //NP need to have borders comm in order not to loose vel information 
+        //NP for ghost elements on reneighboring steps
+        mesh_->prop().addElementProperty<MultiVectorContainer<double,3,3> >("v","comm_exchange_borders","frame_invariant","restart_no");
         /*NL*/// int size = mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v")->size();
         /*NL*/// fprintf(screen,"proc %d, FixMoveMesh::setup size %d\n",comm->me,size);
     }

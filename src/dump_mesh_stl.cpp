@@ -119,6 +119,7 @@ DumpMeshSTL::DumpMeshSTL(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
       {
           /*NL*/ //fprintf(screen,"nMesh_ %d, found mesh %s\n",nMesh_,modify->find_fix_style("mesh",iMesh)->id);
           meshList_[iMesh] = static_cast<FixMeshSurface*>(modify->find_fix_style("mesh/surface",iMesh))->triMesh();
+          static_cast<FixMeshSurface*>(modify->find_fix_style("mesh/surface",iMesh))->dumpAdd();
       }
 
       if (nMesh_ == 0)
@@ -130,6 +131,11 @@ DumpMeshSTL::DumpMeshSTL(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
 
 DumpMeshSTL::~DumpMeshSTL()
 {
+  for (int iMesh = 0; iMesh < nMesh_; iMesh++)
+  {
+      static_cast<FixMeshSurface*>(modify->find_fix_id(meshList_[iMesh]->mesh_id()))->dumpRemove();
+  }
+
   delete[] meshList_;
 }
 

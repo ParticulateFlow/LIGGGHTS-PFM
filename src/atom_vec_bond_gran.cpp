@@ -24,6 +24,7 @@ See the README file in the top-level LAMMPS directory.
 #include "domain.h"
 #include "modify.h"
 #include "fix.h"
+#include "string.h"
 #include "memory.h"
 #include "error.h"
 #include "comm.h"
@@ -38,8 +39,8 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp, int narg, char **arg) :
-  AtomVec(lmp, narg, arg)
+AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp) :
+  AtomVec(lmp)
 {
   molecular = 1;
   bonds_allow = 1;
@@ -58,6 +59,28 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp, int narg, char **arg) :
   atom->molecule_flag = 1;
 
   fbpg = NULL;
+}
+
+/* ----------------------------------------------------------------------
+   no additional args by default
+------------------------------------------------------------------------- */
+
+void AtomVecBondGran::settings(int narg, char **arg)
+{
+
+  if (narg != 4) error->all(FLERR,"Invalid atom_style bond/gran command,expecting exactly 4 arguments");
+
+  if(strcmp(arg[0],"n_bondtypes"))
+    error->all(FLERR,"Illegal atom_style bond/gran command, expecting 'n_bondtypes'");
+
+  atom->nbondtypes = atoi(arg[1]);
+
+  if(strcmp(arg[2],"bonds_per_atom"))
+    error->all(FLERR,"Illegal atom_style bond/gran command, expecting 'bonds_per_atom'");
+
+  atom->bond_per_atom = atoi(arg[3]);
+
+  /*NL*/ if(screen) fprintf(screen,"atom->nbondtypes %d atom->bond_per_atom %d\n",atom->nbondtypes,atom->bond_per_atom);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -178,7 +201,7 @@ void AtomVecBondGran::copy(int i, int j, int delflag)
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
-      modify->fix[atom->extra_grow[iextra]]->copy_arrays(i,j);
+      modify->fix[atom->extra_grow[iextra]]->copy_arrays(i,j,delflag);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -364,6 +387,11 @@ int AtomVecBondGran::pack_border(int n, int *list, double *buf,
       buf[m++] = molecule[j];
     }
   }
+
+  if (atom->nextra_border)
+    for (int iextra = 0; iextra < atom->nextra_border; iextra++)
+      m += modify->fix[atom->extra_border[iextra]]->pack_border(n,list,&buf[m]);
+
   return m;
 }
 
@@ -414,6 +442,11 @@ int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
       buf[m++] = v[j][2];
     }
   }
+
+  if (atom->nextra_border)
+    for (int iextra = 0; iextra < atom->nextra_border; iextra++)
+      m += modify->fix[atom->extra_border[iextra]]->pack_border(n,list,&buf[m]);
+
   return m;
 }
 
@@ -443,6 +476,11 @@ void AtomVecBondGran::unpack_border(int n, int first, double *buf)
     mask[i] = static_cast<int> (buf[m++]);
     molecule[i] = static_cast<int> (buf[m++]);
   }
+
+  if (atom->nextra_border)
+    for (int iextra = 0; iextra < atom->nextra_border; iextra++)
+      m += modify->fix[atom->extra_border[iextra]]->
+        unpack_border(n,first,&buf[m]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -466,6 +504,11 @@ void AtomVecBondGran::unpack_border_vel(int n, int first, double *buf)
     v[i][1] = buf[m++];
     v[i][2] = buf[m++];
   }
+
+  if (atom->nextra_border)
+    for (int iextra = 0; iextra < atom->nextra_border; iextra++)
+      m += modify->fix[atom->extra_border[iextra]]->
+        unpack_border(n,first,&buf[m]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -495,7 +538,8 @@ int AtomVecBondGran::pack_exchange(int i, double *buf)
   buf[m++] = tag[i];
   buf[m++] = type[i];
   buf[m++] = mask[i];
-  buf[m++] = image[i];
+  buf[m] = 0.0;      // for valgrind
+  *((tagint *) &buf[m++]) = image[i];
 
   buf[m++] = molecule[i];
 
@@ -544,7 +588,7 @@ int AtomVecBondGran::unpack_exchange(double *buf)
   tag[nlocal] = static_cast<int> (buf[m++]);
   type[nlocal] = static_cast<int> (buf[m++]);
   mask[nlocal] = static_cast<int> (buf[m++]);
-  image[nlocal] = static_cast<int> (buf[m++]);
+  image[nlocal] = *((tagint *) &buf[m++]);
 
   molecule[nlocal] = static_cast<int> (buf[m++]);
 
@@ -619,7 +663,8 @@ int AtomVecBondGran::pack_restart(int i, double *buf)
   buf[m++] = tag[i];
   buf[m++] = type[i];
   buf[m++] = mask[i];
-  buf[m++] = image[i];
+  buf[m] = 0.0;      // for valgrind
+  *((tagint *) &buf[m++]) = image[i];
   buf[m++] = v[i][0];
   buf[m++] = v[i][1];
   buf[m++] = v[i][2];
@@ -670,7 +715,7 @@ int AtomVecBondGran::unpack_restart(double *buf)
   tag[nlocal] = static_cast<int> (buf[m++]);
   type[nlocal] = static_cast<int> (buf[m++]);
   mask[nlocal] = static_cast<int> (buf[m++]);
-  image[nlocal] = static_cast<int> (buf[m++]);
+  image[nlocal] = *((tagint *) &buf[m++]);
   v[nlocal][0] = buf[m++];
   v[nlocal][1] = buf[m++];
   v[nlocal][2] = buf[m++];
@@ -682,6 +727,8 @@ int AtomVecBondGran::unpack_restart(double *buf)
     bond_type[nlocal][k] = static_cast<int> (buf[m++]);
     bond_atom[nlocal][k] = static_cast<int> (buf[m++]);
   }
+
+  nspecial[nlocal][0] = nspecial[nlocal][1] = nspecial[nlocal][2] = 0;
 
   if(atom->n_bondhist)
   {
@@ -718,7 +765,8 @@ void AtomVecBondGran::create_atom(int itype, double *coord)
   x[nlocal][1] = coord[1];
   x[nlocal][2] = coord[2];
   mask[nlocal] = 1;
-  image[nlocal] = (512 << 20) | (512 << 10) | 512;
+  image[nlocal] = ((tagint) IMGMAX << IMG2BITS) |
+    ((tagint) IMGMAX << IMGBITS) | IMGMAX;
   v[nlocal][0] = 0.0;
   v[nlocal][1] = 0.0;
   v[nlocal][2] = 0.0;
@@ -735,7 +783,7 @@ void AtomVecBondGran::create_atom(int itype, double *coord)
    initialize other atom quantities
 ------------------------------------------------------------------------- */
 
-void AtomVecBondGran::data_atom(double *coord, int imagetmp, char **values)
+void AtomVecBondGran::data_atom(double *coord, tagint imagetmp, char **values)
 {
   int nlocal = atom->nlocal;
   if (nlocal == nmax) grow(0);
@@ -776,6 +824,63 @@ int AtomVecBondGran::data_atom_hybrid(int nlocal, char **values)
 
   num_bond[nlocal] = 0;
 
+  return 1;
+}
+
+/* ----------------------------------------------------------------------
+   pack atom info for data file including 3 image flags
+------------------------------------------------------------------------- */
+
+void AtomVecBondGran::pack_data(double **buf)
+{
+  error->all(FLERR,"needs revision");
+  int nlocal = atom->nlocal;
+  for (int i = 0; i < nlocal; i++) {
+    buf[i][0] = tag[i];
+    buf[i][1] = molecule[i];
+    buf[i][2] = type[i];
+    buf[i][3] = x[i][0];
+    buf[i][4] = x[i][1];
+    buf[i][5] = x[i][2];
+    buf[i][6] = (image[i] & IMGMASK) - IMGMAX;
+    buf[i][7] = (image[i] >> IMGBITS & IMGMASK) - IMGMAX;
+    buf[i][8] = (image[i] >> IMG2BITS) - IMGMAX;
+  }
+}
+
+/* ----------------------------------------------------------------------
+   pack hybrid atom info for data file
+------------------------------------------------------------------------- */
+
+int AtomVecBondGran::pack_data_hybrid(int i, double *buf)
+{
+  error->all(FLERR,"needs revision");
+  buf[0] = molecule[i];
+  return 1;
+}
+
+/* ----------------------------------------------------------------------
+   write atom info to data file including 3 image flags
+------------------------------------------------------------------------- */
+
+void AtomVecBondGran::write_data(FILE *fp, int n, double **buf)
+{
+  error->all(FLERR,"needs revision");
+  for (int i = 0; i < n; i++)
+    fprintf(fp,"%d %d %d %-1.16e %-1.16e %-1.16e %d %d %d\n",
+            (int) buf[i][0],(int) buf[i][1],(int) buf[i][2],
+            buf[i][3],buf[i][4],buf[i][5],
+            (int) buf[i][6],(int) buf[i][7],(int) buf[i][8]);
+}
+
+/* ----------------------------------------------------------------------
+   write hybrid atom info to data file
+------------------------------------------------------------------------- */
+
+int AtomVecBondGran::write_data_hybrid(FILE *fp, double *buf)
+{
+  error->all(FLERR,"needs revision");
+  fprintf(fp," %d",(int) buf[0]);
   return 1;
 }
 

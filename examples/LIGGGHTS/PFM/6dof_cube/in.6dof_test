@@ -33,10 +33,10 @@ fix		1 all nve/sphere
 fix		2 all gravity 9.81 vector 0.0 0.0 -1.0
 
 #import triangular mesh from cad with 6dof
-#mass = 0.2^3* 5000 = 40 kg 
+#mass = 0.2^3* 5000 = 40 kg
 #inertia = 1/6 m 0.2^2 = 0.266666 kg m^2
-fix		cube all mesh/surface/stress/6dof file cube.stl type 1 &
-		com 0. 0. 0. vel 0. 0. -0.5 mass 40 moi 0.266666 0.266666 0.266666 0. 0. 0. angmom 1. 0. 0. 
+fix		cube all mesh/surface/stress/6dof file meshes/cube.stl type 1 &
+		com 0. 0. 0. vel 0. 0. -0.5 mass 40 moi 0.266666 0.266666 0.266666 0. 0. 0. angmom 1. 0. 0.
 
 
 #granular walls
@@ -57,8 +57,8 @@ fix		ins all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0
 		insert_every once overlapcheck yes all_in yes volumefraction_region 0.25 region insreg
 
 
-compute		1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 vol
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
 thermo			1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes

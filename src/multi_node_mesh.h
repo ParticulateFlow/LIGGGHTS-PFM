@@ -127,13 +127,13 @@ namespace LAMMPS_NS
         virtual int sizeGhost() = 0;
         virtual int sizeGlobal() = 0;
 
-      protected:
+        virtual bool isDeforming()
+        { return false; }
 
+      protected:
         MultiNodeMesh(LAMMPS *lmp);
         virtual ~MultiNodeMesh();
 
-        virtual bool isDeforming()
-        { return false; }
 
         virtual bool addElement(double **nodeToAdd);
         virtual void deleteElement(int n);

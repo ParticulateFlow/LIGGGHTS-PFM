@@ -72,7 +72,7 @@ fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 0.1
 
 
 # pair style
-pair_style 	gran/hertz/history rolling_friction cdt #Hertzian without cohesion
+pair_style gran model hertz tangential history rolling_friction cdt #Hertzian without cohesion
 pair_coeff	* *
 
 #Timestep
@@ -82,14 +82,14 @@ timestep	${dt}
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #import triangular mesh from cad
-fix   cad1 all mesh/surface/stress/servo file mesh/plate.stl type 1 scale ${cylRadius} move 0. 0. ${pz} com 0. 0. ${pz} ctrlPV force dim z target_val ${ctrlForce} vel_max ${velMax} kp ${ctrlKp} ki ${ctrlKi} kd ${ctrlKd}
-fix   cad2 all mesh/surface/stress/servo file mesh/rotor.stl type 1 scale ${cylRadius} com 0. 0. 0. target_val ${ctrlTorque} vel_max ${velMax} dim z kp ${ctrlKpTorque} ki ${ctrlKiTorque} kd ${ctrlKdTorque} ctrlPV torque
+fix   cad1 all mesh/surface/stress/servo file meshes/plate.stl type 1 scale ${cylRadius} move 0. 0. ${pz} com 0. 0. ${pz} ctrlPV force axis 0. 0. 1. target_val ${ctrlForce} vel_max ${velMax} kp ${ctrlKp} ki ${ctrlKi} kd ${ctrlKd}
+fix   cad2 all mesh/surface/stress/servo file meshes/rotor.stl type 1 scale ${cylRadius} com 0. 0. 0. target_val ${ctrlTorque} vel_max ${velMax} axis 0. 0. 1. kp ${ctrlKpTorque} ki ${ctrlKiTorque} kd ${ctrlKdTorque} ctrlPV torque
 
 #use the imported mesh as granular wall
-fix   granWall all wall/gran/hertz/history mesh n_meshes 2 meshes cad1 cad2
+fix granWall all wall/gran model hertz tangential history mesh n_meshes 2 meshes cad1 cad2
 
 #additional walls for particle insertation
-fix   wCylinder all wall/gran/hertz/history primitive type 1 zcylinder ${cylRadius} 0. 0.
+fix wCylinder all wall/gran model hertz tangential history primitive type 1 zcylinder ${cylRadius} 0. 0.
 
 # define the material in use
 fix		pts all particletemplate/sphere 5330 atom_type 1 density constant ${dens} radius constant ${rad}
@@ -132,7 +132,7 @@ variable TorqueZ    equal f_cad1[6]
 variable PosX       equal f_cad1[7]
 variable PosY       equal f_cad1[8]
 variable PosZ       equal f_cad1[9]
-fix DumpText all print ${dumpfreqForce} "${ForceX} ${ForceY} ${ForceZ} ${TorqueX} ${TorqueY} ${TorqueZ} ${PosX} ${PosY} ${PosZ}" screen no title "Fx Fy Fz Tx Ty Tz X Y Z" file force.cad1.txt
+fix DumpText all print ${dumpfreqForce} "${ForceX} ${ForceY} ${ForceZ} ${TorqueX} ${TorqueY} ${TorqueZ} ${PosX} ${PosY} ${PosZ}" screen no title "Fx Fy Fz Tx Ty Tz X Y Z" file post/force.cad1.txt
 
 variable ForceXCad2     equal f_cad2[1]
 variable ForceYCad2     equal f_cad2[2]
@@ -140,7 +140,7 @@ variable ForceZCad2     equal f_cad2[3]
 variable TorqueXCad2    equal f_cad2[4]
 variable TorqueYCad2    equal f_cad2[5]
 variable TorqueZCad2    equal f_cad2[6]
-fix DumpTextCad2 all print ${dumpfreqForce} "${ForceXCad2} ${ForceYCad2} ${ForceZCad2} ${TorqueXCad2} ${TorqueYCad2} ${TorqueZCad2}" screen no title "Fx Fy Fz Tx Ty Tz" file force.cad2.txt
+fix DumpTextCad2 all print ${dumpfreqForce} "${ForceXCad2} ${ForceYCad2} ${ForceZCad2} ${TorqueXCad2} ${TorqueYCad2} ${TorqueZCad2}" screen no title "Fx Fy Fz Tx Ty Tz" file post/force.cad2.txt
 
 #insert particles
 run     ${nStepsInit}

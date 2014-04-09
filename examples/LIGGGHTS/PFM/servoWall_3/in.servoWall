@@ -65,11 +65,11 @@ variable    pz2 equal    10*${cylHeight}          # TEST: Very high simulation d
 variable    nStepsIter      equal   ceil(1e-1/${dt})
 variable    nStepsRun       equal   ceil(1e-1/${dt})
 variable    dumpfreq        equal   ceil(1.0e-2/${dt})
-variable    dumpfreqForce   equal   1 #ceil(1.0e-7/${dt})
+variable    dumpfreqForce   equal   ceil(1.0e-3/${dt})
 #########################################################################################
 
 # writing log file to log folder
-log     logs/log.shearCell_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}
+#log        log/log.shearCell_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}
 
 processors  1 2 1
 
@@ -97,7 +97,7 @@ fix     m4 all property/global coefficientFriction peratomtypepair 1 ${fric}
 fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf}
 
 # pair style
-pair_style 	gran/hertz/history rolling_friction cdt #Hertzian without cohesion
+pair_style gran model hertz tangential history rolling_friction cdt #Hertzian without cohesion
 pair_coeff	* *
 
 #Timestep
@@ -107,14 +107,14 @@ timestep	${dt}
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #import triangular mesh from cad
-fix   cad3 all mesh/surface/stress/servo file mesh/plate.stl type 1 scale ${cylRadius} move 0. 0. ${pz2} com 0. 0. ${pz2} target_val ${ctrlForce} vel_max ${velMax} dim z ctrlPV force ratio ${ratio} mode auto 
+fix   cad3 all mesh/surface/stress/servo file meshes/plate.stl type 1 scale ${cylRadius} move 0. 0. ${pz2} com 0. 0. ${pz2} target_val ${ctrlForce} vel_max ${velMax} axis 0 0 1 ctrlPV force ratio ${ratio} mode auto 
 
 #use the imported mesh as granular wall
-fix		meshWall all wall/gran/hertz/history mesh n_meshes 1 meshes cad3
+fix meshWall all wall/gran model hertz tangential history mesh n_meshes 1 meshes cad3
 
 #additonal walls for particle insertion
-fix   wCylinder all wall/gran/hertz/history primitive type 1 zcylinder ${cylRadius} 0. 0.
-fix   wBottom all wall/gran/hertz/history primitive type 1 zplane 0.
+fix wCylinder all wall/gran model hertz tangential history primitive type 1 zcylinder ${cylRadius} 0. 0.
+fix wBottom all wall/gran model hertz tangential history primitive type 1 zplane 0.
 
 # define the material in use
 fix		pts1 all particletemplate/sphere 5330 atom_type 1 density constant ${dens} radius constant ${rad}
@@ -146,8 +146,8 @@ fix_modify cad3 integrate stop
 
 #insert the first particles so that dump is not empty
 run		  1
-#dump    dmp all custom ${dumpfreq} post/dump*.testServo id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius # MARK:DUMP
-#dump    dumpstl all mesh/stl ${dumpfreq} post/dumpStl.cad3_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}_*.stl cad3 # MARK:DUMP
+dump    dmp all custom ${dumpfreq} post/dump*.servoWall id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius # MARK:DUMP
+dump    dumpstl all mesh/stl ${dumpfreq} post/dumpStl.cad3_*.stl cad3 # MARK:DUMP
 
 #insert particles
 unfix   ins
@@ -158,10 +158,10 @@ print "ke ${ke}"
 
 label loop
   print "-----> Checking Kinetic Energy..."
-  if "${ke} < ${kin_en_thre}" then "jump in.testServo endloop"
-  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"  
+  if "${ke} < ${kin_en_thre}" then "jump in.servoWall endloop"
+  print "-----> ke ${ke}, ke_threshold ${kin_en_thre}, continuing run"
   run ${nStepsIter}
-jump in.testServo loop
+jump in.servoWall loop
 label endloop
 
 # write stl-forces
@@ -174,7 +174,7 @@ variable TorqueZCad3 equal f_cad3[6]
 variable PosX       equal f_cad3[7]
 variable PosY       equal f_cad3[8]
 variable PosZ       equal f_cad3[9]
-fix DumpTextCad3 all print ${dumpfreqForce} "${ForceXCad3} ${ForceYCad3} ${ForceZCad3} ${TorqueXCad3} ${TorqueYCad3} ${TorqueZCad3} ${PosX} ${PosY} ${PosZ}" screen no title "Fx Fy Fz Tx Ty Tz X Y Z" file force.cad3_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}.txt
+fix DumpTextCad3 all print ${dumpfreqForce} "${ForceXCad3} ${ForceYCad3} ${ForceZCad3} ${TorqueXCad3} ${TorqueYCad3} ${TorqueZCad3} ${PosX} ${PosY} ${PosZ}" screen no title "Fx Fy Fz Tx Ty Tz X Y Z" file post/force.cad3_rad${rad}_ym${ym}_dcyldp${dCylDp}_dt${dt}.txt
 
 # now move cad3
 fix_modify cad3 integrate start

@@ -70,7 +70,7 @@ void Coarsegraining::command(int narg, char **arg)
   if (narg < 1) error->all(FLERR,"Illegal coarsegraining command");
 
   int iarg = 0;
-  double cg = force->numeric(arg[iarg++]);
+  double cg = force->numeric(FLERR,arg[iarg++]);
   if(cg < 1.)
     error->all(FLERR,"Illegal coarsegraining command, cg > 1 expected");
 

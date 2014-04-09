@@ -47,7 +47,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   vcm_          (*customValues_.addElementProperty< VectorContainer<double,3> >("vcm","comm_exchange_borders","frame_invariant", "restart_yes")),
   fcm_          (*customValues_.addElementProperty< VectorContainer<double,3> >("fcm","comm_none","frame_invariant", "restart_no")),
   torquecm_     (*customValues_.addElementProperty< VectorContainer<double,3> >("torque","comm_none","frame_invariant", "restart_no")),
-  dragforce_cm_ (*customValues_.addElementProperty< VectorContainer<double,3> >("dragforce","comm_none","frame_invariant", "restart_no")),
+  dragforce_cm_ (*customValues_.addElementProperty< VectorContainer<double,3> >("dragforce_cm","comm_none","frame_invariant", "restart_no")),
 
   angmom_ (*customValues_.addElementProperty< VectorContainer<double,3> >("angmom","comm_exchange_borders","frame_invariant", "restart_yes")),
   omega_  (*customValues_.addElementProperty< VectorContainer<double,3> >("omega","comm_exchange_borders","frame_invariant", "restart_yes")),
@@ -64,7 +64,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
 
   nrigid_    (*customValues_.addElementProperty< ScalarContainer<int> >("nrigid","comm_exchange_borders","frame_invariant", "restart_yes")),
 
-  imagebody_ (*customValues_.addElementProperty< ScalarContainer<int> >("imagebody","comm_exchange_borders","frame_invariant", "restart_yes")),
+  imagebody_ (*customValues_.addElementProperty< ScalarContainer<tagint> >("imagebody","comm_exchange_borders","frame_invariant", "restart_yes")),
   remapflag_ (*customValues_.addElementProperty< VectorContainer<int,4> >("remapflag","comm_none","frame_invariant", "restart_no")),
 
   fflag_ (*customValues_.addElementProperty< VectorContainer<bool,3> >("fflag","comm_exchange_borders","frame_invariant", "restart_yes")),
@@ -127,7 +127,7 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
     ez_space_.add(ez_space_ins);
 
     nrigid_.add(nspheres);
-    imagebody_.add((512 << 20) | (512 << 10) | 512);
+    imagebody_.add((IMGMAX << IMG2BITS) | (IMGMAX << IMGBITS) | IMGMAX);
     remapflag_.addZero();
 
     fflag_.add(flags);
@@ -179,7 +179,7 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
 void Multisphere::remap_bodies(int *body)
 {
 
-  int original,oldimage,newimage;
+  tagint original,oldimage,newimage;
   double xbnd[3],xbnd_old[3],xbnd_diff[3];
 
   // adjust body
@@ -197,25 +197,29 @@ void Multisphere::remap_bodies(int *body)
 
     if (original == imagebody_(ibody)) remapflag_(ibody)[3] = 0;
     else {
-      oldimage = original & 1023;
-      newimage = imagebody_(ibody) & 1023;
+      oldimage = original & IMGMASK;
+      newimage = imagebody_(ibody) & IMGMASK;
       remapflag_(ibody)[0] = newimage - oldimage;
-      oldimage = (original >> 10) & 1023;
-      newimage = (imagebody_(ibody) >> 10) & 1023;
+      oldimage = (original >> IMGBITS) & IMGMASK;
+      newimage = (imagebody_(ibody) >> IMGBITS) & IMGMASK;
       remapflag_(ibody)[1] = newimage - oldimage;
-      oldimage = original >> 20;
-      newimage = imagebody_(ibody) >> 20;
+      oldimage = original >> IMG2BITS;
+      newimage = imagebody_(ibody) >> IMG2BITS;
       remapflag_(ibody)[2] = newimage - oldimage;
       remapflag_(ibody)[3] = 1;
     }
   }
 
   //NP adjust image flags of any atom in a rigid body whose xcm was remapped
-  int *atomimage = atom->image;
+  //NP subtracting remapflag = new-old keeps ix,iy,iz near 0
+  //NP   so body is always in central simulation box
+
+  tagint *atomimage = atom->image;
   int nlocal = atom->nlocal;
   int nghost = atom->nghost;
 
-  int ibody,idim,otherdims;
+  int ibody;
+  tagint idim,otherdims;
 
   for (int i = 0; i < nlocal+nghost; i++)
   {
@@ -232,25 +236,25 @@ void Multisphere::remap_bodies(int *body)
     if (remapflag_(ibody)[3] == 0) continue;
 
     if (remapflag_(ibody)[0]) {
-      idim = atomimage[i] & 1023;
+      idim = atomimage[i] & IMGMASK;
       otherdims = atomimage[i] ^ idim;
       idim -= remapflag_(ibody)[0];
-      idim &= 1023;
+      idim &= IMGMASK;
       atomimage[i] = otherdims | idim;
     }
     if (remapflag_(ibody)[1]) {
-      idim = (atomimage[i] >> 10) & 1023;
-      otherdims = atomimage[i] ^ (idim << 10);
+      idim = (atomimage[i] >> IMGBITS) & IMGMASK;
+      otherdims = atomimage[i] ^ (idim << IMGBITS);
       idim -= remapflag_(ibody)[1];
-      idim &= 1023;
-      atomimage[i] = otherdims | (idim << 10);
+      idim &= IMGMASK;
+      atomimage[i] = otherdims | (idim << IMGBITS);
     }
     if (remapflag_(ibody)[2]) {
-      idim = atomimage[i] >> 20;
-      otherdims = atomimage[i] ^ (idim << 20);
+      idim = atomimage[i] >> IMG2BITS;
+      otherdims = atomimage[i] ^ (idim << IMG2BITS);
       idim -= remapflag_(ibody)[2];
-      idim &= 1023;
-      atomimage[i] = otherdims | (idim << 20);
+      idim &= IMGMASK;
+      atomimage[i] = otherdims | (idim << IMG2BITS);
     }
   }
 }
@@ -413,7 +417,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     vectorZeroizeN(nrigid_current,nbody_);
     vectorZeroizeN(delflag,nbody_);
 
-    /*NL*///fprintf(screen,"CHECKING lost atoms for %d bodies on proc %d\n",nbody_,comm->me);
+    /*NL*///fprintf(screen,"CHECKING lost atoms for %d bodies, %d atoms on proc %d\n",nbody_,nall,comm->me);
     /*NL*/ //if(map(7833) >= 0) fprintf(screen,"C proc %d has body %d\n",comm->me,7833);
 
     //NP 2 ways of deleting:
@@ -523,7 +527,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
               because this is required by CfdDatacouplingMPI
 ------------------------------------------------------------------------- */
 
-void *Multisphere::extract(char *name, int &len1, int &len2)
+void *Multisphere::extract(const char *name, int &len1, int &len2)
 {
     // scalars
 
@@ -559,7 +563,7 @@ void *Multisphere::extract(char *name, int &len1, int &len2)
    if don't recognize name or not double ** data, return NULL
 ------------------------------------------------------------------------- */
 
-double** Multisphere::extract_double_vector(char *name)
+double** Multisphere::extract_double_vector(const char *name)
 {
     VectorContainer<double,3> *cb = customValues_.getElementProperty<VectorContainer<double,3> >(name);
     if(!cb) return 0;
@@ -572,7 +576,7 @@ double** Multisphere::extract_double_vector(char *name)
    if don't recognize name or not double * data, return NULL
 ------------------------------------------------------------------------- */
 
-double* Multisphere::extract_double_scalar(char *name)
+double* Multisphere::extract_double_scalar(const char *name)
 {
     ScalarContainer<double> *cb = customValues_.getElementProperty<ScalarContainer<double> >(name);
     if(!cb) return 0;

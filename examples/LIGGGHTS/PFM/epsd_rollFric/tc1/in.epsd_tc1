@@ -75,7 +75,7 @@ fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 ${rf
 fix     m7 all property/global coefficientRollingViscousDamping peratomtypepair 1 ${rvisc}
 
 #pair style
-pair_style 	gran/hertz/history rolling_friction ${rfStyle}
+pair_style gran model hertz tangential history rolling_friction ${rfStyle}
 pair_coeff	* *
 
 #timestep
@@ -85,7 +85,7 @@ timestep	${dt}
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #walls
-fix		zwall all wall/gran/hertz/history   primitive type 1 zplane 0.0 rolling_friction ${rfStyle}
+fix zwall all wall/gran model hertz tangential history rolling_friction ${rfStyle} primitive type 1 zplane 0.0
 
 #particle distributions
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad}
@@ -146,9 +146,10 @@ variable    wz equal omegaz[1]
 variable    tqx equal tqx[1]
 variable    tqy equal tqy[1]
 variable    tqz equal tqz[1]
-fix     dmpData all print 1 "$x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc1.txt
+variable    time equal (step-82000)*dt
+fix     dmpData all print 5 "${time} $x $y $z ${wx} ${wy} ${wz} ${tqx} ${tqy} ${tqz}" screen no title "t X Y Z OmegaX OmegaY OmegaZ Mx My Mz" file post/data.rfstyle${rfSLog}_rf${rf}_rvisc${rvisc}_dt${dt}_tc1.txt
 
-dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz tqx tqy tqz radius 
+dump		dmpMotion all custom ${dumpfreq} ./post/dump_*.motion id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz tqx tqy tqz radius
 
 run ${dumpfreq}
 

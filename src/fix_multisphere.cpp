@@ -46,10 +46,6 @@
 #include "math_extra_liggghts.h"
 #include "math_const.h"
 
-#if defined(_WIN32) || defined(_WIN64)
-double inline round(double d) {  return floor(d + 0.5); }
-#endif
-
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
@@ -355,7 +351,7 @@ void FixMultisphere::set_arrays(int i)
    copy values within local atom-based arrays
 ------------------------------------------------------------------------- */
 
-void FixMultisphere::copy_arrays(int i, int j)
+void FixMultisphere::copy_arrays(int i, int j,int delflag)
 {
     body_[j] = body_[i];
     displace_[j][0] = displace_[i][0];
@@ -560,7 +556,7 @@ void FixMultisphere::final_integrate()
 void FixMultisphere::calc_force()
 {
   int ibody;
-  int *image = atom->image;
+  tagint *image = atom->image;
   int *atag = atom->tag;
   double **x = atom->x;
   double **f = atom->f;
@@ -586,7 +582,7 @@ void FixMultisphere::calc_force()
   forward_comm();
 
   int xbox,ybox,zbox;
-  double xunwrap,yunwrap,zunwrap,dx,dy,dz;
+  double unwrap[3],dx,dy,dz;
 
   // set force and torque to 0
   // do not reset external torques
@@ -616,17 +612,10 @@ void FixMultisphere::calc_force()
     fcm[ibody][1] += f[i][1];
     fcm[ibody][2] += f[i][2];
 
-    xbox = (image[i] & 1023) - 512;
-    ybox = (image[i] >> 10 & 1023) - 512;
-    zbox = (image[i] >> 20) - 512;
-
-    xunwrap = x[i][0] + xbox*xprd;
-    yunwrap = x[i][1] + ybox*yprd;
-    zunwrap = x[i][2] + zbox*zprd;
-
-    dx = xunwrap - xcm[ibody][0];
-    dy = yunwrap - xcm[ibody][1];
-    dz = zunwrap - xcm[ibody][2];
+    domain->unmap(x[i],image[i],unwrap);
+    dx = unwrap[0] - xcm[ibody][0];
+    dy = unwrap[1] - xcm[ibody][1];
+    dz = unwrap[2] - xcm[ibody][2];
 
     //NP modified C.K.
     //NP make sure
@@ -706,7 +695,7 @@ void FixMultisphere::set_xv(int ghostflag)
   double xy,xz,yz;
   double ione[3],exone[3],eyone[3],ezone[3],vr[6],p[3][3];
 
-  int *image = atom->image;
+  tagint *image = atom->image;
   int *atag = atom->tag;
   double **x = atom->x;
   double **v = atom->v;
@@ -749,9 +738,11 @@ void FixMultisphere::set_xv(int ghostflag)
 
     if (ibody < 0) continue;
 
-    xbox = (image[i] & 1023) - 512;
-    ybox = (image[i] >> 10 & 1023) - 512;
-    zbox = (image[i] >> 20) - 512;
+    xbox = (image[i] & IMGMASK) - IMGMAX;
+    ybox = (image[i] >> IMGBITS & IMGMASK) - IMGMAX;
+    zbox = (image[i] >> IMG2BITS) - IMGMAX;
+
+    /*NL*/// fprintf(screen,"boxes %d %d %d image %d\n",xbox,ybox,zbox,image[i]);
 
     // save old positions and velocities for virial
 
@@ -869,7 +860,7 @@ void FixMultisphere::set_v(int ghostflag)
   double *mass = atom->mass;
   double **omega_one = atom->omega;
   int *type = atom->type;
-  int *image = atom->image;
+  tagint *image = atom->image;
   int nlocal = atom->nlocal;
   int nghost = atom->nghost;
   double **vcm = multisphere_.vcm_.begin();
@@ -926,9 +917,9 @@ void FixMultisphere::set_v(int ghostflag)
       fc1 = massone*(v[i][1] - v1)/dtf - f[i][1];
       fc2 = massone*(v[i][2] - v2)/dtf - f[i][2];
 
-      xbox = (image[i] & 1023) - 512;
-      ybox = (image[i] >> 10 & 1023) - 512;
-      zbox = (image[i] >> 20) - 512;
+      xbox = (image[i] & IMGMASK) - IMGMAX;
+      ybox = (image[i] >> IMGBITS & IMGMASK) - IMGMAX;
+      zbox = (image[i] >> IMG2BITS) - IMGMAX;
 
       x0 = x[i][0] + xbox*xprd;
       x1 = x[i][1] + ybox*yprd;
@@ -972,7 +963,7 @@ void FixMultisphere::pre_exchange()
         //NP important to use round() here
         //NP never check if(double_variable) !!!!
         /*NL*/ //fprintf(screen,"delfag particle %d: %f\n",atom->tag[i],delflag[i]);
-        if(round(delflag[i]) == 1)
+        if(round(delflag[i]) == 1.)
         {
             /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
             avec->copy(atom->nlocal-1,i,1);

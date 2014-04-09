@@ -199,7 +199,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
     restart_global = 1;
 
     vector_flag = 1;
-    size_vector = 4;
+    size_vector = 6;
     global_freq = 1; //NP available always
 }
 
@@ -311,8 +311,6 @@ void FixMassflowMesh::post_integrate()
     TriMesh *mesh = fix_mesh_->triMesh();
     int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
 
-    fix_neighlist_->getPointers(neighs,nneighs);
-
     // update time for counter
     // also store values for last invokation
     t_count_ += update->dt;
@@ -328,9 +326,11 @@ void FixMassflowMesh::post_integrate()
 
     for(int iTri = 0; iTri < nTriAll; iTri++)
     {
-        for(int iNeigh = 0; iNeigh < nneighs[iTri]; iNeigh++,neighs++)
+        const std::vector<int> & neighborList = fix_neighlist_->get_contact_list(iTri);
+        const int numneigh = neighborList.size();
+        for(int iNeigh = 0; iNeigh < numneigh; iNeigh++)
         {
-            int iPart = *neighs;
+            const int iPart = neighborList[iNeigh];
 
             // skip ghost particles
             if(iPart >= nlocal) continue;
@@ -375,7 +375,9 @@ void FixMassflowMesh::post_integrate()
                     mass_this += rmass[iPart];
                     nparticles_this ++;
                     if(delete_atoms_)
+                    {
                         atom_tags_delete_.push_back(atom->tag[iPart]);
+                    }
 
                     if (screenflag_ && screen)
                         fprintf(screen," %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g \n ",
@@ -421,8 +423,6 @@ void FixMassflowMesh::pre_exchange()
     int nlocal = atom->nlocal;
     int iPart;
     double *counter = fix_counter_->vector_atom;
-
-    if (update->ntimestep != next_reneighbor) return;
 
     if (delete_atoms_)
     {

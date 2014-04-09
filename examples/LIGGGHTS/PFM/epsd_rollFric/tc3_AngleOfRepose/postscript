@@ -4,4 +4,4 @@ shopt -s expand_aliases
 cd post
 #lpp dump_*.liggghts
 
-lpp dump_*.rad0.005_ym40000000_pr0.49_fric0.8_rfric0.2_rest0.9_dens1056.liggghts
+lpp dump_*.rad0.005_ym40000000_pr0.49_fric0.8_rfric0.2_rvisc0.3_rest0.9_dens1057_rfstyle*.liggghts

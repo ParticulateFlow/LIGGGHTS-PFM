@@ -99,7 +99,7 @@ ComputePairGranLocal::~ComputePairGranLocal()
 
   if(reference_exists == 0) return;
 
-  //NP should do this in a pre_delete() step with uncomputeflag - as for fixes (unfixflag)
+  //NP TODO should do this in a pre_delete() step with uncomputeflag - as for fixes (unfixflag)
 
   if(wall == 0) pairgran->unregister_compute_pair_local(this);
   else fixwall->unregister_compute_wall_local(this);
@@ -123,7 +123,7 @@ void ComputePairGranLocal::post_create()
 
 void ComputePairGranLocal::init()
 {
-    init_cpgl(true);
+    init_cpgl(false); /*NL*/ //HERE
     /*NL*/ //fprintf(screen,"ComputePairGranLocal::init()\n");
 }
 
@@ -160,7 +160,7 @@ void ComputePairGranLocal::init_cpgl(bool requestflag)
       if (force->pair == NULL)
         error->all(FLERR,"No pair style is defined for compute pair/gran/local");
 
-      pairgran = (PairGran*)force->pair_match("gran/",0);
+      pairgran = (PairGran*)force->pair_match("gran",0);
 
       if (pairgran == NULL)
         error->all(FLERR,"No valid granular pair style found for use with compute pair/gran/local");
@@ -181,6 +181,7 @@ void ComputePairGranLocal::init_cpgl(bool requestflag)
           neighbor->requests[irequest]->compute = 1;
           neighbor->requests[irequest]->half = 0;
           neighbor->requests[irequest]->gran = 1;
+          //neighbor->requests[irequest]->granhistory = 1;
           neighbor->requests[irequest]->occasional = 1;
       }
 
@@ -309,9 +310,11 @@ int ComputePairGranLocal::count_pairs()
   int nall = nlocal + atom->nghost;
 
   //NP invoke neighbor list (will copy or build if necessary)
+  //NP cannot invoke here, since will copy outdated data from
+  //NP fix contact history, so rather access pair
+  //neighbor->build_one(list->index); /*NL*/ //HERE
 
-  neighbor->build_one(list->index);
-
+  list = pairgran->list; /*NL*/ //HERE
   inum = list->inum;
   ilist = list->ilist;
   numneigh = list->numneigh;

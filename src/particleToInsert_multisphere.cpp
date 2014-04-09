@@ -216,7 +216,7 @@ int ParticleToInsertMultisphere::insert()
     int nlocal = atom->nlocal;
 
     if(modify->n_fixes_style("multisphere") != 1)
-        error->all(FLERR,"Multi-sphere particle inserted: You have to use exactly one fix multisphere");
+        error->one(FLERR,"Multi-sphere particle inserted: You have to use exactly one fix multisphere");
 
     FixMultisphere *fix_multisphere = static_cast<FixMultisphere*>(modify->find_fix_style("multisphere",0));
 

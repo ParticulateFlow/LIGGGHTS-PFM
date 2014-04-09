@@ -51,10 +51,10 @@ FixWallSphGeneralSimple::FixWallSphGeneralSimple(LAMMPS *lmp, int narg, char **a
     {
         if(strcmp(arg[iarg_++],"r0"))
             error->fix_error(FLERR,this,"illegal argument, expecting keyword 'r0'");
-        r0 = force->numeric(arg[iarg_++]);
+        r0 = force->numeric(FLERR,arg[iarg_++]);
         if(strcmp(arg[iarg_++],"D"))
             error->fix_error(FLERR,this,"illegal argument, expecting keyword 'D'");
-        D  = force->numeric(arg[iarg_++]);
+        D  = force->numeric(FLERR,arg[iarg_++]);
     }
 
     if (r0 <= 0. || D < 0.)
@@ -72,20 +72,19 @@ FixWallSphGeneralSimple::~FixWallSphGeneralSimple()
    compute force on particle
 ------------------------------------------------------------------------- */
 
-void FixWallSphGeneralSimple::compute_force(int ip,double deltan,double rsq,double meff_wall,
-                            double dx,double dy,double dz,double *vwall,
-                            double *c_history,double area_ratio)
+void FixWallSphGeneralSimple::compute_force(CollisionData & cdata, double *)
 {
     // do not use deltan here for SPH
 
     double **f = atom->f;
-    double fwall,rinv, r;
+    double fwall;
     double frac,frac2,frac4; // for penetration force
 
-    if (rsq == 0.) return; // center of the cylinder ... no repulsive force!
+    if (cdata.rsq == 0.) return; // center of the cylinder ... no repulsive force!
 
-    r = sqrt(rsq);
-    rinv = 1./r;
+    const int ip = cdata.i;
+    const double r = cdata.r;
+    const double rinv = 1.0/r;
 
     // repulsive penetration force
     if (r <= r0) {
@@ -96,9 +95,9 @@ void FixWallSphGeneralSimple::compute_force(int ip,double deltan,double rsq,doub
 
         fwall = D * (frac4 - frac2) * rinv; // second rinv
 
-        f[ip][0] += fwall * dx;
-        f[ip][1] += fwall * dy;
-        f[ip][2] += fwall * dz;
+        f[ip][0] += fwall * cdata.delta[0];
+        f[ip][1] += fwall * cdata.delta[1];
+        f[ip][2] += fwall * cdata.delta[2];
     }
 
 }

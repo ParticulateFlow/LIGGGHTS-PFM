@@ -61,11 +61,12 @@
     /*NL*/   id(nTri),center_(nTri)[0],center_(nTri)[1],center_(nTri)[2],cSphere[0],cSphere[1],cSphere[2]);
 
     double node0ToSphereCenter[3];
-    double *surfNorm = SurfaceMeshBase::surfaceNorm(nTri);
+    //double *surfNorm = SurfaceMeshBase::surfaceNorm(nTri);
     vectorSubtract3D(cSphere,n[0],node0ToSphereCenter);
 
     MathExtraLiggghts::calcBaryTriCoords(node0ToSphereCenter,edgeVec(nTri),edgeLen(nTri),bary);
 
+    //NP  > -SMALL_TRIMESH is effectifely a tiny growth of each triangle
     int barySign = (bary[0] > -SMALL_TRIMESH) + 2*(bary[1] > -SMALL_TRIMESH) + 4*(bary[2] > -SMALL_TRIMESH);
 
     double d(0.);
@@ -192,7 +193,7 @@
                                                     double *p, double *delta, double *bary)
   {
       int ip = (iNode+1)%3, ipp = (iNode+2)%3;
-      double d(1.);
+      //double d(1.);
       double *n = node_(iTri)[iNode];
 
       if(obtuse){
@@ -399,7 +400,7 @@
 
   inline int TriMesh::generateRandomOwnedGhost(double *pos)
   {
-    double u,v, tmp, bary_0,bary_1,bary_2;
+    double u,v, bary_0,bary_1,bary_2;
     double ***node = node_.begin();
     int nTri = sizeLocal() + sizeGhost();
 
@@ -419,7 +420,7 @@
     u = random_->uniform();
     v = random_->uniform();
 
-    tmp = sqrt(u);
+    double tmp = sqrt(u);
     bary_0 = 1. - tmp;
     bary_1 = v * tmp;
     bary_2 = 1. - bary_0 - bary_1;
@@ -454,6 +455,8 @@
 
   inline int TriMesh::generateRandomOwnedGhostWithin(double *pos,double delta)
   {
+      UNUSED(pos);
+      UNUSED(delta);
       error->one(FLERR,"internal error");
       return 0;
   }
