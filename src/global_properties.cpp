@@ -430,6 +430,32 @@ namespace MODEL_PARAMS
    return matrix;
   }
 
+  // ------------------------------ JKR --------------------------------
+  MatrixProperty * createCoefArea(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    registry.registerProperty("Yeff", &createYeff);
+    registry.registerProperty(COHESION_ENERGY_DENSITY, &createCohesionEnergyDensity);
+
+    MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
+    MatrixProperty * YeffProp = registry.getMatrixProperty("Yeff");
+    MatrixProperty * cohEnergyDensProp = registry.getMatrixProperty(COHESION_ENERGY_DENSITY);
+    double * const * const Yeff = YeffProp->data;
+    double * const * const cohEnergyDens = cohEnergyDensProp->data;
+
+    for(int i=1;i< max_type+1; i++)
+    {
+      for(int j=1;j<max_type+1;j++)
+      {
+        matrix->data[i][j] = sqrt(M_PI*cohEnergyDens[i][j]/Yeff[i][j]);
+      }
+    }
+
+    return matrix;
+  }
+
+
   ScalarProperty* createLiquidVolume(PropertyRegistry & registry, const char * caller, bool)
   {
     return createScalarProperty(registry, LIQUID_VOLUME, caller);
