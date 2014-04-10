@@ -172,9 +172,8 @@ double FixHeatGranRad::extend_cut_ghost(){
 
 void FixHeatGranRad::init(){
 
-  if (FHG_init_flag == false){
-    FixHeatGran::init();
-  }
+  // init base class
+  FixHeatGran::init();
 
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
@@ -226,7 +225,6 @@ void FixHeatGranRad::post_force(int vflag){
   //NP particle data
   double **x;
   double *radius;
-  int *mask;
   int *type;
   int nlocal, nghost;
 
@@ -252,7 +250,6 @@ void FixHeatGranRad::post_force(int vflag){
   double tempi; //NP temperature
 
   //NP fetch particle data
-  mask   = atom->mask;
   nlocal = atom->nlocal;
   nghost = atom->nghost;
   radius = atom->radius;
@@ -340,7 +337,6 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double
 
   /*NL*/ bool debugflag = false;
 
-  double ratio;
   double sendflux;
   double hitEmis;
   double influx = flux * accum_eps;
@@ -446,7 +442,7 @@ void FixHeatGranRad::createStencils(){
 
   int mbinx = neighbor->mbinx;
   int mbiny = neighbor->mbiny;
-  int mbinz = neighbor->mbinz;
+  //int mbinz = neighbor->mbinz;
   int sx = neighbor->sx;
   int sy = neighbor->sy;
   int sz = neighbor->sz;
@@ -456,7 +452,6 @@ void FixHeatGranRad::createStencils(){
   int i,j,k;
   int nstencil;
 
-  int pos;
   bool hit;
 
   // /*NL*/ printf("creating dx\n");
@@ -689,7 +684,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *b
   double **x     = atom->x;
   double *radius = atom->radius;
 
-  int i, j;
+  int i;
   int currentBin = neighbor->coord2bin(o);
   int dx = 0;
   int dy = 0;

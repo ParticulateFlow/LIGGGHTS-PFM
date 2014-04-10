@@ -69,6 +69,7 @@
     //NP  > -SMALL_TRIMESH is effectifely a tiny growth of each triangle
     int barySign = (bary[0] > -SMALL_TRIMESH) + 2*(bary[1] > -SMALL_TRIMESH) + 4*(bary[2] > -SMALL_TRIMESH);
 
+    //NP distance between particle and mesh element
     double d(0.);
 
     /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
@@ -135,6 +136,7 @@
 
     /*NL*/ //printVec3D(screen,"bary tri_mesh_I",bary);
 
+    // return distance - radius of the particle
     return d - rSphere;
   }
 

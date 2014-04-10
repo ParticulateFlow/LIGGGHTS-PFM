@@ -22,6 +22,7 @@
 #ifdef FIX_CLASS
 
 FixStyle(multisphere,FixMultisphere)
+FixStyle(multisphere/nointegration,FixMultisphere)
 
 #else
 
@@ -60,15 +61,17 @@ class FixMultisphere : public Fix
       virtual ~FixMultisphere();
 
       void post_create();
-      int setmask();
+      virtual int setmask();
       virtual void init();
 
       virtual void setup(int);
+      virtual void setup_pre_force(int) {}
       virtual void setup_pre_neighbor();
 
       double extend_cut_ghost();
 
       void initial_integrate(int);
+      virtual void pre_force(int) {}
       void final_integrate();
       void calc_force();
 
@@ -170,7 +173,7 @@ class FixMultisphere : public Fix
       int calc_n_steps(int iatom,double *p_ref,double *normalvec,double *v_normal)
       { return multisphere_.calc_n_steps(iatom,body_[iatom],p_ref,normalvec,v_normal); }
 
-     private:
+     protected:
 
       inline int map(int i)
       { return data().map(i); }
@@ -182,6 +185,9 @@ class FixMultisphere : public Fix
       void set_xv(int);
       void set_v();
       void set_v(int);
+
+      bool do_modify_body_forces_torques_;
+      virtual void modify_body_forces_torques(int i,double *force_one,double *torque_one) {}
 
       class MultisphereParallel &multisphere_;
       class FixPropertyAtom *fix_corner_ghost_;

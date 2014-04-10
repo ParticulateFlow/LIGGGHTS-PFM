@@ -49,18 +49,19 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   fix_mesh_(0),
   fix_counter_(0),
+  fix_neighlist_(0),
+  havePointAtOutlet_(false),
+  insideOut_(false),
   once_(false),
   mass_(0.),
   nparticles_(0),
-  nparticles_last_(0.),
+  screenflag_(false),
+  fp_(0),
   mass_last_(0.),
+  nparticles_last_(0.),
   t_count_(0.),
   delta_t_(0.),
-  fp_(0),
   reset_t_count_(true),
-  havePointAtOutlet_(false),
-  insideOut_(false),
-  screenflag_(false),
   delete_atoms_(false),
   mass_deleted_(0.),
   nparticles_deleted_(0)
@@ -216,22 +217,19 @@ void FixMassflowMesh::post_create()
 {
     // add per-particle count flag
 
-    char **fixarg;
-    fixarg=new char*[9];
-    for (int kk=0;kk<9;kk++) fixarg[kk]=new char[50+strlen(id)];
+    const char * fixarg[9];
 
-    sprintf(fixarg[0],"massflow_%s",id);
-    sprintf(fixid_,    "massflow_%s",id);
+    sprintf(fixid_,"massflow_%s",id);
+    fixarg[0]=fixid_;
     fixarg[1]="all";
     fixarg[2]="property/atom";
-    sprintf(fixarg[3],"massflow_%s",id);
+    fixarg[3]=fixid_;
     fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
     fixarg[5]="yes";    //NP restart yes
     fixarg[6]="no";    //NP communicate ghost yes
     fixarg[7]="no";    //NP communicate rev no
     fixarg[8]="-1.";     //NP take 0 as default
-    modify->add_fix(9,fixarg);
-    delete []fixarg;
+    modify->add_fix(9,const_cast<char**>(fixarg));
 
     fix_counter_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixid_,"property/atom","scalar",0,0,style));
 
@@ -259,8 +257,8 @@ void FixMassflowMesh::init()
     if(modify->n_fixes_style("multisphere"))
         error->fix_error(FLERR,this,"does not support multi-sphere");
 
-    if(delete_atoms_ && 0 == atom->map_style)
-        error->fix_error(FLERR,this,"requires an 'atom_modify map' command to allocate an atom map");
+    if(delete_atoms_ && 1 != atom->map_style)
+        error->fix_error(FLERR,this,"requires an atom map of type 'array', via an 'atom_modify map array' command");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -302,7 +300,6 @@ void FixMassflowMesh::post_integrate()
     double *rmass = atom->rmass;
     double *counter = fix_counter_->vector_atom;
     double dot,delta[3];
-    int *neighs, *nneighs;
     double mass_this = 0.;
     int nparticles_this = 0.;
     double deltan;
@@ -326,11 +323,16 @@ void FixMassflowMesh::post_integrate()
 
     for(int iTri = 0; iTri < nTriAll; iTri++)
     {
+        //NP    TODO.... maybe some particles are double-counted if they are in the
+        //NP    neighlist multiple times (for different triangles)?? (for case multiple)
+
         const std::vector<int> & neighborList = fix_neighlist_->get_contact_list(iTri);
         const int numneigh = neighborList.size();
         for(int iNeigh = 0; iNeigh < numneigh; iNeigh++)
         {
             const int iPart = neighborList[iNeigh];
+
+            /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"step "BIGINT_FORMAT": checking particle tag %d\n",update->ntimestep,atom->tag[iPart]);
 
             // skip ghost particles
             if(iPart >= nlocal) continue;
@@ -360,17 +362,18 @@ void FixMassflowMesh::post_integrate()
                 dot = vectorDot3D(delta,nvec_);
             }
 
-            // first-time, just set 0 or 1
+            // first-time, just set 0 or 1 depending on what side of the mesh
             if(compDouble(counter[iPart],-1.))
             {
-                counter[iPart] = dot <= 0. ? 0. : 1.;
+                counter[iPart] = (dot <= 0.) ? 0. : 1.;
+                /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"    1 counter set to %f\n",counter[iPart]);
                 continue;
             }
 
-            // not first time
+            // particle is now on nvec_ side
             if(dot > 0.)
             {
-                if(compDouble(counter[iPart],0.))
+                if(compDouble(counter[iPart],0.)) //particle was not on nvec_ side before
                 {
                     mass_this += rmass[iPart];
                     nparticles_this ++;
@@ -395,10 +398,12 @@ void FixMassflowMesh::post_integrate()
                 }
 
                 counter[iPart] = once_ ? 2. : 1.;
+                /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"    2 counter set to %f\n",counter[iPart]);
             }
             else // dot <= 0
             {
                 counter[iPart] = 0.;
+                /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"    3 counter set to %f\n",counter[iPart]);
             }
 
         }
@@ -420,25 +425,27 @@ void FixMassflowMesh::post_integrate()
 
 void FixMassflowMesh::pre_exchange()
 {
-    int nlocal = atom->nlocal;
-    int iPart;
-    double *counter = fix_counter_->vector_atom;
-
     if (delete_atoms_)
     {
         double mass_deleted_this_ = 0.;
         int nparticles_deleted_this_ = 0.;
+        int *atom_map_array = atom->get_map_array();
 
         // delete particles
 
         while (atom_tags_delete_.size() > 0)
         {
-            iPart = atom->map(atom_tags_delete_[0]);
+            int iPart = atom->map(atom_tags_delete_[0]);
 
             mass_deleted_this_ += atom->rmass[iPart];
             nparticles_deleted_this_++;
 
             atom->avec->copy(atom->nlocal-1,iPart,1);
+
+            //NP manipulate atom map array
+            //NP need to do this since atom map is needed for deletion
+            atom_map_array[atom->tag[atom->nlocal-1]] = iPart;
+
             atom->nlocal--;
 
             atom_tags_delete_.erase(atom_tags_delete_.begin());
@@ -455,13 +462,6 @@ void FixMassflowMesh::pre_exchange()
         //NP tags and maps
         if(nparticles_deleted_this_)
         {
-            int i;
-            if (atom->molecular == 0) {
-              int *tag = atom->tag;
-              for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
-              atom->tag_extend();
-            }
-
             if (atom->tag_enable) {
               if (atom->map_style) {
                 atom->nghost = 0;

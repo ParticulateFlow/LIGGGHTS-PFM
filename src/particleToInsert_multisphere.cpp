@@ -212,7 +212,6 @@ int ParticleToInsertMultisphere::insert()
     // now rigid body insertion
     //NP as mentioned above the proc owning xcm has inserted all particles
     //NP called only on proc owning xcm
-    int init_flag = 0;
     int nlocal = atom->nlocal;
 
     if(modify->n_fixes_style("multisphere") != 1)

@@ -129,8 +129,8 @@ namespace LAMMPS_NS
           char *id_;
           int communicationType_;
           int refFrame_;
-          int scalePower_;
           int restartType_;
+          int scalePower_;
 
      private:
 

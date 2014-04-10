@@ -230,7 +230,7 @@ void FixMeshSurfaceStress::final_integrate()
 void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
                                 double *delta,int iTri,double *v_wall)
 {
-    double E,c[3],v_rel[3],cmag,v_rel_mag,cos_gamma,sin_gamma,sin_2gamma,tan_gamma;
+    double E,c[3],v_rel[3],v_rel_mag,cos_gamma,sin_gamma,sin_2gamma;
     double contactPoint[3],surfNorm[3], tmp[3], tmp2[3];
 
     // do not include if not in fix group
@@ -264,7 +264,6 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
     {
         //NP c pointing from particle center to contact point
         vectorSubtract3D(contactPoint,x,c);
-        cmag = vectorMag3D(c);
 
         // calculate relative velocity
         vectorSubtract3D(v,v_wall,v_rel);

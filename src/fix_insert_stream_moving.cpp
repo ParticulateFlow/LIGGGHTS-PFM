@@ -77,8 +77,7 @@ void FixInsertStreamMoving::post_create()
 
   if(modify->n_fixes_style(style) == 1)
   {
-        char* fixarg[24];
-
+        const char* fixarg[24];
         fixarg[0]="release_fix_insert_stream";
         fixarg[1]="all";
         fixarg[2]="property/atom";
@@ -103,7 +102,7 @@ void FixInsertStreamMoving::post_create()
         fixarg[21]="0.";
         fixarg[22]="0.";
         fixarg[23]="0.";
-        modify->add_fix_property_atom(24,fixarg,style);
+        modify->add_fix_property_atom(24,const_cast<char**>(fixarg),style);
   }
 }
 
@@ -336,7 +335,7 @@ void FixInsertStreamMoving::reset_releasedata(bigint newstep,bigint oldstep)
   int nlocal = atom->nlocal;
   double **x = atom->x;
   double **release_data = fix_release->array_atom;
-  double x_ins[3], bary[3], dist_normal;
+  double bary[3], dist_normal;
   int tri_id;
 
   for(int i = 0; i < nlocal; i++)

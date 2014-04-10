@@ -99,48 +99,54 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
 {
     int n = nbody_;
 
+    //NP use this function so also adds an uninitialized element in
+    //NP case other classes register multisphere proeprties
+    customValues_.addUninitializedElement();
+
     // set initialize ID for element
     // ID starts from 0
     //NP -1 means no ID given, will be done by id_extend()
-    id_.add(-1);
+    id_.set(n,-1);
 
     bool flags[3] = {true,true,true};
     double zerovec[3] = {0.,0.,0.};
+    double zerovec4[4] = {0.,0.,0.,0.};
+    int zerovec4int[4] = {0,0,0,0};
 
-    xcm_.add(xcm_ins);
-    vcm_.add(v_ins);
-    fcm_.addZero();
-    torquecm_.addZero();
-    dragforce_cm_.addZero();
+    xcm_.set(n,xcm_ins);
+    vcm_.set(n,v_ins);
+    fcm_.set(n,zerovec);
+    torquecm_.set(n,zerovec);
+    dragforce_cm_.set(n,zerovec);
 
-    angmom_.addZero();
-    omega_.add(omega_ins);
-    quat_.addZero();
+    angmom_.set(n,zerovec);
+    omega_.set(n,omega_ins);
+    quat_.set(n,zerovec4);
 
-    density_.add(dens_ins);
-    atomtype_.add(atomtype_ins);
-    type_.add(type_ins);
-    masstotal_.add(mass_ins);
-    inertia_.add(inertia_ins);
-    ex_space_.add(ex_space_ins);
-    ey_space_.add(ey_space_ins);
-    ez_space_.add(ez_space_ins);
+    density_.set(n,dens_ins);
+    atomtype_.set(n,atomtype_ins);
+    type_.set(n,type_ins);
+    masstotal_.set(n,mass_ins);
+    inertia_.set(n,inertia_ins);
+    ex_space_.set(n,ex_space_ins);
+    ey_space_.set(n,ey_space_ins);
+    ez_space_.set(n,ez_space_ins);
 
-    nrigid_.add(nspheres);
-    imagebody_.add((IMGMAX << IMG2BITS) | (IMGMAX << IMGBITS) | IMGMAX);
-    remapflag_.addZero();
+    nrigid_.set(n,nspheres);
+    imagebody_.set(n,(IMGMAX << IMG2BITS) | (IMGMAX << IMGBITS) | IMGMAX);
+    remapflag_.set(n,zerovec4int);
 
-    fflag_.add(flags);
-    tflag_.add(flags);
+    fflag_.set(n,flags);
+    tflag_.set(n,flags);
 
-    start_step_.add(start_step_ins);
+    start_step_.set(n,start_step_ins);
     if(v_integrate_ins)
-        v_integrate_.add(v_integrate_ins);
+        v_integrate_.set(n,v_integrate_ins);
     else
-        v_integrate_.add(zerovec);
+        v_integrate_.set(n,zerovec);
 
-    r_bound_.add(r_bound_ins);
-    xcm_to_xbound_.add(xcm_to_xbound_ins);
+    r_bound_.set(n,r_bound_ins);
+    xcm_to_xbound_.set(n,xcm_to_xbound_ins);
 
     // calculate q and ang momentum
 

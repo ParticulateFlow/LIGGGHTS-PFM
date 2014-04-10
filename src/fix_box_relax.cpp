@@ -812,7 +812,7 @@ int FixBoxRelax::modify_param(int narg, char **arg)
 
 void FixBoxRelax::compute_sigma()
 {
-  double pdeviatoric[3][3],htmp[3][3];
+  double pdeviatoric[3][3]; //NP modified R.B.
   double tmp1[3][3],sigma_tensor[3][3],h_invtmp[3][3];
 
   // reset reference box dimensions
@@ -830,15 +830,7 @@ void FixBoxRelax::compute_sigma()
   h0_inv[4] = domain->h_inv[4];
   h0_inv[5] = domain->h_inv[5];
 
-  htmp[0][0] = h0[0];
-  htmp[1][1] = h0[1];
-  htmp[2][2] = h0[2];
-  htmp[1][2] = h0[3];
-  htmp[0][2] = h0[4];
-  htmp[0][1] = h0[5];
-  htmp[2][1] = 0.0;
-  htmp[2][0] = 0.0;
-  htmp[1][0] = 0.0;
+  //NP modified R.B.
 
   h_invtmp[0][0] = h0_inv[0];
   h_invtmp[1][1] = h0_inv[1];

@@ -146,66 +146,64 @@ void FixScalarTransportEquation::updatePtrs()
 
 void FixScalarTransportEquation::post_create()
 {
-  char **fixarg;
-  fixarg = new char*[9];
-  fixarg[0] = new char[50];
-  fixarg[3] = new char[50];
-  fixarg[8] = new char[50];
-
+  const char *fixarg[9];
 
   if (fix_quantity==NULL) {
-  //register Temp as property/atom
-    strcpy(fixarg[0],quantity_name);
+    //register Temp as property/atom
+    fixarg[0]=quantity_name;
     fixarg[1]="all";
     fixarg[2]="property/atom";
-    strcpy(fixarg[3],quantity_name);
+    fixarg[3]=quantity_name;
     fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
     fixarg[5]="yes";    //NP restart yes
     fixarg[6]="yes";    //NP communicate ghost yes
     fixarg[7]="no";    //NP communicate rev no
-    sprintf(fixarg[8],"%e",quantity_0);
-    modify->add_fix(9,fixarg);
+    char arg8[30];
+    sprintf(arg8,"%e",quantity_0);
+    fixarg[8]=arg8;
+    modify->add_fix(9,const_cast<char**>(fixarg));
     fix_quantity=static_cast<FixPropertyAtom*>(modify->find_fix_property(quantity_name,"property/atom","scalar",0,0,style));
   }
 
-  delete [] (fixarg[8]);
-
   if (fix_flux==NULL){
     //register heatFlux as property/atom
-    strcpy(fixarg[0],flux_name);
+    fixarg[0]=flux_name;
     fixarg[1]="all";
     fixarg[2]="property/atom";
-    strcpy(fixarg[3],flux_name);
+    fixarg[3]=flux_name;
     fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
     fixarg[5]="yes";    //NP restart yes
     fixarg[6]="no";    //NP communicate ghost no
     fixarg[7]="yes";    //NP communicate rev yes
     fixarg[8]="0.";     //NP take 0 as default flux
-    modify->add_fix(9,fixarg);
+    modify->add_fix(9,const_cast<char**>(fixarg));
     fix_flux=static_cast<FixPropertyAtom*>(modify->find_fix_property(flux_name,"property/atom","scalar",0,0,style));
   }
 
   if (fix_source==NULL){
     //register heatSource as property/atom
-    strcpy(fixarg[0],source_name);
+    fixarg[0]=source_name;
     fixarg[1]="all";
     fixarg[2]="property/atom";
-    strcpy(fixarg[3],source_name);
+    fixarg[3]=source_name;
     fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
     fixarg[5]="yes";    //NP restart yes
     fixarg[6]="yes";    //NP communicate ghost yes
     fixarg[7]="no";    //NP communicate rev no
     fixarg[8]="0.";     //NP take 0 as default source
-    modify->add_fix(9,fixarg);
+    modify->add_fix(9,const_cast<char**>(fixarg));
     fix_source=static_cast<FixPropertyAtom*>(modify->find_fix_property(source_name,"property/atom","scalar",0,0,style));
   }
 
-  delete [] (fixarg[0]);
-  delete [] (fixarg[3]);
-  delete []fixarg;
-
   //NP Get pointer to all the fixes (also those that have the material properties)
   updatePtrs();
+}
+
+/* ---------------------------------------------------------------------- */
+
+double* FixScalarTransportEquation::get_capacity()
+{
+    return capacity;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -328,7 +326,6 @@ double FixScalarTransportEquation::compute_scalar()
 
     //NP update because re-allocation might have taken place
     updatePtrs();
-    /*NL*///fprintf(screen,"step %d, proc %d, nlocal %d\n",update->ntimestep, comm->me,nlocal);
 
     double quantity_sum = 0.;
 
@@ -338,6 +335,7 @@ double FixScalarTransportEquation::compute_scalar()
         {
            capacity = fix_capacity->compute_vector(type[i]-1);
            quantity_sum += capacity * rmass[i] * quantity[i];
+           /*NL*///fprintf(screen,"step %d, proc %d, i %d quantity %f\n",update->ntimestep, comm->me,i,quantity[i]);
         }
     }
     else
@@ -348,7 +346,10 @@ double FixScalarTransportEquation::compute_scalar()
         }
     }
 
-   MPI_Sum_Scalar(quantity_sum,world);
+    MPI_Sum_Scalar(quantity_sum,world);
+
+    /*NL*///fprintf(screen,"step %d, proc %d, nlocal %d quantity_sum %f\n",update->ntimestep, comm->me,nlocal,quantity_sum);
+    /*NL*/ //if(nlocal) error->all(FLERR,"end");
     return quantity_sum;
 }
 

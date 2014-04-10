@@ -32,10 +32,55 @@ COHESION_MODEL(COHESION_HAMAKER,hamaker,3)
 #include "contact_models.h"
 #include "domain.h"
 
+
+namespace MODEL_PARAMS
+{
+  MatrixProperty* createHamakerConstant(PropertyRegistry & registry, const char * caller, bool)
+  {
+    return createPerTypePairProperty(registry, "hamakerConstant", caller);
+  }
+
+  MatrixProperty* createHamakerMinimumParticleDistance(PropertyRegistry & registry, const char * caller, bool)
+  {
+    return createPerTypePairProperty(registry, "minParticleDist", caller);
+  }
+
+  MatrixProperty * createHamakerMaxEff(PropertyRegistry & registry, const char * caller, bool)
+  {
+   LAMMPS * lmp = registry.getLAMMPS();
+   double skin = lmp->neighbor->skin;
+   const int max_type = registry.max_type();
+
+   MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
+   MatrixProperty * hCutEffProp = registry.getMatrixProperty("minParticleDist",caller);
+   double ** hCutEff = hCutEffProp->data;
+   double maxhMaxEff = -1.0;
+
+   for(int i=1;i< max_type+1; i++)
+   {
+     for(int j=1;j<max_type+1;j++)
+     {
+       const double hMaxEff= hCutEff[i][j]*100; // force f(hMax)/f(hCut) = 0.0001
+       matrix->data[i][j] = hMaxEff;
+       maxhMaxEff = max(maxhMaxEff,hMaxEff); // get maximum hMaxEff for skin check
+     }
+   }
+
+   // check skin
+   if(skin < maxhMaxEff) {
+     if(lmp->screen) fprintf(lmp->screen,"Maximum cutoff distance (~ minParticleDist) = %f. Skin = %f\n",maxhMaxEff,skin);
+     lmp->error->all(FLERR,"Skin is too small for Hamaker model.\n");
+   }
+
+   return matrix;
+  }
+}
+
+
 namespace ContactModels {
   using namespace std;
   using namespace LAMMPS_NS;
-  
+
   template<typename Style>
   class CohesionModel<COHESION_HAMAKER, Style> : protected Pointers {
   public:
@@ -54,9 +99,9 @@ namespace ContactModels {
       registry.registerProperty("hCutEff", &MODEL_PARAMS::createHamakerMinimumParticleDistance);
       registry.registerProperty("hMaxEff", &MODEL_PARAMS::createHamakerMaxEff);
 
-      registry.connect("aHamakerEff", aHamakerEff);
-      registry.connect("hCutEff", hCutEff);
-      registry.connect("hMaxEff", hMaxEff);
+      registry.connect("aHamakerEff", aHamakerEff,"cohesion_model hamaker");
+      registry.connect("hCutEff", hCutEff,"cohesion_model hamaker");
+      registry.connect("hMaxEff", hMaxEff,"cohesion_model hamaker");
     }
 
     void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces) //NP modified C.K.
@@ -72,7 +117,7 @@ namespace ContactModels {
 
       // since the particles are in contact, the maximum cohesive force acts
       // using the equation directly without function call may be faster, since you can skip one if-statement
-      const double Fn_coh = calcCohesiveForce(0.0, reff, itype, jtype);
+      const double Fn_coh = calcCohesiveForce(cdata,0.0, reff, itype, jtype);
 
       cdata.Fn += Fn_coh;
 
@@ -95,6 +140,7 @@ namespace ContactModels {
         j_forces.delta_F[1] -= fy;
         j_forces.delta_F[2] -= fz;
       }
+
     }
 
     void beginPass(CollisionData&, ForceData&, ForceData&){}
@@ -117,7 +163,7 @@ namespace ContactModels {
       const double reff = (ri*rj)/(ri+rj);
       const double hIJ = (r-ri-rj);
 
-      const double Fn_coh = calcCohesiveForce(hIJ, reff, itype, jtype);
+      const double Fn_coh = calcCohesiveForce(cdata,hIJ, reff, itype, jtype);
 
       // apply normal force
       if(cdata.is_wall) {
@@ -143,11 +189,14 @@ namespace ContactModels {
     }
 
   private:
-    inline double calcCohesiveForce(const double hIJ, const double reff, const int itype, const int jtype)
+    inline double calcCohesiveForce(ContactData& cdata,const double hIJ, const double reff, const int itype, const int jtype)
     {
         if (hIJ > hCutEff[itype][jtype]) {
             return -aHamakerEff[itype][jtype]/((6*hIJ*hIJ)*reff);
+            if(cdata.touch) *cdata.touch |= TOUCH_COHESION_MODEL;
         }
+        else
+            if(cdata.touch) *cdata.touch &= ~TOUCH_COHESION_MODEL;
         return -aHamakerEff[itype][jtype]/(6*hCutEff[itype][jtype]*hCutEff[itype][jtype]*reff);
     }
 

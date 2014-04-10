@@ -43,7 +43,7 @@ namespace ContactModels {
     CohesionModel(LAMMPS * lmp, IContactHistorySetup * hsetup) :
       Pointers(lmp), liquidVolume(0.0), surfaceTension(0.0)
     {
-      history_offset = hsetup->add_value("contflag", "0");
+      history_offset = hsetup->add_history_value("contflag", "0");
     }
 
     void registerSettings(Settings&) {}
@@ -51,8 +51,16 @@ namespace ContactModels {
     void connectToProperties(PropertyRegistry & registry) {
       registry.registerProperty("liquidVolume", &MODEL_PARAMS::createLiquidVolume);
       registry.registerProperty("surfaceTension", &MODEL_PARAMS::createSurfaceTension);
-      registry.connect("liquidVolume", liquidVolume);
-      registry.connect("surfaceTension", surfaceTension);
+      registry.connect("liquidVolume", liquidVolume,"cohesion_model capilary");
+      registry.connect("surfaceTension", surfaceTension,"cohesion_model capilary");
+
+      #if 0
+      int i = modify->find_fix("liquidtransfer");
+      if (i < 0) error->all(FLERR,"Illegal liquidtracking/instant command, need a fix called 'liquidtransfer'");
+
+      fix_liquidtrackinginstant_ = static_cast<FixLiquidTrackingInstant*>(modify->fix[i]);
+      #endif
+
     }
 
     void beginPass(CollisionData&, ForceData&, ForceData&){}
@@ -102,8 +110,31 @@ namespace ContactModels {
       j_forces.delta_F[1] -= fy;
       j_forces.delta_F[2] -= fz;
 
+      #if 0
+      printf("history_offset: %d \n",history_offset);
+//      double dummy_2;
+//      dummy_2        = fix_liquidtrackinginstant_->generateSCR();
+//      printf("dummy_check: %f \n",dummy_2);
+
+
+      #endif
+
+
       // store for noCollision
       shear[0] = 1.0;
+
+#if 0
+	  history = fopen("contactHistory.txt","a+");
+	  fprintf(history,"history_offset: %d shear[0]: %e \n",history_offset,shear[0]);
+	  fclose(history);
+#endif
+
+#if 0
+	  history = fopen("contactHistory.txt","a+");
+	  fprintf(history,"history_offset: %d shear[0]: %f ,&cdata.contact_history:[0],[1],[2],[3],[4],[5],[6],[7],[8]: %e %e %e %e %e %e %e %e %e %e %e %e %e \n,",history_offset,shear[0],&cdata.contact_history[0],&cdata.contact_history[1],&cdata.contact_history[2],&cdata.contact_history[3],&cdata.contact_history[4],&cdata.contact_history[5],&cdata.contact_history[6],&cdata.contact_history[7],&cdata.contact_history[8],&cdata.contact_history[9],&cdata.contact_history[10],&cdata.contact_history[11],&cdata.contact_history[12]);
+	  fclose(history);
+#endif
+
     }
 
     void noCollision(ContactData & cdata, ForceData & i_forces, ForceData & j_forces) {
@@ -117,8 +148,25 @@ namespace ContactModels {
       const double volLj = (4./3.)*M_PI*radj*radj*radj*liquidVolume;
       const double volBond = (volLi+volLj)/8.;
       const double deltaMax = pow(volBond,(1./3.));
-      if(cdata.touch) *cdata.touch &= ~TOUCH_COHESION_MODEL;
+
       double * const shear = &cdata.contact_history[history_offset];
+
+
+      #if 0
+      printf("history_offset: %d \n",history_offset);
+//      double dummy_2;
+//      dummy_2        = fix_liquidtrackinginstant_->generateSCR();
+//      printf("dummy_check: %f \n",dummy_2);
+
+
+      #endif
+#if 0
+	  history = fopen("contactHistory.txt","a+");
+	  fprintf(history,"history_offset: %d shear[0]: %f ,&cdata.contact_history:[0],[1],[2],[3],[4],[5],[6],[7],[8]: %f %f %f %f %f %f %f %f %f \n,",history_offset,shear[0],&cdata.contact_history[0],&cdata.contact_history[1],&cdata.contact_history[2],&cdata.contact_history[3],&cdata.contact_history[4],&cdata.contact_history[5],&cdata.contact_history[6]&cdata.contact_history[7],&cdata.contact_history[8]);
+	  fclose(history);
+#endif
+
+
 
       if (dist < deltaMax && MathExtraLiggghts::compDouble(shear[0],1.0,1e-6))
       {
@@ -130,6 +178,7 @@ namespace ContactModels {
         const double delta = dist/R2;
         double Fn_coh;
 
+//          printf("2shear[0]: %e %e %e %e %e %e %e %e %e %e %e %e %e\n",shear[0],shear[1],shear[2],shear[3],shear[4],shear[5],shear[6],shear[7],shear[8],shear[9],shear[10],shear[11],shear[12]);
         if (delta > 0)
           Fn_coh = -M_PI*surfaceTension*sqrt(radi*radj)*(exp(Aparam*delta+Bparam)+Cparam);
         else if (delta <= 0)
@@ -147,12 +196,18 @@ namespace ContactModels {
         j_forces.delta_F[0] -= fx;
         j_forces.delta_F[1] -= fy;
         j_forces.delta_F[2] -= fz;
-
+#if 0
+	  history = fopen("contactHistory.txt","a+");
+	  fprintf(history,"history_offset: %d shear[0]: %f ,&cdata.contact_history:[0],[1],[2],[3],[4],[5],[6],[7],[8]: %f %f %f %f %f %f %f %f %f \n,",history_offset,shear[0],&cdata.contact_history[0],&cdata.contact_history[1],&cdata.contact_history[2],&cdata.contact_history[3],&cdata.contact_history[4],&cdata.contact_history[5],&cdata.contact_history[6]&cdata.contact_history[7],&cdata.contact_history[8]);
+	  fclose(history);
+#endif
         cdata.has_force_update = true;
+        if(cdata.touch) *cdata.touch |= TOUCH_COHESION_MODEL;
       }
       else
       {
         shear[0]=0.0;
+        if(cdata.touch) *cdata.touch &= ~TOUCH_COHESION_MODEL;
       }
     }
 
@@ -160,6 +215,9 @@ namespace ContactModels {
     double liquidVolume;
     double surfaceTension;
     int history_offset;
+//    FILE *history;
+
+//    FixLiquidTrackingInstant * fix_liquidtrackinginstant_;
   };
 }
 #endif // COHESION_MODEL_CAPILLARY_H_

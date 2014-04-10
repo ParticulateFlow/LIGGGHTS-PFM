@@ -61,7 +61,6 @@ namespace LAMMPS_NS {
     double *Temp;       //NP particle Temperature
     double T0;          //NP default temperature
     double **directionalHeatFlux;
-    bool FHG_init_flag; //NP only initialize this class once
 
     class PairGran *pair_gran;
     int history_flag;

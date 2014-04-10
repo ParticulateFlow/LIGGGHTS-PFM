@@ -200,7 +200,6 @@ void FixRemove::pre_exchange()
     double mass_shrink_me = 0.;
     double mass_removed_this_me = 0., mass_removed_this;
     int nremoved_this = 0, nremoved_this_me = 0;
-    double prob;
 
     //NP clear containers
 
@@ -381,7 +380,7 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
     //NP delete in reverse order
     //NP so deletion does not mess up list
 
-    for(int ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
+    for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
     {
         int i = atom->map(atom_tags_eligible_[ilist]);
         mass_removed_this_me += rmass[i];
@@ -413,7 +412,6 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
     double ratio_m,ratio_r;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
-    int i = 0, ilist;
 
     //NP multisphere case NOT handled here, cannot shrink
     //NP error in init() function
@@ -421,10 +419,10 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         error->fix_error(FLERR,this,"does not support multisphere");
 
     //NP first remove all particles that are too small
-    ilist = 0;
+    size_t ilist = 0;
     while(ilist < atom_tags_eligible_.size())
     {
-        i = atom->map(atom_tags_eligible_[ilist]);
+        int i = atom->map(atom_tags_eligible_[ilist]);
 
         if(radius[i] < delete_below_)
         {
@@ -444,9 +442,9 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         ratio_m = 1. - mass_to_remove_me / mass_shrink_me;
         ratio_r = pow(ratio_m,0.33333);
 
-        for(int ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
+        for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
         {
-            i = atom->map(atom_tags_eligible_[ilist]);
+            int i = atom->map(atom_tags_eligible_[ilist]);
             mass_removed_this_me += (1.-ratio_m)*rmass[i];
             mass_to_remove_me -= (1.-ratio_m)*rmass[i];
             rmass[i] *= ratio_m;
@@ -468,18 +466,16 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 6\n");
 
     double *rmass = atom->rmass;
-    double mass_to_remove_me_init = mass_to_remove_me, rand;
-    int i, ilist;
 
     while (atom_tags_eligible_.size() > 0 && mass_to_remove_me > 0.)
     {
         //NP randomize which particle to delete
         //NP this avoids a bias: large particles are inserted first
 
-        ilist = static_cast<int>(random_->uniform()*static_cast<double>(atom_tags_eligible_.size()));
+        size_t ilist = static_cast<int>(random_->uniform()*static_cast<double>(atom_tags_eligible_.size()));
         if(ilist == atom_tags_eligible_.size())
             ilist--;
-        i = atom->map(atom_tags_eligible_[ilist]);
+        int i = atom->map(atom_tags_eligible_[ilist]);
 
         // delete particle i
         mass_removed_this_me += rmass[i];
@@ -501,10 +497,8 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 6\n");
 
     double *rmass = atom->rmass;
-    double *delflag = fix_ms_->fix_delflag()->vector_atom;
-    double mass_to_remove_me_init = mass_to_remove_me, rand;
     bool ms;
-    int i,ibody,ilist;
+    int i,ibody;
 
     while ((atom_tags_eligible_.size() > 0 || body_tags_eligible_.size() > 0) && mass_to_remove_me > 0.)
     {
@@ -520,7 +514,7 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
             //NP randomize which particle to delete
             //NP this avoids a bias: large particles are inserted first
 
-            ilist = static_cast<int>(random_->uniform()*static_cast<double>(atom_tags_eligible_.size()));
+            size_t ilist = static_cast<int>(random_->uniform()*static_cast<double>(atom_tags_eligible_.size()));
             if(ilist == atom_tags_eligible_.size())
                 ilist--;
             i = atom->map(atom_tags_eligible_[ilist]);
@@ -535,7 +529,7 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
         }
         else
         {
-            ilist = static_cast<int>(random_->uniform()*static_cast<double>(body_tags_eligible_.size()));
+            size_t ilist = static_cast<int>(random_->uniform()*static_cast<double>(body_tags_eligible_.size()));
             if(ilist == body_tags_eligible_.size())
                 ilist--;
 
@@ -567,7 +561,7 @@ inline void FixRemove::delete_particle(int i)
 void FixRemove::delete_bodies()
 {
     /*NL*/ //fprintf(screen,"called, size %d\n",body_tags_delete_.size());
-    for(int ilist = 0; ilist <  body_tags_delete_.size(); ilist++)
+    for(size_t ilist = 0; ilist <  body_tags_delete_.size(); ilist++)
     {
         int ibody = ms_->map(body_tags_delete_[ilist]);
         /*NL*/ //fprintf(screen,"  rem body tag %d ibody %d tag2 %d\n",body_tags_delete_[ilist],ibody,ms_->tag(ibody));

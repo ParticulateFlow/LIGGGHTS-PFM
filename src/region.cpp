@@ -539,7 +539,7 @@ void Region::generate_random_expandby_cut(double *pos,double cut,bool subdomain_
 //NP test if point inside region AND within a minimum distance from surface
 int Region::match_cut(double *pos,double cut)
 {
-  double a[3],b[3],c[3],d[3],x[3];
+  double x[3]; //NP modified R.B.
   vectorCopy3D(pos,x);
 
   if (dynamic) inverse_transform(x[0],x[1],x[2]);
@@ -554,7 +554,7 @@ int Region::match_cut(double *pos,double cut)
 //NP test if a point is within cut of region surface
 int Region::match_expandby_cut(double *pos,double cut)
 {
-  double a[3],b[3],c[3],d[3],x[3];
+  double x[3]; //NP modified R.B.
   vectorCopy3D(pos,x);
 
   if (dynamic) inverse_transform(x[0],x[1],x[2]);
@@ -569,7 +569,7 @@ int Region::match_expandby_cut(double *pos,double cut)
 //NP test if a point is within cut of region surface
 int Region::match_shrinkby_cut(double *pos,double cut)
 {
-  double a[3],b[3],c[3],d[3],x[3];
+  double x[3]; //NP modified R.B.
   vectorCopy3D(pos,x);
 
   if (dynamic) inverse_transform(x[0],x[1],x[2]);

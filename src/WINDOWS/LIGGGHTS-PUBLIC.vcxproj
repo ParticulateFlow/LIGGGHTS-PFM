@@ -72,6 +72,7 @@
 		<ClInclude Include="..\pair_mie_cut.h"/>
 		<ClInclude Include="..\accelerator_cuda.h"/>
 		<ClInclude Include="..\compute_rigid.h"/>
+		<ClInclude Include="..\fix_property_atom_contact.h"/>
 		<ClInclude Include="..\pointers.h"/>
 		<ClInclude Include="..\style_body.h"/>
 		<ClInclude Include="..\accelerator_omp.h"/>
@@ -110,6 +111,7 @@
 		<ClInclude Include="..\normal_model_hooke_hysteresis.h"/>
 		<ClInclude Include="..\compute_contact_atom.h"/>
 		<ClInclude Include="..\fix_external.h"/>
+		<ClInclude Include="..\fix_dummy2.h"/>
 		<ClInclude Include="..\fix_wall_region.h"/>
 		<ClInclude Include="..\pair_yukawa.h"/>
 		<ClInclude Include="..\pair_lj_smooth_linear.h"/>
@@ -1007,7 +1009,7 @@
 		<ClCompile>
 			<Optimization>Disabled</Optimization>
 			<AdditionalIncludeDirectories>..;extra;settings;../../lib/awpmd/systems/interact/TCP;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<MinimalRebuild>true</MinimalRebuild>
 			<BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
 			<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -1028,7 +1030,7 @@
 		<ClCompile>
 			<Optimization>Disabled</Optimization>
 			<AdditionalIncludeDirectories>..;extra;settings;../../lib/awpmd/systems/interact/TCP;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
 			<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
 			<PrecompiledHeader>
@@ -1046,7 +1048,7 @@
 	<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
 		<ClCompile>
 			<AdditionalIncludeDirectories>..;extra;settings;../../lib/awpmd/systems/interact/TCP;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
 			<PrecompiledHeader>
       </PrecompiledHeader>
@@ -1066,7 +1068,7 @@
 	<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
 		<ClCompile>
 			<AdditionalIncludeDirectories>..;extra;settings;../../lib/awpmd/systems/interact/TCP;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
 			<PrecompiledHeader>
       </PrecompiledHeader>
@@ -1086,7 +1088,7 @@
 		<ClCompile>
 			<Optimization>Disabled</Optimization>
 			<AdditionalIncludeDirectories>..;extra;settings;../STUBS;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<MinimalRebuild>true</MinimalRebuild>
 			<BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
 			<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -1107,7 +1109,7 @@
 		<ClCompile>
 			<Optimization>Disabled</Optimization>
 			<AdditionalIncludeDirectories>..;extra;settings;../STUBS;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
 			<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
 			<PrecompiledHeader>
@@ -1125,7 +1127,7 @@
 	<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_STUBS|Win32'">
 		<ClCompile>
 			<AdditionalIncludeDirectories>..;extra;settings;../STUBS;../../lib/awpmd/systems/interact/TCP;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
 			<PrecompiledHeader>
       </PrecompiledHeader>
@@ -1145,7 +1147,7 @@
 	<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_STUBS|x64'">
 		<ClCompile>
 			<AdditionalIncludeDirectories>..;extra;settings;../STUBS;../../lib/awpmd/systems/interact/TCP;../MOLECULE;../KSPACE;extra/fftw2;../MANYBODY;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+			<PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE;FFT_FFTW;_USE_MATH_DEFINES;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 			<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
 			<PrecompiledHeader>
       </PrecompiledHeader>
