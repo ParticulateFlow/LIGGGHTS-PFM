@@ -63,12 +63,15 @@ class PairSphArtviscTenscorr : public PairSph {
   template <int> void compute_eval(int, int);
 
   class   FixPropertyGlobal* cs;
-  double  **csmean;
+  class   FixPropertyGlobal* alpha;
+  class   FixPropertyGlobal* beta;
+  double  **csmean,**alphaMean,**betaMean;
 
   double  **wDeltaPTypeinv;
 
   int     artVisc_flag, tensCorr_flag; // flags for additional styles
-  double  alpha,beta,eta; // coeffs for artifical viscosity
+  //double  alpha,beta,eta; // coeffs for artifical viscosity
+  const double eta = 0.01;
   double  epsilon,deltaP; // coeffs for tensile correction
 
 };
