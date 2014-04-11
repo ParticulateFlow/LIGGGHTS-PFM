@@ -219,12 +219,12 @@ void Balance::command(int narg, char **arg)
         error->all(FLERR,"Illegal balance command");
 
   if (dflag) {
-    for (int i = 0; i < strlen(bstr); i++) {
+    for (size_t i = 0; i < strlen(bstr); i++) { //NP modified R.B.
       if (bstr[i] != 'x' && bstr[i] != 'y' && bstr[i] != 'z')
         error->all(FLERR,"Balance dynamic string is invalid");
       if (bstr[i] == 'z' && dimension == 2)
         error->all(FLERR,"Balance dynamic string is invalid");
-      for (int j = i+1; j < strlen(bstr); j++)
+      for (size_t j = i+1; j < strlen(bstr); j++) //NP modified R.B.
         if (bstr[i] == bstr[j])
           error->all(FLERR,"Balance dynamic string is invalid");
     }
@@ -452,7 +452,7 @@ void Balance::static_setup(char *str)
   ndim = strlen(str);
   bdim = new int[ndim];
 
-  for (int i = 0; i < strlen(str); i++) {
+  for (size_t i = 0; i < strlen(str); i++) { //NP modified R.B.
     if (str[i] == 'x') bdim[i] = X;
     if (str[i] == 'y') bdim[i] = Y;
     if (str[i] == 'z') bdim[i] = Z;
@@ -798,7 +798,7 @@ void Balance::old_adjust(int iter, int n, bigint *count, double *split)
   // special treatment of end slices with only 1 neighbor
 
   bigint leftcount,mycount,rightcount;
-  double rho,target,targetleft,targetright;
+  double rho,target; //NP modified R.B.
 
   for (int i = 0; i < n; i++) {
     if (i == 0) leftcount = MAXBIGINT;
@@ -941,7 +941,7 @@ void Balance::dumpout(bigint tstep, FILE *bfp)
 
     int nx = comm->procgrid[0] + 1;
     int ny = comm->procgrid[1] + 1;
-    int nz = comm->procgrid[2] + 1;
+    //int nz = comm->procgrid[2] + 1; //NP modified R.B.
 
     if (dimension == 2) {
       int m = 0;

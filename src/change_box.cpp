@@ -70,7 +70,7 @@ void ChangeBox::command(int narg, char **arg)
   memset(ops,0,(narg-1)*sizeof(Operation));
   nops = 0;
 
-  int index;
+  //NP modified R.B.
   int iarg = 1;
   while (iarg < narg) {
     if (strcmp(arg[iarg],"x") == 0 || strcmp(arg[iarg],"y") == 0 ||

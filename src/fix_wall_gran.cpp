@@ -403,6 +403,21 @@ void FixWallGran::init()
 
         // init for derived classes
         init_granular();
+
+        // disallow more than one wall of non-rimitive style
+        //NP because contact history is stored in the mesh
+        //NP and mesh can hold only one history
+        if(is_mesh_wall())
+        {
+            int nfix = modify->n_fixes_style("wall/gran");
+            for (int ifix = 0; ifix < nfix; ifix++)
+            {
+                FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+                if (fwg == this) continue;
+                if (fwg->is_mesh_wall())
+                    error->fix_error(FLERR,this,"More than one wall of type 'mesh' is not supported");
+            }
+        }
     }
     //NP out = fopen("shearhistory","w");
 }
@@ -543,12 +558,12 @@ void FixWallGran::post_force_mesh(int vflag)
     //NP groupbit accounted for via neighlist/mesh
 
     // contact properties
-    double force_old[3],force_wall[3],v_wall[3],bary[3];
+    double v_wall[3],bary[3];
     double delta[3],deltan;
     MultiVectorContainer<double,3,3> *vMeshC;
     double ***vMesh;
     int nlocal = atom->nlocal;
-    int nTriAll, iPart;
+    int nTriAll;
 
     CollisionData cdata;
     cdata.is_wall = true;
@@ -614,7 +629,7 @@ void FixWallGran::post_force_mesh(int vflag)
 
             /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
             /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-            /*NL*/  fprintf(screen,"step %"BIGINT_FORMAT": handling (moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
+            /*NL*/  fprintf(screen,"step "BIGINT_FORMAT": handling (moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             if(deltan > skinDistance_) //allow force calculation away from the wall
             {
@@ -679,7 +694,7 @@ void FixWallGran::post_force_mesh(int vflag)
 
             /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
             /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-            /*NL*/  fprintf(screen,"step %"BIGINT_FORMAT": handling (non-moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
+            /*NL*/  fprintf(screen,"step "BIGINT_FORMAT": handling (non-moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             //NP hack for SPH
             if(deltan > skinDistance_) //allow force calculation away from the wall
@@ -982,7 +997,7 @@ void FixWallGran::addHeatFlux(TriMesh *mesh,int ip, double delta_n, double area_
     if(deltan_ratio)
        delta_n *= deltan_ratio[itype-1][atom_type_wall_-1];
 
-    r = ri + delta_n;
+    r = ri - delta_n;
 
     Acont = (reff_wall*reff_wall-r*r)*M_PI*area_ratio; //contact area sphere-wall
     tcop = th_cond[itype-1]; //types start at 1, array at 0
@@ -999,5 +1014,5 @@ void FixWallGran::addHeatFlux(TriMesh *mesh,int ip, double delta_n, double area_
     if(cwl_ && addflag_)
         cwl_->add_heat_wall(ip,(Temp_wall-Temp_p[ip]) * hc);
     /*NL*/ //fprintf(screen,"adding heat flux of %g to particle %d, wall %f Part %f hc %f\n",(Temp_wall-Temp_p[ip]) * hc,ip,Temp_wall,Temp_p[ip],hc);
-    /*NL*/ //fprintf(screen,"tcop %f tcowall %f Acont %f reff_wall %f r %f\n",tcop,tcowall,Acont,reff_wall,r);
+    /*NL*/ //fprintf(screen,"tcop %f tcowall %f Acont %f reff_wall %f r %f delta_n %f\n",tcop,tcowall,Acont,reff_wall,r,delta_n);
 }

@@ -64,6 +64,7 @@ enum {LOOP_LOCAL,LOOP_ALL};
 
 FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
+  do_modify_body_forces_torques_(false),
   multisphere_(*(new MultisphereParallel(lmp))),
   fix_corner_ghost_(0),
   fix_delflag_(0),
@@ -149,7 +150,7 @@ void FixMultisphere::post_create()
     //NP register corner ghost
     if(!fix_corner_ghost_)
     {
-        char* fixarg[9];
+        const char* fixarg[9];
         fixarg[0]="cornerghost";
         fixarg[1]="all";
         fixarg[2]="property/atom";
@@ -159,13 +160,13 @@ void FixMultisphere::post_create()
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="0.";
-        fix_corner_ghost_ = modify->add_fix_property_atom(9,fixarg,style);
+        fix_corner_ghost_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     //NP register deletion flag
     if(!fix_delflag_)
     {
-        char* fixarg[9];
+        const char* fixarg[9];
         fixarg[0]="delflag";
         fixarg[1]="all";
         fixarg[2]="property/atom";
@@ -175,12 +176,12 @@ void FixMultisphere::post_create()
         fixarg[6]="no";      // communicate ghost
         fixarg[7]="yes";     // communicate rev
         fixarg[8]="0.";
-        fix_delflag_ = modify->add_fix_property_atom(9,fixarg,style);
+        fix_delflag_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
     //NP register deletion flag
     if(!fix_existflag_)
     {
-        char* fixarg[9];
+        const char* fixarg[9];
         fixarg[0]="existflag";
         fixarg[1]="all";
         fixarg[2]="property/atom";
@@ -190,7 +191,7 @@ void FixMultisphere::post_create()
         fixarg[6]="no";      // communicate ghost
         fixarg[7]="yes";     // communicate rev
         fixarg[8]="1.";
-        fix_existflag_ = modify->add_fix_property_atom(9,fixarg,style);
+        fix_existflag_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     //NP in case of restart: see comment in FixMultisphere::restart
@@ -383,6 +384,9 @@ void FixMultisphere::initial_integrate(int vflag)
   bool **tflag = multisphere_.tflag_.begin();
   int nbody = multisphere_.n_body();
 
+  if(strstr(style,"nointegration"))
+    return;
+
   /*NL*/ //fprintf(screen,"nbody_all %d\n",n_body_all());
   /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d at step %d\n",comm->me,7833,update->ntimestep);
 
@@ -471,9 +475,8 @@ void FixMultisphere::initial_integrate(int vflag)
 
 void FixMultisphere::final_integrate()
 {
-  double dtfm,xy,xz,yz;
+  double dtfm;
   int timestep = update->ntimestep;
-  double **xcm = multisphere_.xcm_.begin();
   double **vcm = multisphere_.vcm_.begin();
   double **fcm = multisphere_.fcm_.begin();
   double **torquecm = multisphere_.torquecm_.begin();
@@ -482,7 +485,6 @@ void FixMultisphere::final_integrate()
   double **ez_space = multisphere_.ez_space_.begin();
   double **angmom = multisphere_.angmom_.begin();
   double **omega = multisphere_.omega_.begin();
-  double **quat = multisphere_.quat_.begin();
   double **inertia = multisphere_.inertia_.begin();
   double *masstotal = multisphere_.masstotal_.begin();
   int *start_step = multisphere_.start_step_.begin();
@@ -501,6 +503,9 @@ void FixMultisphere::final_integrate()
   // calculate forces and torques on body
 
   calc_force();
+
+  if(strstr(style,"nointegration"))
+    return;
 
   // resume integration
   for (int ibody = 0; ibody < nbody; ibody++)
@@ -557,16 +562,12 @@ void FixMultisphere::calc_force()
 {
   int ibody;
   tagint *image = atom->image;
-  int *atag = atom->tag;
   double **x = atom->x;
-  double **f = atom->f;
-  double **torque_one = atom->torque;
+  double **f_atom = atom->f;
+  double **torque_atom = atom->torque;
+  double f_one[3],torque_one[3];
   int nlocal = atom->nlocal;
   int nghost = atom->nghost;
-
-  double xprd = domain->xprd;
-  double yprd = domain->yprd;
-  double zprd = domain->zprd;
 
   double **xcm = multisphere_.xcm_.begin();
   double *masstotal = multisphere_.masstotal_.begin();
@@ -581,7 +582,6 @@ void FixMultisphere::calc_force()
   fw_comm_flag_ = MS_COMM_FW_F_TORQUE;
   forward_comm();
 
-  int xbox,ybox,zbox;
   double unwrap[3],dx,dy,dz;
 
   // set force and torque to 0
@@ -608,9 +608,14 @@ void FixMultisphere::calc_force()
 
     /*NL*///fprintf(screen,"A step %d,body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
 
-    fcm[ibody][0] += f[i][0];
-    fcm[ibody][1] += f[i][1];
-    fcm[ibody][2] += f[i][2];
+    vectorCopy3D(f_atom[i],f_one);
+    vectorCopy3D(torque_atom[i],torque_one);
+    if(do_modify_body_forces_torques_)
+        modify_body_forces_torques(i,f_one,torque_one);
+
+    fcm[ibody][0] += f_one[0];
+    fcm[ibody][1] += f_one[1];
+    fcm[ibody][2] += f_one[2];
 
     domain->unmap(x[i],image[i],unwrap);
     dx = unwrap[0] - xcm[ibody][0];
@@ -624,9 +629,9 @@ void FixMultisphere::calc_force()
         domain->minimum_image(dx,dy,dz);
 
     //NP torque due to atom force and torque
-    torquecm[ibody][0] += dy*f[i][2] - dz*f[i][1] + torque_one[i][0];
-    torquecm[ibody][1] += dz*f[i][0] - dx*f[i][2] + torque_one[i][1];
-    torquecm[ibody][2] += dx*f[i][1] - dy*f[i][0] + torque_one[i][2];
+    torquecm[ibody][0] += dy*f_one[2] - dz*f_one[1] + torque_one[0];
+    torquecm[ibody][1] += dz*f_one[0] - dx*f_one[2] + torque_one[1];
+    torquecm[ibody][2] += dx*f_one[1] - dy*f_one[0] + torque_one[2];
 
     /*NL*/ //bool eval = 3100 < update->ntimestep && 3175 > update->ntimestep;
 
@@ -634,8 +639,8 @@ void FixMultisphere::calc_force()
     /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d atom tag %d, ghost %s,pos %f %f %f f %f %f %f torque_one %f %f %f, dx %f dy %f dz %f\n",
     /*NL*/ //                                      update->ntimestep,comm->me,atag[i],i>=nlocal?"yes":"no",
     /*NL*/ //                                      x[i][0],x[i][1],x[i][2],
-    /*NL*/ //                                      f[i][0],f[i][1],f[i][2],
-    /*NL*/ //                                      torque_one[i][0],torque_one[i][1],torque_one[i][2],dx,dy,dz);
+    /*NL*/ //                                      f_one[0],f_one[1],f_one[2],
+    /*NL*/ //                                      torque_one[0],torque_one[1],torque_one[2],dx,dy,dz);
     /*NL*/ //}
 
     /*NL*///fprintf(screen,"B step %d,body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
@@ -668,7 +673,7 @@ void FixMultisphere::calc_force()
   for (ibody = 0; ibody < nbody; ibody++)
   {
       vectorAdd3D(fcm[ibody],dragforce_cm[ibody],fcm[ibody]);
-      /*NL*///fprintf(screen,"D step %d,body tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
+      /*NL*///fprintf(screen,"body tag %d: forcecm %f %f %f, torquecm %f %f %f\n",tag(ibody),fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],torquecm[ibody][0],torquecm[ibody][1],torquecm[ibody][2]);
   }
 }
 
@@ -689,14 +694,12 @@ void FixMultisphere::set_xv()
 
 void FixMultisphere::set_xv(int ghostflag)
 {
-  int ibody,itype;
+  int ibody;
   int xbox,ybox,zbox;
   double x0,x1,x2,v0,v1,v2,fc0,fc1,fc2,massone;
-  double xy,xz,yz;
-  double ione[3],exone[3],eyone[3],ezone[3],vr[6],p[3][3];
+  double vr[6];
 
   tagint *image = atom->image;
-  int *atag = atom->tag;
   double **x = atom->x;
   double **v = atom->v;
   double **f = atom->f;
@@ -712,10 +715,7 @@ void FixMultisphere::set_xv(int ghostflag)
   double **ex_space = multisphere_.ex_space_.begin();
   double **ey_space = multisphere_.ey_space_.begin();
   double **ez_space = multisphere_.ez_space_.begin();
-  double **angmom = multisphere_.angmom_.begin();
   double **omega = multisphere_.omega_.begin();
-  double **quat = multisphere_.quat_.begin();
-  double **inertia = multisphere_.inertia_.begin();
 
   int nloop;
 
@@ -846,12 +846,10 @@ void FixMultisphere::set_v()
 
 void FixMultisphere::set_v(int ghostflag)
 {
-  int ibody,itype;
+  int ibody;
   int xbox,ybox,zbox;
-  double dx,dy,dz;
   double x0,x1,x2,v0,v1,v2,fc0,fc1,fc2,massone;
-  double xy,xz,yz;
-  double ione[3],exone[3],eyone[3],ezone[3],delta[3],vr[6];
+  double delta[3],vr[6];
 
   double **x = atom->x;
   double **v = atom->v;
@@ -952,7 +950,7 @@ void FixMultisphere::pre_exchange()
     //NP mess up paralleliztion
 
     double *delflag = fix_delflag_->vector_atom;
-    double *existflag = fix_existflag_->vector_atom;
+    /*NL*/ //double *existflag = fix_existflag_->vector_atom;
     int i = 0;
 
     /*NL*/ //double sum = vectorSumN(existflag,atom->nlocal);
@@ -1017,7 +1015,7 @@ void FixMultisphere::pre_neighbor()
     //NP need this here before exchange()
     //NP since then the removal list generated at
     //NP FixRemove::pre_exchange() is still up-to-date
-    for(int irem = 0; irem < fix_remove_.size(); irem++)
+    for(size_t irem = 0; irem < fix_remove_.size(); irem++)
         (fix_remove_[irem])->delete_bodies();
 
     //NP re-map bodies, then exchange with stencil procs

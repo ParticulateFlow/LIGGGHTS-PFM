@@ -55,7 +55,7 @@ ComputeTempProfile::ComputeTempProfile(LAMMPS *lmp, int narg, char **arg) :
   ncount += 2;
 
   nbinx = nbiny = nbinz = 1;
-  int lastarg;
+  //NP modified R.B.
 
   int iarg = 6;
   if (strcmp(arg[iarg],"x") == 0) {

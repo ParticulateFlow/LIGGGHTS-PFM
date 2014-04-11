@@ -221,7 +221,7 @@ void ComputeGyrationMolecule::compute_array()
 void ComputeGyrationMolecule::molcom()
 {
   int i,imol;
-  double dx,dy,dz,massone;
+  double massone; //NP modified R.B.
   double unwrap[3];
 
   for (i = 0; i < nmolecules; i++)

@@ -194,23 +194,20 @@ void FixAdapt::post_create()
 
   if (fppat == NULL)
   {
-    char **fixarg;
-    fixarg=new char*[9];
-    for (int kk=0;kk<9;kk++) fixarg[kk]=new char[50];
+    const char *fixarg[9];
     //NP register property/atom
 
-    sprintf(fixarg[0],"adaptProp_%s",id);
-    sprintf(fixid,    "adaptProp_%s",id);
+    sprintf(fixid,"adaptProp_%s",id);
+    fixarg[0]=fixid;
     fixarg[1]="all";
     fixarg[2]="property/atom";
-    sprintf(fixarg[3],"adaptProp_%s",id);
+    fixarg[3]=fixid;
     fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
     fixarg[5]="no";    //NP restart yes
     fixarg[6]="no";    //NP communicate ghost yes
     fixarg[7]="no";    //NP communicate rev no
     fixarg[8]="0.";     //NP take 0 as default heat source
-    modify->add_fix(9,fixarg);
-    delete []fixarg;
+    modify->add_fix(9,const_cast<char**>(fixarg));
 
     fppat = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixid,"property/atom","scalar",0,0,style));
   }

@@ -395,7 +395,7 @@ int FixMeshSurfaceStress6DOF::setmask()
 
 void FixMeshSurfaceStress6DOF::initial_integrate(int vflag)
 {
-    double dX[3],dx[3], qOld[4],dQ[4], dq[4], zerovec[3] = {0.,0.,0.};
+    double dX[3],dx[3], qOld[4],dQ[4], dq[4];
 
     // update vcm by 1/2 step
 

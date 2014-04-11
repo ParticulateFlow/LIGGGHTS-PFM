@@ -479,13 +479,29 @@ void Neighbor::init()
 
   int same = 1;
   if (style != old_style) same = 0;
+  /*NL*/ //fprintf(screen,"same 1 %d, nrequest %d\n",same,nrequest);
   if (triclinic != old_triclinic) same = 0;
+  /*NL*/ //fprintf(screen,"same 2 %d\n",same);
   if (pgsize != old_pgsize) same = 0;
+  /*NL*/ //fprintf(screen,"same 3 %d\n",same);
   if (oneatom != old_oneatom) same = 0;
-  if (nrequest != old_nrequest) same = 0;
+  /*NL*/ //fprintf(screen,"same 4 %d\n",same);
+  if (nrequest != old_nrequest) {
+    same = 0;
+    /*NL*/ //fprintf(screen,"same 5 %d, nrequest %d\n",same,nrequest);
+  }
   else
     for (i = 0; i < nrequest; i++)
-      if (requests[i]->identical(old_requests[i]) == 0) same = 0;
+    {
+      if (requests[i]->identical(old_requests[i]) == 0)  {
+        same = 0;
+        /*NL*/ //fprintf(screen,"same after irequest %d: %d\n",i,same);
+      }
+      //NP now fixed by pair_gran_hashcode in neigh_request.h
+      //if (requests[i]->gran || requests[i]->granhistory) same = 0; //NP modified C.K.
+    }
+
+  /*NL*/ //fprintf(screen,"same final %d\n",same);
 
 #ifdef NEIGH_LIST_DEBUG
   if (comm->me == 0) printf("SAME flag %d\n",same);
@@ -507,6 +523,8 @@ void Neighbor::init()
     pair_build = new PairPtr[nlist];
     stencil_create = new StencilPtr[nlist];
 
+    /*NL*/ //fprintf(screen,"nlist %d nrequest %d\n",nlist,nrequest);
+
     // create individual lists, one per request
     // pass list ptr back to requestor (except for Command class)
     // wait to allocate initial pages until copy lists are detected
@@ -514,7 +532,7 @@ void Neighbor::init()
     for (i = 0; i < nlist; i++) {
       lists[i] = new NeighList(lmp);
       lists[i]->index = i;
-      //NP fprintf(screen,"processing neigh request %d comp %d pair %d\n",i,requests[i]->compute,requests[i]->pair);
+      /*NL*/ //fprintf(screen,"processing neigh request %d comp %d pair %d\n",i,requests[i]->compute,requests[i]->pair);
 
       if (requests[i]->pair) {
         Pair *pair = (Pair *) requests[i]->requestor;
@@ -1321,7 +1339,7 @@ int Neighbor::decide()
 int Neighbor::check_distance()
 {
   double delx,dely,delz,rsq;
-  double delta,deltasq,delta1,delta2,delr,delrsq,trigger; //NP modified C.K.
+  double delta,deltasq,delta1,delta2,delr,delrsq; //NP modified C.K.
 
   if (boxcheck) {
     if (triclinic == 0) {

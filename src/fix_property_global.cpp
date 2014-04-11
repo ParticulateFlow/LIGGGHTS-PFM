@@ -80,6 +80,7 @@ FixPropertyGlobal::FixPropertyGlobal(LAMMPS *lmp, int narg, char **arg) :
 
     //assign values
     nvalues = narg - 5 - darg;
+    nvalues_new_array = 0;
     /*NL*/ //if ((nvalues==1) && (data_style==1)) error->all(FLERR,"Error in fix property/global: Number of default values provided not consistent with vector style. Provide more than 1 value or use style 'scalar'");
 
     values = (double*) memory->smalloc(nvalues*sizeof(double),"values");
@@ -193,7 +194,7 @@ Fix* FixPropertyGlobal::check_fix(const char *varname,const char *svmstyle,int l
         }
 
         // check length
-        if((nvalues < len1) && ((data_style != FIXPROPERTY_GLOBAL_MATRIX) || (data_style == FIXPROPERTY_GLOBAL_MATRIX) && (size_array_cols < len2)))
+        if((nvalues < len1) && ((data_style != FIXPROPERTY_GLOBAL_MATRIX) || ((data_style == FIXPROPERTY_GLOBAL_MATRIX) && (size_array_cols < len2))))
         {
             if(errflag)
             {
@@ -220,6 +221,7 @@ void FixPropertyGlobal::init()
 
     if(FIXPROPERTY_GLOBAL_VECTOR == data_style && is_atomtype_bound && nvalues != ntypes)
     {
+        /*NL*/ //fprintf(screen,"nvalues %d, ntypes %d\n",nvalues,ntypes);
         sprintf(errmsg,"Fix property/global: Length not correct for variable %s, length should be equal to %d (= number of atom types)",
                 variablename,ntypes);
         error->fix_error(FLERR,this,errmsg);
@@ -336,7 +338,7 @@ void FixPropertyGlobal::new_array(int l1,int l2)
     array_flag = 1;
     size_array_rows = l1;
     size_array_cols = l2;
-    nvalues = l1*l2;
+    nvalues_new_array = l1*l2;
 
     memory->create(array,size_array_rows,size_array_cols,"FixPropGlob:array");
     memory->create(array_recomputed,size_array_rows,size_array_cols,"FixPropGlob:array_recomputed");

@@ -1,1 +1,1 @@
-#define LIGGGHTS_VERSION "LIGGGHTS-PFM 3.0.0, compiled 2014-01-23-20:25:56 by kloss"
+#define LIGGGHTS_VERSION "LIGGGHTS-PFM 3.0.1, compiled 2014-04-10-19:12:25 by kloss"

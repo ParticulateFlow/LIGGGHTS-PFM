@@ -101,18 +101,16 @@ void BondGran::compute(int eflag, int vflag)
 
   double rsq,r,rinv,rsqinv;
   double vr1,vr2,vr3,vnnr,vn1,vn2,vn3,vt1,vt2,vt3;
-  double wr1,wr2,wr3,vtr1,vtr2,vtr3,vrel,tor1,tor2,tor3;
+  double wr1,wr2,wr3,vtr1,vtr2,vtr3,tor1,tor2,tor3;
   double wnnr,wn1,wn2,wn3,wt1,wt2,wt3;
-  double fs1,fs2,fs3;
 
   int i1,i2,n,type;
-  double delx,dely,delz,ebond;
+  double delx,dely,delz;
   double dnforce[3],dtforce[3];
   double dntorque[3],dttorque[3];
   double rot;
   double A,J;
 
-  ebond = 0.0;
   if (eflag || vflag) ev_setup(eflag,vflag);
   else evflag = 0;
 
@@ -121,7 +119,6 @@ void BondGran::compute(int eflag, int vflag)
   double **f = atom->f;
   double *radius = atom->radius;
   double **torque = atom->torque;
-  int *tag = atom->tag;
   double **omega = atom->omega;
   int **bondlist = neighbor->bondlist;
   double **bondhistlist = neighbor->bondhistlist;

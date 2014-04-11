@@ -57,9 +57,6 @@ using namespace FixConst;
 #define EPSILON 1.0e-7
 #define TOLERANCE 1.0e-6
 
-#define MIN(A,B) (((A) < (B)) ? (A) : (B))
-#define MAX(A,B) (((A) > (B)) ? (A) : (B))
-
 #define MAXJACOBI 50
 #define BIG 1.e20
 
@@ -136,7 +133,7 @@ FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg
     if(type_ < 1)
         error->fix_error(FLERR,this,"have to provide a type >=1");
 
-    if(mass_set_ && !moi_set_ || !mass_set_ && moi_set_)
+    if((mass_set_ && !moi_set_) || (!mass_set_ && moi_set_))
         error->fix_error(FLERR,this,"have to define either both 'mass' and 'inertia_tensor' or none of the two");
 }
 
@@ -272,12 +269,14 @@ void FixTemplateMultisphere::calc_volumeweight()
 void FixTemplateMultisphere::calc_inertia()
 {
   double x_try[3],xcm[3],distSqr;
-  int n_found = 0;
   bool alreadyChecked;
 
   /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"MC integration for inertia_ tensor\n");
   for(int i = 0; i < 3; i++)
     vectorZeroize3D(moi_[i]);
+
+  //NP we are in a system with xcm=0/0/0, FixTemplateMultiplespheres::calc_center_of_mass()
+  vectorZeroize3D(xcm);
 
   for(int i = 0; i < ntry; i++)
   {
@@ -388,7 +387,6 @@ void FixTemplateMultisphere::calc_eigensystem()
 void FixTemplateMultisphere::calc_displace_xcm_x_body()
 {
   // calculate displace_
-  double del[3];
   for(int i = 0; i < nspheres; i++)
   {
       /*NP old version:

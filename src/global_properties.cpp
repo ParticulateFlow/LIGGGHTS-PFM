@@ -53,7 +53,7 @@ namespace MODEL_PARAMS
   static const char * MINIMUM_PARTICLE_DISTANCE = "minParticleDist";
   static const char * LIQUID_VOLUME = "liquidVolume";
   static const char * SURFACE_TENSION = "surfaceTension";
-
+  static const char * CONTACT_ANGLE = "contactAngle";
   static const char * COEFFICIENT_MAX_ELASTIC_STIFFNESS = "coefficientMaxElasticStiffness";
   static const char * COEFFICIENT_ADHESION_STIFFNESS = "coefficientAdhesionStiffness";
   static const char * COEFFICIENT_PLASTICITY_DEPTH = "coefficientPlasticityDepth";
@@ -97,7 +97,7 @@ namespace MODEL_PARAMS
     LAMMPS * lmp = registry.getLAMMPS();
     ScalarProperty* charVelScalar = createScalarProperty(registry, CHARACTERISTIC_VELOCITY, caller);
     double charVel = charVelScalar->data;
-    
+
     if(sanity_checks)
     {
       if(strcmp(lmp->update->unit_style,"si") == 0  && charVel < 1e-2)
@@ -172,8 +172,8 @@ namespace MODEL_PARAMS
     registry.registerProperty(POISSONS_RATIO, &createPoissonsRatio);
 
     MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
-    VectorProperty * youngsModulus = registry.getVectorProperty(YOUNGS_MODULUS);
-    VectorProperty * poissonRatio = registry.getVectorProperty(POISSONS_RATIO);
+    VectorProperty * youngsModulus = registry.getVectorProperty(YOUNGS_MODULUS,caller);
+    VectorProperty * poissonRatio = registry.getVectorProperty(POISSONS_RATIO,caller);
     double * Y = youngsModulus->data;
     double * v = poissonRatio->data;
 
@@ -200,8 +200,8 @@ namespace MODEL_PARAMS
     registry.registerProperty(POISSONS_RATIO, &createPoissonsRatio);
 
     MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
-    VectorProperty * youngsModulus = registry.getVectorProperty(YOUNGS_MODULUS);
-    VectorProperty * poissonRatio = registry.getVectorProperty(POISSONS_RATIO);
+    VectorProperty * youngsModulus = registry.getVectorProperty(YOUNGS_MODULUS,caller);
+    VectorProperty * poissonRatio = registry.getVectorProperty(POISSONS_RATIO,caller);
     double * Y = youngsModulus->data;
     double * v = poissonRatio->data;
 
@@ -251,13 +251,12 @@ namespace MODEL_PARAMS
 
   MatrixProperty * createCoeffRestLog(PropertyRegistry & registry, const char * caller, bool)
   {
-    LAMMPS * lmp = registry.getLAMMPS();
     const int max_type = registry.max_type();
 
     registry.registerProperty(COEFFICIENT_RESTITUTION, &createCoeffRest);
 
     MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
-    MatrixProperty * coeffRestProp = registry.getMatrixProperty(COEFFICIENT_RESTITUTION);
+    MatrixProperty * coeffRestProp = registry.getMatrixProperty(COEFFICIENT_RESTITUTION,caller);
     double ** coeffRest = coeffRestProp->data;
 
     for(int i=1;i< max_type+1; i++)
@@ -273,13 +272,12 @@ namespace MODEL_PARAMS
 
   MatrixProperty * createBetaEff(PropertyRegistry & registry, const char * caller, bool)
   {
-    LAMMPS * lmp = registry.getLAMMPS();
     const int max_type = registry.max_type();
 
     registry.registerProperty(COEFFICIENT_RESTITUTION_LOG, &createCoeffRestLog);
 
     MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
-    MatrixProperty * coeffRestLogProp = registry.getMatrixProperty(COEFFICIENT_RESTITUTION_LOG);
+    MatrixProperty * coeffRestLogProp = registry.getMatrixProperty(COEFFICIENT_RESTITUTION_LOG,caller);
     double ** coeffRestLog = coeffRestLogProp->data;
 
     for(int i=1;i< max_type+1; i++)
@@ -461,10 +459,40 @@ namespace MODEL_PARAMS
     return createScalarProperty(registry, LIQUID_VOLUME, caller);
   }
 
+  ScalarProperty* createLiquidVolume(PropertyRegistry & registry, const char * caller, bool)
+  {
+    return createScalarProperty(registry, LIQUID_VOLUME, caller);
+  }
+
   ScalarProperty* createSurfaceTension(PropertyRegistry & registry, const char * caller, bool)
   {
     return createScalarProperty(registry, SURFACE_TENSION, caller);
   }
+
+  VectorProperty * createContactAngle(PropertyRegistry & registry, const char * caller, bool sanity_checks)
+  {
+    LAMMPS * lmp = registry.getLAMMPS();
+    const int max_type = registry.max_type();
+
+    VectorProperty * vec = new VectorProperty(max_type+1);
+    FixPropertyGlobal * ca = registry.getGlobalProperty(CONTACT_ANGLE,"property/global","peratomtype",max_type,0,caller);
+
+    for(int i=1; i < max_type+1; i++)
+    {
+      const double vi = ca->compute_vector(i-1);
+
+      // error checks on v
+      if(sanity_checks)
+      {
+        if(vi < 0. || vi > 180)
+          lmp->error->all(FLERR,"0 <= contactAngle <= 180° required");
+      }
+      vec->data[i] = vi;
+    }
+
+    return vec;
+  }
+
 
   MatrixProperty* createKn(PropertyRegistry & registry, const char * caller, bool)
   {

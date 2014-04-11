@@ -43,18 +43,17 @@ namespace ContactModels
   {
   public:
     static const int MASK = CM_COLLISION;
-    static const double piHalf = M_PI / 2.0;
 
     SurfaceModel(LAMMPS * lmp, IContactHistorySetup * hsetup) : Pointers(lmp)
     {
-      history_offset = hsetup->add_value("deltaGamma", "0");
-      hsetup->add_value("psi", "0");
-      hsetup->add_value("contactPX", "0");
-      hsetup->add_value("contactPY", "0");
-      hsetup->add_value("contactPZ", "0");
-      hsetup->add_value("contactN1X", "0");
-      hsetup->add_value("contactN1Y", "0");
-      hsetup->add_value("contactN1Z", "0");
+      history_offset = hsetup->add_history_value("deltaGamma", "0");
+      hsetup->add_history_value("psi", "0");
+      hsetup->add_history_value("contactPX", "0");
+      hsetup->add_history_value("contactPY", "0");
+      hsetup->add_history_value("contactPZ", "0");
+      hsetup->add_history_value("contactN1X", "0");
+      hsetup->add_history_value("contactN1Y", "0");
+      hsetup->add_history_value("contactN1Z", "0");
     }
 
     inline void registerSettings(Settings&) {}
@@ -77,6 +76,8 @@ namespace ContactModels
 
     inline void collision(CollisionData & cdata, ForceData&, ForceData&)
     {
+      static const double piHalf = M_PI / 2.0;
+
       double enx = cdata.en[0];
       double eny = cdata.en[1];
       double enz = cdata.en[2];

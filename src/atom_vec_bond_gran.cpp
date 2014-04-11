@@ -32,9 +32,6 @@ See the README file in the top-level LAMMPS directory.
 
 using namespace LAMMPS_NS;
 
-#define MIN(A,B) (((A) < (B)) ? (A) : (B))
-#define MAX(A,B) (((A) > (B)) ? (A) : (B))
-
 #define DELTA 10000
 
 /* ---------------------------------------------------------------------- */

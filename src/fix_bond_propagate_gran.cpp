@@ -42,9 +42,6 @@ using namespace FixConst;
 
 #define BIG 1.0e20
 
-#define MIN(A,B) (((A) < (B)) ? (A) : (B))
-#define MAX(A,B) (((A) > (B)) ? (A) : (B))
-
 /* ---------------------------------------------------------------------- */
 
 FixBondPropagateGran::FixBondPropagateGran(LAMMPS *lmp, int narg, char **arg) :
@@ -243,10 +240,10 @@ void FixBondPropagateGran::write_restart(FILE *fp)
 
 void FixBondPropagateGran::restart(char *buf)
 {
-  int n = 0;
+  /*int n = 0;
   double *list = (double *) buf;
 
   double dummy = static_cast<int> (list[n++]);
-
+  */
   error->warning(FLERR,"Restart functionality not yet tested for granular bonds...");
 }

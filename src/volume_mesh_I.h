@@ -205,8 +205,6 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcLocalVolPropertie
     // volMeshGlobal [volMesh_(0)] and volMeshOwned [volMesh_(1)]
     // calculated here
 
-    double areaAccOff;
-
     volMesh_(0) = 0.;
     volMesh_(1) = 0.;
 
@@ -241,7 +239,7 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcLocalVolPropertie
 template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
 void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcGhostVolProperties()
 {
-    double pos[3], areaCheck;
+    double pos[3];
     int n_succ, n_iter;
     int nlocal = this->sizeLocal();
     int nall = this->sizeLocal()+this->sizeGhost();
@@ -378,7 +376,6 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::buildNeighbours()
       for(int j = i+1; j < nall; j++)
       {
         //NP continue of do not share any node
-        int iNode(0), jNode(0), iEdge(0), jEdge(0);
         if(0 == this->nSharedNodes(i,j)) continue;
 
         if(shareFace(i,j,iFace,jFace))
