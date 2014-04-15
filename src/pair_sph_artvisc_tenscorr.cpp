@@ -52,16 +52,24 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-PairSphArtviscTenscorr::PairSphArtviscTenscorr(LAMMPS *lmp) : PairSph(lmp)
+PairSphArtviscTenscorr::PairSphArtviscTenscorr(LAMMPS *lmp) : PairSph(lmp),
+    cs(NULL),
+    alpha(NULL),
+    beta(NULL),
+    etaPPG(NULL),
+    csmean(NULL),
+    alphaMean(NULL),
+    betaMean(NULL),
+    wDeltaPTypeinv(NULL),
+    artVisc_flag(false),
+    tensCorr_flag(false),
+    eta(0.),
+    epsilon(0.),
+    deltaP(0.)
 {
   respa_enable = 0;
   single_enable = 0;
   pairStyle_ = 1;
-
-  csmean = NULL;
-  alphaMean = NULL;
-  betaMean = NULL;
-  wDeltaPTypeinv = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -105,43 +113,17 @@ void PairSphArtviscTenscorr::settings(int narg, char **arg)
   // The first two input arguments are reserved for the kernel style and default smoothing length
   PairSph::setKernelAndLength(narg, arg);
 
-/*
-  if (iarg+1 > narg) error->all(FLERR, "Illegal pair_style sph command");
-
-  // kernel style
-
-  if(kernel_style) delete []kernel_style;
-  kernel_style = new char[strlen(arg[iarg])+1];
-  strcpy(kernel_style,arg[iarg]);
-
-  // check uniqueness of kernel IDs
-
-  int flag = SPH_KERNEL_NS::sph_kernels_unique_id();
-  if(flag < 0) error->all(FLERR, "Cannot proceed, sph kernels need unique IDs, check all sph_kernel_* files");
-
-  // get kernel id
-
-  kernel_id = SPH_KERNEL_NS::sph_kernel_id(kernel_style);
-  if(kernel_id < 0) error->all(FLERR, "Illegal pair_style sph command, unknown sph kernel");
-*/
-
   iarg += 2;
 
   // optional parameters
 
   artVisc_flag = tensCorr_flag = 0;
-  //alpha = beta = eta = epsilon = 0.0;
 
   while (iarg < narg) {
     if (strcmp(arg[iarg],"artVisc") == 0) {
       // parameters for artifical viscosity
       if (iarg+1 > narg) error->all(FLERR, "Illegal pair_style sph command");
       artVisc_flag = 1;
-      //alpha = force->numeric(FLERR,arg[iarg+1]);
-      //viscosity_ = alpha;
-      //beta = force->numeric(FLERR,arg[iarg+2]);
-      //eta = force->numeric(FLERR,arg[iarg+3]);
-      //iarg += 4;
       iarg += 1;
     } else if (strcmp(arg[iarg],"tensCorr") == 0) {
       // parameters for tensile correction
@@ -174,8 +156,6 @@ void PairSphArtviscTenscorr::coeff(int narg, char **arg)
     for (int j = MAX(jlo,i); j <= jhi; j++) {
       setflag[i][j] = 1;
       count++;
-      //cut[i][j] = cut[j][i] = cut_global; // sl_0?
-      //cutsq[i][j] = cutsq[j][i] = cut_global*cut_global; // sl_0?
     }
   }
 
@@ -220,13 +200,13 @@ void PairSphArtviscTenscorr::init_substyle()
     beta=static_cast<FixPropertyGlobal*>(modify->find_fix_property("artViscBeta","property/global","peratomtype",max_type,0,force->pair_style));
     if(!beta) error->all(FLERR, "Pairstyle sph/artVisc/tensCorr only works with a fix property/global that defines artViscBeta");
 
-    //eta = 0.01;     // NP const for all type
+    etaPPG=static_cast<FixPropertyGlobal*>(modify->find_fix_property("artViscEta","property/global","scalar",0,0,force->pair_style));
+    if(!etaPPG) error->all(FLERR, "Pairstyle sph/artVisc/tensCorr only works with a fix property/global that defines artViscEta");
+    eta = etaPPG->compute_scalar(); // NP const for all type
+
     viscosity_ = 1; // NP dummy
 
-    //alpha = force->numeric(FLERR,arg[iarg+1]);
     //viscosity_ = alpha;
-    //beta = force->numeric(FLERR,arg[iarg+2]);
-    //eta = force->numeric(FLERR,arg[iarg+3]);
 
     double csi,csj,alphai,alphaj,betai,betaj;
 
@@ -235,14 +215,14 @@ void PairSphArtviscTenscorr::init_substyle()
     {
       for(j=1;j<max_type+1;j++)
       {
-        csi=cs->compute_vector(i-1);
-        csj=cs->compute_vector(j-1);
+        const double csi=cs->compute_vector(i-1);
+        const double csj=cs->compute_vector(j-1);
 
-        alphai=alpha->compute_vector(i-1);
-        alphaj=alpha->compute_vector(j-1);
+        const double alphai=alpha->compute_vector(i-1);
+        const double alphaj=alpha->compute_vector(j-1);
 
-        betai=beta->compute_vector(i-1);
-        betaj=beta->compute_vector(j-1);
+        const double betai=beta->compute_vector(i-1);
+        const double betaj=beta->compute_vector(j-1);
 
         csmean[i][j] = 0.5*(csi+csj);
         alphaMean[i][j] = 0.5*(alphai+alphaj);
@@ -328,87 +308,18 @@ void PairSphArtviscTenscorr::read_restart_settings(FILE *fp)
 }
 
 /* ----------------------------------------------------------------------
-   artificial viscosity according to Monaghan (1992)
-   XXX: function call is slower! may be the double **v call?
-------------------------------------------------------------------------- */
-/*
-double PairSphArtviscTenscorr::artificialViscosity(int ip, int jp, int itype, int jtype,
-    double rsq, double slCom, double delx, double dely, double delz, double rhoi, double rhoj, double **v)
-{
-  // artifical viscosity [Monaghan, 1992]
-  // alpha ... shear viscosity
-  // beta  ... bulk viscosity
-  // eta   ... avoid singularities ~ 0.01*h*h
-
-  double muAB, rhoMeanInv,dotDelVDelR;
-
-  //double **v = atom->vest;
-
-  dotDelVDelR = ( (v[ip][0]-v[jp][0])*delx + (v[ip][1]-v[jp][1])*dely + (v[ip][2]-v[jp][2])*delz );
-
-  if ( dotDelVDelR < 0.0 ) {
-    muAB = slCom * dotDelVDelR / (rsq + eta);
-    rhoMeanInv = 2/(rhoi+rhoj);
-    return ((- alpha * csmean[itype][jtype] * muAB + beta * muAB * muAB) * rhoMeanInv);
-  } else return 0.0;
-}
-*/
-/* ----------------------------------------------------------------------
-   tensile correction according to Monaghan (2000)
-   calculates the values for rAB and fAB4
-------------------------------------------------------------------------- */
-/*
-template <int MASSFLAG>
-void PairSphArtviscTenscorr::tensileCorrection(int itype, int jtype, double rhoi, double rhoj,
-    double pi, double pj, double s, double slCom, double slComInv, double &rAB, double &fAB4)
-{
-  double rA,rB,fAB,fAB2;
-  double wDeltaPinv;
-
-  // repulsive term for tensile instability [Monaghan, 2000]
-  if (pi > 0.0 && pj > 0.0) {
-    rAB = 0.01 * (pi / (rhoi * rhoi) + pj / (rhoj * rhoj));
-  } else {
-    if (pi < 0.0) rA = epsilon * -1.0 * pi / (rhoi * rhoi);
-    else rA = 0;
-    if (pj < 0.0) rB = epsilon * -1.0 * pj / (rhoj * rhoj);
-    else rB = 0;
-    rAB = rA+rB;
-  }
-
-  if (MASSFLAG) {
-    wDeltaPinv = wDeltaPTypeinv[itype][jtype];
-  } else {
-    wDeltaPinv = 1./SPH_KERNEL_NS::sph_kernel(kernel_id,deltaP * slComInv,slCom,slComInv);
-  }
-
-  //TODO: Is fAB4 in this form ok?!
-  fAB =  SPH_KERNEL_NS::sph_kernel(kernel_id,s,slCom,slComInv) * wDeltaPinv;
-  fAB2 = fAB * fAB;
-  fAB4 = fAB2 * fAB2;
-}
-*/
-/* ----------------------------------------------------------------------
    template compute
 ------------------------------------------------------------------------- */
 
 template <int MASSFLAG>
 void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
 {
-  //int i,j,ii,jj,inum,jnum,itype,jtype;
-  //int *ilist,*jlist,*numneigh,**firstneigh;
-  //double xtmp,ytmp,ztmp,delx,dely,delz,r,rsq,rinv,s;
-  //double gradWmag,fpair;
-
-  //double rhoi,rhoj,pi,pj;
-  double sli,slCom,imass,jmass;//slj,,slComInv;
-
+  double sli,slCom,imass,jmass;
   double artVisc,fAB4,rAB;
-  //double muAB, rhoMeanInv,dotDelVDelR;
-  double rA,rB;//,fAB,fAB2;
+  double rA,rB;
   double wDeltaPinv;
 
-  double radi,rcom; //radj,
+  double radi,rcom;
 
   double **x = atom->x;
   double **v = atom->vest;
@@ -439,10 +350,7 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
   // no communication of sl, in case of perAtomType mass
   if (!MASSFLAG) {
     // update smoothing length
-//    timer->stamp(); // no timer step inside of a pair style!!
     fppaSl->do_forward_comm();
-//    timer->stamp(TIME_COMM);
-
     updatePtrs(); // get sl
   }
 
@@ -521,7 +429,7 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
 
           const double dotDelVDelR = ( (v[i][0]-v[j][0])*delx + (v[i][1]-v[j][1])*dely + (v[i][2]-v[j][2])*delz );
 
-          if ( dotDelVDelR < 0.0 ) {
+          if ( dotDelVDelR < 0.0 ) { //NP Direction really important?!
             const double muAB = slCom * dotDelVDelR / (rsq + eta);
             const double rhoMeanInv = 2/(rhoi+rhoj);
             artVisc = ((- alphaMean[itype][jtype] * csmean[itype][jtype] * muAB + betaMean[itype][jtype] * muAB * muAB) * rhoMeanInv);
