@@ -102,29 +102,31 @@ namespace ContactModels
       const double area = calcContactArea(itype,jtype,reff,deltan);
 
       const double Fn_damping = -gamman*cdata.vn;
+      const double Fn_contact_hertz = kn*(cdata.radsum-cdata.r);
       const double area3 = area*area*area;
       const double Fn_contact = 4/3*Yeff[itype][jtype]*area3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*area3);
       const double Fn = Fn_contact + Fn_damping;
+      const double Fn_hertz = Fn_contact_hertz + Fn_damping;
 
-      //NP current implementation uses cohesive force for the calculation of the tangential force
-      //NP  this may be incorrect due to negative forces!
-      cdata.Fn = Fn; //NP save original normal Hertz force for tangential forces?
+      //NP current implementation: As simplification we use Hertz force for the calculation of the tangential force
+      //NP  Cohesive forces (negative forces) may corrupt Coloumb's law!
+      cdata.Fn = Fn_hertz; // save original normal Hertz force for tangential forces and rolling friction
       //NP save stiffness and damping coefficient of the original Hertz model for rolling resistance model, ...
       cdata.kn = kn;
       cdata.kt = kt;
       cdata.gamman = gamman;
       cdata.gammat = gammat;
 
-      // apply normal force
+      // apply normal force (use JKR Force)
       if(cdata.is_wall) {
         const double Fn_ = Fn * cdata.area_ratio;
         i_forces.delta_F[0] = Fn_ * cdata.en[0];
         i_forces.delta_F[1] = Fn_ * cdata.en[1];
         i_forces.delta_F[2] = Fn_ * cdata.en[2];
       } else {
-        i_forces.delta_F[0] = cdata.Fn * cdata.en[0];
-        i_forces.delta_F[1] = cdata.Fn * cdata.en[1];
-        i_forces.delta_F[2] = cdata.Fn * cdata.en[2];
+        i_forces.delta_F[0] = Fn * cdata.en[0];
+        i_forces.delta_F[1] = Fn * cdata.en[1];
+        i_forces.delta_F[2] = Fn * cdata.en[2];
 
         j_forces.delta_F[0] = -i_forces.delta_F[0];
         j_forces.delta_F[1] = -i_forces.delta_F[1];
