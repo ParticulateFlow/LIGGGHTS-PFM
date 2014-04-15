@@ -49,7 +49,6 @@ namespace MODEL_PARAMS
   static const char * FLUID_VISCOSITY = "FluidViscosity";
   static const char * MAXIMUM_RESTITUTION = "MaximumRestitution";
   static const char * CRITITCAL_STOKES = "CriticalStokes";
-  static const char * MINIMUM_PARTICLE_DISTANCE = "minParticleDist";
   static const char * LIQUID_VOLUME = "liquidVolume";
   static const char * SURFACE_TENSION = "surfaceTension";
   static const char * CONTACT_ANGLE = "contactAngle";
@@ -414,12 +413,12 @@ namespace MODEL_PARAMS
         if(vi < 0. || vi > 180)
           lmp->error->all(FLERR,"0 <= contactAngle <= 180° required");
       }
+
       vec->data[i] = vi;
     }
 
     return vec;
   }
-
 
   MatrixProperty* createKn(PropertyRegistry & registry, const char * caller, bool)
   {

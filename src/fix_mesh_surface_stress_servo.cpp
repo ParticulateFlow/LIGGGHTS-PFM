@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "fix_mesh_surface_stress_servo.h"
-#include "fix_wall_gran.h"
 #include "atom.h"
 #include "force.h"
 #include "update.h"
