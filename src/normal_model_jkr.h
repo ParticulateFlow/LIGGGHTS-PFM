@@ -76,7 +76,7 @@ namespace ContactModels
       betaeff(NULL),
       tangential_damping(false),
       cohEnergyDens(NULL),
-      coefArea(NULL)
+      coefContactRadius(NULL)
     {
       /*NL*/ printf("JKR loaded\n");
     }
@@ -91,13 +91,13 @@ namespace ContactModels
       registry.registerProperty("Geff", &MODEL_PARAMS::createGeff);
       registry.registerProperty("betaeff", &MODEL_PARAMS::createBetaEff);
       registry.registerProperty("cohEnergyDens", &MODEL_PARAMS::createCohesionEnergyDensity);
-      registry.registerProperty("coefArea", &MODEL_PARAMS::createCoefContactRadius);
+      registry.registerProperty("coefContactRadius", &MODEL_PARAMS::createCoefContactRadius);
 
       registry.connect("Yeff", Yeff, "normal_model jkr");
       registry.connect("Geff", Geff, "normal_model jkr");
       registry.connect("betaeff", betaeff, "normal_model jkr");
       registry.connect("cohEnergyDens", cohEnergyDens, "normal_model jkr");
-      registry.connect("coefArea", coefArea, "normal_model jkr");
+      registry.connect("coefContactRadius", coefContactRadius, "normal_model jkr");
     }
 
     // effective exponent for stress-strain relationship
@@ -233,15 +233,15 @@ namespace ContactModels
       //NP analytic solution of a quartic equation
       double cRad = reff;
       for (int k=0; k<10; k++) {
-        const double areaOld = cRad;
-        const double areaOld2 = areaOld*areaOld;
-        const double coef = coefArea[itype][jtype]*reff*sqrt(areaOld);
-        cRad = (areaOld*areaOld2 + areaOld*coef + deltan*areaOld*reff)/(2*areaOld2 - coef); //NP modified sign of deltan
-        /*NL*/ //fprintf(screen,"Loop: deltan = %f, coefArea = %f, cRad = %f, areaOld = %f\n",deltan,coefArea[itype][jtype],cRad,areaOld);
-        if (fabs(cRad-areaOld) < __DBL_EPSILON__) break;
+        const double cRadOld = cRad;
+        const double cRadOld2 = cRadOld*cRadOld;
+        const double coef = coefContactRadius[itype][jtype]*reff*sqrt(cRadOld);
+        cRad = (cRadOld*cRadOld2 + cRadOld*coef + deltan*cRadOld*reff)/(2*cRadOld2 - coef); //NP modified sign of deltan
+        /*NL*/ //fprintf(screen,"Loop: deltan = %f, coefContactRadius = %f, cRad = %f, cRadOld = %f\n",deltan,coefContactRadius[itype][jtype],cRad,cRadOld);
+        if (fabs(cRad-cRadOld) < __DBL_EPSILON__) break;
       }
       /*NL*/ //if (isnan(cRad)) lmp->error->all(FLERR,"cRad is NAN. Cohesive surface energy to high?");
-      /*NL*/ //fprintf(screen,"Final: coefArea = %f, cRad = %f\n",coefArea[itype][jtype],cRad);
+      /*NL*/ //fprintf(screen,"Final: coefContactRadius = %f, cRad = %f\n",coefContactRadius[itype][jtype],cRad);
 
       return cRad;
     }
@@ -254,7 +254,7 @@ namespace ContactModels
 
     //NP pre-calculated coefficients for the jkr model
     double ** cohEnergyDens;
-    double ** coefArea;
+    double ** coefContactRadius;
   };
 
 }
