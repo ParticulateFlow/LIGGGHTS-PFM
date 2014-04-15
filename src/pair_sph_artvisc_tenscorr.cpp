@@ -53,6 +53,8 @@ using namespace LAMMPS_NS;
 /* ---------------------------------------------------------------------- */
 
 PairSphArtviscTenscorr::PairSphArtviscTenscorr(LAMMPS *lmp) : PairSph(lmp),
+    artVisc_flag(false),
+    tensCorr_flag(false),
     cs(NULL),
     alpha(NULL),
     beta(NULL),
@@ -60,12 +62,11 @@ PairSphArtviscTenscorr::PairSphArtviscTenscorr(LAMMPS *lmp) : PairSph(lmp),
     csmean(NULL),
     alphaMean(NULL),
     betaMean(NULL),
-    wDeltaPTypeinv(NULL),
-    artVisc_flag(false),
-    tensCorr_flag(false),
     eta(0.),
-    epsilon(0.),
-    deltaP(0.)
+    epsilonPPG(NULL),
+    deltaP(NULL),
+    wDeltaPTypeinv(NULL),
+    epsilon(0.)
 {
   respa_enable = 0;
   single_enable = 0;
@@ -80,7 +81,7 @@ PairSphArtviscTenscorr::~PairSphArtviscTenscorr()
     memory->destroy(csmean);
     memory->destroy(alphaMean);
     memory->destroy(betaMean);
-    if (mass_type && tensCorr_flag) memory->destroy(wDeltaPTypeinv);
+    memory->destroy(wDeltaPTypeinv);
   }
 }
 
@@ -94,9 +95,12 @@ void PairSphArtviscTenscorr::allocate()
 
   int n = atom->ntypes;
 
-  memory->create(csmean,n+1,n+1,"pair:csmean");
-  memory->create(alphaMean,n+1,n+1,"pair:alphaMean");
-  memory->create(betaMean,n+1,n+1,"pair:betaMean");
+  if (artVisc_flag) {
+    memory->create(csmean,n+1,n+1,"pair:csmean");
+    memory->create(alphaMean,n+1,n+1,"pair:alphaMean");
+    memory->create(betaMean,n+1,n+1,"pair:betaMean");
+  }
+
   if (mass_type && tensCorr_flag) memory->create(wDeltaPTypeinv,n+1,n+1,"pair:wDeltaPTypeinv");
 
 }
@@ -127,11 +131,9 @@ void PairSphArtviscTenscorr::settings(int narg, char **arg)
       iarg += 1;
     } else if (strcmp(arg[iarg],"tensCorr") == 0) {
       // parameters for tensile correction
-      if (iarg+3 > narg) error->all(FLERR, "Illegal pair_style sph command");
+      if (iarg+1 > narg) error->all(FLERR, "Illegal pair_style sph command");
       tensCorr_flag = 1;
-      epsilon = force->numeric(FLERR,arg[iarg+1]);
-      deltaP = force->numeric(FLERR,arg[iarg+2]);
-      iarg += 3;
+      iarg += 1;
     } else error->all(FLERR, "Illegal pair_style sph command");
   }
 }
@@ -169,21 +171,28 @@ void PairSphArtviscTenscorr::coeff(int narg, char **arg)
 
 void PairSphArtviscTenscorr::init_substyle()
 {
-  int max_type = atom->ntypes;
-  int i,j;
+  const int max_type = atom->ntypes;
 
   //create wDeltaPTypeInv
   if (mass_type && tensCorr_flag) {
 
-    double slCom,slComInv;
+    deltaP=static_cast<FixPropertyGlobal*>(modify->find_fix_property("tensCorrDeltaP","property/global","peratomtype",max_type,0,force->pair_style));
+    if(!deltaP) error->all(FLERR, "Pairstyle sph/artVisc/tensCorr only works with a fix property/global that defines tensCorrDeltaP");
+
+    epsilonPPG=static_cast<FixPropertyGlobal*>(modify->find_fix_property("tensCorrEpsilon","property/global","scalar",0,0,force->pair_style));
+    if(!epsilonPPG) error->all(FLERR, "Pairstyle sph/artVisc/tensCorr only works with a fix property/global that defines tensCorrEpsilon");
+    epsilon = epsilonPPG->compute_scalar(); // const for all types
 
     //pre-calculate common smoothing length
-    for(i = 1; i < max_type+1; i++) {
-      for(j = 1; j < max_type+1; j++) {
+    for(int i = 1; i < max_type+1; i++) {
+      for(int j = 1; j < max_type+1; j++) {
+        const double deltaPi = deltaP->compute_vector(i-1);
+        const double deltaPj = deltaP->compute_vector(j-1);
+        const double meanDeltaP = 0.5*(deltaPi+deltaPj);
 
-        slCom = slComType[i][j];
-        slComInv = 1./slCom;
-        wDeltaPTypeinv[i][j] = 1./SPH_KERNEL_NS::sph_kernel(kernel_id,deltaP * slComInv,slCom,slComInv);
+        const double slCom = slComType[i][j];
+        const double slComInv = 1./slCom;
+        wDeltaPTypeinv[i][j] = 1./SPH_KERNEL_NS::sph_kernel(kernel_id,meanDeltaP * slComInv,slCom,slComInv);
       }
     }
   }
@@ -205,15 +214,12 @@ void PairSphArtviscTenscorr::init_substyle()
     eta = etaPPG->compute_scalar(); // NP const for all type
 
     viscosity_ = 1; // NP dummy
-
     //viscosity_ = alpha;
 
-    double csi,csj,alphai,alphaj,betai,betaj;
-
     //pre-calculate parameters for possible contact material combinations
-    for(i=1;i< max_type+1; i++)
+    for(int i=1;i< max_type+1; i++)
     {
-      for(j=1;j<max_type+1;j++)
+      for(int j=1;j<max_type+1;j++)
       {
         const double csi=cs->compute_vector(i-1);
         const double csj=cs->compute_vector(j-1);
@@ -456,16 +462,15 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
           if (MASSFLAG) {
             wDeltaPinv = wDeltaPTypeinv[itype][jtype];
           } else {
-            wDeltaPinv = 1./SPH_KERNEL_NS::sph_kernel(kernel_id,deltaP * slComInv,slCom,slComInv);
+            // assumption that deltaP = sl / 1.2
+            const double deltaPOne = slCom/1.2;
+            wDeltaPinv = 1./SPH_KERNEL_NS::sph_kernel(kernel_id,deltaPOne * slComInv,slCom,slComInv);
           }
 
           //TODO: Is fAB4 in this form ok?!
           const double fAB =  SPH_KERNEL_NS::sph_kernel(kernel_id,s,slCom,slComInv) * wDeltaPinv;
           const double fAB2 = fAB * fAB;
           fAB4 = fAB2 * fAB2;
-
-          // version with function
-          //tensileCorrection<MASSFLAG>(itype,jtype,rhoi,rhoj,pi,pj,s,slCom,slComInv,rAB,fAB4); //XXX: function call is slower :-/
         }
 
         // calculate the force

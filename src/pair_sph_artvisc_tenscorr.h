@@ -59,17 +59,19 @@ class PairSphArtviscTenscorr : public PairSph {
   void allocate();
   template <int> void compute_eval(int, int);
 
+  int     artVisc_flag, tensCorr_flag; // flags for additional styles
+
   class   FixPropertyGlobal* cs;
   class   FixPropertyGlobal* alpha;
   class   FixPropertyGlobal* beta;
   class   FixPropertyGlobal* etaPPG;
   double  **csmean,**alphaMean,**betaMean;
-
-  double  **wDeltaPTypeinv;
-
-  int     artVisc_flag, tensCorr_flag; // flags for additional styles
   double  eta;
-  double  epsilon,deltaP; // coeffs for tensile correction
+
+  class   FixPropertyGlobal* epsilonPPG;
+  class   FixPropertyGlobal* deltaP;
+  double  **wDeltaPTypeinv;
+  double  epsilon; // coeffs for tensile correction
 
 };
 
