@@ -492,7 +492,7 @@ void PairSphArtviscTenscorr::compute_eval(int eflag, int vflag)
 
           dotDelVDelR = ( (v[i][0]-v[j][0])*delx + (v[i][1]-v[j][1])*dely + (v[i][2]-v[j][2])*delz );
 
-          if ( dotDelVDelR < 0.0 ) {
+          if ( dotDelVDelR < 0.0 ) { //NP Direction really important?!
             muAB = slCom * dotDelVDelR / (rsq + eta);
             rhoMeanInv = 2/(rhoi+rhoj);
             artVisc = ((- alpha * csmean[itype][jtype] * muAB + beta * muAB * muAB) * rhoMeanInv);
