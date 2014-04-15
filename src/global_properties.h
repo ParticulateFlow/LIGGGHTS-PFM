@@ -60,13 +60,6 @@ namespace MODEL_PARAMS
   MatrixProperty* createCoeffMu(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffRestMax(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffStc(PropertyRegistry & registry, const char * caller, bool sanity_checks);
-
-  // ------------------------------ HAMAKER --------------------------------
-  MatrixProperty* createHamakerConstant(PropertyRegistry & registry, const char * caller, bool sanity_checks);
-  MatrixProperty* createHamakerMinimumParticleDistance(PropertyRegistry & registry, const char * caller, bool sanity_checks);
-  MatrixProperty* createHamakerMaxEff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
-  // ------------------------------ JKR --------------------------------
-  MatrixProperty* createCoefArea(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   ScalarProperty* createLiquidVolume(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   ScalarProperty* createSurfaceTension(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   VectorProperty* createContactAngle(PropertyRegistry & registry, const char * caller, bool sanity_checks);

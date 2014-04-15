@@ -33,6 +33,35 @@ NORMAL_MODEL(JKR,jkr,5)
 #include "global_properties.h"
 #include "math.h"
 
+
+namespace MODEL_PARAMS
+{
+  MatrixProperty * createCoefContactRadius(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    registry.registerProperty("Yeff", &createYeff);
+    registry.registerProperty("cohEnergyDens", &createCohesionEnergyDensity);
+
+    MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
+    MatrixProperty * YeffProp = registry.getMatrixProperty("Yeff", caller);
+    MatrixProperty * cohEnergyDensProp = registry.getMatrixProperty("cohEnergyDens", caller);
+    double * const * const Yeff = YeffProp->data;
+    double * const * const cohEnergyDens = cohEnergyDensProp->data;
+
+    for(int i=1;i< max_type+1; i++)
+      {
+        for(int j=1;j<max_type+1;j++)
+          {
+            matrix->data[i][j] = sqrt(M_PI*cohEnergyDens[i][j]/Yeff[i][j]);
+          }
+      }
+
+    return matrix;
+  }
+}
+
+
 namespace ContactModels
 {
   template<typename Style>
@@ -45,6 +74,7 @@ namespace ContactModels
       Yeff(NULL),
       Geff(NULL),
       betaeff(NULL),
+      tangential_damping(false),
       cohEnergyDens(NULL),
       coefArea(NULL)
     {
@@ -61,13 +91,20 @@ namespace ContactModels
       registry.registerProperty("Geff", &MODEL_PARAMS::createGeff);
       registry.registerProperty("betaeff", &MODEL_PARAMS::createBetaEff);
       registry.registerProperty("cohEnergyDens", &MODEL_PARAMS::createCohesionEnergyDensity);
-      registry.registerProperty("coefArea", &MODEL_PARAMS::createCoefArea);
+      registry.registerProperty("coefArea", &MODEL_PARAMS::createCoefContactRadius);
 
-      registry.connect("Yeff", Yeff);
-      registry.connect("Geff", Geff);
-      registry.connect("betaeff", betaeff);
-      registry.connect("cohEnergyDens", cohEnergyDens);
-      registry.connect("coefArea", coefArea);
+      registry.connect("Yeff", Yeff, "normal_model jkr");
+      registry.connect("Geff", Geff, "normal_model jkr");
+      registry.connect("betaeff", betaeff, "normal_model jkr");
+      registry.connect("cohEnergyDens", cohEnergyDens, "normal_model jkr");
+      registry.connect("coefArea", coefArea, "normal_model jkr");
+    }
+
+    // effective exponent for stress-strain relationship
+    //NP used for area correction of heat transfer
+    inline double stressStrainExponent()
+    {
+      return 1.5;
     }
 
     inline void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
@@ -98,13 +135,13 @@ namespace ContactModels
       kn /= force->nktv2p;
       kt /= force->nktv2p;
 
-      // calculate contact area
-      const double area = calcContactArea(itype,jtype,reff,deltan);
+      // calculate contact radius
+      const double cRad = calcContactRadius(itype,jtype,reff,deltan);
 
       const double Fn_damping = -gamman*cdata.vn;
       const double Fn_contact_hertz = kn*(cdata.radsum-cdata.r);
-      const double area3 = area*area*area;
-      const double Fn_contact = 4/3*Yeff[itype][jtype]*area3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*area3);
+      const double cRad3 = cRad*cRad*cRad;
+      const double Fn_contact = 4/3*Yeff[itype][jtype]*cRad3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*cRad3);
       const double Fn = Fn_contact + Fn_damping;
       const double Fn_hertz = Fn_contact_hertz + Fn_damping;
 
@@ -153,11 +190,11 @@ namespace ContactModels
       /*NL*/ //fprintf(screen,"Non-contact: minDeltaN = %f, deltan = %f\n",minDeltaN,deltan);
 
       if (minDeltaN < deltan) { // non-contact force
-        const double area = calcContactArea(itype,jtype,reff,deltan);
+        const double cRad = calcContactRadius(itype,jtype,reff,deltan);
 
         //NP current state: no damping!
-        const double area3 = area*area*area;
-        const double Fn = 4/3*Yeff[itype][jtype]*area3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*area3);
+        const double cRad3 = cRad*cRad*cRad;
+        const double Fn = 4/3*Yeff[itype][jtype]*cRad3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*cRad3);
 
         double **x = atom->x;
         const double rinv = 1.0 / r;
@@ -182,7 +219,7 @@ namespace ContactModels
           j_forces.delta_F[2] = -i_forces.delta_F[2];
         }
 
-        /*NL*/ //fprintf(screen,"Non-contact force: area = %f, Fn = %f\n",area,Fn);
+        /*NL*/ //fprintf(screen,"Non-contact force: cRad = %f, Fn = %f\n",cRad,Fn);
 
       } // no interaction
 
@@ -191,22 +228,22 @@ namespace ContactModels
     void endPass(CollisionData&, ForceData&, ForceData&){}
 
   protected:
-    inline double calcContactArea(const int itype, const int jtype, const double reff, const double deltan){
-      // area calculation (Newton faster than analytic solution)
+    inline double calcContactRadius(const int itype, const int jtype, const double reff, const double deltan){
+      // contact radius calculation (Newton faster than analytic solution)
       //NP analytic solution of a quartic equation
-      double area = reff;
+      double cRad = reff;
       for (int k=0; k<10; k++) {
-        const double areaOld = area;
+        const double areaOld = cRad;
         const double areaOld2 = areaOld*areaOld;
         const double coef = coefArea[itype][jtype]*reff*sqrt(areaOld);
-        area = (areaOld*areaOld2 + areaOld*coef + deltan*areaOld*reff)/(2*areaOld2 - coef); //NP modified sign of deltan
-        /*NL*/ //fprintf(screen,"Loop: deltan = %f, coefArea = %f, area = %f, areaOld = %f\n",deltan,coefArea[itype][jtype],area,areaOld);
-        if (fabs(area-areaOld) < __DBL_EPSILON__) break;
+        cRad = (areaOld*areaOld2 + areaOld*coef + deltan*areaOld*reff)/(2*areaOld2 - coef); //NP modified sign of deltan
+        /*NL*/ //fprintf(screen,"Loop: deltan = %f, coefArea = %f, cRad = %f, areaOld = %f\n",deltan,coefArea[itype][jtype],cRad,areaOld);
+        if (fabs(cRad-areaOld) < __DBL_EPSILON__) break;
       }
-      /*NL*/ if (isnan(area)) lmp->error->all(FLERR,"Area is NAN. Cohesive surface energy to high?");
-      /*NL*/ //fprintf(screen,"Final: coefArea = %f, area = %f\n",coefArea[itype][jtype],area);
+      /*NL*/ //if (isnan(cRad)) lmp->error->all(FLERR,"cRad is NAN. Cohesive surface energy to high?");
+      /*NL*/ //fprintf(screen,"Final: coefArea = %f, cRad = %f\n",coefArea[itype][jtype],cRad);
 
-      return area;
+      return cRad;
     }
 
     double ** Yeff;
