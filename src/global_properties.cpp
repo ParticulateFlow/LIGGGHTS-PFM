@@ -49,7 +49,6 @@ namespace MODEL_PARAMS
   static const char * FLUID_VISCOSITY = "FluidViscosity";
   static const char * MAXIMUM_RESTITUTION = "MaximumRestitution";
   static const char * CRITITCAL_STOKES = "CriticalStokes";
-  static const char * HAMAKER_CONSTANT = "hamakerConstant";
   static const char * MINIMUM_PARTICLE_DISTANCE = "minParticleDist";
   static const char * LIQUID_VOLUME = "liquidVolume";
   static const char * SURFACE_TENSION = "surfaceTension";
