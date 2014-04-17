@@ -720,6 +720,47 @@ void LAMMPS::help()
   fprintf(screen,"\n\n");
 
   pos = 80;
+  fprintf(screen,"* Granular pair styles:\n");
+  fprintf(screen,"** Normal model:\n");
+#define NORMAL_MODEL
+#define NORMAL_MODEL(Class,key,id) print_style(#key,pos);
+#include "style_normal_model.h"
+#undef NORMAL_MODEL
+  fprintf(screen,"\n\n");
+
+  pos = 80;
+  fprintf(screen,"** Surface model:\n");
+#define SURFACE_MODEL
+#define SURFACE_MODEL(Class,key,id) print_style(#key,pos);
+#include "style_surface_model.h"
+#undef SURFACE_MODEL
+  fprintf(screen,"\n\n");
+
+  pos = 80;
+  fprintf(screen,"** Cohesion model:\n");
+#define COHESION_MODEL
+#define COHESION_MODEL(Class,key,id) print_style(#key,pos);
+#include "style_cohesion_model.h"
+#undef COHESION_MODEL
+  fprintf(screen,"\n\n");
+
+  pos = 80;
+  fprintf(screen,"** Tangential model:\n");
+#define TANGENTIAL_MODEL
+#define TANGENTIAL_MODEL(Class,key,id) print_style(#key,pos);
+#include "style_tangential_model.h"
+#undef TANGENTIAL_MODEL
+  fprintf(screen,"\n\n");
+
+  pos = 80;
+  fprintf(screen,"** Rolling model:\n");
+#define ROLLING_MODEL
+#define ROLLING_MODEL(Class,key,id) print_style(#key,pos);
+#include "style_rolling_model.h"
+#undef ROLLING_MODEL
+  fprintf(screen,"\n\n");
+
+  pos = 80;
   fprintf(screen,"* Bond styles:\n");
 #define BOND_CLASS
 #define BondStyle(key,Class) print_style(#key,pos);
