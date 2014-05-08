@@ -43,9 +43,6 @@ using namespace FixConst;
 
 #define BIG 1.0e20
 
-#define MIN(A,B) (((A) < (B)) ? (A) : (B))
-#define MAX(A,B) (((A) > (B)) ? (A) : (B))
-
 /* ---------------------------------------------------------------------- */
 
 FixBondCreateGran::FixBondCreateGran(LAMMPS *lmp, int narg, char **arg) :
@@ -314,9 +311,9 @@ void FixBondCreateGran::setup(int vflag)
 
 void FixBondCreateGran::post_integrate()
 {
-  int i,j,k,m,ii,jj,inum,jnum,itype,jtype,n1,n3,possible;
+  int i,j,k,ii,jj,inum,jnum,itype,jtype,possible;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq,min,max;
-  int *ilist,*jlist,*numneigh,**firstneigh,*slist;
+  int *ilist,*jlist,*numneigh,**firstneigh;
   int flag;
 
   if (nevery == 0 || update->ntimestep % nevery ) return;
@@ -445,8 +442,6 @@ void FixBondCreateGran::post_integrate()
   int **bond_type = atom->bond_type;
   int **bond_atom = atom->bond_atom;
   int *num_bond = atom->num_bond;
-  int **nspecial = atom->nspecial;
-  int **special = atom->special;
   int newton_bond = force->newton_bond;
   int n_bondhist = atom->n_bondhist;
   double ***bond_hist = atom->bond_hist;

@@ -32,6 +32,13 @@
 
 namespace LAMMPS_NS {
 
+
+inline void __trace__()
+{
+    /*NL*/ //double test[3];
+    /*NL*/ //test[4] = 0.;
+}
+
 inline void __debug__(LAMMPS* lmp)
 {
     /*NL*///fprintf(lmp->screen,"bond_hist %d bond_per_atom %d\n",lmp->atom->bond_hist,lmp->atom->bond_per_atom);

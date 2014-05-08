@@ -332,7 +332,7 @@ void FixMeshSurfaceStressServo::init()
 
   // check if servo-wall is also a granular wall
   if (!fix_mesh_neighlist_)
-    error->fix_error(FLERR,this,"Alice?! Dont't forget to use the servo-wall for a fix wall/gran too.");
+    error->fix_error(FLERR,this,"The servo-wall requires a contact model. Therefore, it has to be used for a fix wall/gran too.");
 
   if (strcmp(update->integrate_style,"respa") == 0)
     error->fix_error(FLERR,this,"not respa-compatible");
@@ -426,7 +426,8 @@ void FixMeshSurfaceStressServo::final_integrate()
   FixMeshSurfaceStress::final_integrate();
 
   // calcualte area
-  double area = mod_andrew_->area();
+  // double area = mod_andrew_->area();
+  mod_andrew_->area();
 
   double dfdt;
 

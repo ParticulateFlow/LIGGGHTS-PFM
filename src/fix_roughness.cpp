@@ -217,18 +217,15 @@ double FixRoughness::generatePsi()
 
 void FixRoughness::initial_integrate(int vflag)
 {
-  
-  FILE *history;
   int i,j,ii,jj,inum,jnum;
 
   //reset heat flux
   //sources are not reset
   int *mask = atom->mask;
-  int nlocal = atom->nlocal;
 
   
   int *ilist,*jlist,*numneigh,**firstneigh;
-  int *touchpair,**firsttouch, *touch;
+  int *touchpair,**firsttouch;
   double *allhist, **firsthist;
   double *deltaGamma, *psi;
 

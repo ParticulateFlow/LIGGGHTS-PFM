@@ -202,7 +202,7 @@ void FixTemplateMultiplespheres::calc_bounding_sphere()
 {
   r_bound = LARGE;
   int *visited = new int[nspheres];
-  double d[3],delta,dist;
+  double d[3],dist;
 
   for(int shuffle = 0; shuffle < N_SHUFFLE_BOUND; shuffle ++)
   {
@@ -298,7 +298,6 @@ void FixTemplateMultiplespheres::calc_center_of_mass()
   int nsuccess = 0;
 
   double x_try[3],xcm[3],dist_j_sqr;
-  int n_found = 0;
 
   /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES) fprintf(screen,"performing MC integration, x_min=%f %f %f, x_max=%f %f %f\n",x_min[0],x_min[1],x_min[2],x_max[0],x_max[1],x_max[2]);
   vectorZeroize3D(xcm);

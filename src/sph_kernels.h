@@ -45,7 +45,7 @@ inline int SPH_KERNEL_NS::sph_kernels_unique_id()
   int ids[50];
   int nkernels = 0;
 
-  //if (0) return 0.;
+  if (0) return 0.;
   #define SPH_KERNEL_CLASS
   #define SPHKernel(kernel_id,kernelstyle,SPHKernelCalculation,SPHKernelCalculationDer,SPHKernelCalculationCut) \
   ids[nkernels++] = kernel_id;
@@ -79,48 +79,42 @@ inline int SPH_KERNEL_NS::sph_kernel_id(char *style)
 
 inline double SPH_KERNEL_NS::sph_kernel(int id,double s,double h,double hinv)
 {
-    switch (id)
-    {
-    #define SPH_KERNEL_CLASS
-    #define SPHKernel(kernel_id,kernelstyle,SPHKernelCalculation,SPHKernelCalculationDer,SPHKernelCalculationCut) \
-    case (kernel_id): return SPH_KERNEL_NS::SPHKernelCalculation(s,h,hinv);
-    #include "style_sph_kernel.h"
-    #undef SPH_KERNEL_CLASS
-    #undef SPHKernel
-    }
-    return 0.;
+  if (0) return 0.;
+  #define SPH_KERNEL_CLASS
+  #define SPHKernel(kernel_id,kernelstyle,SPHKernelCalculation,SPHKernelCalculationDer,SPHKernelCalculationCut) \
+  else if (kernel_id == id) return SPH_KERNEL_NS::SPHKernelCalculation(s,h,hinv);
+  #include "style_sph_kernel.h"
+  #undef SPH_KERNEL_CLASS
+  #undef SPHKernel
+  return 0.;
 }
 
 /* ---------------------------------------------------------------------- */
 
 inline double SPH_KERNEL_NS::sph_kernel_der(int id,double s,double h,double hinv)
 {
-    switch (id)
-    {
-    #define SPH_KERNEL_CLASS
-    #define SPHKernel(kernel_id,kernelstyle,SPHKernelCalculation,SPHKernelCalculationDer,SPHKernelCalculationCut) \
-    case (kernel_id): return SPH_KERNEL_NS::SPHKernelCalculationDer(s,h,hinv);
-    #include "style_sph_kernel.h"
-    #undef SPH_KERNEL_CLASS
-    #undef SPHKernel
-    }
-    return 0.;
+  if (0) return 0.;
+  #define SPH_KERNEL_CLASS
+  #define SPHKernel(kernel_id,kernelstyle,SPHKernelCalculation,SPHKernelCalculationDer,SPHKernelCalculationCut) \
+  else if (kernel_id == id) return SPH_KERNEL_NS::SPHKernelCalculationDer(s,h,hinv);
+  #include "style_sph_kernel.h"
+  #undef SPH_KERNEL_CLASS
+  #undef SPHKernel
+  return 0.;
 }
 
 /* ---------------------------------------------------------------------- */
 
 inline double SPH_KERNEL_NS::sph_kernel_cut(int id)
 {
-    switch (id)
-    {
-    #define SPH_KERNEL_CLASS
-    #define SPHKernel(kernel_id,kernelstyle,SPHKernelCalculation,SPHKernelCalculationDer,SPHKernelCalculationCut) \
-    case (kernel_id): return SPH_KERNEL_NS::SPHKernelCalculationCut();
-    #include "style_sph_kernel.h"
-    #undef SPH_KERNEL_CLASS
-    #undef SPHKernel
-    }
-    return 0.;
+  if (0) return 0.;
+  #define SPH_KERNEL_CLASS
+  #define SPHKernel(kernel_id,kernelstyle,SPHKernelCalculation,SPHKernelCalculationDer,SPHKernelCalculationCut) \
+  else if (kernel_id == id) return SPH_KERNEL_NS::SPHKernelCalculationCut();
+  #include "style_sph_kernel.h"
+  #undef SPH_KERNEL_CLASS
+  #undef SPHKernel
+  return 0.;
 }
 
 #endif

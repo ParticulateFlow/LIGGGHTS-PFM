@@ -116,9 +116,9 @@ void FixNVESphereLimit::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixNVESphereLimit::initial_integrate(int vflag)
+void FixNVESphereLimit::initial_integrate(int)
 {
-  int itype;
+  //NP modified R.B.
   double dtfm,dtirotate,msq,scale,vsq,osq;
   double g[3];
 
@@ -200,7 +200,7 @@ void FixNVESphereLimit::initial_integrate(int vflag)
 
 void FixNVESphereLimit::final_integrate()
 {
-  int itype;
+  //NP modified R.B.
   double dtfm,dtirotate,vsq,osq,scale;
 
   double **v = atom->v;

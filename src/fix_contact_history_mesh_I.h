@@ -74,12 +74,11 @@
 
   /* ---------------------------------------------------------------------- */
 
-  inline void FixContactHistoryMesh::swap(int ilocal,int ineigh, int jneigh, bool delflag_swap)
+  inline void FixContactHistoryMesh::swap(int ilocal,int ineigh, int jneigh, bool keepflag_swap)
   {
       //NP swap data of ineigh and jneigh
 
       int id_temp;
-      bool delflag_temp;
 
       id_temp                  = partner_[ilocal][ineigh];
       partner_[ilocal][ineigh] = partner_[ilocal][jneigh];
@@ -89,11 +88,11 @@
       vectorCopyN(&(contacthistory_[ilocal][jneigh*dnum_]),&(contacthistory_[ilocal][ineigh*dnum_]),dnum_);
       vectorCopyN(swap_,                                   &(contacthistory_[ilocal][jneigh*dnum_]),dnum_);
 
-      if(delflag_swap)
+      if(keepflag_swap)
       {
-          delflag_temp             = delflag_[ilocal][ineigh];
-          delflag_[ilocal][ineigh] = delflag_[ilocal][jneigh];
-          delflag_[ilocal][jneigh] = delflag_temp;
+          const bool keepflag_temp  = keepflag_[ilocal][ineigh];
+          keepflag_[ilocal][ineigh] = keepflag_[ilocal][jneigh];
+          keepflag_[ilocal][jneigh] = keepflag_temp;
       }
   }
 
@@ -102,8 +101,7 @@
   inline bool FixContactHistoryMesh::haveContact(int iP, int idTri, double *&history)
   {
     int *tri = partner_[iP];
-    double *nn = fix_nneighs_->vector_atom;
-    int nneighs = static_cast<int>(round(nn[iP]));
+    const int nneighs = fix_nneighs_->get_vector_atom_int(iP);
 
     /*NL*/ //fprintf(screen,"nneighs %d dnum_ %d\n",nneighs,dnum_);
 
@@ -112,7 +110,7 @@
         if(tri[i] == idTri)
         {
             if(dnum_ > 0) history = &(contacthistory_[iP][i*dnum_]);
-            delflag_[iP][i] = false;
+            keepflag_[iP][i] = true;
             return true;
         }
     }
@@ -123,8 +121,7 @@
 
   inline bool FixContactHistoryMesh::coplanarContactAlready(int iP, int idTri)
   {
-    double *nn = fix_nneighs_->vector_atom;
-    int nneighs = static_cast<int>(round(nn[iP]));
+    const int nneighs = fix_nneighs_->get_vector_atom_int(iP);
     for(int i = 0; i < nneighs; i++)
     {
       /*NL*/// fprintf(screen," step %d: iP %d, partner %d: %d, coplanar %s delflag %s, mesh_->map(tri[i]) %d\n",
@@ -138,7 +135,7 @@
         /*NL*/ //fprintf(screen," step %d: idTri %d, delflag %s \n",update->ntimestep,idTri,delflag[iP][i]?"true":"false");
 
         // other coplanar contact handled already - do not handle this contact
-        if(!delflag_[iP][i]) return true;
+        if(keepflag_[iP][i]) return true;
       }
     }
 
@@ -151,8 +148,7 @@
   inline void FixContactHistoryMesh::checkCoplanarContactHistory(int iP, int idTri, double *&history)
   {
     int *tri = partner_[iP];
-    double *nn = fix_nneighs_->vector_atom;
-    int nneighs = static_cast<int>(round(nn[iP]));
+    const int nneighs = fix_nneighs_->get_vector_atom_int(iP);
 
     for(int i = 0; i < nneighs; i++)
     {
@@ -160,7 +156,7 @@
       if(tri[i] >= 0 && tri[i] != idTri && mesh_->map(tri[i]) >= 0 && mesh_->areCoplanarNodeNeighs(tri[i],idTri))
       {
           //NP this is illegal since coplanarContactAlready() should have avoided this
-          /*NL*/ if(!delflag_[iP][i]) error->one(FLERR,"internal error");
+          /*NL*/ if(keepflag_[iP][i]) error->one(FLERR,"internal error");
 
           // copy contact history
           if(dnum_ > 0) vectorCopyN(&(contacthistory_[iP][i*dnum_]),history,dnum_);
@@ -180,7 +176,7 @@
       //NP error if # contacts larger than # of neighs
       //NP cannot store contact history in this case since allocation insufficient
       //NP should not happen since only neighbor can become contact
-      int nneighs = static_cast<int>(round(fix_nneighs_->vector_atom[iP]));
+      const int nneighs = fix_nneighs_->get_vector_atom_int(iP);
       int iContact = -1;
 
       if(-1 == idTri)
@@ -188,7 +184,7 @@
 
       if(npartner_[iP] >= nneighs)
       {
-        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT": for particle tag %d, npartner %d nneighs %d newcontact id %d\n",update->ntimestep,atom->tag[iP],npartner_[iP],nneighs,idTri);
+        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT": for particle tag %d, proc %d npartner %d nneighs %d newcontact id %d\n",update->ntimestep,atom->tag[iP],comm->me,npartner_[iP],nneighs,idTri);
         /*NL*/ //for(int kk = 0; kk < nneighs; kk++)
         /*NL*/ //    fprintf(screen,"  neigh %d: tri id %d\n",kk,partner_[iP][kk]);
         error->one(FLERR,"internal error");
@@ -208,7 +204,7 @@
         error->one(FLERR,"internal error");
 
       partner_[iP][iContact] = idTri;
-      delflag_[iP][iContact] = false;
+      keepflag_[iP][iContact] = true;
 
       if(dnum_ > 0)
       {

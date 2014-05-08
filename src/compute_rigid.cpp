@@ -145,9 +145,6 @@ void ComputeRigid::init()
 
 void ComputeRigid::compute_local()
 {
-  double **dmpptr;
-  int nprops;
-
   invoked_local = update->ntimestep;
 
   update_pointers();

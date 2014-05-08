@@ -44,9 +44,9 @@ FixMeshSurfaceStressContact::FixMeshSurfaceStressContact(LAMMPS *lmp, int narg, 
 : FixMeshSurfaceStress(lmp, narg, arg),
   fix_wallcontacttime_(0),
   T_(0.),
+  step_ave_start_(-1),
   area_correction_(false),
-  deltan_ratio_(0),
-  step_ave_start_(-1)
+  deltan_ratio_(0)
 {
 
   bool hasargs = true;
@@ -155,7 +155,6 @@ void FixMeshSurfaceStressContact::init_area_correction()
 {
     const double *Y, *nu, *Y_orig;
     double expo, Yeff_ij, Yeff_orig_ij, ratio;
-    Fix *ymo_fix;
 
     if(area_correction_)
     {
@@ -163,8 +162,6 @@ void FixMeshSurfaceStressContact::init_area_correction()
         if(!pair_gran)
             error->fix_error(FLERR,this,"'area_correction' requires using a granular pair style");
         int max_type = pair_gran->mpg->max_type();
-
-        ymo_fix = modify->find_fix_property("youngsModulusOriginal","property/global","peratomtype",0,0,style);
 
         if(force->pair_match("gran/hooke",0)) expo = 1.;
         else if(force->pair_match("gran/hertz",0)) expo = 2./3.;

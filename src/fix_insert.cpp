@@ -64,7 +64,7 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
 
   setup_flag = false;
 
-  /*NL*/ VolumeMesh<4,4,3> *vm;
+  /*NL*/ //VolumeMesh<4,4,3> *vm;
   /*NL*/ //TetMesh *tm;
 
   fix_distribution = NULL;
@@ -823,7 +823,7 @@ int FixInsert::load_xnear(int ninsert_this_local)
   int nspheres_near_local = count_nnear();
 
   // data size per particle: x and radius
-  int n = 4*nspheres_near;
+  //int n = 4*nspheres_near;
 
   // xnear is for my atoms + atoms to be inserted
   /*NL*/ //fprintf(screen,"ninsert_this_local : %d, nspheres_near_local %d, total length %d\n",
@@ -910,4 +910,5 @@ double FixInsert::compute_vector(int index)
 {
     if(index == 0) return static_cast<double>(ninserted);
     if(index == 1) return massinserted;
+    return 0.0;
 }

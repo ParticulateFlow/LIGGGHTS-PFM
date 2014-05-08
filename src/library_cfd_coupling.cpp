@@ -105,7 +105,8 @@ void data_of_to_liggghts(char *name,char *type,void *ptr,void *data,char* dataty
 void update_rm(void *ptr)
 {
     LAMMPS *lmp = (LAMMPS *) ptr;
-    FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
+    //FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
+    locate_coupling_fix(ptr);
     //CfdRegionmodel *rm = fcfd->rm;
 
     //NP call region model
@@ -154,7 +155,7 @@ void allocate_external_double(double **&data, int len2,char* keyword,double init
 //NP    since last call of this function
 void check_datatransfer(void *ptr)
 {
-    LAMMPS *lmp = (LAMMPS *) ptr;
+    //LAMMPS *lmp = (LAMMPS *) ptr;
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
     fcfd->get_dc()->check_datatransfer();
 }

@@ -63,12 +63,13 @@ SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::SurfaceMesh(LAMMPS *lmp)
     edgeVec_      (*this->prop().template addElementProperty< MultiVectorContainer<double,NUM_NODES,3> >  ("edgeVec",      "comm_none","frame_scale_trans_invariant","restart_no")),
     edgeNorm_     (*this->prop().template addElementProperty< MultiVectorContainer<double,NUM_NODES,3> >  ("edgeNorm",     "comm_none","frame_scale_trans_invariant","restart_no")),
     surfaceNorm_  (*this->prop().template addElementProperty< VectorContainer<double,3> >                 ("surfaceNorm",  "comm_none","frame_scale_trans_invariant","restart_no")),
-    edgeActive_   (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("edgeActive",   "comm_exchange_borders","frame_invariant","restart_no")),
-    cornerActive_ (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("cornerActive", "comm_exchange_borders","frame_invariant","restart_no")),
-    hasNonCoplanarSharedNode_(*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >("hasNonCoplanarSharedNode","comm_exchange_borders","frame_invariant", "restart_no")),
+    obtuseAngleIndex_   (*this->prop().template addElementProperty< ScalarContainer<int> >                ("obtuseAngleIndex","comm_exchange_borders","frame_invariant","restart_no")),
     nNeighs_      (*this->prop().template addElementProperty< ScalarContainer<int> >                      ("nNeighs",      "comm_exchange_borders","frame_invariant","restart_no")),
     neighFaces_   (*this->prop().template addElementProperty< VectorContainer<int,NUM_NEIGH_MAX> >        ("neighFaces",   "comm_exchange_borders","frame_invariant","restart_no")),
-    obtuseAngleIndex_   (*this->prop().template addElementProperty< ScalarContainer<int> >                ("obtuseAngleIndex","comm_exchange_borders","frame_invariant","restart_no"))
+    hasNonCoplanarSharedNode_(*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >("hasNonCoplanarSharedNode","comm_exchange_borders","frame_invariant", "restart_no")),
+    edgeActive_   (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("edgeActive",   "comm_exchange_borders","frame_invariant","restart_no")),
+    cornerActive_ (*this->prop().template addElementProperty< VectorContainer<bool,NUM_NODES> >           ("cornerActive", "comm_exchange_borders","frame_invariant","restart_no"))
+
 {
     //NP allocate 3 scalar spaces
     //NP add directly instead of setGlobalProperty
@@ -154,8 +155,6 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::recalcLocalSurfProperties()
     // areaMeshGlobal [areaMesh_(0)] and areaMeshOwned [areaMesh_(1)]
     // calculated here
 
-    double areaAccOff;
-
     areaMesh_(0) = 0.;
     areaMesh_(1) = 0.;
 
@@ -196,8 +195,6 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::recalcLocalSurfProperties()
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::recalcGhostSurfProperties()
 {
-    double pos[3], areaCheck;
-    int n_succ, n_iter;
     int nlocal = this->sizeLocal();
     int nall = this->sizeLocal()+this->sizeGhost();
 
@@ -467,7 +464,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::buildNeighbours()
       for(int j = i+1; j < nall; j++)
       {
         //NP continue of do not share any node so can not share an edge
-        int iNode(0), jNode(0), iEdge(0), jEdge(0);
+        int iEdge(0), jEdge(0);
 
         //NP assumption: 2 surface elements only share 1 edge at maximum
         //NP so for duplicate elements, only 1 edge is handled here!!
@@ -858,6 +855,14 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge,
 
     if(neighflag)
     {
+        /*NL*/ //if(1971 == TrackingMesh<NUM_NODES>::id(iSrf))
+        /*NL*/ //     fprintf(this->screen,"Mesh %s: element id %d (line %d) has element id %d as neigh\n",
+        /*NL*/ //             this->mesh_id_,TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::lineNo(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
+        /*NL*/ //if(1971 == TrackingMesh<NUM_NODES>::id(jSrf))
+        /*NL*/ //     fprintf(this->screen,"Mesh %s: element id %d (line %d) has element id %d as neigh\n",
+        /*NL*/ //             this->mesh_id_,TrackingMesh<NUM_NODES>::id(jSrf),TrackingMesh<NUM_NODES>::lineNo(jSrf),TrackingMesh<NUM_NODES>::id(iSrf));
+
+
         if(nNeighs_(iSrf) == NUM_NEIGH_MAX || nNeighs_(jSrf) == NUM_NEIGH_MAX)
         {
             int ii;
@@ -1223,7 +1228,7 @@ double SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::edgeNodeDist(int iSrf, int iEdge, i
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 double SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::edgePointDist(int iSrf, int iEdge, double *point)
 {
-        double nodeToP[3], dot, dot2;
+        double nodeToP[3], dot;
 
         vectorSubtract3D(point,MultiNodeMesh<NUM_NODES>::node_(iSrf)[iEdge],nodeToP);
         dot = vectorDot3D(edgeVec(iSrf)[iEdge],nodeToP);

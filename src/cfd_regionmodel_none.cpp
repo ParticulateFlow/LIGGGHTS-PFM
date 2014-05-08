@@ -75,7 +75,7 @@ void CfdRegionmodelNone::init()
         fixarg[6]="no";    //NP communicate ghost no
         fixarg[7]="no";    //NP communicate rev yes
         fixarg[8]="1.";
-        modify->add_fix(9,(char**)fixarg);
+        modify->add_fix(9,const_cast<char**>(fixarg));
     }
 
     inRegion = static_cast<FixPropertyAtom*>(modify->find_fix_property("inRegion","property/atom","scalar",1,0,"cfd_regionmodel none"));
@@ -89,7 +89,7 @@ void CfdRegionmodelNone::init()
         fixarg[4]="vector";
         fixarg[5]="0.";
         fixarg[6]="0.";
-        modify->add_fix(7,(char**)fixarg);
+        modify->add_fix(7,const_cast<char**>(fixarg));
     }
 
     outRegion = static_cast<FixPropertyGlobal*>(modify->find_fix_property("outRegion","property/global","vector",2,0,"cfd_regionmodel none"));

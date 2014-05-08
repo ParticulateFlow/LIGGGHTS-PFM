@@ -1448,10 +1448,14 @@ void Input::pair_modify()
 void Input::pair_style()
 {
   if (narg < 1) error->all(FLERR,"Illegal pair_style command");
-  //NP have to uncomment this otherwise restart will ignore change
+
+  //NP must not do this in case of restart because
   //NP in pair gran style because of hashcode not being reflected here
+  //NP problematic to delete object , as callbacks on Pair class
+  //NP have been performed, e.g. init_list()
+  //NP hack in Neighbor::init() when calculating same flag
   /*
-  if (force->pair && strcmp(arg[0],force->pair_style) == 0) {
+  if (!modify->fix_restart_in_progress() && force->pair && strcmp(arg[0],force->pair_style) == 0) {
     force->pair->settings(narg-1,&arg[1]);
     return;
   }*/

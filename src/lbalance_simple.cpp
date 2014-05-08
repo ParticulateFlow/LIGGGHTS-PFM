@@ -178,9 +178,6 @@ void LbalanceSimple::loadbalance_local_boxes_simple(int *lodim, int *hidim)
 
 double LbalanceSimple::calc_border(int ntry,int dim,int ncount_ideal,double *border,int *ncount)
 {
-  double btemp;
-  int ntemp;
-
   border[1] = 0.5 * (border[0] + border[2]);
   ncount[1] = count_particles(dim,border[1]);
 

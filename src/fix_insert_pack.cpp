@@ -148,8 +148,6 @@ void FixInsertPack::init_defaults()
 
 void FixInsertPack::calc_insertion_properties()
 {
-    double dt = update->dt;
-
     // error check on region
     if(!ins_region)
         error->fix_error(FLERR,this,"must define an insertion region");
@@ -210,7 +208,6 @@ int FixInsertPack::calc_ninsert_this()
   double **x = atom->x;
   double *rmass = atom->rmass;
   double *radius = atom->radius;
-  int *mask = atom->mask;
 
   int ninsert_this = 0;
 
@@ -250,16 +247,16 @@ int FixInsertPack::calc_ninsert_this()
 
   //NP count bodies for multisphere
   int nbody;
-  double x_bound_body[3], mass_body, r_bound_body, density_body;
+  double x_bound_body[3], mass_body, density_body;
   if(multisphere)
   {
       nbody = multisphere->n_body();
 
       for(int ibody = 0; ibody < nbody; ibody++)
       {
-
           multisphere->x_bound(x_bound_body,ibody);
-          r_bound_body = multisphere->r_bound(ibody);
+          //r_bound_body = multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
+          multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
           if(ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]))
             //NP OLD - had problems with particles just slightly leaving shinked body
             //NP e.g. if due ot particle-wall overlap if insertion box = wall
