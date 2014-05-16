@@ -445,6 +445,8 @@ Fix* Force::new_granular_wall_fix(int narg, char ** args) {
 
   int64_t selected = select_contact_model(nremaining, remaining_args);
 
+  Fix*  ret_fix = NULL;
+
   if(selected != -1) {
     char ** fix_args = new char*[3+nremaining];
     fix_args[0] = args[0];
@@ -455,7 +457,9 @@ Fix* Force::new_granular_wall_fix(int narg, char ** args) {
     }
 
     if(granular_wall_fix_creators.find(selected) != granular_wall_fix_creators.end()) {
-      return granular_wall_fix_creators[selected](lmp, nremaining+3, fix_args);
+      ret_fix = granular_wall_fix_creators[selected](lmp, nremaining+3, fix_args);
+      delete[] fix_args;
+      return ret_fix;
     }
   }
 
