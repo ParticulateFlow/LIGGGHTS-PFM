@@ -45,6 +45,8 @@ class FixMeshSurfaceStress6DOF : public FixMeshSurfaceStress {
       virtual void post_create();
 
       void init();
+      virtual void setup(int vflag);
+
       int setmask();
       void initial_integrate(int vflag);
       void final_integrate();

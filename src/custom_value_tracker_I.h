@@ -33,7 +33,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T>
-  T* CustomValueTracker::addElementProperty(const char *_id, const char* _comm, const char* _ref, const char *_restart, int _scalePower)
+  T* CustomValueTracker::addElementProperty(const char *_id, const char* _comm, const char* _ref, const char *_restart, int _scalePower, int _init_len)
   {
      // error if property exists already
      if(elementProperties_.getPointerById<T>(_id))
@@ -58,9 +58,12 @@
      }
 
      // allocate memory and initialize
-     //NP only do this in case of mesh, since elements are generated before properties
+     //NP have to do this in case of mesh, since elements are generated before properties
      if(ownerMesh_)
         elementProperties_.getPointerById<T>(_id)->addUninitialized(ownerMesh_->sizeLocal()+ownerMesh_->sizeGhost());
+     if(_init_len > 0)
+        elementProperties_.getPointerById<T>(_id)->addUninitialized(_init_len);
+
      elementProperties_.getPointerById<T>(_id)->setAll(0);
 
      // return pointer

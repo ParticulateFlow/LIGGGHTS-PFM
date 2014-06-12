@@ -683,10 +683,12 @@ void FixRigid::init()
 void FixRigid::setup(int vflag)
 {
   int i,n,ibody;
+  //NP modified R.B.
 
   // fcm = force on center-of-mass of each rigid body
 
   double **f = atom->f;
+  //NP modified R.B.
   int nlocal = atom->nlocal;
 
   for (ibody = 0; ibody < nbody; ibody++)
@@ -2045,7 +2047,7 @@ void FixRigid::setup_bodies_static()
 
 void FixRigid::setup_bodies_dynamic()
 {
-  int i,ibody;
+  int i,ibody; //NP modified R.B.
   double massone,radone;
 
   // vcm = velocity of center-of-mass of each rigid body
@@ -2144,7 +2146,7 @@ void FixRigid::setup_bodies_dynamic()
 
 void FixRigid::readfile(int which, double *vec, double **array, int *inbody)
 {
-  int j,nchunk,id,eofflag;
+  int j,nchunk,id,eofflag; //NP modified R.B.
   int nlines;
   FILE *fp;
   char *eof,*start,*next,*buf;

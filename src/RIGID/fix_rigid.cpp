@@ -71,7 +71,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   //not working correctly for 2d
   if(domain->dimension == 2) error->warning(FLERR,"Fix rigid should not be used for 2d simulations - inertia is for 3d systems");
 
-  if (narg > 3 && strcmp(arg[3],"pseudo") == 0) return;
+  if (narg > 3 && strcmp(arg[3],"pseudo") == 0) return; //NP modified C.K.
 
   int i,ibody;
 
@@ -85,7 +85,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   MPI_Comm_rank(world,&me);
   MPI_Comm_size(world,&nprocs);
 
-  just_created = 0;
+  just_created = 0; //NP modified C.K. inits properties in constructor, do not overwrite
 
   // perform initial allocation of atom-based arrays
   // register with Atom class
@@ -99,7 +99,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   grow_arrays(atom->nmax);
   atom->add_callback(0);
 
-  if (strcmp(this->style,"rigid")) return;
+  if (strcmp(this->style,"rigid")) return;  //NP modified C.K.
 
   // parse args for rigid body specification
   // set nbody and body[i] for each atom
@@ -683,10 +683,12 @@ void FixRigid::init()
 void FixRigid::setup(int vflag)
 {
   int i,n,ibody;
+  //NP modified R.B.
 
   // fcm = force on center-of-mass of each rigid body
 
   double **f = atom->f;
+  //NP modified R.B.
   int nlocal = atom->nlocal;
 
   for (ibody = 0; ibody < nbody; ibody++)
@@ -2045,7 +2047,7 @@ void FixRigid::setup_bodies_static()
 
 void FixRigid::setup_bodies_dynamic()
 {
-  int i,ibody;
+  int i,ibody; //NP modified R.B.
   double massone,radone;
 
   // vcm = velocity of center-of-mass of each rigid body
@@ -2144,7 +2146,7 @@ void FixRigid::setup_bodies_dynamic()
 
 void FixRigid::readfile(int which, double *vec, double **array, int *inbody)
 {
-  int j,nchunk,id,eofflag;
+  int j,nchunk,id,eofflag; //NP modified R.B.
   int nlines;
   FILE *fp;
   char *eof,*start,*next,*buf;

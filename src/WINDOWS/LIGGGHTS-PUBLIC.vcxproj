@@ -42,6 +42,7 @@
 		<ClInclude Include="..\fix_insert_stream_moving.h"/>
 		<ClInclude Include="..\fix_insert_rate_region.h"/>
 		<ClInclude Include="..\debug_liggghts.h"/>
+		<ClInclude Include="..\granular_pair_style.h"/>
 		<ClInclude Include="..\output.h"/>
 		<ClInclude Include="..\contact_interface.h"/>
 		<ClInclude Include="..\pair_buck.h"/>
@@ -88,6 +89,7 @@
 		<ClInclude Include="..\dump_custom.h"/>
 		<ClInclude Include="..\delete_bonds.h"/>
 		<ClInclude Include="..\fix_spring_self.h"/>
+		<ClInclude Include="..\cohesion_model_capillary_model_Willett.h"/>
 		<ClInclude Include="..\pair_coul_dsf.h"/>
 		<ClInclude Include="..\fix_mesh_surface_stress.h"/>
 		<ClInclude Include="..\math_extra.h"/>
@@ -100,7 +102,9 @@
 		<ClInclude Include="..\version_liggghts.h"/>
 		<ClInclude Include="..\fix_property_atom_tracer_stream.h"/>
 		<ClInclude Include="..\fix_cfd_coupling.h"/>
+		<ClInclude Include="..\fix_contact_atom_counter_dummy.h"/>
 		<ClInclude Include="..\pair.h"/>
+		<ClInclude Include="..\pair_gran_proxy.h"/>
 		<ClInclude Include="..\read_dump.h"/>
 		<ClInclude Include="..\write_restart.h"/>
 		<ClInclude Include="..\fix_nve_limit.h"/>
@@ -154,6 +158,7 @@
 		<ClInclude Include="..\compute_temp.h"/>
 		<ClInclude Include="..\custom_value_tracker_I.h"/>
 		<ClInclude Include="..\fix_box_relax.h"/>
+		<ClInclude Include="..\fix_contact_atom_counter_wall_dummy.h"/>
 		<ClInclude Include="..\compute_bond_local.h"/>
 		<ClInclude Include="..\fix_check_timestep_gran.h"/>
 		<ClInclude Include="..\particleToInsert.h"/>
@@ -186,6 +191,7 @@
 		<ClInclude Include="..\compute_stress_atom.h"/>
 		<ClInclude Include="..\fix.h"/>
 		<ClInclude Include="..\fix_mesh_surface_stress_6dof.h"/>
+		<ClInclude Include="..\normal_model_jkr.h"/>
 		<ClInclude Include="..\pair_lj_cut_coul_dsf.h"/>
 		<ClInclude Include="..\input_multisphere.h"/>
 		<ClInclude Include="..\style_pair.h"/>
@@ -206,6 +212,7 @@
 		<ClInclude Include="..\dump_decomposition_vtk.h"/>
 		<ClInclude Include="..\cohesion_model_sjkr.h"/>
 		<ClInclude Include="..\atom_vec_line.h"/>
+		<ClInclude Include="..\fix_contact_property_atom_dummy.h"/>
 		<ClInclude Include="..\bond_gran.h"/>
 		<ClInclude Include="..\primitive_wall.h"/>
 		<ClInclude Include="..\sph_kernel_cubicspline2D.h"/>
@@ -271,6 +278,7 @@
 		<ClInclude Include="..\fix_restrain.h"/>
 		<ClInclude Include="..\fix_nve_noforce.h"/>
 		<ClInclude Include="..\fix_aveforce.h"/>
+		<ClInclude Include="..\fix_lb_coupling_onetoone.h"/>
 		<ClInclude Include="..\fix_shear_history.h"/>
 		<ClInclude Include="..\fix_read_restart.h"/>
 		<ClInclude Include="..\pair_morse.h"/>
@@ -287,6 +295,7 @@
 		<ClInclude Include="..\surface_model_roughness.h"/>
 		<ClInclude Include="..\fix_heat_gran_conduction.h"/>
 		<ClInclude Include="..\mpi_liggghts.h"/>
+		<ClInclude Include="..\cohesion_model_capillary_model_Mikami.h"/>
 		<ClInclude Include="..\style_fix.h"/>
 		<ClInclude Include="..\math_special.h"/>
 		<ClInclude Include="..\cohesion_model_capillary.h"/>
@@ -307,6 +316,7 @@
 		<ClInclude Include="..\domain_wedge_dummy.h"/>
 		<ClInclude Include="..\associative_pointer_array.h"/>
 		<ClInclude Include="..\tri_mesh_planar_I.h"/>
+		<ClInclude Include="..\fix_contact_property_atom_wall_dummy.h"/>
 		<ClInclude Include="..\region_cone.h"/>
 		<ClInclude Include="..\multisphere.h"/>
 		<ClInclude Include="..\thermo.h"/>
@@ -363,6 +373,7 @@
 		<ClInclude Include="..\fix_recenter.h"/>
 		<ClInclude Include="..\neigh_half_multi.h"/>
 		<ClInclude Include="..\compute_pair_local.h"/>
+		<ClInclude Include="..\fix_contact_property_atom_wall.h"/>
 		<ClInclude Include="..\multisphere_parallel.h"/>
 		<ClInclude Include="..\fix_ave_time.h"/>
 		<ClInclude Include="..\fix_momentum.h"/>
@@ -385,6 +396,7 @@
 		<ClInclude Include="..\angle_hybrid.h"/>
 		<ClInclude Include="..\neigh_list.h"/>
 		<ClInclude Include="..\balance.h"/>
+		<ClInclude Include="..\granular_wall.h"/>
 		<ClInclude Include="..\fix_setforce.h"/>
 		<ClInclude Include="..\contact_model_constants.h"/>
 		<ClInclude Include="..\tracking_mesh_I.h"/>
@@ -402,8 +414,10 @@
 		<ClInclude Include="..\compute_com.h"/>
 		<ClInclude Include="..\bond_hybrid.h"/>
 		<ClInclude Include="..\replicate.h"/>
+		<ClInclude Include="..\fix_contact_property_atom.h"/>
 		<ClInclude Include="..\fix_nvt_sphere.h"/>
 		<ClInclude Include="..\neigh_mlg_dummy.h"/>
+		<ClInclude Include="..\fix_nve_sph_limit.h"/>
 		<ClInclude Include="..\fix_nvt_sllod.h"/>
 		<ClInclude Include="..\minimize.h"/>
 		<ClInclude Include="..\neigh_multi_level_grid.h"/>
@@ -424,16 +438,19 @@
 		<ClInclude Include="..\tri_mesh_I.h"/>
 		<ClInclude Include="..\compute_gyration_molecule.h"/>
 		<ClInclude Include="..\compute_property_atom.h"/>
+		<ClInclude Include="..\utils.h"/>
 		<ClInclude Include="..\fix_multisphere.h"/>
 		<ClInclude Include="..\fix_viscous.h"/>
 		<ClInclude Include="..\citeme.h"/>
 		<ClInclude Include="..\fix_store.h"/>
+		<ClInclude Include="..\fix_contact_atom_counter_wall.h"/>
 		<ClInclude Include="..\fix_ave_histo.h"/>
 		<ClInclude Include="..\timer.h"/>
 		<ClInclude Include="..\fix_contact_history_mesh.h"/>
 		<ClInclude Include="..\general_container.h"/>
 		<ClInclude Include="..\create_atoms.h"/>
 		<ClInclude Include="..\contact_models.h"/>
+		<ClInclude Include="..\fix_contact_atom_counter.h"/>
 		<ClInclude Include="..\compute_msd.h"/>
 		<ClInclude Include="..\sph_kernels.h"/>
 		<ClInclude Include="..\style_dump.h"/>
@@ -635,6 +652,7 @@
 		<ClCompile Include="..\fix_shear_history.cpp"/>
 		<ClCompile Include="..\fix_indent.cpp"/>
 		<ClCompile Include="..\delete_atoms.cpp"/>
+		<ClCompile Include="..\granular_pair_style.cpp"/>
 		<ClCompile Include="..\fix_mesh_surface.cpp"/>
 		<ClCompile Include="..\compute_pair_local.cpp"/>
 		<ClCompile Include="..\pair_coul_cut.cpp"/>
@@ -681,6 +699,7 @@
 		<ClCompile Include="..\pair_born.cpp"/>
 		<ClCompile Include="..\library.cpp"/>
 		<ClCompile Include="..\pair_soft.cpp"/>
+		<ClCompile Include="..\granular_styles.cpp"/>
 		<ClCompile Include="..\fix_nve_sph_stationary.cpp"/>
 		<ClCompile Include="..\fix_deform.cpp"/>
 		<ClCompile Include="..\dump.cpp"/>
@@ -745,6 +764,7 @@
 		<ClCompile Include="..\fix_deposit.cpp"/>
 		<ClCompile Include="..\region.cpp"/>
 		<ClCompile Include="..\compute_pe_atom.cpp"/>
+		<ClCompile Include="..\pair_gran_proxy.cpp"/>
 		<ClCompile Include="..\fix_press_berendsen.cpp"/>
 		<ClCompile Include="..\fix_wall_lj1043.cpp"/>
 		<ClCompile Include="..\pair_lj_gromacs_coul_gromacs.cpp"/>
@@ -760,6 +780,7 @@
 		<ClCompile Include="..\cfd_datacoupling_mpi.cpp"/>
 		<ClCompile Include="..\pair_hybrid.cpp"/>
 		<ClCompile Include="..\fix_langevin.cpp"/>
+		<ClCompile Include="..\fix_lb_coupling_onetoone.cpp"/>
 		<ClCompile Include="..\fix_nph_sphere.cpp"/>
 		<ClCompile Include="..\fix_nve_sph.cpp"/>
 		<ClCompile Include="..\compute_erotate_sphere_atom.cpp"/>
@@ -828,6 +849,7 @@
 		<ClCompile Include="..\math_extra.cpp"/>
 		<ClCompile Include="..\fix_cfd_coupling.cpp"/>
 		<ClCompile Include="..\fix_temp_rescale.cpp"/>
+		<ClCompile Include="..\fix_nve_sph_limit.cpp"/>
 		<ClCompile Include="..\fix_box_relax.cpp"/>
 		<ClCompile Include="..\read_data.cpp"/>
 		<ClCompile Include="..\compute_temp_profile.cpp"/>
@@ -837,6 +859,7 @@
 		<ClCompile Include="..\compute_ke.cpp"/>
 		<ClCompile Include="..\pair_lj_smooth.cpp"/>
 		<ClCompile Include="..\compute_angle_local.cpp"/>
+		<ClCompile Include="..\contact_models.cpp"/>
 		<ClCompile Include="..\compute.cpp"/>
 		<ClCompile Include="..\compute_coord_atom.cpp"/>
 		<ClCompile Include="..\fix_respa.cpp"/>
@@ -859,6 +882,7 @@
 		<ClCompile Include="..\cfd_regionmodel_none.cpp"/>
 		<ClCompile Include="..\bounding_box.cpp"/>
 		<ClCompile Include="..\fix_spring.cpp"/>
+		<ClCompile Include="..\granular_wall.cpp"/>
 		<ClCompile Include="..\fix_freeze.cpp"/>
 		<ClCompile Include="..\fix_tmd.cpp"/>
 		<ClCompile Include="..\compute_temp_ramp.cpp"/>

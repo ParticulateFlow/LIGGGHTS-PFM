@@ -35,6 +35,7 @@
 #include "fix_property_atom.h"
 
 #include <iomanip>
+#include <iostream>
 
 namespace LAMMPS_NS {
   FixLbCouplingOnetoone::FixLbCouplingOnetoone(LAMMPS *lmp, int narg, char **arg)
@@ -45,7 +46,7 @@ namespace LAMMPS_NS {
 
   FixLbCouplingOnetoone::~FixLbCouplingOnetoone()
   {
-    
+
   }
 
   int FixLbCouplingOnetoone::setmask()
@@ -69,7 +70,7 @@ namespace LAMMPS_NS {
     // register dragforce
     if(!fix_dragforce_)
       {
-        char* fixarg[11];
+        const char* fixarg[11];
         fixarg[0]="dragforce";
         fixarg[1]="all";
         fixarg[2]="property/atom";
@@ -81,13 +82,13 @@ namespace LAMMPS_NS {
         fixarg[8]="0.";
         fixarg[9]="0.";
         fixarg[10]="0.";
-        fix_dragforce_ = modify->add_fix_property_atom(11,fixarg,style);
+        fix_dragforce_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
       }
 
     // register hydrodynamic torque
     if(!fix_hdtorque_)
       {
-        char* fixarg[11];
+        const char* fixarg[11];
         fixarg[0]="hdtorque";
         fixarg[1]="all";
         fixarg[2]="property/atom";
@@ -99,7 +100,7 @@ namespace LAMMPS_NS {
         fixarg[8]="0.";
         fixarg[9]="0.";
         fixarg[10]="0.";
-        fix_hdtorque_ = modify->add_fix_property_atom(11,fixarg,style);
+        fix_hdtorque_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
       }
   }
 
@@ -107,9 +108,9 @@ namespace LAMMPS_NS {
   void FixLbCouplingOnetoone::post_force(int)
   {
     double **f_ext = fix_dragforce_->array_atom;
-    double **t_ext = fix_hdtorque_->array_atom;
+    //double **t_ext = fix_hdtorque_->array_atom;
     double **f = atom->f;
-    double **t = atom->torque;
+    //double **t = atom->torque;
 
     // for(int i=0;i<atom->nlocal;i++)
     //   std::cout << comm->me << " force_liggghts "

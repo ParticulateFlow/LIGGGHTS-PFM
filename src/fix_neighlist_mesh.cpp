@@ -55,6 +55,7 @@ FixNeighlistMesh::FixNeighlistMesh(LAMMPS *lmp, int narg, char **arg)
   fix_nneighs_name_(0),
   buildNeighList(false),
   numAllContacts_(0),
+  globalNumAllContacts_(false),
   mbinx(0),
   mbiny(0),
   mbinz(0),
@@ -101,7 +102,7 @@ void FixNeighlistMesh::post_create()
         fixarg[2]="property/atom";
         fixarg[3]=fix_nneighs_name_;
         fixarg[4]="scalar"; // 1 vector per particle to be registered
-        fixarg[5]="no";    // restart
+        fixarg[5]="yes";    // restart - REQUIRED!
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="0.";
@@ -200,7 +201,6 @@ void FixNeighlistMesh::min_pre_force(int vflag)
 
 //NP this is called before FixContactHistoryMesh::pre_force()
 //NP because of the order of creation in FixWallGran::post_create()
-//NP this is important so building new neigh list before refreshing contact hist
 
 void FixNeighlistMesh::pre_force(int)
 {
@@ -283,7 +283,9 @@ void FixNeighlistMesh::pre_force(int)
 
     /*NL*/ //if(nall > 0) fprintf(screen,"size numContactsSum %d numAllContacts_ %d vs. %d\n",numContactsSum.size(),numAllContacts_,numContacts(nall-1)+numContactsSum(nall-1));
 
-    MPI_Sum_Scalar(numAllContacts_,world);
+    if(globalNumAllContacts_) {
+      MPI_Sum_Scalar(numAllContacts_,world);
+    }
 }
 
 /* ---------------------------------------------------------------------- */

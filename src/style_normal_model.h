@@ -3,3 +3,4 @@
 #include "normal_model_hooke.h"
 #include "normal_model_hooke_hysteresis.h"
 #include "normal_model_hooke_stiffness.h"
+#include "normal_model_jkr.h"

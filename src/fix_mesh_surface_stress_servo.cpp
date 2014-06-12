@@ -263,6 +263,13 @@ void FixMeshSurfaceStressServo::error_checks()
     if(kp_ == 0. && ki_ == 0. && kd_ == 0.)
       error->fix_error(FLERR,this,"kp, ki, and kd are zero. Please set a valid configuration");
   }
+
+  //NP do not support superposition with fix move/mesh because this fix sets everything
+  //NP hardcoded, e.g. dX and node velocities
+  if(mesh()->nMove() > 1)
+    error->fix_error(FLERR,this,"this fix does not allow superposition with moving mesh fixes");
+
+  /*NL*/ //fprintf(screen,"nmove %d\n",mesh()->nMove() );
 }
 
 /* ---------------------------------------------------------------------- */
@@ -340,6 +347,8 @@ void FixMeshSurfaceStressServo::init()
   // normalize axis
   vectorNormalize3D(axis_);
 
+  // compute global number of contacts
+  fix_mesh_neighlist_->enableTotalNumContacts(true);
 }
 
 /* ---------------------------------------------------------------------- */

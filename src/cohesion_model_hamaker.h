@@ -35,17 +35,17 @@ COHESION_MODEL(COHESION_HAMAKER,hamaker,3)
 
 namespace MODEL_PARAMS
 {
-  MatrixProperty* createHamakerConstant(PropertyRegistry & registry, const char * caller, bool)
+  static MatrixProperty* createHamakerConstant(PropertyRegistry & registry, const char * caller, bool)
   {
     return createPerTypePairProperty(registry, "hamakerConstant", caller);
   }
 
-  MatrixProperty* createHamakerMinimumParticleDistance(PropertyRegistry & registry, const char * caller, bool)
+  static MatrixProperty* createHamakerMinimumParticleDistance(PropertyRegistry & registry, const char * caller, bool)
   {
     return createPerTypePairProperty(registry, "minParticleDist", caller);
   }
 
-  MatrixProperty * createHamakerMaxEff(PropertyRegistry & registry, const char * caller, bool)
+  static MatrixProperty * createHamakerMaxEff(PropertyRegistry & registry, const char * caller, bool)
   {
    LAMMPS * lmp = registry.getLAMMPS();
    double skin = lmp->neighbor->skin;
@@ -76,7 +76,7 @@ namespace MODEL_PARAMS
   }
 }
 
-
+namespace LIGGGHTS {
 namespace ContactModels {
   using namespace std;
   using namespace LAMMPS_NS;
@@ -90,6 +90,7 @@ namespace ContactModels {
     {
       if(domain->dimension!=3)
           error->all(FLERR,"Cohesion model valid for 3d simulations only");
+      /*NL*/ if(comm->me == 0) fprintf(screen, "COHESION/HAMAKER loaded\n");
     }
 
     void registerSettings(Settings&) {}
@@ -204,6 +205,7 @@ namespace ContactModels {
     double **hCutEff;
     double **hMaxEff;
   };
+}
 }
 #endif // COHESION_MODEL_HAMAKER_H_
 #endif

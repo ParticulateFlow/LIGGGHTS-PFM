@@ -104,6 +104,8 @@ to change the controller params inbetween two runs.
 the state after scaling/rotation.
 Mesh elements may not be deleted in case due to leaving the simulation box for a fixed boundary. 
 In this case, an error is generated. See <A HREF = "boundary.html">boundary</A> command for details.
+This fix can not be used in conjunction with another fix that manipulates mesh geometry,
+such as a <A HREF = "fix_move_mesh.html">fix move/mesh</A>
 </P>
 <P><B>Related commands:</B>
 </P>
