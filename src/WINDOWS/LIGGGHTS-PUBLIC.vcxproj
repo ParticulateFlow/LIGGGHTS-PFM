@@ -73,7 +73,6 @@
 		<ClInclude Include="..\pair_mie_cut.h"/>
 		<ClInclude Include="..\accelerator_cuda.h"/>
 		<ClInclude Include="..\compute_rigid.h"/>
-		<ClInclude Include="..\fix_property_atom_contact.h"/>
 		<ClInclude Include="..\pointers.h"/>
 		<ClInclude Include="..\style_body.h"/>
 		<ClInclude Include="..\accelerator_omp.h"/>
