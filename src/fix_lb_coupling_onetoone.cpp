@@ -127,7 +127,7 @@ namespace LAMMPS_NS {
     for(int i=0;i<atom->nlocal;i++){
       for(int j=0;j<3;j++){
         f[i][j] += f_ext[i][j];
-        // t[i][j] += t_ext[i][j];
+        t[i][j] += t_ext[i][j];
       }
     }
 
