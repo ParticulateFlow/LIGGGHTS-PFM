@@ -29,6 +29,9 @@ FixStyle(wall/sph/general/simple,FixWallSphGeneralSimple)
 #define LMP_FIX_WALL_SPH_GENERAL_SIMPLE_H
 
 #include "fix_wall_gran.h"
+#include "contact_interface.h"
+
+namespace LCM = LIGGGHTS::ContactModels;
 
 namespace LAMMPS_NS {
 
@@ -38,7 +41,7 @@ class FixWallSphGeneralSimple : public FixWallGran {
       FixWallSphGeneralSimple(class LAMMPS *, int, char **);
       ~FixWallSphGeneralSimple();
 
-      void compute_force(CollisionData & cdata, double *vwall);
+      void compute_force(LCM::CollisionData & cdata, double *vwall);
 
     protected:
 

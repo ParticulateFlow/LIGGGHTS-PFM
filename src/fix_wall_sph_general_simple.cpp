@@ -38,6 +38,7 @@
 #include "compute_pair_gran_local.h"
 
 using namespace LAMMPS_NS;
+using namespace LIGGGHTS::ContactModels;
 
 /* ---------------------------------------------------------------------- */
 

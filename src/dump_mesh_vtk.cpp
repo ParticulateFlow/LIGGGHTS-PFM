@@ -203,8 +203,10 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
 
           int ifix = modify->find_fix(arg[iarg++]);
 
+          FixMeshSurface *fms = (ifix < 0) ? 0 : dynamic_cast<FixMeshSurface*>(modify->fix[ifix]);
+
           //NP if no mesh, assume its a general container
-          if(ifix == -1)
+          if(!fms)
           {
               n_container_bases_++;
               memory->grow(container_args_,n_container_bases_,100,"container_args_");
@@ -213,7 +215,6 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
           }
           else
           {
-              FixMeshSurface *fms = static_cast<FixMeshSurface*>(modify->fix[ifix]);
               meshList_[nMesh_] = fms->triMesh();
               fms->dumpAdd();
               nMesh_++;
@@ -456,8 +457,8 @@ void DumpMeshVTK::getRefs()
   {
       for(int i = 0; i < nMesh_; i++)
       {
-          T_[i] = meshList_[i]->prop().getGlobalProperty<ScalarContainer<double> >("T");
-          if(0 == comm->me && !wear_[i])
+          T_[i] = meshList_[i]->prop().getGlobalProperty<ScalarContainer<double> >("Temp");
+          if(0 == comm->me && !T_[i])
             error->warning(FLERR,"Trying to dump temperature for mesh which does not calculate temperature, will dump '0' instead");
       }
   }
@@ -491,13 +492,13 @@ void DumpMeshVTK::getGeneralRefs()
       {
           if(meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]))
           {
-              /*NL*/ //fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
+              /*NL*/ fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
               found_scalar = true;
               scalar_containers_[n_scalar_containers_][i] = meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]);
               scalar_containers_[n_scalar_containers_][i]->id(cid);
               strcpy(scalar_container_names_[n_scalar_containers_],cid);
           }
-          /*NL*/ //else  fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
+          /*NL*/ else  fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
 
           if(meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]))
           {

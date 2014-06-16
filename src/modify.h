@@ -108,14 +108,17 @@ class Modify : protected Pointers {
   class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char * );//NP modified C.K.
   class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char *,bool );//NP modified C.K.
   class Fix* find_fix_id(const char *id);//NP modified C.K.
+  class Compute* find_compute_id(const char *id);//NP modified C.K.
   class Fix* find_fix_id_style(const char *id,const char *style);//NP modified C.K.
   class Fix* find_fix_style(const char *style, int rank);//NP modified C.K.
   class Fix* find_fix_style_strict(const char *style, int rank);//NP modified C.K.
+  class Compute* find_compute_style_strict(const char *style, int rank);//NP modified C.K.
   int n_fixes_style(const char *style); //NP modified C.K.
   int n_computes_style(const char *style); //NP modified C.K.
   int n_fixes_style_strict(const char *style); //NP modified C.K.
   bool i_am_first_of_style(class Fix *fix_to_check); //NP modified C.K.
   int index_first_fix_of_style(const char *style); //NP modified C.K.
+  int index_last_fix_of_style(const char *style); //NP modified C.K.
   int my_index(class Fix *fixptr);
   int index_first_fix_with_function(const int FUNCTION, bool integrate=false); //NP modified C.K.
   class FixScalarTransportEquation* find_fix_scalar_transport_equation(const char *equation_id); //NP modified C.K.

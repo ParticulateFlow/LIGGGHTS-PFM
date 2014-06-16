@@ -136,6 +136,18 @@ class FixMultisphere : public Fix
               len2 = 1;
               return (void *) body_;
           }
+          else if (strcmp(name,"ntypes") == 0)
+          {
+              len1 = 1;
+              len2 = 1;
+              return (void *) static_cast<long>(ntypes_);
+          }
+          else if (strcmp(name,"Vclump") == 0)
+          {
+              len1 = ntypes_;
+              len2 = 1;
+              return (void *) Vclump_;
+          }
           return multisphere_.extract(name,len1,len2);
       }
 
@@ -146,7 +158,7 @@ class FixMultisphere : public Fix
       inline class FixPropertyAtom* fix_delflag()
       { return fix_delflag_; }
 
-      inline int belongs_to(int i)
+      inline int belongs_to(int i) const
       { return body_[i]; }
 
       inline int n_body()
@@ -187,7 +199,7 @@ class FixMultisphere : public Fix
       void set_v(int);
 
       bool do_modify_body_forces_torques_;
-      virtual void modify_body_forces_torques(int i,double *force_one,double *torque_one) {}
+      virtual void modify_body_forces_torques() {}
 
       class MultisphereParallel &multisphere_;
       class FixPropertyAtom *fix_corner_ghost_;
@@ -207,6 +219,11 @@ class FixMultisphere : public Fix
       double dtv,dtf,dtq;
 
       vector<FixRemove*> fix_remove_;
+
+      // MS communication
+      int ntypes_;
+      double *Vclump_;
+
 };
 
 }

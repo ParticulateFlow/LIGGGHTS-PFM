@@ -35,6 +35,7 @@ TANGENTIAL_MODEL(TANGENTIAL_HISTORY,history,1)
 #include "global_properties.h"
 #include "atom.h"
 
+namespace LIGGGHTS {
 namespace ContactModels
 {
   template<typename Style>
@@ -53,7 +54,7 @@ namespace ContactModels
       hsetup->add_history_value("sheary", "1");
       hsetup->add_history_value("shearz", "1");
 
-      /*NL*/ printf("TANGENTIAL_HISTORY loaded\n");
+      /*NL*/ if(comm->me == 0) fprintf(screen, "TANGENTIAL/HISTORY loaded\n");
     }
 
     inline void registerSettings(Settings&){}
@@ -169,6 +170,7 @@ namespace ContactModels
     inline void beginPass(CollisionData&, ForceData&, ForceData&){}
     inline void endPass(CollisionData&, ForceData&, ForceData&){}
   };
+}
 }
 #endif // TANGENTIAL_MODEL_HISTORY_H_
 #endif

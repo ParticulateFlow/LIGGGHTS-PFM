@@ -279,6 +279,11 @@ void FixMeshSurfaceStress6DOF::error_checks()
         error->fix_error(FLERR,this,"please define 'mass' for the 6dof mesh");
     if(!moi_.size())
         error->fix_error(FLERR,this,"please define 'moi' for the 6dof mesh");
+
+    //NP do not support superposition with fix move/mesh because this fix sets everything
+    //NP hardcoded, e.g. dX and node velocities
+    if(mesh()->nMove() > 1)
+      error->fix_error(FLERR,this,"this fix does not allow superposition with moving mesh fixes");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -379,6 +384,14 @@ void FixMeshSurfaceStress6DOF::init()
 
     if (strcmp(update->integrate_style,"respa") == 0)
         error->fix_error(FLERR,this,"not respa-compatible");
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMeshSurfaceStress6DOF::setup(int vflag)
+{
+    vectorCopy3D(xcm_(0),xcm_orig_(0));
+    vectorCopy4D(quat_(0),quat_orig_(0));
 }
 
 /* ---------------------------------------------------------------------- */

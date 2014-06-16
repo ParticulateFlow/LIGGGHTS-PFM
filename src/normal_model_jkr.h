@@ -61,6 +61,7 @@ namespace MODEL_PARAMS
   }
 }
 
+namespace LIGGGHTS {
 
 namespace ContactModels
 {
@@ -78,7 +79,7 @@ namespace ContactModels
       cohEnergyDens(NULL),
       coefContactRadius(NULL)
     {
-      /*NL*/ printf("JKR loaded\n");
+      /*NL*/  if(comm->me == 0) printf("JKR loaded\n");
     }
 
     void registerSettings(Settings & settings)
@@ -256,6 +257,7 @@ namespace ContactModels
     double ** cohEnergyDens;
     double ** coefContactRadius;
   };
+}
 
 }
 #endif

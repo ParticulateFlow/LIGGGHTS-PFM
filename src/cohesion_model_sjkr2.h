@@ -34,6 +34,7 @@ COHESION_MODEL(COHESION_SJKR2,sjkr2,2)
 #include "contact_models.h"
 #include "math.h"
 
+namespace LIGGGHTS {
 namespace ContactModels {
   using namespace std;
   using namespace LAMMPS_NS;
@@ -45,6 +46,7 @@ namespace ContactModels {
 
     CohesionModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), cohEnergyDens(NULL)
     {
+      /*NL*/ if(comm->me == 0) fprintf(screen, "COHESION/SJKR2 loaded\n");
     }
 
     void registerSettings(Settings&) {}
@@ -103,6 +105,7 @@ namespace ContactModels {
   private:
     double ** cohEnergyDens;
   };
+}
 }
 #endif // COHESION_MODEL_SJKR2_H_
 #endif

@@ -93,6 +93,8 @@ When using this fix, along with scaling or rotate the body, all the 6dof_keyword
 the state after scaling/rotation.
 Mesh elements may not be deleted in case due to leaving the simulation box for a fixed boundary. 
 In this case, an error is generated. See "boundary"_boundary.html command for details.
+This fix can not be used in conjunction with another fix that manipulates mesh geometry,
+such as a "fix move/mesh"_fix_move_mesh.html
 
 [Related commands:]
 

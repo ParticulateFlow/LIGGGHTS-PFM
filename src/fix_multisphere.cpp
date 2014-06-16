@@ -38,6 +38,7 @@
 #include "memory.h"
 #include "error.h"
 #include "fix_property_atom.h"
+#include "fix_template_multisphere.h"
 #include "neighbor.h"
 #include "fix_gravity.h"
 #include "vector_liggghts.h"
@@ -73,7 +74,9 @@ FixMultisphere::FixMultisphere(LAMMPS *lmp, int narg, char **arg) :
   fw_comm_flag_(MS_COMM_UNDEFINED),
   rev_comm_flag_(MS_COMM_UNDEFINED),
   body_(NULL),
-  displace_(NULL)
+  displace_(NULL),
+  ntypes_(0),
+  Vclump_(0)
 {
 
   //NP check if style is molecular
@@ -295,6 +298,18 @@ void FixMultisphere::init() //NP modified C.K.
   dtv = update->dt;
   dtf = 0.5 * update->dt * force->ftm2v;
   dtq = 0.5 * update->dt;
+
+  // calc MS comm properties
+  ntypes_ = modify->n_fixes_style("particletemplate/multisphere");
+  if(Vclump_) delete []Vclump_;
+  Vclump_ = new double [ntypes_];
+
+  for(int ifix = 0; ifix < ntypes_; ifix++)
+  {
+      FixTemplateMultisphere *ftm =  static_cast<FixTemplateMultisphere*>(modify->find_fix_style("particletemplate/multisphere",ifix));
+      int itype = ftm->type();
+      Vclump_[itype] = ftm->massexpect();
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -588,6 +603,10 @@ void FixMultisphere::calc_force()
   // do not reset external torques
   multisphere_.reset_forces(false);
 
+  //NP correct forces if necessary
+  if(do_modify_body_forces_torques_)
+        modify_body_forces_torques();
+
   // calculate forces and torques of bodies
   for (int i = 0; i < nlocal+nghost; i++)
   {
@@ -610,8 +629,6 @@ void FixMultisphere::calc_force()
 
     vectorCopy3D(f_atom[i],f_one);
     vectorCopy3D(torque_atom[i],torque_one);
-    if(do_modify_body_forces_torques_)
-        modify_body_forces_torques(i,f_one,torque_one);
 
     fcm[ibody][0] += f_one[0];
     fcm[ibody][1] += f_one[1];

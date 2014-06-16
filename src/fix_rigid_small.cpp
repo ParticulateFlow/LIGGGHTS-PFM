@@ -179,7 +179,6 @@ FixRigidSmall::FixRigidSmall(LAMMPS *lmp, int narg, char **arg) :
       bodyown[i] = nlocal_body++;
     } else bodyown[i] = -1;
 
-
   // bodysize = sizeof(Body) in doubles
 
   bodysize = sizeof(Body)/sizeof(double);

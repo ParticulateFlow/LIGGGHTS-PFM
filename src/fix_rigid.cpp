@@ -71,7 +71,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   //not working correctly for 2d
   if(domain->dimension == 2) error->warning(FLERR,"Fix rigid should not be used for 2d simulations - inertia is for 3d systems");
 
-  if (narg > 3 && strcmp(arg[3],"pseudo") == 0) return; //NP modified C.K.
+  if (narg > 3 && strcmp(arg[3],"pseudo") == 0) return;
 
   int i,ibody;
 
@@ -85,7 +85,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   MPI_Comm_rank(world,&me);
   MPI_Comm_size(world,&nprocs);
 
-  just_created = 0; //NP modified C.K. inits properties in constructor, do not overwrite
+  just_created = 0;
 
   // perform initial allocation of atom-based arrays
   // register with Atom class
@@ -99,7 +99,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   grow_arrays(atom->nmax);
   atom->add_callback(0);
 
-  if (strcmp(this->style,"rigid")) return;  //NP modified C.K.
+  if (strcmp(this->style,"rigid")) return;
 
   // parse args for rigid body specification
   // set nbody and body[i] for each atom

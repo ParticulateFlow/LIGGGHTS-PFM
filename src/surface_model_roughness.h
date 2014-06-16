@@ -36,6 +36,7 @@ SURFACE_MODEL(SURFACE_ROUGHNESS,roughness,1)
 #include "update.h"
 #include "fix_roughness.h"
 
+namespace LIGGGHTS {
 namespace ContactModels
 {
   template<typename Style>
@@ -54,6 +55,7 @@ namespace ContactModels
       hsetup->add_history_value("contactN1X", "0");
       hsetup->add_history_value("contactN1Y", "0");
       hsetup->add_history_value("contactN1Z", "0");
+      /*NL*/ if(comm->me == 0) fprintf(screen, "SURFACE/ROUGHNESS loaded\n");
     }
 
     inline void registerSettings(Settings&) {}
@@ -160,7 +162,7 @@ namespace ContactModels
                           +contactN1[2]*contactN1[2]);  //calculate the length
 
             // FIXME: Note to original implementor. Fix your code! Floating-point comparison?!?
-            if(!nLength==1.0)
+            if(nLength!=1.0)
               error->all(FLERR,"nLength not equal to unity");
           }
 
@@ -176,7 +178,7 @@ namespace ContactModels
           nLength = sqrt(n2[0]*n2[0] + n2[1]*n2[1] + n2[2]*n2[2]);  //calculate the length
 
           // FIXME: Note to original implementor. Fix your code! Floating-point comparison?!?
-          if(!nLength==1.0)
+          if(nLength!=1.0)
           {
             fprintf(screen, "deltaGamma, psi: %e %e, contactP: %e %e %e n1: %e %e %e \n",
                           deltaGamma, psi,
@@ -454,6 +456,7 @@ namespace ContactModels
 
     FixRoughness * fix_roughness_;
   };
+}
 }
 #endif // SURFACE_ROUGHNESS
 #endif

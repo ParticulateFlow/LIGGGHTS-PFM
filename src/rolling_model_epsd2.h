@@ -35,6 +35,7 @@ ROLLING_MODEL(ROLLING_EPSD2,epsd2,3)
 #include "domain.h"
 #include "math_extra_liggghts.h"
 
+namespace LIGGGHTS {
 namespace ContactModels
 {
   using namespace LAMMPS_NS;
@@ -51,7 +52,7 @@ namespace ContactModels
       hsetup->add_history_value("r_torquey_old", "1");
       hsetup->add_history_value("r_torquez_old", "1");
       STATIC_ASSERT(Style::TANGENTIAL == TANGENTIAL_HISTORY);
-      /*NL*/ printf("EPSD2 loaded\n");
+      /*NL*/ if(comm->me == 0) fprintf(screen, "EPSD2 loaded\n");
     }
 
     void registerSettings(Settings&) {}
@@ -176,6 +177,7 @@ namespace ContactModels
 
     }
   };
+}
 }
 #endif // ROLLING_MODEL_EPSD_H_
 #endif

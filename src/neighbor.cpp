@@ -117,6 +117,9 @@ Neighbor::Neighbor(LAMMPS *lmp) : Pointers(lmp)
   bins = NULL;
   mlg = NULL; //NP modified C.K.
 
+  //NP modified C.K.
+  ago = -1;
+
   // pair exclusion list info
 
   includegroup = 0;
