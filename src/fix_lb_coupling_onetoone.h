@@ -44,6 +44,7 @@ namespace LAMMPS_NS {
     virtual int setmask();
 
     virtual void post_create();
+    virtual void pre_delete(bool);
     virtual void init();
 
     virtual void post_force(int);

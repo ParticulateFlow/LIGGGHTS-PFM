@@ -41,7 +41,6 @@ namespace LAMMPS_NS {
   FixLbCouplingOnetoone::FixLbCouplingOnetoone(LAMMPS *lmp, int narg, char **arg)
     : Fix(lmp,narg,arg), fix_dragforce_(0), fix_hdtorque_(0)
   {
-    std::cout << "new fix here" << std::endl;
   }
 
   FixLbCouplingOnetoone::~FixLbCouplingOnetoone()
@@ -61,8 +60,6 @@ namespace LAMMPS_NS {
     // make sure there is only one fix of this style
     if(modify->n_fixes_style(style) != 1)
       error->fix_error(FLERR,this,"More than one fix of this style is not allowed");
-
-
   }
 
   void FixLbCouplingOnetoone::post_create()
@@ -70,40 +67,48 @@ namespace LAMMPS_NS {
     // register dragforce
     if(!fix_dragforce_)
       {
-        const char* fixarg[11];
-        fixarg[0]="dragforce";
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="dragforce";
-        fixarg[4]="vector"; // 1 vector per particle to be registered
-        fixarg[5]="yes";    // restart
-        fixarg[6]="no";     // communicate ghost
-        fixarg[7]="yes";     // communicate rev
-        fixarg[8]="0.";
-        fixarg[9]="0.";
-        fixarg[10]="0.";
+
+        const char *fixarg[] = {
+          "dragforce", // fix id
+          "all",       // fix group
+          "property/atom", // fix style: property/atom
+          "dragforce",     // property name
+          "vector", // 1 vector per particle
+          "yes",    // restart
+          "no",     // communicate ghost
+          "yes",    // communicate rev
+          "0.","0.","0." // default values
+        };
         fix_dragforce_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
       }
 
     // register hydrodynamic torque
     if(!fix_hdtorque_)
       {
-        const char* fixarg[11];
-        fixarg[0]="hdtorque";
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="hdtorque";
-        fixarg[4]="vector"; // 1 vector per particle to be registered
-        fixarg[5]="yes";    // restart
-        fixarg[6]="no";     // communicate ghost
-        fixarg[7]="yes";     // communicate rev
-        fixarg[8]="0.";
-        fixarg[9]="0.";
-        fixarg[10]="0.";
+        const char *fixarg[] = {
+          "hdtorque", // fix id
+          "all",      // fix group
+          "property/atom", // fix style: property/atom
+          "hdtorque",      // property name
+          "vector", // 1 vector per particle
+          "yes",    // restart
+          "no",     // communicate ghost
+          "yes",    // communicate rev
+          "0.","0.","0."
+        };
         fix_hdtorque_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
       }
   }
 
+  void FixLbCouplingOnetoone::pre_delete(bool unfixflag)
+  {
+    if(!unfixflag) return;
+
+    if(fix_dragforce_)
+      modify->delete_fix(fix_dragforce_->id);
+    if(fix_hdtorque_)
+      modify->delete_fix(fix_hdtorque_->id);
+  }
 
   void FixLbCouplingOnetoone::post_force(int)
   {
@@ -111,19 +116,6 @@ namespace LAMMPS_NS {
     double **t_ext = fix_hdtorque_->array_atom;
     double **f = atom->f;
     double **t = atom->torque;
-
-    // for(int i=0;i<atom->nlocal;i++)
-    //   std::cout << comm->me << " force_liggghts "
-    //             << std::setprecision(12) << f_ext[i][2] << std::endl;
-
-    // std::cout << "before" << std::endl;
-    // fix_dragforce_->do_reverse_comm();
-    // fix_hdtorque_->do_reverse_comm();
-    // std::cout << "after" << std::endl;
-
-    // for(int i=0;i<atom->nlocal;i++)
-    //   std::cout << comm->me << " force_liggghts_after "
-    //             << std::setprecision(12) << f_ext[i][2] << " x " << atom->x[0][2] << std::endl;
 
     for(int i=0;i<atom->nlocal;i++){
       for(int j=0;j<3;j++){
