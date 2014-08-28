@@ -23,6 +23,7 @@
 #define LMP_DEBUG_LIGGGHTS_H
 
 #include "lammps.h"
+#include "comm.h"
 #include "string.h"
 #include "stdlib.h"
 #include "style_fix.h"
@@ -45,10 +46,10 @@ inline void __debug__(LAMMPS* lmp)
     /*NL*///fprintf(lmp->screen,"step "BIGINT_FORMAT" nparticles %d \n",lmp->update->ntimestep,lmp->atom->nlocal);
     /*NL*///printVec3D(lmp->screen,"pos for tag 206",lmp->atom->x[lmp->atom->map(206)]);
     /*NL*///printVec3D(lmp->screen,"vel for tag 206",lmp->atom->v[lmp->atom->map(206)]);
-    /*NL*///printVec3D(lmp->screen,"f for tag 206",lmp->atom->f[lmp->atom->map(206)]);
-     /*NL*/Atom *atom = lmp->atom;
-     /*NL*/int nlocal = atom->nlocal;
-     /*NL*/fprintf(lmp->screen,"nlocal %d\n",nlocal);
+    /*NL*/if(1==lmp->comm->me)printVec3D(lmp->screen,"f for atom 253",lmp->atom->f[253]);//lmp->atom->f[lmp->atom->map(1)]);
+     /*NL*///Atom *atom = lmp->atom;
+     /*NL*///int nlocal = atom->nlocal;
+     /*NL*///fprintf(lmp->screen,"nlocal %d\n",nlocal);
      /*NL*///int nghost = atom->nghost;
      /*NL*///int nall = atom->nlocal+atom->nghost;
 

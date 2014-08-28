@@ -81,8 +81,8 @@ namespace ContactModels {
   using namespace std;
   using namespace LAMMPS_NS;
 
-  template<typename Style>
-  class CohesionModel<COHESION_HAMAKER, Style> : protected Pointers {
+  template<>
+  class CohesionModel<COHESION_HAMAKER> : protected Pointers {
   public:
     static const int MASK = CM_CONNECT_TO_PROPERTIES | CM_COLLISION | CM_NO_COLLISION;
 
@@ -103,6 +103,11 @@ namespace ContactModels {
       registry.connect("aHamakerEff", aHamakerEff,"cohesion_model hamaker");
       registry.connect("hCutEff", hCutEff,"cohesion_model hamaker");
       registry.connect("hMaxEff", hMaxEff,"cohesion_model hamaker");
+
+      //NP modified C.K.
+      // error checks on coarsegraining
+      if(force->cg_active())
+        error->cg(FLERR,"cohesion model hamaker");
     }
 
     void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces) //NP modified C.K.

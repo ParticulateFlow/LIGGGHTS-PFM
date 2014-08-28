@@ -321,6 +321,8 @@
       if(nMove_ > 0)
         isFirst = false;
 
+      /*NL*/ //fprintf(this->screen,"mesh id %s called registerMove(),nMove_ %d\n",mesh_id_,nMove_);
+
       nMove_ ++;
       if(_scale) nScale_++;
       if(_translate) nTranslate_++;
@@ -333,7 +335,7 @@
       if(isFirst)
       {
           int nall = sizeLocal()+sizeGhost();
-          /*NL*/// fprintf(this->screen,"allocating for %d elements\n",nall);
+          /*NL*/ //fprintf(this->screen,"mesh id %s allocating for %d elements\n",mesh_id_,nall);
 
           double **tmp;
           this->memory->template create<double>(tmp,NUM_NODES,3,"MultiNodeMesh:tmp");
@@ -387,11 +389,15 @@
     if(!node_orig_)
         error->one(FLERR,"Internal error in MultiNodeMesh<NUM_NODES>::storeNodePosOrig");
 
-    /*NL*///fprintf(this->screen,"step %d,proc %d storeNodePos %d %d, nLocal %d nGhost %d\n",this->update->ntimestep,this->comm->me,ilo,ihi,sizeLocal(),sizeGhost());
+    /*NL*///fprintf(this->screen,"step "BIGINT_FORMAT",proc %d storeNodePos %d %d, nLocal %d nGhost %d\n",this->update->ntimestep,this->comm->me,ilo,ihi,sizeLocal(),sizeGhost());
+    /*NL*///fprintf(this->screen,"  node_.size() %d node_orig_.size() %d  \n",this->node_.size(),this->node_orig_->size());
 
     //NP ensure node_orig is long enough
-    //NP if(capacity < nall)
-    //NP    node_orig_->addUninitialized(nall - capacity);
+    //NP can happen upon restart
+    int nall = this->sizeLocal()+this->sizeGhost();
+    int capacity = this->node_orig_->capacity();
+    if(capacity < nall)
+        this->node_orig_->addUninitialized(nall - capacity);
 
     for(int i = ilo; i < ihi; i++)
         for(int j = 0; j < NUM_NODES; j++)

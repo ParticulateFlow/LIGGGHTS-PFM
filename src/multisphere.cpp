@@ -54,7 +54,7 @@ Multisphere::Multisphere(LAMMPS *lmp) :
   quat_   (*customValues_.addElementProperty< VectorContainer<double,4> >("quat","comm_exchange_borders","frame_invariant", "restart_yes")),
 
   atomtype_  (*customValues_.addElementProperty< ScalarContainer<int> >("atomtype","comm_exchange_borders","frame_invariant","restart_yes")),
-  type_      (*customValues_.addElementProperty< ScalarContainer<int> >("type","comm_exchange_borders","frame_invariant","restart_yes")),
+  type_      (*customValues_.addElementProperty< ScalarContainer<int> >("clumptype","comm_exchange_borders","frame_invariant","restart_yes")),
   density_   (*customValues_.addElementProperty< ScalarContainer<double> >("density","comm_exchange_borders","frame_invariant","restart_yes")),
   masstotal_ (*customValues_.addElementProperty< ScalarContainer<double> >("masstotal","comm_exchange_borders","frame_invariant","restart_yes")),
   inertia_   (*customValues_.addElementProperty< VectorContainer<double,3> >("inertia","comm_exchange_borders","frame_invariant", "restart_yes")),
@@ -164,6 +164,8 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
         angmom_(n)
     );
 
+    /*NL*/ //fprintf(screen,"start_step_ins %d\n",start_step_ins);
+    /*NL*/ //printVec3D(screen,"vcm(n)",vcm_(n));
     /*NL*/// printVec3D(screen,"omega_(n)",omega_(n));
     /*NL*/// printVec3D(screen,"angmom_(n)",angmom_(n));
 

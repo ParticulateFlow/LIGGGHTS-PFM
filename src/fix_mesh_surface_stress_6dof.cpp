@@ -72,7 +72,7 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
 
   displace_( *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("displace","comm_none","frame_invariant","restart_yes",3)),
 
-  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_exchange_borders","frame_invariant","restart_no",1)),
+  v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_exchange_borders","frame_invariant","restart_yes",1)),
 
   suspension_flag_(false),
   k_t_(0.),

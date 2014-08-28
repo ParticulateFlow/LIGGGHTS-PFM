@@ -279,6 +279,7 @@ int FixInsertPack::calc_ninsert_this()
       MPI_Sum_Scalar(vol_region,world);
       ninsert_this = static_cast<int>((volumefraction_region*region_volume - vol_region) / fix_distribution->vol_expect() + random->uniform());
       insertion_ratio = vol_region / (volumefraction_region*region_volume);
+      /*NL*/ fprintf(screen,"ninsert_this %d, region_volume %f vol_region %f vol_expect %f\n",ninsert_this,region_volume,vol_region,fix_distribution->vol_expect());
   }
   else if(ntotal_region > 0)
   {
@@ -295,7 +296,9 @@ int FixInsertPack::calc_ninsert_this()
   }
   else error->one(FLERR,"Internal error in FixInsertPack::calc_ninsert_this()");
 
-  // can be < 0 due to round-off etc
+  // can be < 0 due to overflow, round-off etc
+  if(ninsert_this < -200000)
+    error->fix_error(FLERR,this,"overflow in particle number calculation: inserting too many particles in one step");
   if(ninsert_this < 0) ninsert_this = 0;
 
   if(insertion_ratio < 0.) insertion_ratio = 0.;
@@ -307,7 +310,6 @@ int FixInsertPack::calc_ninsert_this()
   //NP   error->warning(FLERR,"Fix insert/pack insertion volume is partly filled and you are using multisphere particles - command does not work accurately in this case");
 
   /*NL*/ //fprintf(screen,"ninsert_this %d\n",ninsert_this);
-
 
   return ninsert_this;
 }
@@ -376,7 +378,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
     double v_toInsert[3];
     vectorZeroize3D(v_toInsert);
 
-    /*NL*/ //fprintf(screen,"STARTED, on proc %d maxtry %d\n",comm->me,maxtry);
+    /*NL*/ //fprintf(screen,"STARTED, on proc %d maxtry %d ninsert_this_local %d\n",comm->me,maxtry,ninsert_this_local);
 
     // no overlap check
     if(!check_ol_flag)
@@ -385,6 +387,9 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
         {
             pti = fix_distribution->pti_list[ninserted_this_local];
             double rbound = pti->r_bound_ins;
+
+            if(print_stats_during_flag && (ninsert_this_local >= 10) && (0 == itotal % (ninsert_this_local/10)))
+                fprintf(screen,"insertion: proc %d at %d %%\n",comm->me,10*itotal/(ninsert_this_local/10));
 
             do
             {
@@ -437,6 +442,9 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             /*NL*///fprintf(screen,"proc %d setting props for pti #%d, maxtry %d\n",comm->me,ninserted_this_local,maxtry);
             pti = fix_distribution->pti_list[ninserted_this_local];
             double rbound = pti->r_bound_ins;
+
+            if(print_stats_during_flag && (ninsert_this_local >= 10) && (0 == ninserted_this_local % (ninsert_this_local/10)) )
+                fprintf(screen,"insertion: proc %d at %d %%\n",comm->me,10*ninserted_this_local/(ninsert_this_local/10));
 
             int nins = 0;
             while(nins == 0 && ntry < maxtry)

@@ -365,6 +365,7 @@ void FixTemplateSphere::randomize_ptilist(int n_random,int distribution_groupbit
 
 double FixTemplateSphere::min_rad()
 {
+    //NP not called via fix.h, but via fix_particle_distribution_discrete.cpp
     return pdf_min(pdf_radius);
 }
 
@@ -373,6 +374,7 @@ double FixTemplateSphere::min_rad()
 double FixTemplateSphere::max_rad()
 {
     /*NL*/ //fprintf(screen, "MAXRAD %f\n",pdf_max(pdf_radius));
+    //NP not called via fix.h, but via fix_particle_distribution_discrete.cpp
     return pdf_max(pdf_radius);
 }
 

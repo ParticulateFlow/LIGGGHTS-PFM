@@ -758,6 +758,9 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
 
   if (ifix < nfix) {
     newflag = 0;
+    //NP modified C.K.
+    if (strncmp(fix[ifix]->style,"insert/",7) == 0)
+      error->all(FLERR,"Using a fix insert/* ID twice, which is not possible. Please use different ID");
     if (strcmp(arg[2],fix[ifix]->style) != 0)
       error->all(FLERR,"Replacing a fix, but new style != old style");
     if (fix[ifix]->igroup != igroup && comm->me == 0)

@@ -51,6 +51,8 @@
 #include "error.h"
 #include "neigh_multi_level_grid.h" //NP modified C.K.
 #include "math_extra_liggghts.h"    //NP modified C.K.
+#include "fix_contact_history.h"
+#include <assert.h>
 
 using namespace LAMMPS_NS;
 
@@ -595,11 +597,13 @@ void Neighbor::init()
 
       if (requests[i]->granhistory) {
         lists[i-1]->listgranhistory = lists[i];
-        for (int ifix = 0; ifix < modify->nfix; ifix++)
-          if (strcmp(modify->fix[ifix]->style,"contacthistory") == 0)  //NP modified C.K.
-            lists[i-1]->fix_history = (FixContactHistory *) modify->fix[ifix]; //NP modified C.K.
-           processed = 1;
-
+        for (int ifix = 0; ifix < modify->nfix; ifix++){
+          if (strcmp(modify->fix[ifix]->style,"contacthistory") == 0) {  //NP modified C.K.
+            lists[i-1]->fix_history = dynamic_cast<FixContactHistory*>(modify->fix[ifix]); //NP modified C.K.
+            assert(lists[i-1]->fix_history != NULL);
+          }
+        }
+        processed = 1;
       } else if (requests[i]->respaouter) {
         if (requests[i-1]->respainner) {
           lists[i]->respamiddle = 0;
@@ -768,6 +772,29 @@ void Neighbor::init()
 #ifdef NEIGH_LIST_DEBUG
     print_lists_of_lists();
 #endif
+  } else {
+    for (i = 0; i < nlist; i++) {
+      if (requests[i]->pair) {
+        Pair *pair = (Pair *) requests[i]->requestor;
+        pair->init_list(requests[i]->id,lists[i]);
+      } else if (requests[i]->fix) {
+        Fix *fix = (Fix *) requests[i]->requestor;
+        fix->init_list(requests[i]->id,lists[i]);
+      } else if (requests[i]->compute) {
+        Compute *compute = (Compute *) requests[i]->requestor;
+        compute->init_list(requests[i]->id,lists[i]);
+      }
+
+      // update contacthistory pointer
+      if (requests[i]->granhistory) {
+        for (int ifix = 0; ifix < modify->nfix; ifix++) {
+          if (strcmp(modify->fix[ifix]->style,"contacthistory") == 0) {  //NP modified C.K.
+            lists[i-1]->fix_history = dynamic_cast<FixContactHistory*>(modify->fix[ifix]); //NP modified C.K.
+            assert(lists[i-1]->fix_history != NULL);
+          }
+        }
+      }
+    }
   }
 
   // delete old requests
@@ -1669,6 +1696,8 @@ void Neighbor::setup_bins()
   if (nbinx == 0) nbinx = 1;
   if (nbiny == 0) nbiny = 1;
   if (nbinz == 0) nbinz = 1;
+
+  /*NL*/ //fprintf(screen,"nbinx %d nbiny %d, nbinz %d\n",nbinx,nbiny,nbinz);
 
   // compute actual bin size for nbins to fit into box exactly
   // error if actual bin size << cutoff, since will create a zillion bins

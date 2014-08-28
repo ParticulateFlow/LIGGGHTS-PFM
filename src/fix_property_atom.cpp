@@ -298,6 +298,29 @@ void FixPropertyAtom::set_arrays(int i)
 }
 
 /* ----------------------------------------------------------------------
+   set all atoms values
+------------------------------------------------------------------------- */
+
+void FixPropertyAtom::set_all(double value)
+{
+    /*NL*///fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
+    int nlocal = atom->nlocal;
+    if (data_style)
+    {
+        for(int i = 0; i < nlocal; i++)
+        {
+            for(int k=0;k<nvalues;k++)
+                array_atom[i][k] = value;
+        }
+    }
+    else
+    {
+        for(int i = 0; i < nlocal; i++)
+            vector_atom[i] = value;
+    }
+}
+
+/* ----------------------------------------------------------------------
    pack values in local atom-based arrays for exchange with another proc
 ------------------------------------------------------------------------- */
 

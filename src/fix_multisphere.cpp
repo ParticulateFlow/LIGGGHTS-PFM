@@ -302,13 +302,13 @@ void FixMultisphere::init() //NP modified C.K.
   // calc MS comm properties
   ntypes_ = modify->n_fixes_style("particletemplate/multisphere");
   if(Vclump_) delete []Vclump_;
-  Vclump_ = new double [ntypes_];
+  Vclump_ = new double [ntypes_+1];
 
   for(int ifix = 0; ifix < ntypes_; ifix++)
   {
       FixTemplateMultisphere *ftm =  static_cast<FixTemplateMultisphere*>(modify->find_fix_style("particletemplate/multisphere",ifix));
       int itype = ftm->type();
-      Vclump_[itype] = ftm->massexpect();
+      Vclump_[itype] = ftm->volexpect();
   }
 }
 
@@ -415,6 +415,9 @@ void FixMultisphere::initial_integrate(int vflag)
         xcm[ibody][0] += dtv * vcm[ibody][0];
         xcm[ibody][1] += dtv * vcm[ibody][1];
         xcm[ibody][2] += dtv * vcm[ibody][2];
+        /*NL*/ //printVec3D(screen,"vcm[ibody] FixMultisphere::initial_integrate",vcm[ibody]);
+        /*NL*/ //printVec3D(screen,"xcm[ibody] FixMultisphere::initial_integrate",xcm[ibody]);
+        /*NL*/ //error->one(FLERR,"end");
         /*NL*/ //fprintf(screen,"this should not be\n");
         continue;
     }
@@ -424,6 +427,7 @@ void FixMultisphere::initial_integrate(int vflag)
     // update vcm by 1/2 step
 
     dtfm = dtf / masstotal[ibody];
+
     if(fflag[ibody][0]) vcm[ibody][0] += dtfm * fcm[ibody][0];
     if(fflag[ibody][1]) vcm[ibody][1] += dtfm * fcm[ibody][1];
     if(fflag[ibody][2]) vcm[ibody][2] += dtfm * fcm[ibody][2];
@@ -434,7 +438,10 @@ void FixMultisphere::initial_integrate(int vflag)
     xcm[ibody][1] += dtv * vcm[ibody][1];
     xcm[ibody][2] += dtv * vcm[ibody][2];
 
+    /*NL*/ //fprintf(screen,"masstotal[ibody] %f\n",masstotal[ibody]);
     /*NL*/ //printVec3D(screen,"xcm[ibody]",xcm[ibody]);
+    /*NL*/ //printVec3D(screen,"vcm[ibody]",vcm[ibody]);
+    /*NL*/ //printVec3D(screen,"fcm[ibody]",fcm[ibody]);
 
     // update angular momentum by 1/2 step
 
@@ -625,7 +632,7 @@ void FixMultisphere::calc_force()
     if(!domain->is_owned_or_first_ghost(i))
         continue;
 
-    /*NL*///fprintf(screen,"A step %d,body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
+    /*NL*///fprintf(screen,"A step "BIGINT_FORMAT",body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
 
     vectorCopy3D(f_atom[i],f_one);
     vectorCopy3D(torque_atom[i],torque_one);

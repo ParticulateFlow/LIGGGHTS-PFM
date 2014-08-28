@@ -92,6 +92,7 @@
 		<ClInclude Include="..\pair_coul_dsf.h"/>
 		<ClInclude Include="..\fix_mesh_surface_stress.h"/>
 		<ClInclude Include="..\math_extra.h"/>
+		<ClInclude Include="..\dump_custom_vtk.h"/>
 		<ClInclude Include="..\write_data.h"/>
 		<ClInclude Include="..\finish.h"/>
 		<ClInclude Include="..\min_sd.h"/>
@@ -265,6 +266,7 @@
 		<ClInclude Include="..\body.h"/>
 		<ClInclude Include="..\fix_move_mesh.h"/>
 		<ClInclude Include="..\atom_vec_sph_var.h"/>
+		<ClInclude Include="..\region_mesh_tet_I.h"/>
 		<ClInclude Include="..\pair_coul_cut.h"/>
 		<ClInclude Include="..\pair_sph_artvisc_tenscorr.h"/>
 		<ClInclude Include="..\fix_bond_propagate_gran.h"/>
@@ -297,7 +299,6 @@
 		<ClInclude Include="..\cohesion_model_capillary_model_Mikami.h"/>
 		<ClInclude Include="..\style_fix.h"/>
 		<ClInclude Include="..\math_special.h"/>
-		<ClInclude Include="..\cohesion_model_capillary.h"/>
 		<ClInclude Include="..\style_compute.h"/>
 		<ClInclude Include="..\min_fire.h"/>
 		<ClInclude Include="..\normal_model_hertz.h"/>
@@ -571,6 +572,7 @@
 		<ClCompile Include="..\input.cpp"/>
 		<ClCompile Include="..\cfd_datacoupling_file.cpp"/>
 		<ClCompile Include="..\min_quickmin.cpp"/>
+		<ClCompile Include="..\dump_custom_vtk.cpp"/>
 		<ClCompile Include="..\dump_euler_vtk.cpp"/>
 		<ClCompile Include="..\fix_insert_stream_moving.cpp"/>
 		<ClCompile Include="..\improper_hybrid.cpp"/>

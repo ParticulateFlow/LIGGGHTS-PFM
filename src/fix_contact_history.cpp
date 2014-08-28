@@ -36,6 +36,7 @@
 #include "memory.h"
 #include "math_extra_liggghts.h"
 #include "error.h"
+#include <algorithm>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -74,7 +75,7 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
   // initialize npartner to 0 so neighbor list creation is OK the 1st time
 
   int nlocal = atom->nlocal;
-  for (int i = 0; i < nlocal; i++) npartner_[i] = 0;
+  std::fill_n(npartner_, nlocal, 0);
 
   //=====================
   // parse args
@@ -276,7 +277,7 @@ void FixContactHistory::pre_exchange()
   // zero npartner for all current atoms
   // clear 2 page data structures
 
-  for (i = 0; i < nlocal; i++) npartner_[i] = 0;
+  std::fill_n(npartner_, nlocal, 0);
 
   ipage_->reset();
   dpage_->reset();
@@ -335,7 +336,7 @@ void FixContactHistory::pre_exchange()
   // store atom IDs and shear history for my atoms
   // re-zero npartner to use as counter for all my atoms
 
-  for (i = 0; i < nlocal; i++) npartner_[i] = 0;
+  std::fill_n(npartner_, nlocal, 0);
 
 /*NL*/ //fprintf(screen,"pre copy hist, inum %d\n",inum);
 
@@ -377,9 +378,9 @@ void FixContactHistory::pre_exchange()
 
   // set maxtouch = max # of partners of any owned atom
   // bump up comm->maxexchange_fix if necessary
-
   maxtouch_ = 0;
-  for (i = 0; i < nlocal; i++) maxtouch_ = MAX(maxtouch_,npartner_[i]);
+  if(nlocal > 0) maxtouch_ = *std::max_element(npartner_, npartner_+nlocal);
+
   comm->maxexchange_fix = MAX(comm->maxexchange_fix,(dnum_+1)*maxtouch_+1);
 }
 
@@ -587,6 +588,7 @@ void FixContactHistory::unpack_restart(int nlocal, int nth)
 
   for (int n = 0; n < npartner_[nlocal]; n++) {
     partner_[nlocal][n] = ubuf(extra[nlocal][m++]).i;
+    /*NL*/ if(partner_[nlocal][n] < 0) error->one(FLERR,"internal error");
     for (int d = 0; d < dnum_; d++) {
       contacthistory_[nlocal][n*dnum_+d] = extra[nlocal][m++];
     }

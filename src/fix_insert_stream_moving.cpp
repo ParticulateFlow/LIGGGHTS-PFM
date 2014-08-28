@@ -35,6 +35,7 @@
 #include "random_park.h"
 #include "memory.h"
 #include "error.h"
+#include "fix_multisphere.h"
 #include "fix_property_atom.h"
 #include "fix_particledistribution_discrete.h"
 #include "fix_template_sphere.h"
@@ -263,6 +264,14 @@ void FixInsertStreamMoving::end_of_step()
             if(step > r_step) continue;
             else if (r_step == step)
             {
+                //NP dont do this for multisphere, skip to next i in for loop
+                if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0)
+                {
+                    //NP would have to randomize here for MS
+                    fix_multisphere->release(i,v_insert,omega_insert);
+                    continue;
+                }
+
                 // integrate with constant vel and set v,omega
 
                 time_elapsed = (step - i_step) * dt;

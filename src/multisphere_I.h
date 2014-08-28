@@ -121,4 +121,33 @@ inline int Multisphere::calc_n_steps(int, int body, double *p_ref, double *norma
     return n_steps;
 }
 
+/* ---------------------------------------------------------------------- */
+
+inline void Multisphere::release(int iatom,int body,double *v_toInsert,double *omega_toInsert)
+{
+    int ibody;
+
+    //NP skip if atom not in rigid body
+    if(body < 0)
+        return;
+
+    //NP body ID stored in atom is global
+    //NP need to know where stored in my data
+    ibody = map(body);
+    if(ibody < 0)
+        return;
+
+    bigint step = update->ntimestep;
+
+    if(start_step_(ibody) >= 0 && step >= start_step_(ibody))
+    {
+        /*NL*/// fprintf(screen,"releasing body %d at step "BIGINT_FORMAT"\n",body,update->ntimestep);
+
+        // set v and omega
+        vcm_.set(ibody,v_toInsert);
+        omega_.set(ibody,omega_toInsert);
+        start_step_.set(ibody,-1);
+    }
+}
+
 #endif

@@ -388,6 +388,10 @@ void FixInsertStream::init()
 
     /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::init() end\n");
 
+    // error check on insertion face
+    if(face_style == FACE_NONE)
+        error->fix_error(FLERR,this,"must define an insertion face");
+
     //NP disallow movement because shallow mesh copy would not know about it
     if(ins_face->isMoving() || ins_face->isScaling())
         error->fix_error(FLERR,this,"cannot translate, rotate, scale mesh which is used for particle insertion");
@@ -729,6 +733,8 @@ void FixInsertStream::finalize_insertion(int ninserted_spheres_this_local)
     for(int i = ilo; i < ihi; i++)
     {
         /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::finalize_insertion() i %d, 0\n",i);
+
+        //NP calc_n_steps sets insertion step and velocity
         if(multisphere)
             n_steps = fix_multisphere->calc_n_steps(i,p_ref,normalvec,v_normal);
         if(!multisphere || n_steps == -1)
@@ -832,7 +838,13 @@ void FixInsertStream::end_of_step()
             {
                 //NP dont do this for multisphere, skip to next i in for loop
                 if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0)
+                {
+                    //NP v, omage stored in all particles
+                    v_toInsert = &release_data[i][8];
+                    omega_toInsert = &release_data[i][11];
+                    fix_multisphere->release(i,v_toInsert,omega_toInsert);
                     continue;
+                }
 
                 // integrate with constant vel and set v,omega
 

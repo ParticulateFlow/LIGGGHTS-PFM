@@ -492,13 +492,13 @@ void DumpMeshVTK::getGeneralRefs()
       {
           if(meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]))
           {
-              /*NL*/ fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
+              /*NL*/ //fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
               found_scalar = true;
               scalar_containers_[n_scalar_containers_][i] = meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]);
               scalar_containers_[n_scalar_containers_][i]->id(cid);
               strcpy(scalar_container_names_[n_scalar_containers_],cid);
           }
-          /*NL*/ else  fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
+          /*NL*/ //else  fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
 
           if(meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]))
           {

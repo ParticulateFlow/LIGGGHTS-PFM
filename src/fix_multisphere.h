@@ -68,7 +68,7 @@ class FixMultisphere : public Fix
       virtual void setup_pre_force(int) {}
       virtual void setup_pre_neighbor();
 
-      double extend_cut_ghost();
+      virtual double extend_cut_ghost();
 
       void initial_integrate(int);
       virtual void pre_force(int) {}
@@ -136,18 +136,6 @@ class FixMultisphere : public Fix
               len2 = 1;
               return (void *) body_;
           }
-          else if (strcmp(name,"ntypes") == 0)
-          {
-              len1 = 1;
-              len2 = 1;
-              return (void *) static_cast<long>(ntypes_);
-          }
-          else if (strcmp(name,"Vclump") == 0)
-          {
-              len1 = ntypes_;
-              len2 = 1;
-              return (void *) Vclump_;
-          }
           return multisphere_.extract(name,len1,len2);
       }
 
@@ -170,6 +158,12 @@ class FixMultisphere : public Fix
       inline int tag_max_body()
       { return data().tag_max_body(); }
 
+      inline int ntypes()
+      { return ntypes_; }
+
+      inline double* vclump()
+      { return Vclump_; }
+
       inline double extract_ke()
       { return data().extract_ke(); }
 
@@ -184,6 +178,9 @@ class FixMultisphere : public Fix
 
       int calc_n_steps(int iatom,double *p_ref,double *normalvec,double *v_normal)
       { return multisphere_.calc_n_steps(iatom,body_[iatom],p_ref,normalvec,v_normal); }
+
+      void release(int iatom,double *v_toInsert,double *omega_toInsert)
+      { return multisphere_.release(iatom,body_[iatom],v_toInsert,omega_toInsert); }
 
      protected:
 

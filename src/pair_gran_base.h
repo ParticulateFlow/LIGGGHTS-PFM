@@ -81,6 +81,18 @@ public:
     cmodel.registerSettings(settings);
     bool success = settings.parseArguments(nargs, args);
 
+#ifdef LIGGGHTS_DEBUG
+    if(comm->me == 0) {
+      fprintf(screen, "==== PAIR SETTINGS ====\n");
+      settings.print_all(screen);
+      fprintf(screen, "==== PAIR SETTINGS ====\n");
+
+      fprintf(logfile, "==== PAIR SETTINGS ====\n");
+      settings.print_all(logfile);
+      fprintf(logfile, "==== PAIR SETTINGS ====\n");
+    }
+#endif
+
     if(!success) {
       error->all(FLERR,settings.error_message.c_str());
     }
@@ -88,6 +100,18 @@ public:
 
   virtual void init_granular() {
     cmodel.connectToProperties(force->registry);
+
+#ifdef LIGGGHTS_DEBUG
+    if(comm->me == 0) {
+      fprintf(screen, "==== PAIR GLOBAL PROPERTIES ====\n");
+      force->registry.print_all(screen);
+      fprintf(screen, "==== PAIR GLOBAL PROPERTIES ====\n");
+
+      fprintf(logfile, "==== PAIR GLOBAL PROPERTIES ====\n");
+      force->registry.print_all(logfile);
+      fprintf(logfile, "==== PAIR GLOBAL PROPERTIES ====\n");
+    }
+#endif
   }
 
   virtual void write_restart_settings(FILE * fp)
@@ -258,6 +282,8 @@ public:
 
           /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" xi %f %f %f xj %f %f %f\n",update->ntimestep,x[i][0],x[i][1],x[i][2],x[j][0],x[j][1],x[j][2]);
           /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" iforces %f %f %f\n",update->ntimestep,i_forces.delta_F[0],i_forces.delta_F[1],i_forces.delta_F[2]);
+          /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" mol %d %d i %d j %d, nlocal %d\n",update->ntimestep,atom->molecule[i],atom->molecule[j],i,j,atom->nlocal);
+          /*NL*/ //error->one(FLERR,"end");
 
           // if there is a collision, there will always be a force
           cdata.has_force_update = true;

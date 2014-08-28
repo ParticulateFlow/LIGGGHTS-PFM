@@ -56,7 +56,10 @@ namespace LAMMPS_NS {
 
       void calc_nbody_all();
       bool check_lost_atoms(int *body, double *atom_delflag,double *body_existflag);
+
+      //NP particle insertion for multi-spheres
       int calc_n_steps(int iatom,int body,double *p_ref,double *normalvec,double *v_normal);
+      void release(int iatom,int body,double *v_toInsert,double *omega_toInsert);
 
       double max_r_bound();
 

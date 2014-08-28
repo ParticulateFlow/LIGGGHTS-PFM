@@ -1,0 +1,65 @@
+atom_style	granular
+atom_modify	map array
+communicate	single vel yes
+
+boundary	f p f
+newton		off
+
+units		si
+processors	4 1 1
+
+region		reg block -0.5 0.5   0. 0.2   0. 0.5  units box
+#create_box	1 reg
+read_restart	post/restart/liggghts.restart
+
+neighbor	0.01 bin
+neigh_modify	delay 0
+
+
+#Material properties required for new pair styles
+
+fix 		m1 all property/global youngsModulus peratomtype 5.e6 5.e6
+fix 		m2 all property/global poissonsRatio peratomtype 0.45 0.45
+fix 		m3 all property/global coefficientRestitution peratomtypepair 2 0.3 0.3 0.3 0.3
+fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.5 0.5 0.5 0.5
+
+#pair style
+pair_style gran model hertz tangential history #Hertzian without cohesion
+pair_coeff	* *
+
+#timestep, gravity
+variable	dt equal 0.00001
+timestep	${dt}
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+#walls
+fix xwalls1 all wall/gran model hertz tangential history primitive type 1 xplane -1.0
+fix xwalls2 all wall/gran model hertz tangential history primitive type 1 xplane +1.0
+fix zwalls1 all wall/gran model hertz tangential history primitive type 1 zplane +0.0
+fix zwalls2 all wall/gran model hertz tangential history primitive type 1 zplane +0.5
+
+#material shrink
+region		delreg1 block  0.6  1.0   0. 0.2   0. 0.1  units box
+region		delreg2 block -1.0 -0.6   0. 0.2   0. 0.1  units box
+region		delreg union 2 delreg1 delreg2 units box
+#fix		delete all remove nevery 500 massrate 40 style delete &
+		seed 10007143 region delreg atomtype 1
+fix		shrink all remove nevery 500 massrate 20 style shrink &
+		delete_below 0.012 seed 10007143 region delreg atomtype 1
+
+
+#apply nve integration to all particles that are inserted as single particles
+fix		integr all nve/sphere
+
+#screen output
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke cpu vol
+thermo		1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+#dump
+dump		dmp all custom 500 post/dump*.resume_nc id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+
+#run
+run		100000

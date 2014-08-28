@@ -34,6 +34,8 @@
 
 int liggghts_get_maxtag(void *ptr);
 /*NL*/int liggghts_get_maxtag_ms(void *ptr);
+/*NL*/ int liggghts_get_ntypes_ms(void *ptr);
+/*NL*/ double* liggghts_get_vclump_ms(void *ptr);
 void* locate_coupling_fix(void *ptr);
 void data_liggghts_to_of(char *name,char *type,void *ptr,void *&data,char *datatype);
 void data_of_to_liggghts(char *name,char *type,void *ptr,void *data,char *datatype);

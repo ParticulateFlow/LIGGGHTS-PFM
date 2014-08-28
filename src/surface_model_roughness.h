@@ -39,8 +39,8 @@ SURFACE_MODEL(SURFACE_ROUGHNESS,roughness,1)
 namespace LIGGGHTS {
 namespace ContactModels
 {
-  template<typename Style>
-  class SurfaceModel<SURFACE_ROUGHNESS, Style> : protected Pointers
+  template<>
+  class SurfaceModel<SURFACE_ROUGHNESS> : protected Pointers
   {
   public:
     static const int MASK = CM_COLLISION;

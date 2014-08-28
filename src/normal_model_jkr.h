@@ -36,7 +36,7 @@ NORMAL_MODEL(JKR,jkr,5)
 
 namespace MODEL_PARAMS
 {
-  MatrixProperty * createCoefContactRadius(PropertyRegistry & registry, const char * caller, bool)
+  static MatrixProperty * createCoefContactRadius(PropertyRegistry & registry, const char * caller, bool)
   {
     const int max_type = registry.max_type();
 
@@ -65,8 +65,8 @@ namespace LIGGGHTS {
 
 namespace ContactModels
 {
-  template<typename Style>
-  class NormalModel<JKR, Style> : protected Pointers
+  template<>
+  class NormalModel<JKR> : protected Pointers
   {
   public:
     static const int MASK = CM_REGISTER_SETTINGS | CM_CONNECT_TO_PROPERTIES | CM_COLLISION | CM_NO_COLLISION;
@@ -99,6 +99,11 @@ namespace ContactModels
       registry.connect("betaeff", betaeff, "normal_model jkr");
       registry.connect("cohEnergyDens", cohEnergyDens, "normal_model jkr");
       registry.connect("coefContactRadius", coefContactRadius, "normal_model jkr");
+
+      //NP modified C.K.
+      // error checks on coarsegraining
+      if(force->cg_active())
+        error->cg(FLERR,"model jkr");
     }
 
     // effective exponent for stress-strain relationship

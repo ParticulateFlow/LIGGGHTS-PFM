@@ -1,0 +1,25 @@
+mpirun -np 8 liggghts2 -partition 1x8 -in in.settle -var PROC 8 -var LB 1
+cp log.liggghts.0 logs/log.liggghts_8proc_LB
+
+mpirun -np 8 liggghts2 -partition 2x4 -in in.settle -var PROC 4 -var LB 1
+cp log.liggghts.0 logs/log.liggghts_4proc_LB
+
+mpirun -np 8 liggghts2 -partition 4x2 -in in.settle -var PROC 2 -var LB 1
+cp log.liggghts.0 logs/log.liggghts_2proc_LB
+
+
+mpirun -np 8 liggghts2 -partition 1x8 -in in.settle -var PROC 8 -var LB 0
+cp log.liggghts.0 logs/log.liggghts_8proc_noLB
+
+mpirun -np 8 liggghts2 -partition 2x4 -in in.settle -var PROC 4 -var LB 0
+cp log.liggghts.0 logs/log.liggghts_4proc_noLB
+
+mpirun -np 8 liggghts2 -partition 4x2 -in in.settle -var PROC 2 -var LB 0
+cp log.liggghts.0 logs/log.liggghts_2proc_noLB
+
+
+
+mpirun -np 8 liggghts2 -partition 8x1 -in in.settle -var PROC 1 -var LB 0
+cp log.liggghts.0 logs/log.liggghts_1proc
+
+

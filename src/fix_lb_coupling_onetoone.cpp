@@ -60,6 +60,8 @@ namespace LAMMPS_NS {
     // make sure there is only one fix of this style
     if(modify->n_fixes_style(style) != 1)
       error->fix_error(FLERR,this,"More than one fix of this style is not allowed");
+
+
   }
 
   void FixLbCouplingOnetoone::post_create()
@@ -67,7 +69,6 @@ namespace LAMMPS_NS {
     // register dragforce
     if(!fix_dragforce_)
       {
-
         const char *fixarg[] = {
           "dragforce", // fix id
           "all",       // fix group
@@ -113,13 +114,29 @@ namespace LAMMPS_NS {
   void FixLbCouplingOnetoone::post_force(int)
   {
     double **f_ext = fix_dragforce_->array_atom;
+    //double **t_ext = fix_hdtorque_->array_atom;
     double **t_ext = fix_hdtorque_->array_atom;
     double **f = atom->f;
+    //double **t = atom->torque;
+
+    // for(int i=0;i<atom->nlocal;i++)
+    //   std::cout << comm->me << " force_liggghts "
+    //             << std::setprecision(12) << f_ext[i][2] << std::endl;
+
+    // std::cout << "before" << std::endl;
+    // fix_dragforce_->do_reverse_comm();
+    // fix_hdtorque_->do_reverse_comm();
+    // std::cout << "after" << std::endl;
+
+    // for(int i=0;i<atom->nlocal;i++)
+    //   std::cout << comm->me << " force_liggghts_after "
+    //             << std::setprecision(12) << f_ext[i][2] << " x " << atom->x[0][2] << std::endl;
     double **t = atom->torque;
 
     for(int i=0;i<atom->nlocal;i++){
       for(int j=0;j<3;j++){
         f[i][j] += f_ext[i][j];
+        // t[i][j] += t_ext[i][j];
         t[i][j] += t_ext[i][j];
       }
     }

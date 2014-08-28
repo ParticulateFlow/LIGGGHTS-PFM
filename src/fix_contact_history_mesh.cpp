@@ -202,6 +202,13 @@ void FixContactHistoryMesh::allocate_pages()
 
 /* ---------------------------------------------------------------------- */
 
+void FixContactHistoryMesh::setup_pre_neighbor()
+{
+    /*NL*///if(7==comm->me) fprintf(screen,"fix id %s, pre-neigh: atom tag %d: partner0 = %d\n",id,atom->tag[378],partner_[378][0]);
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixContactHistoryMesh::setup_pre_exchange()
 {
     pre_exchange();
@@ -481,6 +488,7 @@ void FixContactHistoryMesh::cleanUpContactJumps()
     //NP important to loop here from 0..npartner-1 because when this fct is called
     //NP nneighs is already the new #of neighbors
 
+    /*NL*///if(7==comm->me) fprintf(screen,"fix id %s, pre-clean: atom tag %d: partner0 = %d\n",id,atom->tag[378],partner_[378][0]);
     for(int i = 0; i < nlocal; i++)
     {
         int ipartner = 0;
@@ -488,7 +496,10 @@ void FixContactHistoryMesh::cleanUpContactJumps()
         {
             //NP contacts should be sorted at this point
             if(partner_[i][ipartner] < 0)
+            {
+                /*NL*/fprintf(screen,"fix id %s, proc %d: atom %d / tag %d: npartner %d, ipartner %d, partner %d\n",id,comm->me,i,atom->tag[i],npartner_[i],ipartner,partner_[i][ipartner]);
                 error->one(FLERR,"internal error");
+            }
 
             iTri = mesh_->map(partner_[i][ipartner]);
             /*NL*/ //if(7998 == atom->tag[i])  fprintf(screen,"tri id %d found in old list %s\n",partner_[i][ipartner],fix_neighlist_mesh_->contactInList(iTri,i)?"true":"false");
@@ -596,8 +607,9 @@ int FixContactHistoryMesh::unpack_exchange(int nlocal, double *buf)
 
   npartner_[nlocal] = ubuf(buf[m++]).i;
   maxtouch_ = MAX(maxtouch_,npartner_[nlocal]);
-  partner_[nlocal] = ipage_->get(nneighs);
-  contacthistory_[nlocal] = dpage_->get(dnum_*nneighs);
+  int nalloc = MathExtraLiggghts::max(nneighs,npartner_[nlocal]);
+  partner_[nlocal] = ipage_->get(nalloc);
+  contacthistory_[nlocal] = dpage_->get(dnum_*nalloc);
 
   if (!partner_[nlocal] || !contacthistory_[nlocal])
         error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
@@ -606,15 +618,19 @@ int FixContactHistoryMesh::unpack_exchange(int nlocal, double *buf)
   for (int n = 0; n < npartner_[nlocal]; n++) {
     partner_[nlocal][n] = ubuf(buf[m++]).i;
     /*NL*/ //fprintf(screen,"atom %d: unpacking partner %d\n",atom->tag[nlocal],partner_[nlocal][n]);
+    /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"id %s, atom tag %d: unpacking partner %d, nneighs %d, nlocal %d\n",id,atom->tag[nlocal],partner_[nlocal][n],nneighs,nlocal);
     for (int d = 0; d < dnum_; d++) {
       contacthistory_[nlocal][n*dnum_+d] = buf[m++];
       /*NL*/ //fprintf(screen,"atom %d: unpacking hist %e\n",atom->tag[nlocal],contacthistory_[nlocal][n*dnum_+d]);
     }
   }
 
+  /*NL*/ //if(7==comm->me && nlocal>= 2432) fprintf(screen,"id %s, atom %d: to partner0 %d\n",id,atom->tag[2432],partner_[nlocal][0]);
+
   //NP set initial values for neighs
   for (int n = npartner_[nlocal]; n < nneighs; n++) {
     partner_[nlocal][n] = -1;
+    /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"id %s, atom %d: resetting to partner %d\n",id,atom->tag[nlocal],partner_[nlocal][n]);
     for (int d = 0; d < dnum_; d++) {
       contacthistory_[nlocal][n*dnum_+d] = 0.;
     }
@@ -655,10 +671,13 @@ void FixContactHistoryMesh::unpack_restart(int nlocal, int nth)
         error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
 
   /*NL*/ //fprintf(screen,"npartner_[nlocal] %d\n",npartner_[nlocal]);
+  /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"fix %s proc %d, TAG 22654 npartner %d\n",id,comm->me,npartner_[nlocal]);
 
   //NP unpack values for contacts
   for (int n = 0; n < npartner_[nlocal]; n++) {
     partner_[nlocal][n] = ubuf(extra[nlocal][m++]).i;
+    /*NL*/ //if(partner_[nlocal][n] < 0) error->one(FLERR,"internal error");
+    /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"fix %s, TAG 22654 ipartner %d: %d\n",id,n,partner_[nlocal][n]);
     for (d = 0; d < dnum_; d++) {
       contacthistory_[nlocal][n*dnum_+d] = extra[nlocal][m++];
       /*NL*/ //fprintf(screen,"unpacking %e\n",contacthistory_[nlocal][n*dnum_+d]);

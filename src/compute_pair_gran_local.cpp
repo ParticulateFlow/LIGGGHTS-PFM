@@ -56,19 +56,20 @@ ComputePairGranLocal::ComputePairGranLocal(LAMMPS *lmp, int narg, char **arg) :
   array = NULL;
 
   // store everything by default expect heat flux
-  posflag = idflag = fflag = tflag = hflag = aflag = 1;
+  posflag = velflag = idflag = fflag = tflag = hflag = aflag = 1;
 
   // do not store heat flux by default
   hfflag = 0;
 
   // if further args, store only the properties that are listed
   if(narg > 3)
-     posflag = idflag = fflag = tflag = hflag = aflag = 0;
+     posflag = velflag = idflag = fflag = tflag = hflag = aflag = 0;
 
   for (int iarg = 3; iarg < narg; iarg++)
   {
     //int i = iarg-3;
     if (strcmp(arg[iarg],"pos") == 0) posflag = 1;
+    else if (strcmp(arg[iarg],"vel") == 0) velflag = 1;
     else if (strcmp(arg[iarg],"id") == 0) idflag = 1;
     else if (strcmp(arg[iarg],"force") == 0) fflag = 1;
     else if (strcmp(arg[iarg],"torque") == 0) tflag = 1;
@@ -226,7 +227,7 @@ void ComputePairGranLocal::init_cpgl(bool requestflag)
   if(hflag && dnum == 0) error->all(FLERR,"Compute pair/gran/local or wall/gran/local can not calculate history values since pair or wall style does not compute them");
   // standard values: pos1,pos2,id1,id2,extra id for mesh wall,force,torque,contact area
 
-  nvalues = posflag*6 + idflag*3 + fflag*3 + tflag*3 + hflag*dnum + aflag + hfflag;
+  nvalues = posflag*6 + velflag*6 + idflag*3 + fflag*3 + tflag*3 + hflag*dnum + aflag + hfflag;
   size_local_cols = nvalues;
 
   /*NL*/ //fprintf(screen,"nvalues = %d\n",nvalues);
@@ -368,7 +369,7 @@ int ComputePairGranLocal::count_wallcontacts()
 void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,double tor1,double tor2,double tor3,double *hist)
 {
     double del[3],r,rsq,radi,radj,contactArea;
-    double *xi, *xj,xi_w[3],xj_w[3];
+    double *xi,*xj,xi_w[3],xj_w[3],*vi,*vj;
     int nlocal;
 
     //NP return if pair not meant to be included (was not counted in the count() procedure
@@ -381,6 +382,8 @@ void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,do
 
     xi = atom->x[i];
     xj = atom->x[j];
+    vi = atom->v[i];
+    vj = atom->v[j];
 
     //NP simply make a local copy of the data
     int n = 0;
@@ -392,6 +395,11 @@ void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,do
         domain->remap(xj_w);
         vectorToBuf3D(xi_w,array[ipair],n);
         vectorToBuf3D(xj_w,array[ipair],n);
+    }
+    if(velflag)
+    {
+        vectorToBuf3D(vi,array[ipair],n);
+        vectorToBuf3D(vj,array[ipair],n);
     }
     if(idflag)
     {
@@ -465,7 +473,7 @@ void ComputePairGranLocal::add_heat(int i,int j,double hf)
    add data from particle-wall contact on this proc
 ------------------------------------------------------------------------- */
 
-void ComputePairGranLocal::add_wall_1(int iFMG,int idTri,int iP,double *contact_point)
+void ComputePairGranLocal::add_wall_1(int iFMG,int idTri,int iP,double *contact_point,double *v_wall)
 {
     if (!(atom->mask[iP] & groupbit)) return;
 
@@ -477,6 +485,23 @@ void ComputePairGranLocal::add_wall_1(int iFMG,int idTri,int iP,double *contact_
         array[ipair][n++] = contact_point[0];
         array[ipair][n++] = contact_point[1];
         array[ipair][n++] = contact_point[2];
+        n += 3;
+    }
+
+    if(velflag)
+    {
+        if(v_wall)
+        {
+            array[ipair][n++] = v_wall[0];
+            array[ipair][n++] = v_wall[1];
+            array[ipair][n++] = v_wall[2];
+        }
+        else
+        {
+            array[ipair][n++] = 0.;
+            array[ipair][n++] = 0.;
+            array[ipair][n++] = 0.;
+        }
         n += 3;
     }
 
@@ -508,6 +533,13 @@ void ComputePairGranLocal::add_wall_2(int i,double fx,double fy,double fz,double
         array[ipair][n++] = atom->x[i][0];
         array[ipair][n++] = atom->x[i][1];
         array[ipair][n++] = atom->x[i][2];
+    }
+    if(velflag)
+    {
+        n += 3;
+        array[ipair][n++] = atom->v[i][0];
+        array[ipair][n++] = atom->v[i][1];
+        array[ipair][n++] = atom->v[i][2];
     }
     if(idflag)
     {

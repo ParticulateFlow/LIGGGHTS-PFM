@@ -39,14 +39,13 @@ namespace ContactModels
 {
   using namespace LAMMPS_NS;
 
-  template<typename Style>
-  class RollingModel<ROLLING_CDT, Style> : protected Pointers {
+  template<>
+  class RollingModel<ROLLING_CDT> : protected Pointers {
   public:
     static const int MASK = CM_CONNECT_TO_PROPERTIES | CM_COLLISION;
 
     RollingModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), coeffRollFrict(NULL)
     {
-      STATIC_ASSERT(Style::MODEL == HOOKE);
       /*NL*/ if(comm->me == 0) fprintf(screen, "CDT loaded\n");
     }
 
@@ -56,6 +55,11 @@ namespace ContactModels
     {
       registry.registerProperty("coeffRollFrict", &MODEL_PARAMS::createCoeffRollFrict);
       registry.connect("coeffRollFrict", coeffRollFrict,"rolling_model cdt");
+
+      //NP modified C.K.
+      // error checks on coarsegraining
+      if(force->cg_active())
+        error->cg(FLERR,"rolling model cdt");
     }
 
     void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces) //NP modified C.K.

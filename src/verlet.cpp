@@ -46,7 +46,7 @@
 
 using namespace LAMMPS_NS;
 
-/*NL*/ #define DEBUG_VERLET false // (update->ntimestep>30000) //(update->ntimestep>54500) //false  true //
+/*NL*/ #define DEBUG_VERLET false //(update->ntimestep>=61500) //(update->ntimestep>54500) //false  true //
 
 /* ---------------------------------------------------------------------- */
 
@@ -134,12 +134,13 @@ void Verlet::setup()
   neighbor->build();
   neighbor->ncalls = 0;
 
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting modify->setup_pre_force\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: clearing forces\n");__debug__(lmp);}
 
   // compute all forces
 
   ev_set(update->ntimestep);
   force_clear();
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting modify->setup_pre_force\n");__debug__(lmp);}
   modify->setup_pre_force(vflag);
 
   /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: computing forces\n");__debug__(lmp);}

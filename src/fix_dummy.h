@@ -60,6 +60,9 @@ class FixMultisphere : public Fix {
   inline int tag_max_body()
   { return data().tag_max_body(); }
 
+  int ntypes() {return 0;}
+  double * vclump() {return 0;}
+
   class MultisphereParallel *multisphere_;
 
 };

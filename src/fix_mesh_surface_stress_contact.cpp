@@ -228,7 +228,7 @@ void FixMeshSurfaceStressContact::add_particle_contribution(int ip,double *frc,
     //NP adjust overlap that may be superficially large due to softening
     if(area_correction_)
     {
-        delta_n = radius - sqrt(r);
+        delta_n = radius - sqrt(rsq);
         delta_n *= deltan_ratio_[atom->type[ip]-1][atomTypeWall()-1];
         r = radius - delta_n;
         rsq = r*r;

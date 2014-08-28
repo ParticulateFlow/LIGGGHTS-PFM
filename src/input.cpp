@@ -1408,6 +1408,7 @@ void Input::modify_timing()
   if (narg == 1) {
     if (strcmp(arg[0],"off") == 0) timing = 0;
     else if (strcmp(arg[0],"on") == 0) timing = 1;
+    else if (strcmp(arg[0],"verbose") == 0) timing = 2;
     else error->all(FLERR,"Illegal modify_timing command");
   } else error->all(FLERR,"Illegal modify_timing command");
 
@@ -1490,7 +1491,7 @@ void Input::pair_style()
   }*/
   int num_remaining_arg = narg - 1;
   char ** remaining_args = &arg[1];
-  force->create_pair(arg[0], num_remaining_arg, remaining_args, lmp->suffix);
+  force->create_pair(arg[0],lmp->suffix);
   if (force->pair) force->pair->settings(num_remaining_arg,remaining_args);
 }
 
