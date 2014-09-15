@@ -15,8 +15,25 @@
 #define LMP_ATOM_H
 
 #include "pointers.h"
+#include <vector>
+
+#include <iterator>
 
 namespace LAMMPS_NS {
+
+class Partitioner : protected Pointers {
+public:
+  enum Result {
+    NO_CHANGE,
+    NEW_PARTITIONS,
+    FAILED
+  };
+
+  Partitioner(class LAMMPS * lmp) : Pointers(lmp) {}
+  virtual ~Partitioner(){}
+  virtual bool is_cost_effective() const = 0;
+  virtual Result generate_partitions(int * permute, std::vector<int> & thread_offsets) = 0;
+};
 
 class Atom : protected Pointers {
  public:
@@ -47,6 +64,7 @@ class Atom : protected Pointers {
   int *tag,*type,*mask;
   tagint *image;
   double **x,**v,**f;
+  int * thread;
 
   int *molecule;
   double *q,**mu;
@@ -226,6 +244,9 @@ class Atom : protected Pointers {
   void map_delete();
   int map_find_hash(int);
 
+  void dump_to_file(FILE* fp);
+  void fill_permute_by_spatial_sorted_bins(std::vector<int> & ilist, int * target_permute);
+
  private:
 
   // global to local ID mapping
@@ -260,8 +281,22 @@ class Atom : protected Pointers {
 
   size_t memlength;                  // allocated size of memstr  //NP modified R.B.
   char *memstr;                   // string of array names already counted
+  Partitioner * partitioner;
+ public:
+  char * partitioner_style;
+  void create_partitioner(const char *style, int narg, const char * const * arg, const char *suffix = NULL);
+  Partitioner * new_partitioner(const char * style, int narg, const char * const * arg, const char *suffix, int & sflag);
+
+  int threading_spatial_sort;
+  std::vector<int> thread_offsets;
+
+  bool same_thread(int i, int j) const;
+  bool in_thread_region(int tid, int i) const;
 
   void setup_sort_bins();
+  void spatial_sort();
+  void partitioner_sort();
+
   int next_prime(int);
 };
 

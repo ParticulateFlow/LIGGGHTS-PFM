@@ -2220,3 +2220,60 @@ int Neighbor::n_neighs()
 
     return nneigh;
 }
+
+void Neighbor::dump_to_file(FILE * file) {
+  // write process configuration
+  //fwrite(&cutneighsq, sizeof(double), 1, file);
+  fwrite(&binsizex, sizeof(double), 1, file);
+  fwrite(&binsizey, sizeof(double), 1, file);
+  fwrite(&binsizez, sizeof(double), 1, file);
+  fwrite(&mbinxlo, sizeof(int), 1, file);
+  fwrite(&mbinx, sizeof(int), 1, file);
+  fwrite(&mbinylo, sizeof(int), 1, file);
+  fwrite(&mbiny, sizeof(int), 1, file);
+  fwrite(&mbinzlo, sizeof(int), 1, file);
+  fwrite(&mbinz, sizeof(int), 1, file);
+  fwrite(&mbins, sizeof(int), 1, file);
+  fwrite(&maxbin, sizeof(int), 1, file);
+
+  // write bins
+  if(binhead && bins && lists) {
+    fwrite(binhead, sizeof(int), mbins, file);
+    fwrite(bins, sizeof(int), maxbin, file);
+
+    // write ibins
+    //fwrite(cached_ibin, sizeof(int), maxbin, file);
+
+    // write neighbor list
+
+    // find a non-skip neighbor list containing half the pairwise interactions
+    // count neighbors in that list for stats purposes
+
+    int m;
+
+    for (m = 0; m < old_nrequest; m++)
+      if ((old_requests[m]->half || old_requests[m]->gran || old_requests[m]->respaouter || old_requests[m]->half_from_full) &&
+              old_requests[m]->skip == 0) break;
+
+    int inum = 0;
+
+    if (m < old_nrequest) {
+      inum = lists[m]->inum;
+      int *ilist = lists[m]->ilist;
+      int *numneigh = lists[m]->numneigh;
+
+      fwrite(&inum, sizeof(int), 1, file);
+      fwrite(ilist, sizeof(int), inum, file);
+      fwrite(numneigh, sizeof(int), inum, file);
+
+      for(int ii = 0; ii < inum; ii++) {
+        const int i = ilist[ii];
+        int * const jlist = lists[m]->firstneigh[i];
+        const int jnum = numneigh[i];
+        fwrite(jlist, sizeof(int), jnum, file);
+      }
+    } else {
+      fwrite(&inum, sizeof(int), 1, file);
+    }
+  }
+}

@@ -336,7 +336,8 @@ ComputePropertyAtom::ComputePropertyAtom(LAMMPS *lmp, int narg, char **arg) :
       if (!avec_tri) error->all(FLERR,"Compute property/atom for "
                                  "atom property that isn't allocated");
       pack_choice[i] = &ComputePropertyAtom::pack_corner3z;
-
+    } else if (strcmp(arg[iarg],"thread") == 0) {
+      pack_choice[i] = &ComputePropertyAtom::pack_thread;
     } else if (strstr(arg[iarg],"i_") == arg[iarg]) {
       int flag;
       index[i] = atom->find_custom(&arg[iarg][2],flag);
@@ -1686,7 +1687,6 @@ void ComputePropertyAtom::pack_corner3z(int n)
 }
 
 /* ---------------------------------------------------------------------- */
-
 void ComputePropertyAtom::pack_iname(int n)
 {
   int *ivector = atom->ivector[index[n]];
@@ -1710,6 +1710,21 @@ void ComputePropertyAtom::pack_dname(int n)
 
   for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) buf[n] = dvector[i];
+    else buf[n] = 0.0;
+    n += nvalues;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputePropertyAtom::pack_thread(int n)
+{
+  int *thread = atom->thread;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) buf[n] = thread[i];
     else buf[n] = 0.0;
     n += nvalues;
   }

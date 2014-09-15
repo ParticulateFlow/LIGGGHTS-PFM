@@ -43,6 +43,7 @@ class Modify : protected Pointers {
   int n_pre_force_respa,n_post_force_respa,n_final_integrate_respa;
   int n_min_pre_exchange,n_min_pre_neighbor;
   int n_min_pre_force,n_min_post_force,n_min_energy;
+  int n_post_force_omp;
 
   int restart_pbc_any;       // 1 if any fix sets restart_pbc
   int nfix_restart_global;   // stored fix global info from restart file
@@ -157,6 +158,7 @@ class Modify : protected Pointers {
   int *list_min_pre_exchange,*list_min_pre_neighbor;
   int *list_min_pre_force,*list_min_post_force;
   int *list_min_energy;
+  int *list_post_force_omp;
 
   int *end_of_step_every;
 
@@ -183,6 +185,7 @@ private:
   inline void call_method_on_fixes(FixMethod method, int *& ilist, int & inum);
   inline void call_method_on_fixes(FixMethodWithVFlag method, int vflag);
   inline void call_method_on_fixes(FixMethodWithVFlag method, int vflag, int *& ilist, int & inum);
+  inline void call_method_on_fixes_omp(FixMethodWithVFlag method, int vflag, int *& ilist, int & inum, int *& plist, int & pnum);
 
   inline void call_respa_method_on_fixes(FixMethodRESPA2 method, int arg1, int arg2, int *& ilist, int & inum);
   inline void call_respa_method_on_fixes(FixMethodRESPA3 method, int arg1, int arg2, int arg3, int *& ilist, int & inum);

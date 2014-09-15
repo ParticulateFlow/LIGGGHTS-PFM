@@ -273,6 +273,7 @@ void Verlet::run(int n)
       comm->forward_comm();
       timer->stamp(TIME_COMM);
     } else {
+      const int prev_nlocal = atom->nlocal;
       /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre_exchange\n");__debug__(lmp);}
       if (n_pre_exchange) modify->pre_exchange();
       /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pbc, reset_box, comm setup\n");__debug__(lmp);}
@@ -288,7 +289,12 @@ void Verlet::run(int n)
       /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing exchange\n");__debug__(lmp);}
       comm->exchange();
       /*NL*/ //fprintf(screen,"proc %d has %d owned particles\n",comm->me,atom->nlocal);
-      if (sortflag && ntimestep >= atom->nextsort) atom->sort();
+      if (sortflag && (prev_nlocal != atom->nlocal || ntimestep >= atom->nextsort)) {
+        // don't count sorting as part of Comm time -> this will become part of Other
+        timer->stamp(TIME_COMM);
+        atom->sort();
+        timer->stamp();
+      }
       comm->borders();
       if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
       timer->stamp(TIME_COMM);

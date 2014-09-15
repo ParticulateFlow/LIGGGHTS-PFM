@@ -136,6 +136,9 @@ namespace LAMMPS_NS
           inline void clearContainer()
           { numElem_ = 0; }
 
+          void copy(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other);
+          void copy_n(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other, const size_t n);
+
       protected:
 
           GeneralContainer(const char *_id);
@@ -149,6 +152,14 @@ namespace LAMMPS_NS
           int numElem_, maxElem_;
 
           T*** arr_;
+
+          T* _begin() const {
+            return &arr_[0][0][0];
+          }
+
+          T* _end() const {
+            return &arr_[0][0][0] + numElem_*(NUM_VEC*LEN_VEC);
+          }
   };
 
   // *************************************

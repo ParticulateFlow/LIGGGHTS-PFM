@@ -33,6 +33,7 @@ class Neighbor : protected Pointers {
   friend class Cuda;
   //NP modified C.K.
   friend class FixNeighlistMesh;
+  friend class FixNeighlistMeshOMP;
   friend class OneLevelGrid;
   /*NL*/ friend class Lbalance;
   //NP modified St.A.
@@ -109,6 +110,8 @@ class Neighbor : protected Pointers {
   //NP modified C.K.
   void multi_levels(double &, double &, int &);
   int multi_levels();
+
+  void dump_to_file(FILE* fp);
 
  protected:
   int me,nprocs;

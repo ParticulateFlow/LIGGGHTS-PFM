@@ -157,6 +157,9 @@ void NeighList::grow(int nmax)
   firstneigh = (int **) memory->smalloc(maxatoms*sizeof(int *),
                                         "neighlist:firstneigh");
 
+  memset(ilist, 0, maxatoms*sizeof(int));
+  memset(numneigh, 0, maxatoms*sizeof(int));
+
   if (dnum)
     firstdouble = (double **) memory->smalloc(maxatoms*sizeof(double *),
                                               "neighlist:firstdouble");

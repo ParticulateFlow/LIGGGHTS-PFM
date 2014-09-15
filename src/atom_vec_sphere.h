@@ -88,6 +88,7 @@ class AtomVecSphere : public AtomVec {
   int *tag,*type,*mask;
   tagint *image;
   double **x,**v,**f;
+  int * thread;
   double *radius,*density,*rmass;
   double **omega,**torque;
   int radvary;

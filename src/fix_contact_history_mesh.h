@@ -79,7 +79,9 @@ class FixContactHistoryMesh : public FixContactHistory {
 
   // OMP interface
   void resetDeletionPage(int tid);
+  void markForDeletion(int tid, int i);
   void markForDeletion(int tid, int ifrom, int ito);
+  void cleanUpContact(int i);
   void cleanUpContacts(int ifrom, int ito);
 
   void reset_history();

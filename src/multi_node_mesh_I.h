@@ -425,10 +425,7 @@
     {
         int nall = sizeLocal() + sizeGhost();
         stepLastReset_ = ntimestep;
-        for(int i = 0; i < nall; i++)
-            for(int j = 0; j < NUM_NODES; j++)
-                vectorCopy3D(node_orig(i)[j],node_(i)[j]);
-
+        node_.copy_n(*node_orig_, nall);
         return true;
     }
     return false;
@@ -464,7 +461,7 @@
         vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -485,7 +482,7 @@
         vectorAdd3D(center_(i),vecIncremental,center_(i));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
   /* ----------------------------------------------------------------------
    move mesh incrementally by amount vecIncremental
@@ -543,29 +540,90 @@
 
     //NP add rotation due to totalQ to each of the nodes, which have been reset to
     //NP original position before
-    resetToOrig();
+    //resetToOrig();
+    int ntimestep = update->ntimestep;
 
-    //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
-
-    bool trans = vectorMag3DSquared(origin) > 0.;
-
-    // perform total rotation for data in this class
-    for(int i = 0; i < n; i++)
+    //NP reset mesh nodes only if not yet done before in this time-step
+    bool reset = false;
+    if(stepLastReset_ < ntimestep)
     {
-      vectorZeroize3D(center_(i));
-
-      for(int j = 0; j < NUM_NODES; j++)
-      {
-        if(trans) vectorSubtract3D(node_(i)[j],origin,node_(i)[j]);
-        MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
-        if(trans) vectorAdd3D(node_(i)[j],origin,node_(i)[j]);
-        vectorAdd3D(node_(i)[j],center_(i),center_(i));
-      }
-      vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+      stepLastReset_ = ntimestep;
+      reset = true;
     }
 
-    updateGlobalBoundingBox();
+    //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
+    const int n = sizeLocal() + sizeGhost();
+
+    const bool trans = vectorMag3DSquared(origin) > 0.;
+
+    if (trans) {
+      if (reset) {
+        // perform total rotation for data in this class
+        #pragma omp parallel for firstprivate(totalQ)
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            vectorSubtract3D(node_orig(i)[j],origin,node_(i)[j]);
+            MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],origin,node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      } else {
+        // perform total rotation for data in this class
+        #pragma omp parallel for firstprivate(totalQ)
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            vectorSubtract3D(node_(i)[j],origin,node_(i)[j]);
+            MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],origin,node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      }
+    }
+    else {
+      if (reset) {
+        // perform total rotation for data in this class
+        #pragma omp parallel for firstprivate(totalQ)
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            MathExtraLiggghts::vec_quat_rotate(node_orig(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      } else {
+        // perform total rotation for data in this class
+        #pragma omp parallel for firstprivate(totalQ)
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      }
+    }
+
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -601,12 +659,13 @@
   void MultiNodeMesh<NUM_NODES>::rotate(double *dQ, double *origin)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
-    bool trans = vectorMag3DSquared(origin) > 0.;
+    const bool trans = vectorMag3DSquared(origin) > 0.;
 
     // perform total rotation for data in this class
     //NP move into origin, rotate and move back
+    #pragma omp parallel for shared(dQ, origin)
     for(int i = 0; i < n; i++)
     {
       vectorZeroize3D(center_(i));
@@ -620,7 +679,7 @@
       vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -656,7 +715,7 @@
       rBound_(i) = rb;
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -684,11 +743,11 @@
       rBound_(i) = rb;
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
-   bounding box funtions
+   bounding box functions
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
@@ -701,8 +760,12 @@
   }
 
   template<int NUM_NODES>
-  BoundingBox MultiNodeMesh<NUM_NODES>::getGlobalBoundingBox() const
+  BoundingBox MultiNodeMesh<NUM_NODES>::getGlobalBoundingBox()
   {
+    if(bbox_.isDirty()) {
+      updateGlobalBoundingBox();
+      bbox_.setDirty(false);
+    }
     return bbox_;
   }
 

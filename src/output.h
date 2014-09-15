@@ -57,6 +57,9 @@ class Output : protected Pointers {
   char *restart2a,*restart2b;  // names of double restart files
   class WriteRestart *restart; // class for writing restart files
 
+  bigint next_memory_snapshot;
+  int memory_snapshot_every;    // 1 if memory snapshot should be created for each timestep a dump occurs
+
   Output(class LAMMPS *);
   ~Output();
   void init();
@@ -75,6 +78,8 @@ class Output : protected Pointers {
   void create_restart(int, char **); // create Restart and restart files
 
   void memory_usage();               // print out memory usage
+
+  void write_memory_snapshot(bigint ntimestep);    // writes memory snapshot to file
 };
 
 }

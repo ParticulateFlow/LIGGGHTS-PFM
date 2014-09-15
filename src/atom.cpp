@@ -29,6 +29,7 @@
 #include "limits.h"
 #include "atom.h"
 #include "style_atom.h"
+#include "style_partitioner.h"
 #include "atom_vec.h"
 #include "atom_vec_ellipsoid.h"
 #include "comm.h"
@@ -45,8 +46,15 @@
 #include "atom_masks.h"
 #include "memory.h"
 #include "error.h"
+#include <vector>
+#include <algorithm>
+
+// defining NDEBUG disables assertions
+#define NDEBUG
+#include <assert.h>
 
 using namespace LAMMPS_NS;
+using namespace std;
 
 #define DELTA 1
 #define DELTA_MEMSTR 1024
@@ -175,12 +183,19 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
 
   //NP modified C.K.
   radvary_flag = 0;
+
+  threading_spatial_sort = 1; // TODO: TESTING ONLY
+  partitioner = NULL;
+  partitioner_style = NULL;
+  thread = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
 
 Atom::~Atom()
 {
+  delete [] partitioner_style;
+  delete partitioner;
   delete [] atom_style;
   delete avec;
 
@@ -199,6 +214,7 @@ Atom::~Atom()
   memory->destroy(x);
   memory->destroy(v);
   memory->destroy(f);
+  memory->destroy(thread);
 
   memory->destroy(q);
   memory->destroy(mu);
@@ -382,6 +398,70 @@ AtomVec *Atom::new_avec(const char *style, char *suffix, int &sflag)
 #undef ATOM_CLASS
 
   else error->all(FLERR,"Invalid atom style");
+
+  return NULL;
+}
+
+
+
+/* ----------------------------------------------------------------------
+   create a Partitioner style
+------------------------------------------------------------------------- */
+
+void Atom::create_partitioner(const char *style, int narg, const char * const * arg, const char *suffix)
+{
+  delete [] partitioner_style;
+  delete partitioner;
+
+  int sflag;
+  partitioner = new_partitioner(style,narg,arg,suffix,sflag);
+
+  if (sflag) {
+    char estyle[256];
+    sprintf(estyle,"%s/%s",style,suffix);
+    int n = strlen(estyle) + 1;
+    partitioner_style = new char[n];
+    strcpy(partitioner_style,estyle);
+  } else {
+    int n = strlen(style) + 1;
+    partitioner_style = new char[n];
+    strcpy(partitioner_style,style);
+  }
+}
+
+/* ----------------------------------------------------------------------
+   generate a Partitioner class, first with suffix appended
+------------------------------------------------------------------------- */
+
+Partitioner * Atom::new_partitioner(const char * style, int narg, const char * const * arg, const char *suffix, int & sflag)
+{
+  if (suffix && lmp->suffix_enable) {
+    sflag = 1;
+    char estyle[256];
+    sprintf(estyle,"%s/%s",style,suffix);
+
+    if (0) return NULL;
+
+#define PARTITIONER_CLASS
+#define PartitionerStyle(key,Class) \
+    else if (strcmp(estyle,#key) == 0) return new Class(lmp, narg,arg);
+#include "style_partitioner.h"
+#undef PartitionerStyle
+#undef PARTITIONER_CLASS
+
+  }
+
+  sflag = 0;
+
+  if (0) return NULL;
+
+#define PARTITIONER_CLASS
+#define PartitionerStyle(key,Class) \
+  else if (strcmp(style,#key) == 0) return new Class(lmp, narg,arg);
+#include "style_partitioner.h"
+#undef PARTITIONER_CLASS
+
+  else error->all(FLERR,"Invalid partitioner style");
 
   return NULL;
 }
@@ -1238,6 +1318,14 @@ void Atom::first_reorder()
 
 void Atom::sort()
 {
+  if(partitioner && partitioner->is_cost_effective()) {
+    partitioner_sort();
+  } else {
+    spatial_sort();
+  }
+}
+
+void Atom::spatial_sort(){
   int i,m,n,ix,iy,iz,ibin,empty;
 
   // set next timestep for sorting to take place
@@ -1298,6 +1386,23 @@ void Atom::sort()
     }
   }
 
+  // use simple thread offsets
+  thread_offsets.clear();
+  const int idelta = 1 + nlocal/comm->nthreads;
+  int offset = 0;
+
+  for(int tid = 0; tid < comm->nthreads; tid++) {
+    thread_offsets.push_back(offset);
+    //printf("offset: %d\n", offset);
+    offset   = ((offset + idelta) > nlocal) ? nlocal : offset + idelta;
+  }
+
+  thread_offsets.push_back(offset);
+  //printf("offset: %d\n", offset);
+
+  assert(nlocal == offset);
+  assert(static_cast<size_t>(comm->nthreads+1) == thread_offsets.size());
+
   // current = current permutation, just reuse next vector
   // current[I] = J means Ith current atom is Jth old atom
 
@@ -1335,6 +1440,166 @@ void Atom::sort()
   //int flagall;
   //MPI_Allreduce(&flag,&flagall,1,MPI_INT,MPI_SUM,world);
   //if (flagall) error->all(FLERR,"Atom sort did not operate correctly");
+}
+
+
+void Atom::fill_permute_by_spatial_sorted_bins(std::vector<int> & ilist, int * target_permute)
+{
+
+  // bin atoms in reverse order so linked list will be in forward order
+
+  for (int i = 0; i < nbins; i++) binhead[i] = -1;
+
+  for (std::vector<int>::reverse_iterator it = ilist.rbegin(); it != ilist.rend(); ++it)
+  {
+    const int i = *it;
+    int ix = static_cast<int> ((x[i][0]-bboxlo[0])*bininvx);
+    int iy = static_cast<int> ((x[i][1]-bboxlo[1])*bininvy);
+    int iz = static_cast<int> ((x[i][2]-bboxlo[2])*bininvz);
+    ix = MAX(ix,0);
+    iy = MAX(iy,0);
+    iz = MAX(iz,0);
+    ix = MIN(ix,nbinx-1);
+    iy = MIN(iy,nbiny-1);
+    iz = MIN(iz,nbinz-1);
+    int ibin = iz*nbiny*nbinx + iy*nbinx + ix;
+    next[i] = binhead[ibin];
+    binhead[ibin] = i;
+  }
+
+  // permute = desired permutation of atoms
+  // permute[I] = J means Ith new atom will be Jth old atom
+
+  int n = 0;
+  for (int m = 0; m < nbins; m++) {
+    int i = binhead[m];
+    while (i >= 0) {
+      target_permute[n++] = i;
+      i = next[i];
+    }
+  }
+}
+
+void Atom::partitioner_sort() {
+  // set next timestep for sorting to take place
+  nextsort = (update->ntimestep/sortfreq)*sortfreq + sortfreq;
+
+  // download data from GPU if necessary
+  if (lmp->cuda && !lmp->cuda->oncpu) lmp->cuda->downloadAll();
+
+  // re-setup sort bins if needed
+  if (domain->box_change) setup_sort_bins();
+
+  // reallocate per-atom vectors if needed
+  if (nlocal > maxnext) {
+    memory->destroy(next);
+    memory->destroy(permute);
+    maxnext = atom->nmax;
+    memory->create(next,maxnext,"atom:next");
+    memory->create(permute,maxnext,"atom:permute");
+  }
+
+  // insure there is one extra atom location at end of arrays for swaps
+  if (nlocal == nmax) avec->grow(0);
+
+  // permute = desired permutation of atoms
+  // permute[I] = J means Ith new atom will be Jth old atom
+  double startTime = MPI_Wtime();
+  Partitioner::Result result = partitioner->generate_partitions(permute, thread_offsets);
+  double deltaTime = MPI_Wtime() - startTime;
+  if(comm->me == 0) fprintf(screen, "Partitioning time: %g seconds\n", deltaTime);
+  startTime += deltaTime;
+
+  switch(result) {
+    case Partitioner::NO_CHANGE:
+      // do nothing
+      return;
+
+    case Partitioner::FAILED:
+    {
+      // use simple thread offsets
+      thread_offsets.clear();
+      const int idelta = 1 + nlocal/comm->nthreads;
+      int offset = 0;
+
+      for(int tid = 0; tid < comm->nthreads; tid++) {
+        thread_offsets.push_back(offset);
+        //printf("[%d] offset: %d\n", comm->me, offset);
+        offset   = ((offset + idelta) > nlocal) ? nlocal : offset + idelta;
+      }
+
+      thread_offsets.push_back(offset);
+      //printf("[%d] offset: %d\n", comm->me, offset);
+
+      // assign all particles to a thread
+      for(int tid = 0; tid < comm->nthreads; tid++) {
+        const int b = thread_offsets[tid];
+        const int e = thread_offsets[tid+1];
+        std::fill(&atom->thread[b], &atom->thread[b] + (e-b), tid);
+      }
+
+      return;
+    }
+
+    case Partitioner::NEW_PARTITIONS:
+      // go on an reorder atom data, based on generated permute vector
+      break;
+  }
+
+  // current = current permutation, just reuse next vector
+  // current[I] = J means Ith current atom is Jth old atom
+
+  int *current = next;
+  for (int i = 0; i < nlocal; i++) current[i] = i;
+
+  // reorder local atom list, when done, current = permute
+  // perform "in place" using copy() to extra atom location at end of list
+  // inner while loop processes one cycle of the permutation
+  // copy before inner-loop moves an atom to end of atom list
+  // copy after inner-loop moves atom at end of list back into list
+  // empty = location in atom list that is currently empty
+
+  for (int i = 0; i < nlocal; i++) {
+    if (current[i] == permute[i]) continue;
+    avec->copy(i,nlocal,0);
+    int empty = i;
+    while (permute[empty] != i) {
+      avec->copy(permute[empty],empty,0);
+      empty = current[empty] = permute[empty];
+    }
+    avec->copy(nlocal,empty,0);
+    current[empty] = permute[empty];
+  }
+
+  deltaTime = MPI_Wtime() - startTime;
+  if(comm->me == 0) fprintf(screen, "Permute time: %g seconds\n", deltaTime);
+
+  // upload data back to GPU if necessary
+  if (lmp->cuda && !lmp->cuda->oncpu) lmp->cuda->uploadAll();
+
+  // sanity check that current = permute
+
+  //int flag = 0;
+  //for (i = 0; i < nlocal; i++)
+  //  if (current[i] != permute[i]) flag = 1;
+  //int flagall;
+  //MPI_Allreduce(&flag,&flagall,1,MPI_INT,MPI_SUM,world);
+  //if (flagall) error->all(FLERR,"Atom sort did not operate correctly");
+}
+
+bool Atom::same_thread(int i, int j) const {
+  if(i >= nlocal || j >= nlocal) return false;
+  assert(thread[i] >= 0);
+  assert(thread[j] >= 0);
+  return thread[i] == thread[j];
+}
+
+bool Atom::in_thread_region(int tid, int i) const {
+  if(i < nlocal) {
+    assert(thread[i] >= 0);
+    return thread[i] == tid;
+  }
+  return false;
 }
 
 /* ----------------------------------------------------------------------
@@ -1697,4 +1962,21 @@ int Atom::memcheck(const char *str)
   strcat(memstr,padded);
   delete [] padded;
   return 1;
+}
+
+void Atom::dump_to_file(FILE * file) {
+  int nall = nlocal + nghost;
+  int nthreads = comm->nthreads;
+  if(nall > 0) {
+    double * positionAdress = &x[0][0];
+    fwrite(&positionAdress, sizeof(double*), 1, file);
+    fwrite(&nlocal, sizeof(int), 1, file);
+    fwrite(&nghost, sizeof(int), 1, file);
+    fwrite(&nthreads, sizeof(int), 1, file);
+    fwrite(positionAdress, 3*sizeof(double), nall, file);
+
+    if(nthreads > 1) {
+      fwrite(thread, sizeof(int), nlocal, file);
+    }
+  }
 }

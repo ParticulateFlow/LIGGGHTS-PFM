@@ -87,6 +87,10 @@ Output::Output(LAMMPS *lmp) : Pointers(lmp)
   restart_flag = restart_flag_single = restart_flag_double = 0;
   restart_every_single = restart_every_double = 0;
   last_restart = -1;
+
+  memory_snapshot_every = 0;
+  next_memory_snapshot = 0;
+
   restart1 = restart2a = restart2b = NULL;
   var_restart_single = var_restart_double = NULL;
   restart = NULL;
@@ -274,10 +278,18 @@ void Output::setup(int memflag)
 
   modify->addstep_compute(next_thermo);
 
+  if (memory_snapshot_every) {
+    next_memory_snapshot = (ntimestep/memory_snapshot_every)*memory_snapshot_every + memory_snapshot_every;
+    next_memory_snapshot = MIN(next_memory_snapshot,update->laststep);
+  } else {
+    next_memory_snapshot = -1;
+  }
+
   // next = next timestep any output will be done
 
   next = MIN(next_dump_any,next_restart);
   next = MIN(next,next_thermo);
+  next = (memory_snapshot_every > 0) ? MIN(next, next_memory_snapshot) : next;
 }
 
 /* ----------------------------------------------------------------------
@@ -317,6 +329,11 @@ void Output::write(bigint ntimestep)
       if (idump) next_dump_any = MIN(next_dump_any,next_dump[idump]);
       else next_dump_any = next_dump[0];
     }
+  }
+
+  if(next_memory_snapshot == ntimestep) {
+    write_memory_snapshot(ntimestep);
+    next_memory_snapshot = ntimestep + memory_snapshot_every;
   }
 
   // next_restart does not force output on last step of run
@@ -393,6 +410,7 @@ void Output::write(bigint ntimestep)
 
   next = MIN(next_dump_any,next_restart);
   next = MIN(next,next_thermo);
+  next = (memory_snapshot_every > 0) ? MIN(next, next_memory_snapshot) : next;
 }
 
 /* ----------------------------------------------------------------------
@@ -772,4 +790,18 @@ void Output::memory_usage()
     if (logfile)
       fprintf(logfile,"Memory usage per processor = %g Mbytes\n",mbytes);
   }
+}
+
+void Output::write_memory_snapshot(bigint ntimestep) {
+  int me;
+  char filename[50];
+  MPI_Comm_rank(MPI_COMM_WORLD, &me);
+  sprintf(filename, "diag/memory_dump_proc_%d_%ld.dat", me, ntimestep);
+  FILE * fp = fopen(filename, "w");
+
+  if(atom->nlocal > 0) {
+    atom->dump_to_file(fp);
+    neighbor->dump_to_file(fp);
+  }
+  fclose(fp);
 }

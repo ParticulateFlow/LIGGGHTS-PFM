@@ -39,6 +39,8 @@
 #include "update.h"
 #include <stdio.h>
 #include <algorithm>
+#define NDEBUG
+#include <assert.h>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -201,6 +203,7 @@ void FixNeighlistMesh::min_pre_force(int vflag)
 
 //NP this is called before FixContactHistoryMesh::pre_force()
 //NP because of the order of creation in FixWallGran::post_create()
+//NP this is important so building new neigh list before refreshing contact hist
 
 void FixNeighlistMesh::pre_force(int)
 {
@@ -214,8 +217,9 @@ void FixNeighlistMesh::pre_force(int)
     buildNeighList = false;
     numAllContacts_ = 0;
 
-    // set num_neigh = 0
-    memset(fix_nneighs_->vector_atom, 0, atom->nlocal*sizeof(double));
+    // copy current to old # of neighbors
+    //NP this is important for correct contact history copy
+    memset(fix_nneighs_->vector_atom, 0, sizeof(double)*atom->nlocal);
 
     x = atom->x;
     r = atom->radius;
@@ -276,10 +280,34 @@ void FixNeighlistMesh::pre_force(int)
     /*NL*/ }
 
     for(size_t iTri = 0; iTri < nall; iTri++) {
-      TriangleNeighlist & triangle = triangles[iTri];
       handleTriangle(iTri);
-      numAllContacts_ += triangle.contacts.size();
     }
+
+  // prepare memory for partition generation
+  const int nlocal = atom->nlocal;
+
+  particle_indices.clear();
+  particle_triangles.resize(nlocal);
+
+  std::fill_n(particle_triangles.begin(), nlocal, 0);
+
+  // update nneighs
+  for(size_t iTri = 0; iTri < nall; ++iTri) {
+    std::vector<int> & neighbors = triangles[iTri].contacts;
+    for(std::vector<int>::iterator it = neighbors.begin(); it != neighbors.end(); ++it) {
+      const int i =  *it;
+      ++particle_triangles[i];
+    }
+    numAllContacts_ += neighbors.size();
+  }
+
+  for(int i = 0; i < nlocal; ++i) {
+    const int ntriangles = particle_triangles[i];
+    if(ntriangles > 0) {
+      particle_indices.push_back(i);
+      fix_nneighs_->set_vector_atom_int(i, ntriangles);
+    }
+  }
 
     /*NL*/ //if(nall > 0) fprintf(screen,"size numContactsSum %d numAllContacts_ %d vs. %d\n",numContactsSum.size(),numAllContacts_,numContacts(nall-1)+numContactsSum(nall-1));
 
@@ -298,7 +326,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
     int *mask = atom->mask;
     int ixMin(0),ixMax(0),iyMin(0),iyMax(0),izMin(0),izMax(0);
     int nlocal = atom->nlocal;
-    double contactDistanceFactor = neighbor->contactDistanceFactor;
+    const double contactDistanceFactor = neighbor->contactDistanceFactor;
 
     neighbors.clear();
 
@@ -355,7 +383,6 @@ void FixNeighlistMesh::handleTriangle(int iTri)
                 {
                   //NP include iAtom in neighbor list
                   neighbors.push_back(iAtom);
-                  fix_nneighs_->set_vector_atom_int(iAtom, fix_nneighs_->get_vector_atom_int(iAtom)+1); // num_neigh++
                   /*NL*/ //if(377==atom->tag[iAtom]) fprintf(screen,"proc %d, step "BIGINT_FORMAT" adding pair tri tag %d atom ta %d to NEIGHLIST\n",comm->me,update->ntimestep,mesh_->id(iTri),atom->tag[iAtom]);
                 }
                 if(bins) iAtom = bins[iAtom];
@@ -392,7 +419,6 @@ void FixNeighlistMesh::handleTriangle(int iTri)
             {
               //NP include iAtom in neighbor list
               neighbors.push_back(iAtom);
-              fix_nneighs_->set_vector_atom_int(iAtom, fix_nneighs_->get_vector_atom_int(iAtom)+1); // num_neigh++
             }
             if(bins) iAtom = bins[iAtom];
             else iAtom = -1;

@@ -21,6 +21,12 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #include "neighbor.h"
 #include "neigh_list.h"
 #include "atom.h"
