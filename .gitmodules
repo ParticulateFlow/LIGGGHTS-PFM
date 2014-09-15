@@ -1,0 +1,3 @@
+[submodule "lib/Zoltan"]
+	path = lib/zoltan
+	url = git@github.com:CFDEMproject/zoltan.git
