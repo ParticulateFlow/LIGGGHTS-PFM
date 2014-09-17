@@ -63,6 +63,7 @@
 #include "fix_npt_sphere.h"
 #include "fix_nve.h"
 #include "fix_nve_limit.h"
+#include "fix_nve_limit_omp.h"
 #include "fix_nve_noforce.h"
 #include "fix_nve_sphere_aos_omp.h"
 #include "fix_nve_sphere.h"
