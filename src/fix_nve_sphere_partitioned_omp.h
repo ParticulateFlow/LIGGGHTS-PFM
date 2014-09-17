@@ -19,6 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #ifdef FIX_CLASS
 
 FixStyle(nve/sphere/partitioned/omp,FixNVESpherePartitionedOMP)
