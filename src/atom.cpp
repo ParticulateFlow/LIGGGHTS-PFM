@@ -50,7 +50,6 @@
 #include <algorithm>
 
 // defining NDEBUG disables assertions
-#define NDEBUG
 #include <assert.h>
 
 using namespace LAMMPS_NS;
@@ -1426,6 +1425,11 @@ void Atom::spatial_sort(){
     }
     avec->copy(nlocal,empty,0);
     current[empty] = permute[empty];
+  }
+
+  // set thread assignment
+  for(int tid = 0; tid < comm->nthreads; tid++) {
+    std::fill(atom->thread + thread_offsets[tid], atom->thread + thread_offsets[tid+1], tid);
   }
 
   // upload data back to GPU if necessary

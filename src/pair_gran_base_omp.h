@@ -42,7 +42,6 @@
 #include <algorithm>
 
 // defining NDEBUG disables assertions
-#define NDEBUG
 #include <assert.h>
 
 namespace LIGGGHTS {
