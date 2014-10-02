@@ -882,6 +882,7 @@ int AtomVecSphere::unpack_exchange(double *buf)
   omega[nlocal][2] = buf[m++];
 
   thread[nlocal] = -1; //NP we don't know yet where this should go
+  atom->dirty = true;
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)

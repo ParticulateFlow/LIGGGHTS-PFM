@@ -1322,6 +1322,7 @@ void Atom::sort()
   } else {
     spatial_sort();
   }
+  dirty = false;
 }
 
 void Atom::spatial_sort(){
@@ -1597,6 +1598,12 @@ void Atom::partitioner_sort() {
 
 bool Atom::same_thread(int i, int j) const {
   if(i >= nlocal || j >= nlocal) return false;
+  /*
+  if(thread[i] < 0 || thread[j] < 0) {
+    printf("thread[%d] = %d, i, nlocal: %d\n", i, thread[i], nlocal);
+    printf("thread[%d] = %d, j, nlocal: %d\n", j, thread[j], nlocal);
+  }
+  */
   assert(thread[i] >= 0);
   assert(thread[j] >= 0);
   return thread[i] == thread[j];

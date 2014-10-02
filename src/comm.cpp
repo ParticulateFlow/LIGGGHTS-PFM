@@ -935,6 +935,7 @@ void Comm::exchange()
         if (nsend > maxsend) grow_send(nsend,1);
         nsend += avec->pack_exchange(i,&buf_send[nsend]);
         avec->copy(nlocal-1,i,1);
+        atom->dirty = true;
         nlocal--;
       } else i++;
     }
