@@ -1511,7 +1511,9 @@ void Atom::partitioner_sort() {
   double startTime = MPI_Wtime();
   Partitioner::Result result = partitioner->generate_partitions(permute, thread_offsets);
   double deltaTime = MPI_Wtime() - startTime;
+#ifdef LIGGGHTS_DEBUG
   if(comm->me == 0) fprintf(screen, "Partitioning time: %g seconds\n", deltaTime);
+#endif
   startTime += deltaTime;
 
   switch(result) {
@@ -1576,7 +1578,9 @@ void Atom::partitioner_sort() {
   }
 
   deltaTime = MPI_Wtime() - startTime;
+#ifdef LIGGGHTS_DEBUG
   if(comm->me == 0) fprintf(screen, "Permute time: %g seconds\n", deltaTime);
+#endif
 
   // upload data back to GPU if necessary
   if (lmp->cuda && !lmp->cuda->oncpu) lmp->cuda->uploadAll();

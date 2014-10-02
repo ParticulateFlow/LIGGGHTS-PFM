@@ -38,7 +38,6 @@
 #include "update.h"
 #include <stdio.h>
 #include "thr_omp.h"
-#define NDEBUG
 #include <assert.h>
 
 using namespace LAMMPS_NS;
@@ -247,7 +246,7 @@ void FixNeighlistMeshOMP::pre_force(int vflag)
     }
 
     if(sort && update->ntimestep >= nextsort) {
-      printf("%ld - %s, %s: sorting %lu triangles...\n", update->ntimestep, id, style, nall);
+      //printf("%ld - %s, %s: sorting %lu triangles...\n", update->ntimestep, id, style, nall);
       sort_triangles_by_nchecked();
       nextsort = (update->ntimestep/sortfreq)*sortfreq + sortfreq;
     }

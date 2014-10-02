@@ -103,6 +103,8 @@ ZoltanPartitioner::ZoltanPartitioner(class LAMMPS * lmp, int argc, const char * 
       } else {
         error->all(FLERR, "Bad USE_SPATIAL_SORT value");
       }
+    } else if(strcmp(argv[a], "EVERY") == 0) {
+      nevery = atoi(argv[a+1]);
     } else {
       zinstance->Set_Param(argv[a], argv[a+1]);
     }
@@ -255,7 +257,9 @@ Partitioner::Result ZoltanPartitioner::amend_partitions(int * permute, std::vect
   // NOTE: be aware that because of exchange, particles might have been deleted.
   // this will cause particles of the last partitions to move forward to fill
   // in the blanks.
+#ifdef ZOLTAN_DEBUG
   if(comm->me == 0) printf("[%lu] Updating partitioning!\n", update->ntimestep);
+#endif
   double ** x = atom->x;
 
   for(int tid = 0; tid < nthreads; ++tid) {
@@ -318,7 +322,9 @@ Partitioner::Result ZoltanPartitioner::update_partitions(int * permute, std::vec
 
   if(result == ZOLTAN_OK) {
       if(changes) {
+#ifdef ZOLTAN_DEBUG
         if(comm->me == 0) printf("[%lu] Zoltan partitioning!\n", update->ntimestep);
+#endif
 
         for(int tid = 0; tid < nthreads; ++tid) {
           part_lists[tid].clear();
