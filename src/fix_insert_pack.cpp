@@ -345,6 +345,24 @@ inline int FixInsertPack::is_nearby(int i)
     return 0;
 }
 
+void FixInsertPack::get_insertion_bounding_box(InsertBoundingBox & b) {
+  const double cut = 2*maxrad;
+
+  const double xlo = ins_region->extent_xlo - cut;
+  const double xhi = ins_region->extent_xhi + cut;
+  const double ylo = ins_region->extent_ylo - cut;
+  const double yhi = ins_region->extent_yhi + cut;
+  const double zlo = ins_region->extent_zlo - cut;
+  const double zhi = ins_region->extent_zhi + cut;
+
+  b.xlo = std::max(domain->sublo[0], xlo);
+  b.xhi = std::min(domain->subhi[0], xhi);
+  b.ylo = std::max(domain->sublo[1], ylo);
+  b.yhi = std::min(domain->subhi[1], yhi);
+  b.zlo = std::max(domain->sublo[2], zlo);
+  b.zhi = std::min(domain->subhi[2], zhi);
+}
+
 /* ----------------------------------------------------------------------
    calc # of maximum tries
    propertional to total desired # of particles to insert on this

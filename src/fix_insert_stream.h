@@ -65,6 +65,8 @@ class FixInsertStream : public FixInsert {
   void pre_insert();
 
   int is_nearby(int);
+  virtual void get_insertion_bounding_box(InsertBoundingBox & b);
+
   inline void generate_random(double *pos, double rad);
   inline void generate_random_global(double *pos);
 

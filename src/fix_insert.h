@@ -167,6 +167,7 @@ class FixInsert : public Fix {
   virtual int load_xnear(int);
   virtual int count_nnear();
   virtual int is_nearby(int) = 0;
+  virtual void get_insertion_bounding_box(InsertBoundingBox & b) = 0;
 
   virtual void x_v_omega(int,int&,int&,double&) = 0;
   virtual double insertion_fraction() = 0;
