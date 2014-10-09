@@ -691,7 +691,7 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
                 if(ntry < maxtry)
                 {
                     /*NL*///fprintf(screen,"domain->dist_subbox_borders(pos) %f rad_to_insert %f\n",domain->dist_subbox_borders(pos),rad_to_insert);
-                    nins = pti->check_near_set_x_v_omega(pos,v_normal,omega_tmp,quat_insert,xnear,nspheres_near);
+                    nins = pti->check_near_set_x_v_omega(pos,v_normal,omega_tmp,quat_insert,neighList);
                 }
             }
 

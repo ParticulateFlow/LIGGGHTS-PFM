@@ -124,6 +124,24 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
     return 1;
 }
 
+int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, RegionNeighborList & neighList)
+{
+    vectorCopy3D(x,x_ins[0]);
+
+    if(neighList.hasOverlap(x_ins[0], radius_ins[0])) {
+        return 0;
+    }
+
+    // no overlap with any other - success
+
+    vectorCopy3D(v,v_ins);
+    vectorCopy3D(omega,omega_ins);
+
+    neighList.insert(x_ins[0], radius_ins[0]);
+
+    return 1;
+}
+
 /* ---------------------------------------------------------------------- */
 //NP no check against xnear list
 //NP returns # inserted spheres

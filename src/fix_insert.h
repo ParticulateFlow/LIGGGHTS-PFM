@@ -29,6 +29,7 @@
 #define LMP_FIX_INSERT_H
 
 #include "fix.h"
+#include "region_neighbor_list.h"
 
 namespace LAMMPS_NS {
 
@@ -124,8 +125,7 @@ class FixInsert : public Fix {
   int maxattempt;
 
   // positions generated, and for overlap check
-  int nspheres_near;
-  double **xnear;
+  RegionNeighborList neighList;
 
   // velocity and ang vel distribution
   // currently constant for omega - could also be a distribution
