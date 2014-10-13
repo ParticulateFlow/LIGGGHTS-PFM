@@ -819,12 +819,12 @@ int FixInsert::load_xnear(int)
   double *radius = atom->radius;
   const int nall = atom->nlocal + atom->nghost;
 
-  InsertBoundingBox bb;
-
-  get_insertion_bounding_box(bb);
+  BoundingBox bb = getBoundingBox();
   neighList.reset();
 
+#ifdef LIGGGHTS_DEBUG
   printf("subdomain bounding box: [%g, %g] x [%g, %g] x [%g, %g]\n", domain->sublo[0], domain->subhi[0], domain->sublo[1], domain->subhi[1], domain->sublo[2], domain->subhi[2]);
+#endif
 
   if(neighList.setBoundingBox(bb, maxrad)) {
     for (int i = 0; i < nall; ++i)

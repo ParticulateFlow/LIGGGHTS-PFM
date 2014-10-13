@@ -124,7 +124,7 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
     return 1;
 }
 
-int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, RegionNeighborList & neighList)
+int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList)
 {
     vectorCopy3D(x,x_ins[0]);
 

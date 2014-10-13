@@ -539,7 +539,7 @@ inline int FixInsertStream::is_nearby(int i)
     return ins_face->isOnSurface(pos_projected);
 }
 
-void FixInsertStream::get_insertion_bounding_box(InsertBoundingBox & b) {
+BoundingBox FixInsertStream::getBoundingBox() const {
   BoundingBox bb = ins_face->getGlobalBoundingBox();
 
   const double cut = 2*maxrad;
@@ -548,15 +548,7 @@ void FixInsertStream::get_insertion_bounding_box(InsertBoundingBox & b) {
   const double delta = -(extrude_length + 2*cut);
   bb.extrude(delta, normalvec);
   bb.shrinkToSubbox(domain->sublo, domain->subhi);
-
-  double low[3], high[3];
-  bb.getBoxBounds(low, high);
-  b.xlo = low[0];
-  b.ylo = low[1];
-  b.zlo = low[2];
-  b.xhi = high[0];
-  b.yhi = high[1];
-  b.zhi = high[2];
+  return bb;
 }
 
 /* ----------------------------------------------------------------------

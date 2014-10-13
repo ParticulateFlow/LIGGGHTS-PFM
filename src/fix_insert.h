@@ -29,6 +29,7 @@
 #define LMP_FIX_INSERT_H
 
 #include "fix.h"
+#include "bounding_box.h"
 #include "region_neighbor_list.h"
 
 namespace LAMMPS_NS {
@@ -125,7 +126,7 @@ class FixInsert : public Fix {
   int maxattempt;
 
   // positions generated, and for overlap check
-  RegionNeighborList neighList;
+  LIGGGHTS::RegionNeighborList neighList;
 
   // velocity and ang vel distribution
   // currently constant for omega - could also be a distribution
@@ -167,7 +168,7 @@ class FixInsert : public Fix {
   virtual int load_xnear(int);
   virtual int count_nnear();
   virtual int is_nearby(int) = 0;
-  virtual void get_insertion_bounding_box(InsertBoundingBox & b) = 0;
+  virtual BoundingBox getBoundingBox() const = 0;
 
   virtual void x_v_omega(int,int&,int&,double&) = 0;
   virtual double insertion_fraction() = 0;

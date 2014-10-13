@@ -28,6 +28,7 @@ FixStyle(insert/stream,FixInsertStream)
 #ifndef LMP_FIX_INSERT_STREAM_H
 #define LMP_FIX_INSERT_STREAM_H
 
+#include "bounding_box.h"
 #include "fix_insert.h"
 
 namespace LAMMPS_NS {
@@ -65,7 +66,7 @@ class FixInsertStream : public FixInsert {
   void pre_insert();
 
   int is_nearby(int);
-  virtual void get_insertion_bounding_box(InsertBoundingBox & b);
+  virtual BoundingBox getBoundingBox() const;
 
   inline void generate_random(double *pos, double rad);
   inline void generate_random_global(double *pos);

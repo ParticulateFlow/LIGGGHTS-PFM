@@ -58,7 +58,7 @@ namespace LAMMPS_NS
     zHi = zHi+delta;
   }
 
-  void BoundingBox::extrude(double length, double * vec)
+  void BoundingBox::extrude(double length, const double * vec)
   {
     xLo = std::min(xLo, (xLo + length * vec[0]));
     yLo = std::min(yLo, (yLo + length * vec[1]));
