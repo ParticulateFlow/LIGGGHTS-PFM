@@ -83,6 +83,9 @@ class BoundingBox
       zLo = -limit[4];
       zHi =  limit[5];
     }
+
+    void extrude(double length, double * vec);
+
     void getBoxBounds(double *lo,double *hi)
     {
         lo[0] = xLo;
@@ -92,6 +95,8 @@ class BoundingBox
         hi[1] = yHi;
         hi[2] = zHi;
     }
+
+    void extendByDelta(double delta);
 
     void getBoxBoundsExtendedByDelta(double *lo,double *hi,double delta)
     {

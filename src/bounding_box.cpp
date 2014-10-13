@@ -48,4 +48,24 @@ namespace LAMMPS_NS
     initGiven = false;
   }
 
+  void BoundingBox::extendByDelta(double delta)
+  {
+    xLo = xLo-delta;
+    yLo = yLo-delta;
+    zLo = zLo-delta;
+    xHi = xHi+delta;
+    yHi = yHi+delta;
+    zHi = zHi+delta;
+  }
+
+  void BoundingBox::extrude(double length, double * vec)
+  {
+    xLo = std::min(xLo, (xLo + length * vec[0]));
+    yLo = std::min(yLo, (yLo + length * vec[1]));
+    zLo = std::min(zLo, (zLo + length * vec[2]));
+    xHi = std::max(xHi, (xHi + length * vec[0]));
+    yHi = std::max(yHi, (yHi + length * vec[1]));
+    zHi = std::max(zHi, (zHi + length * vec[2]));
+  }
+
 } /* namespace LAMMPS_NS */

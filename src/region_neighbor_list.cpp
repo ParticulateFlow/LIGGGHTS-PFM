@@ -68,7 +68,7 @@ size_t RegionNeighborList::count() const {
   return ncount;
 }
 
-void RegionNeighborList::setBoundingBox(InsertBoundingBox & bb, double maxrad) {
+bool RegionNeighborList::setBoundingBox(InsertBoundingBox & bb, double maxrad) {
 
   printf("setting insertion bounding box: [%g, %g] x [%g, %g] x [%g, %g]\n", bb.xlo, bb.xhi, bb.ylo, bb.yhi, bb.zlo, bb.zhi);
 
@@ -78,6 +78,13 @@ void RegionNeighborList::setBoundingBox(InsertBoundingBox & bb, double maxrad) {
   bbox[0] = bb.xhi - bb.xlo;
   bbox[1] = bb.yhi - bb.ylo;
   bbox[2] = bb.zhi - bb.zlo;
+
+  if(bbox[0]*bbox[1]*bbox[2] < 0) {
+    // insertion area not in subbox
+    bins.clear();
+    stencil.clear();
+    return false;
+  }
 
   bboxlo[0] = bb.xlo;
   bboxlo[1] = bb.ylo;
@@ -98,7 +105,7 @@ void RegionNeighborList::setBoundingBox(InsertBoundingBox & bb, double maxrad) {
   if (bbox[0]*binsizeinv > max_small_int || bbox[1]*binsizeinv > max_small_int ||
       bbox[2]*binsizeinv > max_small_int) {
     printf("ERROR\n");
-    return;
+    return false;
   }
 
   // create actual bins
@@ -187,7 +194,7 @@ void RegionNeighborList::setBoundingBox(InsertBoundingBox & bb, double maxrad) {
   bigint bbin = ((bigint) mbinx) * ((bigint) mbiny) * ((bigint) mbinz);
   if (bbin > max_small_int) {
     printf("Too many neighbor bins\n");
-    return;
+    return false;
   }
   bins.resize(bbin);
 
@@ -196,6 +203,8 @@ void RegionNeighborList::setBoundingBox(InsertBoundingBox & bb, double maxrad) {
     for (int j = -1; j <= 1; j++)
       for (int i = -1; i <= 1; i++)
         stencil.push_back(k*mbiny*mbinx + j*mbinx + i);
+
+  return true;
 }
 
 /* ----------------------------------------------------------------------

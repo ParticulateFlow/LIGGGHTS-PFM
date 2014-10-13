@@ -541,30 +541,22 @@ inline int FixInsertStream::is_nearby(int i)
 
 void FixInsertStream::get_insertion_bounding_box(InsertBoundingBox & b) {
   BoundingBox bb = ins_face->getGlobalBoundingBox();
-  double low[3], high[3];
-  bb.getBoxBounds(low, high);
-  const double cut = 2*maxrad;
 
-  low[0]  -= cut;
-  high[0] += cut;
-  low[1]  -= cut;
-  high[1] += cut;
-  low[2]  -= cut;
-  high[2] += cut;
+  const double cut = 2*maxrad;
+  bb.extendByDelta(cut);
 
   const double delta = -(extrude_length + 2*cut);
+  bb.extrude(delta, normalvec);
+  bb.shrinkToSubbox(domain->sublo, domain->subhi);
 
-  for(int i = 0; i < 3; ++i) {
-    low[i] = std::min(low[i], (low[i] + delta * normalvec[i]));
-    high[i] = std::max(high[i], (high[i] + delta * normalvec[i]));
-  }
-
-  b.xlo = std::max(domain->sublo[0], low[0]);
-  b.xhi = std::min(domain->subhi[0], high[0]);
-  b.ylo = std::max(domain->sublo[1], low[1]);
-  b.yhi = std::min(domain->subhi[1], high[1]);
-  b.zlo = std::max(domain->sublo[2], low[2]);
-  b.zhi = std::min(domain->subhi[2], high[2]);
+  double low[3], high[3];
+  bb.getBoxBounds(low, high);
+  b.xlo = low[0];
+  b.ylo = low[1];
+  b.zlo = low[2];
+  b.xhi = high[0];
+  b.yhi = high[1];
+  b.zhi = high[2];
 }
 
 /* ----------------------------------------------------------------------

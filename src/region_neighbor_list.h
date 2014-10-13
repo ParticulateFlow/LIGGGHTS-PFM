@@ -63,7 +63,7 @@ public:
     void insert(double * x, double radius);
     size_t count() const;
     void reset();
-    void setBoundingBox(InsertBoundingBox & bb, double maxrad);
+    bool setBoundingBox(InsertBoundingBox & bb, double maxrad);
 
 };
 

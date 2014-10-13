@@ -826,14 +826,13 @@ int FixInsert::load_xnear(int)
 
   printf("subdomain bounding box: [%g, %g] x [%g, %g] x [%g, %g]\n", domain->sublo[0], domain->subhi[0], domain->sublo[1], domain->subhi[1], domain->sublo[2], domain->subhi[2]);
 
-  neighList.setBoundingBox(bb, maxrad);
-
-
-  for (int i = 0; i < nall; ++i)
-  {
-    if (is_nearby(i))
+  if(neighList.setBoundingBox(bb, maxrad)) {
+    for (int i = 0; i < nall; ++i)
     {
-      neighList.insert(x[i], radius[i]);
+      if (is_nearby(i))
+      {
+        neighList.insert(x[i], radius[i]);
+      }
     }
   }
 
