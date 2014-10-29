@@ -2572,7 +2572,7 @@ void DumpCustom::pack_thread(int n)
   int *thread = atom->thread;
 
   for (int i = 0; i < nchoose; i++) {
-    buf[n] = thread[clist[i]];
+    buf[n] = comm->me * comm->nprocs + thread[clist[i]];
     n += size_one;
   }
 }
