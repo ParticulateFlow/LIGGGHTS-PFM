@@ -164,6 +164,24 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
         angmom_(n)
     );
 
+    // loop all non-initialized properties and set to their
+    // default values
+    int iProperty = 0;
+    for(ContainerBase *cb = customValues_.getElementPropertyBase(iProperty); cb; cb = customValues_.getElementPropertyBase(++iProperty))
+    {
+        /*NL*///char id[200];
+        /*NL*///cb->id(id);
+        /*NL*///fprintf(screen,"iProperty %d, property %s\n",iProperty,id);
+
+        //NP this funtion is inlinable
+        if(cb->useDefault())
+        {
+            //NP this is virtual fct
+            cb->setToDefault(n);
+            /*NL*///fprintf(screen,"    setting default here\n");
+        }
+    }
+
     /*NL*/ //fprintf(screen,"start_step_ins %d\n",start_step_ins);
     /*NL*/ //printVec3D(screen,"vcm(n)",vcm_(n));
     /*NL*/// printVec3D(screen,"omega_(n)",omega_(n));
@@ -508,7 +526,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     {
         if(delflag[ibody] == 1)
         {
-            /*NL*/if(screen) fprintf(screen,"DELETING body tag %d ibody %d on step "BIGINT_FORMAT"\n",tag(ibody),ibody,update->ntimestep);
+            /*NL*///if(screen) fprintf(screen,"DELETING body tag %d ibody %d on step "BIGINT_FORMAT"\n",tag(ibody),ibody,update->ntimestep);
             delflag[ibody] = delflag[nbody_-1];
             remove_body(ibody);
             /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d\n",comm->me,7833);

@@ -48,7 +48,10 @@ MeshMoverLinear::MeshMoverLinear(LAMMPS *lmp,AbstractMesh *_mesh,
     vel_[0] = vx;
     vel_[1] = vy;
     vel_[2] = vz;
+}
 
+void MeshMoverLinear::post_create()
+{
     isFirst_ = mesh_->registerMove(false,true,false);
 }
 
@@ -120,7 +123,12 @@ MeshMoverLinearVariable::MeshMoverLinearVariable(LAMMPS *lmp,AbstractMesh *_mesh
       vel_[1] = input->variable->compute_equal(myvar2_);
       vel_[2] = input->variable->compute_equal(myvar3_);
 
-      isFirst_ = mesh_->registerMove(false,true,false);
+
+}
+
+void MeshMoverLinearVariable::post_create()
+{
+    isFirst_ = mesh_->registerMove(false,true,false);
 }
 
 void MeshMoverLinearVariable::pre_delete()
@@ -212,7 +220,10 @@ MeshMoverWiggle::MeshMoverWiggle(LAMMPS *lmp,AbstractMesh *_mesh,
     amplitude_[0] = ax;
     amplitude_[1] = ay;
     amplitude_[2] = az;
+}
 
+void MeshMoverWiggle::post_create()
+{
     isFirst_ = mesh_->registerMove(false,true,false);
 }
 
@@ -283,7 +294,10 @@ MeshMoverRotate::MeshMoverRotate(LAMMPS *lmp,AbstractMesh *_mesh,
     point_[2] = pz;
 
     add_reference_point(point_);
+}
 
+void MeshMoverRotate::post_create()
+{
     isFirst_ = mesh_->registerMove(false,true,true);
 }
 
@@ -370,7 +384,10 @@ MeshMoverRotateVariable::MeshMoverRotateVariable(LAMMPS *lmp,AbstractMesh *_mesh
     point_[2] = pz;
 
     add_reference_point(point_);
+}
 
+void MeshMoverRotateVariable::post_create()
+{
     isFirst_ = mesh_->registerMove(false,true,true);
 }
 
@@ -478,7 +495,10 @@ MeshMoverRiggle::MeshMoverRiggle(LAMMPS *lmp,AbstractMesh *_mesh,
     point_[0] = px;
     point_[1] = py;
     point_[2] = pz;
+}
 
+void MeshMoverRiggle::post_create()
+{
     isFirst_ = mesh_->registerMove(false,true,true);
 }
 
@@ -550,7 +570,10 @@ MeshMoverVibLin::MeshMoverVibLin(LAMMPS *lmp,AbstractMesh *_mesh,
        phi[j] = phase[j];
        ampl[j] = amplitude[j];
      }
+}
 
+void MeshMoverVibLin::post_create()
+{
     isFirst_ = mesh_->registerMove(false,true,false);
 }
 
@@ -625,9 +648,13 @@ MeshMoverVibRot::MeshMoverVibRot(LAMMPS *lmp,AbstractMesh *_mesh,
        phi[j] = phase[j];
        ampl[j] = amplitude[j];
      }
+}
 
+void MeshMoverVibRot::post_create()
+{
     isFirst_ = mesh_->registerMove(false,true,true);
 }
+
 void MeshMoverVibRot::pre_delete()
 {
     mesh_->unregisterMove(false,true,true);

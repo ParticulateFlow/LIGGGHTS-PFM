@@ -98,6 +98,9 @@ namespace LAMMPS_NS {
       inline int atomtype(int i)
       { return atomtype_(i); }
 
+      inline int nrigid(int i)
+      { return nrigid_(i); }
+
       inline void xcm(double *x_cm,int i)
       { vectorCopy3D(xcm_(i),x_cm); }
 

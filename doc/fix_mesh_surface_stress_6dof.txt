@@ -81,7 +81,8 @@ separately for the x-, y-, and z-axis.
 
 This fix stores a global vector with 6 components for access by various "output commands"_Section_howto.html#4_15. 
 The first 3 components are equal to the total force on the mesh, the last 3 components store the total torque 
-on the body. Please note that as opposed to "fix mesh/surface/stress"_fix_mesh_surface_stress.html, 
+on the body. The last 3 components store the position of the center of mass of the body.
+Please note that as opposed to "fix mesh/surface/stress"_fix_mesh_surface_stress.html, 
 the total force and torque contain the contributions of the particles, gravity and the suspension
 model (if activated). 
 Furthermore, this fix writes the state of the rigid body (translational and rotational) to binary restart files so 

@@ -93,6 +93,8 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
 
     init_defaults();
 
+    size_vector = 9;
+
     // parse further args
     //NP may NOT change quat since MultiNodeMesh::setRotation() assumes is called with
     //NP unit quat the first time
@@ -228,9 +230,6 @@ FixMeshSurfaceStress6DOF::FixMeshSurfaceStress6DOF(LAMMPS *lmp, int narg, char *
     // store original position and rotation state
     xcm_orig_.add(xcm_(0));
     quat_orig_.add(quat_(0));
-
-    //NP inform mesh of upcoming movement
-    mesh()->registerMove(false,true,true);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -241,13 +240,31 @@ FixMeshSurfaceStress6DOF::~FixMeshSurfaceStress6DOF()
 
 /* ---------------------------------------------------------------------- */
 
+void FixMeshSurfaceStress6DOF::post_create_pre_restart()
+{
+     FixMeshSurfaceStress::post_create_pre_restart();
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMeshSurfaceStress6DOF::post_create()
 {
+    /*NL*/ //fprintf(screen,"after re pref %f %f %f\n",p_ref(0),p_ref(1),p_ref(2));
+    /*NL*/ //fprintf(screen,"after re torque_total %f %f %f\n",torque_total(0),torque_total(1),torque_total(2));
+    /*NL*/ //printVec3D(screen,"after re xcm",xcm_(0));
+    /*NL*/ //printVec4D(screen,"after re quat",quat_(0));
+    /*NL*/ //fprintf(screen,"sizes xcm %d mass %d moi %d\n",xcm_.size(),mass_.size(),moi_.size());
+
     FixMeshSurfaceStress::post_create();
 
     init_rotation_props();
 
     calc_displace();
+
+
+    //NP inform mesh of upcoming movement
+    //NP has to be done here so that all elements are read in case of restart
+    mesh()->registerMove(false,true,true);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -388,6 +405,14 @@ void FixMeshSurfaceStress6DOF::init()
 
 /* ---------------------------------------------------------------------- */
 
+void FixMeshSurfaceStress6DOF::setup_pre_force(int vflag)
+{
+    FixMeshSurfaceStress::setup_pre_force(vflag);
+    set_p_ref(xcm_(0));
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMeshSurfaceStress6DOF::setup(int vflag)
 {
     vectorCopy3D(xcm_(0),xcm_orig_(0));
@@ -425,6 +450,10 @@ void FixMeshSurfaceStress6DOF::initial_integrate(int vflag)
     vectorSubtract3D(xcm_(0),xcm_orig_(0),dX);
 
     // update angular momentum by 1/2 step
+
+    /*NL*/ //fprintf(screen,"pref %f %f %f\n",p_ref(0),p_ref(1),p_ref(2));
+    /*NL*/ //fprintf(screen,"torque_total %f %f %f\n",torque_total(0),torque_total(1),torque_total(2));
+    /*NL*/// printVec3D(screen,"xcm",xcm_(0));
 
     if(tflag_(0)[0]) angmom_(0)[0] += dtf_ * torque_total(0);
     if(tflag_(0)[1]) angmom_(0)[1] += dtf_ * torque_total(1);
@@ -605,4 +634,15 @@ void FixMeshSurfaceStress6DOF::set_vel()
     }
 
     memory->destroy<double>(vNodes);
+}
+
+
+/* ----------------------------------------------------------------------
+   return total force or torque component on body or xcm
+------------------------------------------------------------------------- */
+
+double FixMeshSurfaceStress6DOF::compute_vector(int n)
+{
+  if(n < 6) return FixMeshSurfaceStress::compute_vector(n);
+  else      return xcm_(0)[n-6];
 }

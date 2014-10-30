@@ -32,7 +32,7 @@ NORMAL_MODEL(JKR,jkr,5)
 #define NORMAL_MODEL_JKR_H_
 #include "global_properties.h"
 #include "math.h"
-
+#include <limits>
 
 namespace MODEL_PARAMS
 {
@@ -244,7 +244,7 @@ namespace ContactModels
         const double coef = coefContactRadius[itype][jtype]*reff*sqrt(cRadOld);
         cRad = (cRadOld*cRadOld2 + cRadOld*coef + deltan*cRadOld*reff)/(2*cRadOld2 - coef); //NP modified sign of deltan
         /*NL*/ //fprintf(screen,"Loop: deltan = %f, coefContactRadius = %f, cRad = %f, cRadOld = %f\n",deltan,coefContactRadius[itype][jtype],cRad,cRadOld);
-        if (fabs(cRad-cRadOld) < __DBL_EPSILON__) break;
+        if (fabs(cRad-cRadOld) < std::numeric_limits<double>::epsilon()) break;
       }
       /*NL*/ //if (isnan(cRad)) lmp->error->all(FLERR,"cRad is NAN. Cohesive surface energy to high?");
       /*NL*/ //fprintf(screen,"Final: coefContactRadius = %f, cRad = %f\n",coefContactRadius[itype][jtype],cRad);

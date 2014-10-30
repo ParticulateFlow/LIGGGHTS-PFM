@@ -80,6 +80,15 @@ FixMoveMesh::FixMoveMesh(LAMMPS *lmp, int narg, char **arg)
 
 /* ---------------------------------------------------------------------- */
 
+void FixMoveMesh:: post_create()
+{
+    //NP must register move here in case of restart so that all
+    //NP elements are created already
+    move_->post_create();
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMoveMesh::pre_delete(bool unfixflag)
 {
     // check if another fix move operates on the same mesh
@@ -157,7 +166,7 @@ void FixMoveMesh::setup(int vflag)
 
     if(!mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v"))
     {
-        //NP need to have borders comm in order not to loose vel information 
+        //NP need to have borders comm in order not to loose vel information
         //NP for ghost elements on reneighboring steps
         mesh_->prop().addElementProperty<MultiVectorContainer<double,3,3> >("v","comm_exchange_borders","frame_invariant","restart_no");
         /*NL*/// int size = mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v")->size();
@@ -165,6 +174,14 @@ void FixMoveMesh::setup(int vflag)
     }
 
     move_->setup();
+
+    // do set-up in case velocity is dumped (called via set-up)
+    if(move_->isFirst())
+    {
+        MultiVectorContainer<double,3,3> *v;
+        v = mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v");
+        v->setAll(0.);
+    }
 }
 
 /* ---------------------------------------------------------------------- */

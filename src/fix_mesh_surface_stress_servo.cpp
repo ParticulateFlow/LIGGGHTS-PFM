@@ -59,13 +59,13 @@ enum{NONE,CONSTANT,EQUAL,FORCE,TORQUE};
 
 FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char **arg) :
 FixMeshSurfaceStress(lmp, narg, arg),
-xcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm","comm_none","frame_invariant","restart_yes",3)),
-vcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("vcm","comm_none","frame_invariant","restart_yes",1)),
-omegacm_(  *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("torquecm","comm_none","frame_invariant","restart_yes",1)),
-xcm_orig_( *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm_orig","comm_none","frame_invariant","restart_yes",3)),
+xcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm","comm_none","frame_general","restart_yes",3)),
+vcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("vcm","comm_none","frame_general","restart_yes",1)),
+omegacm_(  *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("torquecm","comm_none","frame_general","restart_yes",1)),
+xcm_orig_( *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm_orig","comm_none","frame_general","restart_yes",3)),
 
 nodes_(    mesh()->nodePtr()),
-v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_exchange_borders","frame_invariant","restart_no",1)),
+v_(0),
 
 totalPhi_( 0.),
 ctrl_op_( 0),
@@ -203,15 +203,6 @@ mod_andrew_(new ModifiedAndrew(lmp))
 
   // store original position
   xcm_orig_.add(xcm_(0));
-
-  //NP inform mesh of upcoming movement
-  if (ctrl_style_ == FORCE)
-    mesh()->registerMove(false,true,false);
-  else if(ctrl_style_ == TORQUE)
-    mesh()->registerMove(false,false,true);
-  else
-    error->fix_error(FLERR,this,"Bad registration of upcoming move.");
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -224,9 +215,42 @@ FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
 
 /* ---------------------------------------------------------------------- */
 
+void FixMeshSurfaceStressServo::post_create_pre_restart()
+{
+    FixMeshSurfaceStress::post_create_pre_restart();
+
+    /*NL*/ fprintf(screen,"ServoWall - post_create_pre_restart!!!: mesh size = %d \n",mesh()->size());
+    /*NL*/ fprintf(screen,"ServoWall - post_create_pre_restart!!!: local = %d, global = %d, ghost = %d \n",mesh()->sizeLocal(),mesh()->sizeGlobal(),mesh()->sizeGhost());
+
+    //NP called after constructor and before restart
+    //NP i.e. no restart: mesh elements present at this point
+    //NP restart: no mesh elements present because created in restart()
+    //Np -->register properties and set values for non-restart properties here
+
+    mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("servoV","comm_exchange_borders","frame_invariant","restart_no");
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMeshSurfaceStressServo::post_create()
 {
-  FixMeshSurfaceStress::post_create();
+   FixMeshSurfaceStress::post_create();
+
+   //NP inform mesh of upcoming movement
+   //NP do here so all mesh elements created already
+   if (ctrl_style_ == FORCE)
+     mesh()->registerMove(false,true,false);
+   else if(ctrl_style_ == TORQUE)
+     mesh()->registerMove(false,false,true);
+   else
+    error->fix_error(FLERR,this,"Bad registration of upcoming move.");
+
+  //NP called after constructor and restart
+  //NP i.e. no restart: mesh elements present at this point
+  //NP restart: no mesh elements present because created in restart()
+  //Np --> set values for no-restart properties here
+
+  mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("servoV")->setAll(0.);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -276,13 +300,25 @@ void FixMeshSurfaceStressServo::error_checks()
 
 void FixMeshSurfaceStressServo::init()
 {
+  /*NL*/ //int size1 = (mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("servoV"))->size();
+  /*NL*/ //int size2 = (mesh()->prop().getElementProperty<ScalarContainer<int> >("id"))->size();
+  /*NL*/ //fprintf(screen,"proc %d, size of servoV container %d\n",comm->me,size1);
+  /*NL*/ //fprintf(screen,"proc %d, size of ID container %d\n",comm->me,size2);
+
+
   FixMeshSurfaceStress::init();
+
+  set_p_ref(xcm_(0));
 
   // do some error checks
   error_checks();
 
   // get timestep
   reset_dt();
+
+  // update ptrs
+  nodes_ = mesh()->nodePtr();
+  v_ = mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("servoV");
 
   // check variables
   if (sp_str_) {
@@ -576,7 +612,7 @@ void FixMeshSurfaceStressServo::set_v_node()
 
   for(int i = 0; i < nall; i++)
     for(int j = 0; j < nnodes; j++)
-      v_.set(i,j,vcm_(0));
+      v_->set(i,j,vcm_(0));
 
 }
 
@@ -596,7 +632,7 @@ void FixMeshSurfaceStressServo::set_v_node_rotate()
       vectorCopy3D(nodes_[i][j],node);
       vectorSubtract3D(node,xcm_(0),rPA);
       vectorCross3D(omegacm_(0),rPA,vRot);
-      v_.set(i,j,vRot);
+      v_->set(i,j,vRot);
     }
   }
 }
@@ -650,11 +686,16 @@ double FixMeshSurfaceStressServo::getMaxRad()
       rPaMax = MAX(rPaMax,vectorMag3D(vRot));
     }
   }
-  return rPaMax;
+
+  // get max for all processors
+  double rPaMaxAll;
+  MPI_Allreduce(&rPaMax,&rPaMaxAll,1,MPI_DOUBLE,MPI_MAX,world);
+  /*NL*/ fprintf(screen,"rPaMax = %f \n",rPaMaxAll);
+  return rPaMaxAll;
 }
 
 /* ----------------------------------------------------------------------
-   return total force or torque component on body
+   return total force or torque component on body or xcm
 ------------------------------------------------------------------------- */
 
 double FixMeshSurfaceStressServo::compute_vector(int n)

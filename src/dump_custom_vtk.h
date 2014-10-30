@@ -22,9 +22,10 @@
 /* ----------------------------------------------------------------------
    Contributing author:
    Daniel Queteschiner, daniel.queteschiner@dcs-computing.com
+   Richard Berger, richard.berger@jku.at
 ------------------------------------------------------------------------- */
 
-#ifdef LAMMPS_VTK
+#if defined(LAMMPS_VTK) //NP do not use #ifdef here (VS C++ bug)
 #ifdef DUMP_CLASS
 
 DumpStyle(custom/vtk,DumpCustomVTK)
