@@ -67,7 +67,8 @@ using namespace FixConst;
 FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg) :
   FixTemplateMultiplespheres(lmp, narg, arg),
   mass_set_(false),
-  moi_set_(false)
+  moi_set_(false),
+  use_density_(-1)
 {
     delete pti;
     pti = new ParticleToInsertMultisphere(lmp,nspheres);
@@ -109,6 +110,12 @@ FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg
             mass_expect = atof(arg[iarg++]);
             mass_set_ = true;
             hasargs = true;
+        } else if(strcmp(arg[iarg],"use_volume") == 0) {
+            iarg++;
+            use_density_ = 0;
+        } else if(strcmp(arg[iarg],"use_density") == 0) {
+            iarg++;
+            use_density_ = 1;
         } else if(strcmp(arg[iarg],"inertia_tensor") == 0) {
             if (iarg+7 > narg)
                 error->fix_error(FLERR,this,"not enough arguments for 'inertia_tensor'");
@@ -135,6 +142,9 @@ FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg
 
     if((mass_set_ && !moi_set_) || (!mass_set_ && moi_set_))
         error->fix_error(FLERR,this,"have to define either both 'mass' and 'inertia_tensor' or none of the two");
+
+    if(mass_set_ && -1 == use_density_)
+        error->fix_error(FLERR,this,"have to use either 'use_volume' or 'use_density' in case 'mass' and 'moi' are specified");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -144,14 +154,38 @@ void FixTemplateMultisphere::post_create()
   // bounding sphere, center of mass calculations in mother class
   // calculate inertia_ tensor and its eigensystem
 
+  // use density and volume from MC; mass calculated
   if(!mass_set_)
   {
+      // bounding sphere and center of mass
+
       FixTemplateMultiplespheres::post_create();
       calc_inertia();
       calc_eigensystem();
       calc_displace_xcm_x_body();
   }
+  // use mass specified and volume_mc; density calculated
+  else if(0 == use_density_)
+  {
+      // store mass read in from input script
+      double mass = mass_expect;
 
+      // bounding sphere and center of mass
+      // calculates mass_expect, volume_expect, r_equiv
+      FixTemplateMultiplespheres::post_create();
+
+      // re-apply mass read in from input script
+      // re-calc r_equiv without using density
+      mass_expect = mass;
+      r_equiv = pow(3.*volume_expect/(4.*M_PI),1./3.);
+      pdf_density->set_params<RANDOM_CONSTANT>(mass_expect/volume_expect);
+      /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"overwrote MC values; now: mass_expect %e, r_equiv %f\n",mass_expect,r_equiv);
+
+      // calc rest of stuff
+      calc_eigensystem();
+      calc_displace_xcm_x_body();
+  }
+  // use density specified and mass specified; volume calculated
   else
   {
       calc_bounding_sphere();
@@ -162,7 +196,9 @@ void FixTemplateMultisphere::post_create()
       // calc expectancy values
       volume_expect = mass_expect / expectancy(pdf_density);
       r_equiv = pow(6.*mass_expect/(8.*expectancy(pdf_density)*M_PI),1./3.);
+      /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"overwrote MC values; now: volume_expect %e, r_equiv %f\n",volume_expect,r_equiv);
   }
+
 
   print_info();
 }

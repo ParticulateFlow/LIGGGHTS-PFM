@@ -1,78 +1,78 @@
-INSTRUCTIONS FOR COMPILING LAMMPS WITH VISUAL STUDIO 2005
+INSTRUCTIONS FOR COMPILING LIGGGHTS WITH VISUAL STUDIO 2010/2012/2013
+(Ultimate, Professional or Express Versions)
 
-The provided project
+#######################################################################################
+IMPORTANT: If you used Git on Windows to get this code, ensure that Unix-style line 
+endings are used throughout the project. "Git for Windows" will ask during installation
+how it should handle newlines, we recommend Option 2. "Checkout as-is, commit Unix-style
+line endings". The simplest way to check if everything is alright is opening
+Make.sh in the source folder using a text editor such as Notepad++. Verify that lines
+end with LF and not CR LF.
+#######################################################################################
 
-LAMMPS.vcproj                  
+#######################################################################################
+IMPORTANT: Prior to opening the Visual Studio project, some files must be generated and
+updated. This is why the project file only contains lammps.cpp and lammps.h in the
+beginning.
 
-includes the minimal package set: KSPACE, MANYBODY, MOLECULE.
+LIGGGHTS build routine uses GNU tools before compilation to generate headers.
+The easiest way to generate these files is to install Cygwin, a utility which allows 
+many Unix utilities to run on Windows. Using these ported unix utilties one can
+trigger the file generation.
 
-The package set may be reconfiured with the help of the supplied VS
-macro (see below).
+1. Download the Cygwin installer (https://www.cygwin.com/)
+2. Install Cygwin: Beside the core installation, also install Python
+2. Open a Cygwin shell and go to source folder (parent folder of this one)
 
-The project has configurations to compile either with MPI support or
-with MPI stubs.
+   $ cd /cygdrive/c/your-windows-path-to-your-liggghts-folder/
 
-To compile with MPI:
+3. Run the following commands in that folder
 
-1.  Install MPICH for Windows, specify the corresponding include and
-    lib directories in MSVS/Tools/Options/Projects and Solutions/VC++
-    Directories
+   $ sh Make.sh style
+   $ sh Make.sh models
 
-2.  Compile LAMMPS using Debug or Release configurations from the
-    provided projects
+4. Verify if files were generated:
 
-To compile with MPI STUBS
+   $ ls style_*
+   should output a list of style file headers
+
+   $ cat style_contact_model.h
+   should output a long list of GRAN_MODEL(....) lines
+
+5. Finally one must update the Visual Studio project in the WINDOWS folder. To do this,
+   run the following Python script inside of the WINDOWS folder
+
+   $ cd WINDOWS/
+   $ python update_project.py LIGGGHTS.vcxproj
+
+   This will update all headers and implementation files from the LIGGGHTS source
+   directory and insert them into the Visual Studio project.
+#######################################################################################
+
+To compile LIGGGHTS open the LIGGGHTS_VS2013 Solution
+
+The LIGGGHTS project has configurations to compile either with MPI 
+support or with MPI stubs. *
+
+To compile WITH MPI:
+
+1.  Install MS-MPI by downloading the HPC Pack MS-MPI Redistributable Package
+    from http://www.microsoft.com/en-us/download/details.aspx?id=41634
+    Validate corresponding include and lib directories in the project properties 
+    of LIGGGHTS: LIGGGHTS/Properties/Configuration Properties/VC++ Directories **
+	Here is a tutorial on MS-MPI: http://www.cs.ucla.edu/~zhu/tutorial/Using_MS-MPI.pdf
+
+2.  Compile LIGGGHTS using Debug or Release configurations from the
+    provided projects (use x64 for 64bit binary)
+
+To compile WITHOUT MPI, but instead using MPI STUBS
    
 1.  Compile STUBS.vcproj 
 
-2.  Compile LAMMPS using Debug_STUBS or Release_STUBS configurations
-from the provided project
-
-To run the code you may need mpich and fftw213 dlls accessible by the
-system search (they may be copied to Windows/system32 directory).  The
-fftw213 dlls can be found in vs9/extra/fftw213 or downloaded from the
-fftw site
-
-To customise the packages via a Visual Basic macro:
-
-1. Load LAMMPS solution in Visual Studio IDE
-2. Select in the main menu "Tools/Macros/Load Macro Project..."
-   and load the file src/WINDOWS/LAMMPS.vsmacros
-3. In the "Macro Explorer" on the right panel open LAMMPS and LAMMPS_settings
-4. Double click on "ManagePackages" to run the configuration
-   macro. Please note that the window for running macro sometimes
-   opens in the background, so use Alt-TAB to locate it.
-5. Configure a custom set of packages and press Ok. Wait till the
-   macro completes.
-6. Rebuild the LAMMPS project
-
-Before the first build or after an update from LAMMPS src repository
-it is recommended to run "ManagePackages" macro an check "Refresh file
-list in src filter" to get an up to date list of source files in the
-"src" project filter. This may be needed as the file composition in
-src may change between LAMMPS releases.
-
-Some of the packages were not tested to be compatible with VS compiler
-or require additional libraries. They are marked with asterics in the
-package list displayed when the macro is running. If you wish to try
-those packages, install them using the macro and then change the
-project properties (libraries, includes, etc.) manually.
-
-Please note that "ManagePackages" macro works on the project named
-LAMMPS.  So if you rename the LAMMPS project and still want to use
-automatic package configuration, please specify the new name in the
-line "Dim LAMMPS_project_name As String =" at the beginning of the
-macro code.
-
-The default package options such as the path to include and library
-files, description, etc can also be changed by editing the
-"ManagePackages" macro code. To do this right click on
-"ManagePackages" in the "Macro Explorer" and select Edit. Then go to
-the section named 
-
-"===================== Custom Package options ========================",
-
-find the required package and change its properties by modyfing the
-corresponding PKG_OPTS(...) entry.
+2.  Compile LIGGGHTS using Debug_STUBS or Release_STUBS configurations
+from the provided project (use x64 for 64bit binary)
 
 
+* For Visual Studio versions prior to 2013  the Platform Toolset setting has to
+be adjusted for each project. This setting can be changed under:
+Properties/Configuration Properties/General/General/Platform Toolset

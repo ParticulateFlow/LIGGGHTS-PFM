@@ -42,14 +42,18 @@ class FixMeshSurfaceStress6DOF : public FixMeshSurfaceStress {
       FixMeshSurfaceStress6DOF(class LAMMPS *, int, char **);
       virtual ~FixMeshSurfaceStress6DOF();
 
+      virtual void post_create_pre_restart();
       virtual void post_create();
 
       void init();
       virtual void setup(int vflag);
+      virtual void setup_pre_force(int vflag);
 
       int setmask();
       void initial_integrate(int vflag);
       void final_integrate();
+
+      double compute_vector(int n);
 
     private:
 

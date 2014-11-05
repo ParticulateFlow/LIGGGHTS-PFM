@@ -312,6 +312,8 @@ void FixContactHistoryMesh::pre_force(int dummy)
         //NP get new storage for partner at next
         //NP get new storage for contact history at next
         partner_[i] = ipage_next->get(nneighs_next);
+        if (!partner_[i]) 
+            error->one(FLERR,"mesh neighbor list overflow, boost neigh_modify one and/or page");
         vectorInitializeN(partner_[i],nneighs_next,-1);
         /*NL*/ //fprintf(screen,"nneighs_next %d\n",nneighs_next);
         contacthistory_[i] = dpage_next->get(nneighs_next*dnum_);

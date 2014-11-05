@@ -27,6 +27,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 #include "fix_mesh_surface_stress_servo.h"
 #include "atom.h"
 #include "force.h"
@@ -38,7 +39,6 @@
 #include "vector_liggghts.h"
 #include "fix_property_global.h"
 #include "modified_andrew.h"
-#include <vector>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -58,51 +58,51 @@ enum{NONE,CONSTANT,EQUAL,FORCE,TORQUE};
 /* ---------------------------------------------------------------------- */
 
 FixMeshSurfaceStressServo::FixMeshSurfaceStressServo(LAMMPS *lmp, int narg, char **arg) :
-FixMeshSurfaceStress(lmp, narg, arg),
-xcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm","comm_none","frame_invariant","restart_yes",3)),
-vcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("vcm","comm_none","frame_invariant","restart_yes",1)),
-omegacm_(  *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("torquecm","comm_none","frame_invariant","restart_yes",1)),
-xcm_orig_( *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm_orig","comm_none","frame_invariant","restart_yes",3)),
+  FixMeshSurfaceStress(lmp, narg, arg),
+  xcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm","comm_none","frame_invariant","restart_yes")),
+  vcm_(      *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("vcm","comm_none","frame_invariant","restart_yes")),
+  omegacm_(  *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("torquecm","comm_none","frame_invariant","restart_yes")),
+  xcm_orig_( *mesh()->prop().addGlobalProperty< VectorContainer<double,3> > ("xcm_orig","comm_none","frame_invariant","restart_yes")),
 
-nodes_(    mesh()->nodePtr()),
-v_(        *mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_exchange_borders","frame_invariant","restart_no",1)),
+  nodes_(    mesh()->nodePtr()),
+  v_(0),
 
-totalPhi_( 0.),
-ctrl_op_( 0),
-pv_vec_( 0),
+  totalPhi_( 0.),
+  ctrl_op_( 0),
+  pv_vec_( 0),
 
-vel_max_(  0.),
-vel_min_(  0.),
-ctrl_op_max_(0.),
-ctrl_op_min_(0.),
-ratio_(0.),
+  vel_max_(  0.),
+  vel_min_(  0.),
+  ctrl_op_max_(0.),
+  ctrl_op_min_(0.),
+  ratio_(0.),
 
-sp_mag_(0.),
-sp_mag_inv_(0.),
-pv_mag_(0.),
-old_pv_mag_(0.),
+  sp_mag_(0.),
+  sp_mag_inv_(0.),
+  pv_mag_(0.),
+  old_pv_mag_(0.),
 
-err_(       0.),
-sum_err_(   0.),
-kp_(       0.01),
-ki_(       0.),
-kd_(       0.),
+  err_(       0.),
+  sum_err_(   0.),
+  kp_(       0.01),
+  ki_(       0.),
+  kd_(       0.),
 
-sp_var_(   -1),
-sp_style_( NONE),
-sp_str_(   NULL),
+  sp_var_(   -1),
+  sp_style_( NONE),
+  sp_str_(   NULL),
 
-int_flag_( true),
-mode_flag_(false),
-ctrl_style_(NONE),
-mod_andrew_(new ModifiedAndrew(lmp))
+  int_flag_( true),
+  mode_flag_(false),
+  ctrl_style_(NONE),
+  mod_andrew_(new ModifiedAndrew(lmp))
 {
   if(!trackStress())
     error->fix_error(FLERR,this,"stress = 'on' required");
 
   if(verbose() && manipulated())
     error->warning(FLERR,"Mesh has been scaled, moved, or rotated.\n"
-        "Please note that values for 'com', 'vel' refer to the scaled, moved, or rotated configuration");
+                   "Please note that values for 'com', 'vel' refer to the scaled, moved, or rotated configuration");
 
   // override default from base
   size_vector = 9;
@@ -120,7 +120,7 @@ mod_andrew_(new ModifiedAndrew(lmp))
     hasargs = false;
     if(strcmp(arg[iarg_],"com") == 0) {
       if (narg < iarg_+4) error->fix_error(FLERR,this,"not enough arguments for 'com'");
-      iarg_++;
+      ++iarg_;
       double _com[3];
       _com[0] = force->numeric(FLERR,arg[iarg_++]);
       _com[1] = force->numeric(FLERR,arg[iarg_++]);
@@ -137,16 +137,16 @@ mod_andrew_(new ModifiedAndrew(lmp))
       hasargs = true;
     } else if(strcmp(arg[iarg_],"vel_max") == 0) {
       if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'vel'");
-      iarg_++;
+      ++iarg_;
       vel_max_ = force->numeric(FLERR,arg[iarg_++]);
       if(vel_max_ <= 0.)
         error->fix_error(FLERR,this,"vel_max > 0 required");
       hasargs = true;
     } else if(strcmp(arg[iarg_],"target_val") == 0) {
       if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'target_val'");
-      iarg_++;
+      ++iarg_;
       if (strstr(arg[iarg_],"v_") == arg[iarg_]) {
-        int n = strlen(&arg[iarg_][2]) + 1;
+        const int n = strlen(&arg[iarg_][2]) + 1;
         sp_str_ = new char[n];
         strcpy(sp_str_,&arg[iarg_][2]);
         sp_style_ = EQUAL;
@@ -156,13 +156,15 @@ mod_andrew_(new ModifiedAndrew(lmp))
         sp_mag_inv_ = 1./fabs(sp_mag_);
         sp_style_ = CONSTANT;
       }
-      iarg_++;
+      ++iarg_;
       hasargs = true;
     } else if(strcmp(arg[iarg_],"axis") == 0) {
       if (narg < iarg_+4) error->fix_error(FLERR,this,"not enough arguments for 'axis'");
       axis_[0] = force->numeric(FLERR,arg[iarg_+1]);
       axis_[1] = force->numeric(FLERR,arg[iarg_+2]);
       axis_[2] = force->numeric(FLERR,arg[iarg_+3]);
+      // normalize axis
+      vectorNormalize3D(axis_);
       iarg_ = iarg_+4;
       hasargs = true;
     } else if(strcmp(arg[iarg_],"kp") == 0) {
@@ -180,15 +182,15 @@ mod_andrew_(new ModifiedAndrew(lmp))
       kd_ = force->numeric(FLERR,arg[iarg_+1]);
       iarg_ = iarg_+2;
       hasargs = true;
-    } else if(strcmp(arg[iarg_],"mode") == 0) { //NP Test Aigner
+    } else if(strcmp(arg[iarg_],"mode") == 0) {
       if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
-      iarg_++;
+      ++iarg_;
       if (strcmp("auto",arg[iarg_]) == 0) {
         mode_flag_ = true;
       }  else error->fix_error(FLERR,this,"mode supports only auto");
-      iarg_++;
+      ++iarg_;
       hasargs = true;
-    } else if(strcmp(arg[iarg_],"ratio") == 0) { //NP Test Aigner
+    } else if(strcmp(arg[iarg_],"ratio") == 0) {
       if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
       ratio_ = force->numeric(FLERR,arg[iarg_+1]);
       iarg_ = iarg_+2;
@@ -203,15 +205,6 @@ mod_andrew_(new ModifiedAndrew(lmp))
 
   // store original position
   xcm_orig_.add(xcm_(0));
-
-  //NP inform mesh of upcoming movement
-  if (ctrl_style_ == FORCE)
-    mesh()->registerMove(false,true,false);
-  else if(ctrl_style_ == TORQUE)
-    mesh()->registerMove(false,false,true);
-  else
-    error->fix_error(FLERR,this,"Bad registration of upcoming move.");
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -224,9 +217,39 @@ FixMeshSurfaceStressServo::~FixMeshSurfaceStressServo()
 
 /* ---------------------------------------------------------------------- */
 
+void FixMeshSurfaceStressServo::post_create_pre_restart()
+{
+  FixMeshSurfaceStress::post_create_pre_restart();
+
+  //NP called after constructor and before restart
+  //NP i.e. no restart: mesh elements present at this point
+  //NP restart: no mesh elements present because created in restart()
+  //Np -->register properties and set values for non-restart properties here
+
+  mesh()->prop().addElementProperty< MultiVectorContainer<double,3,3> > ("v","comm_exchange_borders","frame_invariant","restart_no");
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMeshSurfaceStressServo::post_create()
 {
   FixMeshSurfaceStress::post_create();
+
+  //NP inform mesh of upcoming movement
+  //NP do here so all mesh elements created already
+  if (ctrl_style_ == FORCE)
+    mesh()->registerMove(false,true,false);
+  else if(ctrl_style_ == TORQUE)
+    mesh()->registerMove(false,false,true);
+  else
+    error->fix_error(FLERR,this,"Bad registration of upcoming move.");
+
+  //NP called after constructor and restart
+  //NP i.e. no restart: mesh elements present at this point
+  //NP restart: no mesh elements present because created in restart()
+  //Np --> set values for no-restart properties here
+
+  mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v")->setAll(0.);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -269,6 +292,14 @@ void FixMeshSurfaceStressServo::error_checks()
   if(mesh()->nMove() > 1)
     error->fix_error(FLERR,this,"this fix does not allow superposition with moving mesh fixes");
 
+  // check if servo-wall is also a granular wall
+  if (!fix_mesh_neighlist_)
+    error->fix_error(FLERR,this,"The servo-wall requires a contact model. Therefore, it has to be used for a fix wall/gran too.");
+
+  // no respa integrator
+  if (strcmp(update->integrate_style,"respa") == 0)
+    error->fix_error(FLERR,this,"not respa-compatible");
+
   /*NL*/ //fprintf(screen,"nmove %d\n",mesh()->nMove() );
 }
 
@@ -276,13 +307,25 @@ void FixMeshSurfaceStressServo::error_checks()
 
 void FixMeshSurfaceStressServo::init()
 {
+  /*NL*/ //int size1 = (mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v"))->size();
+  /*NL*/ //int size2 = (mesh()->prop().getElementProperty<ScalarContainer<int> >("id"))->size();
+  /*NL*/ //fprintf(screen,"proc %d, size of v container %d\n",comm->me,size1);
+  /*NL*/ //fprintf(screen,"proc %d, size of ID container %d\n",comm->me,size2);
+
+
   FixMeshSurfaceStress::init();
+
+  set_p_ref(xcm_(0));
 
   // do some error checks
   error_checks();
 
   // get timestep
   reset_dt();
+
+  // update ptrs
+  nodes_ = mesh()->nodePtr();
+  v_ = mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v");
 
   // check variables
   if (sp_str_) {
@@ -293,14 +336,14 @@ void FixMeshSurfaceStressServo::init()
       error->fix_error(FLERR,this,"Variable is invalid style");
   }
 
-  // set pointers for controller
+  // controller parameters
   double r_min,r;
   const int nlocal = atom->nlocal;
   const double rPaMax = getMaxRad();
 
   r = r_min = BIG;
-  for (int ii = 0; ii < nlocal; ii++) {
-    r = atom->radius[ii];
+  for (int i = 0; i < nlocal; ++i) {
+    r = atom->radius[i];
     r_min = MIN(r_min,r);
   }
   MPI_Min_Scalar(r_min,world);
@@ -309,43 +352,33 @@ void FixMeshSurfaceStressServo::init()
 
   // set pointers for controller
   switch (ctrl_style_) {
-  case FORCE:
-    pv_vec_ = f_total_;
-    ctrl_op_ = vcm_(0);
-    ctrl_op_max_ = vel_max_;
-    ctrl_op_min_ = vel_min_;
-    break;
-  case TORQUE:
-    pv_vec_ = torque_total_;
-    ctrl_op_ = omegacm_(0);
+    case FORCE:
+      pv_vec_ = f_total_;
+      ctrl_op_ = vcm_(0);
+      ctrl_op_max_ = vel_max_;
+      ctrl_op_min_ = vel_min_;
+      break;
+    case TORQUE:
+      pv_vec_ = torque_total_;
+      ctrl_op_ = omegacm_(0);
 
-    // find maximum distance axis-node
-    if (rPaMax == 0)
-      error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
+      // find maximum distance axis-node
+      if (rPaMax == 0)
+        error->fix_error(FLERR,this,"All mesh nodes are located at the rotation axis.");
 
-    // maximum angular velocity
-    ctrl_op_max_ = vel_max_/rPaMax;
-    ctrl_op_min_ = vel_min_/rPaMax;
-    break;
-  default:
-    error->fix_error(FLERR,this,"This may not happen!");
-    break;
+      // maximum angular velocity
+      ctrl_op_max_ = vel_max_/rPaMax;
+      ctrl_op_min_ = vel_min_/rPaMax;
+      break;
+    default:
+      error->fix_error(FLERR,this,"This may not happen!");
+      break;
   }
 
   // check maximal velocity
-  double skin = neighbor->skin;
+  const double skin = neighbor->skin;
   if(vel_max_ >= skin/(2.*dtv_))
     error->fix_error(FLERR,this,"vel_max < skin/(2.*dt) required");
-
-  // check if servo-wall is also a granular wall
-  if (!fix_mesh_neighlist_)
-    error->fix_error(FLERR,this,"The servo-wall requires a contact model. Therefore, it has to be used for a fix wall/gran too.");
-
-  if (strcmp(update->integrate_style,"respa") == 0)
-    error->fix_error(FLERR,this,"not respa-compatible");
-
-  // normalize axis
-  vectorNormalize3D(axis_);
 
   // compute global number of contacts
   fix_mesh_neighlist_->enableTotalNumContacts(true);
@@ -379,43 +412,42 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
   UNUSED(vflag);
 
   double dX[3],dx[3];
-  double incrementalPhi;
 
   // only if the wall should move
   if (int_flag_) {
 
     switch (ctrl_style_) {
-    case FORCE:
+      case FORCE:
 
-      // update xcm by full step
+        // update xcm by full step
 
-      dx[0] = dtv_ * vcm_(0)[0];
-      dx[1] = dtv_ * vcm_(0)[1];
-      dx[2] = dtv_ * vcm_(0)[2];
-      vectorAdd3D(xcm_(0),dx,xcm_(0));
-      vectorSubtract3D(xcm_(0),xcm_orig_(0),dX);
+        dx[0] = dtv_ * vcm_(0)[0];
+        dx[1] = dtv_ * vcm_(0)[1];
+        dx[2] = dtv_ * vcm_(0)[2];
+        vectorAdd3D(xcm_(0),dx,xcm_(0));
+        vectorSubtract3D(xcm_(0),xcm_orig_(0),dX);
 
-      mesh()->move(dX,dx);
+        mesh()->move(dX,dx);
 
-      // update reference point to COM
-      //NP would not be necessary b/c p_ref_ is moved, rotated automatically
-      //NP do it anyway to avoid long-term divergence
-      //NP which could happen b/c move, rotate is done incrementally
+        // update reference point to COM
+        //NP would not be necessary b/c p_ref_ is moved, rotated automatically
+        //NP do it anyway to avoid long-term divergence
+        //NP which could happen b/c move, rotate is done incrementally
 
-      set_p_ref(xcm_(0));
-      /*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
-      /*NL*/ //printVec3D(screen,"xcm",xcm_(0));
+        set_p_ref(xcm_(0));
+        /*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
+        /*NL*/ //printVec3D(screen,"xcm",xcm_(0));
 
-      break;
+        break;
 
-    case TORQUE:
-      incrementalPhi = dtv_ * vectorDot3D(omegacm_(0),axis_);
-      totalPhi_ += incrementalPhi;
+      case TORQUE:
+        const double incrementalPhi = dtv_ * vectorDot3D(omegacm_(0),axis_);
+        totalPhi_ += incrementalPhi;
 
-      //rotate the mesh
-      mesh()->rotate(totalPhi_,incrementalPhi,axis_,xcm_(0));
+        //rotate the mesh
+        mesh()->rotate(totalPhi_,incrementalPhi,axis_,xcm_(0));
 
-      break;
+        break;
     }
 
   }
@@ -457,16 +489,13 @@ void FixMeshSurfaceStressServo::final_integrate()
 
     }
 
-    // auto mode
-    //NP TEST AIGNER
+    // auto mode - p-controller with variable proportional gain
     if (mode_flag_) {
 
       pv_mag_ = vectorDot3D(pv_vec_,axis_);
       err_ = (sp_mag_ - pv_mag_) * sp_mag_inv_;
 
-      // TODO: Valid or trash?
-      // Hard coded test for piecewise controller
-      // This setting works, but doesn't speed up most cases
+      // Hard coded piecewise controller
       double ctrl_kp;
       const double err_low = 0.9;
       const double err_high = 1.0;
@@ -520,12 +549,12 @@ void FixMeshSurfaceStressServo::final_integrate()
     limit_vel();
 
     switch (ctrl_style_) {
-    case FORCE:
-      set_v_node();
-      break;
-    case TORQUE:
-      set_v_node_rotate();
-      break;
+      case FORCE:
+        set_v_node();
+        break;
+      case TORQUE:
+        set_v_node_rotate();
+        break;
     }
 
   }
@@ -571,12 +600,12 @@ void FixMeshSurfaceStressServo::limit_vel()
 
 void FixMeshSurfaceStressServo::set_v_node()
 {
-  int nall = mesh()->size();
-  int nnodes = mesh()->numNodes();
+  const int nall = mesh()->size();
+  const int nnodes = mesh()->numNodes();
 
-  for(int i = 0; i < nall; i++)
-    for(int j = 0; j < nnodes; j++)
-      v_.set(i,j,vcm_(0));
+  for(int i = 0; i < nall; ++i)
+    for(int j = 0; j < nnodes; ++j)
+      v_->set(i,j,vcm_(0));
 
 }
 
@@ -586,17 +615,17 @@ void FixMeshSurfaceStressServo::set_v_node_rotate()
 {
   double node[3],rPA[3],vRot[3];
 
-  int nall = mesh()->size();
-  int nnodes = mesh()->numNodes();
+  const int nall = mesh()->size();
+  const int nnodes = mesh()->numNodes();
 
-  for(int i = 0; i < nall; i++)
+  for(int i = 0; i < nall; ++i)
   {
-    for(int j = 0; j < nnodes; j++)
+    for(int j = 0; j < nnodes; ++j)
     {
       vectorCopy3D(nodes_[i][j],node);
       vectorSubtract3D(node,xcm_(0),rPA);
       vectorCross3D(omegacm_(0),rPA,vRot);
-      v_.set(i,j,vRot);
+      v_->set(i,j,vRot);
     }
   }
 }
@@ -616,7 +645,7 @@ void FixMeshSurfaceStressServo::reset_dt()
 ------------------------------------------------------------------------- */
 
 void FixMeshSurfaceStressServo::add_particle_contribution(int ip, double *frc,
-    double *delta, int iTri, double *v_wall)
+                                                          double *delta, int iTri, double *v_wall)
 {
   FixMeshSurfaceStress::add_particle_contribution(ip,frc,delta,iTri,v_wall);
 
@@ -637,12 +666,12 @@ double FixMeshSurfaceStressServo::getMaxRad()
   double node[3],rPA[3],vRot[3];
 
   double rPaMax = 0;
-  int nall = mesh()->size();
-  int nnodes = mesh()->numNodes();
+  const int nall = mesh()->size();
+  const int nnodes = mesh()->numNodes();
 
-  for(int i = 0; i < nall; i++)
+  for(int i = 0; i < nall; ++i)
   {
-    for(int j = 0; j < nnodes; j++)
+    for(int j = 0; j < nnodes; ++j)
     {
       vectorCopy3D(nodes_[i][j],node);
       vectorSubtract3D(node,xcm_(0),rPA);
@@ -650,11 +679,15 @@ double FixMeshSurfaceStressServo::getMaxRad()
       rPaMax = MAX(rPaMax,vectorMag3D(vRot));
     }
   }
+
+  // get max for all processors
+  MPI_Max_Scalar(rPaMax,world);
+  /*NL*/// fprintf(screen,"rPaMax = %f \n",rPaMax);
   return rPaMax;
 }
 
 /* ----------------------------------------------------------------------
-   return total force or torque component on body
+   return total force or torque component on body or xcm
 ------------------------------------------------------------------------- */
 
 double FixMeshSurfaceStressServo::compute_vector(int n)
@@ -678,11 +711,10 @@ int FixMeshSurfaceStressServo::modify_param(int narg, char **arg)
       error->fix_error(FLERR,this,"wrong argument for fix_modify 'integrate'");
 
     return 2;
-
   } else if (strcmp(arg[0],"target_val") == 0) {
     if (narg < 2) error->fix_error(FLERR,this,"not enough arguments for fix_modify 'target_val'");
     if (strstr(arg[1],"v_") == arg[1]) {
-      int n = strlen(&arg[1][2]) + 1;
+      const int n = strlen(&arg[1][2]) + 1;
       sp_str_ = new char[n];
       strcpy(sp_str_,&arg[1][2]);
 

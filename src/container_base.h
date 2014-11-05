@@ -71,6 +71,7 @@ namespace LAMMPS_NS
           virtual void del(int n) = 0;
           virtual void delForward(int n,bool scale,bool translate,bool rotate) = 0;
           virtual void delRestart(int n,bool scale,bool translate,bool rotate) = 0;
+          virtual void delRestart(bool scale,bool translate,bool rotate) = 0;
           virtual void clearReverse(bool scale,bool translate,bool rotate) = 0;
 
           virtual bool setFromContainer(ContainerBase *cont) = 0;
@@ -79,6 +80,11 @@ namespace LAMMPS_NS
           virtual void move(double *dx) = 0;
           virtual void moveElement(int i,double *dx) = 0;
           virtual void rotate(double *dQ) = 0;
+
+          virtual void setToDefault(int n) = 0;
+
+          inline bool useDefault()
+          { return useDefault_ ; }
 
           // buffer functions for parallelization
 
@@ -131,6 +137,8 @@ namespace LAMMPS_NS
           int refFrame_;
           int restartType_;
           int scalePower_;
+
+          bool useDefault_;
 
      private:
 

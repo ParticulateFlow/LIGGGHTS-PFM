@@ -90,24 +90,24 @@ FixBondCreateGran::FixBondCreateGran(LAMMPS *lmp, int narg, char **arg) :
   while (iarg < narg) {
     if (strcmp(arg[iarg],"iparam") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal fix bond/create command");
-      imaxbond = atoi(arg[iarg+1]);
-      inewtype = atoi(arg[iarg+2]);
+      imaxbond = force->inumeric(FLERR,arg[iarg+1]);
+      inewtype = force->inumeric(FLERR,arg[iarg+2]);
       if (imaxbond < 0) error->all(FLERR,"Illegal fix bond/create command");
       if (inewtype < 1 || inewtype > atom->ntypes)
         error->all(FLERR,"Invalid atom type in fix bond/create command");
       iarg += 3;
     } else if (strcmp(arg[iarg],"jparam") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal fix bond/create command");
-      jmaxbond = atoi(arg[iarg+1]);
-      jnewtype = atoi(arg[iarg+2]);
+      jmaxbond = force->inumeric(FLERR,arg[iarg+1]);
+      jnewtype = force->inumeric(FLERR,arg[iarg+2]);
       if (jmaxbond < 0) error->all(FLERR,"Illegal fix bond/create command");
       if (jnewtype < 1 || jnewtype > atom->ntypes)
         error->all(FLERR,"Invalid atom type in fix bond/create command");
       iarg += 3;
     } else if (strcmp(arg[iarg],"prob") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal fix bond/create command");
-      fraction = atof(arg[iarg+1]);
-      seed = atoi(arg[iarg+2]);
+      fraction = force->numeric(FLERR,arg[iarg+1]);
+      seed = force->inumeric(FLERR,arg[iarg+2]);
       if (fraction < 0.0 || fraction > 1.0)
         error->all(FLERR,"Illegal fix bond/create command");
       if (seed <= 0) error->all(FLERR,"Illegal fix bond/create command");

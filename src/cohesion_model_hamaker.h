@@ -117,7 +117,7 @@ namespace ContactModels {
       //     * the calculation of the displacement (hIJ) is not required (no cdata.r)
       const double ri = cdata.radi;
       const double rj = cdata.radj;
-      const double reff = (ri*rj)/(ri+rj);
+      const double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
       const int itype = cdata.itype;
       const int jtype = cdata.jtype;
 
@@ -166,8 +166,8 @@ namespace ContactModels {
       const int itype = atom->type[cdata.i];
       const int jtype = atom->type[cdata.j];
 
-      const double reff = (ri*rj)/(ri+rj);
-      const double hIJ = (r-ri-rj);
+      const double reff = cdata.is_wall ? ri : (ri*rj/(ri+rj));
+      const double hIJ = cdata.is_wall ? (r-ri) : (r-ri-rj);
 
       const double Fn_coh = calcCohesiveForce(cdata,hIJ, reff, itype, jtype);
 

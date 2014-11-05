@@ -115,6 +115,8 @@ namespace LAMMPS_NS
 
         virtual void setVerbose() = 0;
 
+        virtual void check_element_property_consistency() = 0;
+
         //NP ***************************************
         //NP interface to SurfaceMesh
         //NP ***************************************

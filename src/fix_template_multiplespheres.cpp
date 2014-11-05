@@ -331,7 +331,8 @@ void FixTemplateMultiplespheres::calc_center_of_mass()
   r_equiv = pow(6.*mass_expect/(8.*expectancy(pdf_density)*M_PI),1./3.);
 
   /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES)
-  /*NL*/    fprintf(screen,"MC integration done: mass=%f, volume=%f, xcm=%f|%f|%f, r_equiv=%f\n",mass_expect,volume_expect,xcm[0],xcm[1],xcm[2],r_equiv);
+  /*NL*/    fprintf(screen,"MC integration done: mass=%e, volume=%e, xcm=%e|%e|%e, r_equiv=%e, nsuccess %d, ntry %d vol_box %f\n",
+  /*NL*/            mass_expect,volume_expect,xcm[0],xcm[1],xcm[2],r_equiv,nsuccess,ntry,(x_max[0]-x_min[0])*(x_max[1]-x_min[1])*(x_max[2]-x_min[2]));
 
   // transform into a system with center of mass=0/0/0
 
