@@ -342,7 +342,7 @@
 
           //NP IMPORTANT: 0 == nall might be in case registerMove() is called before post_create!!
           //NP in case of restart because elements are created/allocated upon restart
-          if(node_orig_ || 0 == nall)
+          if(node_orig_ || 0 == sizeGlobal())
             error->one(FLERR,"Illegal situation in MultiNodeMesh<NUM_NODES>::registerMove");
 
           node_orig_ = new MultiVectorContainer<double,NUM_NODES,3>("node_orig");
