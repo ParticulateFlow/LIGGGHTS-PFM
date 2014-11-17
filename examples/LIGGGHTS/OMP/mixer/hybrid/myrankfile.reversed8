@@ -1,0 +1,16 @@
+rank 0=node34 slot=0:0-3
+rank 1=node34 slot=0:4-7
+rank 2=node34 slot=0:8-11
+rank 3=node34 slot=0:12-15
+rank 4=node34 slot=1:0-3
+rank 5=node34 slot=1:4-7
+rank 6=node34 slot=1:8-11
+rank 7=node34 slot=1:12-15
+rank 8=node33 slot=0:0-3
+rank 9=node33 slot=0:4-7
+rank 10=node33 slot=0:8-11
+rank 11=node33 slot=0:12-15
+rank 12=node33 slot=1:0-3
+rank 13=node33 slot=1:4-7
+rank 14=node33 slot=1:8-11
+rank 15=node33 slot=1:12-15
