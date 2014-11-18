@@ -1,8 +1,0 @@
-rank 0=node34 slot=0:0-7
-rank 1=node34 slot=0:8-15
-rank 2=node34 slot=1:0-7
-rank 3=node34 slot=1:8-15
-rank 4=node33 slot=0:0-7
-rank 5=node33 slot=0:8-15
-rank 6=node33 slot=1:0-7
-rank 7=node33 slot=1:8-15
