@@ -146,6 +146,15 @@ public:
     return offset;
   }
 
+  int get_history_value_offset(const std::string & name) {
+    for(std::vector<HistoryArg>::size_type it = 0; it != history_arg.size(); ++it) {
+      if (history_arg[it].name == name) {
+        return it;
+      }
+    }
+    return -1;
+  }
+
   void do_store_contact_forces()
   { store_contact_forces_ = true; }
 
