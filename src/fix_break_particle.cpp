@@ -227,6 +227,7 @@ void FixBreakParticle::init()
   siblingOffset = pair_gran->get_history_value_offset("sibling");
   collisionFactorOffset = pair_gran->get_history_value_offset("collisionFactor");
   impactEnergyOffset = pair_gran->get_history_value_offset("impactEnergy");
+  forceMaxOffset = pair_gran->get_history_value_offset("forceMax");
   if (deltaMaxOffset < 0 || impactEnergyOffset < 0)
     error->fix_error(FLERR,this,"failed to find deltaMaxOffset/impactEnergy value in contact history");
 }
@@ -329,11 +330,15 @@ void FixBreakParticle::pre_force(int)
 
           if (rsq < radsum * radsum) {
 
-            double * contact_history = &allhist[dnum*jj];
+            if (mask[j] & groupbit) {
+              double * contact_history = &allhist[dnum*jj];
 
-            if (contact_history[deltaMaxOffset] == 0.0) {
-              contact_history[siblingOffset] = 1.0;
-              contact_history[collisionFactorOffset] = fix_collision_factor->vector_atom[i];
+              if (contact_history[deltaMaxOffset] == 0.0) {
+                contact_history[siblingOffset] = 1.0;
+                contact_history[collisionFactorOffset] = fix_collision_factor->vector_atom[i];
+              }
+            } else {
+              error->warning(FLERR, "Inserted fragments overlap with alien particle");
             }
           }
         }
@@ -362,41 +367,65 @@ void FixBreakParticle::end_of_step()
 
   switch (breakage_criterion) {
   case BC_ENERGY:
-    for (int ii = 0; ii < inum; ++ii) {
-      const int i = ilist[ii];
-
-      if (mask[i] & groupbit && radius[i] > min_break_rad) {
+    {
+      std::vector<double> breaker_energy(nlocal, 0.0);
+      std::vector<int> breaker_tag(nlocal, 0);
+      for (int ii = 0; ii < inum; ++ii) {
+        const int i = ilist[ii];
         double * const allhist = firsthist[i];
         int * const jlist = firstneigh[i];
         const int jnum = numneigh[i];
 
-        double breaker_energy = 0.0;
-        int breaker_tag = 0;
         for (int jj = 0; jj < jnum; ++jj) {
           const int j = jlist[jj];
           double * contact_history = &allhist[dnum*jj];
-          const double impact_energy_limited = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[i]);
-          if(breaker_energy < impact_energy_limited) {
-            breaker_energy = impact_energy_limited;
-            breaker_tag = tag[j];
+          const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[i]);
+          const double impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[j]);
+          if(breaker_energy[i] < impact_energy_limited_i) {
+            breaker_energy[i] = impact_energy_limited_i;
+            breaker_tag[i] = tag[j];
           }
-          flag[i] += impact_energy_limited;
+          if(breaker_energy[j] < impact_energy_limited_j) {
+            breaker_energy[j] = impact_energy_limited_j;
+            breaker_tag[j] = tag[i];
+          }
+          flag[i] += impact_energy_limited_i;
+          flag[j] += impact_energy_limited_j;
         }
-        if(breaker_energy > 0.0) {
-          double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
+        if(mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
+          const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
           if (probability > random->uniform()) {
-            breaker[i] = static_cast<double>(breaker_tag);
+            breaker[i] = static_cast<double>(breaker_tag[i]);
           }
         }
-        //if(i < 4 && flag[i] != 0.0)
-          //fprintf(screen,"FixBreakParticle impact energy %d: %f\n", i, flag[i]);
       }
     }
     break;
   case BC_FORCE:
-    for(int i = 0; i < nlocal; ++i) {
-      if (mask[i] & groupbit && radius[i] > min_break_rad) {
-        /// TODO
+    {
+      std::vector<double> forceMax(nlocal, 0.0);
+      for (int ii = 0; ii < inum; ++ii) {
+        const int i = ilist[ii];
+        double * const allhist = firsthist[i];
+        int * const jlist = firstneigh[i];
+        const int jnum = numneigh[i];
+
+        for (int jj = 0; jj < jnum; ++jj) {
+          const int j = jlist[jj];
+          double * contact_history = &allhist[dnum*jj];
+
+          forceMax[i] = std::max(forceMax[i], contact_history[forceMaxOffset]);
+          forceMax[j] = std::max(forceMax[j], contact_history[forceMaxOffset]);
+        }
+        if(mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
+          double probability = 1.0 - exp(-fMat * forceMax[i] / threshold);
+          if (flag[i] == 0.0) {
+            flag[i] = random->uniform();
+          }
+          if (probability > flag[i]) {
+            flag[i] = -probability;  // sign indicates breakage
+          }
+        }
       }
     }
     break;
@@ -434,32 +463,59 @@ void FixBreakParticle::pre_insert()
   int ** firstneigh = pair_gran->list->firstneigh;
   double ** firsthist = pair_gran->listgranhistory->firstdouble;
 
-  for (int ii = 0; ii < inum; ++ii) {
-    const int i = ilist[ii];
+  switch (breakage_criterion) {
+  case BC_ENERGY:
+    {
+      std::vector<bool> found_breaker(nlocal, false);
+      for (int ii = 0; ii < inum; ++ii) {
+        const int i = ilist[ii];
+        double * const allhist = firsthist[i];
+        int * const jlist = firstneigh[i];
+        const int jnum = numneigh[i];
 
-    if (mask[i] & groupbit && breaker[i] > 0) {
-      double * const allhist = firsthist[i];
-      int * const jlist = firstneigh[i];
-      const int jnum = numneigh[i];
+        for (int jj = 0; jj < jnum; ++jj) {
+          const int j = jlist[jj];
 
-      bool found_breaker = false;
-      for (int jj = 0; jj < jnum; ++jj) {
-        const int j = jlist[jj];
-        if (atom->tag[j] == breaker[i]) {
-          found_breaker = true;
-          double * contact_history = &allhist[dnum*jj];
-          if (contact_history[deltaMaxOffset] < 0.0) {
-            ++n_break_this_local;
-            mass_break_this_local += rmass[i];
-            flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
-            break;
+          if (breaker[i] > 0 && atom->tag[j] == breaker[i]) {
+            found_breaker[i] = true;
+            double * contact_history = &allhist[dnum*jj];
+            if (contact_history[deltaMaxOffset] < 0.0) {
+              ++n_break_this_local;
+              mass_break_this_local += rmass[i];
+              flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
+            }
+          }
+          if (breaker[j] > 0 && atom->tag[i] == breaker[j]) {
+            found_breaker[j] = true;
+            double * contact_history = &allhist[dnum*jj];
+            if (contact_history[deltaMaxOffset] < 0.0) {
+              ++n_break_this_local;
+              mass_break_this_local += rmass[j];
+              flag[j] = -(1.0 - exp(-fMat * 2.0*radius[j] * flag[j])); // sign indicates breakage
+            }
+          }
+        }
+        if (mask[i] & groupbit) {
+          if(breaker[i] > 0 && !found_breaker[i]) {
+            fprintf(screen,"FixBreakParticle::pre_insert: breaker not found!\n");
           }
         }
       }
-      if(!found_breaker) {
-        fprintf(screen,"FixBreakParticle::pre_insert: breaker not found!\n");
+    }
+    break;
+  case BC_FORCE:
+    for(int i = 0; i < nlocal; ++i) {
+      if (mask[i] & groupbit && flag[i] < 0.0) {
+        ++n_break_this_local;
+        mass_break_this_local += rmass[i];
       }
     }
+    break;
+  case BC_VON_MISES:
+    /// TODO
+    break;
+  default:
+    break;
   }
 
   // tally stats
@@ -470,39 +526,17 @@ void FixBreakParticle::pre_insert()
 
   // virtual contact force calculation to restore overlap energy of contacting particles
   delta_v.clear();
-  std::multimap<int,int> processed_pairs;
 
   for (int ii = 0; ii < inum; ++ii) {
     const int i = ilist[ii];
 
-    if (mask[i] & groupbit && flag[i] < 0.0) { // this one breaks
-      int * const jlist = firstneigh[i];
-      const int jnum = numneigh[i];
+    int * const jlist = firstneigh[i];
+    const int jnum = numneigh[i];
 
-      {
-        std::map<int, std::vector<double> >::iterator it = delta_v.find(i);
-        if (it == delta_v.end()) {
-          std::vector<double> delta_v0(3,0.0);
-          delta_v[i] = delta_v0;
-        }
-      }
+    for (int jj = 0; jj < jnum; ++jj) {
+      const int j = jlist[jj];
 
-      for (int jj = 0; jj < jnum; ++jj) {
-        const int j = jlist[jj];
-
-        // check if this pair has already been processed
-        bool processed = false;
-        std::pair <std::multimap<int,int>::iterator, std::multimap<int,int>::iterator> ret;
-        ret = processed_pairs.equal_range(j);
-        for (std::multimap<int,int>::iterator it=ret.first; it!=ret.second; ++it) {
-          if(it->second == i) {
-            processed = true;
-            break;
-          }
-        }
-        if (processed) {
-          continue;
-        }
+      if (flag[i] < 0.0 || flag[j] < 0.0) {
 
         virtual_x_i.clear();
         virtual_x_i.push_back(x[i][0]);
@@ -535,7 +569,13 @@ void FixBreakParticle::pre_insert()
         }
 
         {
-          std::map<int, std::vector<double> >::iterator it = delta_v.find(j);
+          std::map<int, std::vector<double> >::iterator it;
+          it = delta_v.find(i);
+          if (it == delta_v.end()) {
+            std::vector<double> delta_v0(3,0.0);
+            delta_v[i] = delta_v0;
+          }
+          it = delta_v.find(j);
           if (it == delta_v.end()) {
             std::vector<double> delta_v0(3,0.0);
             delta_v[j] = delta_v0;
@@ -545,10 +585,10 @@ void FixBreakParticle::pre_insert()
         delta_v[i][0] += (virtual_v_i[0] - v[i][0]);
         delta_v[i][1] += (virtual_v_i[1] - v[i][1]);
         delta_v[i][2] += (virtual_v_i[2] - v[i][2]);
+
         delta_v[j][0] += (virtual_v_j[0] - v[j][0]);
         delta_v[j][1] += (virtual_v_j[1] - v[j][1]);
         delta_v[j][2] += (virtual_v_j[2] - v[j][2]);
-        processed_pairs.insert(std::pair<int, int>(i, j));
       }
     }
   }

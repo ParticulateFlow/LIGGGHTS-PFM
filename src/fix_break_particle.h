@@ -95,6 +95,7 @@ class FixBreakParticle : public FixInsert {
   int siblingOffset;
   int collisionFactorOffset;
   int impactEnergyOffset;
+  int forceMaxOffset;
   int tag_max;
 
   double virtual_force(int i, int j);
