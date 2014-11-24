@@ -73,6 +73,7 @@ class FixBreakParticle : public FixInsert {
   class FixPropertyAtom *fix_break;
   class FixPropertyAtom *fix_breaker;
   class FixPropertyAtom *fix_collision_factor;
+  class FixPropertyAtom *fix_stress;
 
   // template holding data of the fragments
   class FixTemplateFragments *fix_fragments;
@@ -96,9 +97,10 @@ class FixBreakParticle : public FixInsert {
   int collisionFactorOffset;
   int impactEnergyOffset;
   int forceMaxOffset;
+  int normalOffset;
   int tag_max;
 
-  double virtual_force(int i, int j);
+  double virtual_force(int i, int j, double *siblingDeltaMax);
   void virtual_initial_integrate(int i, int j);
   void virtual_final_integrate(int i, int j);
 

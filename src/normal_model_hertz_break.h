@@ -57,6 +57,9 @@ namespace ContactModels
       hsetup->add_history_value("collisionFactor", "1");
       hsetup->add_history_value("impactEnergy", "1");
       hsetup->add_history_value("forceMax", "1");
+      hsetup->add_history_value("enx", "1");
+      hsetup->add_history_value("eny", "1");
+      hsetup->add_history_value("enz", "1");
       /*NL*/ if(comm->me == 0) fprintf(screen, "HERTZ/BREAK loaded\n");
     }
 
@@ -98,6 +101,7 @@ namespace ContactModels
       double sibling = history[1];
       double collisionFactor = history[3];
       double * const forceMax = &cdata.contact_history[history_offset+5];
+      double * const en = &cdata.contact_history[history_offset+6];
 
       // limit forces between siblings
       //NP sibling contact flags must be set after insertion (pre_exchange)
@@ -173,6 +177,9 @@ namespace ContactModels
 
       // store for max force breakage criterion
       *forceMax = Fn;
+      en[0] = cdata.en[0];
+      en[1] = cdata.en[1];
+      en[2] = cdata.en[2];
 
       // apply normal force
       if(cdata.is_wall) {

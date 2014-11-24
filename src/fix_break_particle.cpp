@@ -188,6 +188,30 @@ void FixBreakParticle::post_create()
     fix_collision_factor = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     delete [] breakvar_name;
   }
+
+  if(!fix_stress && breakage_criterion == BC_VON_MISES)
+  {
+      // stress tensor in Voigt notation:
+      char * breakvar_name = new char[14+strlen(id)];
+      sprintf(breakvar_name,"break_stress_%s",id);
+
+      const char* fixarg[14];
+      fixarg[0] = breakvar_name;
+      fixarg[1] = "all";
+      fixarg[2] = "property/atom";
+      fixarg[3] = breakvar_name;
+      fixarg[4] = "vector"; // 1 vector per particle to be registered
+      fixarg[5] = "yes";    // restart
+      fixarg[6] = "no";     // communicate ghost
+      fixarg[7] = "no";     // communicate rev
+      fixarg[8] = "0.";     // sigma_x = sigma11
+      fixarg[9] = "0.";     // sigma_y = sigma22
+      fixarg[10]= "0.";     // sigma_z = sigma33
+      fixarg[11]= "0.";     // tau_yz  = sigma23
+      fixarg[12]= "0.";     // tau_xz  = sigma13
+      fixarg[13]= "0.";     // tau_xy  = sigma12
+      fix_stress = modify->add_fix_property_atom(14,const_cast<char**>(fixarg),style);
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -228,8 +252,11 @@ void FixBreakParticle::init()
   collisionFactorOffset = pair_gran->get_history_value_offset("collisionFactor");
   impactEnergyOffset = pair_gran->get_history_value_offset("impactEnergy");
   forceMaxOffset = pair_gran->get_history_value_offset("forceMax");
-  if (deltaMaxOffset < 0 || impactEnergyOffset < 0)
-    error->fix_error(FLERR,this,"failed to find deltaMaxOffset/impactEnergy value in contact history");
+  normalOffset = pair_gran->get_history_value_offset("enx");
+
+  if (deltaMaxOffset < 0 || siblingOffset < 0 || collisionFactorOffset < 0 ||
+      impactEnergyOffset < 0 || forceMaxOffset < 0 || normalOffset < 0)
+    error->fix_error(FLERR,this,"failed to find value offset in contact history");
 }
 
 /* ----------------------------------------------------------------------
@@ -430,8 +457,70 @@ void FixBreakParticle::end_of_step()
     }
     break;
   case BC_VON_MISES:
-      /// TODO
-      break;
+    {
+      double **stress = fix_stress->array_atom;
+      std::vector<double> r_over_vol(nlocal, 0.0);
+      for (int i = 0; i < nlocal; ++i) {
+        for (int j = 0; j < 6; ++j) {
+          stress[i][j] = 0.0;
+        }
+        r_over_vol[i] = 1./(MY_4PI3 * radius[i] * radius[i]);
+      }
+      for (int ii = 0; ii < inum; ++ii) {
+        const int i = ilist[ii];
+        double * const allhist = firsthist[i];
+        int * const jlist = firstneigh[i];
+        const int jnum = numneigh[i];
+
+        for (int jj = 0; jj < jnum; ++jj) {
+          const int j = jlist[jj];
+          double * contact_history = &allhist[dnum*jj];
+
+          double Fn = contact_history[forceMaxOffset];
+          // en points from j to i
+          double enx = contact_history[normalOffset];
+          double eny = contact_history[normalOffset+1];
+          double enz = contact_history[normalOffset+2];
+          if(mask[i] & groupbit && radius[i] > min_break_rad) {
+            stress[i][0] += r_over_vol[i] * enx * Fn * enx;
+            stress[i][1] += r_over_vol[i] * eny * Fn * eny;
+            stress[i][2] += r_over_vol[i] * enz * Fn * enz;
+            stress[i][3] += r_over_vol[i] * eny * Fn * enz;
+            stress[i][4] += r_over_vol[i] * enx * Fn * enz;
+            stress[i][5] += r_over_vol[i] * enx * Fn * eny;
+          }
+
+          if(mask[j] & groupbit && radius[j] > min_break_rad) {
+            stress[j][0] += r_over_vol[j] * enx * Fn * enx;
+            stress[j][1] += r_over_vol[j] * eny * Fn * eny;
+            stress[j][2] += r_over_vol[j] * enz * Fn * enz;
+            stress[j][3] += r_over_vol[j] * eny * Fn * enz;
+            stress[j][4] += r_over_vol[j] * enx * Fn * enz;
+            stress[j][5] += r_over_vol[j] * enx * Fn * eny;
+          }
+        }
+        if(mask[i] & groupbit && radius[i] > min_break_rad) {
+          // deviator stress
+          double trace3 = (stress[i][0] + stress[i][1] + stress[i][2]) / 3.0;
+          stress[i][0] -= trace3;
+          stress[i][1] -= trace3;
+          stress[i][2] -= trace3;
+          double von_Mises_stress = 0.5 * (stress[i][0]*stress[i][0] + stress[i][1]*stress[i][1] + stress[i][2]*stress[i][2])
+                                         + stress[i][3]*stress[i][3] + stress[i][4]*stress[i][4] + stress[i][5]*stress[i][5];
+          if (von_Mises_stress > 0.0) {
+            von_Mises_stress = sqrt(3.0 * von_Mises_stress);
+            double probability = 1.0 - exp(-fMat * von_Mises_stress / threshold);
+            if (flag[i] == 0.0) {
+              flag[i] = random->uniform();
+            }
+            if (probability > flag[i]) {
+              flag[i] = -probability;  // sign indicates breakage
+            }
+          }
+        }
+      }
+    }
+    break;
   default:
     break;
   }
@@ -512,7 +601,12 @@ void FixBreakParticle::pre_insert()
     }
     break;
   case BC_VON_MISES:
-    /// TODO
+    for(int i = 0; i < nlocal; ++i) {
+      if (mask[i] & groupbit && flag[i] < 0.0) {
+        ++n_break_this_local;
+        mass_break_this_local += rmass[i];
+      }
+    }
     break;
   default:
     break;
@@ -524,6 +618,9 @@ void FixBreakParticle::pre_insert()
   MPI_Sum_Scalar(mass_break_this_local,mass_break_this,world);
   mass_break += mass_break_this;
 
+  if (n_break_this_local == 0)
+      return;
+
   // virtual contact force calculation to restore overlap energy of contacting particles
   delta_v.clear();
 
@@ -532,6 +629,7 @@ void FixBreakParticle::pre_insert()
 
     int * const jlist = firstneigh[i];
     const int jnum = numneigh[i];
+    double * const allhist = firsthist[i];
 
     for (int jj = 0; jj < jnum; ++jj) {
       const int j = jlist[jj];
@@ -561,11 +659,14 @@ void FixBreakParticle::pre_insert()
         virtual_f_ij.push_back(0.0);
         virtual_f_ij.push_back(0.0);
 
+        double * contact_history = &allhist[dnum*jj];
+        double siblingDeltaMax = contact_history[siblingOffset+1];
+
         while(true) {
-            if(virtual_force(i, j) <= 0.0) break;
-            virtual_initial_integrate(i, j);
-            if(virtual_force(i, j) <= 0.0) break;
-            virtual_final_integrate(i, j);
+          if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+          virtual_initial_integrate(i, j);
+          if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+          virtual_final_integrate(i, j);
         }
 
         {
@@ -726,7 +827,7 @@ void FixBreakParticle::x_v_omega(int ninsert_this, int &ninserted_this, int &nin
 }
 
 
-double FixBreakParticle::virtual_force(int i, int j)
+double FixBreakParticle::virtual_force(int i, int j, double *siblingDeltaMax)
 {
   virtual_f_ij.clear();
   virtual_f_ij.push_back(0.0);
@@ -758,6 +859,16 @@ double FixBreakParticle::virtual_force(int i, int j)
       const double enz = delz * rinv;
 
       deltan = radsum - r;
+      if (*siblingDeltaMax > 0.0) {
+        const double collisionFactor = fix_collision_factor->vector_atom[i];
+        if (deltan > *siblingDeltaMax) {
+          deltan -= *siblingDeltaMax;
+          deltan += *siblingDeltaMax*collisionFactor;
+        } else {
+          *siblingDeltaMax = deltan;
+          deltan *= collisionFactor;
+        }
+      }
 
       double sqrtval = sqrt(reff*deltan);
 
