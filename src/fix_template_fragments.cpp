@@ -56,14 +56,31 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
   if (pdf_radius)
     error->fix_error(FLERR,this,"currently does not support keyword 'radius'");
 
-  if (strcmp(arg[iarg++],"breakage_index") != 0)
-    error->fix_error(FLERR,this,"expecting argument 'breakage_index'");
-
-  t10_max = atof(arg[iarg++]);
-  rad_min_pct = atof(arg[iarg++]); // percentage of original size
-  radiiMassFractions[2] = 0.0;
-  radiiMassFractions[4] = 0.0;
-  radiiMassFractions[10] = 0.0;
+  bool hasargs = true;
+  while (iarg < narg && hasargs) {
+    hasargs = false;
+    if (strcmp(arg[iarg],"breakage_index") == 0) {
+      ++iarg;
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"not enough arguments for breakage_index");
+      t10_max = atof(arg[iarg++]);
+      rad_min_pct = atof(arg[iarg++]); // percentage of original size
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"tn_family") == 0) {
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"not enough arguments for tn_family");
+      int sizes = atoi(arg[iarg+1]);
+      iarg += 2;
+      if (iarg+sizes > narg) error->fix_error(FLERR,this,"not enough arguments for tn_family");
+      while (sizes > 0) {
+        radiiMassFractions[atoi(arg[iarg++])] = 0.0;
+        --sizes;
+      }
+      hasargs = true;
+    } else {
+      std::string unknown("unknown keyword ");
+      unknown += arg[iarg];
+      error->fix_error(FLERR,this,unknown.c_str());
+    }
+  }
 
   nspheres = 0;
   x_sphere = NULL;
