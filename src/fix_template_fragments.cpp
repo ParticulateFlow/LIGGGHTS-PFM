@@ -60,8 +60,8 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
   while (iarg < narg && hasargs) {
     hasargs = false;
     if (strcmp(arg[iarg],"breakage_index") == 0) {
-      ++iarg;
       if (iarg+3 > narg) error->fix_error(FLERR,this,"not enough arguments for breakage_index");
+      ++iarg;
       t10_max = atof(arg[iarg++]);
       rad_min_pct = atof(arg[iarg++]); // percentage of original size
       hasargs = true;
@@ -80,6 +80,14 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
       unknown += arg[iarg];
       error->fix_error(FLERR,this,unknown.c_str());
     }
+  }
+
+  // set default tn_family if none is specified
+  if(radiiMassFractions.empty()) {
+    radiiMassFractions[2] = 0.0;
+    radiiMassFractions[3] = 0.0;
+    radiiMassFractions[5] = 0.0;
+    radiiMassFractions[10] = 0.0;
   }
 
   nspheres = 0;
