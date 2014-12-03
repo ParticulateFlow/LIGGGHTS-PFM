@@ -249,11 +249,12 @@ void ParticleSpatialDistribution::randomInsertion(double radius,
 
   for (unsigned int idx = 0; idx < nParticles; ++idx) {
     std::vector<double> x_rand(3, 0.0);
-    bool centerInOccupiedSpace = false;
+    bool centerInOccupiedSpace;
     unsigned int ntry = 0;
 
     do {
       randomPointInSphere(radius-radii[idx], x_rand);
+      centerInOccupiedSpace = false;
       ++ntry;
 
       // check if point is inside any sphere already inserted -> max overlap < radius
@@ -279,9 +280,7 @@ void ParticleSpatialDistribution::randomInsertion(double radius,
       }
     } while (centerInOccupiedSpace && ntry < 200);
 
-    x[idx].push_back(x_rand[0]);
-    x[idx].push_back(x_rand[1]);
-    x[idx].push_back(x_rand[2]);
+    x[idx] = x_rand;
   }
 }
 
