@@ -64,6 +64,7 @@ namespace LAMMPS_NS
         inline void buildNeighList(double neighCutoff, double **x, double *r, int nPart);
 
         inline double resolveContact(double *x, double r, double *delta);
+        inline bool resolveSameSide(double *x0, double *x1);
         inline bool resolveNeighlist(double *x, double r, double treshold);
 
         inline int axis();
@@ -89,6 +90,11 @@ namespace LAMMPS_NS
   double PrimitiveWall::resolveContact(double *x, double r, double *delta)
   {
     return PRIMITIVE_WALL_DEFINITIONS::chooseContactTemplate(x, r, delta, param, wType);
+  }
+
+  bool PrimitiveWall::resolveSameSide(double *x0, double *x1)
+  {
+    return PRIMITIVE_WALL_DEFINITIONS::chooseSameSideTemplate(x0, x1, param, wType);
   }
 
   int PrimitiveWall::axis()

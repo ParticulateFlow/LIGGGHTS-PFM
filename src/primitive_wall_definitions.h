@@ -121,6 +121,14 @@ namespace LAMMPS_NS
           return *param - pos[d::x] - r;
         }
       }
+      static bool resolveSameSide(double *pos0, double *pos1, double *param)
+      {
+        if((pos0[d::x] > *param && pos1[d::x] > *param) ||
+           (pos0[d::x] < *param && pos1[d::x] < *param)){
+          return true;
+        }
+        return false;
+      }
       static bool resolveNeighlist(double *pos, double r, double treshold, double *param)
       {
         double dMax = r + treshold;
@@ -149,6 +157,12 @@ namespace LAMMPS_NS
         dz = pos[d::z]-param[2];
         return sqrt(dy*dy+dz*dz);
       }
+      static double calcRadialDistanceSquared(double *pos, double *param, double &dy, double &dz)
+      {
+        dy = pos[d::y]-param[1];
+        dz = pos[d::z]-param[2];
+        return (dy*dy+dz*dz);
+      }
 
       static double resolveContact(double *pos, double r, double *delta, double *param)
       {
@@ -165,6 +179,18 @@ namespace LAMMPS_NS
           delta[d::x] = 0.; delta[d::y] = +dy*fact; delta[d::z] = +dz*fact;
         }
         return dx;
+      }
+      static bool resolveSameSide(double *pos0, double *pos1, double *param)
+      {
+        double dy,dz;
+        double distsq0 = calcRadialDistanceSquared(pos0,param,dy,dz);
+        double distsq1 = calcRadialDistanceSquared(pos1,param,dy,dz);
+        double rsq = param[0]*param[0];
+        if((distsq0 > rsq && distsq1 > rsq) ||
+           (distsq0 < rsq && distsq1 < rsq)){
+          return true;
+        }
+        return false;
       }
       static bool resolveNeighlist(double *pos, double r, double treshold, double *param)
       {
@@ -206,6 +232,27 @@ namespace LAMMPS_NS
       }
     }
 
+    inline bool chooseSameSideTemplate(double *x0, double *x1, double *param, WallType wType)
+    {
+      //TODO: create switch statement automatically
+      switch(wType){
+      case XPLANE:
+        return Plane<0>::resolveSameSide(x0,x1,param);
+      case YPLANE:
+        return Plane<1>::resolveSameSide(x0,x1,param);
+      case ZPLANE:
+        return Plane<2>::resolveSameSide(x0,x1,param);
+      case XCYLINDER:
+        return Cylinder<0>::resolveSameSide(x0,x1,param);
+      case YCYLINDER:
+        return Cylinder<1>::resolveSameSide(x0,x1,param);
+      case ZCYLINDER:
+        return Cylinder<2>::resolveSameSide(x0,x1,param);
+
+      default: // default: same side
+        return true;
+      }
+    }
     inline bool chooseNeighlistTemplate(double *x, double r, double treshold, double *param, WallType wType)
     {
       //TODO: create switch statement automatically
