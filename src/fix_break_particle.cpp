@@ -423,7 +423,7 @@ void FixBreakParticle::end_of_step()
         if(mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
           const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
           if (probability > random->uniform()) {
-            breaker[i] = static_cast<double>(breaker_tag[i]);
+            fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
           }
         }
       }
@@ -566,7 +566,7 @@ void FixBreakParticle::pre_insert()
         for (int jj = 0; jj < jnum; ++jj) {
           const int j = jlist[jj];
 
-          if (breaker[i] > 0 && atom->tag[j] == breaker[i]) {
+          if (atom->tag[j] == fix_breaker->get_vector_atom_int(i)) {
             found_breaker[i] = true;
             double * contact_history = &allhist[dnum*jj];
             if (contact_history[deltaMaxOffset] < 0.0) {
@@ -575,7 +575,7 @@ void FixBreakParticle::pre_insert()
               flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
             }
           }
-          if (breaker[j] > 0 && atom->tag[i] == breaker[j]) {
+          if (atom->tag[i] == fix_breaker->get_vector_atom_int(j)) {
             found_breaker[j] = true;
             double * contact_history = &allhist[dnum*jj];
             if (contact_history[deltaMaxOffset] < 0.0) {
@@ -586,7 +586,7 @@ void FixBreakParticle::pre_insert()
           }
         }
         if (mask[i] & groupbit) {
-          if(breaker[i] > 0 && !found_breaker[i]) {
+          if (fix_breaker->get_vector_atom_int(i) > 0 && !found_breaker[i]) {
             fprintf(screen,"FixBreakParticle::pre_insert: breaker not found!\n");
           }
         }
