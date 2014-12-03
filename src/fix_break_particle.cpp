@@ -122,6 +122,7 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
   fix_break = NULL;
   fix_breaker = NULL;
   fix_collision_factor = NULL;
+  fix_stress = NULL;
   tag_max = 0;
 
   // execute end of step
