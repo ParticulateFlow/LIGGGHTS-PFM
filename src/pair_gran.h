@@ -138,7 +138,7 @@ public:
 
   void *extract(const char *str, int &dim);
 
-  int add_history_value(std::string name, std::string newtonflag) {
+  int add_history_value(const std::string & name, const std::string & newtonflag) {
     int offset = history_arg.size();
     history = true;
     history_arg.push_back(HistoryArg(name, newtonflag));
@@ -164,7 +164,7 @@ public:
     std::string name;
     std::string newtonflag;
 
-    HistoryArg(std::string name, std::string newtonflag) : name(name), newtonflag(newtonflag) {}
+    HistoryArg(const std::string & name, const std::string & newtonflag) : name(name), newtonflag(newtonflag) {}
   };
 
   std::vector<HistoryArg> history_arg;
