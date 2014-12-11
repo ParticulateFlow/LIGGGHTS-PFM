@@ -32,22 +32,26 @@
 
 using namespace LAMMPS_NS;
 
-ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) : Pointers(lmp)
+ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) :
+  Pointers(lmp),
+  nspheres(ns),
+  groupbit(0),
+  atom_type(0),
+  density_ins(0.0),
+  volume_ins(0.0),
+  mass_ins(0.0),
+  r_bound_ins(0.0)
 {
-        groupbit = 0;
-
-        nspheres = ns;
-
-        memory->create(x_ins,nspheres,3,"x_ins");
-        radius_ins = new double[nspheres];
+    memory->create(x_ins,nspheres,3,"x_ins");
+    radius_ins = new double[nspheres]();
 }
 
 /* ---------------------------------------------------------------------- */
 
 ParticleToInsert::~ParticleToInsert()
 {
-        memory->destroy(x_ins);
-        delete []radius_ins;
+    memory->destroy(x_ins);
+    delete []radius_ins;
 }
 
 /* ---------------------------------------------------------------------- */
