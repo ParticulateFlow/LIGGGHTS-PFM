@@ -28,6 +28,8 @@
 #ifndef LMP_TRI_MESH_I_H
 #define LMP_TRI_MESH_I_H
 
+#include <cmath>
+
 #define SMALL_TRIMESH 1.e-10
 #define LARGE_TRIMESH 1000000
 
@@ -278,6 +280,22 @@
       vectorSubtract3D(p,tmp,csPlane);
 
       return calcDist(p,csPlane,delta);
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  inline bool TriMesh::resolveSameSide(int iTri, double *x0, double *x1)
+  {
+    double *surfNorm = SurfaceMeshBase::surfaceNorm(iTri);
+    double ***node = node_.begin();
+    double d = -vectorDot3D(surfNorm, node[iTri][0]);
+    double dot0 = vectorDot3D(surfNorm, x0) + d;
+    double dot1 = vectorDot3D(surfNorm, x1) + d;
+
+    if (std::signbit(dot0) == std::signbit(dot1))
+      return true;
+
+    return false;
   }
 
   /* ---------------------------------------------------------------------- */
