@@ -1065,6 +1065,7 @@ void FixBreakParticle::pre_insert()
 
                 if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
                 if (radius[iPart] < min_break_rad) continue;
+                if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(JSHash(fwg->id))) continue;
 
                 double *contact_history = NULL;
                 {
