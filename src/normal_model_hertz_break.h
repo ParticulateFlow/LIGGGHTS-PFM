@@ -131,8 +131,10 @@ namespace ContactModels
         history[4] = 0.5 * cdata.vn * cdata.vn; // mass specific impact energy
       } else if (*deltaMax > deltan || *deltaMax < 0.0) {
         *deltaMax = -deltan;
+        history[4] = 0.0;
       } else if (*deltaMax <= deltan) {
         *deltaMax = deltan;
+        history[4] = 0.0;
       }
 
       double sqrtval = sqrt(reff*deltan);
