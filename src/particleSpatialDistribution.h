@@ -29,11 +29,13 @@
 namespace LAMMPS_NS {
 
 class RanPark;
+class PrimitiveWall;
+class TriMeshContacts;
 
 class ParticleSpatialDistribution
 {
  public:
-  ParticleSpatialDistribution(RanPark *rp);
+  ParticleSpatialDistribution(RanPark *rp, int overlap);
   ~ParticleSpatialDistribution();
 
   bool isPointInSphere(const std::vector<double> &center, double radius, const std::vector<double> &x, double *dir=NULL, double *dist=NULL);
@@ -41,9 +43,11 @@ class ParticleSpatialDistribution
 
   void apollonianInsertion(double radius, const std::vector<double> &radii, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
 
-  void randomInsertion(double radius,
+  void randomInsertion(double *xp, double radius,
                        const std::vector<double> &radii, std::vector<std::vector<double> > &x,
-                       const std::vector<double> &ext_radii, const std::vector<std::vector<double> > &ext_center);
+                       const std::vector<double> &ext_radii, const std::vector<std::vector<double> > &ext_center,
+                       const std::vector<PrimitiveWall*> &prim_walls,
+                       const std::vector<TriMeshContacts*> &meshes);
 
   void relax(double radius,
              const std::vector<double> &radii, std::vector<std::vector<double> > &x,
@@ -62,6 +66,7 @@ class ParticleSpatialDistribution
 
  private:
   RanPark * RNG;
+  int max_overlap;
 };
 
 }

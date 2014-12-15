@@ -34,7 +34,7 @@ namespace LAMMPS_NS {
 class ParticleSizeDistribution
 {
  public:
-  ParticleSizeDistribution(double P, double density, double rad_parent, double rad_min, double t10_max);
+  ParticleSizeDistribution(double P, double density, double rad_parent, double rad_min, double rad_max, double t10_max);
 
   void range_mass_fractions(std::map<int, double>& radiiRangeMassFractions);
   void radii(const std::map<int, double>& radiiRangeMassFractions, std::vector<double> &radii);
@@ -49,6 +49,7 @@ class ParticleSizeDistribution
   double density_;
   double rad_parent_;
   double rad_min_;
+  double rad_max_;
   double t10_max_;
   double t10_;
 };

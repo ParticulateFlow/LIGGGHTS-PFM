@@ -39,6 +39,9 @@ FixStyle(particletemplate/fragments,FixTemplateFragments)
 
 namespace LAMMPS_NS {
 
+class PrimitiveWall;
+class TriMeshContacts;
+
 class FixTemplateFragments : public FixTemplateSphere {
  public:
 
@@ -58,7 +61,7 @@ class FixTemplateFragments : public FixTemplateSphere {
   virtual void init_ptilist(int);
   virtual void randomize_ptilist(int ,int );
 
-  void pre_insert(int n_total, double **breakdata);
+  void pre_insert(int n_total, double **breakdata, const std::multimap<int,PrimitiveWall*> &prim_walls_mm, const std::multimap<int,TriMeshContacts*> &meshes_mm);
 
  protected:
 

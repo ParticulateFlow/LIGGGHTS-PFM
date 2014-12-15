@@ -36,6 +36,8 @@
 #include "math_const.h"
 #include "particleSizeDistribution.h"
 #include "particleSpatialDistribution.h"
+#include "primitive_wall.h"
+#include <map>
 
 using namespace MathConst;
 
@@ -99,8 +101,8 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
 
 FixTemplateFragments::~FixTemplateFragments()
 {
-    memory->destroy(x_sphere);
-    delete [] r_sphere;
+  memory->destroy(x_sphere);
+  delete [] r_sphere;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -201,7 +203,7 @@ void FixTemplateFragments::randomize_ptilist(int n_random,int distribution_group
 }
 
 
-void FixTemplateFragments::pre_insert(int n_total, double **breakdata)
+void FixTemplateFragments::pre_insert(int n_total, double **breakdata, const std::multimap<int,PrimitiveWall*> &prim_walls_mm, const std::multimap<int,TriMeshContacts*> &meshes_mm)
 {
   // generate particle size/spatial distributions
   r_sphere_list.clear();
@@ -219,7 +221,7 @@ void FixTemplateFragments::pre_insert(int n_total, double **breakdata)
   x_sphere_list.resize(n_total);
 
   for (int i = 0; i < n_total; ++i) {
-    ParticleSizeDistribution psd(breakdata[i][7], density, breakdata[i][6], breakdata[i][6]*rad_min_pct, t10_max);
+    ParticleSizeDistribution psd(breakdata[i][7], density, breakdata[i][6], breakdata[i][6]*rad_min_pct, breakdata[i][6]-0.5*breakdata[i][10], t10_max);
     psd.range_mass_fractions(radiiMassFractions);
     std::vector<double> radii;
     psd.radii(radiiMassFractions, radii);
@@ -233,7 +235,6 @@ void FixTemplateFragments::pre_insert(int n_total, double **breakdata)
     }
 
     // check for overlapping atoms
-    /// TODO check for overlapping meshes
     std::vector<double> ext_radii;
     std::vector<std::vector<double> > ext_center;
     {
@@ -258,9 +259,26 @@ void FixTemplateFragments::pre_insert(int n_total, double **breakdata)
       }
     }
 
-    ParticleSpatialDistribution pxd(random);
-    x_sphere_list[i].resize(radii.size());
-    pxd.randomInsertion(breakdata[i][6], radii, x_sphere_list[i], ext_radii, ext_center);
+    // overlapping primitive walls
+    std::vector<PrimitiveWall*> prim_walls;
+    {
+      std::pair<std::multimap<int,PrimitiveWall*>::const_iterator, std::multimap<int,PrimitiveWall*>::const_iterator> ret;
+      ret = prim_walls_mm.equal_range(static_cast<int>(breakdata[i][8]));
+      for (std::multimap<int,PrimitiveWall*>::const_iterator it = ret.first; it != ret.second; ++it) {
+        prim_walls.push_back(it->second);
+      }
+    }
+    std::vector<TriMeshContacts*> meshes;
+    {
+      std::pair<std::multimap<int,TriMeshContacts*>::const_iterator, std::multimap<int,TriMeshContacts*>::const_iterator> ret;
+      ret = meshes_mm.equal_range(static_cast<int>(breakdata[i][8]));
+      for (std::multimap<int,TriMeshContacts*>::const_iterator it = ret.first; it != ret.second; ++it) {
+        meshes.push_back(it->second);
+      }
+    }
+
+    ParticleSpatialDistribution pxd(random, breakdata[i][10]);
+    pxd.randomInsertion(&breakdata[i][0], breakdata[i][6], radii, x_sphere_list[i], ext_radii, ext_center, prim_walls, meshes);
 
     double energy = elastic_energy(r_sphere_list[i], x_sphere_list[i]);
     double CF = breakdata[i][9]/energy;

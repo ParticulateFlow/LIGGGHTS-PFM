@@ -30,11 +30,12 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
-ParticleSizeDistribution::ParticleSizeDistribution(double P, double density, double rad_parent, double rad_min, double t10_max) :
+ParticleSizeDistribution::ParticleSizeDistribution(double P, double density, double rad_parent, double rad_min, double rad_max, double t10_max) :
   breakage_probability(P),
   density_(density),
   rad_parent_(rad_parent),
   rad_min_(rad_min),
+  rad_max_(rad_max),
   t10_max_(t10_max),
   t10_(0.0)
 {
@@ -104,7 +105,13 @@ void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMass
   if (totalMassPool > 0.0) {
     double radius = cbrt(totalMassPool/(MY_4PI3*density_));
 
-    if (radius < rad_min_) {
+    if (radius > rad_max_) {
+      radius *= cbrt(0.5);
+      std::vector<double>::iterator it = radii.begin();
+      while (it != radii.end() && *it > radius)
+        ++it;
+      radii.insert(it, radius);
+    } else if (radius < rad_min_) {
       radius += radii.back();
       radii.pop_back();
     }

@@ -37,6 +37,7 @@ FixStyle(break/particle,FixBreakParticle)
 #include "fix_insert.h"
 #include <map>
 #include <vector>
+#include "contact_interface.h"
 
 namespace LAMMPS_NS {
 
@@ -69,9 +70,14 @@ class FixBreakParticle : public FixInsert {
   inline void generate_random(double *pos, double rad_broken,double rad_insert);
   void print_stats_breakage_during();
 
+  void check_energy_criterion();
+  void check_force_criterion();
+  void check_von_mises_criterion();
+
   // per breakage flag
   class FixPropertyAtom *fix_break;
   class FixPropertyAtom *fix_breaker;
+  class FixPropertyAtom *fix_breaker_wall;
   class FixPropertyAtom *fix_collision_factor;
   class FixPropertyAtom *fix_stress;
 
@@ -101,8 +107,10 @@ class FixBreakParticle : public FixInsert {
   int tag_max;
 
   double virtual_force(int i, int j, double *siblingDeltaMax);
-  void virtual_initial_integrate(int i, int j);
-  void virtual_final_integrate(int i, int j);
+  double virtual_collision(LIGGGHTS::ContactModels::CollisionData & cdata, double *siblingDeltaMax = NULL);
+  void virtual_initial_integrate(int i, std::vector<double> &virtual_v, std::vector<double> &virtual_x);
+  void virtual_final_integrate(int i, std::vector<double> &virtual_v);
+  void invert_vector(std::vector<double> &v3);
 
   std::map<int, std::vector<double> > delta_v;
   std::vector<double> virtual_x_i;

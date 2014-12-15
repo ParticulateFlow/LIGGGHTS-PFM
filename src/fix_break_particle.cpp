@@ -50,10 +50,14 @@
 #include <string>
 #include <algorithm>
 #include "math_const.h"
+#include "fix_wall_gran.h"
+#include "primitive_wall.h"
+#include "tri_mesh_contacts.h"
 
 using namespace MathConst;
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace LIGGGHTS::ContactModels;
 
 enum{BC_ENERGY, BC_FORCE, BC_VON_MISES};
 
@@ -121,6 +125,7 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
   breakdata = NULL;
   fix_break = NULL;
   fix_breaker = NULL;
+  fix_breaker_wall = NULL;
   fix_collision_factor = NULL;
   fix_stress = NULL;
   tag_max = 0;
@@ -155,7 +160,7 @@ void FixBreakParticle::post_create()
     fix_break = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     delete [] breakvar_name;
   }
-  if (!fix_breaker) {
+  if (!fix_breaker) { // holds the id of the atom that caused breakage
     char * breakvar_name = new char[9+strlen(id)];
     sprintf(breakvar_name,"breaker_%s",id);
 
@@ -170,6 +175,23 @@ void FixBreakParticle::post_create()
     fixarg[7] = "no";     //NP communicate rev no
     fixarg[8] = "0.";
     fix_breaker = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    delete [] breakvar_name;
+  }
+  if (!fix_breaker_wall) { // holds the hash of the wall id that causes breakage
+    char * breakvar_name = new char[14+strlen(id)];
+    sprintf(breakvar_name,"breaker_wall_%s",id);
+
+    const char * fixarg[9];
+    fixarg[0] = breakvar_name;
+    fixarg[1] = "all";
+    fixarg[2] = "property/atom";
+    fixarg[3] = breakvar_name;
+    fixarg[4] = "scalar"; //NP 1 scalar per particle to be registered
+    fixarg[5] = "yes";    //NP restart yes
+    fixarg[6] = "yes";    //NP communicate ghost yes
+    fixarg[7] = "no";     //NP communicate rev no
+    fixarg[8] = "0.";
+    fix_breaker_wall = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     delete [] breakvar_name;
   }
   if (!fix_collision_factor) {
@@ -226,7 +248,7 @@ void FixBreakParticle::pre_delete(bool unfixflag)
 
 FixBreakParticle::~FixBreakParticle()
 {
-  if(breakdata) memory->destroy(breakdata);
+  if (breakdata) memory->destroy(breakdata);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -278,9 +300,9 @@ void FixBreakParticle::calc_insertion_properties()
     error->fix_error(FLERR,this,"specifying 'every' must be > 0");
 
   // fix holding particle fragments
-  if(fix_distribution->n_particletemplates() != 1)
+  if (fix_distribution->n_particletemplates() != 1)
     error->fix_error(FLERR,this,"fix of type particledistribution/discrete must hold exactly one template");
-  if(strcmp(fix_distribution->particletemplates()[0]->style,"particletemplate/fragments"))
+  if (strcmp(fix_distribution->particletemplates()[0]->style,"particletemplate/fragments"))
     error->fix_error(FLERR,this,"fix of type particledistribution/discrete must hold exactly one template of type fix particletemplate/fragments");
 
   fix_fragments = static_cast<FixTemplateFragments*>(fix_distribution->particletemplates()[0]);
@@ -302,7 +324,7 @@ int FixBreakParticle::setmask()
 
 double FixBreakParticle::insertion_fraction()
 {
-  if(n_break_this == 0) return 0.0;
+  if (n_break_this == 0) return 0.0;
   return static_cast<double>(n_break_this_local)/static_cast<double>(n_break_this);
 }
 
@@ -320,7 +342,7 @@ inline int FixBreakParticle::is_nearby(int i)
 void FixBreakParticle::pre_force(int)
 {
   // set sibling contact flags and collision factor in contact_history
-  if(n_break_this_local > 0) {
+  if (n_break_this_local > 0) {
     double **x = atom->x;
     double *radius = atom->radius;
     int *mask = atom->mask;
@@ -377,150 +399,30 @@ void FixBreakParticle::pre_force(int)
 
 /* ---------------------------------------------------------------------- */
 
+unsigned int JSHash(const std::string& str)
+{
+  unsigned int hash = 1315423911;
+
+  for (std::size_t i = 0; i < str.length(); ++i) {
+    hash ^= ((hash << 5) + str[i] + (hash >> 2));
+  }
+
+  return hash;
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixBreakParticle::end_of_step()
 {
-  double *flag = fix_break->vector_atom;
-  double *breaker = fix_breaker->vector_atom;
-  int nlocal = atom->nlocal;
-  int *mask = atom->mask;
-  int *tag = atom->tag;
-  double *radius = atom->radius;
-
-  int inum = pair_gran->list->inum;
-  int * ilist = pair_gran->list->ilist;
-  int * numneigh = pair_gran->list->numneigh;
-
-  int ** firstneigh = pair_gran->list->firstneigh;
-  double ** firsthist = pair_gran->listgranhistory->firstdouble;
-
   switch (breakage_criterion) {
   case BC_ENERGY:
-    {
-      std::vector<double> breaker_energy(nlocal, 0.0);
-      std::vector<int> breaker_tag(nlocal, 0);
-      for (int ii = 0; ii < inum; ++ii) {
-        const int i = ilist[ii];
-        double * const allhist = firsthist[i];
-        int * const jlist = firstneigh[i];
-        const int jnum = numneigh[i];
-
-        for (int jj = 0; jj < jnum; ++jj) {
-          const int j = jlist[jj];
-          double * contact_history = &allhist[dnum*jj];
-          const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[i]);
-          const double impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[j]);
-          if(breaker_energy[i] < impact_energy_limited_i) {
-            breaker_energy[i] = impact_energy_limited_i;
-            breaker_tag[i] = tag[j];
-          }
-          if(breaker_energy[j] < impact_energy_limited_j) {
-            breaker_energy[j] = impact_energy_limited_j;
-            breaker_tag[j] = tag[i];
-          }
-          flag[i] += impact_energy_limited_i;
-          flag[j] += impact_energy_limited_j;
-        }
-        if(mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
-          const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
-          if (probability > random->uniform()) {
-            fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
-          }
-        }
-      }
-    }
+    check_energy_criterion();
     break;
   case BC_FORCE:
-    {
-      std::vector<double> forceMax(nlocal, 0.0);
-      for (int ii = 0; ii < inum; ++ii) {
-        const int i = ilist[ii];
-        double * const allhist = firsthist[i];
-        int * const jlist = firstneigh[i];
-        const int jnum = numneigh[i];
-
-        for (int jj = 0; jj < jnum; ++jj) {
-          const int j = jlist[jj];
-          double * contact_history = &allhist[dnum*jj];
-
-          forceMax[i] = std::max(forceMax[i], contact_history[forceMaxOffset]);
-          forceMax[j] = std::max(forceMax[j], contact_history[forceMaxOffset]);
-        }
-        if(mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
-          double probability = 1.0 - exp(-fMat * forceMax[i] / threshold);
-          if (flag[i] == 0.0) {
-            flag[i] = random->uniform();
-          }
-          if (probability > flag[i]) {
-            flag[i] = -probability;  // sign indicates breakage
-          }
-        }
-      }
-    }
+    check_force_criterion();
     break;
   case BC_VON_MISES:
-    {
-      double **stress = fix_stress->array_atom;
-      std::vector<double> r_over_vol(nlocal, 0.0);
-      for (int i = 0; i < nlocal; ++i) {
-        for (int j = 0; j < 6; ++j) {
-          stress[i][j] = 0.0;
-        }
-        r_over_vol[i] = 1./(MY_4PI3 * radius[i] * radius[i]);
-      }
-      for (int ii = 0; ii < inum; ++ii) {
-        const int i = ilist[ii];
-        double * const allhist = firsthist[i];
-        int * const jlist = firstneigh[i];
-        const int jnum = numneigh[i];
-
-        for (int jj = 0; jj < jnum; ++jj) {
-          const int j = jlist[jj];
-          double * contact_history = &allhist[dnum*jj];
-
-          double Fn = contact_history[forceMaxOffset];
-          // en points from j to i
-          double enx = contact_history[normalOffset];
-          double eny = contact_history[normalOffset+1];
-          double enz = contact_history[normalOffset+2];
-          if(mask[i] & groupbit && radius[i] > min_break_rad) {
-            stress[i][0] += r_over_vol[i] * enx * Fn * enx;
-            stress[i][1] += r_over_vol[i] * eny * Fn * eny;
-            stress[i][2] += r_over_vol[i] * enz * Fn * enz;
-            stress[i][3] += r_over_vol[i] * eny * Fn * enz;
-            stress[i][4] += r_over_vol[i] * enx * Fn * enz;
-            stress[i][5] += r_over_vol[i] * enx * Fn * eny;
-          }
-
-          if(mask[j] & groupbit && radius[j] > min_break_rad) {
-            stress[j][0] += r_over_vol[j] * enx * Fn * enx;
-            stress[j][1] += r_over_vol[j] * eny * Fn * eny;
-            stress[j][2] += r_over_vol[j] * enz * Fn * enz;
-            stress[j][3] += r_over_vol[j] * eny * Fn * enz;
-            stress[j][4] += r_over_vol[j] * enx * Fn * enz;
-            stress[j][5] += r_over_vol[j] * enx * Fn * eny;
-          }
-        }
-        if(mask[i] & groupbit && radius[i] > min_break_rad) {
-          // deviator stress
-          double trace3 = (stress[i][0] + stress[i][1] + stress[i][2]) / 3.0;
-          stress[i][0] -= trace3;
-          stress[i][1] -= trace3;
-          stress[i][2] -= trace3;
-          double von_Mises_stress = 0.5 * (stress[i][0]*stress[i][0] + stress[i][1]*stress[i][1] + stress[i][2]*stress[i][2])
-                                         + stress[i][3]*stress[i][3] + stress[i][4]*stress[i][4] + stress[i][5]*stress[i][5];
-          if (von_Mises_stress > 0.0) {
-            von_Mises_stress = sqrt(3.0 * von_Mises_stress);
-            double probability = 1.0 - exp(-fMat * von_Mises_stress / threshold);
-            if (flag[i] == 0.0) {
-              flag[i] = random->uniform();
-            }
-            if (probability > flag[i]) {
-              flag[i] = -probability;  // sign indicates breakage
-            }
-          }
-        }
-      }
-    }
+    check_von_mises_criterion();
     break;
   default:
     break;
@@ -529,23 +431,549 @@ void FixBreakParticle::end_of_step()
 
 /* ---------------------------------------------------------------------- */
 
+void FixBreakParticle::check_energy_criterion()
+{
+  double *flag = fix_break->vector_atom;
+  int nlocal = atom->nlocal;
+  int *mask = atom->mask;
+  int *tag = atom->tag;
+  double *radius = atom->radius;
+  int nall = nlocal + atom->nghost;
+
+  int inum = pair_gran->list->inum;
+  int * ilist = pair_gran->list->ilist;
+  int * numneigh = pair_gran->list->numneigh;
+
+  int ** firstneigh = pair_gran->list->firstneigh;
+  double ** firsthist = pair_gran->listgranhistory->firstdouble;
+
+  int n_wall_fixes = modify->n_fixes_style("wall/gran");
+
+  std::vector<double> breaker_energy(nall, 0.0);
+  std::vector<int> breaker_tag(nall, 0);
+  // in case of impact energy criterion, we may already have a breaker but are still waiting for largest overlap
+  std::vector<bool> already_doomed(nall, false);
+  for (int i = 0; i < nall; ++i) {
+    if (mask[i] & groupbit &&
+        radius[i] > min_break_rad &&
+        (fix_breaker->get_vector_atom_int(i) > 0 || fix_breaker_wall->get_vector_atom_int(i) > 0)) {
+      already_doomed[i] = true;
+    }
+  }
+
+  // particle - particle
+  for (int ii = 0; ii < inum; ++ii) {
+    const int i = ilist[ii];
+    double * const allhist = firsthist[i];
+    int * const jlist = firstneigh[i];
+    const int jnum = numneigh[i];
+
+    for (int jj = 0; jj < jnum; ++jj) {
+      const int j = jlist[jj];
+      double * contact_history = &allhist[dnum*jj];
+
+      const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[i]);
+      const double impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[j]);
+
+      if (!already_doomed[i]) { // no breaker yet
+        if (breaker_energy[i] < impact_energy_limited_i) {
+          breaker_energy[i] = impact_energy_limited_i;
+          breaker_tag[i] = tag[j];
+        }
+      }
+      if (!already_doomed[j]) { // no breaker yet
+        if (breaker_energy[j] < impact_energy_limited_j) {
+          breaker_energy[j] = impact_energy_limited_j;
+          breaker_tag[j] = tag[i];
+        }
+      }
+
+      flag[i] += impact_energy_limited_i;
+      flag[j] += impact_energy_limited_j;
+    }
+
+    if (mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
+      const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
+      if (probability > random->uniform()) {
+        fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
+      }
+    }
+  }
+
+  // particle - wall
+  for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
+    FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+
+    if (fwg->is_mesh_wall()) {
+
+      int n_FixMesh = fwg->n_meshes();
+
+      for (int iMesh = 0; iMesh < n_FixMesh; iMesh++) {
+
+        TriMesh *mesh = fwg->mesh_list()[iMesh]->triMesh();
+        int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+        FixContactHistoryMesh *fix_contact = fwg->mesh_list()[iMesh]->contactHistory();
+        if (!fix_contact) continue;
+
+        // get neighborList and numNeigh
+        FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
+        if (!meshNeighlist) continue;
+
+        // loop owned and ghost triangles
+        for (int iTri = 0; iTri < nTriAll; iTri++) {
+
+          const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
+          const int numneigh = neighborList.size();
+
+          for (int iCont = 0; iCont < numneigh; iCont++) {
+
+            const int iPart = neighborList[iCont];
+
+            if (already_doomed[iPart]) continue;
+            if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+            if (radius[iPart] < min_break_rad) continue;
+
+            double *contact_history = NULL;
+            {
+              // get contact history of particle iPart and triangle idTri
+              //NP depends on naming in fix_wall_gran!
+              std::string fix_nneighs_name("n_neighs_mesh_");
+              fix_nneighs_name += mesh->mesh_id();
+              FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
+              if (fix_nneighs) {
+                int idTri = mesh->id(iTri);
+                const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
+                for (int j = 0; j < nneighs; ++j) {
+                  if (fix_contact->partner(iPart, j) == idTri) {
+                    contact_history = fix_contact->contacthistory(iPart, j);
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (contact_history) {
+              const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
+              flag[iPart] += impact_energy_limited_i;
+
+              if (breaker_energy[iPart] < impact_energy_limited_i) {
+                breaker_energy[iPart] = impact_energy_limited_i;
+                breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
+                const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
+                if (probability > random->uniform()) {
+                  fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
+                  fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
+                }
+              }
+            }
+          }
+        }
+      }
+    } else { // primitive wall
+
+      double **c_history = NULL;
+
+      if (fwg->dnum() > 0) {
+        //NP depends on naming in fix_wall_gran!
+        std::string hist_name("history_");
+        hist_name += fwg->id;
+        FixPropertyAtom *fix_history_primitive_ =
+        static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
+        if (fix_history_primitive_) {
+          c_history = fix_history_primitive_->array_atom;
+        }
+      }
+
+      if (c_history) {
+        // loop neighbor list
+        int *neighborList;
+        int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
+
+        for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
+          int iPart = *neighborList;
+          if (already_doomed[iPart]) continue;
+          if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+          if (radius[iPart] < min_break_rad) continue;
+
+          double *contact_history = c_history[iPart];
+          const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
+          flag[iPart] += impact_energy_limited_i;
+
+          if (breaker_energy[iPart] < impact_energy_limited_i) {
+            breaker_energy[iPart] = impact_energy_limited_i;
+            breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
+            const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
+            if (probability > random->uniform()) {
+              fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
+              fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
+            }
+          }
+        }
+      }
+    }
+  }
+
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixBreakParticle::check_force_criterion()
+{
+  double *flag = fix_break->vector_atom;
+  int nlocal = atom->nlocal;
+  int *mask = atom->mask;
+  double *radius = atom->radius;
+  int nall = nlocal + atom->nghost;
+
+  int inum = pair_gran->list->inum;
+  int * ilist = pair_gran->list->ilist;
+  int * numneigh = pair_gran->list->numneigh;
+
+  int ** firstneigh = pair_gran->list->firstneigh;
+  double ** firsthist = pair_gran->listgranhistory->firstdouble;
+
+  int n_wall_fixes = modify->n_fixes_style("wall/gran");
+
+  std::vector<double> forceMax(nall, 0.0);
+
+  // particle - particle
+  for (int ii = 0; ii < inum; ++ii) {
+    const int i = ilist[ii];
+    double * const allhist = firsthist[i];
+    int * const jlist = firstneigh[i];
+    const int jnum = numneigh[i];
+
+    for (int jj = 0; jj < jnum; ++jj) {
+      const int j = jlist[jj];
+      double * contact_history = &allhist[dnum*jj];
+
+      forceMax[i] = std::max(forceMax[i], contact_history[forceMaxOffset]);
+      forceMax[j] = std::max(forceMax[j], contact_history[forceMaxOffset]);
+    }
+  }
+
+  // particle - wall
+  for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
+    FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+    if (fwg->is_mesh_wall()) {
+
+      int n_FixMesh = fwg->n_meshes();
+
+      for (int iMesh = 0; iMesh < n_FixMesh; iMesh++) {
+
+        TriMesh *mesh = fwg->mesh_list()[iMesh]->triMesh();
+        int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+        FixContactHistoryMesh *fix_contact = fwg->mesh_list()[iMesh]->contactHistory();
+        if (!fix_contact) continue;
+
+        // get neighborList and numNeigh
+        FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
+        if (!meshNeighlist) continue;
+
+        // loop owned and ghost triangles
+        for (int iTri = 0; iTri < nTriAll; iTri++) {
+
+          const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
+          const int numneigh = neighborList.size();
+
+          for (int iCont = 0; iCont < numneigh; iCont++) {
+
+            const int iPart = neighborList[iCont];
+
+            if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+            if (radius[iPart] < min_break_rad) continue;
+
+            double *contact_history = NULL;
+            {
+              // get contact history of particle iPart and triangle idTri
+              //NP depends on naming in fix_wall_gran!
+              std::string fix_nneighs_name("n_neighs_mesh_");
+              fix_nneighs_name += mesh->mesh_id();
+              FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
+              if (fix_nneighs) {
+                int idTri = mesh->id(iTri);
+                const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
+                for (int j = 0; j < nneighs; ++j) {
+                  if (fix_contact->partner(iPart, j) == idTri) {
+                    contact_history = fix_contact->contacthistory(iPart, j);
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (contact_history) {
+              forceMax[iPart] = std::max(forceMax[iPart], contact_history[forceMaxOffset]);
+            }
+          }
+        }
+      }
+    } else { // primitive wall
+
+      double **c_history = NULL;
+
+      if (fwg->dnum() > 0) {
+        //NP depends on naming in fix_wall_gran!
+        std::string hist_name("history_");
+        hist_name += fwg->id;
+        FixPropertyAtom *fix_history_primitive_ =
+          static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
+        if (fix_history_primitive_) {
+          c_history = fix_history_primitive_->array_atom;
+        }
+      }
+
+      if (c_history) {
+        // loop neighbor list
+        int *neighborList;
+        int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
+
+        for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
+          int iPart = *neighborList;
+          if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+          if (radius[iPart] < min_break_rad) continue;
+
+          double *contact_history = c_history[iPart];
+
+          forceMax[iPart] = std::max(forceMax[iPart], contact_history[forceMaxOffset]);
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < nall; ++i) {
+    if (mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
+      double probability = 1.0 - exp(-fMat * forceMax[i] / threshold);
+      if (flag[i] == 0.0) {
+        flag[i] = random->uniform();
+      }
+      if (probability > flag[i]) {
+        flag[i] = -probability;  // sign indicates breakage
+      }
+    }
+  }
+
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixBreakParticle::check_von_mises_criterion()
+{
+  double *flag = fix_break->vector_atom;
+  int nlocal = atom->nlocal;
+  int *mask = atom->mask;
+  double *radius = atom->radius;
+  int nall = nlocal + atom->nghost;
+
+  int inum = pair_gran->list->inum;
+  int * ilist = pair_gran->list->ilist;
+  int * numneigh = pair_gran->list->numneigh;
+
+  int ** firstneigh = pair_gran->list->firstneigh;
+  double ** firsthist = pair_gran->listgranhistory->firstdouble;
+
+  int n_wall_fixes = modify->n_fixes_style("wall/gran");
+
+  double **stress = fix_stress->array_atom;
+  std::vector<double> r_over_vol(nall, 0.0);
+  for (int i = 0; i < nall; ++i) {
+    for (int j = 0; j < 6; ++j) {
+      stress[i][j] = 0.0;
+    }
+    r_over_vol[i] = 1./(MY_4PI3 * radius[i] * radius[i]);
+  }
+
+  // particle - particle
+  for (int ii = 0; ii < inum; ++ii) {
+    const int i = ilist[ii];
+    double * const allhist = firsthist[i];
+    int * const jlist = firstneigh[i];
+    const int jnum = numneigh[i];
+
+    for (int jj = 0; jj < jnum; ++jj) {
+      const int j = jlist[jj];
+      double * contact_history = &allhist[dnum*jj];
+
+      double Fn = contact_history[forceMaxOffset];
+      //NP en points from j to i
+      double enx = contact_history[normalOffset];
+      double eny = contact_history[normalOffset+1];
+      double enz = contact_history[normalOffset+2];
+
+      if (mask[i] & groupbit && radius[i] > min_break_rad) {
+        stress[i][0] += r_over_vol[i] * enx * Fn * enx;
+        stress[i][1] += r_over_vol[i] * eny * Fn * eny;
+        stress[i][2] += r_over_vol[i] * enz * Fn * enz;
+        stress[i][3] += r_over_vol[i] * eny * Fn * enz;
+        stress[i][4] += r_over_vol[i] * enx * Fn * enz;
+        stress[i][5] += r_over_vol[i] * enx * Fn * eny;
+      }
+
+      if (mask[j] & groupbit && radius[j] > min_break_rad) {
+        stress[j][0] += r_over_vol[j] * enx * Fn * enx;
+        stress[j][1] += r_over_vol[j] * eny * Fn * eny;
+        stress[j][2] += r_over_vol[j] * enz * Fn * enz;
+        stress[j][3] += r_over_vol[j] * eny * Fn * enz;
+        stress[j][4] += r_over_vol[j] * enx * Fn * enz;
+        stress[j][5] += r_over_vol[j] * enx * Fn * eny;
+      }
+    }
+  }
+
+  // particle - wall
+  for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
+    FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+    if (fwg->is_mesh_wall()) {
+
+      int n_FixMesh = fwg->n_meshes();
+
+      for (int iMesh = 0; iMesh < n_FixMesh; iMesh++) {
+
+        TriMesh *mesh = fwg->mesh_list()[iMesh]->triMesh();
+        int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+        FixContactHistoryMesh *fix_contact = fwg->mesh_list()[iMesh]->contactHistory();
+        if (!fix_contact) continue;
+
+        // get neighborList and numNeigh
+        FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
+        if (!meshNeighlist) continue;
+
+        // loop owned and ghost triangles
+        for (int iTri = 0; iTri < nTriAll; iTri++) {
+
+          const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
+          const int numneigh = neighborList.size();
+
+          for (int iCont = 0; iCont < numneigh; iCont++) {
+
+            const int iPart = neighborList[iCont];
+
+            if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+            if (radius[iPart] < min_break_rad) continue;
+
+            double *contact_history = NULL;
+            {
+              // get contact history of particle iPart and triangle idTri
+              //NP depends on naming in fix_wall_gran!
+              std::string fix_nneighs_name("n_neighs_mesh_");
+              fix_nneighs_name += mesh->mesh_id();
+              FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
+              if (fix_nneighs) {
+                int idTri = mesh->id(iTri);
+                const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
+                for (int j = 0; j < nneighs; ++j) {
+                  if (fix_contact->partner(iPart, j) == idTri) {
+                    contact_history = fix_contact->contacthistory(iPart, j);
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (contact_history) {
+              double Fn = contact_history[forceMaxOffset];
+              //NP en points from j to i
+              double enx = contact_history[normalOffset];
+              double eny = contact_history[normalOffset+1];
+              double enz = contact_history[normalOffset+2];
+
+              stress[iPart][0] += r_over_vol[iPart] * enx * Fn * enx;
+              stress[iPart][1] += r_over_vol[iPart] * eny * Fn * eny;
+              stress[iPart][2] += r_over_vol[iPart] * enz * Fn * enz;
+              stress[iPart][3] += r_over_vol[iPart] * eny * Fn * enz;
+              stress[iPart][4] += r_over_vol[iPart] * enx * Fn * enz;
+              stress[iPart][5] += r_over_vol[iPart] * enx * Fn * eny;
+            }
+          }
+        }
+      }
+    } else { // primitive wall
+
+      double **c_history = NULL;
+
+      if (fwg->dnum() > 0) {
+        //NP depends on naming in fix_wall_gran!
+        std::string hist_name("history_");
+        hist_name += fwg->id;
+        FixPropertyAtom *fix_history_primitive_ =
+          static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
+        if (fix_history_primitive_) {
+          c_history = fix_history_primitive_->array_atom;
+        }
+      }
+
+      if (c_history) {
+        // loop neighbor list
+        int *neighborList;
+        int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
+
+        for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
+          int iPart = *neighborList;
+          if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+          if (radius[iPart] < min_break_rad) continue;
+
+          double *contact_history = c_history[iPart];
+
+          double Fn = contact_history[forceMaxOffset];
+          //NP en points from j to i
+          double enx = contact_history[normalOffset];
+          double eny = contact_history[normalOffset+1];
+          double enz = contact_history[normalOffset+2];
+
+          stress[iPart][0] += r_over_vol[iPart] * enx * Fn * enx;
+          stress[iPart][1] += r_over_vol[iPart] * eny * Fn * eny;
+          stress[iPart][2] += r_over_vol[iPart] * enz * Fn * enz;
+          stress[iPart][3] += r_over_vol[iPart] * eny * Fn * enz;
+          stress[iPart][4] += r_over_vol[iPart] * enx * Fn * enz;
+          stress[iPart][5] += r_over_vol[iPart] * enx * Fn * eny;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < nall; ++i) {
+    if (mask[i] & groupbit && radius[i] > min_break_rad) {
+      // deviator stress
+      double trace3 = (stress[i][0] + stress[i][1] + stress[i][2]) / 3.0;
+      stress[i][0] -= trace3;
+      stress[i][1] -= trace3;
+      stress[i][2] -= trace3;
+      double von_Mises_stress = 0.5 * (stress[i][0]*stress[i][0] + stress[i][1]*stress[i][1] + stress[i][2]*stress[i][2])
+                                     + stress[i][3]*stress[i][3] + stress[i][4]*stress[i][4] + stress[i][5]*stress[i][5];
+      if (von_Mises_stress > 0.0) {
+        von_Mises_stress = sqrt(3.0 * von_Mises_stress);
+        double probability = 1.0 - exp(-fMat * von_Mises_stress / threshold);
+        if (flag[i] == 0.0) {
+          flag[i] = random->uniform();
+        }
+        if (probability > flag[i]) {
+          flag[i] = -probability;  // sign indicates breakage
+        }
+      }
+    }
+  }
+
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixBreakParticle::pre_insert()
 {
-  int i,ibreak;
   int nlocal = atom->nlocal;
+  int nall = nlocal + atom->nghost;
   int *mask = atom->mask;
   double **x = atom->x;
   double **v = atom->v;
   double *radius = atom->radius;
   double *rmass = atom->rmass;
   double *flag = fix_break->vector_atom;
-  double *breaker = fix_breaker->vector_atom;
   AtomVec *avec = atom->avec;
 
   // count # of particles to break
 
   n_break_this_local = 0;
   mass_break_this_local = 0.;
+  int n_break_this_all = 0;
 
   int inum = pair_gran->list->inum;
   int * ilist = pair_gran->list->ilist;
@@ -553,10 +981,17 @@ void FixBreakParticle::pre_insert()
   int ** firstneigh = pair_gran->list->firstneigh;
   double ** firsthist = pair_gran->listgranhistory->firstdouble;
 
+  int n_wall_fixes = modify->n_fixes_style("wall/gran");
+
+  // find out which particles are breaking this timestep
+  std::set<int> breaking_atoms;
+
   switch (breakage_criterion) {
   case BC_ENERGY:
     {
       std::vector<bool> found_breaker(nlocal, false);
+
+      // check particles
       for (int ii = 0; ii < inum; ++ii) {
         const int i = ilist[ii];
         double * const allhist = firsthist[i];
@@ -565,22 +1000,29 @@ void FixBreakParticle::pre_insert()
 
         for (int jj = 0; jj < jnum; ++jj) {
           const int j = jlist[jj];
+          double * contact_history = &allhist[dnum*jj];
 
           if (atom->tag[j] == fix_breaker->get_vector_atom_int(i)) {
             found_breaker[i] = true;
-            double * contact_history = &allhist[dnum*jj];
             if (contact_history[deltaMaxOffset] < 0.0) {
-              ++n_break_this_local;
-              mass_break_this_local += rmass[i];
+              ++n_break_this_all;
+              if (i < nlocal) {
+                ++n_break_this_local;
+                mass_break_this_local += rmass[i];
+              }
+              breaking_atoms.insert(i);
               flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
             }
           }
           if (atom->tag[i] == fix_breaker->get_vector_atom_int(j)) {
             found_breaker[j] = true;
-            double * contact_history = &allhist[dnum*jj];
             if (contact_history[deltaMaxOffset] < 0.0) {
-              ++n_break_this_local;
-              mass_break_this_local += rmass[j];
+              ++n_break_this_all;
+              if (j < nlocal) {
+                ++n_break_this_local;
+                mass_break_this_local += rmass[j];
+              }
+              breaking_atoms.insert(j);
               flag[j] = -(1.0 - exp(-fMat * 2.0*radius[j] * flag[j])); // sign indicates breakage
             }
           }
@@ -591,21 +1033,139 @@ void FixBreakParticle::pre_insert()
           }
         }
       }
+
+      // check walls
+      for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
+
+        FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+
+        if (fwg->is_mesh_wall()) {
+          int n_FixMesh = fwg->n_meshes();
+
+          for (int iMesh = 0; iMesh < n_FixMesh; iMesh++) {
+
+            TriMesh *mesh = fwg->mesh_list()[iMesh]->triMesh();
+            int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+            FixContactHistoryMesh *fix_contact = fwg->mesh_list()[iMesh]->contactHistory();
+            if (!fix_contact) continue;
+
+            // get neighborList and numNeigh
+            FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
+            if (!meshNeighlist) continue;
+
+            // loop owned and ghost triangles
+            for (int iTri = 0; iTri < nTriAll; iTri++) {
+
+              const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
+              const int numneigh = neighborList.size();
+
+              for (int iCont = 0; iCont < numneigh; iCont++) {
+
+                const int iPart = neighborList[iCont];
+
+                if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+                if (radius[iPart] < min_break_rad) continue;
+
+                double *contact_history = NULL;
+                {
+                  // get contact history of particle iPart and triangle idTri
+                  int idTri = mesh->id(iTri);
+                  std::string fix_nneighs_name("n_neighs_mesh_");
+                  fix_nneighs_name += mesh->mesh_id();
+                  FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
+                  const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
+                  for (int j = 0; j < nneighs; ++j) {
+                    if (fix_contact->partner(iPart, j) == idTri) {
+                      contact_history = fix_contact->contacthistory(iPart, j);
+                      break;
+                    }
+                  }
+                }
+
+                if (contact_history) {
+                  if (contact_history[deltaMaxOffset] < 0.0) {
+                    ++n_break_this_all;
+                    if (iPart < nlocal) {
+                      ++n_break_this_local;
+                      mass_break_this_local += rmass[iPart];
+                    }
+                    breaking_atoms.insert(iPart);
+                    flag[iPart] = -(1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart])); // sign indicates breakage
+                  }
+                }
+              }
+            }
+          }
+        } else { // primitive wall
+
+          double **c_history = NULL;
+
+          if (fwg->dnum() > 0) {
+            std::string hist_name("history_");
+            hist_name += fwg->id;
+            FixPropertyAtom *fix_history_primitive_ =
+            static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
+            if (fix_history_primitive_) {
+              c_history = fix_history_primitive_->array_atom;
+            }
+          }
+
+          if (c_history) {
+            // loop neighbor list
+            int *neighborList;
+            int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
+
+            for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
+              int iPart = *neighborList;
+              if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+              if (radius[iPart] < min_break_rad) continue;
+              if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(JSHash(fwg->id))) continue;
+
+              double *contact_history = c_history[iPart];
+              if (contact_history[deltaMaxOffset] < 0.0) {
+                ++n_break_this_all;
+                if (iPart < nlocal) {
+                  ++n_break_this_local;
+                  mass_break_this_local += rmass[iPart];
+                }
+                breaking_atoms.insert(iPart);
+                flag[iPart] = -(1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart])); // sign indicates breakage
+              }
+            }
+          }
+        }
+      }
     }
     break;
   case BC_FORCE:
-    for(int i = 0; i < nlocal; ++i) {
+    for (int i = 0; i < nlocal; ++i) {
       if (mask[i] & groupbit && flag[i] < 0.0) {
+        ++n_break_this_all;
         ++n_break_this_local;
         mass_break_this_local += rmass[i];
+        breaking_atoms.insert(i);
+      }
+    }
+    for (int i = nlocal; i < nall; ++i) {
+      if (mask[i] & groupbit && flag[i] < 0.0) {
+        ++n_break_this_all;
+        breaking_atoms.insert(i);
       }
     }
     break;
   case BC_VON_MISES:
-    for(int i = 0; i < nlocal; ++i) {
+    for (int i = 0; i < nlocal; ++i) {
       if (mask[i] & groupbit && flag[i] < 0.0) {
+        ++n_break_this_all;
         ++n_break_this_local;
         mass_break_this_local += rmass[i];
+        breaking_atoms.insert(i);
+      }
+    }
+    for (int i = nlocal; i < nall; ++i) {
+      if (mask[i] & groupbit && flag[i] < 0.0) {
+        ++n_break_this_all;
+        breaking_atoms.insert(i);
       }
     }
     break;
@@ -619,12 +1179,17 @@ void FixBreakParticle::pre_insert()
   MPI_Sum_Scalar(mass_break_this_local,mass_break_this,world);
   mass_break += mass_break_this;
 
-  if (n_break_this_local == 0)
-      return;
+  if (n_break_this_all == 0)
+    return;
+
+  std::map<int, double> deltaMax;
+  for (int i = 0; i < nlocal; ++i)
+    deltaMax[atom->tag[i]] = 0.0;
 
   // virtual contact force calculation to restore overlap energy of contacting particles
   delta_v.clear();
 
+  // particle - particle energy
   for (int ii = 0; ii < inum; ++ii) {
     const int i = ilist[ii];
 
@@ -636,7 +1201,6 @@ void FixBreakParticle::pre_insert()
       const int j = jlist[jj];
 
       if (flag[i] < 0.0 || flag[j] < 0.0) {
-
         virtual_x_i.clear();
         virtual_x_i.push_back(x[i][0]);
         virtual_x_i.push_back(x[i][1]);
@@ -655,19 +1219,22 @@ void FixBreakParticle::pre_insert()
         virtual_v_j.push_back(v[j][1]);
         virtual_v_j.push_back(v[j][2]);
 
-        virtual_f_ij.clear();
-        virtual_f_ij.push_back(0.0);
-        virtual_f_ij.push_back(0.0);
-        virtual_f_ij.push_back(0.0);
-
         double * contact_history = &allhist[dnum*jj];
+        deltaMax[atom->tag[i]] = std::max(deltaMax[atom->tag[i]], fabs(contact_history[deltaMaxOffset]));
+        deltaMax[atom->tag[j]] = std::max(deltaMax[atom->tag[j]], fabs(contact_history[deltaMaxOffset]));
+
         double siblingDeltaMax = contact_history[siblingOffset+1];
 
-        while(true) {
+        while (true) {
           if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
-          virtual_initial_integrate(i, j);
+          virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
+          invert_vector(virtual_f_ij);
+          virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
+
           if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
-          virtual_final_integrate(i, j);
+          virtual_final_integrate(i, virtual_v_i);
+          invert_vector(virtual_f_ij);
+          virtual_final_integrate(j, virtual_v_j);
         }
 
         {
@@ -695,18 +1262,168 @@ void FixBreakParticle::pre_insert()
     }
   }
 
+
+  std::multimap<int,TriMeshContacts*> contacting_meshes; // atom_tag, mesh & triangles
+  std::multimap<int,PrimitiveWall*> contacting_prim_walls;
+  // particle - wall energy
+  {
+    for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
+      FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+      if (fwg->is_mesh_wall()) {
+
+        double bary[3];
+        double delta[3],deltan;
+
+        for (int iMesh = 0; iMesh < fwg->n_meshes(); iMesh++) {
+          TriMesh *mesh = fwg->mesh_list()[iMesh]->triMesh();
+          int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+
+          // get neighborList and numNeigh
+          FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
+
+          int atom_type_wall = fwg->mesh_list()[iMesh]->atomTypeWall();
+
+          std::map<int,std::set<int> > contacting_triangles; // atom_tag, triangle
+          // loop owned and ghost triangles
+          for (int iTri = 0; iTri < nTriAll; iTri++) {
+            const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
+            const int numneigh = neighborList.size();
+            for (int iCont = 0; iCont < numneigh; iCont++) {
+              const int iPart = neighborList[iCont];
+
+              if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+              if (breaking_atoms.find(iPart) == breaking_atoms.end()) continue;
+
+              deltan = mesh->resolveTriSphereContactBary(iPart, iTri, radius[iPart], x[iPart], delta, bary);
+
+              // to ensure that the fragments end up on the same side of the mesh as the original particle
+              // all contacting triangles are required in ParticleSpatialDistribution
+              // triangles that have an edge/corner contact but edge/corner are not active return (LARGE_TRIMESH - radius)
+              if (deltan + radius[iPart] > 999999) {
+                contacting_triangles[atom->tag[iPart]].insert(iTri);
+              } else if (deltan < 0.0) {
+                contacting_triangles[atom->tag[iPart]].insert(iTri);
+
+                deltan = -deltan;
+                deltaMax[atom->tag[iPart]] = std::max(deltaMax[atom->tag[iPart]], deltan);
+
+                double Yeff;
+                {
+                  int itype = atom->type[iPart];
+                  int jtype = atom_type_wall;
+                  const int max_type = pair_gran->mpg->max_type();
+                  const double *Y, *nu;
+                  Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
+                  nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
+                  Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
+                }
+
+                /// Hertz, TODO : Hooke
+                double sqrtval = sqrt(radius[iPart]*deltan);
+                double kn = 4./3. * Yeff * sqrtval;
+                double E_el = (2./5.)*kn*deltan*deltan;
+                double v_el = sqrt(2.0 * E_el / rmass[iPart]);
+                const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
+                const double r = sqrt(rsq);
+                const double rinv = 1.0 / r;
+                std::map<int, std::vector<double> >::iterator it;
+                it = delta_v.find(iPart);
+                if (it == delta_v.end()) {
+                  std::vector<double> delta_v0(3,0.0);
+                  delta_v[iPart] = delta_v0;
+                }
+                delta_v[iPart][0] += v_el * delta[0]*rinv;
+                delta_v[iPart][1] += v_el * delta[1]*rinv;
+                delta_v[iPart][2] += v_el * delta[2]*rinv;
+              }
+            }
+          } // end triangle loop
+
+          for (std::map<int,std::set<int> >::const_iterator it=contacting_triangles.begin(); it!=contacting_triangles.end(); ++it) {
+            TriMeshContacts *tmc = new TriMeshContacts(mesh);
+            tmc->contacts = it->second;
+            contacting_meshes.insert(std::pair<int,TriMeshContacts*>(it->first, tmc));
+          }
+
+        }
+
+      } else { // primitive wall
+
+        // loop neighbor list
+        int *neighborList;
+        int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
+
+        for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
+          int iPart = *neighborList;
+
+          if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+          if (breaking_atoms.find(iPart) == breaking_atoms.end()) continue;
+
+          double delta[3];
+          double deltan = fwg->primitiveWall()->resolveContact(x[iPart], radius[iPart], delta);
+
+          if (deltan < 0.0) {
+            contacting_prim_walls.insert(std::pair<int,PrimitiveWall*>(atom->tag[iPart],fwg->primitiveWall()));
+
+            deltan = -deltan;
+            deltaMax[atom->tag[iPart]] = std::max(deltaMax[atom->tag[iPart]], deltan);
+
+            double Yeff;
+            {
+                int itype = atom->type[iPart];
+                int jtype = fwg->atom_type_wall();
+                const int max_type = pair_gran->mpg->max_type();
+                const double *Y, *nu;
+                Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
+                nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
+                Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
+            }
+
+            /// Hertz, TODO : Hooke
+            double sqrtval = sqrt(radius[iPart]*deltan);
+            double kn = 4./3. * Yeff * sqrtval;
+            double E_el = (2./5.)*kn*deltan*deltan;
+            double v_el = sqrt(2.0 * E_el / rmass[iPart]);
+            const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
+            const double r = sqrt(rsq);
+            const double rinv = 1.0 / r;
+            std::map<int, std::vector<double> >::iterator it;
+            it = delta_v.find(iPart);
+            if (it == delta_v.end()) {
+              std::vector<double> delta_v0(3,0.0);
+              delta_v[iPart] = delta_v0;
+            }
+            delta_v[iPart][0] += v_el * delta[0]*rinv;
+            delta_v[iPart][1] += v_el * delta[1]*rinv;
+            delta_v[iPart][2] += v_el * delta[2]*rinv;
+          }
+        }
+      }
+    }
+  }
+
+  // correct velocities
   for (std::map<int, std::vector<double> >::iterator it=delta_v.begin(); it!=delta_v.end(); ++it) {
     v[it->first][0] += it->second[0];
     v[it->first][1] += it->second[1];
     v[it->first][2] += it->second[2];
   }
 
-  // allocate breakage data
-  if (breakdata) memory->destroy(breakdata);
-  memory->create(breakdata,n_break_this_local,10,"FixBreakParticle::breakdata");
+  // allocate breakage data if required
+  if (breakdata) {
+    memory->destroy(breakdata);
+    breakdata = NULL;
+  }
+
+  if (n_break_this_local == 0)
+    return;
+
+  memory->create(breakdata,n_break_this_local,11,"FixBreakParticle::breakdata");
 
   // fill breakage data and remove particles
+  //NP leave ghosts alone
   const double eMF = 0.485;
+  int i, ibreak;
   i = ibreak = 0;
   while (i < nlocal) {
     if (mask[i] & groupbit && flag[i] < 0.0) {
@@ -718,6 +1435,8 @@ void FixBreakParticle::pre_insert()
       breakdata[ibreak][7] = -flag[i];
       breakdata[ibreak][8] = atom->tag[i];
       breakdata[ibreak][9] = (1.0 - eMF*eMF) * 0.5 * rmass[i] * (v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2]);
+      breakdata[ibreak][10] = deltaMax[atom->tag[i]];
+
       ++ibreak;
 
       // delete particle
@@ -736,7 +1455,9 @@ void FixBreakParticle::pre_insert()
   double rlocal = static_cast<double>(atom->nlocal);
   MPI_Allreduce(&rlocal,&atom->natoms,1,MPI_DOUBLE,MPI_SUM,world);
 
-  fix_fragments->pre_insert(n_break_this_local, breakdata);
+  fix_fragments->pre_insert(n_break_this_local, breakdata, contacting_prim_walls, contacting_meshes);
+  for (std::multimap<int,TriMeshContacts*>::iterator it=contacting_meshes.begin(); it != contacting_meshes.end(); ++it)
+    delete (it->second);
 
   // print stats
   print_stats_breakage_during();
@@ -834,34 +1555,63 @@ double FixBreakParticle::virtual_force(int i, int j, double *siblingDeltaMax)
   virtual_f_ij.push_back(0.0);
   virtual_f_ij.push_back(0.0);
   virtual_f_ij.push_back(0.0);
-  double deltan = 0.0;
 
-  if(true) { // hertz/break
-    const int itype = atom->type[i];
-    const int jtype = atom->type[j];
-    double ri = atom->radius[i];
-    double rj = atom->radius[j];
-    double reff = ri*rj/(ri+rj);//cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
+  CollisionData cdata;
+
+  const double delx = virtual_x_i[0] - virtual_x_j[0];
+  const double dely = virtual_x_i[1] - virtual_x_j[1];
+  const double delz = virtual_x_i[2] - virtual_x_j[2];
+
+  cdata.rsq = delx * delx + dely * dely + delz * delz;
+  cdata.radi = atom->radius[i];
+  cdata.radj = atom->radius[j];
+  cdata.radsum = cdata.radi + cdata.radj;
+
+  if (cdata.rsq < cdata.radsum * cdata.radsum) {
+    cdata.i = i;
+    cdata.j = j;
+    cdata.is_wall = false;
+    cdata.itype = atom->type[i];
+    cdata.jtype = atom->type[j];
     double mi = atom->rmass[i];
     double mj = atom->rmass[j];
-    double meff = mi * mj / (mi + mj);
+    cdata.meff = mi * mj / (mi + mj);
+    cdata.r = sqrt(cdata.rsq);
+    const double rinv = 1.0 / cdata.r;
+    cdata.rinv = rinv;
+    cdata.deltan = cdata.radsum - cdata.r;
+    cdata.en[0]   = delx * rinv;
+    cdata.en[1]   = dely * rinv;
+    cdata.en[2]   = delz * rinv;
 
-    const double delx = virtual_x_i[0] - virtual_x_j[0];
-    const double dely = virtual_x_i[1] - virtual_x_j[1];
-    const double delz = virtual_x_i[2] - virtual_x_j[2];
-    const double rsq = delx * delx + dely * dely + delz * delz;
-    const double radsum = ri + rj;
+    return virtual_collision(cdata, siblingDeltaMax);
+  }
 
-    if (rsq < radsum * radsum) {
-      const double r = sqrt(rsq);
-      const double rinv = 1.0 / r;
-      const double enx = delx * rinv;
-      const double eny = dely * rinv;
-      const double enz = delz * rinv;
+  return 0.0;
+}
 
-      deltan = radsum - r;
-      if (*siblingDeltaMax > 0.0) {
-        const double collisionFactor = fix_collision_factor->vector_atom[i];
+
+double FixBreakParticle::virtual_collision(CollisionData & cdata, double *siblingDeltaMax)
+{
+  double deltan = 0.0;
+
+  if (true) { // hertz/break
+    const int itype = cdata.itype;
+    const int jtype = cdata.jtype;
+    const double ri = cdata.radi;
+    const double rj = cdata.radj;
+    const double reff = cdata.is_wall ? ri : (ri*rj/(ri+rj));
+    const double meff = cdata.meff;
+
+    {
+      const double enx = cdata.en[0];
+      const double eny = cdata.en[1];
+      const double enz = cdata.en[2];
+
+      deltan = cdata.deltan;
+
+      if (!cdata.is_wall && *siblingDeltaMax > 0.0) {
+        const double collisionFactor = fix_collision_factor->vector_atom[cdata.i];
         if (deltan > *siblingDeltaMax) {
           deltan -= *siblingDeltaMax;
           deltan += *siblingDeltaMax*collisionFactor;
@@ -873,17 +1623,22 @@ double FixBreakParticle::virtual_force(int i, int j, double *siblingDeltaMax)
 
       double sqrtval = sqrt(reff*deltan);
 
-      const int max_type = pair_gran->mpg->max_type();
-      const double *Y, *nu;
-      const double * const * e;
-      Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
-      nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
-      e = static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRestitution","property/global","peratomtypepair",max_type,max_type,style))->get_array();
+      double Yeff;
+      double betaeff;
+      {
+        const int max_type = pair_gran->mpg->max_type();
+        const double *Y, *nu;
+        const double * const * e;
+        Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
+        nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
+        e = static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRestitution","property/global","peratomtypepair",max_type,max_type,style))->get_array();
 
-      const double Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
-      const double loge = log(e[itype-1][jtype-1]);
-      const double betaeff = loge/sqrt(loge * loge + MY_PI * MY_PI);
-      const double Sn = 2.*Yeff*sqrtval;
+        Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
+        const double loge = log(e[itype-1][jtype-1]);
+        betaeff = loge/sqrt(loge * loge + MY_PI * MY_PI);
+      }
+
+      const double Sn = 2. * Yeff*sqrtval;
 
       double kn = 4./3. * Yeff * sqrtval;
       const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
@@ -909,11 +1664,11 @@ double FixBreakParticle::virtual_force(int i, int j, double *siblingDeltaMax)
       }
 
       // apply normal force
-      if (false) { /*(cdata.is_wall) {
+      if (cdata.is_wall) {
         const double Fn_ = Fn * cdata.area_ratio;
-        i_forces.delta_F[0] = Fn_ * cdata.en[0];
-        i_forces.delta_F[1] = Fn_ * cdata.en[1];
-        i_forces.delta_F[2] = Fn_ * cdata.en[2];*/
+        virtual_f_ij[0] = Fn_ * enx;
+        virtual_f_ij[1] = Fn_ * eny;
+        virtual_f_ij[2] = Fn_ * enz;
       } else {
         virtual_f_ij[0] = Fn * enx;
         virtual_f_ij[1] = Fn * eny;
@@ -927,50 +1682,43 @@ double FixBreakParticle::virtual_force(int i, int j, double *siblingDeltaMax)
 }
 
 
-void FixBreakParticle::virtual_initial_integrate(int i, int j)
+void FixBreakParticle::virtual_initial_integrate(int i, std::vector<double> &virtual_v, std::vector<double> &virtual_x)
 {
     const double dtv = update->dt;
     const double dtf = 0.5 * update->dt * force->ftm2v;
     double *rmass = atom->rmass;
     double dtfm;
 
-    // update v and x of atoms
+    // update v and x of atom
 
     dtfm = dtf / rmass[i];
-    virtual_v_i[0] += dtfm * virtual_f_ij[0];
-    virtual_v_i[1] += dtfm * virtual_f_ij[1];
-    virtual_v_i[2] += dtfm * virtual_f_ij[2];
-    virtual_x_i[0] += dtv * virtual_v_i[0];
-    virtual_x_i[1] += dtv * virtual_v_i[1];
-    virtual_x_i[2] += dtv * virtual_v_i[2];
-
-    dtfm = dtf / rmass[j];
-    virtual_v_j[0] -= dtfm * virtual_f_ij[0];
-    virtual_v_j[1] -= dtfm * virtual_f_ij[1];
-    virtual_v_j[2] -= dtfm * virtual_f_ij[2];
-    virtual_x_j[0] += dtv * virtual_v_j[0];
-    virtual_x_j[1] += dtv * virtual_v_j[1];
-    virtual_x_j[2] += dtv * virtual_v_j[2];
+    virtual_v[0] += dtfm * virtual_f_ij[0];
+    virtual_v[1] += dtfm * virtual_f_ij[1];
+    virtual_v[2] += dtfm * virtual_f_ij[2];
+    virtual_x[0] += dtv * virtual_v[0];
+    virtual_x[1] += dtv * virtual_v[1];
+    virtual_x[2] += dtv * virtual_v[2];
 }
 
 
-void FixBreakParticle::virtual_final_integrate(int i, int j)
+void FixBreakParticle::virtual_final_integrate(int i, std::vector<double> &virtual_v)
 {
     const double dtf = 0.5 * update->dt * force->ftm2v;
     double *rmass = atom->rmass;
     double dtfm;
 
-    // update v of atoms
+    // update v of atom
 
     dtfm = dtf / rmass[i];
-    virtual_v_i[0] += dtfm * virtual_f_ij[0];
-    virtual_v_i[1] += dtfm * virtual_f_ij[1];
-    virtual_v_i[2] += dtfm * virtual_f_ij[2];
-
-    dtfm = dtf / rmass[j];
-    virtual_v_j[0] -= dtfm * virtual_f_ij[0];
-    virtual_v_j[1] -= dtfm * virtual_f_ij[1];
-    virtual_v_j[2] -= dtfm * virtual_f_ij[2];
+    virtual_v[0] += dtfm * virtual_f_ij[0];
+    virtual_v[1] += dtfm * virtual_f_ij[1];
+    virtual_v[2] += dtfm * virtual_f_ij[2];
 }
 
 
+void FixBreakParticle::invert_vector(std::vector<double> &v3)
+{
+    v3[0] = -v3[0];
+    v3[1] = -v3[1];
+    v3[2] = -v3[2];
+}

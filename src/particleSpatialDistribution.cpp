@@ -33,6 +33,10 @@
 #include <string>
 #include "particleSpatialDistribution.h"
 #include "random_park.h"
+#include "atom.h"
+#include "primitive_wall.h"
+#include "tri_mesh.h"
+#include "tri_mesh_contacts.h"
 
 using namespace LAMMPS_NS;
 
@@ -43,9 +47,10 @@ typedef struct
   double z;
 } point;
 
-ParticleSpatialDistribution::ParticleSpatialDistribution(RanPark *rp)
+ParticleSpatialDistribution::ParticleSpatialDistribution(RanPark *rp, int overlap)
 {
     RNG = rp;
+    max_overlap = overlap;
 }
 
 
@@ -93,8 +98,8 @@ void ParticleSpatialDistribution::randomPointInSphere(double radius, std::vector
   double length_sq = x[0]*x[0] + x[1]*x[1] + x[2]*x[2];
 
   if (length_sq > 0.0) {
-    double inverse_length = 1.0/sqrt(length_sq);
-    double factor = RNG->uniform() * radius * inverse_length;
+    const double inverse_length = 1.0/sqrt(length_sq);
+    const double factor =  RNG->uniform() * radius * inverse_length;
     x[0] *= factor;
     x[1] *= factor;
     x[2] *= factor;
@@ -236,16 +241,21 @@ void ParticleSpatialDistribution::apollonianInsertion(
 }
 
 
-void ParticleSpatialDistribution::randomInsertion(double radius,
+void ParticleSpatialDistribution::randomInsertion(
+        double *xp,
+        double radius,
         const std::vector<double>& radii,
         std::vector<std::vector<double> >& x,
         const std::vector<double>& ext_radii,
-        const std::vector<std::vector<double> >& ext_center)
+        const std::vector<std::vector<double> >& ext_center,
+        const std::vector<PrimitiveWall*>& prim_walls,
+        const std::vector<TriMeshContacts*>& meshes)
 {
   const unsigned int nParticles = radii.size();
   const unsigned int ext = ext_radii.size();
 
   if (nParticles == 0) return;
+  x.resize(nParticles);
 
   for (unsigned int idx = 0; idx < nParticles; ++idx) {
     std::vector<double> x_rand(3, 0.0);
@@ -257,27 +267,61 @@ void ParticleSpatialDistribution::randomInsertion(double radius,
       centerInOccupiedSpace = false;
       ++ntry;
 
-      // check if point is inside any sphere already inserted -> max overlap < radius
-      for (unsigned int idx2 = 0; idx2 < idx; ++idx2) {
-        centerInOccupiedSpace = isPointInSphere(x[idx2], radii[idx2], x_rand);
+      // check if point is inside any external sphere
+      for (unsigned int ext_i = 0; ext_i < ext; ++ext_i) {
+        std::vector<double> ext_c(3, 0.0);
+        ext_c[0] = ext_center[ext_i][0];
+        ext_c[1] = ext_center[ext_i][1];
+        ext_c[2] = ext_center[ext_i][2];
 
+        centerInOccupiedSpace = isPointInSphere(ext_c, ext_radii[ext_i]+radii[idx], x_rand);
         if (centerInOccupiedSpace)
-           break;
+          break;
       }
 
-      // check if point is inside any external sphere -> max overlap < radius
+      // check if point is inside a primitive wall
       if (!centerInOccupiedSpace) {
-        for (unsigned int ext_i = 0; ext_i < ext; ++ext_i) {
-          std::vector<double> ext_c(3, 0.0);
-          ext_c[0] = ext_center[ext_i][0];
-          ext_c[1] = ext_center[ext_i][1];
-          ext_c[2] = ext_center[ext_i][2];
-
-          centerInOccupiedSpace = isPointInSphere(ext_c, ext_radii[ext_i]+radii[idx], x_rand);
+        double x_global[3] = {x_rand[0] + xp[0], x_rand[1] + xp[1],x_rand[2] + xp[2]};
+        for (std::vector<PrimitiveWall*>::const_iterator it = prim_walls.begin(); it != prim_walls.end(); ++it) {
+          double delta[3];
+          centerInOccupiedSpace = (!((*it)->resolveSameSide(xp, x_global)) || ((*it)->resolveContact(x_global, radii[idx], delta) < 0.0));
           if (centerInOccupiedSpace)
             break;
         }
       }
+
+      // check if point is inside a mesh wall
+      if (!centerInOccupiedSpace) {
+        double x_global[3] = {x_rand[0] + xp[0], x_rand[1] + xp[1],x_rand[2] + xp[2]};
+        for (std::vector<TriMeshContacts*>::const_iterator it = meshes.begin(); it != meshes.end() && !centerInOccupiedSpace; ++it) {
+          bool sameSide = false;
+          double delta[3];
+          for (std::set<int>::const_iterator it2 = (*it)->contacts.begin(); it2 != (*it)->contacts.end(); ++it2) {
+            double deltan = (*it)->mesh_->resolveTriSphereContact(0, *it2, radii[idx], x_global, delta);
+            if (deltan < 0.0) {
+              centerInOccupiedSpace = true;
+              break;
+            } else if (!sameSide) {
+              // only if particles is smaller than overlap it may be on the wrong side and not collide
+              if (2.0*radii[idx] > max_overlap || (*it)->mesh_->resolveSameSide(*it2, x_global, xp)) {
+                sameSide = true;
+              }
+            }
+          }
+          centerInOccupiedSpace = centerInOccupiedSpace || !sameSide;
+        }
+      }
+
+      // check if point is inside any sphere already inserted -> max overlap < radius
+      if (!centerInOccupiedSpace) {
+        for (unsigned int idx2 = 0; idx2 < idx; ++idx2) {
+          centerInOccupiedSpace = isPointInSphere(x[idx2], radii[idx2], x_rand);
+
+          if (centerInOccupiedSpace)
+             break;
+        }
+      }
+
     } while (centerInOccupiedSpace && ntry < 200);
 
     x[idx] = x_rand;
