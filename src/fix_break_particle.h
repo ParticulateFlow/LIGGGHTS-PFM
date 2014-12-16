@@ -63,7 +63,7 @@ class FixBreakParticle : public FixInsert {
   virtual void calc_insertion_properties();
   virtual void pre_insert();
   int is_nearby(int);
-  void x_v_omega(int ninsert_this,int &ninserted_this, int &ninserted_spheres_this, double &mass_inserted_this);
+  void x_v_omega(int ninsert_this_local,int &ninserted_this_local, int &ninserted_spheres_this_local, double &mass_inserted_this_local);
   double insertion_fraction();
 
   // functions declared in this class
@@ -104,7 +104,7 @@ class FixBreakParticle : public FixInsert {
   int impactEnergyOffset;
   int forceMaxOffset;
   int normalOffset;
-  int tag_max;
+  int max_type;
 
   double virtual_force(int i, int j, double *siblingDeltaMax);
   double virtual_collision(LIGGGHTS::ContactModels::CollisionData & cdata, double *siblingDeltaMax = NULL);

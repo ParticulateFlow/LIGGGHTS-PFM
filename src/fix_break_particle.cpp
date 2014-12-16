@@ -128,15 +128,12 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
   fix_breaker_wall = NULL;
   fix_collision_factor = NULL;
   fix_stress = NULL;
-  tag_max = 0;
 
   // execute end of step
   nevery = 1;
 
   n_break = 0;
   mass_break = 0.;
-
-  /////if(maxrad >= 1.) error->fix_error(FLERR,this,"Particle distribution must be relative, max radius mus be < 1");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -268,6 +265,7 @@ void FixBreakParticle::init()
 {
   FixInsert::init();
   pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+  max_type = pair_gran->mpg->max_type();
 
   dnum = pair_gran->dnum();
   deltaMaxOffset = pair_gran->get_history_value_offset("deltaMax");
@@ -1180,281 +1178,277 @@ void FixBreakParticle::pre_insert()
   MPI_Sum_Scalar(mass_break_this_local,mass_break_this,world);
   mass_break += mass_break_this;
 
-  if (n_break_this_all == 0)
-    return;
-
-  std::map<int, double> deltaMax;
-  for (int i = 0; i < nlocal; ++i)
-    deltaMax[atom->tag[i]] = 0.0;
-
-  // virtual contact force calculation to restore overlap energy of contacting particles
-  delta_v.clear();
-
-  // particle - particle energy
-  for (int ii = 0; ii < inum; ++ii) {
-    const int i = ilist[ii];
-
-    int * const jlist = firstneigh[i];
-    const int jnum = numneigh[i];
-    double * const allhist = firsthist[i];
-
-    for (int jj = 0; jj < jnum; ++jj) {
-      const int j = jlist[jj];
-
-      if (flag[i] < 0.0 || flag[j] < 0.0) {
-        virtual_x_i.clear();
-        virtual_x_i.push_back(x[i][0]);
-        virtual_x_i.push_back(x[i][1]);
-        virtual_x_i.push_back(x[i][2]);
-        virtual_v_i.clear();
-        virtual_v_i.push_back(v[i][0]);
-        virtual_v_i.push_back(v[i][1]);
-        virtual_v_i.push_back(v[i][2]);
-
-        virtual_x_j.clear();
-        virtual_x_j.push_back(x[j][0]);
-        virtual_x_j.push_back(x[j][1]);
-        virtual_x_j.push_back(x[j][2]);
-        virtual_v_j.clear();
-        virtual_v_j.push_back(v[j][0]);
-        virtual_v_j.push_back(v[j][1]);
-        virtual_v_j.push_back(v[j][2]);
-
-        double * contact_history = &allhist[dnum*jj];
-        deltaMax[atom->tag[i]] = std::max(deltaMax[atom->tag[i]], fabs(contact_history[deltaMaxOffset]));
-        deltaMax[atom->tag[j]] = std::max(deltaMax[atom->tag[j]], fabs(contact_history[deltaMaxOffset]));
-
-        double siblingDeltaMax = contact_history[siblingOffset+1];
-
-        while (true) {
-          if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
-          virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
-          invert_vector(virtual_f_ij);
-          virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
-
-          if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
-          virtual_final_integrate(i, virtual_v_i);
-          invert_vector(virtual_f_ij);
-          virtual_final_integrate(j, virtual_v_j);
-        }
-
-        {
-          std::map<int, std::vector<double> >::iterator it;
-          it = delta_v.find(i);
-          if (it == delta_v.end()) {
-            std::vector<double> delta_v0(3,0.0);
-            delta_v[i] = delta_v0;
-          }
-          it = delta_v.find(j);
-          if (it == delta_v.end()) {
-            std::vector<double> delta_v0(3,0.0);
-            delta_v[j] = delta_v0;
-          }
-        }
-
-        delta_v[i][0] += (virtual_v_i[0] - v[i][0]);
-        delta_v[i][1] += (virtual_v_i[1] - v[i][1]);
-        delta_v[i][2] += (virtual_v_i[2] - v[i][2]);
-
-        delta_v[j][0] += (virtual_v_j[0] - v[j][0]);
-        delta_v[j][1] += (virtual_v_j[1] - v[j][1]);
-        delta_v[j][2] += (virtual_v_j[2] - v[j][2]);
-      }
-    }
-  }
-
-
   std::multimap<int,TriMeshContacts*> contacting_meshes; // atom_tag, mesh & triangles
   std::multimap<int,PrimitiveWall*> contacting_prim_walls;
-  // particle - wall energy
-  {
-    for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
-      FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
-      if (fwg->is_mesh_wall()) {
 
-        double bary[3];
-        double delta[3],deltan;
+  if (n_break_this_all > 0) {
 
-        for (int iMesh = 0; iMesh < fwg->n_meshes(); iMesh++) {
-          TriMesh *mesh = fwg->mesh_list()[iMesh]->triMesh();
-          int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+    std::map<int, double> deltaMax;
+    for (int i = 0; i < nlocal; ++i)
+      deltaMax[atom->tag[i]] = 0.0;
 
-          // get neighborList and numNeigh
-          FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
+    // virtual contact force calculation to restore overlap energy of contacting particles
+    delta_v.clear();
 
-          int atom_type_wall = fwg->mesh_list()[iMesh]->atomTypeWall();
+    // particle - particle energy
+    for (int ii = 0; ii < inum; ++ii) {
+      const int i = ilist[ii];
 
-          std::map<int,std::set<int> > contacting_triangles; // atom_tag, triangle
-          // loop owned and ghost triangles
-          for (int iTri = 0; iTri < nTriAll; iTri++) {
-            const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
-            const int numneigh = neighborList.size();
-            for (int iCont = 0; iCont < numneigh; iCont++) {
-              const int iPart = neighborList[iCont];
+      int * const jlist = firstneigh[i];
+      const int jnum = numneigh[i];
+      double * const allhist = firsthist[i];
 
-              if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
-              if (breaking_atoms.find(iPart) == breaking_atoms.end()) continue;
+      for (int jj = 0; jj < jnum; ++jj) {
+        const int j = jlist[jj];
 
-              deltan = mesh->resolveTriSphereContactBary(iPart, iTri, radius[iPart], x[iPart], delta, bary);
+        if (flag[i] < 0.0 || flag[j] < 0.0) {
+          virtual_x_i.clear();
+          virtual_x_i.push_back(x[i][0]);
+          virtual_x_i.push_back(x[i][1]);
+          virtual_x_i.push_back(x[i][2]);
+          virtual_v_i.clear();
+          virtual_v_i.push_back(v[i][0]);
+          virtual_v_i.push_back(v[i][1]);
+          virtual_v_i.push_back(v[i][2]);
 
-              // to ensure that the fragments end up on the same side of the mesh as the original particle
-              // all contacting triangles are required in ParticleSpatialDistribution
-              // triangles that have an edge/corner contact but edge/corner are not active return (LARGE_TRIMESH - radius)
-              if (deltan + radius[iPart] > 999999) {
-                contacting_triangles[atom->tag[iPart]].insert(iTri);
-              } else if (deltan < 0.0) {
-                contacting_triangles[atom->tag[iPart]].insert(iTri);
+          virtual_x_j.clear();
+          virtual_x_j.push_back(x[j][0]);
+          virtual_x_j.push_back(x[j][1]);
+          virtual_x_j.push_back(x[j][2]);
+          virtual_v_j.clear();
+          virtual_v_j.push_back(v[j][0]);
+          virtual_v_j.push_back(v[j][1]);
+          virtual_v_j.push_back(v[j][2]);
 
-                deltan = -deltan;
-                deltaMax[atom->tag[iPart]] = std::max(deltaMax[atom->tag[iPart]], deltan);
+          double * contact_history = &allhist[dnum*jj];
+          deltaMax[atom->tag[i]] = std::max(deltaMax[atom->tag[i]], fabs(contact_history[deltaMaxOffset]));
+          deltaMax[atom->tag[j]] = std::max(deltaMax[atom->tag[j]], fabs(contact_history[deltaMaxOffset]));
 
-                double Yeff;
-                {
+          double siblingDeltaMax = contact_history[siblingOffset+1];
+
+          while (true) {
+            if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+            virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
+            invert_vector(virtual_f_ij);
+            virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
+
+            if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+            virtual_final_integrate(i, virtual_v_i);
+            invert_vector(virtual_f_ij);
+            virtual_final_integrate(j, virtual_v_j);
+          }
+
+          {
+            std::map<int, std::vector<double> >::iterator it;
+            it = delta_v.find(i);
+            if (it == delta_v.end()) {
+              std::vector<double> delta_v0(3,0.0);
+              delta_v[i] = delta_v0;
+            }
+            it = delta_v.find(j);
+            if (it == delta_v.end()) {
+              std::vector<double> delta_v0(3,0.0);
+              delta_v[j] = delta_v0;
+            }
+          }
+
+          delta_v[i][0] += (virtual_v_i[0] - v[i][0]);
+          delta_v[i][1] += (virtual_v_i[1] - v[i][1]);
+          delta_v[i][2] += (virtual_v_i[2] - v[i][2]);
+
+          delta_v[j][0] += (virtual_v_j[0] - v[j][0]);
+          delta_v[j][1] += (virtual_v_j[1] - v[j][1]);
+          delta_v[j][2] += (virtual_v_j[2] - v[j][2]);
+        }
+      }
+    }
+
+    // particle - wall energy
+    {
+      for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
+        FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+        if (fwg->is_mesh_wall()) {
+
+          double bary[3];
+          double delta[3],deltan;
+
+          for (int iMesh = 0; iMesh < fwg->n_meshes(); iMesh++) {
+            TriMesh *mesh = fwg->mesh_list()[iMesh]->triMesh();
+            int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+
+            // get neighborList and numNeigh
+            FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
+
+            int atom_type_wall = fwg->mesh_list()[iMesh]->atomTypeWall();
+
+            std::map<int,std::set<int> > contacting_triangles; // atom_tag, triangle
+            // loop owned and ghost triangles
+            for (int iTri = 0; iTri < nTriAll; iTri++) {
+              const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
+              const int numneigh = neighborList.size();
+              for (int iCont = 0; iCont < numneigh; iCont++) {
+                const int iPart = neighborList[iCont];
+
+                if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+                if (breaking_atoms.find(iPart) == breaking_atoms.end()) continue;
+
+                deltan = mesh->resolveTriSphereContactBary(iPart, iTri, radius[iPart], x[iPart], delta, bary);
+
+                // to ensure that the fragments end up on the same side of the mesh as the original particle
+                // all contacting triangles are required in ParticleSpatialDistribution
+                // triangles that have an edge/corner contact but edge/corner are not active return (LARGE_TRIMESH - radius)
+                if (deltan + radius[iPart] > 999999) {
+                  contacting_triangles[atom->tag[iPart]].insert(iTri);
+                } else if (deltan < 0.0) {
+                  contacting_triangles[atom->tag[iPart]].insert(iTri);
+
+                  deltan = -deltan;
+                  deltaMax[atom->tag[iPart]] = std::max(deltaMax[atom->tag[iPart]], deltan);
+
+                  double Yeff;
+                  {
+                    int itype = atom->type[iPart];
+                    int jtype = atom_type_wall;
+                    const double *Y, *nu;
+                    Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
+                    nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
+                    Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
+                  }
+
+                  /// Hertz, TODO : Hooke
+                  double sqrtval = sqrt(radius[iPart]*deltan);
+                  double kn = 4./3. * Yeff * sqrtval;
+                  double E_el = (2./5.)*kn*deltan*deltan;
+                  double v_el = sqrt(2.0 * E_el / rmass[iPart]);
+                  const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
+                  const double r = sqrt(rsq);
+                  const double rinv = 1.0 / r;
+                  std::map<int, std::vector<double> >::iterator it;
+                  it = delta_v.find(iPart);
+                  if (it == delta_v.end()) {
+                    std::vector<double> delta_v0(3,0.0);
+                    delta_v[iPart] = delta_v0;
+                  }
+                  delta_v[iPart][0] += v_el * delta[0]*rinv;
+                  delta_v[iPart][1] += v_el * delta[1]*rinv;
+                  delta_v[iPart][2] += v_el * delta[2]*rinv;
+                }
+              }
+            } // end triangle loop
+
+            for (std::map<int,std::set<int> >::const_iterator it=contacting_triangles.begin(); it!=contacting_triangles.end(); ++it) {
+              TriMeshContacts *tmc = new TriMeshContacts(mesh);
+              tmc->contacts = it->second;
+              contacting_meshes.insert(std::pair<int,TriMeshContacts*>(it->first, tmc));
+            }
+          }
+        } else { // primitive wall
+
+          // loop neighbor list
+          int *neighborList;
+          int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
+
+          for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
+            int iPart = *neighborList;
+
+            if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
+            if (breaking_atoms.find(iPart) == breaking_atoms.end()) continue;
+
+            double delta[3];
+            double deltan = fwg->primitiveWall()->resolveContact(x[iPart], radius[iPart], delta);
+
+            if (deltan < 0.0) {
+              contacting_prim_walls.insert(std::pair<int,PrimitiveWall*>(atom->tag[iPart],fwg->primitiveWall()));
+
+              deltan = -deltan;
+              deltaMax[atom->tag[iPart]] = std::max(deltaMax[atom->tag[iPart]], deltan);
+
+              double Yeff;
+              {
                   int itype = atom->type[iPart];
-                  int jtype = atom_type_wall;
-                  const int max_type = pair_gran->mpg->max_type();
+                  int jtype = fwg->atom_type_wall();
                   const double *Y, *nu;
                   Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
                   nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
                   Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
-                }
-
-                /// Hertz, TODO : Hooke
-                double sqrtval = sqrt(radius[iPart]*deltan);
-                double kn = 4./3. * Yeff * sqrtval;
-                double E_el = (2./5.)*kn*deltan*deltan;
-                double v_el = sqrt(2.0 * E_el / rmass[iPart]);
-                const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
-                const double r = sqrt(rsq);
-                const double rinv = 1.0 / r;
-                std::map<int, std::vector<double> >::iterator it;
-                it = delta_v.find(iPart);
-                if (it == delta_v.end()) {
-                  std::vector<double> delta_v0(3,0.0);
-                  delta_v[iPart] = delta_v0;
-                }
-                delta_v[iPart][0] += v_el * delta[0]*rinv;
-                delta_v[iPart][1] += v_el * delta[1]*rinv;
-                delta_v[iPart][2] += v_el * delta[2]*rinv;
               }
+
+              /// Hertz, TODO : Hooke
+              double sqrtval = sqrt(radius[iPart]*deltan);
+              double kn = 4./3. * Yeff * sqrtval;
+              double E_el = (2./5.)*kn*deltan*deltan;
+              double v_el = sqrt(2.0 * E_el / rmass[iPart]);
+              const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
+              const double r = sqrt(rsq);
+              const double rinv = 1.0 / r;
+              std::map<int, std::vector<double> >::iterator it;
+              it = delta_v.find(iPart);
+              if (it == delta_v.end()) {
+                std::vector<double> delta_v0(3,0.0);
+                delta_v[iPart] = delta_v0;
+              }
+              delta_v[iPart][0] += v_el * delta[0]*rinv;
+              delta_v[iPart][1] += v_el * delta[1]*rinv;
+              delta_v[iPart][2] += v_el * delta[2]*rinv;
             }
-          } // end triangle loop
-
-          for (std::map<int,std::set<int> >::const_iterator it=contacting_triangles.begin(); it!=contacting_triangles.end(); ++it) {
-            TriMeshContacts *tmc = new TriMeshContacts(mesh);
-            tmc->contacts = it->second;
-            contacting_meshes.insert(std::pair<int,TriMeshContacts*>(it->first, tmc));
-          }
-
-        }
-
-      } else { // primitive wall
-
-        // loop neighbor list
-        int *neighborList;
-        int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
-
-        for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
-          int iPart = *neighborList;
-
-          if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
-          if (breaking_atoms.find(iPart) == breaking_atoms.end()) continue;
-
-          double delta[3];
-          double deltan = fwg->primitiveWall()->resolveContact(x[iPart], radius[iPart], delta);
-
-          if (deltan < 0.0) {
-            contacting_prim_walls.insert(std::pair<int,PrimitiveWall*>(atom->tag[iPart],fwg->primitiveWall()));
-
-            deltan = -deltan;
-            deltaMax[atom->tag[iPart]] = std::max(deltaMax[atom->tag[iPart]], deltan);
-
-            double Yeff;
-            {
-                int itype = atom->type[iPart];
-                int jtype = fwg->atom_type_wall();
-                const int max_type = pair_gran->mpg->max_type();
-                const double *Y, *nu;
-                Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
-                nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
-                Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
-            }
-
-            /// Hertz, TODO : Hooke
-            double sqrtval = sqrt(radius[iPart]*deltan);
-            double kn = 4./3. * Yeff * sqrtval;
-            double E_el = (2./5.)*kn*deltan*deltan;
-            double v_el = sqrt(2.0 * E_el / rmass[iPart]);
-            const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
-            const double r = sqrt(rsq);
-            const double rinv = 1.0 / r;
-            std::map<int, std::vector<double> >::iterator it;
-            it = delta_v.find(iPart);
-            if (it == delta_v.end()) {
-              std::vector<double> delta_v0(3,0.0);
-              delta_v[iPart] = delta_v0;
-            }
-            delta_v[iPart][0] += v_el * delta[0]*rinv;
-            delta_v[iPart][1] += v_el * delta[1]*rinv;
-            delta_v[iPart][2] += v_el * delta[2]*rinv;
           }
         }
       }
     }
-  }
 
-  // correct velocities
-  for (std::map<int, std::vector<double> >::iterator it=delta_v.begin(); it!=delta_v.end(); ++it) {
-    v[it->first][0] += it->second[0];
-    v[it->first][1] += it->second[1];
-    v[it->first][2] += it->second[2];
-  }
+    // correct velocities
+    for (std::map<int, std::vector<double> >::iterator it=delta_v.begin(); it!=delta_v.end(); ++it) {
+      v[it->first][0] += it->second[0];
+      v[it->first][1] += it->second[1];
+      v[it->first][2] += it->second[2];
+    }
 
-  // allocate breakage data if required
-  if (breakdata) {
-    memory->destroy(breakdata);
-    breakdata = NULL;
-  }
+    // allocate breakage data if required
+    if (breakdata) {
+      memory->destroy(breakdata);
+      breakdata = NULL;
+    }
 
-  if (n_break_this_local == 0)
-    return;
+    if (n_break_this_local > 0) {
 
-  memory->create(breakdata,n_break_this_local,11,"FixBreakParticle::breakdata");
+      memory->create(breakdata,n_break_this_local,11,"FixBreakParticle::breakdata");
 
-  // fill breakage data and remove particles
-  //NP leave ghosts alone
-  const double eMF = 0.485;
-  int i, ibreak;
-  i = ibreak = 0;
-  while (i < nlocal) {
-    if (mask[i] & groupbit && flag[i] < 0.0) {
-      // copy data needed for insertion
-      vectorCopy3D(x[i],&breakdata[ibreak][0]);
-      vectorCopy3D(v[i],&breakdata[ibreak][3]);
-      vectorScalarMult3D(&breakdata[ibreak][3], eMF);
-      breakdata[ibreak][6] = radius[i];
-      breakdata[ibreak][7] = -flag[i];
-      breakdata[ibreak][8] = atom->tag[i];
-      breakdata[ibreak][9] = (1.0 - eMF*eMF) * 0.5 * rmass[i] * (v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2]);
-      breakdata[ibreak][10] = deltaMax[atom->tag[i]];
+      // fill breakage data and remove particles
+      //NP leave ghosts alone
+      const double eMF = 0.485;
+      int i=0, ibreak=0;
+      while (i < nlocal) {
+        if ((mask[i] & groupbit) && (flag[i] < 0.0)) {
+          // copy data needed for insertion
+          vectorCopy3D(x[i],&breakdata[ibreak][0]);
+          vectorCopy3D(v[i],&breakdata[ibreak][3]);
+          vectorScalarMult3D(&breakdata[ibreak][3], eMF);
+          breakdata[ibreak][6] = radius[i];
+          breakdata[ibreak][7] = -flag[i];
+          breakdata[ibreak][8] = atom->tag[i];
+          breakdata[ibreak][9] = (1.0 - eMF*eMF) * 0.5 * rmass[i] * (v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2]);
+          breakdata[ibreak][10] = deltaMax[atom->tag[i]];
 
-      ++ibreak;
+          ++ibreak;
 
-      // delete particle
-      avec->copy(nlocal-1,i,1);
-      --nlocal;
-    } else {
-      ++i;
+          // delete particle
+          avec->copy(nlocal-1,i,1);
+          --nlocal;
+        } else {
+          ++i;
+        }
+      }
+
+      // update local # particles
+      atom->nlocal = nlocal;
     }
   }
 
-  // update local and global # particles
+  // update global # particles
   //NP wait with tags, global map etc
   //NP since done by fix insert anyway
-
-  atom->nlocal = nlocal;
-  double rlocal = static_cast<double>(atom->nlocal);
-  MPI_Allreduce(&rlocal,&atom->natoms,1,MPI_DOUBLE,MPI_SUM,world);
+  bigint nblocal = atom->nlocal;
+  MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
 
   fix_fragments->pre_insert(n_break_this_local, breakdata, contacting_prim_walls, contacting_meshes);
   for (std::multimap<int,TriMeshContacts*>::iterator it=contacting_meshes.begin(); it != contacting_meshes.end(); ++it)
@@ -1502,7 +1496,7 @@ int FixBreakParticle::calc_ninsert_this()
    returns # bodies and # spheres that could actually be inserted
 ------------------------------------------------------------------------- */
 
-void FixBreakParticle::x_v_omega(int ninsert_this, int &ninserted_this, int &ninserted_spheres_this, double &mass_inserted_this)
+void FixBreakParticle::x_v_omega(int ninsert_this_local, int &ninserted_this_local, int &ninserted_spheres_this_local, double &mass_inserted_this_local)
 {
   double pos_ins[3],v_ins[3],omega_ins[3],quat_ins[4];
   int nins;
@@ -1511,17 +1505,8 @@ void FixBreakParticle::x_v_omega(int ninsert_this, int &ninserted_this, int &nin
   vectorZeroize3D(omega_ins);
   vectorZeroize4D(quat_ins);
 
-  // local insertion
-  double mass_inserted_this_local = 0.;
-  int ninserted_this_local = 0;
-  int ninserted_spheres_this_local = 0;
-
-  // global insertion
-  ninserted_this = ninserted_spheres_this = 0;
-  mass_inserted_this = 0.;
-
-  // n_break_this ptis with n_fragments spheres each
-  // n_break_this * n_fragments spheres to be generated
+  ninserted_this_local = ninserted_spheres_this_local = 0;
+  mass_inserted_this_local = 0.;
 
   for (int iparticle = 0; iparticle < n_break_this_local; ++iparticle) {
 
@@ -1539,14 +1524,6 @@ void FixBreakParticle::x_v_omega(int ninsert_this, int &ninserted_this, int &nin
     mass_inserted_this_local += pti->mass_ins;
     ++ninserted_this_local;
   }
-
-  // tally stats, have to do this since operation is locally on each process
-  // as opposed to e.g. FixInsertPack::x_v_omega()
-
-  MPI_Sum_Scalar(ninserted_spheres_this_local,ninserted_spheres_this,world);
-  MPI_Sum_Scalar(ninserted_this_local,ninserted_this,world);
-  MPI_Sum_Scalar(mass_inserted_this_local,mass_inserted_this,world);
-  tag_max = atom->tag_max();
 }
 
 
@@ -1627,7 +1604,6 @@ double FixBreakParticle::virtual_collision(CollisionData & cdata, double *siblin
       double Yeff;
       double betaeff;
       {
-        const int max_type = pair_gran->mpg->max_type();
         const double *Y, *nu;
         const double * const * e;
         Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();

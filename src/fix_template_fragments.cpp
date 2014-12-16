@@ -110,6 +110,7 @@ FixTemplateFragments::~FixTemplateFragments()
 void FixTemplateFragments::post_create()
 {
   pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+  max_type = pair_gran->mpg->max_type();
   dnum = pair_gran->dnum();
 
   // don't know these in advance ...
@@ -299,7 +300,6 @@ double FixTemplateFragments::elastic_energy(const std::vector<double> &radius, c
     const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
     const double density = expectancy(pdf_density);
     const double *Y, *nu;
-    const int max_type = pair_gran->mpg->max_type();
     const int itype = atom_type - 1;
     Y  = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
     nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();

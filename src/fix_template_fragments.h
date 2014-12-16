@@ -89,6 +89,7 @@ class FixTemplateFragments : public FixTemplateSphere {
 
   // number of tries for mc
   int ntry;
+  int max_type;
 
   class PairGran *pair_gran;
   int dnum;
