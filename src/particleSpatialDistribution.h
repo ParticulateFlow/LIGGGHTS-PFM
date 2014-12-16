@@ -45,7 +45,7 @@ class ParticleSpatialDistribution
 
   void randomInsertion(double *xp, double radius,
                        const std::vector<double> &radii, std::vector<std::vector<double> > &x,
-                       const std::vector<double> &ext_radii, const std::vector<std::vector<double> > &ext_center,
+                       const std::vector<std::vector<double> >& ext_atoms,
                        const std::vector<PrimitiveWall*> &prim_walls,
                        const std::vector<TriMeshContacts*> &meshes);
 

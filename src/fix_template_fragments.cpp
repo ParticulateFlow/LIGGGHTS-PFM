@@ -204,7 +204,12 @@ void FixTemplateFragments::randomize_ptilist(int n_random,int distribution_group
 }
 
 
-void FixTemplateFragments::pre_insert(int n_total, double **breakdata, const std::multimap<int,PrimitiveWall*> &prim_walls_mm, const std::multimap<int,TriMeshContacts*> &meshes_mm)
+void FixTemplateFragments::pre_insert(
+    int n_total,
+    double **breakdata,
+    const std::multimap<int,std::vector<double> > &contacting_atoms_mm,
+    const std::multimap<int,PrimitiveWall*> &prim_walls_mm,
+    const std::multimap<int,TriMeshContacts*> &meshes_mm)
 {
   // generate particle size/spatial distributions
   r_sphere_list.clear();
@@ -235,28 +240,13 @@ void FixTemplateFragments::pre_insert(int n_total, double **breakdata, const std
       nspheres = static_cast<int>(radii.size());
     }
 
-    // check for overlapping atoms
-    std::vector<double> ext_radii;
-    std::vector<std::vector<double> > ext_center;
+    // overlapping atoms
+    std::vector<std::vector<double> > ext_atoms;
     {
-      double **x = atom->x;
-      double *radius = atom->radius;
-      int nall = atom->nlocal + atom->nghost;
-
-      for (int j = 0; j < nall; ++j) { /// TODO optimize: just check neighborlist
-        const double delx = x[j][0] - breakdata[i][0];
-        const double dely = x[j][1] - breakdata[i][1];
-        const double delz = x[j][2] - breakdata[i][2];
-        const double rsq = delx * delx + dely * dely + delz * delz;
-        const double radsum = radius[j] + breakdata[i][6];
-        if (rsq < radsum * radsum) {
-          std::vector<double> x_j(3, 0.0);
-          x_j[0] = delx;
-          x_j[1] = dely;
-          x_j[2] = delz;
-          ext_center.push_back(x_j);
-          ext_radii.push_back(radius[j]);
-        }
+      std::pair<std::multimap<int,std::vector<double> >::const_iterator, std::multimap<int,std::vector<double> >::const_iterator> ret;
+      ret = contacting_atoms_mm.equal_range(static_cast<int>(breakdata[i][8]));
+      for (std::multimap<int,std::vector<double> >::const_iterator it = ret.first; it != ret.second; ++it) {
+        ext_atoms.push_back(it->second);
       }
     }
 
@@ -269,6 +259,8 @@ void FixTemplateFragments::pre_insert(int n_total, double **breakdata, const std
         prim_walls.push_back(it->second);
       }
     }
+
+    // overlapping meshes
     std::vector<TriMeshContacts*> meshes;
     {
       std::pair<std::multimap<int,TriMeshContacts*>::const_iterator, std::multimap<int,TriMeshContacts*>::const_iterator> ret;
@@ -279,7 +271,7 @@ void FixTemplateFragments::pre_insert(int n_total, double **breakdata, const std
     }
 
     ParticleSpatialDistribution pxd(random, breakdata[i][10]);
-    pxd.randomInsertion(&breakdata[i][0], breakdata[i][6], radii, x_sphere_list[i], ext_radii, ext_center, prim_walls, meshes);
+    pxd.randomInsertion(&breakdata[i][0], breakdata[i][6], radii, x_sphere_list[i], ext_atoms, prim_walls, meshes);
 
     double energy = elastic_energy(r_sphere_list[i], x_sphere_list[i]);
     double CF = breakdata[i][9]/energy;

@@ -1178,6 +1178,7 @@ void FixBreakParticle::pre_insert()
   MPI_Sum_Scalar(mass_break_this_local,mass_break_this,world);
   mass_break += mass_break_this;
 
+  std::multimap<int,std::vector<double> > contacting_atoms; // atom_tag, x & radius
   std::multimap<int,TriMeshContacts*> contacting_meshes; // atom_tag, mesh & triangles
   std::multimap<int,PrimitiveWall*> contacting_prim_walls;
 
@@ -1202,63 +1203,83 @@ void FixBreakParticle::pre_insert()
         const int j = jlist[jj];
 
         if (flag[i] < 0.0 || flag[j] < 0.0) {
-          virtual_x_i.clear();
-          virtual_x_i.push_back(x[i][0]);
-          virtual_x_i.push_back(x[i][1]);
-          virtual_x_i.push_back(x[i][2]);
-          virtual_v_i.clear();
-          virtual_v_i.push_back(v[i][0]);
-          virtual_v_i.push_back(v[i][1]);
-          virtual_v_i.push_back(v[i][2]);
 
-          virtual_x_j.clear();
-          virtual_x_j.push_back(x[j][0]);
-          virtual_x_j.push_back(x[j][1]);
-          virtual_x_j.push_back(x[j][2]);
-          virtual_v_j.clear();
-          virtual_v_j.push_back(v[j][0]);
-          virtual_v_j.push_back(v[j][1]);
-          virtual_v_j.push_back(v[j][2]);
+          const double delx = x[j][0] - x[i][0];
+          const double dely = x[j][1] - x[i][1];
+          const double delz = x[j][2] - x[i][2];
+          const double rsq = delx * delx + dely * dely + delz * delz;
+          const double radsum = radius[j] + radius[i];
 
-          double * contact_history = &allhist[dnum*jj];
-          deltaMax[atom->tag[i]] = std::max(deltaMax[atom->tag[i]], fabs(contact_history[deltaMaxOffset]));
-          deltaMax[atom->tag[j]] = std::max(deltaMax[atom->tag[j]], fabs(contact_history[deltaMaxOffset]));
+          if (rsq < radsum * radsum) {
+            virtual_x_i.clear();
+            virtual_x_i.push_back(x[i][0]);
+            virtual_x_i.push_back(x[i][1]);
+            virtual_x_i.push_back(x[i][2]);
+            virtual_v_i.clear();
+            virtual_v_i.push_back(v[i][0]);
+            virtual_v_i.push_back(v[i][1]);
+            virtual_v_i.push_back(v[i][2]);
 
-          double siblingDeltaMax = contact_history[siblingOffset+1];
+            virtual_x_j.clear();
+            virtual_x_j.push_back(x[j][0]);
+            virtual_x_j.push_back(x[j][1]);
+            virtual_x_j.push_back(x[j][2]);
+            virtual_v_j.clear();
+            virtual_v_j.push_back(v[j][0]);
+            virtual_v_j.push_back(v[j][1]);
+            virtual_v_j.push_back(v[j][2]);
 
-          while (true) {
-            if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
-            virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
-            invert_vector(virtual_f_ij);
-            virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
-
-            if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
-            virtual_final_integrate(i, virtual_v_i);
-            invert_vector(virtual_f_ij);
-            virtual_final_integrate(j, virtual_v_j);
-          }
-
-          {
-            std::map<int, std::vector<double> >::iterator it;
-            it = delta_v.find(i);
-            if (it == delta_v.end()) {
-              std::vector<double> delta_v0(3,0.0);
-              delta_v[i] = delta_v0;
+            if (flag[i] < 0.0) {
+              std::vector<double> xr_j(virtual_x_j);
+              xr_j.push_back(radius[j]);
+              contacting_atoms.insert(std::pair<int, std::vector<double> >(atom->tag[i],xr_j));
             }
-            it = delta_v.find(j);
-            if (it == delta_v.end()) {
-              std::vector<double> delta_v0(3,0.0);
-              delta_v[j] = delta_v0;
+            if (flag[j] < 0.0) {
+              std::vector<double> xr_i(virtual_x_i);
+              xr_i.push_back(radius[i]);
+              contacting_atoms.insert(std::pair<int, std::vector<double> >(atom->tag[j],xr_i));
             }
+
+            double * contact_history = &allhist[dnum*jj];
+            deltaMax[atom->tag[i]] = std::max(deltaMax[atom->tag[i]], fabs(contact_history[deltaMaxOffset]));
+            deltaMax[atom->tag[j]] = std::max(deltaMax[atom->tag[j]], fabs(contact_history[deltaMaxOffset]));
+
+            double siblingDeltaMax = contact_history[siblingOffset+1];
+
+            while (true) {
+              if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+              virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
+              invert_vector(virtual_f_ij);
+              virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
+
+              if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+              virtual_final_integrate(i, virtual_v_i);
+              invert_vector(virtual_f_ij);
+              virtual_final_integrate(j, virtual_v_j);
+            }
+
+            {
+              std::map<int, std::vector<double> >::iterator it;
+              it = delta_v.find(i);
+              if (it == delta_v.end()) {
+                std::vector<double> delta_v0(3,0.0);
+                delta_v[i] = delta_v0;
+              }
+              it = delta_v.find(j);
+              if (it == delta_v.end()) {
+                std::vector<double> delta_v0(3,0.0);
+                delta_v[j] = delta_v0;
+              }
+            }
+
+            delta_v[i][0] += (virtual_v_i[0] - v[i][0]);
+            delta_v[i][1] += (virtual_v_i[1] - v[i][1]);
+            delta_v[i][2] += (virtual_v_i[2] - v[i][2]);
+
+            delta_v[j][0] += (virtual_v_j[0] - v[j][0]);
+            delta_v[j][1] += (virtual_v_j[1] - v[j][1]);
+            delta_v[j][2] += (virtual_v_j[2] - v[j][2]);
           }
-
-          delta_v[i][0] += (virtual_v_i[0] - v[i][0]);
-          delta_v[i][1] += (virtual_v_i[1] - v[i][1]);
-          delta_v[i][2] += (virtual_v_i[2] - v[i][2]);
-
-          delta_v[j][0] += (virtual_v_j[0] - v[j][0]);
-          delta_v[j][1] += (virtual_v_j[1] - v[j][1]);
-          delta_v[j][2] += (virtual_v_j[2] - v[j][2]);
         }
       }
     }
@@ -1450,7 +1471,7 @@ void FixBreakParticle::pre_insert()
   bigint nblocal = atom->nlocal;
   MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
 
-  fix_fragments->pre_insert(n_break_this_local, breakdata, contacting_prim_walls, contacting_meshes);
+  fix_fragments->pre_insert(n_break_this_local, breakdata, contacting_atoms, contacting_prim_walls, contacting_meshes);
   for (std::multimap<int,TriMeshContacts*>::iterator it=contacting_meshes.begin(); it != contacting_meshes.end(); ++it)
     delete (it->second);
 

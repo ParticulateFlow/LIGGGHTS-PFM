@@ -61,7 +61,10 @@ class FixTemplateFragments : public FixTemplateSphere {
   virtual void init_ptilist(int);
   virtual void randomize_ptilist(int ,int );
 
-  void pre_insert(int n_total, double **breakdata, const std::multimap<int,PrimitiveWall*> &prim_walls_mm, const std::multimap<int,TriMeshContacts*> &meshes_mm);
+  void pre_insert(int n_total, double **breakdata,
+                  const std::multimap<int,std::vector<double> > &contacting_atoms_mm,
+                  const std::multimap<int,PrimitiveWall*> &prim_walls_mm,
+                  const std::multimap<int,TriMeshContacts*> &meshes_mm);
 
  protected:
 

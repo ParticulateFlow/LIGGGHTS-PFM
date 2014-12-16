@@ -246,13 +246,12 @@ void ParticleSpatialDistribution::randomInsertion(
         double radius,
         const std::vector<double>& radii,
         std::vector<std::vector<double> >& x,
-        const std::vector<double>& ext_radii,
-        const std::vector<std::vector<double> >& ext_center,
+        const std::vector<std::vector<double> >& ext_atoms,
         const std::vector<PrimitiveWall*>& prim_walls,
         const std::vector<TriMeshContacts*>& meshes)
 {
   const unsigned int nParticles = radii.size();
-  const unsigned int ext = ext_radii.size();
+  const unsigned int ext = ext_atoms.size();
 
   if (nParticles == 0) return;
   x.resize(nParticles);
@@ -270,11 +269,11 @@ void ParticleSpatialDistribution::randomInsertion(
       // check if point is inside any external sphere
       for (unsigned int ext_i = 0; ext_i < ext; ++ext_i) {
         std::vector<double> ext_c(3, 0.0);
-        ext_c[0] = ext_center[ext_i][0];
-        ext_c[1] = ext_center[ext_i][1];
-        ext_c[2] = ext_center[ext_i][2];
+        ext_c[0] = ext_atoms[ext_i][0] - xp[0];
+        ext_c[1] = ext_atoms[ext_i][1] - xp[1];
+        ext_c[2] = ext_atoms[ext_i][2] - xp[2];
 
-        centerInOccupiedSpace = isPointInSphere(ext_c, ext_radii[ext_i]+radii[idx], x_rand);
+        centerInOccupiedSpace = isPointInSphere(ext_c, ext_atoms[ext_i][3]+radii[idx], x_rand);
         if (centerInOccupiedSpace)
           break;
       }
