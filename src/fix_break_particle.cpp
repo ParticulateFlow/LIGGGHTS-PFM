@@ -1250,6 +1250,8 @@ void FixBreakParticle::pre_insert()
             deltaMax[atom->tag[i]] = std::max(deltaMax[atom->tag[i]], fabs(contact_history[deltaMaxOffset]));
             deltaMax[atom->tag[j]] = std::max(deltaMax[atom->tag[j]], fabs(contact_history[deltaMaxOffset]));
 
+            contact_history[deltaMaxOffset] = 0.0;
+
             double siblingDeltaMax = contact_history[siblingOffset+1];
 
             while (true) {
