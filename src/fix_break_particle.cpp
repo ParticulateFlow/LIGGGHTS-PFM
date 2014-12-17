@@ -132,8 +132,8 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
   // execute end of step
   nevery = 1;
 
-  n_break = 0;
-  mass_break = 0.;
+  n_break = n_break_this = n_break_this_local = 0;
+  mass_break = mass_break_this = mass_break_this_local = 0.;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -489,11 +489,15 @@ void FixBreakParticle::check_energy_criterion()
       flag[i] += impact_energy_limited_i;
       flag[j] += impact_energy_limited_j;
     }
+  }
 
-    if (mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
-      const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
-      if (probability > random->uniform()) {
-        fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
+  for (int i = 0; i < nall; ++i) {
+    if (!already_doomed[i]) {
+      if (mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
+        const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
+        if (probability > random->uniform()) { /// TODO ensure same result on all procs
+          fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
+        }
       }
     }
   }
@@ -552,15 +556,17 @@ void FixBreakParticle::check_energy_criterion()
 
             if (contact_history) {
               const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
-              flag[iPart] += impact_energy_limited_i;
+              if (impact_energy_limited_i > 0.0) {
+                flag[iPart] += impact_energy_limited_i;
 
-              if (breaker_energy[iPart] < impact_energy_limited_i) {
-                breaker_energy[iPart] = impact_energy_limited_i;
-                breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
-                const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
-                if (probability > random->uniform()) {
-                  fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
-                  fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
+                if (breaker_energy[iPart] < impact_energy_limited_i) {
+                  breaker_energy[iPart] = impact_energy_limited_i;
+                  breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
+                  const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
+                  if (probability > random->uniform()) { /// TODO ensure same result on all procs
+                    fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
+                    fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
+                  }
                 }
               }
             }
@@ -601,7 +607,7 @@ void FixBreakParticle::check_energy_criterion()
             breaker_energy[iPart] = impact_energy_limited_i;
             breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
             const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
-            if (probability > random->uniform()) {
+            if (probability > random->uniform()) { /// TODO ensure same result on all procs
               fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
               fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
             }
@@ -745,7 +751,7 @@ void FixBreakParticle::check_force_criterion()
       if (flag[i] == 0.0) {
         flag[i] = random->uniform();
       }
-      if (probability > flag[i]) {
+      if (probability > flag[i]) {  /// TODO ensure same result on all procs
         flag[i] = -probability;  // sign indicates breakage
       }
     }
@@ -944,7 +950,7 @@ void FixBreakParticle::check_von_mises_criterion()
         if (flag[i] == 0.0) {
           flag[i] = random->uniform();
         }
-        if (probability > flag[i]) {
+        if (probability > flag[i]) { /// TODO ensure same result on all procs
           flag[i] = -probability;  // sign indicates breakage
         }
       }
