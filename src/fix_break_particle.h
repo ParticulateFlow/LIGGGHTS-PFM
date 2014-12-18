@@ -110,7 +110,6 @@ class FixBreakParticle : public FixInsert {
   double virtual_collision(LIGGGHTS::ContactModels::CollisionData & cdata, double *siblingDeltaMax = NULL);
   void virtual_initial_integrate(int i, std::vector<double> &virtual_v, std::vector<double> &virtual_x);
   void virtual_final_integrate(int i, std::vector<double> &virtual_v);
-  void invert_vector(std::vector<double> &v3);
 
   std::map<int, std::vector<double> > delta_v;
   std::vector<double> virtual_x_i;

@@ -50,6 +50,7 @@
 #include <string>
 #include <algorithm>
 #include "math_const.h"
+#include "math_extra.h"
 #include "fix_wall_gran.h"
 #include "primitive_wall.h"
 #include "tri_mesh_contacts.h"
@@ -1238,12 +1239,12 @@ void FixBreakParticle::pre_insert()
             while (true) {
               if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
               virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
-              invert_vector(virtual_f_ij);
+              MathExtra::negate3(&virtual_f_ij[0]);
               virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
 
               if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
               virtual_final_integrate(i, virtual_v_i);
-              invert_vector(virtual_f_ij);
+              MathExtra::negate3(&virtual_f_ij[0]);
               virtual_final_integrate(j, virtual_v_j);
             }
 
@@ -1707,10 +1708,3 @@ void FixBreakParticle::virtual_final_integrate(int i, std::vector<double> &virtu
     virtual_v[2] += dtfm * virtual_f_ij[2];
 }
 
-
-void FixBreakParticle::invert_vector(std::vector<double> &v3)
-{
-    v3[0] = -v3[0];
-    v3[1] = -v3[1];
-    v3[2] = -v3[2];
-}
