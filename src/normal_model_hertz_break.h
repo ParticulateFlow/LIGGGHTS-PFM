@@ -51,12 +51,12 @@ namespace ContactModels
       limitForce(false),
       displayedSettings(false)
     {
-      history_offset = hsetup->add_history_value("deltaMax", "1");
-      hsetup->add_history_value("sibling", "1");
-      hsetup->add_history_value("siblingDeltaMax", "1");
-      hsetup->add_history_value("collisionFactor", "1");
-      hsetup->add_history_value("impactEnergy", "1");
-      hsetup->add_history_value("forceMax", "1");
+      history_offset = hsetup->add_history_value("deltaMax", "0");
+      hsetup->add_history_value("sibling", "0");
+      hsetup->add_history_value("siblingDeltaMax", "0");
+      hsetup->add_history_value("collisionFactor", "0");
+      hsetup->add_history_value("impactEnergy", "0");
+      hsetup->add_history_value("forceMax", "0");
       hsetup->add_history_value("enx", "1");
       hsetup->add_history_value("eny", "1");
       hsetup->add_history_value("enz", "1");
