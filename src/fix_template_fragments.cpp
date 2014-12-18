@@ -58,6 +58,8 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
   if (pdf_radius)
     error->fix_error(FLERR,this,"currently does not support keyword 'radius'");
 
+  maxattempt = 200;
+
   bool hasargs = true;
   while (iarg < narg && hasargs) {
     hasargs = false;
@@ -76,6 +78,11 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
         radiiMassFractions[atoi(arg[iarg++])] = 0.0;
         --sizes;
       }
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"maxattempt") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments for maxattempt");
+      maxattempt = atoi(arg[iarg+1]);
+      iarg += 2;
       hasargs = true;
     } else {
       std::string unknown("unknown keyword ");
@@ -270,7 +277,7 @@ void FixTemplateFragments::pre_insert(
       }
     }
 
-    ParticleSpatialDistribution pxd(random, breakdata[i][10]);
+    ParticleSpatialDistribution pxd(random, breakdata[i][10], maxattempt);
     pxd.randomInsertion(&breakdata[i][0], breakdata[i][6], radii, x_sphere_list[i], ext_atoms, prim_walls, meshes);
 
     double energy = elastic_energy(r_sphere_list[i], x_sphere_list[i]);

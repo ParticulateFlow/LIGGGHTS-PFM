@@ -47,10 +47,11 @@ typedef struct
   double z;
 } point;
 
-ParticleSpatialDistribution::ParticleSpatialDistribution(RanPark *rp, int overlap)
+ParticleSpatialDistribution::ParticleSpatialDistribution(RanPark *rp, int overlap, int maxattempt) :
+  RNG(rp),
+  max_overlap(overlap),
+  maxattempt(maxattempt)
 {
-    RNG = rp;
-    max_overlap = overlap;
 }
 
 
@@ -259,7 +260,7 @@ void ParticleSpatialDistribution::randomInsertion(
   for (unsigned int idx = 0; idx < nParticles; ++idx) {
     std::vector<double> x_rand(3, 0.0);
     bool centerInOccupiedSpace;
-    unsigned int ntry = 0;
+    int ntry = 0;
 
     do {
       randomPointInSphere(radius-radii[idx], x_rand);
@@ -321,7 +322,7 @@ void ParticleSpatialDistribution::randomInsertion(
         }
       }
 
-    } while (centerInOccupiedSpace && ntry < 200);
+    } while (centerInOccupiedSpace && ntry < maxattempt);
 
     x[idx] = x_rand;
   }

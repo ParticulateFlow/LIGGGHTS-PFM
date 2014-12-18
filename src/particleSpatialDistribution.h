@@ -35,7 +35,7 @@ class TriMeshContacts;
 class ParticleSpatialDistribution
 {
  public:
-  ParticleSpatialDistribution(RanPark *rp, int overlap);
+  ParticleSpatialDistribution(RanPark *rp, int overlap, int maxattempt);
   ~ParticleSpatialDistribution();
 
   bool isPointInSphere(const std::vector<double> &center, double radius, const std::vector<double> &x, double *dir=NULL, double *dist=NULL);
@@ -67,6 +67,7 @@ class ParticleSpatialDistribution
  private:
   RanPark * RNG;
   int max_overlap;
+  int maxattempt;
 };
 
 }
