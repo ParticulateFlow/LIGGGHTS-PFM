@@ -340,7 +340,7 @@ inline int FixBreakParticle::is_nearby(int i)
 void FixBreakParticle::pre_force(int)
 {
   // set sibling contact flags and collision factor in contact_history
-  if (n_break_this_local > 0) {
+  if (n_break_this > 0) {
     double **x = atom->x;
     double *radius = atom->radius;
     int *mask = atom->mask;
