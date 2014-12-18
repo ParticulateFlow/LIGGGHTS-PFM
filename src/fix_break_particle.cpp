@@ -490,11 +490,11 @@ void FixBreakParticle::check_energy_criterion()
     }
   }
 
-  for (int i = 0; i < nall; ++i) {
+  for (int i = 0; i < nlocal; ++i) {
     if (!already_doomed[i]) {
       if (mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
         const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
-        if (probability > random->uniform()) { /// TODO ensure same result on all procs
+        if (probability > random->uniform()) {
           fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
         }
       }
@@ -530,6 +530,8 @@ void FixBreakParticle::check_energy_criterion()
 
             const int iPart = neighborList[iCont];
 
+            // do not need to handle ghost particles
+            if (iPart >= nlocal) continue;
             if (already_doomed[iPart]) continue;
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
@@ -594,6 +596,8 @@ void FixBreakParticle::check_energy_criterion()
 
         for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
           int iPart = *neighborList;
+          // do not need to handle ghost particles
+          if (iPart >= nlocal) continue;
           if (already_doomed[iPart]) continue;
           if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
           if (radius[iPart] < min_break_rad) continue;
@@ -646,7 +650,7 @@ void FixBreakParticle::check_energy_criterion()
       }
     }
 
-    for (int i = 0; i < nall; ++i) {
+    for (int i = 0; i < nlocal; ++i) {
       if (mask[i] & groupbit) {
         if (fix_breaker->get_vector_atom_int(i) > 0 && !found_breaker[i]) {
           fprintf(screen,"FixBreakParticle::pre_insert: breaker not found!\n");
@@ -683,6 +687,8 @@ void FixBreakParticle::check_energy_criterion()
 
               const int iPart = neighborList[iCont];
 
+              // do not need to handle ghost particles
+              if (iPart >= nlocal) continue;
               if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
               if (radius[iPart] < min_break_rad) continue;
               if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(JSHash(fwg->id))) continue;
@@ -732,6 +738,8 @@ void FixBreakParticle::check_energy_criterion()
 
           for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
             int iPart = *neighborList;
+            // do not need to handle ghost particles
+            if (iPart >= nlocal) continue;
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
             if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(JSHash(fwg->id))) continue;
@@ -813,6 +821,8 @@ void FixBreakParticle::check_force_criterion()
 
             const int iPart = neighborList[iCont];
 
+            // do not need to handle ghost particles
+            if (iPart >= nlocal) continue;
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
 
@@ -863,6 +873,8 @@ void FixBreakParticle::check_force_criterion()
 
         for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
           int iPart = *neighborList;
+          // do not need to handle ghost particles
+          if (iPart >= nlocal) continue;
           if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
           if (radius[iPart] < min_break_rad) continue;
 
@@ -874,13 +886,13 @@ void FixBreakParticle::check_force_criterion()
     }
   }
 
-  for (int i = 0; i < nall; ++i) {
+  for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
       double probability = 1.0 - exp(-fMat * forceMax[i] / threshold);
       if (flag[i] == 0.0) {
         flag[i] = random->uniform();
       }
-      if (probability > flag[i]) {  /// TODO ensure same result on all procs
+      if (probability > flag[i]) {
         flag[i] = -probability;  // sign indicates breakage
       }
     }
@@ -981,6 +993,8 @@ void FixBreakParticle::check_von_mises_criterion()
 
             const int iPart = neighborList[iCont];
 
+            // do not need to handle ghost particles
+            if (iPart >= nlocal) continue;
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
 
@@ -1042,6 +1056,8 @@ void FixBreakParticle::check_von_mises_criterion()
 
         for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
           int iPart = *neighborList;
+          // do not need to handle ghost particles
+          if (iPart >= nlocal) continue;
           if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
           if (radius[iPart] < min_break_rad) continue;
 
@@ -1064,7 +1080,7 @@ void FixBreakParticle::check_von_mises_criterion()
     }
   }
 
-  for (int i = 0; i < nall; ++i) {
+  for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit && radius[i] > min_break_rad) {
       // deviator stress
       double trace3 = (stress[i][0] + stress[i][1] + stress[i][2]) / 3.0;
@@ -1079,7 +1095,7 @@ void FixBreakParticle::check_von_mises_criterion()
         if (flag[i] == 0.0) {
           flag[i] = random->uniform();
         }
-        if (probability > flag[i]) { /// TODO ensure same result on all procs
+        if (probability > flag[i]) {
           flag[i] = -probability;  // sign indicates breakage
         }
       }
@@ -1093,51 +1109,54 @@ void FixBreakParticle::check_von_mises_criterion()
 void FixBreakParticle::pre_insert()
 {
   int nlocal = atom->nlocal;
-  int nall = nlocal + atom->nghost;
   int *mask = atom->mask;
   double **x = atom->x;
   double **v = atom->v;
   double *radius = atom->radius;
   double *rmass = atom->rmass;
   double *flag = fix_break->vector_atom;
-  AtomVec *avec = atom->avec;
   int *tag = atom->tag;
 
   // count # of particles to break
 
   n_break_this_local = 0;
   mass_break_this_local = 0.;
-  int n_break_this_all = 0;
 
-  // find out which particles are breaking this timestep
-  std::set<int> breaking_atoms;
+  std::set<int> breaking_atom_tags_this;
 
-  for (int i = 0; i < nlocal; ++i) {
-    if (mask[i] & groupbit && flag[i] < 0.0) {
-      ++n_break_this_all;
-      ++n_break_this_local;
-      mass_break_this_local += rmass[i];
-      breaking_atoms.insert(tag[i]);
+  {
+    // find out which particles are breaking this timestep
+    std::vector<int> breaking_atom_tags_this_local;
+
+    for (int i = 0; i < nlocal; ++i) {
+      if (mask[i] & groupbit && flag[i] < 0.0) {
+        ++n_break_this_local;
+        mass_break_this_local += rmass[i];
+        breaking_atom_tags_this_local.push_back(tag[i]);
+      }
+    }
+
+    // tally stats
+    MPI_Sum_Scalar(n_break_this_local,n_break_this,world);
+    n_break += n_break_this;
+    MPI_Sum_Scalar(mass_break_this_local,mass_break_this,world);
+    mass_break += mass_break_this;
+
+    if(n_break_this > 0) {
+      int *breaking_atom_tags_this_recv = NULL;
+      MPI_Allgather_Vector(&breaking_atom_tags_this_local[0], n_break_this_local, breaking_atom_tags_this_recv, world);
+      for (int i = 0; i < n_break_this; ++i) {
+        breaking_atom_tags_this.insert(breaking_atom_tags_this_recv[i]);
+      }
+      delete [] breaking_atom_tags_this_recv;
     }
   }
-  for (int i = nlocal; i < nall; ++i) {
-    if (mask[i] & groupbit && flag[i] < 0.0) {
-      ++n_break_this_all;
-      breaking_atoms.insert(tag[i]);
-    }
-  }
-
-  // tally stats
-  MPI_Sum_Scalar(n_break_this_local,n_break_this,world);
-  n_break += n_break_this;
-  MPI_Sum_Scalar(mass_break_this_local,mass_break_this,world);
-  mass_break += mass_break_this;
 
   std::multimap<int,std::vector<double> > contacting_atoms; // atom_tag, x & radius
   std::multimap<int,TriMeshContacts*> contacting_meshes; // atom_tag, mesh & triangles
   std::multimap<int,PrimitiveWall*> contacting_prim_walls;
 
-  if (n_break_this_all > 0) {
+  if (n_break_this > 0) {
 
     int inum = pair_gran->list->inum;
     int * ilist = pair_gran->list->ilist;
@@ -1165,7 +1184,8 @@ void FixBreakParticle::pre_insert()
       for (int jj = 0; jj < jnum; ++jj) {
         const int j = jlist[jj];
 
-        if (flag[i] < 0.0 || flag[j] < 0.0) {
+        if (breaking_atom_tags_this.find(tag[i]) != breaking_atom_tags_this.end() ||
+            breaking_atom_tags_this.find(tag[j]) != breaking_atom_tags_this.end()) {
 
           const double delx = x[j][0] - x[i][0];
           const double dely = x[j][1] - x[i][1];
@@ -1192,12 +1212,12 @@ void FixBreakParticle::pre_insert()
             virtual_v_j.push_back(v[j][1]);
             virtual_v_j.push_back(v[j][2]);
 
-            if (flag[i] < 0.0) {
+            if (breaking_atom_tags_this.find(tag[i]) != breaking_atom_tags_this.end()) {
               std::vector<double> xr_j(virtual_x_j);
               xr_j.push_back(radius[j]);
               contacting_atoms.insert(std::pair<int, std::vector<double> >(tag[i],xr_j));
             }
-            if (flag[j] < 0.0) {
+            if (breaking_atom_tags_this.find(tag[j]) != breaking_atom_tags_this.end()) {
               std::vector<double> xr_i(virtual_x_i);
               xr_i.push_back(radius[i]);
               contacting_atoms.insert(std::pair<int, std::vector<double> >(tag[j],xr_i));
@@ -1254,7 +1274,7 @@ void FixBreakParticle::pre_insert()
     }
 
     // particle - wall energy
-    {
+    if (n_break_this_local > 0) {
       for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
         FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
         if (fwg->is_mesh_wall()) {
@@ -1279,8 +1299,10 @@ void FixBreakParticle::pre_insert()
               for (int iCont = 0; iCont < numneigh; iCont++) {
                 const int iPart = neighborList[iCont];
 
+                // do not need to handle ghost particles
+                if (iPart >= nlocal) continue;
                 if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
-                if (breaking_atoms.find(tag[iPart]) == breaking_atoms.end()) continue;
+                if (breaking_atom_tags_this.find(tag[iPart]) == breaking_atom_tags_this.end()) continue;
 
                 deltan = mesh->resolveTriSphereContactBary(iPart, iTri, radius[iPart], x[iPart], delta, bary);
 
@@ -1341,8 +1363,10 @@ void FixBreakParticle::pre_insert()
           for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
             int iPart = *neighborList;
 
+            // do not need to handle ghost particles
+            if (iPart >= nlocal) continue;
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
-            if (breaking_atoms.find(tag[iPart]) == breaking_atoms.end()) continue;
+            if (breaking_atom_tags_this.find(tag[iPart]) == breaking_atom_tags_this.end()) continue;
 
             double delta[3];
             double deltan = fwg->primitiveWall()->resolveContact(x[iPart], radius[iPart], delta);
@@ -1405,6 +1429,7 @@ void FixBreakParticle::pre_insert()
 
       // fill breakage data and remove particles
       //NP leave ghosts alone
+      AtomVec *avec = atom->avec;
       const double eMF = 0.485;
       int i=0, ibreak=0;
       while (i < nlocal) {
