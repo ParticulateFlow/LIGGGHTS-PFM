@@ -47,7 +47,7 @@ typedef struct
   double z;
 } point;
 
-ParticleSpatialDistribution::ParticleSpatialDistribution(RanPark *rp, int overlap, int maxattempt) :
+ParticleSpatialDistribution::ParticleSpatialDistribution(RanPark *rp, double overlap, int maxattempt) :
   RNG(rp),
   max_overlap(overlap),
   maxattempt(maxattempt)
@@ -259,6 +259,7 @@ void ParticleSpatialDistribution::randomInsertion(
 
   for (unsigned int idx = 0; idx < nParticles; ++idx) {
     std::vector<double> x_rand(3, 0.0);
+    std::vector<double> most_acceptable_x(4, 0.0);
     bool centerInOccupiedSpace;
     int ntry = 0;
 
@@ -314,17 +315,39 @@ void ParticleSpatialDistribution::randomInsertion(
 
       // check if point is inside any sphere already inserted -> max overlap < radius
       if (!centerInOccupiedSpace) {
+        bool acceptable = true;
+        double dist_min_sq = radii[0];
         for (unsigned int idx2 = 0; idx2 < idx; ++idx2) {
-          centerInOccupiedSpace = isPointInSphere(x[idx2], radii[idx2], x_rand);
+          double dir[3];
+          centerInOccupiedSpace = isPointInSphere(x[idx2], radii[idx2], x_rand, dir);
 
-          if (centerInOccupiedSpace)
-             break;
+          if (centerInOccupiedSpace) {
+            double dist_sq = dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2];
+            double dist_acceptable = radii[idx2] - radii[idx];
+            acceptable = (dist_sq > dist_acceptable*dist_acceptable);
+            if (acceptable) {
+              dist_min_sq = std::min(dist_min_sq, dist_sq);
+            } else {
+              break;
+            }
+          }
+        }
+        if (acceptable && dist_min_sq > most_acceptable_x[3]) {
+          most_acceptable_x[0] = x_rand[0];
+          most_acceptable_x[1] = x_rand[1];
+          most_acceptable_x[2] = x_rand[2];
+          most_acceptable_x[3] = dist_min_sq;
         }
       }
 
     } while (centerInOccupiedSpace && ntry < maxattempt);
 
-    x[idx] = x_rand;
+    if (centerInOccupiedSpace && ntry == maxattempt && most_acceptable_x[3] > 0.0) {
+      most_acceptable_x.resize(3);
+      x[idx] = most_acceptable_x;
+    } else {
+      x[idx] = x_rand;
+    }
   }
 }
 
