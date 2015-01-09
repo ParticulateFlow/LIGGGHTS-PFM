@@ -239,6 +239,10 @@ void FixBreakParticle::post_create()
 void FixBreakParticle::pre_delete(bool unfixflag)
 {
   modify->delete_fix(fix_break->id);
+  modify->delete_fix(fix_breaker->id);
+  modify->delete_fix(fix_breaker_wall->id);
+  modify->delete_fix(fix_collision_factor->id);
+  if (fix_stress) modify->delete_fix(fix_stress->id);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -381,7 +385,7 @@ void FixBreakParticle::pre_force(int)
             if (mask[j] & groupbit) {
               double * contact_history = &allhist[dnum*jj];
 
-              if (contact_history[deltaMaxOffset] == 0.0) {
+              if (fix_collision_factor->vector_atom[i] != 1.0) {
                 contact_history[siblingOffset] = 1.0;
                 contact_history[collisionFactorOffset] = fix_collision_factor->vector_atom[i];
               }
@@ -392,6 +396,8 @@ void FixBreakParticle::pre_force(int)
         }
       }
     }
+
+    fix_collision_factor->set_all(1.0);
   }
 }
 
@@ -1228,21 +1234,16 @@ void FixBreakParticle::pre_insert()
             deltaMax[tag[i]] = std::max(deltaMax[tag[i]], fabs(contact_history[deltaMaxOffset]));
             deltaMax[tag[j]] = std::max(deltaMax[tag[j]], fabs(contact_history[deltaMaxOffset]));
 
-
             double siblingDeltaMax = contact_history[siblingOffset+1];
-
-            contact_history[deltaMaxOffset] = 0.0;
-            contact_history[siblingOffset]  = 0.0;
-            contact_history[siblingOffset+1] = 0.0;
-            contact_history[collisionFactorOffset] = 1.0;
+            double collision_factor = contact_history[collisionFactorOffset];
 
             while (true) {
-              if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+              if (virtual_force(i, j, collision_factor, &siblingDeltaMax) <= 0.0) break;
               virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
               MathExtra::negate3(&virtual_f_ij[0]);
               virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
 
-              if (virtual_force(i, j, &siblingDeltaMax) <= 0.0) break;
+              if (virtual_force(i, j, collision_factor, &siblingDeltaMax) <= 0.0) break;
               virtual_final_integrate(i, virtual_v_i);
               MathExtra::negate3(&virtual_f_ij[0]);
               virtual_final_integrate(j, virtual_v_j);
@@ -1478,16 +1479,16 @@ void FixBreakParticle::pre_insert()
 
 void FixBreakParticle::print_stats_breakage_during()
 {
-  int step = update->ntimestep;
-
   if (me == 0 && n_break_this > 0) {
+    int step = update->ntimestep;
+
     if (screen) {
-      fprintf(screen ,"Particle breakage: broke %d particles (mass %f) at step %d\n - a total of %d particles (mass %f) broken so far.\n",
+      fprintf(screen ,"INFO: Particle breakage: broke %d particles (mass %f) at step %d\n - a total of %d particles (mass %f) broken so far.\n",
               n_break_this,mass_break_this,step,n_break,mass_break);
     }
 
     if (logfile) {
-      fprintf(logfile,"Particle breakage: broke %d particles (mass %f) at step %d\n - a total of %d particles (mass %f) broken so far.\n",
+      fprintf(logfile,"INFO: Particle breakage: broke %d particles (mass %f) at step %d\n - a total of %d particles (mass %f) broken so far.\n",
               n_break_this,mass_break_this,step,n_break,mass_break);
     }
   }
@@ -1543,7 +1544,7 @@ void FixBreakParticle::x_v_omega(int ninsert_this_local, int &ninserted_this_loc
 }
 
 
-double FixBreakParticle::virtual_force(int i, int j, double *siblingDeltaMax)
+double FixBreakParticle::virtual_force(int i, int j, double collision_factor, double *siblingDeltaMax)
 {
   virtual_f_ij.clear();
   virtual_f_ij.push_back(0.0);
@@ -1578,14 +1579,14 @@ double FixBreakParticle::virtual_force(int i, int j, double *siblingDeltaMax)
     cdata.en[1]   = dely * rinv;
     cdata.en[2]   = delz * rinv;
 
-    return virtual_collision(cdata, siblingDeltaMax);
+    return virtual_collision(cdata, collision_factor, siblingDeltaMax);
   }
 
   return 0.0;
 }
 
 
-double FixBreakParticle::virtual_collision(CollisionData & cdata, double *siblingDeltaMax)
+double FixBreakParticle::virtual_collision(CollisionData & cdata, double collision_factor, double *siblingDeltaMax)
 {
   double deltan = 0.0;
 
@@ -1605,13 +1606,12 @@ double FixBreakParticle::virtual_collision(CollisionData & cdata, double *siblin
       deltan = cdata.deltan;
 
       if (!cdata.is_wall && *siblingDeltaMax > 0.0) {
-        const double collisionFactor = fix_collision_factor->vector_atom[cdata.i];
         if (deltan > *siblingDeltaMax) {
           deltan -= *siblingDeltaMax;
-          deltan += *siblingDeltaMax*collisionFactor;
+          deltan += *siblingDeltaMax*collision_factor;
         } else {
           *siblingDeltaMax = deltan;
-          deltan *= collisionFactor;
+          deltan *= collision_factor;
         }
       }
 

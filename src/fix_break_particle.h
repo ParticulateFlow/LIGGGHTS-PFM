@@ -106,8 +106,8 @@ class FixBreakParticle : public FixInsert {
   int normalOffset;
   int max_type;
 
-  double virtual_force(int i, int j, double *siblingDeltaMax);
-  double virtual_collision(LIGGGHTS::ContactModels::CollisionData & cdata, double *siblingDeltaMax = NULL);
+  double virtual_force(int i, int j, double collision_factor, double *siblingDeltaMax);
+  double virtual_collision(LIGGGHTS::ContactModels::CollisionData & cdata, double collision_factor, double *siblingDeltaMax = NULL);
   void virtual_initial_integrate(int i, std::vector<double> &virtual_v, std::vector<double> &virtual_x);
   void virtual_final_integrate(int i, std::vector<double> &virtual_v);
 
