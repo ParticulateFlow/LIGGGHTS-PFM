@@ -45,7 +45,7 @@ using namespace MathConst;
 using namespace LAMMPS_NS;
 using namespace LMP_PROBABILITY_NS;
 
-/*NL*/#define LMP_DEBUGMODE_FRAGMENTS true
+/*NL*/#define LMP_DEBUGMODE_FRAGMENTS false
 
 /* ---------------------------------------------------------------------- */
 
@@ -282,7 +282,14 @@ void FixTemplateFragments::pre_insert(
 
     double energy = elastic_energy(r_sphere_list[i], x_sphere_list[i]);
     double CF = breakdata[i][9]/energy;
-    CF = cbrt(CF*CF);
+
+    const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
+    if (normalmodel == 6) { // hertz/break
+      CF = cbrt(CF*CF); // force scales with deltan^(3/2)
+    } else if (normalmodel == 7) { // hooke/break
+      CF = CF; // force scales with deltan
+    }
+
     collision_factor.push_back(CF);
   }
 }
@@ -322,7 +329,7 @@ double FixTemplateFragments::elastic_energy(const std::vector<double> &radius, c
           if (normalmodel == 6) { // hertz/break
             kn = 4./3.*Yeff*sqrt(reff * deltan);
             energy += 0.4 * kn * deltan * deltan; // 0.4 = (2./5.)
-          } else if (false) { // hooke/break
+          } else if (normalmodel == 7) { // hooke/break
             const double sqrtval = sqrt(reff);
             const double mi = MY_4PI3 * radius[pi] * radius[pi] * radius[pi] * density;
             const double mj = MY_4PI3 * radius[pj] * radius[pj] * radius[pj] * density;

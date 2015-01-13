@@ -571,7 +571,7 @@ void FixBreakParticle::check_energy_criterion()
                   breaker_energy[iPart] = impact_energy_limited_i;
                   breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
                   const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
-                  if (probability > random->uniform()) { /// TODO ensure same result on all procs
+                  if (probability > random->uniform()) {
                     fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
                     fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
                   }
@@ -617,7 +617,7 @@ void FixBreakParticle::check_energy_criterion()
             breaker_energy[iPart] = impact_energy_limited_i;
             breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
             const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
-            if (probability > random->uniform()) { /// TODO ensure same result on all procs
+            if (probability > random->uniform()) {
               fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
               fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
             }
@@ -1589,8 +1589,9 @@ double FixBreakParticle::virtual_force(int i, int j, double collision_factor, do
 double FixBreakParticle::virtual_collision(CollisionData & cdata, double collision_factor, double *siblingDeltaMax)
 {
   double deltan = 0.0;
+  const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
 
-  if (true) { // hertz/break
+  if (normalmodel == 6) { // hertz/break
     const int itype = cdata.itype;
     const int jtype = cdata.jtype;
     const double ri = cdata.radi;
@@ -1647,7 +1648,7 @@ double FixBreakParticle::virtual_collision(CollisionData & cdata, double collisi
 
       const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
       const double Fn_damping = -gamman * vn;
-      const double Fn_contact = kn*deltan;
+      const double Fn_contact = kn * deltan;
       double Fn = Fn_damping + Fn_contact;
 
       // limit force to avoid the artefact of negative repulsion force
@@ -1668,8 +1669,91 @@ double FixBreakParticle::virtual_collision(CollisionData & cdata, double collisi
         virtual_f_ij[2] = Fn * enz;
       }
     }
-  } else { // hooke/break
-    /// TODO
+  } else if (normalmodel == 7) { // hooke/break
+    const int itype = cdata.itype;
+    const int jtype = cdata.jtype;
+    const double ri = cdata.radi;
+    const double rj = cdata.radj;
+    const double reff=cdata.is_wall ? ri : (ri*rj/(ri+rj));
+    const double meff=cdata.meff;
+    double coeffRestLogChosen;
+
+    {
+      const double enx = cdata.en[0];
+      const double eny = cdata.en[1];
+      const double enz = cdata.en[2];
+
+      deltan = cdata.deltan;
+
+      if (!cdata.is_wall && *siblingDeltaMax > 0.0) {
+        if (deltan > *siblingDeltaMax) {
+          deltan -= *siblingDeltaMax;
+          deltan += *siblingDeltaMax*collision_factor;
+        } else {
+          *siblingDeltaMax = deltan;
+          deltan *= collision_factor;
+        }
+      }
+
+      const double sqrtval = sqrt(reff);
+
+      double Yeff;
+      const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
+      double coeffRestLog;
+      {
+        const double *Y, *nu;
+        const double * const * e;
+        Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
+        nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
+        e = static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRestitution","property/global","peratomtypepair",max_type,max_type,style))->get_array();
+
+        Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
+        coeffRestLog = log(e[itype-1][jtype-1]);
+      }
+
+      /*if (viscous)  {
+        // Stokes Number from MW Schmeeckle (2001)
+        const double stokes=cdata.meff*cdata.vn/(6.0*M_PI*coeffMu[itype][jtype]*reff*reff);
+        // Empirical from Legendre (2006)
+        coeffRestLogChosen=log(coeffRestMax[itype][jtype])+coeffStc[itype][jtype]/stokes;
+      } else*/ {
+        coeffRestLogChosen=coeffRestLog;/// coeffRestLog[itype][jtype];
+      }
+
+      double kn = 16./15.*sqrtval*Yeff*pow(15.*meff*charVel*charVel/(16.*sqrtval*Yeff),0.2);
+      const double gamman=sqrt(4.*meff*kn/(1.+(M_PI/coeffRestLogChosen)*(M_PI/coeffRestLogChosen)));
+
+      // convert Kn and Kt from pressure units to force/distance^2
+      kn /= force->nktv2p;
+
+      // relative translational velocity
+      const double vr1 = virtual_v_i[0] - virtual_v_j[0];
+      const double vr2 = virtual_v_i[1] - virtual_v_j[1];
+      const double vr3 = virtual_v_i[2] - virtual_v_j[2];
+
+      const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
+      const double Fn_damping = -gamman * vn;
+      const double Fn_contact = kn * deltan;
+      double Fn = Fn_damping + Fn_contact;
+
+      //limit force to avoid the artefact of negative repulsion force
+      bool limitForce = false;
+      if (limitForce && (Fn<0.0) ) {
+        Fn = 0.0;
+      }
+
+      // apply normal force
+      if(cdata.is_wall) {
+        const double Fn_ = Fn * cdata.area_ratio;
+        virtual_f_ij[0] = Fn_ * enx;
+        virtual_f_ij[1] = Fn_ * eny;
+        virtual_f_ij[2] = Fn_ * enz;
+      } else {
+        virtual_f_ij[0] = Fn * enx;
+        virtual_f_ij[1] = Fn * eny;
+        virtual_f_ij[2] = Fn * enz;
+      }
+    }
   }
   return deltan;
 }
