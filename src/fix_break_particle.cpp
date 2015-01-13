@@ -1279,6 +1279,7 @@ void FixBreakParticle::pre_insert()
     if (n_break_this_local > 0) {
       for (int ifix = 0; ifix < n_wall_fixes; ++ifix) {
         FixWallGran *fwg = static_cast<FixWallGran*>(modify->find_fix_style("wall/gran",ifix));
+        const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
         if (fwg->is_mesh_wall()) {
 
           double bary[3];
@@ -1329,10 +1330,19 @@ void FixBreakParticle::pre_insert()
                     Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
                   }
 
-                  /// Hertz, TODO : Hooke
-                  double sqrtval = sqrt(radius[iPart]*deltan);
-                  double kn = 4./3. * Yeff * sqrtval;
-                  double E_el = (2./5.)*kn*deltan*deltan;
+                  double E_el = 0.0;
+                  if (normalmodel == 6) { // hertz/break
+                    const double sqrtval = sqrt(radius[iPart]*deltan);
+                    const double kn = 4./3. * Yeff * sqrtval;
+                    E_el = 0.4*kn*deltan*deltan;
+                  } else if (normalmodel == 7) { // hooke/break
+                    const double sqrtval = sqrt(radius[iPart]);
+                    const double meff = rmass[iPart];
+                    const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
+                    const double kn = (16./15.) * sqrtval * Yeff * pow(15. * meff * charVel * charVel /(16. * sqrtval * Yeff), 0.2);
+                    E_el = 0.5 * kn * deltan * deltan;
+                  }
+
                   double v_el = sqrt(2.0 * E_el / rmass[iPart]);
                   const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
                   const double r = sqrt(rsq);
@@ -1389,10 +1399,19 @@ void FixBreakParticle::pre_insert()
                   Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
               }
 
-              /// Hertz, TODO : Hooke
-              double sqrtval = sqrt(radius[iPart]*deltan);
-              double kn = 4./3. * Yeff * sqrtval;
-              double E_el = (2./5.)*kn*deltan*deltan;
+              double E_el = 0.0;
+              if (normalmodel == 6) { // hertz/break
+                const double sqrtval = sqrt(radius[iPart]*deltan);
+                const double kn = 4./3. * Yeff * sqrtval;
+                E_el = 0.4*kn*deltan*deltan;
+              } else if (normalmodel == 7) { // hooke/break
+                const double sqrtval = sqrt(radius[iPart]);
+                const double meff = rmass[iPart];
+                const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
+                const double kn = (16./15.) * sqrtval * Yeff * pow(15. * meff * charVel * charVel /(16. * sqrtval * Yeff), 0.2);
+                E_el = 0.5 * kn * deltan * deltan;
+              }
+
               double v_el = sqrt(2.0 * E_el / rmass[iPart]);
               const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
               const double r = sqrt(rsq);
