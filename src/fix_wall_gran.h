@@ -59,6 +59,8 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   virtual int min_type();
   virtual int max_type();
 
+  virtual int64_t hashcode();
+
   /* PUBLIC ACCESS FUNCTIONS */
 
   void setSkinDistance(double newSkinDistance)
