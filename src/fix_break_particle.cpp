@@ -1234,10 +1234,11 @@ void FixBreakParticle::pre_insert()
               contacting_atoms.insert(std::pair<int, std::vector<double> >(tag[j],xr_i));
             }
 
-            double * contact_history = &allhist[dnum*jj];
-            deltaMax[tag[i]] = std::max(deltaMax[tag[i]], fabs(contact_history[deltaMaxOffset]));
-            deltaMax[tag[j]] = std::max(deltaMax[tag[j]], fabs(contact_history[deltaMaxOffset]));
+            double deltan = radsum - sqrt(rsq);
+            deltaMax[tag[i]] = std::max(deltaMax[tag[i]], deltan);
+            deltaMax[tag[j]] = std::max(deltaMax[tag[j]], deltan);
 
+            double * contact_history = &allhist[dnum*jj];
             double siblingDeltaMax = contact_history[siblingOffset+1];
             double collision_factor = contact_history[collisionFactorOffset];
 
