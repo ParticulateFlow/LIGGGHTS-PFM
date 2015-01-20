@@ -387,6 +387,7 @@ void FixBreakParticle::pre_force(int)
 
               if (fix_collision_factor->vector_atom[i] != 1.0) {
                 contact_history[siblingOffset] = 1.0;
+                contact_history[siblingOffset+1] = 0.0;
                 contact_history[collisionFactorOffset] = fix_collision_factor->vector_atom[i];
               }
             } else {
@@ -398,6 +399,7 @@ void FixBreakParticle::pre_force(int)
     }
 
     fix_collision_factor->set_all(1.0);
+    n_break_this = 0;
   }
 }
 
@@ -418,6 +420,8 @@ unsigned int JSHash(const std::string& str)
 
 void FixBreakParticle::end_of_step()
 {
+  if (next_reneighbor-1 != update->ntimestep) return;
+
   switch (breakage_criterion) {
   case BC_ENERGY:
     check_energy_criterion();
