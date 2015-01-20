@@ -1102,7 +1102,7 @@ void FixBreakParticle::check_von_mises_criterion()
                                      + stress[i][3]*stress[i][3] + stress[i][4]*stress[i][4] + stress[i][5]*stress[i][5];
       if (von_Mises_stress > 0.0) {
         von_Mises_stress = sqrt(3.0 * von_Mises_stress);
-        double probability = 1.0 - exp(-fMat * von_Mises_stress / threshold);
+        double probability = 1.0 - exp(-fMat * radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
         if (flag[i] == 0.0) {
           flag[i] = random->uniform();
         }
