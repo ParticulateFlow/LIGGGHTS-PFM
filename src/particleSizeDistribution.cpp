@@ -26,6 +26,7 @@
 #include <cmath>
 #include "math_const.h"
 #include "particleSizeDistribution.h"
+#include <stdio.h>
 
 using namespace LAMMPS_NS;
 using namespace MathConst;
@@ -39,6 +40,11 @@ ParticleSizeDistribution::ParticleSizeDistribution(double P, double density, dou
   t10_max_(t10_max),
   t10_(0.0)
 {
+  if (rad_max_ < rad_min_) {
+    fprintf(stdout,"WARNING: max radius < min radius: resetting %s (%s:%d)\n",(rad_max_>0)?"min radius":"max radius",__FILE__,__LINE__);
+    if (rad_max_ > 0.0) rad_min_=rad_max_;
+    else                rad_max_=rad_min_;
+  }
 }
 
 
@@ -78,7 +84,7 @@ void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMass
   std::map<int,double>::const_iterator it2 = radiiRangeMassFractions.begin();
 
   for (++it2; it1 != radiiRangeMassFractions.end(); ++it1, ++it2) {
-    double currentParticleRadius = rad_parent_/it1->first;
+    double currentParticleRadius = std::min(rad_parent_/it1->first, rad_max_);
     double currentMassPool = mass_parent * it1->second;
     double nextParticleRadiusMax = 0.0;
     double nextParticleMassMax = 0.0;
@@ -88,10 +94,14 @@ void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMass
       nextParticleMassMax = mass_parent/(it2->first*it2->first*it2->first);
     }
 
+    if (rad_max_ < nextParticleRadiusMax) {
+      fprintf(stdout,"WARNING: skipping radius fraction %d (%s:%d)\n",it1->first,__FILE__,__LINE__);
+    }
+
     // as long as we have enough mass left to form a particle with radius larger than the next section ...
-    while (currentMassPool       >  nextParticleMassMax   &&
-           currentParticleRadius >  nextParticleRadiusMax &&
-           currentParticleRadius >= rad_min_) {
+    while (currentMassPool       > nextParticleMassMax   &&
+           currentParticleRadius > nextParticleRadiusMax &&
+           currentParticleRadius > rad_min_) {
       double currentParticleMass = MY_4PI3 * currentParticleRadius*currentParticleRadius*currentParticleRadius * density_;
       while (currentMassPool >= currentParticleMass) {
         radii.push_back(currentParticleRadius);
@@ -102,15 +112,11 @@ void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMass
     }
   }
 
-  if (totalMassPool > 0.0) {
+  while (totalMassPool > 0.0) {
     double radius = cbrt(totalMassPool/(MY_4PI3*density_));
 
     if (radius > rad_max_) {
-      radius *= cbrt(0.5);
-      std::vector<double>::iterator it = radii.begin();
-      while (it != radii.end() && *it > radius)
-        ++it;
-      radii.insert(it, radius);
+      radius = rad_max_;
     } else if (radius < rad_min_) {
       radius += radii.back();
       radii.pop_back();
@@ -120,6 +126,7 @@ void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMass
     while (it != radii.end() && *it > radius)
       ++it;
     radii.insert(it, radius); // slow op; use list?
+    totalMassPool -= MY_4PI3*density_*radius*radius*radius;
   }
 }
 
