@@ -661,7 +661,8 @@ void FixBreakParticle::check_energy_criterion()
     for (int i = 0; i < nlocal; ++i) {
       if (mask[i] & groupbit) {
         if (fix_breaker->get_vector_atom_int(i) > 0 && !found_breaker[i]) {
-          fprintf(screen,"FixBreakParticle::pre_insert: breaker not found!\n");
+          // breaker vanished from neighlist, break now
+          flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
         }
       }
     }
