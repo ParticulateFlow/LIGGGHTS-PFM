@@ -359,7 +359,7 @@ void FixBreakParticle::pre_force(int)
 
       const int i = ilist[ii];
 
-      if (mask[i] & groupbit) {
+      if (mask[i] & groupbit && fix_collision_factor->vector_atom[i] != 1.0) {
 
         const double xtmp = x[i][0];
         const double ytmp = x[i][1];
@@ -382,14 +382,11 @@ void FixBreakParticle::pre_force(int)
 
           if (rsq < radsum * radsum) {
 
-            if (mask[j] & groupbit) {
+            if (mask[j] & groupbit && fix_collision_factor->vector_atom[j] == fix_collision_factor->vector_atom[i]) {
               double * contact_history = &allhist[dnum*jj];
-
-              if (fix_collision_factor->vector_atom[i] != 1.0) {
-                contact_history[siblingOffset] = 1.0;
-                contact_history[siblingOffset+1] = 0.0;
-                contact_history[collisionFactorOffset] = fix_collision_factor->vector_atom[i];
-              }
+              contact_history[siblingOffset] = 1.0;
+              contact_history[siblingOffset+1] = 0.0;
+              contact_history[collisionFactorOffset] = fix_collision_factor->vector_atom[i];
             } else {
               error->warning(FLERR, "Inserted fragments overlap with alien particle");
             }
