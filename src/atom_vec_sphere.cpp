@@ -983,6 +983,7 @@ int AtomVecSphere::unpack_restart(double *buf)
   omega[nlocal][2] = buf[m++];
 
   thread[nlocal] = -1; //NP don't know where this will be placed yet
+  atom->dirty = true;
 
   double **extra = atom->extra;
   if (atom->nextra_store) {
@@ -1028,6 +1029,7 @@ void AtomVecSphere::create_atom(int itype, double *coord)
   omega[nlocal][2] = 0.0;
 
   thread[nlocal] = -1; //NP don't know where this will be placed yet
+  atom->dirty = true;
 
   atom->nlocal++;
 }
@@ -1082,6 +1084,7 @@ void AtomVecSphere::data_atom(double *coord, tagint imagetmp, char **values)
   omega[nlocal][2] = 0.0;
 
   thread[nlocal] = -1; //NP don't know where this will be placed yet
+  atom->dirty = true;
 
   atom->nlocal++;
 }
