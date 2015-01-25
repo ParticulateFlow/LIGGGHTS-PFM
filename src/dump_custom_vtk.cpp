@@ -1832,8 +1832,9 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
       vtype[ERFORCE] = DOUBLE;
       name[ERFORCE] = arg[iarg];
     } else if (strcmp(arg[iarg],"thread") == 0) {
-      pack_choice[i] = &DumpCustomVTK::pack_thread;
-      vtype[i] = INT;
+      pack_choice[THREAD] = &DumpCustomVTK::pack_thread;
+      vtype[THREAD] = INT;
+      name[THREAD] = arg[iarg];
 
     // compute value = c_ID
     // if no trailing [], then arg is set to 0, else arg is int between []
