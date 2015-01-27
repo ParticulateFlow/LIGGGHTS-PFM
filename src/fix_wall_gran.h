@@ -103,6 +103,8 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   int n_contacts_all(int);
   int n_contacts_local();
   int n_contacts_local(int);
+  int n_ghosts_all();
+  int n_ghosts_local();
   int is_moving();
 
   void register_compute_wall_local(ComputePairGranLocal *,int&);

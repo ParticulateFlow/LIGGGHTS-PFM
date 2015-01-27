@@ -1108,6 +1108,30 @@ int FixWallGran::n_contacts_all(int contact_groupbit)
     return ncontacts;
 }
 
+/* ---------------------------------------------------------------------- */
+
+int FixWallGran::n_ghosts_local()
+{
+    if (!is_mesh_wall()) return 0;
+
+    int nghosts = 0;
+    for(int iMesh = 0; iMesh < n_FixMesh_; ++iMesh) {
+        TriMesh *mesh = FixMesh_list_[iMesh]->triMesh();
+        nghosts += mesh->sizeGhost();
+    }
+
+    return nghosts;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixWallGran::n_ghosts_all()
+{
+    int nghosts = n_ghosts_local();
+    MPI_Sum_Scalar(nghosts,world);
+    return nghosts;
+}
+
 /* ----------------------------------------------------------------------
    register and unregister callback to compute
 ------------------------------------------------------------------------- */
