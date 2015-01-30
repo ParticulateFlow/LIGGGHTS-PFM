@@ -120,22 +120,81 @@ FixMeshSurfaceStress::~FixMeshSurfaceStress()
 {
 
 }
+
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStress::post_create_pre_restart()
 {
+    //NP called after constructor and before restart
+    //NP i.e. no restart: mesh elements present at this point
+    //NP restart: no mesh elements present because created in restart()
+    //Np -->register properties and set values for non-restart properties here
+
     if(stress_flag_)
-        initStress();
+        regStress();
 
     if(wear_flag_)
-        initWear();
+        regWear();
 }
+
+/* ---------------------------------------------------------------------- */
+
+//NP in case of no restart, mem for properties is allocated directly
+//NP by addElementProperty because mesh elements are already present
+
+//NP restart allocates mem for all element properties (unititialized)
+//NP (callback via addElement), but are unitilized, so have to init
+//NP them in post_create
 
 /* ---------------------------------------------------------------------- */
 
 void FixMeshSurfaceStress::post_create()
 {
+    //NP called after constructor and restart
+    //NP i.e. no restart: mesh elements present at this point
+    //NP restart: no mesh elements present because created in restart()
+    //Np --> set values for no-restart properties here
+
+    if(stress_flag_)
+        zeroizeStress();
+
+    if(wear_flag_)
+        zeroizeWear();
+
     FixMeshSurface::post_create();
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMeshSurfaceStress::regStress()
+{
+    mesh()->prop().addElementProperty<VectorContainer<double,3> >("f","comm_reverse","frame_invariant","restart_no");
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("sigma_n","comm_none","frame_invariant","restart_no");
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("sigma_t","comm_none","frame_invariant","restart_no");
+}
+/* ---------------------------------------------------------------------- */
+
+void FixMeshSurfaceStress::zeroizeStress()
+{
+    mesh()->prop().getElementProperty<VectorContainer<double,3> >("f")->setAll(0.);
+    mesh()->prop().getElementProperty<ScalarContainer<double> >("sigma_n")->setAll(0.);
+    mesh()->prop().getElementProperty<ScalarContainer<double> >("sigma_t")->setAll(0.);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMeshSurfaceStress::regWear()
+{
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("wear","comm_exchange_borders","frame_invariant","restart_yes");
+    mesh()->prop().getElementProperty<ScalarContainer<double> >("wear")->setAll(0.);
+    mesh()->prop().addElementProperty<ScalarContainer<double> >("wear_step","comm_reverse","frame_invariant","restart_no");
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMeshSurfaceStress::zeroizeWear()
+{
+    mesh()->prop().getElementProperty<ScalarContainer<double> >("wear_step")->setAll(0.);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -174,28 +233,6 @@ int FixMeshSurfaceStress::setmask()
 void FixMeshSurfaceStress::setup_pre_force(int vflag)
 {
     FixMeshSurface::setup_pre_force(vflag);
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixMeshSurfaceStress::initStress()
-{
-    mesh()->prop().addElementProperty<VectorContainer<double,3> >("f","comm_reverse","frame_invariant","restart_no");
-    mesh()->prop().getElementProperty<VectorContainer<double,3> >("f")->setAll(0.);
-    mesh()->prop().addElementProperty<ScalarContainer<double> >("sigma_n","comm_none","frame_invariant","restart_no");
-    mesh()->prop().getElementProperty<ScalarContainer<double> >("sigma_n")->setAll(0.);
-    mesh()->prop().addElementProperty<ScalarContainer<double> >("sigma_t","comm_none","frame_invariant","restart_no");
-    mesh()->prop().getElementProperty<ScalarContainer<double> >("sigma_t")->setAll(0.);
-}
-
-/* ---------------------------------------------------------------------- */
-
-void FixMeshSurfaceStress::initWear()
-{
-    mesh()->prop().addElementProperty<ScalarContainer<double> >("wear","comm_exchange_borders","frame_invariant","restart_yes");
-    mesh()->prop().getElementProperty<ScalarContainer<double> >("wear")->setAll(0.);
-    mesh()->prop().addElementProperty<ScalarContainer<double> >("wear_step","comm_reverse","frame_invariant","restart_no");
-    mesh()->prop().getElementProperty<ScalarContainer<double> >("wear_step")->setAll(0.);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -241,6 +278,8 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
 
     vectorNegate3D(frc);
 
+    vectorAdd3D(x,delta,contactPoint);
+
     if(trackStress())
     {
         /*NL*/ //if(strcmp(id,"servo")==0) printVec3D(screen,"added force",frc);
@@ -250,7 +289,6 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         vectorAdd3D(f(iTri),frc,f(iTri));
 
         // add contribution to total body force and torque
-        vectorAdd3D(x,delta,contactPoint);
         vectorAdd3D(f_total_,frc,f_total_);
         vectorSubtract3D(contactPoint,p_ref_(0),tmp);
         /*NL*/ //fprintf(screen,"p_ref_ %f %f %f\n",p_ref_(0)[0],p_ref_(0)[1],p_ref_(0)[2]);

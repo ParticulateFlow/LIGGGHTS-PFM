@@ -29,10 +29,12 @@ values_spheres = one out of the following options :l
     option 3 = {x1 y1 z1 r1 x2 y2 r2...} where x/y/z are sphere positions and r are the radii :pre
 type = obligatory keyword :l
 mt = multisphere type of the template :l
-opt_keyword = {mass} or {inertia_tensor} :l
+opt_keyword = {mass} or {inertia_tensor} or {use_volume} or {use_density} :l
 {mass} value = mass assigned to this particle template
 {inertia_tensor} values = Ixx Ixy Ixz Iyy Iyz Izz
-  Ixx Ixy Ixz Iyy Iyz Izz = 6 independant components of the inertia tensor :pre
+  Ixx Ixy Ixz Iyy Iyz Izz = 6 independant components of the inertia tensor 
+{use_volume} = particle density calculated from mass and volume (only if keyword 'mass' is used')
+{use_density} = particle volume calculated from mass and density (only if keyword 'mass' is used') :pre
 
 :ule
 
@@ -70,7 +72,19 @@ and the inertia tensor including its eigensystem.
 As an alternative, the body's mass and inertia tensor can be specified
 directly via keywords {mass} and {inertia_tensor}. Note that you can
 use these keywords only together, i.e. defining only {mass} but not
-{inertia_tensor} will throw an error.
+{inertia_tensor} will throw an error. Also note that only 2 out of the
+3 variables density, mass and volume are independant. Thus, you are 
+offered two options when {mass} and {inertia_tensor} are used:
+(a) if keyword {use_volume} is specified, LIGGGHTS will use the 
+specified {mass} and volume_mc (the volume of the particle template 
+calculated by the Monte Carlo procedure), and calculate the density from 
+these two variables.
+(b) if keyword {use_density} is used, LIGGGHTS will use the specified 
+{mass} and the specified {density} (see doc of 
+"fix particletemplate/sphere"_fix_particletemplate_sphere.html command),
+and the volume of the clump is then calculated from these two variables.
+Note you have to use either {use_volume} or {use_density} in case
+{mass} and {inertia_tensor} are used.
 
 The multisphere type or shape type as defined via the {type} keyword must 
 be unique integer given to each fix particletemplate/multisphere 

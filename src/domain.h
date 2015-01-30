@@ -169,6 +169,7 @@ class Domain : protected Pointers {
   int is_in_subdomain(double* pos); //NP modified C.K.
   int is_in_extended_subdomain(double* pos); //NP modified C.K.
   double dist_subbox_borders(double* pos); //NP modified C.K.
+  void min_subbox_extent(double &min_extent,int &dim); //NP modified C.K.
   int is_periodic_ghost(int i); //NP modified C.K.
   bool is_owned_or_first_ghost(int i); //NP modified C.K.
 

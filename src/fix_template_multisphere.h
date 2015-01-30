@@ -68,6 +68,7 @@ class FixTemplateMultisphere : public FixTemplateMultiplespheres {
 
   // flags
   bool mass_set_, moi_set_;
+  int use_density_;
 
   // inertia of clump
   double moi_[3][3];      // 3x3 inertia tensor

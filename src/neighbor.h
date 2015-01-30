@@ -38,6 +38,7 @@ class Neighbor : protected Pointers {
   /*NL*/ friend class Lbalance;
   //NP modified St.A.
   friend class FixHeatGranRad;
+  friend class FixLiquidTrackingInstant;
 
  public:
   int style;                       // 0,1,2 = nsq, bin, multi

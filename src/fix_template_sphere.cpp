@@ -390,8 +390,11 @@ double FixTemplateSphere::max_r_bound()
 double FixTemplateSphere::volexpect()
 {
     if(volume_expect < vol_limit)
+    {
+        /*NL*/ fprintf(screen,"volume_expect %f\n",volume_expect);
         error->fix_error(FLERR,this,"Volume expectancy too small. Change 'volume_limit' "
         "if you are sure you know what you're doing");
+    }
     return volume_expect;
 }
 

@@ -229,6 +229,11 @@
           m += nrecv_this;
       }
 
+      //NP same as done in popElemFromBuffer() for element properties
+      //NP first delete, then re-add elements with correct restart data
+      //NP this is necessary since GeneralContainer::popElemFromBuffer
+      //NP always creates new elements
+      this->prop().deleteRestartGlobal(dummy,dummy,dummy);
       popMeshPropsFromBuffer(&list[m],OPERATION_RESTART,dummy,dummy,dummy);
   }
 
@@ -502,22 +507,26 @@
 
       //NP OPERATION_COMM_REVERSE is a list operation, not per-element operation
 
+      //NP restart wants to set restart data for existing elements
+      //NP this is realized by deleting existing and re-creating new elements with correct data
       if(OPERATION_RESTART == operation)
       {
           MultiVectorContainer<double,NUM_NODES,3> nodeTmp("nodeTmp");
           //NP pop node info from buffer and call addElement so everything is initialized correctly
+          //NP calls to TrackingMesh::addElement()
           nrecv += nodeTmp.popElemFromBuffer(&(buf[nrecv]),operation);
           this->addElement(nodeTmp.begin()[0],-1);
 
           //NP this->addElement() creates properties, calculates everything
           //NP also adds custom values for which restart data is available
-          //NP these are now cleared and re-created with correct restart data
-          //NP in TrackingMesh::popElemFromBuffer
+          //NP these are now cleared via the call below and afterward
+          //NP re-created with correct restart data in derived class (TrackingMesh::popElemFromBuffer)
           this->prop().deleteRestartElement(nLocal_-1,false,false,false);
 
           return nrecv;
       }
 
+      //NP exchange and border want to create new elements
       if(OPERATION_COMM_EXCHANGE == operation || OPERATION_COMM_BORDERS == operation)
       {
           nrecv += MultiNodeMesh<NUM_NODES>::center_.popElemFromBuffer(&(buf[nrecv]),operation);
