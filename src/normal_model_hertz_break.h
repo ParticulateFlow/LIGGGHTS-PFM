@@ -123,18 +123,21 @@ namespace ContactModels
 
         cdata.shearupdate = false;
         cdata.vtr1 = cdata.vtr2 = cdata.vtr3 = 0.0;
-      }
-
-      // detect new contact / maximum overlap
-      if (*deltaMax == 0.0) { // new contact
-        *deltaMax = deltan;
-        history[4] = 0.5 * cdata.vn * cdata.vn; // mass specific impact energy
-      } else if (*deltaMax > deltan || *deltaMax < 0.0) {
-        *deltaMax = -deltan;
-        history[4] = 0.0;
-      } else if (*deltaMax <= deltan) {
-        *deltaMax = deltan;
-        history[4] = 0.0;
+      } else { // sibling contact is never an impact
+        // detect new contact / maximum overlap
+        if (*deltaMax == 0.0) { // new contact
+          *deltaMax = deltan;
+          history[4] = 0.5 * cdata.vn * cdata.vn; // mass specific impact energy
+          if (!cdata.is_wall) {
+            history[4] = history[4] * cdata.meff/(cdata.mi + cdata.mj);
+          }
+        } else if (*deltaMax > deltan || *deltaMax < 0.0) {
+          *deltaMax = -deltan;
+          history[4] = 0.0;
+        } else { //if (*deltaMax <= deltan)
+          *deltaMax = deltan;
+          history[4] = 0.0;
+        }
       }
 
       double sqrtval = sqrt(reff*deltan);
@@ -184,7 +187,7 @@ namespace ContactModels
       en[2] = cdata.en[2];
 
       // apply normal force
-      if(cdata.is_wall) {
+      if (cdata.is_wall) {
         const double Fn_ = Fn * cdata.area_ratio;
         i_forces.delta_F[0] = Fn_ * cdata.en[0];
         i_forces.delta_F[1] = Fn_ * cdata.en[1];
