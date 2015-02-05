@@ -5,9 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Department for Particule Flow Modelling
+   Copyright 2014- JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -21,7 +20,6 @@
 
 /* ----------------------------------------------------------------------
    Contributing authors:
-   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
@@ -61,6 +59,7 @@ using namespace FixConst;
 using namespace LIGGGHTS::ContactModels;
 
 enum{BC_ENERGY, BC_FORCE, BC_VON_MISES};
+enum{BD_CONSTANT, BD_UNIFORM, BD_GAUSSIAN};
 
 #define LMP_DEBUGMODE_FIX_BREAK_PARTICLE true
 #define LMP_DEBUG_OUT_FIX_BREAK_PARTICLE screen
@@ -103,6 +102,28 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
       breakage_criterion = BC_VON_MISES;
       iarg += 2;
       hasargs = true;
+    } else if (strcmp(arg[iarg],"breakability") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: breakability");
+      if (strcmp(arg[iarg+1],"constant") == 0) {
+        if (iarg+3 > narg) error->fix_error(FLERR,this,"not enough arguments: breakability");
+        const_breakability = atof(arg[iarg+2]);
+        breakability_distribution = BD_CONSTANT;
+        if (const_breakability < 0. || const_breakability >= 1.) error->fix_error(FLERR,this,"constant breakability must be >= 0 and < 1");
+        ++iarg;
+      } else if (strcmp(arg[iarg+1],"uniform") == 0) {
+        breakability_distribution = BD_UNIFORM;
+      } else if (strcmp(arg[iarg+1],"gaussian") == 0) {
+        if (iarg+4 > narg) error->fix_error(FLERR,this,"not enough arguments: breakability");
+        rand_expected_value = atof(arg[iarg+2]);
+        rand_full_width = atof(arg[iarg+3]);
+        if (rand_expected_value < 0. || rand_expected_value > 1.) error->fix_error(FLERR,this,"breakability must be >= 0 and < 1");
+        breakability_distribution = BD_GAUSSIAN;
+        iarg +=2;
+      } else {
+        error->fix_error(FLERR,this,"unknown option for: breakability");
+      }
+      iarg += 2;
+      hasargs = true;
     } else if (strcmp(arg[iarg],"min_radius") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: missing min_rad value");
       min_break_rad = atof(arg[iarg+1]);
@@ -125,6 +146,7 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
 
   breakdata = NULL;
   fix_break = NULL;
+  fix_breakability = NULL;
   fix_breaker = NULL;
   fix_breaker_wall = NULL;
   fix_collision_factor = NULL;
@@ -141,7 +163,7 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
 
 void FixBreakParticle::post_create()
 {
-  if (!fix_break) {
+  if (!fix_break) { // breaking flag
     char * breakvar_name = new char[7+strlen(id)];
     sprintf(breakvar_name,"break_%s",id);
 
@@ -156,6 +178,23 @@ void FixBreakParticle::post_create()
     fixarg[7] = "no";     //NP communicate rev no
     fixarg[8] = "0.";
     fix_break = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    delete [] breakvar_name;
+  }
+  if (!fix_breakability) { // breakability
+    char * breakvar_name = new char[14+strlen(id)];
+    sprintf(breakvar_name,"breakability_%s",id);
+
+    const char * fixarg[9];
+    fixarg[0] = breakvar_name;
+    fixarg[1] = "all";
+    fixarg[2] = "property/atom";
+    fixarg[3] = breakvar_name;
+    fixarg[4] = "scalar"; //NP 1 scalar per particle to be registered
+    fixarg[5] = "yes";    //NP restart yes
+    fixarg[6] = "yes";    //NP communicate ghost yes
+    fixarg[7] = "no";     //NP communicate rev no
+    fixarg[8] = "0.";
+    fix_breakability = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     delete [] breakvar_name;
   }
   if (!fix_breaker) { // holds the id of the atom that caused breakage
@@ -221,7 +260,7 @@ void FixBreakParticle::post_create()
     fixarg[2] = "property/atom";
     fixarg[3] = breakvar_name;
     fixarg[4] = "vector"; // 1 vector per particle to be registered
-    fixarg[5] = "yes";    // restart
+    fixarg[5] = "no";     // restart
     fixarg[6] = "no";     // communicate ghost
     fixarg[7] = "no";     // communicate rev
     fixarg[8] = "0.";     // sigma_x = sigma11
@@ -231,6 +270,7 @@ void FixBreakParticle::post_create()
     fixarg[12]= "0.";     // tau_xz  = sigma13
     fixarg[13]= "0.";     // tau_xy  = sigma12
     fix_stress = modify->add_fix_property_atom(14,const_cast<char**>(fixarg),style);
+    delete [] breakvar_name;
   }
 }
 
@@ -239,6 +279,7 @@ void FixBreakParticle::post_create()
 void FixBreakParticle::pre_delete(bool unfixflag)
 {
   modify->delete_fix(fix_break->id);
+  modify->delete_fix(fix_breakability->id);
   modify->delete_fix(fix_breaker->id);
   modify->delete_fix(fix_breaker_wall->id);
   modify->delete_fix(fix_collision_factor->id);
@@ -249,7 +290,7 @@ void FixBreakParticle::pre_delete(bool unfixflag)
 
 FixBreakParticle::~FixBreakParticle()
 {
-  if (breakdata) memory->destroy(breakdata);
+  memory->destroy(breakdata);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -258,6 +299,10 @@ void FixBreakParticle::init_defaults()
 {
   threshold = -1.0;
   fMat = 1.0;
+  breakability_distribution = BD_UNIFORM;
+  rand_expected_value = 0.5;
+  rand_full_width = 1.0;
+  const_breakability = 0.5;
   breakage_criterion = BC_ENERGY;
   fix_fragments = NULL;
   min_break_rad = 0.0;
@@ -382,10 +427,12 @@ void FixBreakParticle::pre_force(int)
 
           if (rsq < radsum * radsum) {
 
-            if (mask[j] & groupbit && fix_collision_factor->vector_atom[j] == fix_collision_factor->vector_atom[i]) {
+            if (mask[j] & groupbit) {
               double * contact_history = &allhist[dnum*jj];
               contact_history[siblingOffset] = 1.0;
               contact_history[siblingOffset+1] = 0.0;
+              contact_history[deltaMaxOffset] = 0.0;
+              contact_history[impactEnergyOffset] = 0.0;
               contact_history[collisionFactorOffset] = fix_collision_factor->vector_atom[i];
             } else {
               error->warning(FLERR, "Inserted fragments overlap with alien particle");
@@ -439,6 +486,7 @@ void FixBreakParticle::end_of_step()
 void FixBreakParticle::check_energy_criterion()
 {
   double *flag = fix_break->vector_atom;
+  double *breakability = fix_breakability->vector_atom;
   int nlocal = atom->nlocal;
   int *mask = atom->mask;
   int *tag = atom->tag;
@@ -502,7 +550,20 @@ void FixBreakParticle::check_energy_criterion()
     if (!already_doomed[i]) {
       if (mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
         const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
-        if (probability > random->uniform()) {
+        if (breakability[i] == 0.0) {
+          switch (breakability_distribution) {
+          case BD_GAUSSIAN:
+            breakability[i] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+            break;
+          case BD_CONSTANT:
+            breakability[i] = const_breakability;
+            break;
+          default:
+            breakability[i] = random->uniform();
+            break;
+          }
+        }
+        if (probability > breakability[i]) {
           fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
         }
       }
@@ -572,7 +633,20 @@ void FixBreakParticle::check_energy_criterion()
                   breaker_energy[iPart] = impact_energy_limited_i;
                   breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
                   const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
-                  if (probability > random->uniform()) {
+                  if (breakability[iPart] == 0.0) {
+                    switch (breakability_distribution) {
+                    case BD_GAUSSIAN:
+                      breakability[iPart] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+                      break;
+                    case BD_CONSTANT:
+                      breakability[iPart] = const_breakability;
+                      break;
+                    default:
+                      breakability[iPart] = random->uniform();
+                      break;
+                    }
+                  }
+                  if (probability > breakability[iPart]) {
                     fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
                     fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
                   }
@@ -618,7 +692,20 @@ void FixBreakParticle::check_energy_criterion()
             breaker_energy[iPart] = impact_energy_limited_i;
             breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
             const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
-            if (probability > random->uniform()) {
+            if (breakability[iPart] == 0.0) {
+              switch (breakability_distribution) {
+              case BD_GAUSSIAN:
+                breakability[iPart] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+                break;
+              case BD_CONSTANT:
+                breakability[iPart] = const_breakability;
+                break;
+              default:
+                breakability[iPart] = random->uniform();
+                break;
+              }
+            }
+            if (probability > breakability[iPart]) {
               fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
               fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
             }
@@ -643,13 +730,13 @@ void FixBreakParticle::check_energy_criterion()
         const int j = jlist[jj];
         double * contact_history = &allhist[dnum*jj];
 
-        if (tag[j] == fix_breaker->get_vector_atom_int(i)) {
+        if (i < nlocal && tag[j] == fix_breaker->get_vector_atom_int(i)) {
           found_breaker[i] = true;
           if (contact_history[deltaMaxOffset] < 0.0) {
             flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
           }
         }
-        if (tag[i] == fix_breaker->get_vector_atom_int(j)) {
+        if (j < nlocal && tag[i] == fix_breaker->get_vector_atom_int(j)) {
           found_breaker[j] = true;
           if (contact_history[deltaMaxOffset] < 0.0) {
             flag[j] = -(1.0 - exp(-fMat * 2.0*radius[j] * flag[j])); // sign indicates breakage
@@ -770,6 +857,7 @@ void FixBreakParticle::check_energy_criterion()
 void FixBreakParticle::check_force_criterion()
 {
   double *flag = fix_break->vector_atom;
+  double *breakability = fix_breakability->vector_atom;
   int nlocal = atom->nlocal;
   int *mask = atom->mask;
   double *radius = atom->radius;
@@ -898,10 +986,22 @@ void FixBreakParticle::check_force_criterion()
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
       double probability = 1.0 - exp(-fMat * forceMax[i] / threshold);
-      if (flag[i] == 0.0) {
-        flag[i] = random->uniform();
       }
-      if (probability > flag[i]) {
+
+      if (breakability[i] == 0.0) {
+        switch (breakability_distribution) {
+        case BD_GAUSSIAN:
+          breakability[i] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+          break;
+        case BD_CONSTANT:
+          breakability[i] = const_breakability;
+          break;
+        default:
+          breakability[i] = random->uniform();
+          break;
+        }
+      }
+      if (probability > breakability[i]) {
         flag[i] = -probability;  // sign indicates breakage
       }
     }
@@ -914,6 +1014,7 @@ void FixBreakParticle::check_force_criterion()
 void FixBreakParticle::check_von_mises_criterion()
 {
   double *flag = fix_break->vector_atom;
+  double *breakability = fix_breakability->vector_atom;
   int nlocal = atom->nlocal;
   int *mask = atom->mask;
   double *radius = atom->radius;
@@ -1101,10 +1202,20 @@ void FixBreakParticle::check_von_mises_criterion()
       if (von_Mises_stress > 0.0) {
         von_Mises_stress = sqrt(3.0 * von_Mises_stress);
         double probability = 1.0 - exp(-fMat * radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
-        if (flag[i] == 0.0) {
-          flag[i] = random->uniform();
+        if (breakability[i] == 0.0) {
+          switch (breakability_distribution) {
+          case BD_GAUSSIAN:
+           breakability[i] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+            break;
+          case BD_CONSTANT:
+            breakability[i] = const_breakability;
+            break;
+          default:
+            breakability[i] = random->uniform();
+            break;
+          }
         }
-        if (probability > flag[i]) {
+        if (probability > breakability[i]) {
           flag[i] = -probability;  // sign indicates breakage
         }
       }
@@ -1175,6 +1286,7 @@ void FixBreakParticle::pre_insert()
 
     int n_wall_fixes = modify->n_fixes_style("wall/gran");
 
+    // estimate max fragment radius from max overlap
     std::map<int, double> deltaMax;
     for (int i = 0; i < nlocal; ++i)
       deltaMax[tag[i]] = 0.0;

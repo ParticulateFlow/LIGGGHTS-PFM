@@ -5,9 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Department for Particule Flow Modelling
+   Copyright 2014- JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -21,7 +20,6 @@
 
 /* ----------------------------------------------------------------------
    Contributing authors:
-   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
@@ -76,6 +74,7 @@ class FixBreakParticle : public FixInsert {
 
   // per breakage flag
   class FixPropertyAtom *fix_break;
+  class FixPropertyAtom *fix_breakability;
   class FixPropertyAtom *fix_breaker;
   class FixPropertyAtom *fix_breaker_wall;
   class FixPropertyAtom *fix_collision_factor;
@@ -89,6 +88,9 @@ class FixBreakParticle : public FixInsert {
   int breakage_criterion;
   double fMat;
   double min_break_rad;
+  int breakability_distribution;
+  double const_breakability;
+  double rand_expected_value, rand_full_width;
 
   // stats for breakage
   int n_break,n_break_this,n_break_this_local;
