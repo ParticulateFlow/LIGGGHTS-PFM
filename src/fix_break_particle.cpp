@@ -36,6 +36,8 @@
 #include "mpi_liggghts.h"
 #include "domain.h"
 #include "random_park.h"
+#include "input.h"
+#include "variable.h"
 #include "memory.h"
 #include "error.h"
 #include "fix_property_atom.h"
@@ -60,6 +62,7 @@ using namespace LIGGGHTS::ContactModels;
 
 enum{BC_ENERGY, BC_FORCE, BC_VON_MISES};
 enum{BD_CONSTANT, BD_UNIFORM, BD_GAUSSIAN};
+enum{NONE, CONSTANT, EQUAL, ATOM};
 
 #define LMP_DEBUGMODE_FIX_BREAK_PARTICLE true
 #define LMP_DEBUG_OUT_FIX_BREAK_PARTICLE screen
@@ -71,34 +74,66 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
 {
   // set defaults first, then parse args
   init_defaults();
+  fMatstr = thresholdstr = NULL;
+  fMatAtom = thresholdAtom = NULL;
+  fMatstyle = thresholdstyle = NONE;
+  maxatom1 = maxatom2 = 0;
 
   bool hasargs = true;
   while (iarg < narg && hasargs) {
     hasargs = false;
     if (strcmp(arg[iarg],"fMat") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: missing fMat value");
-      fMat = atof(arg[iarg+1]);
-      if(fMat <= 0. ) error->fix_error(FLERR,this,"'fMat' must be > 0");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
+        int n = strlen(&arg[iarg+1][2]) + 1;
+        fMatstr = new char[n];
+        strcpy(fMatstr,&arg[iarg+1][2]);
+      } else {
+        fMat = atof(arg[iarg+1]);
+        if(fMat <= 0. ) error->fix_error(FLERR,this,"'fMat' must be > 0");
+        fMatstyle = CONSTANT;
+      }
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"energy_threshold") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: missing energy_threshold value");
-      threshold = atof(arg[iarg+1]);
-      if (threshold < 0.) error->fix_error(FLERR,this,"'energy_threshold' must be >= 0");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
+        int n = strlen(&arg[iarg+1][2]) + 1;
+        thresholdstr = new char[n];
+        strcpy(thresholdstr,&arg[iarg+1][2]);
+      } else {
+        threshold = atof(arg[iarg+1]);
+        if (threshold < 0.) error->fix_error(FLERR,this,"'energy_threshold' must be >= 0");
+        thresholdstyle = CONSTANT;
+      }
       breakage_criterion = BC_ENERGY;
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"force_threshold") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: missing force_threshold value");
-      threshold = atof(arg[iarg+1]);
-      if (threshold <= 0.) error->fix_error(FLERR,this,"'force_threshold' must be > 0");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
+        int n = strlen(&arg[iarg+1][2]) + 1;
+        thresholdstr = new char[n];
+        strcpy(thresholdstr,&arg[iarg+1][2]);
+      } else {
+        threshold = atof(arg[iarg+1]);
+        if (threshold <= 0.) error->fix_error(FLERR,this,"'force_threshold' must be > 0");
+        thresholdstyle = CONSTANT;
+      }
       breakage_criterion = BC_FORCE;
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"von_mises_stress") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: missing von_mises_stress value");
-      threshold = atof(arg[iarg+1]);
-      if (threshold <= 0.) error->fix_error(FLERR,this,"'von_mises_stress' must be > 0");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
+        int n = strlen(&arg[iarg+1][2]) + 1;
+        thresholdstr = new char[n];
+        strcpy(thresholdstr,&arg[iarg+1][2]);
+      } else {
+        threshold = atof(arg[iarg+1]);
+        if (threshold <= 0.) error->fix_error(FLERR,this,"'von_mises_stress' must be > 0");
+        thresholdstyle = CONSTANT;
+      }
       breakage_criterion = BC_VON_MISES;
       iarg += 2;
       hasargs = true;
@@ -291,6 +326,10 @@ void FixBreakParticle::pre_delete(bool unfixflag)
 FixBreakParticle::~FixBreakParticle()
 {
   memory->destroy(breakdata);
+  memory->destroy(fMatAtom);
+  memory->destroy(thresholdAtom);
+  delete [] fMatstr;
+  delete [] thresholdstr;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -313,6 +352,24 @@ void FixBreakParticle::init_defaults()
 void FixBreakParticle::init()
 {
   FixInsert::init();
+
+  if (fMatstr) {
+    fMatvar = input->variable->find(fMatstr);
+    if (fMatvar < 0)
+      error->all(FLERR,"Variable name for fMat of fix break/particle does not exist");
+    if (input->variable->equalstyle(fMatvar)) fMatstyle = EQUAL;
+    else if (input->variable->atomstyle(fMatvar)) fMatstyle = ATOM;
+    else error->all(FLERR,"Variable for fMat of fix break/particle is invalid style");
+  }
+  if (thresholdstr) {
+    thresholdvar = input->variable->find(thresholdstr);
+    if (thresholdvar < 0)
+      error->all(FLERR,"Variable name for threshold of fix break/particle does not exist");
+    if (input->variable->equalstyle(thresholdvar)) thresholdstyle = EQUAL;
+    else if (input->variable->atomstyle(thresholdvar)) thresholdstyle = ATOM;
+    else error->all(FLERR,"Variable for threshold of fix break/particle is invalid style");
+  }
+
   pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
   max_type = pair_gran->mpg->max_type();
 
@@ -337,7 +394,7 @@ void FixBreakParticle::init()
 void FixBreakParticle::calc_insertion_properties()
 {
   // error checks
-  if (threshold < 0.)
+  if (!thresholdstr && threshold < 0.)
     error->fix_error(FLERR,this,"you have to specify a threshold value");
   if (nflowrate > 0. || massflowrate > 0.)
     error->fix_error(FLERR,this,"specifying 'nflowrate' or 'massflowrate' is not allowed");
@@ -466,6 +523,30 @@ void FixBreakParticle::end_of_step()
 {
   if (next_reneighbor-1 != update->ntimestep) return;
 
+  modify->clearstep_compute();
+  if (fMatstyle == EQUAL) {
+    fMat = input->variable->compute_equal(fMatvar);
+  } else if (fMatstyle == ATOM) {
+    if (atom->nlocal > maxatom1) {
+      maxatom1 = atom->nmax;
+      memory->destroy(fMatAtom);
+      memory->create(fMatAtom,maxatom1,"break/particle:fMatAtom");
+    }
+    input->variable->compute_atom(fMatvar,igroup,fMatAtom,1,0);
+  }
+
+  if (thresholdstyle == EQUAL) {
+    threshold = input->variable->compute_equal(thresholdvar);
+  } else if (thresholdstyle == ATOM) {
+    if (atom->nlocal > maxatom2) {
+      maxatom2 = atom->nmax;
+      memory->destroy(thresholdAtom);
+      memory->create(thresholdAtom,maxatom2,"break/particle:thresholdAtom");
+    }
+    input->variable->compute_atom(thresholdvar,igroup,thresholdAtom,1,0);
+  }
+  modify->addstep_compute(update->ntimestep + nevery);
+
   switch (breakage_criterion) {
   case BC_ENERGY:
     check_energy_criterion();
@@ -524,9 +605,16 @@ void FixBreakParticle::check_energy_criterion()
     for (int jj = 0; jj < jnum; ++jj) {
       const int j = jlist[jj];
       double * contact_history = &allhist[dnum*jj];
+      double impact_energy_limited_i;
+      double impact_energy_limited_j;
 
-      const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[i]);
-      const double impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[j]);
+      if (thresholdstyle == ATOM) {
+        impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[i]/radius[i]);
+        impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[j]/radius[j]);
+      } else {
+        impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[i]);
+        impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[j]);
+      }
 
       if (!already_doomed[i]) { // no breaker yet
         if (breaker_energy[i] < impact_energy_limited_i) {
@@ -549,7 +637,14 @@ void FixBreakParticle::check_energy_criterion()
   for (int i = 0; i < nlocal; ++i) {
     if (!already_doomed[i]) {
       if (mask[i] & groupbit && radius[i] > min_break_rad && breaker_energy[i] > 0.0) {
-        const double probability = 1.0 - exp(-fMat * 2.0*radius[i] * flag[i]);
+
+        double probability;
+        if (fMatstyle == ATOM) {
+          probability = 1.0 - exp(-fMatAtom[i] * 2.0*radius[i] * flag[i]);
+        } else {
+          probability = 1.0 - exp(-fMat        * 2.0*radius[i] * flag[i]);
+        }
+
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
           case BD_GAUSSIAN:
@@ -625,14 +720,27 @@ void FixBreakParticle::check_energy_criterion()
             }
 
             if (contact_history) {
-              const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
+              double impact_energy_limited_i;
+
+              if (thresholdstyle == ATOM) {
+                impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[iPart]/radius[iPart]);
+              } else {
+                impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
+              }
               if (impact_energy_limited_i > 0.0) {
                 flag[iPart] += impact_energy_limited_i;
 
                 if (breaker_energy[iPart] < impact_energy_limited_i) {
                   breaker_energy[iPart] = impact_energy_limited_i;
                   breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
-                  const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
+
+                  double probability;
+                  if (fMatstyle == ATOM) {
+                    probability = 1.0 - exp(-fMatAtom[iPart] * 2.0*radius[iPart] * flag[iPart]);
+                  } else {
+                    probability = 1.0 - exp(-fMat            * 2.0*radius[iPart] * flag[iPart]);
+                  }
+
                   if (breakability[iPart] == 0.0) {
                     switch (breakability_distribution) {
                     case BD_GAUSSIAN:
@@ -685,13 +793,26 @@ void FixBreakParticle::check_energy_criterion()
           if (radius[iPart] < min_break_rad) continue;
 
           double *contact_history = c_history[iPart];
-          const double impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
+          double impact_energy_limited_i;
+
+          if (thresholdstyle == ATOM) {
+            impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[iPart]/radius[iPart]);
+          } else {
+            impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
+          }
           flag[iPart] += impact_energy_limited_i;
 
           if (breaker_energy[iPart] < impact_energy_limited_i) {
             breaker_energy[iPart] = impact_energy_limited_i;
             breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
-            const double probability = 1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart]);
+
+            double probability;
+            if (fMatstyle == ATOM) {
+              probability = 1.0 - exp(-fMatAtom[iPart] * 2.0*radius[iPart] * flag[iPart]);
+            } else {
+              probability = 1.0 - exp(-fMat            * 2.0*radius[iPart] * flag[iPart]);
+            }
+
             if (breakability[iPart] == 0.0) {
               switch (breakability_distribution) {
               case BD_GAUSSIAN:
@@ -733,13 +854,23 @@ void FixBreakParticle::check_energy_criterion()
         if (i < nlocal && tag[j] == fix_breaker->get_vector_atom_int(i)) {
           found_breaker[i] = true;
           if (contact_history[deltaMaxOffset] < 0.0) {
-            flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
+            // sign indicates breakage
+            if (fMatstyle == ATOM) {
+              flag[i] = -(1.0 - exp(-fMatAtom[i] * 2.0*radius[i] * flag[i]));
+            } else {
+              flag[i] = -(1.0 - exp(-fMat        * 2.0*radius[i] * flag[i]));
+            }
           }
         }
         if (j < nlocal && tag[i] == fix_breaker->get_vector_atom_int(j)) {
           found_breaker[j] = true;
           if (contact_history[deltaMaxOffset] < 0.0) {
-            flag[j] = -(1.0 - exp(-fMat * 2.0*radius[j] * flag[j])); // sign indicates breakage
+            // sign indicates breakage
+            if (fMatstyle == ATOM) {
+              flag[j] = -(1.0 - exp(-fMatAtom[j] * 2.0*radius[j] * flag[j]));
+            } else {
+              flag[j] = -(1.0 - exp(-fMat        * 2.0*radius[j] * flag[j]));
+            }
           }
         }
       }
@@ -749,7 +880,12 @@ void FixBreakParticle::check_energy_criterion()
       if (mask[i] & groupbit) {
         if (fix_breaker->get_vector_atom_int(i) > 0 && !found_breaker[i]) {
           // breaker vanished from neighlist, break now
-          flag[i] = -(1.0 - exp(-fMat * 2.0*radius[i] * flag[i])); // sign indicates breakage
+          // sign indicates breakage
+          if (fMatstyle == ATOM) {
+            flag[i] = -(1.0 - exp(-fMatAtom[i] * 2.0*radius[i] * flag[i]));
+          } else {
+            flag[i] = -(1.0 - exp(-fMat        * 2.0*radius[i] * flag[i]));
+          }
         }
       }
     }
@@ -807,7 +943,12 @@ void FixBreakParticle::check_energy_criterion()
 
               if (contact_history) {
                 if (contact_history[deltaMaxOffset] < 0.0) {
-                  flag[iPart] = -(1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart])); // sign indicates breakage
+                  // sign indicates breakage
+                  if (fMatstyle == ATOM) {
+                    flag[iPart] = -(1.0 - exp(-fMatAtom[iPart] * 2.0*radius[iPart] * flag[iPart]));
+                  } else {
+                    flag[iPart] = -(1.0 - exp(-fMat            * 2.0*radius[iPart] * flag[iPart]));
+                  }
                 }
               }
             }
@@ -842,7 +983,12 @@ void FixBreakParticle::check_energy_criterion()
 
             double *contact_history = c_history[iPart];
             if (contact_history[deltaMaxOffset] < 0.0) {
-              flag[iPart] = -(1.0 - exp(-fMat * 2.0*radius[iPart] * flag[iPart])); // sign indicates breakage
+              // sign indicates breakage
+              if (fMatstyle == ATOM) {
+                flag[iPart] = -(1.0 - exp(-fMatAtom[iPart] * 2.0*radius[iPart] * flag[iPart]));
+              } else {
+                flag[iPart] = -(1.0 - exp(-fMat            * 2.0*radius[iPart] * flag[iPart]));
+              }
             }
           }
         }
@@ -985,7 +1131,20 @@ void FixBreakParticle::check_force_criterion()
 
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
-      double probability = 1.0 - exp(-fMat * forceMax[i] / threshold);
+      double probability;
+      if (fMatstyle == ATOM) {
+        if (thresholdstyle == ATOM) {
+          probability = 1.0 - exp(-fMatAtom[i] * forceMax[i] / thresholdAtom[i]);
+        } else {
+          probability = 1.0 - exp(-fMatAtom[i] * forceMax[i] / threshold);
+        }
+      } else {
+        if (thresholdstyle == ATOM) {
+          probability = 1.0 - exp(-fMat        * forceMax[i] / thresholdAtom[i]);
+        } else {
+          probability = 1.0 - exp(-fMat        * forceMax[i] / threshold);
+        }
+      }
 
       if (breakability[i] == 0.0) {
         switch (breakability_distribution) {
@@ -1200,7 +1359,6 @@ void FixBreakParticle::check_von_mises_criterion()
                                      + stress[i][3]*stress[i][3] + stress[i][4]*stress[i][4] + stress[i][5]*stress[i][5];
       if (von_Mises_stress > 0.0) {
         von_Mises_stress = sqrt(3.0 * von_Mises_stress);
-        double probability = 1.0 - exp(-fMat * radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
           case BD_GAUSSIAN:
@@ -1212,6 +1370,20 @@ void FixBreakParticle::check_von_mises_criterion()
           default:
             breakability[i] = random->uniform();
             break;
+          }
+        }
+        double probability;
+        if (fMatstyle == ATOM) {
+          if (thresholdstyle == ATOM) {
+            probability = 1.0 - exp(-fMatAtom[i] * radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
+          } else {
+            probability = 1.0 - exp(-fMatAtom[i] * radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
+          }
+        } else {
+          if (thresholdstyle == ATOM) {
+            probability = 1.0 - exp(-fMat * radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
+          } else {
+            probability = 1.0 - exp(-fMat * radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
           }
         }
         if (probability > breakability[i]) {

@@ -92,6 +92,15 @@ class FixBreakParticle : public FixInsert {
   double const_breakability;
   double rand_expected_value, rand_full_width;
 
+  // variable values
+  char *fMatstr;
+  char *thresholdstr;
+  int fMatstyle, fMatvar;
+  int thresholdstyle, thresholdvar;
+  double *fMatAtom;
+  double *thresholdAtom;
+  int maxatom1, maxatom2;
+
   // stats for breakage
   int n_break,n_break_this,n_break_this_local;
   double mass_break,mass_break_this,mass_break_this_local;
