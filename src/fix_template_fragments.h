@@ -98,6 +98,8 @@ class FixTemplateFragments : public FixTemplateSphere {
   class PairGran *pair_gran;
   int dnum;
   double rad_min_pct;
+  double rad_omit;
+  bool omit_post_generation;
   double t10_max;
   std::map<int, double> radiiMassFractions;
   std::vector<std::vector<double> > r_sphere_list;

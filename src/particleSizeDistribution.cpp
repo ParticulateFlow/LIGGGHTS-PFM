@@ -31,19 +31,24 @@
 using namespace LAMMPS_NS;
 using namespace MathConst;
 
-ParticleSizeDistribution::ParticleSizeDistribution(double P, double density, double rad_parent, double rad_min, double rad_max, double t10_max) :
+ParticleSizeDistribution::ParticleSizeDistribution(double P, double density, double rad_parent, double rad_min, double rad_max, double t10_max, double rad_omit, bool omit_post) :
   breakage_probability(P),
   density_(density),
   rad_parent_(rad_parent),
   rad_min_(rad_min),
   rad_max_(rad_max),
   t10_max_(t10_max),
-  t10_(0.0)
+  rad_omit_(rad_omit),
+  t10_(0.0),
+  mass_fraction_omit_(0.0),
+  omit_post_(omit_post)
 {
+  if (rad_omit_ > rad_min_) {
+    rad_min_ = rad_omit_;
+  }
   if (rad_max_ < rad_min_) {
-    fprintf(stdout,"WARNING: max radius < min radius: resetting %s (%s:%d)\n",(rad_max_>0)?"min radius":"max radius",__FILE__,__LINE__);
-    if (rad_max_ > 0.0) rad_min_=rad_max_;
-    else                rad_max_=rad_min_;
+    fprintf(stdout,"WARNING: max radius < min radius: resetting max radius (%s:%d)\n",__FILE__,__LINE__);
+    rad_max_ = rad_min_;
   }
 }
 
@@ -56,7 +61,21 @@ void ParticleSizeDistribution::mass_fractions(std::map<int, double>& radiiMassFr
   std::map<int,double>::iterator it = radiiMassFractions.begin();
 
   for (; it != radiiMassFractions.end(); ++it) {
+    if (!omit_post_ && rad_parent_/it->first <= rad_omit_)
+      break;
     it->second = tn(it->first);
+  }
+
+  radiiMassFractions.erase(it, radiiMassFractions.end());
+
+  if (rad_omit_ >= rad_parent_) {
+    mass_fraction_omit_ = 1.0;
+  } else if (rad_omit_ > 0.0) {
+    if (omit_post_) {
+      mass_fraction_omit_ = 0.0;
+    } else {
+      mass_fraction_omit_ = tn(rad_parent_/rad_omit_);
+    }
   }
 }
 
@@ -65,20 +84,27 @@ void ParticleSizeDistribution::range_mass_fractions(std::map<int, double>& radii
 {
   mass_fractions(radiiRangeMassFractions);
 
-  std::map<int,double>::iterator it1 = radiiRangeMassFractions.begin();
-  std::map<int,double>::iterator it2 = radiiRangeMassFractions.begin();
+  if (!radiiRangeMassFractions.empty()) {
+    std::map<int,double>::iterator it1 = radiiRangeMassFractions.begin();
+    std::map<int,double>::iterator it2 = radiiRangeMassFractions.begin();
 
-  for (++it2; it2 != radiiRangeMassFractions.end(); ++it1, ++it2) {
-    it1->second = it1->second - it2->second;
+    for (++it2; it2 != radiiRangeMassFractions.end(); ++it1, ++it2) {
+      it1->second = it1->second - it2->second;
+    }
+
+    if (rad_omit_ > 0.0) {
+      it1->second = it1->second - mass_fraction_omit_;
+    }
   }
 }
 
 
-void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMassFractions, std::vector<double>& radii)
+double ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMassFractions, std::vector<double>& radii)
 {
   const double volume_parent = MY_4PI3 * rad_parent_*rad_parent_*rad_parent_;
   const double mass_parent = volume_parent * density_;
-  double totalMassPool = mass_parent;
+  double totalMassPool = mass_parent - mass_parent * mass_fraction_omit_;
+  double mass_omitted = 0.0;
 
   std::map<int,double>::const_iterator it1 = radiiRangeMassFractions.begin();
   std::map<int,double>::const_iterator it2 = radiiRangeMassFractions.begin();
@@ -110,6 +136,11 @@ void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMass
       }
       currentParticleRadius *= 0.999;
     }
+
+    if (omit_post_ && currentParticleRadius <= rad_omit_) {
+      totalMassPool -= currentMassPool;
+      mass_omitted += currentMassPool;
+    }
   }
 
   while (totalMassPool > 0.0) {
@@ -128,6 +159,12 @@ void ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMass
     radii.insert(it, radius); // slow op; use list?
     totalMassPool -= MY_4PI3*density_*radius*radius*radius;
   }
+
+  if (omit_post_) {
+    return mass_omitted;
+  } else {
+    return mass_parent * mass_fraction_omit_;
+  }
 }
 
 
@@ -137,8 +174,8 @@ double ParticleSizeDistribution::t10()
 }
 
 
-double ParticleSizeDistribution::tn(int n)
+double ParticleSizeDistribution::tn(double n)
 {
-  double alpha = 1.0;
+  const double alpha = 1.0;
   return 1.0 - pow(1.0-t10_, alpha*9.0/(n-1.0));
 }

@@ -58,6 +58,8 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
   if (pdf_radius)
     error->fix_error(FLERR,this,"currently does not support keyword 'radius'");
 
+  rad_omit = 0.0;
+  omit_post_generation = false;
   maxattempt = 200;
 
   bool hasargs = true;
@@ -79,6 +81,17 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
         --sizes;
       }
       hasargs = true;
+    } else if (strcmp(arg[iarg],"omit_radius") == 0) {
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"not enough arguments: omit_radius");
+      if (strcmp(arg[iarg+1],"post") == 0) {
+        omit_post_generation = true;
+      } else if (strcmp(arg[iarg+1],"pre") != 0) {
+        error->fix_error(FLERR,this,"invalid argument for omit_radius");
+      }
+      rad_omit = atof(arg[iarg+2]);
+      if (rad_omit < 0.) error->fix_error(FLERR,this,"'omit_radius' must be >= 0");
+      iarg += 3;
+      hasargs = true;
     } else if (strcmp(arg[iarg],"maxattempt") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments for maxattempt");
       maxattempt = atoi(arg[iarg+1]);
@@ -92,7 +105,7 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
   }
 
   // set default tn_family if none is specified
-  if(radiiMassFractions.empty()) {
+  if (radiiMassFractions.empty()) {
     radiiMassFractions[2] = 0.0;
     radiiMassFractions[3] = 0.0;
     radiiMassFractions[5] = 0.0;
@@ -210,6 +223,7 @@ void FixTemplateFragments::randomize_ptilist(int n_random,int distribution_group
   }
 }
 
+/* ----------------------------------------------------------------------*/
 
 void FixTemplateFragments::pre_insert(
     int n_total,
@@ -233,67 +247,78 @@ void FixTemplateFragments::pre_insert(
   double density = expectancy(pdf_density);
   x_sphere_list.resize(n_total);
 
+#define OVERLAP_SCALE 0.75
   for (int i = 0; i < n_total; ++i) {
-    ParticleSizeDistribution psd(breakdata[i][7], density, breakdata[i][6], breakdata[i][6]*rad_min_pct, breakdata[i][6]-0.5*breakdata[i][10], t10_max);
-    psd.range_mass_fractions(radiiMassFractions);
+    if (breakdata[i][6]*rad_min_pct > breakdata[i][6]-OVERLAP_SCALE*breakdata[i][10]) {
+      error->warning(FLERR, "Even fragments with minimum radius may produce overlap energy!");
+    }
+
+    ParticleSizeDistribution psd(breakdata[i][7], density, breakdata[i][6], breakdata[i][6]*rad_min_pct, breakdata[i][6]-OVERLAP_SCALE*breakdata[i][10], t10_max, rad_omit, omit_post_generation);
+    std::map<int, double> rmf(radiiMassFractions);
+    psd.range_mass_fractions(rmf);
     std::vector<double> radii;
-    psd.radii(radiiMassFractions, radii);
+    psd.radii(rmf, radii);
     r_sphere_list.push_back(radii);
 
-    if (r_bound < breakdata[i][6]) {
-      r_bound = breakdata[i][6];
-    }
-    if (nspheres < static_cast<int>(radii.size())) {
-      nspheres = static_cast<int>(radii.size());
-    }
-
-    // overlapping atoms
-    std::vector<std::vector<double> > ext_atoms;
-    {
-      std::pair<std::multimap<int,std::vector<double> >::const_iterator, std::multimap<int,std::vector<double> >::const_iterator> ret;
-      ret = contacting_atoms_mm.equal_range(static_cast<int>(breakdata[i][8]));
-      for (std::multimap<int,std::vector<double> >::const_iterator it = ret.first; it != ret.second; ++it) {
-        ext_atoms.push_back(it->second);
+    if (radii.size() > 0) {
+      if (r_bound < breakdata[i][6]) {
+        r_bound = breakdata[i][6];
       }
-    }
-
-    // overlapping primitive walls
-    std::vector<PrimitiveWall*> prim_walls;
-    {
-      std::pair<std::multimap<int,PrimitiveWall*>::const_iterator, std::multimap<int,PrimitiveWall*>::const_iterator> ret;
-      ret = prim_walls_mm.equal_range(static_cast<int>(breakdata[i][8]));
-      for (std::multimap<int,PrimitiveWall*>::const_iterator it = ret.first; it != ret.second; ++it) {
-        prim_walls.push_back(it->second);
+      if (nspheres < static_cast<int>(radii.size())) {
+        nspheres = static_cast<int>(radii.size());
       }
-    }
 
-    // overlapping meshes
-    std::vector<TriMeshContacts*> meshes;
-    {
-      std::pair<std::multimap<int,TriMeshContacts*>::const_iterator, std::multimap<int,TriMeshContacts*>::const_iterator> ret;
-      ret = meshes_mm.equal_range(static_cast<int>(breakdata[i][8]));
-      for (std::multimap<int,TriMeshContacts*>::const_iterator it = ret.first; it != ret.second; ++it) {
-        meshes.push_back(it->second);
+      // overlapping atoms
+      std::vector<std::vector<double> > ext_atoms;
+      {
+        std::pair<std::multimap<int,std::vector<double> >::const_iterator, std::multimap<int,std::vector<double> >::const_iterator> ret;
+        ret = contacting_atoms_mm.equal_range(static_cast<int>(breakdata[i][8]));
+        for (std::multimap<int,std::vector<double> >::const_iterator it = ret.first; it != ret.second; ++it) {
+          ext_atoms.push_back(it->second);
+        }
       }
+
+      // overlapping primitive walls
+      std::vector<PrimitiveWall*> prim_walls;
+      {
+        std::pair<std::multimap<int,PrimitiveWall*>::const_iterator, std::multimap<int,PrimitiveWall*>::const_iterator> ret;
+        ret = prim_walls_mm.equal_range(static_cast<int>(breakdata[i][8]));
+        for (std::multimap<int,PrimitiveWall*>::const_iterator it = ret.first; it != ret.second; ++it) {
+          prim_walls.push_back(it->second);
+        }
+      }
+
+      // overlapping meshes
+      std::vector<TriMeshContacts*> meshes;
+      {
+        std::pair<std::multimap<int,TriMeshContacts*>::const_iterator, std::multimap<int,TriMeshContacts*>::const_iterator> ret;
+        ret = meshes_mm.equal_range(static_cast<int>(breakdata[i][8]));
+        for (std::multimap<int,TriMeshContacts*>::const_iterator it = ret.first; it != ret.second; ++it) {
+          meshes.push_back(it->second);
+        }
+      }
+
+      ParticleSpatialDistribution pxd(random, breakdata[i][10], maxattempt);
+      pxd.randomInsertion(&breakdata[i][0], breakdata[i][6], radii, x_sphere_list[i], ext_atoms, prim_walls, meshes);
+
+      double energy = elastic_energy(r_sphere_list[i], x_sphere_list[i]);
+      double CF = breakdata[i][9]/energy;
+
+      const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
+      if (normalmodel == 6) { // hertz/break
+        CF = cbrt(CF*CF); // force scales with deltan^(3/2)
+      } else if (normalmodel == 7) { // hooke/break
+        CF = CF; // force scales with deltan
+      }
+
+      collision_factor.push_back(CF);
+    } else {
+      collision_factor.push_back(1.0);
     }
-
-    ParticleSpatialDistribution pxd(random, breakdata[i][10], maxattempt);
-    pxd.randomInsertion(&breakdata[i][0], breakdata[i][6], radii, x_sphere_list[i], ext_atoms, prim_walls, meshes);
-
-    double energy = elastic_energy(r_sphere_list[i], x_sphere_list[i]);
-    double CF = breakdata[i][9]/energy;
-
-    const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
-    if (normalmodel == 6) { // hertz/break
-      CF = cbrt(CF*CF); // force scales with deltan^(3/2)
-    } else if (normalmodel == 7) { // hooke/break
-      CF = CF; // force scales with deltan
-    }
-
-    collision_factor.push_back(CF);
   }
 }
 
+/* ----------------------------------------------------------------------*/
 
 // geometrically correct elastic energy
 double FixTemplateFragments::elastic_energy(const std::vector<double> &radius, const std::vector<std::vector<double> > &x)
