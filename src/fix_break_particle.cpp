@@ -986,7 +986,6 @@ void FixBreakParticle::check_force_criterion()
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
       double probability = 1.0 - exp(-fMat * forceMax[i] / threshold);
-      }
 
       if (breakability[i] == 0.0) {
         switch (breakability_distribution) {
