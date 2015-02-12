@@ -1132,17 +1132,20 @@ void FixBreakParticle::check_force_criterion()
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
       double probability;
+      // P = 1 - exp(-fMat * (r/r0)^(3-2m) * (f/f0)^m)
+      // m ... Weibull modulus (shape parameter)
+      // here: m = 1; fMat is supposed to be scaled by 1/r0
       if (fMatstyle == ATOM) {
         if (thresholdstyle == ATOM) {
-          probability = 1.0 - exp(-fMatAtom[i] * forceMax[i] / thresholdAtom[i]);
+          probability = 1.0 - exp(-fMatAtom[i] * radius[i] * forceMax[i] / thresholdAtom[i]);
         } else {
-          probability = 1.0 - exp(-fMatAtom[i] * forceMax[i] / threshold);
+          probability = 1.0 - exp(-fMatAtom[i] * radius[i] * forceMax[i] / threshold);
         }
       } else {
         if (thresholdstyle == ATOM) {
-          probability = 1.0 - exp(-fMat        * forceMax[i] / thresholdAtom[i]);
+          probability = 1.0 - exp(-fMat        * radius[i] * forceMax[i] / thresholdAtom[i]);
         } else {
-          probability = 1.0 - exp(-fMat        * forceMax[i] / threshold);
+          probability = 1.0 - exp(-fMat        * radius[i] * forceMax[i] / threshold);
         }
       }
 
@@ -1373,6 +1376,9 @@ void FixBreakParticle::check_von_mises_criterion()
           }
         }
         double probability;
+        // P = 1 - exp(-fMat * (r/r0)^3 * (sigma/sigma0)^m)
+        // m ... Weibull modulus (shape parameter)
+        // here: m = 1; fMat is supposed to be scaled by 1/r0^3
         if (fMatstyle == ATOM) {
           if (thresholdstyle == ATOM) {
             probability = 1.0 - exp(-fMatAtom[i] * radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
