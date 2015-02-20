@@ -1,24 +1,17 @@
-# ENABLE_PACKAGE: enable PACKAGE-modules (OFF by default)
-# ENABLE_PACKAGEUSER: enable PACKAGEUSER-modules (OFF by default)
-# SUFFIX: add sufix to binary-name (NONE by default)
-# USERPATH: use RPATH for search of the shared library libliggghts, need to be switched on by packaging (ON by default)
-# VERSION: version number (2.2 by default)
-# LIB_SUFFIX: suffix, where libliggghts library will be installed, lib/${LIB_SUFFIX} (NONE by default)
-
 PROJECT(LIGGGHTS C CXX)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET(LIGGGHTS_MAJOR_VERSION 3)
 SET(LIGGGHTS_MINOR_VERSION 0)
-SET(LIGGGHTS_PATCH_VERSION 3)
+SET(LIGGGHTS_PATCH_VERSION 5)
 SET(LIGGGHTS_VERSION ${LIGGGHTS_MAJOR_VERSION}.${LIGGGHTS_MINOR_VERSION}.${LIGGGHTS_PATCH_VERSION})
 
 IF (NOT CMAKE_CXX_FLAGS)
   #If flags are not set, add default flags
-  SET(CMAKE_BUILD_TYPE Release)
+  SET(CMAKE_BUILD_TYPE Debug)
 
   IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "-Wall -fstack-protector --param=ssp-buffer-size=4 -Wformat -Wformat-security -Werror=format-security -Wno-maybe-uninitialized")
+    SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wno-uninitialized -std=c++11 -Wno-literal-suffix")
   ENDIF()
 ENDIF()
 
@@ -54,7 +47,7 @@ SET_TARGET_PROPERTIES(liggghts_bin PROPERTIES OUTPUT_NAME liggghts)
 
 #=======================================
 
-FIND_PACKAGE(VTK COMPONENTS Common Filtering IO)
+FIND_PACKAGE(VTK NO_MODULE)
 
 IF(VTK_FOUND)
   INCLUDE(${VTK_USE_FILE})
@@ -97,20 +90,6 @@ ELSE(MPI_FOUND)
   ADD_SUBDIRECTORY(STUBS)
   TARGET_LINK_LIBRARIES(liggghts STUBS)
 ENDIF(MPI_FOUND)
-
-#=======================================
-
-#Disabled modules
-#GPU KIM MEAM POEMS REAX SRD
-IF(ENABLE_PACKAGE)
-  SET(MODULES_PACKAGE ASPHERE CLASS2 COLLOID DIPOLE FLD  GRANULAR KSPACE MANYBODY MC MOLECULE OPT PERI REPLICA SHOCK  XTC)
-ENDIF(ENABLE_PACKAGE)
-#Disabled modules
-#USER-MISC
-IF(ENABLE_PACKAGEUSER)
-  SET(MODULES_USER USER-ATC USER-AWPMD USER-CG-CMM USER-CUDA USER-EFF USER-EWALDN USER-OMP USER-REAXC USER-SPH)
-ENDIF(ENABLE_PACKAGEUSER)
-#=======================================
 
 enable_testing()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
