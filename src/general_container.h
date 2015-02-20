@@ -140,6 +140,7 @@ namespace LAMMPS_NS
 
           void copy(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other);
           void copy_n(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other, const size_t n);
+
           inline void setDefaultValue(T val)
           { defaultValue_ = val; useDefault_ = true; }
 
@@ -164,6 +165,7 @@ namespace LAMMPS_NS
           T* _end() const {
             return &arr_[0][0][0] + numElem_*(NUM_VEC*LEN_VEC);
           }
+
           T defaultValue_;
   };
 
