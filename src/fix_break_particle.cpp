@@ -1790,7 +1790,7 @@ void FixBreakParticle::pre_insert()
 
 void FixBreakParticle::print_stats_breakage_during()
 {
-  if (me == 0 && n_break_this > 0) {
+  if (me == 0 && print_stats_during_flag && n_break_this > 0) {
     int step = update->ntimestep;
 
     if (screen) {
