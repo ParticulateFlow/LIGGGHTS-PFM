@@ -90,7 +90,7 @@ class FixBreakParticle : public FixInsert {
   double min_break_rad;
   int breakability_distribution;
   double const_breakability;
-  double rand_expected_value, rand_full_width;
+  double rand_expected_value, rand_sigma;
 
   // variable values
   char *fMatstr;

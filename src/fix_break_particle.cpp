@@ -150,7 +150,7 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
       } else if (strcmp(arg[iarg+1],"gaussian") == 0) {
         if (iarg+4 > narg) error->fix_error(FLERR,this,"not enough arguments: breakability");
         rand_expected_value = atof(arg[iarg+2]);
-        rand_full_width = atof(arg[iarg+3]);
+        rand_sigma = atof(arg[iarg+3]);
         if (rand_expected_value < 0. || rand_expected_value > 1.) error->fix_error(FLERR,this,"breakability must be >= 0 and < 1");
         breakability_distribution = BD_GAUSSIAN;
         iarg +=2;
@@ -340,7 +340,7 @@ void FixBreakParticle::init_defaults()
   fMat = 1.0;
   breakability_distribution = BD_UNIFORM;
   rand_expected_value = 0.5;
-  rand_full_width = 1.0;
+  rand_sigma = 0.16;
   const_breakability = 0.5;
   breakage_criterion = BC_ENERGY;
   fix_fragments = NULL;
@@ -648,7 +648,7 @@ void FixBreakParticle::check_energy_criterion()
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
           case BD_GAUSSIAN:
-            breakability[i] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+            breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
             break;
           case BD_CONSTANT:
             breakability[i] = const_breakability;
@@ -744,7 +744,7 @@ void FixBreakParticle::check_energy_criterion()
                   if (breakability[iPart] == 0.0) {
                     switch (breakability_distribution) {
                     case BD_GAUSSIAN:
-                      breakability[iPart] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+                      breakability[iPart] = random->gaussian()*rand_sigma + rand_expected_value;
                       break;
                     case BD_CONSTANT:
                       breakability[iPart] = const_breakability;
@@ -816,7 +816,7 @@ void FixBreakParticle::check_energy_criterion()
             if (breakability[iPart] == 0.0) {
               switch (breakability_distribution) {
               case BD_GAUSSIAN:
-                breakability[iPart] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+                breakability[iPart] = random->gaussian()*rand_sigma + rand_expected_value;
                 break;
               case BD_CONSTANT:
                 breakability[iPart] = const_breakability;
@@ -1132,27 +1132,27 @@ void FixBreakParticle::check_force_criterion()
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit && radius[i] > min_break_rad && forceMax[i] > 0.0) {
       double probability;
-      // P = 1 - exp(-fMat * (r/r0)^(3-2m) * (f/f0)^m)
+      // P = 1 - exp(-fMat * (d/d0)^(3-2m) * (f/f0)^m)
       // m ... Weibull modulus (shape parameter)
-      // here: m = 1; fMat is supposed to be scaled by 1/r0
+      // here: m = 1; fMat is supposed to be scaled by 1/d0
       if (fMatstyle == ATOM) {
         if (thresholdstyle == ATOM) {
-          probability = 1.0 - exp(-fMatAtom[i] * radius[i] * forceMax[i] / thresholdAtom[i]);
+          probability = 1.0 - exp(-fMatAtom[i] * 2.0*radius[i] * forceMax[i] / thresholdAtom[i]);
         } else {
-          probability = 1.0 - exp(-fMatAtom[i] * radius[i] * forceMax[i] / threshold);
+          probability = 1.0 - exp(-fMatAtom[i] * 2.0*radius[i] * forceMax[i] / threshold);
         }
       } else {
         if (thresholdstyle == ATOM) {
-          probability = 1.0 - exp(-fMat        * radius[i] * forceMax[i] / thresholdAtom[i]);
+          probability = 1.0 - exp(-fMat        * 2.0*radius[i] * forceMax[i] / thresholdAtom[i]);
         } else {
-          probability = 1.0 - exp(-fMat        * radius[i] * forceMax[i] / threshold);
+          probability = 1.0 - exp(-fMat        * 2.0*radius[i] * forceMax[i] / threshold);
         }
       }
 
       if (breakability[i] == 0.0) {
         switch (breakability_distribution) {
         case BD_GAUSSIAN:
-          breakability[i] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+          breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
           break;
         case BD_CONSTANT:
           breakability[i] = const_breakability;
@@ -1365,7 +1365,7 @@ void FixBreakParticle::check_von_mises_criterion()
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
           case BD_GAUSSIAN:
-           breakability[i] = random->gaussian()*0.15*rand_full_width + rand_expected_value;
+           breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
             break;
           case BD_CONSTANT:
             breakability[i] = const_breakability;
@@ -1376,20 +1376,20 @@ void FixBreakParticle::check_von_mises_criterion()
           }
         }
         double probability;
-        // P = 1 - exp(-fMat * (r/r0)^3 * (sigma/sigma0)^m)
+        // P = 1 - exp(-fMat * (d/d0)^3 * (sigma/sigma0)^m)
         // m ... Weibull modulus (shape parameter)
-        // here: m = 1; fMat is supposed to be scaled by 1/r0^3
+        // here: m = 1; fMat is supposed to be scaled by 1/d0^3
         if (fMatstyle == ATOM) {
           if (thresholdstyle == ATOM) {
-            probability = 1.0 - exp(-fMatAtom[i] * radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
+            probability = 1.0 - exp(-fMatAtom[i] * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
           } else {
-            probability = 1.0 - exp(-fMatAtom[i] * radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
+            probability = 1.0 - exp(-fMatAtom[i] * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
           }
         } else {
           if (thresholdstyle == ATOM) {
-            probability = 1.0 - exp(-fMat * radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
+            probability = 1.0 - exp(-fMat * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
           } else {
-            probability = 1.0 - exp(-fMat * radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
+            probability = 1.0 - exp(-fMat * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
           }
         }
         if (probability > breakability[i]) {
