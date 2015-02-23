@@ -515,7 +515,7 @@ package"_Section_accelerate.html.
 
 :line
 
-compute syles :h4
+compute styles :h4
 
 See the "compute"_compute.html command for one-line descriptions of
 each style or click on the style itself for a full description:
@@ -640,7 +640,7 @@ package"_Section_accelerate.html.
 
 :line
 
-dump syles :h4
+dump styles :h4
 
 Click on the style itself for a full description:
 
@@ -649,11 +649,9 @@ Click on the style itself for a full description:
 "molfile"_dump_molfile.html,
 "movie"_dump_image.html :tb(c=4,ea=c)
 
-These are accelerated styles, which can be used if LAMMPS is built with the "appropriate accelerated package"_Section_accelerate.html.
+:line
 
- :tb(c=4,ea=c)
-
-fix syles :h4
+fix styles :h4
 
 See the "fix"_fix.html command for one-line descriptions
 of each style or click on the style itself for a full description:
@@ -675,6 +673,7 @@ of each style or click on the style itself for a full description:
 "bond/create"_fix_bond_create.html,
 "bond/swap"_fix_bond_swap.html,
 "box/relax"_fix_box_relax.html,
+"break/particle"_fix_break_particle.html,
 "check/timestep/gran"_fix_check_timestep_gran.html,
 "colvars"_fix_colvars.html,
 "deform"_fix_deform.html,
@@ -748,6 +747,7 @@ of each style or click on the style itself for a full description:
 "nvt/sphere"_fix_nvt_sphere.html,
 "orient/fcc"_fix_orient_fcc.html,
 "particledistribution/discrete"_fix_particledistribution_discrete.html,
+"particletemplate/fragments"_fix_particletemplate_fragments.html,
 "particletemplate/multisphere"_fix_particletemplate_multisphere.html,
 "particletemplate/sphere"_fix_particletemplate_sphere.html,
 "phonon"_fix_phonon.html,
