@@ -121,6 +121,7 @@ namespace ContactModels
           deltan *= collisionFactor;
         }
 
+        cdata.deltan = deltan;
         cdata.shearupdate = false;
         cdata.vtr1 = cdata.vtr2 = cdata.vtr3 = 0.0;
       } else { // sibling contact is never an impact
