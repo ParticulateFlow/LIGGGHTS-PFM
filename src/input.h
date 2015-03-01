@@ -24,7 +24,7 @@
 #ifndef LMP_INPUT_H
 #define LMP_INPUT_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "pointers.h"
 #include <map>
 #include <string>
