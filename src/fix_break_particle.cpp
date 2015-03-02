@@ -59,9 +59,10 @@ using namespace MathConst;
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace LIGGGHTS::ContactModels;
+using namespace LMP_PROBABILITY_NS;
 
 enum{BC_ENERGY, BC_FORCE, BC_VON_MISES};
-enum{BD_CONSTANT, BD_UNIFORM, BD_GAUSSIAN};
+enum{BD_CONSTANT, BD_UNIFORM, BD_GAUSSIAN, BD_WEIBULL};
 enum{NONE, CONSTANT, EQUAL, ATOM};
 
 #define LMP_DEBUGMODE_FIX_BREAK_PARTICLE true
@@ -78,6 +79,7 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
   fMatAtom = thresholdAtom = NULL;
   fMatstyle = thresholdstyle = NONE;
   maxatom1 = maxatom2 = 0;
+  pdf_breakability = NULL;
 
   bool hasargs = true;
   while (iarg < narg && hasargs) {
@@ -154,6 +156,16 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
         if (rand_expected_value < 0. || rand_expected_value > 1.) error->fix_error(FLERR,this,"breakability must be >= 0 and < 1");
         breakability_distribution = BD_GAUSSIAN;
         iarg +=2;
+      } else if (strcmp(arg[iarg+1],"weibull") == 0) {
+        if (iarg+4 > narg) error->fix_error(FLERR,this,"not enough arguments: breakability");
+        pdf_breakability = new PDF(error);
+        double scale = atof(arg[iarg+2]);
+        double shape = atof(arg[iarg+3]);
+        if (scale <= 0.) error->fix_error(FLERR,this,"illegal scale value for Weibull");
+        if (shape <= 0.) error->fix_error(FLERR,this,"illegal shape value for Weibull");
+        pdf_breakability->set_params<RANDOM_WEIBULL>(scale,shape);
+        breakability_distribution = BD_WEIBULL;
+        iarg += 2;
       } else {
         error->fix_error(FLERR,this,"unknown option for: breakability");
       }
@@ -330,6 +342,7 @@ FixBreakParticle::~FixBreakParticle()
   memory->destroy(thresholdAtom);
   delete [] fMatstr;
   delete [] thresholdstr;
+  delete pdf_breakability;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -647,6 +660,9 @@ void FixBreakParticle::check_energy_criterion()
 
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
+          case BD_WEIBULL:
+            breakability[i] = rand(pdf_breakability,random);
+            break;
           case BD_GAUSSIAN:
             breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
             break;
@@ -743,6 +759,9 @@ void FixBreakParticle::check_energy_criterion()
 
                   if (breakability[iPart] == 0.0) {
                     switch (breakability_distribution) {
+                    case BD_WEIBULL:
+                      breakability[iPart] = rand(pdf_breakability,random);
+                      break;
                     case BD_GAUSSIAN:
                       breakability[iPart] = random->gaussian()*rand_sigma + rand_expected_value;
                       break;
@@ -815,6 +834,9 @@ void FixBreakParticle::check_energy_criterion()
 
             if (breakability[iPart] == 0.0) {
               switch (breakability_distribution) {
+              case BD_WEIBULL:
+                breakability[iPart] = rand(pdf_breakability,random);
+                break;
               case BD_GAUSSIAN:
                 breakability[iPart] = random->gaussian()*rand_sigma + rand_expected_value;
                 break;
@@ -1151,6 +1173,9 @@ void FixBreakParticle::check_force_criterion()
 
       if (breakability[i] == 0.0) {
         switch (breakability_distribution) {
+        case BD_WEIBULL:
+          breakability[i] = rand(pdf_breakability,random);
+          break;
         case BD_GAUSSIAN:
           breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
           break;
@@ -1364,6 +1389,9 @@ void FixBreakParticle::check_von_mises_criterion()
         von_Mises_stress = sqrt(3.0 * von_Mises_stress);
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
+          case BD_WEIBULL:
+            breakability[i] = rand(pdf_breakability,random);
+            break;
           case BD_GAUSSIAN:
            breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
             break;

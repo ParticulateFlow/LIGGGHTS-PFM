@@ -36,6 +36,7 @@ FixStyle(break/particle,FixBreakParticle)
 #include <map>
 #include <vector>
 #include "contact_interface.h"
+#include "probability_distribution.h"
 
 namespace LAMMPS_NS {
 
@@ -91,6 +92,7 @@ class FixBreakParticle : public FixInsert {
   int breakability_distribution;
   double const_breakability;
   double rand_expected_value, rand_sigma;
+  class LMP_PROBABILITY_NS::PDF *pdf_breakability;
 
   // variable values
   char *fMatstr;

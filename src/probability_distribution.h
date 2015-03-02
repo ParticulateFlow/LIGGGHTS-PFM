@@ -29,7 +29,7 @@
 #include "error.h"
 #include "pointers.h"
 
-enum{RANDOM_CONSTANT,RANDOM_UNIFORM,RANDOM_GAUSSIAN,RANDOM_LOGNORMAL};
+enum{RANDOM_CONSTANT,RANDOM_UNIFORM,RANDOM_GAUSSIAN,RANDOM_LOGNORMAL,RANDOM_WEIBULL};
 
 namespace LMP_PROBABILITY_NS {
   class PDF
@@ -259,6 +259,32 @@ namespace LMP_PROBABILITY_NS {
   }
 
   //------------------------------------------------------------------------------
+  // WEIBULL
+  //------------------------------------------------------------------------------
+
+  template<> inline void PDF::set_params<RANDOM_WEIBULL>(double scale, double shape)
+  {
+    rand_style_ = RANDOM_WEIBULL;
+    sigma_ = scale;
+    mu_ = shape;
+  }
+
+  template<> inline double cubic_expectancy_value<RANDOM_WEIBULL>(PDF *pdf)
+  {
+    return pdf->sigma_*pdf->sigma_*pdf->sigma_ * tgamma(1.0 + 3.0/pdf->mu_);
+  }
+
+  template<> inline double expectancy_value<RANDOM_WEIBULL>(PDF *pdf)
+  {
+    return pdf->sigma_ * tgamma(1.0 + 1.0/pdf->mu_);
+  }
+
+  template<> inline double rand_value<RANDOM_WEIBULL>(PDF *pdf,LAMMPS_NS::RanPark *rp)
+  {
+     return pdf->sigma_ * pow(-log(1.0-rp->uniform()), 1.0/pdf->mu_);
+  }
+
+  //------------------------------------------------------------------------------
   // MASTER FUNCTIONS
   //------------------------------------------------------------------------------
 
@@ -268,6 +294,7 @@ namespace LMP_PROBABILITY_NS {
       else if(pdf->rand_style_ == RANDOM_UNIFORM) return expectancy_value<RANDOM_UNIFORM>(pdf);
       else if(pdf->rand_style_ == RANDOM_GAUSSIAN) return expectancy_value<RANDOM_GAUSSIAN>(pdf);
       else if(pdf->rand_style_ == RANDOM_LOGNORMAL) return expectancy_value<RANDOM_LOGNORMAL>(pdf);
+      else if(pdf->rand_style_ == RANDOM_WEIBULL) return expectancy_value<RANDOM_WEIBULL>(pdf);
       else pdf->error->all(FLERR,"Faulty implemantation in Probability::expectancy");
       return 0.;
   }
@@ -278,6 +305,7 @@ namespace LMP_PROBABILITY_NS {
       else if(pdf->rand_style_ == RANDOM_UNIFORM) return cubic_expectancy_value<RANDOM_UNIFORM>(pdf);
       else if(pdf->rand_style_ == RANDOM_GAUSSIAN) return cubic_expectancy_value<RANDOM_GAUSSIAN>(pdf);
       else if(pdf->rand_style_ == RANDOM_LOGNORMAL) return cubic_expectancy_value<RANDOM_LOGNORMAL>(pdf);
+      else if(pdf->rand_style_ == RANDOM_WEIBULL) return cubic_expectancy_value<RANDOM_WEIBULL>(pdf);
       else pdf->error->all(FLERR,"Faulty implemantation in Probability::expectancy");
       return 0.;
   }
@@ -288,10 +316,11 @@ namespace LMP_PROBABILITY_NS {
       else if(pdf->rand_style_ == RANDOM_UNIFORM) return rand_value<RANDOM_UNIFORM>(pdf,rp);
       else if(pdf->rand_style_ == RANDOM_GAUSSIAN) return rand_value<RANDOM_GAUSSIAN>(pdf,rp);
       else if(pdf->rand_style_ == RANDOM_LOGNORMAL) return rand_value<RANDOM_LOGNORMAL>(pdf,rp);
+      else if(pdf->rand_style_ == RANDOM_WEIBULL) return rand_value<RANDOM_WEIBULL>(pdf,rp);
       else pdf->error->all(FLERR,"Faulty implemantation in Probability::rand");
       return 0.;
   }
 
-};
+}
 
 #endif
