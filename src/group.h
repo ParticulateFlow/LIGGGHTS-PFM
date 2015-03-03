@@ -16,6 +16,7 @@
 
 #include "stdio.h"
 #include "pointers.h"
+#include <map>
 
 namespace LAMMPS_NS {
 
@@ -25,6 +26,7 @@ class Group : protected Pointers {
   char **names;                // name of each group
   int *bitmask;                // one-bit mask for each group
   int *inversemask;            // inverse mask for each group
+  int *dynamic;                // 1 if dynamic, 0 if not
 
   Group(class LAMMPS *);
   ~Group();
@@ -62,8 +64,17 @@ class Group : protected Pointers {
 
  private:
   int me;
+  std::map<tagint,int> *hash;
 
   int find_unused();
+  void add_molecules(int, int);
+
+  // static variable for ring communication callback to access class data
+  // callback functions for ring communication
+
+  static Group *cptr;
+  static void molring(int, char *);
+  int molbit;
 };
 
 }
