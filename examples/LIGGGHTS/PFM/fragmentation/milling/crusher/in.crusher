@@ -79,7 +79,7 @@ variable forceZ atom 0.0
 
 fix     pts3 all particletemplate/fragments 11 atom_type 1 density constant 2500 breakage_index 0.24 0.099 tn_family 3 2 5 10 maxattempt 300
 fix     pdd2 all particledistribution/discrete 31 1 pts3 1.0
-fix     breakid all break/particle seed 21 distributiontemplate pdd2 every 200 fMat 675.0 von_mises_stress 28000.0 min_radius 0.012 breakability gaussian 0.63 0.11
+fix     breakid all break/particle seed 21 distributiontemplate pdd2 every 200 fMat 675.0 von_mises_stress 250000.0 3 min_radius 0.012 breakability weibull 0.5 3
 
 fix     move all move/mesh mesh cyl wiggle amplitude 0.0 0.0 -0.03 period ${period}
 fix     dragforce all addforce v_forceX v_forceY v_forceZ

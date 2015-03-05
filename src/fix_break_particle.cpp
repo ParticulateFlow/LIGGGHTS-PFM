@@ -113,6 +113,7 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
       hasargs = true;
     } else if (strcmp(arg[iarg],"force_threshold") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: missing force_threshold value");
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"not enough arguments: missing Weibull modulus value");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
         int n = strlen(&arg[iarg+1][2]) + 1;
         thresholdstr = new char[n];
@@ -122,11 +123,13 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
         if (threshold <= 0.) error->fix_error(FLERR,this,"'force_threshold' must be > 0");
         thresholdstyle = CONSTANT;
       }
+      weibull_modulus = atof(arg[iarg+2]);
       breakage_criterion = BC_FORCE;
-      iarg += 2;
+      iarg += 3;
       hasargs = true;
     } else if (strcmp(arg[iarg],"von_mises_stress") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: missing von_mises_stress value");
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"not enough arguments: missing Weibull modulus value");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
         int n = strlen(&arg[iarg+1][2]) + 1;
         thresholdstr = new char[n];
@@ -136,8 +139,9 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
         if (threshold <= 0.) error->fix_error(FLERR,this,"'von_mises_stress' must be > 0");
         thresholdstyle = CONSTANT;
       }
+      weibull_modulus = atof(arg[iarg+2]);
       breakage_criterion = BC_VON_MISES;
-      iarg += 2;
+      iarg += 3;
       hasargs = true;
     } else if (strcmp(arg[iarg],"breakability") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments: breakability");
@@ -350,6 +354,7 @@ FixBreakParticle::~FixBreakParticle()
 void FixBreakParticle::init_defaults()
 {
   threshold = -1.0;
+  weibull_modulus = 1.0;
   fMat = 1.0;
   breakability_distribution = BD_UNIFORM;
   rand_expected_value = 0.5;
@@ -1156,18 +1161,18 @@ void FixBreakParticle::check_force_criterion()
       double probability;
       // P = 1 - exp(-fMat * (d/d0)^(3-2m) * (f/f0)^m)
       // m ... Weibull modulus (shape parameter)
-      // here: m = 1; fMat is supposed to be scaled by 1/d0
+      // fMat is supposed to include 1/d0^(3-2m)
       if (fMatstyle == ATOM) {
         if (thresholdstyle == ATOM) {
-          probability = 1.0 - exp(-fMatAtom[i] * 2.0*radius[i] * forceMax[i] / thresholdAtom[i]);
+          probability = 1.0 - exp(-fMatAtom[i] * pow(2.0*radius[i], 3.0-2.0*weibull_modulus) * pow(forceMax[i]/thresholdAtom[i], weibull_modulus));
         } else {
-          probability = 1.0 - exp(-fMatAtom[i] * 2.0*radius[i] * forceMax[i] / threshold);
+          probability = 1.0 - exp(-fMatAtom[i] * pow(2.0*radius[i], 3.0-2.0*weibull_modulus) * pow(forceMax[i]/threshold, weibull_modulus));
         }
       } else {
         if (thresholdstyle == ATOM) {
-          probability = 1.0 - exp(-fMat        * 2.0*radius[i] * forceMax[i] / thresholdAtom[i]);
+          probability = 1.0 - exp(-fMat        * pow(2.0*radius[i], 3.0-2.0*weibull_modulus) * pow(forceMax[i]/thresholdAtom[i], weibull_modulus));
         } else {
-          probability = 1.0 - exp(-fMat        * 2.0*radius[i] * forceMax[i] / threshold);
+          probability = 1.0 - exp(-fMat        * pow(2.0*radius[i], 3.0-2.0*weibull_modulus) * pow(forceMax[i]/threshold, weibull_modulus));
         }
       }
 
@@ -1406,18 +1411,18 @@ void FixBreakParticle::check_von_mises_criterion()
         double probability;
         // P = 1 - exp(-fMat * (d/d0)^3 * (sigma/sigma0)^m)
         // m ... Weibull modulus (shape parameter)
-        // here: m = 1; fMat is supposed to be scaled by 1/d0^3
+        // fMat is supposed to include 1/d0^3
         if (fMatstyle == ATOM) {
           if (thresholdstyle == ATOM) {
-            probability = 1.0 - exp(-fMatAtom[i] * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
+            probability = 1.0 - exp(-fMatAtom[i] * 8.0*radius[i]*radius[i]*radius[i] * pow(von_Mises_stress / thresholdAtom[i], weibull_modulus));
           } else {
-            probability = 1.0 - exp(-fMatAtom[i] * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
+            probability = 1.0 - exp(-fMatAtom[i] * 8.0*radius[i]*radius[i]*radius[i] * pow(von_Mises_stress / threshold, weibull_modulus));
           }
         } else {
           if (thresholdstyle == ATOM) {
-            probability = 1.0 - exp(-fMat * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / thresholdAtom[i]));
+            probability = 1.0 - exp(-fMat * 8.0*radius[i]*radius[i]*radius[i] * pow(von_Mises_stress / thresholdAtom[i], weibull_modulus));
           } else {
-            probability = 1.0 - exp(-fMat * 8.0*radius[i]*radius[i]*radius[i] * (von_Mises_stress / threshold));
+            probability = 1.0 - exp(-fMat * 8.0*radius[i]*radius[i]*radius[i] * pow(von_Mises_stress / threshold, weibull_modulus));
           }
         }
         if (probability > breakability[i]) {

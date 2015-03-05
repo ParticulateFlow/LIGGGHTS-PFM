@@ -86,6 +86,7 @@ class FixBreakParticle : public FixInsert {
 
   // threshold value
   double threshold;
+  double weibull_modulus;
   int breakage_criterion;
   double fMat;
   double min_break_rad;
