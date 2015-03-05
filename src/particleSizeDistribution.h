@@ -36,11 +36,11 @@ class ParticleSizeDistribution
  public:
   ParticleSizeDistribution(double P, double density, double rad_parent, double rad_min, double rad_max, double t10_max, double rad_omit=0.0, bool omit_post=false);
 
-  void range_mass_fractions(std::map<int, double>& radiiRangeMassFractions);
-  double radii(const std::map<int, double>& radiiRangeMassFractions, std::vector<double> &radii);
+  void range_mass_fractions(std::map<double, double>& radiiRangeMassFractions);
+  double radii(const std::map<double, double>& radiiRangeMassFractions, std::vector<double> &radii);
 
  private:
-  void mass_fractions(std::map<int, double>& radiiMassFractions);
+  void mass_fractions(std::map<double, double>& radiiMassFractions);
   double t10();
   double tn(double n);
 

@@ -77,7 +77,7 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
       iarg += 2;
       if (iarg+sizes > narg) error->fix_error(FLERR,this,"not enough arguments for tn_family");
       while (sizes > 0) {
-        radiiMassFractions[atoi(arg[iarg++])] = 0.0;
+        radiiMassFractions[atof(arg[iarg++])] = 0.0;
         --sizes;
       }
       hasargs = true;
@@ -106,10 +106,10 @@ FixTemplateFragments::FixTemplateFragments(LAMMPS *lmp, int narg, char **arg) :
 
   // set default tn_family if none is specified
   if (radiiMassFractions.empty()) {
-    radiiMassFractions[2] = 0.0;
-    radiiMassFractions[3] = 0.0;
-    radiiMassFractions[5] = 0.0;
-    radiiMassFractions[10] = 0.0;
+    radiiMassFractions[2.0] = 0.0;
+    radiiMassFractions[3.0] = 0.0;
+    radiiMassFractions[5.0] = 0.0;
+    radiiMassFractions[10.0] = 0.0;
   }
 
   nspheres = 0;
@@ -254,7 +254,7 @@ void FixTemplateFragments::pre_insert(
     }
 
     ParticleSizeDistribution psd(breakdata[i][7], density, breakdata[i][6], breakdata[i][6]*rad_min_pct, breakdata[i][6]-OVERLAP_SCALE*breakdata[i][10], t10_max, rad_omit, omit_post_generation);
-    std::map<int, double> rmf(radiiMassFractions);
+    std::map<double, double> rmf(radiiMassFractions);
     psd.range_mass_fractions(rmf);
     std::vector<double> radii;
     psd.radii(rmf, radii);

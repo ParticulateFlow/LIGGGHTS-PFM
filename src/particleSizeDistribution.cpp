@@ -54,11 +54,11 @@ ParticleSizeDistribution::ParticleSizeDistribution(double P, double density, dou
 
 
 // Note: std::map elements are sorted by their keys.
-void ParticleSizeDistribution::mass_fractions(std::map<int, double>& radiiMassFractions)
+void ParticleSizeDistribution::mass_fractions(std::map<double, double>& radiiMassFractions)
 {
   t10_ = t10();
 
-  std::map<int,double>::iterator it = radiiMassFractions.begin();
+  std::map<double,double>::iterator it = radiiMassFractions.begin();
 
   for (; it != radiiMassFractions.end(); ++it) {
     if (!omit_post_ && rad_parent_/it->first <= rad_omit_)
@@ -80,13 +80,13 @@ void ParticleSizeDistribution::mass_fractions(std::map<int, double>& radiiMassFr
 }
 
 
-void ParticleSizeDistribution::range_mass_fractions(std::map<int, double>& radiiRangeMassFractions)
+void ParticleSizeDistribution::range_mass_fractions(std::map<double, double>& radiiRangeMassFractions)
 {
   mass_fractions(radiiRangeMassFractions);
 
   if (!radiiRangeMassFractions.empty()) {
-    std::map<int,double>::iterator it1 = radiiRangeMassFractions.begin();
-    std::map<int,double>::iterator it2 = radiiRangeMassFractions.begin();
+    std::map<double,double>::iterator it1 = radiiRangeMassFractions.begin();
+    std::map<double,double>::iterator it2 = radiiRangeMassFractions.begin();
 
     for (++it2; it2 != radiiRangeMassFractions.end(); ++it1, ++it2) {
       it1->second = it1->second - it2->second;
@@ -99,15 +99,15 @@ void ParticleSizeDistribution::range_mass_fractions(std::map<int, double>& radii
 }
 
 
-double ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMassFractions, std::vector<double>& radii)
+double ParticleSizeDistribution::radii(const std::map<double, double>& radiiRangeMassFractions, std::vector<double>& radii)
 {
   const double volume_parent = MY_4PI3 * rad_parent_*rad_parent_*rad_parent_;
   const double mass_parent = volume_parent * density_;
   double totalMassPool = mass_parent - mass_parent * mass_fraction_omit_;
   double mass_omitted = 0.0;
 
-  std::map<int,double>::const_iterator it1 = radiiRangeMassFractions.begin();
-  std::map<int,double>::const_iterator it2 = radiiRangeMassFractions.begin();
+  std::map<double,double>::const_iterator it1 = radiiRangeMassFractions.begin();
+  std::map<double,double>::const_iterator it2 = radiiRangeMassFractions.begin();
 
   for (++it2; it1 != radiiRangeMassFractions.end(); ++it1, ++it2) {
     double currentParticleRadius = std::min(rad_parent_/it1->first, rad_max_);
@@ -121,7 +121,7 @@ double ParticleSizeDistribution::radii(const std::map<int, double>& radiiRangeMa
     }
 
     if (rad_max_ < nextParticleRadiusMax) {
-      fprintf(stdout,"WARNING: skipping radius fraction %d (%s:%d)\n",it1->first,__FILE__,__LINE__);
+      fprintf(stdout,"WARNING: skipping radius fraction %f (%s:%d)\n",it1->first,__FILE__,__LINE__);
     }
 
     // as long as we have enough mass left to form a particle with radius larger than the next section ...

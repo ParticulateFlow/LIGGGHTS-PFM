@@ -101,7 +101,7 @@ class FixTemplateFragments : public FixTemplateSphere {
   double rad_omit;
   bool omit_post_generation;
   double t10_max;
-  std::map<int, double> radiiMassFractions;
+  std::map<double, double> radiiMassFractions;
   std::vector<std::vector<double> > r_sphere_list;
   std::vector<std::vector<std::vector<double> > > x_sphere_list;
   std::vector<double> collision_factor;
