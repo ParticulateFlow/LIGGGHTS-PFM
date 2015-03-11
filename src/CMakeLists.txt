@@ -114,3 +114,9 @@ IF(USE_OPENMP)
     ENDIF()
   ENDIF()
 ENDIF()
+
+#=======================================
+
+install(TARGETS liggghts liggghts_bin
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib)
