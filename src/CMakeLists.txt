@@ -90,3 +90,9 @@ ELSE(MPI_FOUND)
   ADD_SUBDIRECTORY(STUBS)
   TARGET_LINK_LIBRARIES(liggghts STUBS)
 ENDIF(MPI_FOUND)
+
+#=======================================
+
+install(TARGETS liggghts liggghts_bin
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib)
