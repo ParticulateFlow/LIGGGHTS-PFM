@@ -5,10 +5,10 @@
 #  ZOLTAN_LIBRARIES, the libraries needed to use Zoltan.
 #  ZOLTAN_FOUND, If false, do not try to use Zoltan.
 
-find_path(ZOLTAN_INCLUDE_DIR zoltan.h)
+find_path(ZOLTAN_INCLUDE_DIR zoltan.h PATHS ENV CPATH)
 
 set(ZOLTAN_NAMES ${ZOLTAN_NAMES} zoltan)
-find_library(ZOLTAN_LIBRARY NAMES ${ZOLTAN_NAMES} )
+find_library(ZOLTAN_LIBRARY NAMES ${ZOLTAN_NAMES} PATHS ENV LD_LIBRARY_PATH)
 
 # handle the QUIETLY and REQUIRED arguments and set ZOLTAN_FOUND to TRUE if
 # all listed variables are TRUE
