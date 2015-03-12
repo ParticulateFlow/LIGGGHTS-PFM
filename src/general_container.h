@@ -32,6 +32,7 @@
 #include "memory_ns.h"
 #include "math_extra_liggghts.h"
 #include <string.h>
+#include <algorithm>
 
 #define GROW 100
 
