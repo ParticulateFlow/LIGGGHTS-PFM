@@ -20,6 +20,7 @@
 #include "my_page.h"
 #include "memory.h"
 #include "error.h"
+#include <string.h>
 
 using namespace LAMMPS_NS;
 

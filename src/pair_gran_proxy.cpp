@@ -29,6 +29,7 @@
 #include "force.h"
 #include "pair_hybrid.h"
 #include "suffix.h"
+#include <string.h>
 
 #include "pair_gran_proxy.h"
 #include "granular_pair_style.h"
