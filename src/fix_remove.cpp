@@ -193,14 +193,6 @@ void FixRemove::pre_exchange()
     int time_now = update->ntimestep;
     if(time_now != next_reneighbor) return;
 
-    // initializations
-
-    double mass_eligible_me = 0., mass_eligible;
-    double mass_to_remove_me = 0., ratio_ms_to_remove_me = 0.;
-    double mass_shrink_me = 0.;
-    double mass_removed_this_me = 0., mass_removed_this;
-    int nremoved_this = 0, nremoved_this_me = 0;
-
     //NP clear containers
 
     atom_tags_eligible_.clear();
@@ -235,9 +227,16 @@ void FixRemove::pre_exchange()
 
     //NP count eligible particles
 
+    double mass_eligible_me = 0., mass_eligible = 0.;
+    double mass_to_remove_me = 0., ratio_ms_to_remove_me = 0.;
+    double mass_shrink_me = 0.;
+
     if(!count_eligible(mass_eligible_me,mass_eligible,mass_shrink_me,
                        mass_to_remove_me,ratio_ms_to_remove_me))
         return;
+
+    double mass_removed_this_me = 0., mass_removed_this = 0.;
+    int nremoved_this = 0, nremoved_this_me = 0;
 
     //NP delete all particles if eligible mass smaller that mass to remove
     if(mass_eligible <= mass_to_remove_)
@@ -349,7 +348,6 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
     //NP get eligible mass from all procs
 
     MPI_Allreduce(&mass_eligible_me,&mass_eligible,1,MPI_DOUBLE,MPI_SUM,world);
-    mass_to_remove_me = mass_eligible_me / mass_eligible * mass_to_remove_;
 
     if(mass_eligible_me > 0.)
         ratio_ms_to_remove_me = mass_ms_eligible_me / mass_eligible_me;
@@ -364,6 +362,9 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
             error->warning(FLERR,"Fix remove requested to removed mass, but no eligible particles found");
         return false;
     }
+
+    mass_to_remove_me = mass_eligible_me / mass_eligible * mass_to_remove_;
+
     return true;
 }
 
