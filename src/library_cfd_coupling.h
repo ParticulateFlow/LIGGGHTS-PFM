@@ -43,10 +43,10 @@ void update_rm(void *ptr);
 void check_datatransfer(void *ptr);
 
 void allocate_external_int(int    **&data, int len2, int len1, int initvalue, void *ptr);
-void allocate_external_int(int    **&data, int len2, char *,   int initvalue, void *ptr);
+void allocate_external_int(int    **&data, int len2, const char *,   int initvalue, void *ptr);
 
 void allocate_external_double(double **&data, int len2, int len1, double initvalue, void *ptr);
-void allocate_external_double(double **&data, int len2, char *,   double initvalue, void *ptr);
+void allocate_external_double(double **&data, int len2, const char *,   double initvalue, void *ptr);
 
 #ifdef __cplusplus
 //}
