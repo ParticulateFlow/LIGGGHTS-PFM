@@ -109,7 +109,7 @@ void* locate_coupling_fix(void *ptr)
 
 /* ---------------------------------------------------------------------- */
 
-void data_liggghts_to_of(char *name,char *type,void *ptr,void *&data,char* datatype)
+void data_liggghts_to_of(const char *name, const char *type, void *ptr, void *&data, const char *datatype)
 {
     //LAMMPS *lmp = (LAMMPS *) ptr;
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
@@ -118,7 +118,7 @@ void data_liggghts_to_of(char *name,char *type,void *ptr,void *&data,char* datat
 
 /* ---------------------------------------------------------------------- */
 
-void data_of_to_liggghts(char *name,char *type,void *ptr,void *data,char* datatype)
+void data_of_to_liggghts(const char *name,const char *type,void *ptr,void *data,const char* datatype)
 {
     //LAMMPS *lmp = (LAMMPS *) ptr;
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);

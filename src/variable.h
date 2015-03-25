@@ -26,7 +26,7 @@ class Variable : protected Pointers {
   void set(int, char **);
   void set(char *, int, char **);
   int next(int, char **);
-  int find(char *);
+  int find(const char *);
   int equalstyle(int);
   int atomstyle(int);
   char *retrieve(char *);
