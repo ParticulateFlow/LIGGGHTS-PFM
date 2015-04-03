@@ -1,12 +1,12 @@
 #include <iso646.h>
 #if !defined(__MINGW32__)
-#include "erf.h"
+#include <erf.h>
 #endif
-#include "direct.h"
-#include "math.h"
+#include <direct.h>
+#include <math.h>
 // LAMMPS uses usleep with 100 ms arguments, no microsecond precision needed
 #if !defined(__MINGW32__)
-#include "sleep.h"
+#include <sleep.h>
 #endif
 
 // some symbols have different names in Windows
