@@ -24,7 +24,7 @@
 #ifndef LMP_MODIFY_H
 #define LMP_MODIFY_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "pointers.h"
 #include "fix.h"
 #include <map>

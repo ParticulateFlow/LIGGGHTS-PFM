@@ -9,9 +9,6 @@ SET(LIGGGHTS_PATCH_VERSION 5)
 SET(LIGGGHTS_VERSION ${LIGGGHTS_MAJOR_VERSION}.${LIGGGHTS_MINOR_VERSION}.${LIGGGHTS_PATCH_VERSION})
 
 IF (NOT CMAKE_CXX_FLAGS)
-  #If flags are not set, add default flags
-  SET(CMAKE_BUILD_TYPE Debug)
-
   IF(CMAKE_COMPILER_IS_GNUCXX)
     SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wno-uninitialized -std=c++11 -Wno-literal-suffix")
   ENDIF()
