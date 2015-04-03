@@ -681,7 +681,7 @@ void Variable::compute_atom(int ivar, int igroup,
    return index or -1 if not found
 ------------------------------------------------------------------------- */
 
-int Variable::find(char *name)
+int Variable::find(const char *name)
 {
   for (int i = 0; i < nvar; i++)
     if (strcmp(name,names[i]) == 0) return i;
