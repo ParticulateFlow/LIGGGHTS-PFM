@@ -61,7 +61,11 @@
 #include "fix_property_global.h"
 #include <vector>
 #include "granular_wall.h"
+#include <assert.h>
+#include <string>
+#include <sstream>
 
+using namespace std;
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace LAMMPS_NS::PRIMITIVE_WALL_DEFINITIONS;
@@ -668,44 +672,61 @@ void FixWallGran::post_force_mesh(int vflag)
     // contact properties
     double v_wall[3],bary[3];
     double delta[3],deltan;
-    MultiVectorContainer<double,3,3> *vMeshC;
-    double ***vMesh;
-    int nlocal = atom->nlocal;
-    int nTriAll;
+
+    const int nlocal = atom->nlocal;
 
     CollisionData cdata;
     cdata.is_wall = true;
+    cdata.computeflag = computeflag_;
+    cdata.shearupdate = shearupdate_;
 
     /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
     /*NL*///   fprintf(screen,"proc 3 start\n");
 
     for(int iMesh = 0; iMesh < n_FixMesh_; iMesh++)
     {
-      TriMesh *mesh = FixMesh_list_[iMesh]->triMesh();
-      nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
       FixContactHistoryMesh *fix_contact = FixMesh_list_[iMesh]->contactHistory();
-
-      /*NL*/ //fprintf(screen,"dnum chist %d\n",fix_contact->get_dnum());
-
-      // mark all contacts for delettion at this point
+      // mark all contacts for deletion at this point
       //NP all detected contacts will be un-marked by fix_contact->handleContact()
-      if(fix_contact) fix_contact->markAllContacts();
+      if(fix_contact) {
+        FixNeighlistMesh * meshNeighlist = static_cast<FixNeighlistMesh*>(FixMesh_list_[iMesh]->meshNeighlist());
+        fix_contact->resetDeletionPage(0);
+
+        std::vector<int> & particle_indices = meshNeighlist->particle_indices;
+
+        // mark all contacts for deletion at this point
+        //NP all detected contacts will be un-marked by fix_contact->handleContact()
+        for(std::vector<int>::iterator it = particle_indices.begin(); it != particle_indices.end(); ++it) {
+          fix_contact->markForDeletion(0, *it);
+        }
+      }
 
       //NP extremely dirty; this is that FixWallGranBase can use fix_wallforce_contact_
       //NP pointer for both primitive and mesh case
       if(store_force_contact_)
         fix_wallforce_contact_ = FixMesh_list_[iMesh]->meshforceContact();
+    }
+    //fprintf(screen, "[%d] Mark All took %g seconds.\n", tid, MPI_Wtime() - markAllTime);
+
+    for(int iMesh = 0; iMesh < n_FixMesh_; iMesh++)
+    {
+      TriMesh *mesh = FixMesh_list_[iMesh]->triMesh();
+      const int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
+      FixContactHistoryMesh * const fix_contact = FixMesh_list_[iMesh]->contactHistory();
 
       /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
       /*NL*///   fprintf(screen,"proc 3 mesh %d - 0\n",iMesh);
 
       // get neighborList and numNeigh
-      FixNeighlistMesh * meshNeighlist = FixMesh_list_[iMesh]->meshNeighlist();
+      FixNeighlistMesh * meshNeighlist = static_cast<FixNeighlistMesh*>(FixMesh_list_[iMesh]->meshNeighlist());
+      std::vector<int>::iterator b = meshNeighlist->particle_indices.begin();
+      std::vector<int>::iterator e = meshNeighlist->particle_indices.end();
+      if(b == e) continue; // nothing to do (no neighbors)
 
       vectorZeroize3D(v_wall);
-      vMeshC = mesh->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v");
+      MultiVectorContainer<double,3,3> *vMeshC = mesh->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v");
 
-      atom_type_wall_ = FixMesh_list_[iMesh]->atomTypeWall();
+      cdata.jtype = FixMesh_list_[iMesh]->atomTypeWall();
 
       /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
       /*NL*///   fprintf(screen,"proc 3 mesh %d - 1\n",iMesh);
@@ -713,7 +734,7 @@ void FixWallGran::post_force_mesh(int vflag)
       // moving mesh
       if(vMeshC)
       {
-        vMesh = vMeshC->begin();
+        double ***vMesh = vMeshC->begin();
 
         /*NL*/// if(update->ntimestep > 35000 ) fprintf(screen,"looking for iTri %d TriAll\n",nTriAll);
 
@@ -829,13 +850,29 @@ void FixWallGran::post_force_mesh(int vflag)
           }
         }
       }
+    }
 
+
+
+  // clean-up contacts
+  //NP i.e. delete all which have not been detected this time-step
+  //NP have to do this here: values cannot be deleted before
+  //NP since must be available to copy contact history for coplanar neighs
+  //double cleanupTime = MPI_Wtime();
+  for(int iMesh = 0; iMesh < n_FixMesh_; iMesh++)
+  {
+    FixContactHistoryMesh *fix_contact = FixMesh_list_[iMesh]->contactHistory();
       // clean-up contacts
       //NP i.e. delete all which have not been detected this time-step
-      //NP have to do this here: values cannot be deleted before
-      //NP since must be available to copy contact history for coplanar neighs
-      if(fix_contact) fix_contact->cleanUpContacts();
-    }
+      if(fix_contact) {
+        FixNeighlistMesh * meshNeighlist = static_cast<FixNeighlistMesh*>(FixMesh_list_[iMesh]->meshNeighlist());
+        std::vector<int> & particle_indices = meshNeighlist->particle_indices;
+
+        for(std::vector<int>::iterator it = particle_indices.begin(); it != particle_indices.end(); ++it) {
+          fix_contact->cleanUpContact(*it);
+        }
+      }
+  }
 
     /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
     /*NL*///   fprintf(screen,"proc 3 end\n");
@@ -851,6 +888,9 @@ void FixWallGran::post_force_primitive(int vflag)
 
   CollisionData cdata;
   cdata.is_wall = true;
+  cdata.computeflag = computeflag_;
+  cdata.shearupdate = shearupdate_;
+  cdata.jtype = atom_type_wall_;
 
   // contact properties
   double delta[3],deltan,rdist[3];
@@ -920,9 +960,6 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
   cdata.meff = rmass_ ? rmass_[iPart] : atom->mass[atom->type[iPart]];
   cdata.area_ratio = 1.;
 
-  cdata.computeflag = computeflag_;
-  cdata.shearupdate = shearupdate_;
-  cdata.jtype = atom_type_wall_;
 
   double force_old[3], f_pw[3];
 
