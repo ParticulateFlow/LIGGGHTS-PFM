@@ -142,8 +142,8 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
     int nremaining = narg - 3;
     char ** remaining_args = &arg[3];
 
-    int64_t variant = Factory::instance().selectVariant("gran", nremaining, remaining_args);
-    impl = Factory::instance().create("gran", variant, lmp, this);
+    int64_t variant = Factory::instance().selectVariant(style, nremaining, remaining_args);
+    impl = Factory::instance().create(style, variant, lmp, this);
 
     iarg_ = narg - nremaining;
 
