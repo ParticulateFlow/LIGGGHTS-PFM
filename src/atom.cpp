@@ -122,6 +122,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   // custom atom arrays
 
   nivector = ndvector = 0;
+  ndarray = 0;
   ivector = NULL;
   dvector = NULL;
   iname = dname = NULL;
