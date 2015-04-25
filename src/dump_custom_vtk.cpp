@@ -86,7 +86,7 @@ enum{X,Y,Z, // required for vtk, must come first
      OMEGAX,OMEGAY,OMEGAZ,ANGMOMX,ANGMOMY,ANGMOMZ,
      TQX,TQY,TQZ,SPIN,ERADIUS,ERVEL,ERFORCE,
      DENSITY, RHO, P, THREAD, //NP modified C.K. included DENSITY .. A.A. included RHO and P .. R.B. included THREAD
-     VARIABLE,COMPUTE,FIX,
+     VARIABLE,COMPUTE,FIX,INAME,DNAME,
      ATTRIBUTES}; // must come last
 enum{LT,LE,GT,GE,EQ,NEQ};
 enum{INT,DOUBLE,STRING};    // same as in DumpCFG
@@ -133,6 +133,10 @@ DumpCustomVTK::DumpCustomVTK(LAMMPS *lmp, int narg, char **arg) :
   id_variable = NULL;
   variable = NULL;
   vbuf = NULL;
+
+  ncustom = 0;
+  id_custom = NULL;
+  flag_custom = NULL;
 
   myarrays.clear();
   n_calls_ = 0;
@@ -227,6 +231,10 @@ DumpCustomVTK::~DumpCustomVTK()
   for (int i = 0; i < nvariable; i++) memory->destroy(vbuf[i]);
   delete [] vbuf;
 
+  for (int i = 0; i < ncustom; i++) delete [] id_custom[i];
+  memory->sfree(id_custom);
+  delete [] flag_custom;
+
   memory->destroy(choose);
   memory->destroy(dchoose);
   memory->destroy(clist);
@@ -293,6 +301,13 @@ void DumpCustomVTK::init_style()
     if (ivariable < 0)
       error->all(FLERR,"Could not find dump custom/vtk variable name");
     variable[i] = ivariable;
+  }
+
+  int icustom;
+  for (int i = 0; i < ncustom; i++) {
+    icustom = atom->find_custom(id_custom[i],flag_custom[i]);
+    if (icustom < 0)
+      error->all(FLERR,"Could not find custom per-atom property ID");
   }
 
   // set index and check validity of region
@@ -825,6 +840,24 @@ int DumpCustomVTK::count()
       } else if (thresh_array[ithresh] == VARIABLE) {
         i = ATTRIBUTES + nfield + ithresh;
         ptr = vbuf[field2index[i]];
+        nstride = 1;
+
+      } else if (thresh_array[ithresh] == DNAME) {
+	int iwhich,tmp;
+        i = nfield + ithresh;
+	iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
+        ptr = atom->dvector[iwhich];
+        nstride = 1;
+
+      } else if (thresh_array[ithresh] == INAME) {
+	int iwhich,tmp;
+        i = nfield + ithresh;
+	iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
+
+        int *ivector = atom->ivector[iwhich];
+        for (i = 0; i < nlocal; i++)
+          dchoose[i] = ivector[i];
+        ptr = dchoose;
         nstride = 1;
       }
       else if (thresh_array[ithresh] == THREAD) {
@@ -1929,6 +1962,50 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
       name[ATTRIBUTES+i] = suffix;
       delete [] suffix;
 
+    // custom per-atom floating point value = d_ID
+
+    } else if (strncmp(arg[iarg],"d_",2) == 0) {
+      pack_choice[i] = &DumpCustomVTK::pack_custom;
+      vtype[i] = DOUBLE;
+
+      int n = strlen(arg[iarg]);
+      char *suffix = new char[n];
+      strcpy(suffix,&arg[iarg][2]);
+      argindex[i] = 0;
+
+      int tmp = -1;
+      n = atom->find_custom(suffix,tmp);
+      if (n < 0)
+        error->all(FLERR,"Could not find custom per-atom property ID");
+
+      if (tmp != 1)
+        error->all(FLERR,"Custom per-atom property ID is not floating point");
+
+      field2index[i] = add_custom(suffix,1);
+      delete [] suffix;
+
+    // custom per-atom integer value = i_ID
+
+    } else if (strncmp(arg[iarg],"i_",2) == 0) {
+      pack_choice[i] = &DumpCustomVTK::pack_custom;
+      vtype[i] = INT;
+
+      int n = strlen(arg[iarg]);
+      char *suffix = new char[n];
+      strcpy(suffix,&arg[iarg][2]);
+      argindex[i] = 0;
+
+      int tmp = -1;
+      n = atom->find_custom(suffix,tmp);
+      if (n < 0)
+        error->all(FLERR,"Could not find custom per-atom property ID");
+
+      if (tmp != 0)
+        error->all(FLERR,"Custom per-atom property ID is not integer");
+
+      field2index[i] = add_custom(suffix,0);
+      delete [] suffix;
+
     } else return iarg;
   }
 
@@ -2060,6 +2137,34 @@ int DumpCustomVTK::add_variable(char *id)
   strcpy(id_variable[nvariable],id);
   nvariable++;
   return nvariable-1;
+}
+
+/* ----------------------------------------------------------------------
+   add custom atom property to list used by dump
+   return index of where this property is in list
+   if already in list, do not add, just return index, else add to list
+------------------------------------------------------------------------- */
+
+int DumpCustomVTK::add_custom(char *id, int flag)
+{
+  int icustom;
+  for (icustom = 0; icustom < ncustom; icustom++)
+    if ((strcmp(id,id_custom[icustom]) == 0)
+        && (flag == flag_custom[icustom])) break;
+  if (icustom < ncustom) return icustom;
+
+  id_custom = (char **)
+    memory->srealloc(id_custom,(ncustom+1)*sizeof(char *),"dump:id_custom");
+  flag_custom = (int *)
+    memory->srealloc(flag_custom,(ncustom+1)*sizeof(int),"dump:flag_custom");
+
+  int n = strlen(id) + 1;
+  id_custom[ncustom] = new char[n];
+  strcpy(id_custom[ncustom],id);
+  flag_custom[ncustom] = flag;
+
+  ncustom++;
+  return ncustom-1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -2411,6 +2516,34 @@ void DumpCustomVTK::pack_variable(int n)
   for (int i = 0; i < nchoose; i++) {
     buf[n] = vector[clist[i]];
     n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustomVTK::pack_custom(int n)
+{
+
+  int index = field2index[n];
+
+  if (flag_custom[index] == 0) { // integer
+    int iwhich,tmp;
+    iwhich = atom->find_custom(id_custom[index],tmp);
+
+    int *ivector = atom->ivector[iwhich];
+    for (int i = 0; i < nchoose; i++) {
+      buf[n] = ivector[clist[i]];
+      n += size_one;
+    }
+  } else if (flag_custom[index] == 1) { // double
+    int iwhich,tmp;
+    iwhich = atom->find_custom(id_custom[index],tmp);
+
+    double *dvector = atom->dvector[iwhich];
+    for (int i = 0; i < nchoose; i++) {
+      buf[n] = dvector[clist[i]];
+      n += size_one;
+    }
   }
 }
 
