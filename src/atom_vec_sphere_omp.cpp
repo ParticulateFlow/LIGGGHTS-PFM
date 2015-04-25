@@ -105,6 +105,20 @@ void AtomVecSphereOMP::copy(int i, int j, int delflag)
   thread[j] = thread[i];
 }
 
+/* ----------------------------------------------------------------------
+   pack data for atom I for sending to another proc
+   xyz must be 1st 3 values, so comm::exchange() can test on them
+------------------------------------------------------------------------- */
+
+int AtomVecSphereOMP::pack_exchange(int i, double *buf)
+{
+  int m = AtomVecSphere::pack_exchange(i, buf);
+  // atom removed from partition, other from tail will be taking its place
+  // enforce resorting of data
+  atom->dirty = true;
+  return m;
+}
+
 /* ---------------------------------------------------------------------- */
 
 int AtomVecSphereOMP::unpack_exchange(double *buf)

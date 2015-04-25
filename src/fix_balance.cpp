@@ -212,13 +212,9 @@ void FixBalance::setup_pre_exchange()
 
 void FixBalance::pre_exchange()
 {
-  int nlocal = atom->nlocal; // store number of atoms before rebalance
-
   // return if not a rebalance timestep
 
   if (nevery && update->ntimestep < next_reneighbor) return;
-
-  atom->nextsort = update->ntimestep;
 
   // insure atoms are in current box & update box via shrink-wrap
   // no exchange() since doesn't matter if atoms are assigned to correct procs
@@ -232,14 +228,11 @@ void FixBalance::pre_exchange()
 
   imbnow = balance->imbalance_nlocal(maxperproc);
   if (imbnow <= thresh) {
-    if (nlocal != atom->nlocal) atom->nextsort = update->ntimestep;
     if (nevery) next_reneighbor = (update->ntimestep/nevery)*nevery + nevery;
     return;
   }
 
   rebalance();
-
-  if (nlocal != atom->nlocal) atom->nextsort = update->ntimestep;
 
   // next timestep to rebalance
 

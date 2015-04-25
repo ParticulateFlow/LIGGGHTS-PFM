@@ -44,6 +44,7 @@ public:
   void grow(int);
   void grow_reset();
   void copy(int, int, int);
+  int pack_exchange(int, double *);
   int unpack_exchange(double *);
   int unpack_restart(double *);
   void create_atom(int, double *);
