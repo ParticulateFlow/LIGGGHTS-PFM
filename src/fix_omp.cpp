@@ -186,7 +186,8 @@ static std::string thread_affinity_string(int tid)
 FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
   :  Fix(lmp, narg, arg),
      thr(NULL), last_omp_style(NULL), last_pair_hybrid(NULL),
-     _nthr(-1), _neighbor(true), _mixed(false), _reduced(true)
+     _nthr(-1), _neighbor(true), _mixed(false), _reduced(true),
+     _use_reduction(false)
 {
   if ((narg < 4) || (narg > 7)) error->all(FLERR,"Illegal package omp command");
   if (strcmp(arg[1],"all") != 0) error->all(FLERR,"fix OMP has to operate on group 'all'");
@@ -228,7 +229,7 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
     else if (strcmp(arg[iarg],"double") == 0)
       _mixed = false;
     else if (strcmp(arg[iarg],"reduction") == 0)
-      force->use_reduction = true;
+      _use_reduction = true;
     else if (strcmp(arg[iarg],"thread-binding") == 0)
       use_binding = true;
     else if (strcmp(arg[iarg],"verbose") == 0)
@@ -248,7 +249,7 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
         fprintf(screen,"set %d OpenMP thread(s) per MPI task\n", nthreads);
       fprintf(screen,"using %s neighbor list subroutines\n", nmode);
       fprintf(screen,"prefer %s precision OpenMP force kernels\n", kmode);
-      if(force->use_reduction)
+      if(_use_reduction)
         fprintf(screen,"Using Array Reduction\n");
       if (use_binding)
         fprintf(screen,"Binding threads to cores\n");
@@ -259,7 +260,7 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
         fprintf(logfile,"set %d OpenMP thread(s) per MPI task\n", nthreads);
       fprintf(logfile,"using %s neighbor list subroutines\n", nmode);
       fprintf(logfile,"prefer %s precision OpenMP force kernels\n", kmode);
-      if(force->use_reduction)
+      if(_use_reduction)
         fprintf(logfile,"Using Array Reduction\n");
       if (use_binding)
         fprintf(logfile,"Binding threads to cores\n");
@@ -277,7 +278,7 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
 #endif
   {
     const int tid = get_tid();
-    thr[tid] = new ThrData(tid, force->use_reduction);
+    thr[tid] = new ThrData(tid, _use_reduction);
     set_thread_affinity(comm->me, comm->nprocs, tid, nthreads);
     if(verbose) {
       affinity[tid] = thread_affinity_string(tid);
@@ -475,7 +476,7 @@ void FixOMP::pre_force(int)
   double *de = atom->de;
   double *drho = atom->drho;
 
-  if(force->use_reduction) {
+  if(_use_reduction) {
     #if defined(_OPENMP)
     #pragma omp parallel default(none) shared(f,torque,erforce,de,drho)
     #endif

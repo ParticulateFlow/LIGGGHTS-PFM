@@ -51,7 +51,7 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-Force::Force(LAMMPS *lmp) : Pointers(lmp), use_reduction(false), registry(lmp)
+Force::Force(LAMMPS *lmp) : Pointers(lmp), registry(lmp)
 {
   newton = newton_pair = newton_bond = 1;
 

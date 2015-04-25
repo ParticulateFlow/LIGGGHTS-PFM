@@ -107,25 +107,13 @@ void AtomVecSphere::grow(int n)
   image = memory->grow(atom->image,nmax,"atom:image");
   x = memory->grow(atom->x,nmax,3,"atom:x");
   v = memory->grow(atom->v,nmax,3,"atom:v");
-
-  if(force->use_reduction) {
-    f = memory->grow(atom->f,nmax*comm->nthreads,3,"atom:f");
-  } else {
-    f = memory->grow(atom->f,nmax,3,"atom:f");
-  }
-
-  thread = memory->grow(atom->thread,nmax,"atom:thread");
+  f = memory->grow(atom->f,nmax*comm->nthreads,3,"atom:f");
 
   radius = memory->grow(atom->radius,nmax,"atom:radius");
   density = memory->grow(atom->density,nmax,"atom:density"); //NP modified C.K:
   rmass = memory->grow(atom->rmass,nmax,"atom:rmass");
   omega = memory->grow(atom->omega,nmax,3,"atom:omega");
-
-  if(force->use_reduction) {
-    torque = memory->grow(atom->torque,nmax*comm->nthreads,3,"atom:torque");
-  } else {
-    torque = memory->grow(atom->torque,nmax,3,"atom:torque");
-  }
+  torque = memory->grow(atom->torque,nmax*comm->nthreads,3,"atom:torque");
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
@@ -140,7 +128,7 @@ void AtomVecSphere::grow_reset()
 {
   tag = atom->tag; type = atom->type;
   mask = atom->mask; image = atom->image;
-  x = atom->x; v = atom->v; f = atom->f; thread = atom->thread;
+  x = atom->x; v = atom->v; f = atom->f;
   radius = atom->radius; density = atom->density; rmass = atom->rmass; //NP modified C.K.
   omega = atom->omega; torque = atom->torque;
 }
@@ -168,8 +156,6 @@ void AtomVecSphere::copy(int i, int j, int delflag)
   omega[j][0] = omega[i][0];
   omega[j][1] = omega[i][1];
   omega[j][2] = omega[i][2];
-
-  thread[j] = thread[i];
 
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
@@ -881,9 +867,6 @@ int AtomVecSphere::unpack_exchange(double *buf)
   omega[nlocal][1] = buf[m++];
   omega[nlocal][2] = buf[m++];
 
-  thread[nlocal] = -1; //NP we don't know yet where this should go
-  atom->dirty = true;
-
   if (atom->nextra_grow)
     for (int iextra = 0; iextra < atom->nextra_grow; iextra++)
       m += modify->fix[atom->extra_grow[iextra]]->
@@ -982,9 +965,6 @@ int AtomVecSphere::unpack_restart(double *buf)
   omega[nlocal][1] = buf[m++];
   omega[nlocal][2] = buf[m++];
 
-  thread[nlocal] = -1; //NP don't know where this will be placed yet
-  atom->dirty = true;
-
   double **extra = atom->extra;
   if (atom->nextra_store) {
     int size = static_cast<int> (buf[0]) - m;
@@ -1027,9 +1007,6 @@ void AtomVecSphere::create_atom(int itype, double *coord)
   omega[nlocal][0] = 0.0;
   omega[nlocal][1] = 0.0;
   omega[nlocal][2] = 0.0;
-
-  thread[nlocal] = -1; //NP don't know where this will be placed yet
-  atom->dirty = true;
 
   atom->nlocal++;
 }
@@ -1082,9 +1059,6 @@ void AtomVecSphere::data_atom(double *coord, tagint imagetmp, char **values)
   omega[nlocal][0] = 0.0;
   omega[nlocal][1] = 0.0;
   omega[nlocal][2] = 0.0;
-
-  thread[nlocal] = -1; //NP don't know where this will be placed yet
-  atom->dirty = true;
 
   atom->nlocal++;
 }
@@ -1311,9 +1285,8 @@ bigint AtomVecSphere::memory_usage()
   if (atom->memcheck("radius")) bytes += memory->usage(radius,nmax);
   if (atom->memcheck("rmass")) bytes += memory->usage(rmass,nmax);
   if (atom->memcheck("omega")) bytes += memory->usage(omega,nmax,3);
-  if (atom->memcheck("torque")) bytes += memory->usage(torque,nmax*comm->nthreads,3);
-
-  if (atom->memcheck("thread")) bytes += memory->usage(thread,nmax);
+  if (atom->memcheck("torque"))
+    bytes += memory->usage(torque,nmax*comm->nthreads,3);
 
   return bytes;
 }

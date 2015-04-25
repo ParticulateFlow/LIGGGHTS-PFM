@@ -208,7 +208,7 @@ public:
 
       if(pg->evflag)
       {
-        if(force->use_reduction) {
+        if(fix->use_reduction()) {
           // use reductions for compute
           ev_setup_thr(eflag, vflag, nall, pg->eatom, pg->vatom, thr);
 
@@ -260,7 +260,7 @@ public:
     // reduction of accumulators only
     // force->reduction stands for full reduction code
     // if a full reduction is used, this code is unnecessary
-    if(pg->evflag && !force->use_reduction)
+    if(pg->evflag && !fix->use_reduction())
     {
       for(int tid = 0; tid < nthreads; ++tid){
         ThrData * const thr = fix->get_thr(tid);

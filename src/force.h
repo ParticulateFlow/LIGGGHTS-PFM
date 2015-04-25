@@ -56,7 +56,6 @@ class Force : protected Pointers {
   double qelectron;                  // 1 electron charge abs() in native units
 
   int newton,newton_pair,newton_bond;   // Newton's 3rd law settings
-  bool use_reduction;                // whether reduction is used. if not, don't allocate extra arrays
 
   class Pair *pair;
   char *pair_style;
