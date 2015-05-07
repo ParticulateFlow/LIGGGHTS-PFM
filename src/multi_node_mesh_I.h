@@ -466,7 +466,7 @@
         vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -487,7 +487,7 @@
         vectorAdd3D(center_(i),vecIncremental,center_(i));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
   /* ----------------------------------------------------------------------
    move mesh incrementally by amount vecIncremental
@@ -548,9 +548,9 @@
     resetToOrig();
 
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
-    bool trans = vectorMag3DSquared(origin) > 0.;
+    const bool trans = vectorMag3DSquared(origin) > 0.;
 
     // perform total rotation for data in this class
     for(int i = 0; i < n; i++)
@@ -567,7 +567,7 @@
       vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -603,9 +603,9 @@
   void MultiNodeMesh<NUM_NODES>::rotate(double *dQ, double *origin)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
-    bool trans = vectorMag3DSquared(origin) > 0.;
+    const bool trans = vectorMag3DSquared(origin) > 0.;
 
     // perform total rotation for data in this class
     //NP move into origin, rotate and move back
@@ -622,7 +622,7 @@
       vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -658,7 +658,7 @@
       rBound_(i) = rb;
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -686,11 +686,11 @@
       rBound_(i) = rb;
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
-   bounding box funtions
+   bounding box functions
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
@@ -703,8 +703,12 @@
   }
 
   template<int NUM_NODES>
-  BoundingBox MultiNodeMesh<NUM_NODES>::getGlobalBoundingBox() const
+  BoundingBox MultiNodeMesh<NUM_NODES>::getGlobalBoundingBox()
   {
+    if(bbox_.isDirty()) {
+      updateGlobalBoundingBox();
+      bbox_.setDirty(false);
+    }
     return bbox_;
   }
 

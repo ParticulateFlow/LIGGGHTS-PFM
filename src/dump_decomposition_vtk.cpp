@@ -40,11 +40,6 @@ DumpDecompositionVTK::DumpDecompositionVTK(LAMMPS *lmp, int narg, char **arg) : 
   if (narg != 5)
     error->all(FLERR,"Illegal dump decomposition command");
 
-  //INFO: CURRENTLY ONLY PROC 0 writes
-
-  //multifile=1;             // 0 = one big file, 1 = one file per timestep
-  //multiproc=0;             // 0 = proc 0 writes for all, 1 = one file/proc
-
   format_default = NULL;
 
   //number of properties written out in one line with buff
@@ -100,9 +95,7 @@ void DumpDecompositionVTK::init_style()
   pack_choice = &DumpDecompositionVTK::pack_item;
   write_choice = &DumpDecompositionVTK::write_item;
 
-  // open single file, one time only
-
-  if (multifile == 0) openfile();
+  openfile();
 
   //NP realloc since domain decomposition may have changed
   delete []xdata;
@@ -142,7 +135,7 @@ void DumpDecompositionVTK::write_header(bigint ndump)
 
 int DumpDecompositionVTK::count()
 {
-  if (comm->me!=0) return 0;
+  if (multiproc == 0 && comm->me != 0) return 0;
   return 1;
 }
 
@@ -164,7 +157,7 @@ void DumpDecompositionVTK::write_data(int n, double *mybuf)
 
 void DumpDecompositionVTK::header_item(bigint ndump)
 {
-  if (comm->me!=0) return;
+  if (multiproc == 0 && comm->me!=0) return;
   fprintf(fp,"# vtk DataFile Version 2.0\nLIGGGHTS mesh/gran/VTK export\nASCII\n");
 }
 
@@ -225,8 +218,8 @@ void DumpDecompositionVTK::pack_item()
 
 void DumpDecompositionVTK::write_item(int n, double *mybuf)
 {
-  //NP only proc 0 writes
-  if (comm->me!=0) return;
+  //NP only proc 0 writes if multiproc=0
+  if (multiproc == 0 && comm->me!=0) return;
 
   //ensure it is only written once in multi-proc (work-around)
   if(lasttimestep==update->ntimestep)return;
@@ -235,20 +228,31 @@ void DumpDecompositionVTK::write_item(int n, double *mybuf)
   //write the data
   fprintf(fp,"DATASET RECTILINEAR_GRID\nDIMENSIONS %d %d %d\n",len[0],len[1],len[2]);
 
-  fprintf(fp,"X_COORDINATES %d float\n",len[0]);
-  for (int i = 0; i < len[0]; i++)
-     fprintf(fp,"%f ",xdata_all[i]);
-  fprintf(fp,"\n");
+  if(multiproc == 1) {
+    fprintf(fp,"X_COORDINATES 2 float\n");
+    fprintf(fp,"%f %f\n",domain->sublo[0], domain->subhi[0]);
 
-  fprintf(fp,"Y_COORDINATES %d float\n",len[1]);
-  for (int i = 0; i < len[1]; i++)
-     fprintf(fp,"%f ",ydata_all[i]);
-  fprintf(fp,"\n");
+    fprintf(fp,"Y_COORDINATES 2 float\n");
+    fprintf(fp,"%f %f\n",domain->sublo[1], domain->subhi[1]);
 
-  fprintf(fp,"Z_COORDINATES %d float\n",len[2]);
-  for (int i = 0; i < len[2]; i++)
-     fprintf(fp,"%f ",zdata_all[i]);
-  fprintf(fp,"\n");
+    fprintf(fp,"Z_COORDINATES 2 float\n");
+    fprintf(fp,"%f %f\n",domain->sublo[2], domain->subhi[2]);
+  } else {
+    fprintf(fp,"X_COORDINATES %d float\n",len[0]);
+    for (int i = 0; i < len[0]; i++)
+       fprintf(fp,"%f ",xdata_all[i]);
+    fprintf(fp,"\n");
+
+    fprintf(fp,"Y_COORDINATES %d float\n",len[1]);
+    for (int i = 0; i < len[1]; i++)
+       fprintf(fp,"%f ",ydata_all[i]);
+    fprintf(fp,"\n");
+
+    fprintf(fp,"Z_COORDINATES %d float\n",len[2]);
+    for (int i = 0; i < len[2]; i++)
+       fprintf(fp,"%f ",zdata_all[i]);
+    fprintf(fp,"\n");
+  }
 
   //footer not needed
 }

@@ -66,8 +66,7 @@ class FixNeighlistMesh : public Fix
   public:
 
     FixNeighlistMesh(LAMMPS *lmp, int narg, char **arg);
-    virtual
-    ~FixNeighlistMesh();
+    virtual ~FixNeighlistMesh();
     virtual int setmask();
     virtual void post_create();
     virtual void pre_delete(bool unfixflag);
@@ -103,6 +102,9 @@ class FixNeighlistMesh : public Fix
 
     inline class FixPropertyAtom* fix_nneighs()
     { return fix_nneighs_; };
+
+    std::vector<int> particle_indices;
+    std::vector<int> particle_triangles;
 
   protected:
 
