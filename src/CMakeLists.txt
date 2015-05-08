@@ -1,5 +1,6 @@
 PROJECT(LIGGGHTS C CXX)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+OPTION(TESTING "TESTING" OFF)
 
 SET(LIGGGHTS_MAJOR_VERSION 3)
 SET(LIGGGHTS_MINOR_VERSION 0)
@@ -94,6 +95,8 @@ install(TARGETS liggghts liggghts_bin
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib)
 
-enable_testing()
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirectory(tests)
+IF(TESTING)
+  enable_testing()
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  add_subdirectory(tests)
+ENDIF(TESTING)
