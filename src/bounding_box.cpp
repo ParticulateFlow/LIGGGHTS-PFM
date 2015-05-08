@@ -26,6 +26,7 @@
 ------------------------------------------------------------------------- */
 
 #include "bounding_box.h"
+#include <algorithm>
 
 namespace LAMMPS_NS
 {
