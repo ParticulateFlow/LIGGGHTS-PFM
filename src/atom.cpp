@@ -329,8 +329,6 @@ void Atom::create_avec(const char *style, int narg, char **arg, char *suffix)
 
   int sflag;
   avec = new_avec(style,suffix,sflag);
-  avec->settings(narg,arg);
-  avec->grow(1);
 
   if (sflag) {
     char estyle[256];
@@ -343,6 +341,9 @@ void Atom::create_avec(const char *style, int narg, char **arg, char *suffix)
     atom_style = new char[n];
     strcpy(atom_style,style);
   }
+
+  avec->settings(narg,arg);
+  avec->grow(1);
 
   // if molecular system, default is to have array map
 
