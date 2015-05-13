@@ -51,7 +51,7 @@ namespace ContactModels
         phiF(NULL)
     {
       history_offset = hsetup->add_history_value("deltaMax", "1");
-      /*NL*/ if(Pointers::comm->me == 0) fprintf(Pointers::screen, "HOOKE/HYSTERESIS loaded\n");
+      /*NL*/ if(Pointers::comm->me == 0 && Pointers::screen) fprintf(Pointers::screen, "HOOKE/HYSTERESIS loaded\n");
     }
 
     inline void registerSettings(Settings & settings){

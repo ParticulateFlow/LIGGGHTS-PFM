@@ -79,7 +79,7 @@ namespace ContactModels
       cohEnergyDens(NULL),
       coefContactRadius(NULL)
     {
-      /*NL*/  if(comm->me == 0) printf("JKR loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "JKR loaded\n");
     }
 
     void registerSettings(Settings & settings)

@@ -55,7 +55,7 @@ namespace ContactModels
       hsetup->add_history_value("sheary", "1");
       hsetup->add_history_value("shearz", "1");
 
-      /*NL*/ if(comm->me == 0) fprintf(screen, "TANGENTIAL/HISTORY loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "TANGENTIAL/HISTORY loaded\n");
     }
 
     inline void registerSettings(Settings&){}

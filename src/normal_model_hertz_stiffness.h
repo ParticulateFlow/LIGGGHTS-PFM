@@ -51,7 +51,7 @@ namespace ContactModels
       limitForce(false),
       displayedSettings(false)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "HERTZ/STIFFNESS loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HERTZ/STIFFNESS loaded\n");
     }
 
     void registerSettings(Settings & settings)
