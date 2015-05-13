@@ -49,7 +49,7 @@ namespace ContactModels
 
     TangentialModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), coeffFrict(NULL)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "TANGENTIAL/NO_HISTORY loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "TANGENTIAL/NO_HISTORY loaded\n");
     }
 
     inline void registerSettings(Settings&){}
