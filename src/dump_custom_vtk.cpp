@@ -842,16 +842,16 @@ int DumpCustomVTK::count()
         nstride = 1;
 
       } else if (thresh_array[ithresh] == DNAME) {
-	int iwhich,tmp;
-        i = nfield + ithresh;
-	iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
+        int iwhich,tmp;
+        i = ATTRIBUTES + nfield + ithresh;
+        iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
         ptr = atom->dvector[iwhich];
         nstride = 1;
 
       } else if (thresh_array[ithresh] == INAME) {
-	int iwhich,tmp;
-        i = nfield + ithresh;
-	iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
+        int iwhich,tmp;
+        i = ATTRIBUTES + nfield + ithresh;
+        iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
 
         int *ivector = atom->ivector[iwhich];
         for (i = 0; i < nlocal; i++)
@@ -1954,13 +1954,13 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
     // custom per-atom floating point value = d_ID
 
     } else if (strncmp(arg[iarg],"d_",2) == 0) {
-      pack_choice[i] = &DumpCustomVTK::pack_custom;
-      vtype[i] = DOUBLE;
+      pack_choice[ATTRIBUTES+i] = &DumpCustomVTK::pack_custom;
+      vtype[ATTRIBUTES+i] = DOUBLE;
 
       int n = strlen(arg[iarg]);
       char *suffix = new char[n];
       strcpy(suffix,&arg[iarg][2]);
-      argindex[i] = 0;
+      argindex[ATTRIBUTES+i] = 0;
 
       int tmp = -1;
       n = atom->find_custom(suffix,tmp);
@@ -1970,19 +1970,20 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
       if (tmp != 1)
         error->all(FLERR,"Custom per-atom property ID is not floating point");
 
-      field2index[i] = add_custom(suffix,1);
+      field2index[ATTRIBUTES+i] = add_custom(suffix,1);
+      name[ATTRIBUTES+i] = suffix;
       delete [] suffix;
 
     // custom per-atom integer value = i_ID
 
     } else if (strncmp(arg[iarg],"i_",2) == 0) {
-      pack_choice[i] = &DumpCustomVTK::pack_custom;
-      vtype[i] = INT;
+      pack_choice[ATTRIBUTES+i] = &DumpCustomVTK::pack_custom;
+      vtype[ATTRIBUTES+i] = INT;
 
       int n = strlen(arg[iarg]);
       char *suffix = new char[n];
       strcpy(suffix,&arg[iarg][2]);
-      argindex[i] = 0;
+      argindex[ATTRIBUTES+i] = 0;
 
       int tmp = -1;
       n = atom->find_custom(suffix,tmp);
@@ -1992,7 +1993,8 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
       if (tmp != 0)
         error->all(FLERR,"Custom per-atom property ID is not integer");
 
-      field2index[i] = add_custom(suffix,0);
+      field2index[ATTRIBUTES+i] = add_custom(suffix,0);
+      name[ATTRIBUTES+i] = suffix;
       delete [] suffix;
 
     } else return iarg;
