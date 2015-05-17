@@ -210,8 +210,8 @@ class Atom : protected Pointers {
   void delete_callback(const char *, int);
   void update_callback(int);
 
-  int find_custom(char *, int &);
-  int add_custom(char *, int);
+  int find_custom(const char *, int &);
+  int add_custom(const char *, int);
   void remove_custom(int, int);
 
   void *extract(const char *, int &); //NP modified C.K.
