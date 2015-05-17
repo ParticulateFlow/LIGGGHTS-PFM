@@ -111,6 +111,10 @@ public:
   }
 
   virtual void init_granular() {
+    if(!atom->thread) {
+      error->all(FLERR, "OpenMP support requires atom_style granular/omp or sphere/omp\n");
+    }
+
     cmodel.connectToProperties(force->registry);
   }
 

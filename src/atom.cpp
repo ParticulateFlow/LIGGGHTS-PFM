@@ -1431,8 +1431,10 @@ void Atom::spatial_sort(){
   }
 
   // set thread assignment
-  for(int tid = 0; tid < comm->nthreads; tid++) {
-    std::fill(atom->thread + thread_offsets[tid], atom->thread + thread_offsets[tid+1], tid);
+  if(atom->thread) {
+    for(int tid = 0; tid < comm->nthreads; tid++) {
+      std::fill(atom->thread + thread_offsets[tid], atom->thread + thread_offsets[tid+1], tid);
+    }
   }
 
   // upload data back to GPU if necessary
@@ -1541,10 +1543,12 @@ void Atom::partitioner_sort() {
       //printf("[%d] offset: %d\n", comm->me, offset);
 
       // assign all particles to a thread
-      for(int tid = 0; tid < comm->nthreads; tid++) {
-        const int b = thread_offsets[tid];
-        const int e = thread_offsets[tid+1];
-        std::fill(&atom->thread[b], &atom->thread[b] + (e-b), tid);
+      if(atom->thread) {
+        for(int tid = 0; tid < comm->nthreads; tid++) {
+          const int b = thread_offsets[tid];
+          const int e = thread_offsets[tid+1];
+          std::fill(&atom->thread[b], &atom->thread[b] + (e-b), tid);
+        }
       }
 
       return;
