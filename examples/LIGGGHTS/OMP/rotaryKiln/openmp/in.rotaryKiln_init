@@ -1,4 +1,4 @@
-package omp 4 force/neigh thread-binding verbose
+package omp ${NTHREADS} force/neigh thread-binding verbose
 
 atom_style	granular
 atom_modify	map array

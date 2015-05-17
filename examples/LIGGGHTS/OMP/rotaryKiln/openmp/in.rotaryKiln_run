@@ -1,6 +1,6 @@
-package omp 4 force/neigh thread-binding verbose
+package omp ${NTHREADS} force/neigh thread-binding verbose
 
-atom_style	granular
+atom_style	granular/omp
 atom_modify	map array
 boundary	f f f
 newton		off
