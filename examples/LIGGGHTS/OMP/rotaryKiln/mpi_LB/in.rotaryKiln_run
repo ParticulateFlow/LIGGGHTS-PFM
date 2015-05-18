@@ -7,9 +7,8 @@ communicate	single vel yes
 
 units		si
 
-processors	1 * 1
-region		reg block -0.001 0.016 -0.08 0.08 -0.08 0.08 units box
-create_box	2 reg
+processors	${XPROC} ${YPROC} 1
+read_restart post/restart/mixer.75000
 
 neighbor	0.005 bin
 neigh_modify	delay 0
@@ -40,19 +39,19 @@ fix meshes all wall/gran model hertz mesh n_meshes 1 meshes cadDrum
 
 #region for insertion
 #region		insertionRegion block 0.001 0.014 -0.035 0.035 -0.050 0.035 units box
-region		insertionRegion cylinder x 0.0 0.0 0.076 0.001 0.014 units box
+#region		insertionRegion cylinder x 0.0 0.0 0.076 0.001 0.014 units box
 
 
 #distributions for insertion
-fix			pts1 all particletemplate/sphere 5330 atom_type 1 density constant 3900 radius constant 0.001
-fix			pdd1 all particledistribution/discrete 5331  1 pts1 1.0
+#fix			pts1 all particletemplate/sphere 5330 atom_type 1 density constant 3900 radius constant 0.001
+#fix			pdd1 all particledistribution/discrete 5331  1 pts1 1.0
 
 #particle insertion
 #fix             ins all insert/pack seed 100001 distributiontemplate pdd1 maxattempt 1000 vel constant 0. 0. 0. &
 #                        insert_every once overlapcheck yes all_in yes particles_in_region 20000 region insertionRegion
 
-fix             ins all insert/stream seed 100001 distributiontemplate pdd1 nparticles 20000  vel constant 0. 0. -2. &
-                        insert_every 1000 overlapcheck yes all_in yes particlerate 2000000 insertion_face insFace
+#fix             ins all insert/stream seed 100001 distributiontemplate pdd1 nparticles 20000  vel constant 0. 0. -2. &
+#                        insert_every 1000 overlapcheck yes all_in yes particlerate 2000000 insertion_face insFace
 
 
 #apply nve integration to all particles that are inserted as single particles
@@ -66,11 +65,19 @@ thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
-run	1
-dump	dmp all custom/vtk 100 post/dump*.vtp id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+#run	1
+dump	dmp all custom/vtk 1000 post/dump*.vtp id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 dump_modify dmp binary yes
-dump 	dumpstlmov all mesh/stl 100 post/drum*.stl cadDrum
+dump 	dumpstlmov all mesh/stl 1000 post/drum*.stl cadDrum
+dump    decomp all decomposition/vtk 1000 post/decomp*.vtk
+
+fix lb all balance 0 xy 20 1.1
 
 #insert particles
-run 75000
-write_restart post/restart/mixer.75000
+#run 75000
+#write_restart post/restart/mixer.75000
+#run 20000
+
+fix move all move/mesh mesh cadDrum rotate origin 0. 0. 0. axis  1. 0. 0. period 3.0
+
+run 400000

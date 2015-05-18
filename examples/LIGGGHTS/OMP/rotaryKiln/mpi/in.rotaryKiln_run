@@ -69,6 +69,7 @@ compute_modify	thermo_temp dynamic yes
 dump	dmp all custom/vtk 1000 post/dump*.vtp id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 dump_modify dmp binary yes
 dump 	dumpstlmov all mesh/stl 1000 post/drum*.stl cadDrum
+dump    decomp all decomposition/vtk 1000 post/decomp*.vtk
 
 #insert particles
 #run 75000

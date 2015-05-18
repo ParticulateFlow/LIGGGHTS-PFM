@@ -7,7 +7,7 @@ communicate	single vel yes
 
 units		si
 
-processors	1 * 1
+processors	${XPROC} ${YPROC} 1
 region		reg block -0.001 0.016 -0.08 0.08 -0.08 0.08 units box
 create_box	2 reg
 
@@ -70,6 +70,8 @@ run	1
 dump	dmp all custom/vtk 100 post/dump*.vtp id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 dump_modify dmp binary yes
 dump 	dumpstlmov all mesh/stl 100 post/drum*.stl cadDrum
+
+fix lb all balance 0 xy 20 1.1
 
 #insert particles
 run 75000
