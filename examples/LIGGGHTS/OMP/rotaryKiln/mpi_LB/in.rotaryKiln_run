@@ -7,7 +7,7 @@ communicate	single vel yes
 
 units		si
 
-processors	${XPROC} ${YPROC} 1
+processors	1 ${YPROC} ${ZPROC}
 read_restart post/restart/mixer.75000
 
 neighbor	0.005 bin
@@ -65,13 +65,13 @@ thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
-#run	1
+run	1
 dump	dmp all custom/vtk 1000 post/dump*.vtp id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 dump_modify dmp binary yes
 dump 	dumpstlmov all mesh/stl 1000 post/drum*.stl cadDrum
 dump    decomp all decomposition/vtk 1000 post/decomp*.vtk
 
-fix lb all balance 0 xy 20 1.1
+fix lb all balance 0 yz 20 1.1
 
 #insert particles
 #run 75000
