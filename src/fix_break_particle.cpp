@@ -1492,7 +1492,6 @@ void FixBreakParticle::pre_insert()
     int * ilist = pair_gran->list->ilist;
     int * numneigh = pair_gran->list->numneigh;
     int ** firstneigh = pair_gran->list->firstneigh;
-    double ** firsthist = pair_gran->listgranhistory->firstdouble;
 
     int n_wall_fixes = modify->n_fixes_style("wall/gran");
 
@@ -1510,7 +1509,6 @@ void FixBreakParticle::pre_insert()
 
       int * const jlist = firstneigh[i];
       const int jnum = numneigh[i];
-      double * const allhist = firsthist[i];
 
       for (int jj = 0; jj < jnum; ++jj) {
         const int j = jlist[jj];
@@ -1529,19 +1527,19 @@ void FixBreakParticle::pre_insert()
             virtual_x_i.push_back(x[i][0]);
             virtual_x_i.push_back(x[i][1]);
             virtual_x_i.push_back(x[i][2]);
-            virtual_v_i.clear();
-            virtual_v_i.push_back(v[i][0]);
-            virtual_v_i.push_back(v[i][1]);
-            virtual_v_i.push_back(v[i][2]);
+
+            virtual_v_i[0] = v[i][0];
+            virtual_v_i[1] = v[i][1];
+            virtual_v_i[2] = v[i][2];
 
             virtual_x_j.clear();
             virtual_x_j.push_back(x[j][0]);
             virtual_x_j.push_back(x[j][1]);
             virtual_x_j.push_back(x[j][2]);
-            virtual_v_j.clear();
-            virtual_v_j.push_back(v[j][0]);
-            virtual_v_j.push_back(v[j][1]);
-            virtual_v_j.push_back(v[j][2]);
+
+            virtual_v_j[0] = v[j][0];
+            virtual_v_j[1] = v[j][1];
+            virtual_v_j[2] = v[j][2];
 
             if (breaking_atom_tags_this.find(tag[i]) != breaking_atom_tags_this.end()) {
               std::vector<double> xr_j(virtual_x_j);
@@ -1558,20 +1556,14 @@ void FixBreakParticle::pre_insert()
             deltaMax[tag[i]] = std::max(deltaMax[tag[i]], deltan);
             deltaMax[tag[j]] = std::max(deltaMax[tag[j]], deltan);
 
-            double * contact_history = &allhist[dnum*jj];
-            double siblingDeltaMax = contact_history[siblingOffset+1];
-            double collision_factor = contact_history[collisionFactorOffset];
-
             while (true) {
-              if (virtual_force(i, j, collision_factor, &siblingDeltaMax) <= 0.0) break;
-              virtual_initial_integrate(i, virtual_v_i, virtual_x_i);
-              MathExtra::negate3(&virtual_f_ij[0]);
-              virtual_initial_integrate(j, virtual_v_j, virtual_x_j);
+              if (virtual_force(i, j, jj) <= 0.0) break;
+              virtual_initial_integrate(i, virtual_f_i, virtual_v_i, virtual_x_i);
+              virtual_initial_integrate(j, virtual_f_j, virtual_v_j, virtual_x_j);
 
-              if (virtual_force(i, j, collision_factor, &siblingDeltaMax) <= 0.0) break;
-              virtual_final_integrate(i, virtual_v_i);
-              MathExtra::negate3(&virtual_f_ij[0]);
-              virtual_final_integrate(j, virtual_v_j);
+              if (virtual_force(i, j, jj) <= 0.0) break;
+              virtual_final_integrate(i, virtual_f_i, virtual_v_i);
+              virtual_final_integrate(j, virtual_f_j, virtual_v_j);
             }
 
             {
@@ -1888,13 +1880,8 @@ void FixBreakParticle::x_v_omega(int ninsert_this_local, int &ninserted_this_loc
 }
 
 
-double FixBreakParticle::virtual_force(int i, int j, double collision_factor, double *siblingDeltaMax)
+double FixBreakParticle::virtual_force(int i, int j, int jj)
 {
-  virtual_f_ij.clear();
-  virtual_f_ij.push_back(0.0);
-  virtual_f_ij.push_back(0.0);
-  virtual_f_ij.push_back(0.0);
-
   CollisionData cdata;
 
   const double delx = virtual_x_i[0] - virtual_x_j[0];
@@ -1910,11 +1897,33 @@ double FixBreakParticle::virtual_force(int i, int j, double collision_factor, do
     cdata.i = i;
     cdata.j = j;
     cdata.is_wall = false;
+    cdata.computeflag = 0;
+    cdata.shearupdate = 0;
     cdata.itype = atom->type[i];
     cdata.jtype = atom->type[j];
-    double mi = atom->rmass[i];
-    double mj = atom->rmass[j];
+
+    double mi;
+    double mj;
+    if (atom->rmass) {
+      mi = atom->rmass[i];
+      mj = atom->rmass[j];
+    } else {
+      mi = atom->mass[cdata.itype];
+      mj = atom->mass[cdata.jtype];
+    }
+    if (pair_gran->fr_pair()) {
+      const double * mass_rigid = pair_gran->mr_pair();
+      if (mass_rigid[i] > 0.0) mi = mass_rigid[i];
+      if (mass_rigid[j] > 0.0) mj = mass_rigid[j];
+    }
+
+    const int freeze_group_bit = pair_gran->freeze_group_bit();
     cdata.meff = mi * mj / (mi + mj);
+    if (atom->mask[i] & freeze_group_bit)
+      cdata.meff = mj;
+    if (atom->mask[j] & freeze_group_bit)
+      cdata.meff = mi;
+
     cdata.r = sqrt(cdata.rsq);
     const double rinv = 1.0 / cdata.r;
     cdata.rinv = rinv;
@@ -1922,188 +1931,29 @@ double FixBreakParticle::virtual_force(int i, int j, double collision_factor, do
     cdata.en[0]   = delx * rinv;
     cdata.en[1]   = dely * rinv;
     cdata.en[2]   = delz * rinv;
+    cdata.v_i = virtual_v_i;
+    cdata.v_j = virtual_v_j;
+    double omega[3] = {};
+    cdata.omega_i = omega;
+    cdata.omega_j = omega;
 
-    return virtual_collision(cdata, collision_factor, siblingDeltaMax);
+    int ** firsttouch = pair_gran->listgranhistory ? pair_gran->listgranhistory->firstneigh : NULL;
+    double ** firstshear = pair_gran->listgranhistory ? pair_gran->listgranhistory->firstdouble : NULL;
+    int * const touch = firsttouch ? firsttouch[i] : NULL;
+    double * const allshear = firstshear ? firstshear[i] : NULL;
+    cdata.touch = touch ? &touch[jj] : NULL;
+    cdata.contact_history = allshear ? &allshear[dnum*jj] : NULL;
+
+    pair_gran->compute_sp(cdata, virtual_f_i, virtual_f_j);
+
+    return cdata.deltan;
   }
 
   return 0.0;
 }
 
 
-double FixBreakParticle::virtual_collision(CollisionData & cdata, double collision_factor, double *siblingDeltaMax)
-{
-  double deltan = 0.0;
-  const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
-
-  if (normalmodel == 6) { // hertz/break
-    const int itype = cdata.itype;
-    const int jtype = cdata.jtype;
-    const double ri = cdata.radi;
-    const double rj = cdata.radj;
-    const double reff = cdata.is_wall ? ri : (ri*rj/(ri+rj));
-    const double meff = cdata.meff;
-
-    {
-      const double enx = cdata.en[0];
-      const double eny = cdata.en[1];
-      const double enz = cdata.en[2];
-
-      deltan = cdata.deltan;
-
-      if (!cdata.is_wall && *siblingDeltaMax > 0.0) {
-        if (deltan > *siblingDeltaMax) {
-          deltan -= *siblingDeltaMax;
-          deltan += *siblingDeltaMax*collision_factor;
-        } else {
-          *siblingDeltaMax = deltan;
-          deltan *= collision_factor;
-        }
-      }
-
-      double sqrtval = sqrt(reff*deltan);
-
-      double Yeff;
-      double betaeff;
-      {
-        const double *Y, *nu;
-        const double * const * e;
-        Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
-        nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
-        e = static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRestitution","property/global","peratomtypepair",max_type,max_type,style))->get_array();
-
-        Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
-        const double loge = log(e[itype-1][jtype-1]);
-        betaeff = loge/sqrt(loge * loge + MY_PI * MY_PI);
-      }
-
-      const double Sn = 2. * Yeff*sqrtval;
-
-      double kn = 4./3. * Yeff * sqrtval;
-      const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
-      double gamman = -2. * sqrtFiveOverSix * betaeff * sqrt(Sn*meff);
-
-      // convert Kn and Kt from pressure units to force/distance^2
-      kn /= force->nktv2p;
-
-      // relative translational velocity
-      const double vr1 = virtual_v_i[0] - virtual_v_j[0];
-      const double vr2 = virtual_v_i[1] - virtual_v_j[1];
-      const double vr3 = virtual_v_i[2] - virtual_v_j[2];
-
-      const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
-      const double Fn_damping = -gamman * vn;
-      const double Fn_contact = kn * deltan;
-      double Fn = Fn_damping + Fn_contact;
-
-      // limit force to avoid the artefact of negative repulsion force
-      bool limitForce = false;
-      if (limitForce && (Fn < 0.0) ) {
-        Fn = 0.0;
-      }
-
-      // apply normal force
-      if (cdata.is_wall) {
-        const double Fn_ = Fn * cdata.area_ratio;
-        virtual_f_ij[0] = Fn_ * enx;
-        virtual_f_ij[1] = Fn_ * eny;
-        virtual_f_ij[2] = Fn_ * enz;
-      } else {
-        virtual_f_ij[0] = Fn * enx;
-        virtual_f_ij[1] = Fn * eny;
-        virtual_f_ij[2] = Fn * enz;
-      }
-    }
-  } else if (normalmodel == 7) { // hooke/break
-    const int itype = cdata.itype;
-    const int jtype = cdata.jtype;
-    const double ri = cdata.radi;
-    const double rj = cdata.radj;
-    const double reff=cdata.is_wall ? ri : (ri*rj/(ri+rj));
-    const double meff=cdata.meff;
-    double coeffRestLogChosen;
-
-    {
-      const double enx = cdata.en[0];
-      const double eny = cdata.en[1];
-      const double enz = cdata.en[2];
-
-      deltan = cdata.deltan;
-
-      if (!cdata.is_wall && *siblingDeltaMax > 0.0) {
-        if (deltan > *siblingDeltaMax) {
-          deltan -= *siblingDeltaMax;
-          deltan += *siblingDeltaMax*collision_factor;
-        } else {
-          *siblingDeltaMax = deltan;
-          deltan *= collision_factor;
-        }
-      }
-
-      const double sqrtval = sqrt(reff);
-
-      double Yeff;
-      const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
-      double coeffRestLog;
-      {
-        const double *Y, *nu;
-        const double * const * e;
-        Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
-        nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
-        e = static_cast<FixPropertyGlobal*>(modify->find_fix_property("coefficientRestitution","property/global","peratomtypepair",max_type,max_type,style))->get_array();
-
-        Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
-        coeffRestLog = log(e[itype-1][jtype-1]);
-      }
-
-      /*if (viscous)  {
-        // Stokes Number from MW Schmeeckle (2001)
-        const double stokes=cdata.meff*cdata.vn/(6.0*M_PI*coeffMu[itype][jtype]*reff*reff);
-        // Empirical from Legendre (2006)
-        coeffRestLogChosen=log(coeffRestMax[itype][jtype])+coeffStc[itype][jtype]/stokes;
-      } else*/ {
-        coeffRestLogChosen=coeffRestLog;/// coeffRestLog[itype][jtype];
-      }
-
-      double kn = 16./15.*sqrtval*Yeff*pow(15.*meff*charVel*charVel/(16.*sqrtval*Yeff),0.2);
-      const double gamman=sqrt(4.*meff*kn/(1.+(M_PI/coeffRestLogChosen)*(M_PI/coeffRestLogChosen)));
-
-      // convert Kn and Kt from pressure units to force/distance^2
-      kn /= force->nktv2p;
-
-      // relative translational velocity
-      const double vr1 = virtual_v_i[0] - virtual_v_j[0];
-      const double vr2 = virtual_v_i[1] - virtual_v_j[1];
-      const double vr3 = virtual_v_i[2] - virtual_v_j[2];
-
-      const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
-      const double Fn_damping = -gamman * vn;
-      const double Fn_contact = kn * deltan;
-      double Fn = Fn_damping + Fn_contact;
-
-      //limit force to avoid the artefact of negative repulsion force
-      bool limitForce = false;
-      if (limitForce && (Fn<0.0) ) {
-        Fn = 0.0;
-      }
-
-      // apply normal force
-      if(cdata.is_wall) {
-        const double Fn_ = Fn * cdata.area_ratio;
-        virtual_f_ij[0] = Fn_ * enx;
-        virtual_f_ij[1] = Fn_ * eny;
-        virtual_f_ij[2] = Fn_ * enz;
-      } else {
-        virtual_f_ij[0] = Fn * enx;
-        virtual_f_ij[1] = Fn * eny;
-        virtual_f_ij[2] = Fn * enz;
-      }
-    }
-  }
-  return deltan;
-}
-
-
-void FixBreakParticle::virtual_initial_integrate(int i, std::vector<double> &virtual_v, std::vector<double> &virtual_x)
+void FixBreakParticle::virtual_initial_integrate(int i, const ForceData& virtual_f, double* virtual_v, std::vector<double> &virtual_x)
 {
     const double dtv = update->dt;
     const double dtf = 0.5 * update->dt * force->ftm2v;
@@ -2113,16 +1963,16 @@ void FixBreakParticle::virtual_initial_integrate(int i, std::vector<double> &vir
     // update v and x of atom
 
     dtfm = dtf / rmass[i];
-    virtual_v[0] += dtfm * virtual_f_ij[0];
-    virtual_v[1] += dtfm * virtual_f_ij[1];
-    virtual_v[2] += dtfm * virtual_f_ij[2];
+    virtual_v[0] += dtfm * virtual_f.delta_F[0];
+    virtual_v[1] += dtfm * virtual_f.delta_F[1];
+    virtual_v[2] += dtfm * virtual_f.delta_F[2];
     virtual_x[0] += dtv * virtual_v[0];
     virtual_x[1] += dtv * virtual_v[1];
     virtual_x[2] += dtv * virtual_v[2];
 }
 
 
-void FixBreakParticle::virtual_final_integrate(int i, std::vector<double> &virtual_v)
+void FixBreakParticle::virtual_final_integrate(int i, const ForceData& virtual_f, double* virtual_v)
 {
     const double dtf = 0.5 * update->dt * force->ftm2v;
     double *rmass = atom->rmass;
@@ -2131,8 +1981,8 @@ void FixBreakParticle::virtual_final_integrate(int i, std::vector<double> &virtu
     // update v of atom
 
     dtfm = dtf / rmass[i];
-    virtual_v[0] += dtfm * virtual_f_ij[0];
-    virtual_v[1] += dtfm * virtual_f_ij[1];
-    virtual_v[2] += dtfm * virtual_f_ij[2];
+    virtual_v[0] += dtfm * virtual_f.delta_F[0];
+    virtual_v[1] += dtfm * virtual_f.delta_F[1];
+    virtual_v[2] += dtfm * virtual_f.delta_F[2];
 }
 
