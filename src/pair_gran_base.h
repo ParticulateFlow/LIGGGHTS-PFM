@@ -335,6 +335,37 @@ public:
     if(store_contact_forces)
         pg->fix_contact_forces()->do_forward_comm();
   }
+
+  virtual void compute_force(PairGran * pg, CollisionData &cdata, ForceData &i_forces, ForceData &j_forces) //int eflag, int vflag, int addflag)
+  {
+      cmodel.beginPass(cdata, i_forces, j_forces);
+
+      i_forces.reset();
+      j_forces.reset();
+
+      if (cdata.rsq < cdata.radsum * cdata.radsum) {
+        cmodel.collision(cdata, i_forces, j_forces);
+        // if there is a collision, there will always be a force
+        cdata.has_force_update = true;
+      } else {
+        // apply force update only if selected contact models have requested it
+        cdata.has_force_update = false;
+        cmodel.noCollision(cdata, i_forces, j_forces);
+      }
+
+      if(cdata.has_force_update) {
+        if (cdata.computeflag) {
+          force_update(atom->f[cdata.i], atom->torque[cdata.i], i_forces);
+
+          if(force->newton_pair || cdata.j < atom->nlocal) {
+            force_update(atom->f[cdata.j], atom->torque[cdata.j], j_forces);
+          }
+        }
+      }
+
+      cmodel.endPass(cdata, i_forces, j_forces);
+  }
+
 };
 
 }
