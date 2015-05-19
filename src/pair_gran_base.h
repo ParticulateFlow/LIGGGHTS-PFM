@@ -336,7 +336,7 @@ public:
         pg->fix_contact_forces()->do_forward_comm();
   }
 
-  virtual void compute_force(PairGran * pg, CollisionData &cdata, ForceData &i_forces, ForceData &j_forces) //int eflag, int vflag, int addflag)
+  virtual void compute_single_pair_force(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
   {
       cmodel.beginPass(cdata, i_forces, j_forces);
 

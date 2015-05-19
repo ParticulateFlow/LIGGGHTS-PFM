@@ -55,7 +55,7 @@ public:
 
   virtual void compute(int eflag, int vflag);
   virtual void compute_pgl(int eflag, int vflag);
-  virtual void compute(LCM::CollisionData &cdata, LCM::ForceData &i_forces, LCM::ForceData &j_forces);
+  virtual void compute_sp(LCM::CollisionData & cdata, LCM::ForceData & i_forces, LCM::ForceData & j_forces);
   virtual void settings(int, char **) = 0;
   virtual void coeff(int, char **);
   virtual void init_style();
@@ -178,7 +178,7 @@ public:
   }
 
   virtual void compute_force(int eflag, int vflag,int addflag) = 0;
-  virtual void compute_force(LCM::CollisionData &cdata, LCM::ForceData &i_forces, LCM::ForceData &j_forces) = 0;
+  virtual void compute_single_pair_force(LCM::CollisionData & cdata, LCM::ForceData & i_forces, LCM::ForceData & j_forces) = 0;
   virtual bool forceoff();
 
 
