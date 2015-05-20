@@ -55,7 +55,7 @@ public:
 
   virtual void compute(int eflag, int vflag);
   virtual void compute_pgl(int eflag, int vflag);
-  virtual void compute_sp(LCM::CollisionData & cdata, LCM::ForceData & i_forces, LCM::ForceData & j_forces);
+  virtual void compute_single_pair(LCM::CollisionData & cdata, LCM::ForceData & i_forces, LCM::ForceData & j_forces);
   virtual void settings(int, char **) = 0;
   virtual void coeff(int, char **);
   virtual void init_style();

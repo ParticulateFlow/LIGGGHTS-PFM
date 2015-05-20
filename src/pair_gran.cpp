@@ -632,7 +632,7 @@ void PairGran::compute_pgl(int eflag, int vflag)
 /* ----------------------------------------------------------------------
    compute as called via fix break particle
 ------------------------------------------------------------------------- */
-void PairGran::compute_sp(LCM::CollisionData &cdata, LCM::ForceData &i_forces, LCM::ForceData &j_forces)
+void PairGran::compute_single_pair(LCM::CollisionData &cdata, LCM::ForceData &i_forces, LCM::ForceData &j_forces)
 {
   compute_single_pair_force(cdata, i_forces, j_forces);
 }
