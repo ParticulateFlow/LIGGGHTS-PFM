@@ -1944,7 +1944,7 @@ double FixBreakParticle::virtual_force(int i, int j, int jj)
     cdata.touch = touch ? &touch[jj] : NULL;
     cdata.contact_history = allshear ? &allshear[dnum*jj] : NULL;
 
-    pair_gran->compute_sp(cdata, virtual_f_i, virtual_f_j);
+    pair_gran->compute_single_pair(cdata, virtual_f_i, virtual_f_j);
 
     return cdata.deltan;
   }
