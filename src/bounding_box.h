@@ -145,9 +145,18 @@ class BoundingBox
            p[2] >= zLo && p[2] < zHi);
     }
 
+    bool isDirty() const {
+        return dirty;
+    }
+
+    void setDirty(bool value) {
+        dirty = value;
+    }
+
   private:
     double xLo, xHi, yLo, yHi, zLo, zHi;
     bool initGiven;
+    bool dirty;
 };
 
 } /* LAMMPS_NS */

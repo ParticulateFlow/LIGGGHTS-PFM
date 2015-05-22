@@ -315,7 +315,7 @@ MeshMoverRotate::~MeshMoverRotate()
 
 void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
-    double node[3],vRot[3],omegaVec[3],rPA[3];
+    double omegaVec[3];
     double reference_point[3];
     double totalPhi = omega_*dTSetup;
     double incrementalPhi = omega_*dt;
@@ -326,10 +326,10 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
     get_reference_point(reference_point);
 
     //NP size includes owned and ghost elements
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
-    double ***v_node = get_v();
-    double ***nodes = get_nodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
+    double *** const v_node = get_v();
+    double *** const nodes = get_nodes();
 
     /*NL*/ //fprintf(screen,"dTAbs %f dTSetup %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
     /*NL*/ //               dTAbs,dTSetup,totalPhi,incrementalPhi,reference_point[0],reference_point[1],reference_point[2]);
@@ -343,8 +343,8 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
       {
-          vectorCopy3D(nodes[i][iNode],node);
-          vectorSubtract3D(node,reference_point,rPA);
+          double vRot[3],rPA[3];
+          vectorSubtract3D(nodes[i][iNode],reference_point,rPA);
           vectorCross3D(omegaVec,rPA,vRot);
           vectorAdd3D(v_node[i][iNode],vRot,v_node[i][iNode]);
       }
@@ -432,7 +432,7 @@ void MeshMoverRotateVariable::setup()
 
 void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
 {
-    double node[3],vRot[3],omegaVec[3],rPA[3];
+    double omegaVec[3];
     double reference_point[3];
     double incrementalPhi;
 
@@ -461,12 +461,13 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
 
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
+
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
       {
-          vectorCopy3D(nodes[i][iNode],node);
-          vectorSubtract3D(node,reference_point,rPA);
+          double rPA[3], vRot[3];
+          vectorSubtract3D(nodes[i][iNode],reference_point,rPA);
           vectorCross3D(omegaVec,rPA,vRot);
           vectorAdd3D(v_node[i][iNode],vRot,v_node[i][iNode]);
       }

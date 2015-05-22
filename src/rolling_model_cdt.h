@@ -46,7 +46,7 @@ namespace ContactModels
 
     RollingModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), coeffRollFrict(NULL)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "CDT loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "CDT loaded\n");
     }
 
     void registerSettings(Settings&) {}

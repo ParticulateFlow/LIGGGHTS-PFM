@@ -417,19 +417,26 @@ void FixContactHistoryMesh::resetDeletionPage(int tid)
     keeppage_[tid]->reset(true);
 }
 
+/* ----------------------------------------------------------------------- */
+
+void FixContactHistoryMesh::markForDeletion(int tid, int i)
+{
+  const int nneighs = fix_nneighs_->get_vector_atom_int(i);
+  keepflag_[i] = keeppage_[tid]->get(nneighs);
+  if (!keepflag_[i])
+    error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
+}
+
 /* ----------------------------------------------------------------------
      mark all contacts for deletion
 ------------------------------------------------------------------------- */
 
 void FixContactHistoryMesh::markForDeletion(int tid, int ifrom, int ito)
 {
-    for(int i = ifrom; i < ito; i++)
-    {
-      const int nneighs = fix_nneighs_->get_vector_atom_int(i);
-      keepflag_[i] = keeppage_[tid]->get(nneighs);
-      if (!keepflag_[i])
-        error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
-    }
+  for(int i = ifrom; i < ito; ++i)
+  {
+    markForDeletion(tid, i);
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -441,42 +448,46 @@ void FixContactHistoryMesh::cleanUpContacts()
 
 /* ---------------------------------------------------------------------- */
 
+void FixContactHistoryMesh::cleanUpContact(int i) {
+  const int nneighs = fix_nneighs_->get_vector_atom_int(i);
+
+  for(int j = 0; j < nneighs; ++j)
+  {
+    // delete values
+    //NP do not swap with last in array, since paged data structure
+    //NP doesn't support this
+    if(!keepflag_[i][j])
+    {
+      if(partner_[i][j] > -1)
+      {
+        --npartner_[i];
+        /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {fprintf(screen,"step "BIGINT_FORMAT" deleting contact: tri id %d, npartner %d, nneighs %d\n",update->ntimestep,partner_[i][j],npartner_[i],nneighs);
+        /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
+        /*NL*/ //         fprintf(screen,"    neigh %d: tri id %d\n",kk,partner_[i][kk]); }
+      }
+      partner_[i][j] = -1;
+      vectorZeroizeN(&(contacthistory_[i][j*dnum_]),dnum_);
+    }
+  }
+  /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {
+  /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
+  /*NL*/ //          fprintf(screen,"    neigh post-clean %d: tri id %d\n",kk,partner_[i][kk]); }
+}
+
 void FixContactHistoryMesh::cleanUpContacts(int ifrom, int ito)
 {
-    /*NL*/ //if(10024 == update->ntimestep) {
-    /*NL*/ //       int iDeb = atom->map(DEBUG_P_TAG);
-    /*NL*/ //       int nn = static_cast<int>(round(fix_nneighs_->vector_atom[iDeb]));
-    /*NL*/ //       for(int kk = 0; kk < nn; kk++)
-    /*NL*/ //          fprintf(screen,"       neigh PRE-pre-clean %d: tri id %d\n",kk,partner_[iDeb][kk]); }
+  /*NL*/ //if(10024 == update->ntimestep) {
+  /*NL*/ //       int iDeb = atom->map(DEBUG_P_TAG);
+  /*NL*/ //       int nn = static_cast<int>(round(fix_nneighs_->vector_atom[iDeb]));
+  /*NL*/ //       for(int kk = 0; kk < nn; kk++)
+  /*NL*/ //          fprintf(screen,"       neigh PRE-pre-clean %d: tri id %d\n",kk,partner_[iDeb][kk]); }
 
-    //NP delete contacts that no longer exist (i.e. delflag set)
+  //NP delete contacts that no longer exist (i.e. delflag set)
 
-    for(int i = ifrom; i < ito; i++)
-    {
-        const int nneighs = fix_nneighs_->get_vector_atom_int(i);
-
-        for(int j = 0; j < nneighs; j++)
-        {
-            // delete values
-            //NP do not swap with last in array, since paged data structure
-            //NP doesn't support this
-            if(!keepflag_[i][j])
-            {
-                if(partner_[i][j] > -1)
-                {
-                    npartner_[i]--;
-                    /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {fprintf(screen,"step "BIGINT_FORMAT" deleting contact: tri id %d, npartner %d, nneighs %d\n",update->ntimestep,partner_[i][j],npartner_[i],nneighs);
-                    /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
-                    /*NL*/ //         fprintf(screen,"    neigh %d: tri id %d\n",kk,partner_[i][kk]); }
-                }
-                partner_[i][j] = -1;
-                vectorZeroizeN(&(contacthistory_[i][j*dnum_]),dnum_);
-            }
-        }
-        /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {
-        /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
-        /*NL*/ //          fprintf(screen,"    neigh post-clean %d: tri id %d\n",kk,partner_[i][kk]); }
-    }
+  for(int i = ifrom; i < ito; ++i)
+  {
+    cleanUpContact(i);
+  }
 }
 
 /* ---------------------------------------------------------------------- */

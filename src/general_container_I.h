@@ -80,30 +80,36 @@
    check if data is of type double
   ------------------------------------------------------------------------- */
 
+  template<typename T>
+  struct is_double {
+    static const bool value = false;
+  };
+
+  template<typename T>
+  struct is_int {
+    static const bool value = false;
+  };
+
+  template<>
+  struct is_double<double> {
+    static const bool value = true;
+  };
+
+  template<>
+  struct is_int<int> {
+    static const bool value = true;
+  };
+
   template<typename T, int NUM_VEC, int LEN_VEC>
   bool GeneralContainer<T,NUM_VEC,LEN_VEC>::isDoubleData()
   {
-      // partial templatization does not work
-      // std::is_same<T,double>::value is from C++11
-      // this is work-around
-
-      if(sizeof(T) == sizeof(double))
-        return true;
-      else
-        return false;
+    return is_double<T>::value;
   }
 
   template<typename T, int NUM_VEC, int LEN_VEC>
   bool GeneralContainer<T,NUM_VEC,LEN_VEC>::isIntData()
   {
-      // partial templatization does not work
-      // std::is_same<T,double>::value is from C++11
-      // this is work-around
-
-      if(sizeof(T) == sizeof(int))
-        return true;
-      else
-        return false;
+    return is_int<T>::value;
   }
 
   /* ----------------------------------------------------------------------

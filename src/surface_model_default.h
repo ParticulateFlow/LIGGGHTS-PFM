@@ -46,7 +46,7 @@ namespace ContactModels
 
     SurfaceModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "SURFACE/DEFAULT loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "SURFACE/DEFAULT loaded\n");
     }
 
     inline void registerSettings(Settings&) {}

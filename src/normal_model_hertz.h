@@ -49,7 +49,7 @@ namespace ContactModels
       limitForce(false),
       displayedSettings(false)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "HERTZ loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HERTZ loaded\n");
     }
 
     void registerSettings(Settings & settings)

@@ -332,6 +332,10 @@ public:
 
     cmodel.endPass(cdata, i_forces, j_forces);
 
+    if (pg->vflag_fdotr) {
+      pg->virial_fdotr_compute();
+    }
+
     if(store_contact_forces)
         pg->fix_contact_forces()->do_forward_comm();
   }

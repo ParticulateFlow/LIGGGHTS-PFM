@@ -81,7 +81,7 @@ namespace LAMMPS_NS
         void unregisterMove(bool _scale, bool _translate, bool _rotate);
 
         // bbox stuff
-        BoundingBox getGlobalBoundingBox() const;
+        BoundingBox getGlobalBoundingBox();
         BoundingBox getElementBoundingBoxOnSubdomain(int const n);
         void updateGlobalBoundingBox();
 
