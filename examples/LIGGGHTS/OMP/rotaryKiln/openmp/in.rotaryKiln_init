@@ -13,7 +13,7 @@ processors	* * *
 region		reg block -0.001 0.016 -0.08 0.08 -0.08 0.08 units box
 create_box	2 reg
 
-neighbor	0.005 bin
+neighbor	0.002 bin
 neigh_modify	delay 0
 
 echo both

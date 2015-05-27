@@ -10,7 +10,7 @@ units		si
 processors	1 * 1
 read_restart post/restart/mixer.75000
 
-neighbor	0.005 bin
+neighbor	0.002 bin
 neigh_modify	delay 0
 
 echo both
