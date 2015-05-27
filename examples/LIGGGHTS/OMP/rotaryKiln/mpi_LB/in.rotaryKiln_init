@@ -7,7 +7,7 @@ communicate	single vel yes
 
 units		si
 
-processors	${XPROC} ${YPROC} 1
+processors	1 ${YPROC} ${ZPROC}
 region		reg block -0.001 0.016 -0.08 0.08 -0.08 0.08 units box
 create_box	2 reg
 
