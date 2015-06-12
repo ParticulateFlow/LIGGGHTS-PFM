@@ -1,0 +1,62 @@
+#Contact model example
+
+atom_style	granular
+atom_modify	map array
+boundary	f f f
+newton		off
+
+communicate	single vel yes
+
+units		si
+
+region		reg block 0.0 0.5 0.0 0.5 0.0 0.5 units box
+create_box	1 reg
+
+neighbor	0.002 bin
+neigh_modify	delay 0
+modify_timing   on
+
+
+#Material properties required for new pair styles
+
+fix		m1 all property/global youngsModulus peratomtype 5.e6
+fix		m2 all property/global poissonsRatio peratomtype 0.45
+fix		m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix		m4 all property/global coefficientFriction peratomtypepair 1 0.05
+fix		m5 all property/global characteristicVelocity scalar 2.
+
+
+#New pair style
+pair_style 	gran model hooke
+pair_coeff	* *
+
+timestep	0.00001
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix		zwalls1 all wall/gran model hooke primitive type 1 xplane 0.0
+fix		zwalls2 all wall/gran model hooke primitive type 1 xplane 0.5
+fix		zwalls3 all wall/gran model hooke primitive type 1 yplane 0.0
+fix		zwalls4 all wall/gran model hooke primitive type 1 yplane 0.5
+fix		zwalls5 all wall/gran model hooke primitive type 1 zplane 0.0
+fix		zwalls6 all wall/gran model hooke primitive type 1 zplane 1.0
+
+#particle distributions
+fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.0025
+fix		pdd1 all particledistribution/discrete 1.  1 pts1 1.0
+
+
+#apply nve integration to all particles
+fix		integr all nve/sphere
+
+fix		ts all check/timestep/gran 1000 0.1 0.1
+
+#output settings, include total thermal energy
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke f_ts[1] f_ts[2] vol
+thermo		1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+fix ins all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. 0. insert_every once overlapcheck yes all_in yes particles_in_region ${NPARTICLES} region reg
+run 1
