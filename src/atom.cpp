@@ -184,7 +184,6 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   //NP modified C.K.
   radvary_flag = 0;
 
-  threading_spatial_sort = 1; // TODO: TESTING ONLY
   partitioner = NULL;
   partitioner_style = NULL;
   thread = NULL;

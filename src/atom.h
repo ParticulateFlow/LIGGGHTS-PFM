@@ -287,7 +287,6 @@ class Atom : protected Pointers {
   void create_partitioner(const char *style, int narg, const char * const * arg, const char *suffix = NULL);
   Partitioner * new_partitioner(const char * style, int narg, const char * const * arg, const char *suffix, int & sflag);
 
-  int threading_spatial_sort;
   bool dirty;                     // current partitions are not valid
   std::vector<int> thread_offsets;
 
