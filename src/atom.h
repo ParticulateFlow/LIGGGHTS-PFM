@@ -244,7 +244,6 @@ class Atom : protected Pointers {
   void map_delete();
   int map_find_hash(int);
 
-  void dump_to_file(FILE* fp);
   void fill_permute_by_spatial_sorted_bins(std::vector<int> & ilist, int * target_permute);
 
  private:

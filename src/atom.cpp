@@ -1983,20 +1983,3 @@ int Atom::memcheck(const char *str)
   delete [] padded;
   return 1;
 }
-
-void Atom::dump_to_file(FILE * file) {
-  int nall = nlocal + nghost;
-  int nthreads = comm->nthreads;
-  if(nall > 0) {
-    double * positionAdress = &x[0][0];
-    fwrite(&positionAdress, sizeof(double*), 1, file);
-    fwrite(&nlocal, sizeof(int), 1, file);
-    fwrite(&nghost, sizeof(int), 1, file);
-    fwrite(&nthreads, sizeof(int), 1, file);
-    fwrite(positionAdress, 3*sizeof(double), nall, file);
-
-    if(nthreads > 1) {
-      fwrite(thread, sizeof(int), nlocal, file);
-    }
-  }
-}

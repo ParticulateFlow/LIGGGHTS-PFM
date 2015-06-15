@@ -112,8 +112,6 @@ class Neighbor : protected Pointers {
   void multi_levels(double &, double &, int &);
   int multi_levels();
 
-  void dump_to_file(FILE* fp);
-
  protected:
   int me,nprocs;
 

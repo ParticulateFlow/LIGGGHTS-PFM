@@ -591,7 +591,6 @@ int Input::execute_command()
   else if (!strcmp(command,"unfix")) unfix();
   else if (!strcmp(command,"units")) units();
   else if (!strcmp(command,"modify_timing")) modify_timing(); //NP modified by R.B.
-  else if (!strcmp(command,"memory_snapshot")) memory_snapshot(); //NP modified by R.B.
   else if (!strcmp(command,"partitioner_style")) partitioner_style(); //NP modified by R.B.
   else flag = 0;
 
@@ -1604,16 +1603,6 @@ void Input::suffix()
 void Input::thermo()
 {
   output->set_thermo(narg,arg);
-}
-
-/* ---------------------------------------------------------------------- */
-
-void Input::memory_snapshot()
-{
-  if (narg != 1) error->all(FLERR,"Illegal memory_snapshot command");
-  int n = atoi(arg[0]);
-  if (n < 0) error->all(FLERR,"Illegal memory_snapshot command");
-  output->memory_snapshot_every = n;
 }
 
 /* ---------------------------------------------------------------------- */
