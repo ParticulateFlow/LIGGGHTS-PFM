@@ -71,7 +71,7 @@ TEST(particle_distribution_discrete, uniform_park) {
 }
 
 
-TEST(particle_distribution_discrete, tube) {
+/*TEST(particle_distribution_discrete, tube) {
   int nprocs = 1;
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
@@ -129,7 +129,7 @@ TEST(particle_distribution_discrete, tube) {
   for(size_t j = 0; j < count.size(); ++j) {
     EXPECT_TRUE(count[j] > 0) << "radii[" << j << "] = " << radii[j] << " does not appear";
   }
-}
+}*/
 
 
 TEST(particle_distribution_discrete, two_types) {
