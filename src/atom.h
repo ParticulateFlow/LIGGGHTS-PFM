@@ -15,25 +15,10 @@
 #define LMP_ATOM_H
 
 #include "pointers.h"
+#include "partitioner.h"
 #include <vector>
 
-#include <iterator>
-
 namespace LAMMPS_NS {
-
-class Partitioner : protected Pointers {
-public:
-  enum Result {
-    NO_CHANGE,
-    NEW_PARTITIONS,
-    FAILED
-  };
-
-  Partitioner(class LAMMPS * lmp) : Pointers(lmp) {}
-  virtual ~Partitioner(){}
-  virtual bool is_cost_effective() const = 0;
-  virtual Result generate_partitions(int * permute, std::vector<int> & thread_offsets) = 0;
-};
 
 class Atom : protected Pointers {
  public:
