@@ -203,18 +203,7 @@ void FixInsertStreamMoving::finalize_insertion(int ninserted_spheres_this_local)
         //NP from release step for body
 
         // could ramdonize vel, omega, quat here
-        if(v_randomSetting==1)
-        {
-            v_toInsert[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
-            v_toInsert[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
-            v_toInsert[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
-        }
-        else if(v_randomSetting==2)
-        {
-            v_toInsert[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
-            v_toInsert[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
-            v_toInsert[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
-        }
+        generate_random_velocity(v_toInsert);
 
         // 10 11 12 is velocity, 13 14 15 is omega
         vectorCopy3D(v_toInsert,&release_data[i][10]);

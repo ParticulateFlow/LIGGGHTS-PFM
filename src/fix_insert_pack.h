@@ -54,6 +54,7 @@ class FixInsertPack : public FixInsert {
 
   int is_nearby(int);
   int is_nearby_body(int);
+  virtual BoundingBox getBoundingBox() const;
 
   // region to be used for insertion
   class Region *ins_region;
