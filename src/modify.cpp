@@ -728,8 +728,9 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
 
   if (domain->box_exist == 0) {
     int m;
-    for (m = 0; m < NEXCEPT; m++)
-      if (strcmp(arg[2],exceptions[m]) == 0) break;
+    for (m = 0; m < NEXCEPT; m++) {
+      if (strstr(arg[2],exceptions[m])) break;
+    }
     if (m == NEXCEPT)
       error->all(FLERR,"Fix command before simulation box is defined");
   }
