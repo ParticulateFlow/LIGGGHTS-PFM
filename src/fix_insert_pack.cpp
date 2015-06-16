@@ -416,18 +416,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             // randomize vel, omega, quat here
             vectorCopy3D(v_insert,v_toInsert);
             // could ramdonize vel, omega, quat here
-            if(v_randomSetting==1)
-            {
-                v_toInsert[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
-                v_toInsert[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
-                v_toInsert[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
-            }
-            if(v_randomSetting==2)
-            {
-                v_toInsert[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
-                v_toInsert[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
-                v_toInsert[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
-            }
+            generate_random_velocity(v_toInsert);
 
             if(quat_random_)
                 MathExtraLiggghts::random_unit_quat(random,quat_insert);
@@ -472,19 +461,8 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
                 // randomize vel, omega, quat here
                 vectorCopy3D(v_insert,v_toInsert);
 
-                // could ramdonize vel, omega, quat here
-                if(v_randomSetting==1)
-                {
-                    v_toInsert[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
-                    v_toInsert[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
-                    v_toInsert[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
-                }
-                else if(v_randomSetting==2)
-                {
-                    v_toInsert[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
-                    v_toInsert[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
-                    v_toInsert[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
-                }
+                // could randomize vel, omega, quat here
+                generate_random_velocity(v_toInsert);
 
                 if(quat_random_)
                     MathExtraLiggghts::random_unit_quat(random,quat_insert);
@@ -505,6 +483,8 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
     }
     /*NL*/ //fprintf(screen,"FINISHED on proc %d\n",comm->me);
 }
+
+
 
 /* ---------------------------------------------------------------------- */
 

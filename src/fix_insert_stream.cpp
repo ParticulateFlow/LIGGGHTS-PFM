@@ -371,7 +371,7 @@ void FixInsertStream::init()
 
     FixInsert::init();
 
-    if(fix_multisphere && v_randomSetting != 0)
+    if(fix_multisphere && v_randomSetting != RANDOM_CONSTANT)
         error->fix_error(FLERR,this,"Currently only fix insert/stream with multisphere particles only supports constant velocity");
 
     fix_release = static_cast<FixPropertyAtom*>(modify->find_fix_property("release_fix_insert_stream","property/atom","vector",5,0,style));
@@ -783,18 +783,7 @@ void FixInsertStream::finalize_insertion(int ninserted_spheres_this_local)
         //NP from release step for body
 
         // could ramdonize vel, omega, quat here
-        if(v_randomSetting==1)
-        {
-            v_toInsert[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
-            v_toInsert[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
-            v_toInsert[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
-        }
-        else if(v_randomSetting==2)
-        {
-            v_toInsert[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
-            v_toInsert[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
-            v_toInsert[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
-        }
+        generate_random_velocity(v_toInsert);
 
         // 9-11th value is velocity, 12-14 is omega
         vectorCopy3D(v_toInsert,&release_data[i][8]);

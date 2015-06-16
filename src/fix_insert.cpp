@@ -39,7 +39,8 @@
 #include "math_extra_liggghts.h"
 #include "mpi_liggghts.h"
 #include "vector_liggghts.h"
-/*NL*/ #include "volume_mesh.h"
+#include "volume_mesh.h"
+#include "probability_distribution.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -179,7 +180,7 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
           iarg += 5;
       } else if (strcmp(arg[iarg+1],"uniform") == 0) {
           if (iarg+8 > narg) error->fix_error(FLERR,this,"not enough keyword for 'uniform'");
-          v_randomSetting = 1; //switch 1...distribute with equal prop.
+          v_randomSetting = RANDOM_UNIFORM;
           v_insert[0] = atof(arg[iarg+2]);
           v_insert[1] = atof(arg[iarg+3]);
           v_insert[2] = atof(arg[iarg+4]);
@@ -189,7 +190,7 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
           iarg += 8;
       } else if (strcmp(arg[iarg+1],"gaussian") == 0) {
           if (iarg+8 > narg) error->fix_error(FLERR,this,"not enough keyword for 'gaussian'");
-          v_randomSetting = 2; //switch 2...distribute with gaussian distrib.
+          v_randomSetting = RANDOM_GAUSSIAN;
           v_insert[0] = atof(arg[iarg+2]);
           v_insert[1] = atof(arg[iarg+3]);
           v_insert[2] = atof(arg[iarg+4]);
@@ -351,7 +352,7 @@ void FixInsert::init_defaults()
 
   exact_number = 1;
 
-  v_randomSetting = 0;
+  v_randomSetting = RANDOM_CONSTANT;
   vectorZeroize3D(v_insert);
   vectorZeroize3D(v_insertFluct);
   vectorZeroize3D(omega_insert);
@@ -850,6 +851,25 @@ int FixInsert::load_xnear(int)
   }
 
   return neighList.count();
+}
+
+/* ----------------------------------------------------------------------
+   generate random velocity based on random setting
+------------------------------------------------------------------------- */
+
+void FixInsert::generate_random_velocity(double * velocity) {
+  switch(v_randomSetting) {
+    case RANDOM_UNIFORM:
+      velocity[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
+      velocity[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
+      velocity[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
+      break;
+
+    case RANDOM_GAUSSIAN:
+      velocity[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
+      velocity[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
+      velocity[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
+  }
 }
 
 /* ----------------------------------------------------------------------

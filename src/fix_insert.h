@@ -175,6 +175,9 @@ class FixInsert : public Fix {
 
   virtual void finalize_insertion(int){};
 
+ protected:
+  void generate_random_velocity(double * velocity);
+
  private:
 
   bool setup_flag;
