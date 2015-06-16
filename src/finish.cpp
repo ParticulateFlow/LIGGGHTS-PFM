@@ -47,7 +47,7 @@ void Finish::end(int flag)
   int loopflag,minflag,prdflag,tadflag,timeflag,fftflag,histoflag,neighflag;
   double time,tmp,ave,max,min;
   double time_loop,time_other;
-  double time_max_loop,time_max_other;
+  double time_max_loop;
   double time_max;
 
   int me,nprocs;
