@@ -86,7 +86,7 @@ IF(MPI_FOUND)
 ELSE(MPI_FOUND)
   MESSAGE(STATUS "MPI NOT found! Using MPI Stubs instead.")
   ADD_SUBDIRECTORY(STUBS)
-  TARGET_LINK_LIBRARIES(liggghts STUBS)
+  TARGET_LINK_LIBRARIES(liggghts mpi_stubs)
 ENDIF(MPI_FOUND)
 
 #=======================================
