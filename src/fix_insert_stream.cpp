@@ -542,7 +542,7 @@ inline int FixInsertStream::is_nearby(int i)
 BoundingBox FixInsertStream::getBoundingBox() const {
   BoundingBox bb = ins_face->getGlobalBoundingBox();
 
-  const double cut = 2*maxrad;
+  const double cut = 3*maxrad;
   bb.extendByDelta(cut);
 
   const double delta = -(extrude_length + 2*cut);
