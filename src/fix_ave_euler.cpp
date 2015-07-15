@@ -455,7 +455,7 @@ void FixAveEuler::calculate_eu()
 
         /*NL*/ //if(ncount) fprintf(screen,"Cell %d has %d particles. \n",icell,ncount); // modified A.A.
 
-        if(ncount) vectorScalarDiv3D(v_av_[icell],static_cast<double>(ncount)*mass_[icell]);
+        if(mass_[icell] > 0.) vectorScalarDiv3D(v_av_[icell],mass_[icell]);
         if(ncount) radius_[icell]/=static_cast<double>(ncount);
         vol_fr_[icell] *= prefactor_vol_fr;
 
