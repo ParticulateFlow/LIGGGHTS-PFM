@@ -40,6 +40,7 @@
 #define BIG 1000000000
 
 #define INVOKED_PERATOM 8
+#define SMALL 1e-10
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -206,7 +207,7 @@ void FixAveEuler::setup_bins()
       // round down (makes cell size larger)
       // at least one cell
       if (triclinic_) {
-      ncells_dim_[dim] = static_cast<int>((hi_lamda_[dim]-lo_lamda_[dim])/cell_size_ideal_lamda_[dim]);
+      ncells_dim_[dim] = static_cast<int>((hi_lamda_[dim]-lo_lamda_[dim])/cell_size_ideal_lamda_[dim] + SMALL);
       if (ncells_dim_[dim] < 1) {
         ncells_dim_[dim] = 1;
         error->warning(FLERR,"Number of cells for fix_ave_euler was less than 1");
@@ -215,7 +216,7 @@ void FixAveEuler::setup_bins()
 
         cell_size_[dim] = cell_size_lamda_[dim]*domain->h[dim];
       } else {
-        ncells_dim_[dim] = static_cast<int>((hi_[dim]-lo_[dim])/cell_size_ideal_);
+        ncells_dim_[dim] = static_cast<int>((hi_[dim]-lo_[dim])/cell_size_ideal_ + SMALL);
       if (ncells_dim_[dim] < 1) {
         ncells_dim_[dim] = 1;
         /*NL*/ //fprintf(screen,"DIM %d hi_[dim]-lo_[dim] %f\n",dim,hi_[dim]-lo_[dim]);
