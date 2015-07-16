@@ -45,7 +45,7 @@ class FixParScaleCouple : public Fix  {
   void      init();
   void      setup(int);
 
-  void      pre_exchange();
+//  void      pre_exchange();
   void      end_of_step();
 
   int*      get_liggghts_map(int &length);
@@ -54,20 +54,18 @@ class FixParScaleCouple : public Fix  {
 
   void*     find_push_property(const char *name, const char *type, int &len1, int &len2);
 
- protected:
-
-  class FixPropertyAtom* fix_shellTemperature_;
-  class FixPropertyAtom* fix_shellHeatFlux_;
-
  private:
 
   // data transfer is handled by this class
   class CfdDatacouplingSimple *dc_;
-
+  int   *map_copy;
+  
   bool      verbose_;
-  int       couple_at_least_every_;
+  int       reneighbor_at_least_every_;
+  int       couple_every_,ts_create_;
   bool      couple_this_step_;
   bool      pascal_setup_;
+  bool      prePostRun_;        //indicator for printing pre and post LIGGGHTS data when running
   double    time_;
   int       iarg_;    
 
