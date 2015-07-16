@@ -40,7 +40,7 @@
 #define BIG 1000000000
 
 #define INVOKED_PERATOM 8
-#define SMALL 1e-10
+#define SMALL 1e-6
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
