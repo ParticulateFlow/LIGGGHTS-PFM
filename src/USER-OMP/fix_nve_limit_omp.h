@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -19,26 +19,31 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #ifdef FIX_CLASS
 
-FixStyle(gravity/partitioned/omp,FixGravityPartitionedOMP)
+FixStyle(nve/limit/omp,FixNVELimitOMP)
 
 #else
 
-#ifndef LMP_FIX_GRAVITY_PARTITIONED_OMP_H
-#define LMP_FIX_GRAVITY_PARTITIONED_OMP_H
+#ifndef LMP_FIX_NVE_LIMIT_OMP_H
+#define LMP_FIX_NVE_LIMIT_OMP_H
 
-#include "fix_gravity.h"
+#include "fix_nve_limit.h"
 
 namespace LAMMPS_NS {
 
-class FixGravityPartitionedOMP : public FixGravity {
-
+class FixNVELimitOMP : public FixNVELimit {
  public:
-  FixGravityPartitionedOMP(class LAMMPS *, int, char **);
+  FixNVELimitOMP(class LAMMPS *lmp, int narg, char **arg) :
+    FixNVELimit(lmp, narg, arg) {};
 
-  virtual int setmask();
-  virtual void post_force(int);
+  virtual void initial_integrate(int);
+  virtual void final_integrate();
 };
 
 }

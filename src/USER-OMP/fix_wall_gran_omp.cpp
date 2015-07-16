@@ -7,7 +7,8 @@
 
    This file was modified with respect to the release in LAMMPS
    Modifications are Copyright 2009-2012 JKU Linz
-                     Copyright 2012-     DCS Computing GmbH, Linz
+                     Copyright 2012-2014 DCS Computing GmbH, Linz
+                     Copyright 2013-     JKU Linz
 
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
@@ -74,10 +75,6 @@ using namespace LAMMPS_NS::PRIMITIVE_WALL_DEFINITIONS;
 using namespace LIGGGHTS::Walls;
 using namespace LIGGGHTS::ContactModels;
 
-/*NL*/ #define DEBUGMODE_LMP_FIX_WALL_GRAN false //(20950 < update->ntimestep) //(comm->me ==1)
-/*NL*/ #define DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID 774
-/*NL*/ #define DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID 206
-
 const double SMALL = 1e-12;
 
 /* ---------------------------------------------------------------------- */
@@ -109,7 +106,6 @@ void FixWallGranOMP::setup(int vflag)
       ((Respa *) update->integrate)->copy_f_flevel(nlevels_respa_-1);
     }
 
-    //NP doing this here because deltan_ratio is set in init() of fix heat/gran
     init_heattransfer();
 }
 
@@ -131,11 +127,7 @@ void FixWallGranOMP::pre_force(int vflag)
     radius_ = atom->radius;
     cutneighmax_ = neighbor->cutneighmax;
 
-    /*NL*/// fprintf(screen,"cutneighmax_ %f, radius is %s, rebuild primitive %s\n",cutneighmax_,radius_?"notnull":"null",rebuildPrimitiveNeighlist_?"yes":"no");
-    /*NL*/// error->all(FLERR,"end");
-
     // build neighlist for primitive walls
-    //NP as in neighlist/mesh - hack for sph
     if(rebuildPrimitiveNeighlist_) {
       const int nwalls = primitiveWalls_.size();
 
@@ -196,18 +188,6 @@ void FixWallGranOMP::post_force_wall(int vflag)
     }
   }
 
-#ifdef PROFILING
-  for(int tid = 0; tid < comm->nthreads; ++tid) {
-    num_triangles_processed[tid] = 0;
-    num_neighbors_processed[tid] = 0;
-    num_contacts_computed[tid] = 0;
-    idle_time[tid] = 0.0;
-    total_compute_time[tid] = 0.0;
-    contact_compute_time[tid] = 0.0;
-  }
-  if(comm->me == 0) fprintf(screen, "BEGIN_WALL\n");
-#endif
-
   #pragma omp parallel
   {
     if(meshwall_ == 1) {
@@ -226,20 +206,6 @@ void FixWallGranOMP::post_force_wall(int vflag)
       }
     }
   }
-
-#ifdef PROFILING
-  for(int tid = 0; tid < comm->nthreads; ++tid) {
-    if(comm->me == 0) fprintf(screen, "[%d] %lu triangles processed, %lu neighbors processed, %lu contacts computed\n", tid,
-            num_triangles_processed[tid], num_neighbors_processed[tid], num_contacts_computed[tid]);
-  }
-  //for(int tid = 0; tid < comm->nthreads; ++tid) {
-  //  fprintf(screen, "[%d] %g seconds compute time out of %g total seconds\n", tid, contact_compute_time[tid], total_compute_time[tid]);
-  //}
-  //for(int tid = 0; tid < comm->nthreads; ++tid) {
-  //  fprintf(screen, "[%d] idle time: %g seconds\n", tid, idle_time[tid]);
-  //}
-  if(comm->me == 0) fprintf(screen, "END_WALL\n");
-#endif
 }
 
 /* ----------------------------------------------------------------------
@@ -249,12 +215,6 @@ void FixWallGranOMP::post_force_wall(int vflag)
 void FixWallGranOMP::post_force_mesh(int vflag)
 {
     const int tid = omp_get_thread_num();
-
-  /* ----------- PROFILING ------------ */
-  // const double startTime = MPI_Wtime();
-  /* ----------- PROFILING ------------ */
-
-    //NP groupbit accounted for via neighlist/mesh
 
     // contact properties
     double v_wall[3],bary[3];
@@ -267,18 +227,10 @@ void FixWallGranOMP::post_force_mesh(int vflag)
     cdata.computeflag = computeflag_;
     cdata.shearupdate = shearupdate_;
 
-    /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
-    /*NL*///   fprintf(screen,"proc 3 start\n");
-
-  /* ----------- PROFILING ------------ */
-  // double markAllTime = MPI_Wtime();
-  /* ----------- PROFILING ------------ */
-
     for(int iMesh = 0; iMesh < n_FixMesh_; iMesh++)
     {
       FixContactHistoryMesh *fix_contact = FixMesh_list_[iMesh]->contactHistory();
       // mark all contacts for deletion at this point
-      //NP all detected contacts will be un-marked by fix_contact->handleContact()
       if(fix_contact) {
         FixNeighlistMeshOMP * meshNeighlist = static_cast<FixNeighlistMeshOMP*>(FixMesh_list_[iMesh]->meshNeighlist());
         fix_contact->resetDeletionPage(tid);
@@ -286,24 +238,16 @@ void FixWallGranOMP::post_force_mesh(int vflag)
         int* b = meshNeighlist->partition_begin(tid);
         int* e = meshNeighlist->partition_end(tid);
 
-		// mark all contacts for delettion at this point
-        //NP all detected contacts will be un-marked by fix_contact->handleContact()
+	// mark all contacts for delettion at this point
         for(int* it = b; it != e; ++it) {
           assert(meshNeighlist->in_thread_partition(tid, *it));
           fix_contact->markForDeletion(tid, *it);
         }
       }
-
-      //NP extremely dirty; this is that FixWallGranBase can use fix_wallforce_contact_
-      //NP pointer for both primitive and mesh case
       // TODO if(store_force_contact_)
       // TODO  fix_wallforce_contact_ = FixMesh_list_[iMesh]->meshforceContact();
     }
-    //fprintf(screen, "[%d] Mark All took %g seconds.\n", tid, MPI_Wtime() - markAllTime);
 
-  /* ----------- PROFILING ------------ */
-    //const double threadStart = MPI_Wtime();
-  /* ----------- PROFILING ------------ */
     for(int iMesh = 0; iMesh < n_FixMesh_; iMesh++)
     {
       // need to enforce synchronization after each mesh, because thread partitions of different meshes
@@ -314,9 +258,6 @@ void FixWallGranOMP::post_force_mesh(int vflag)
       TriMesh *mesh = FixMesh_list_[iMesh]->triMesh();
       const int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
       FixContactHistoryMesh * const fix_contact = FixMesh_list_[iMesh]->contactHistory();
-
-      /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
-      /*NL*///   fprintf(screen,"proc 3 mesh %d - 0\n",iMesh);
 
       // get neighborList and numNeigh
       FixNeighlistMeshOMP * meshNeighlist = static_cast<FixNeighlistMeshOMP*>(FixMesh_list_[iMesh]->meshNeighlist());
@@ -329,73 +270,36 @@ void FixWallGranOMP::post_force_mesh(int vflag)
 
       cdata.jtype = FixMesh_list_[iMesh]->atomTypeWall();
 
-      /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
-      /*NL*///   fprintf(screen,"proc 3 mesh %d - 1\n",iMesh);
-
       // moving mesh
       if(vMeshC)
       {
         double ***vMesh = vMeshC->begin();
 
-        /*NL*/// if(update->ntimestep > 35000 ) fprintf(screen,"looking for iTri %d TriAll\n",nTriAll);
-
         // loop owned and ghost triangles
         for(int iTri = 0; iTri < nTriAll; iTri++)
         {
-  #ifdef PROFILING
-          ++num_triangles_processed[tid];
-  #endif
           const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
           const int numneigh = neighborList.size();
           for(int iCont = 0; iCont < numneigh; iCont++)
           {
-  #ifdef PROFILING
-            ++num_neighbors_processed[tid];
-  #endif
-            /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
-            /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d START\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
-
             const int iPart = neighborList[iCont];
 
             // do not need to handle ghost particles
             if(iPart >= nlocal) continue;
 
             // do not handle particles not in thread region
-            //NP this ensures that contact history of a particle is only manipulated by a single thread
             if(!meshNeighlist->in_thread_partition(tid, iPart)) continue;
-
-            /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
-            /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d 1, atom %d\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri],atom->tag[iPart]);
 
             int idTri = mesh->id(iTri);
 
-            /*NL*/// if(!radius_) error->one(FLERR,"need to revise this for SPH");
             deltan = mesh->resolveTriSphereContactBary(iPart,iTri,radius_ ? radius_[iPart]:r0_ ,x_[iPart],delta,bary);
-
-            /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
-            /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-            /*NL*/  fprintf(screen,"step "BIGINT_FORMAT": handling (moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             if(deltan > skinDistance_) //allow force calculation away from the wall
             {
-              /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
-              /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d 3a\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
-              //NP if(fix_contact) fix_contact->handleNoContact(iPart,idTri);
             }
             else
             {
-              /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
-              /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d 3b\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
               if(fix_contact && ! fix_contact->handleContact(iPart,idTri,cdata.contact_history)) continue;
-
-              /*NL*/ //printVec3D(screen,"bary",bary);
-              /*NL*/ //printVec3D(screen,"vMesh[iTri][0]",vMesh[iTri][0]);
-              /*NL*/ //printVec3D(screen,"vMesh[iTri][1]",vMesh[iTri][1]);
-              /*NL*/ //printVec3D(screen,"vMesh[iTri][2]",vMesh[iTri][2]);
-  #ifdef PROFILING
-              ++num_contacts_computed[tid];
-              //double computeStart = MPI_Wtime();
-  #endif
 
               for(int i = 0; i < 3; i++)
                 v_wall[i] = (bary[0]*vMesh[iTri][0][i] + bary[1]*vMesh[iTri][1][i] + bary[2]*vMesh[iTri][2][i]);
@@ -406,14 +310,7 @@ void FixWallGranOMP::post_force_mesh(int vflag)
               cdata.delta[1] = -delta[1];
               cdata.delta[2] = -delta[2];
               post_force_eval_contact(cdata, v_wall,iMesh,FixMesh_list_[iMesh],mesh,iTri);
-  /* ----------- PROFILING ------------ */
-              //contact_compute_time[tid] += MPI_Wtime() - computeStart;
-  /* ----------- PROFILING ------------ */
             }
-
-            /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)// && mesh->id(iTri) == 4942)
-            /*NL*///   fprintf(screen,"proc 3 moving mesh %d Tri %d iCont %d numNeigh %d END\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
-
           }
         }
       }
@@ -423,53 +320,27 @@ void FixWallGranOMP::post_force_mesh(int vflag)
         // loop owned and ghost particles
         for(int iTri = 0; iTri < nTriAll; iTri++)
         {
-#ifdef PROFILING
-          ++num_triangles_processed[tid];
-#endif
-          /*NL*/// if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri))
-          /*NL*///  fprintf(screen,"handling tri id %d, numNeigh %d\n",mesh->id(iTri),numNeigh[iTri]);
           const std::vector<int> & neighborList = meshNeighlist->get_contact_list(iTri);
           const int numneigh = neighborList.size();
           for(int iCont = 0; iCont < numneigh; iCont++)
           {
-  #ifdef PROFILING
-            ++num_neighbors_processed[tid];
-  #endif
             const int iPart = neighborList[iCont];
-
-            /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
-            /*NL*///   fprintf(screen,"nonmoving mesh %d Tri %d iCont %d numNeigh %d\n",iMesh,mesh->id(iTri),iCont,numNeigh[iTri]);
 
             // do not need to handle ghost particles
             if(iPart >= nlocal) continue;
 
             // do not handle particles not in thread region
-            //NP this ensures that contact history of a particle is only manipulated by a single thread
+            // this ensures that contact history of a particle is only manipulated by a single thread
             if(!meshNeighlist->in_thread_partition(tid, iPart)) continue;
 
             int idTri = mesh->id(iTri);
             deltan = mesh->resolveTriSphereContact(iPart,iTri,radius_ ? radius_[iPart]:r0_,x_[iPart],delta);
 
-            /*NL*/// if(atom->tag[iPart] == 624)// && mesh->id(iTri) == 4942)
-            /*NL*///   fprintf(screen,"particle 624 step %d nonmoving mesh %d Tri %d iCont %d numNeigh %d 2, deltan %f\n",update->ntimestep,iMesh,mesh->id(iTri),iCont,numNeigh[iTri],deltan);
-
-            /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
-            /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-            /*NL*/  fprintf(screen,"step "BIGINT_FORMAT": handling (non-moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
-
-            //NP hack for SPH
             if(deltan > skinDistance_) //allow force calculation away from the wall
             {
-              //NP if(fix_contact) fix_contact->handleNoContact(iPart,idTri);
             }
-            else //NP always handle contact for SPH
+            else
             {
-  #ifdef PROFILING
-              ++num_contacts_computed[tid];
-  #endif
-
-            //  double computeStart = MPI_Wtime();
-              //NP continue in case already have a contact with a coplanar face
               if(fix_contact && ! fix_contact->handleContact(iPart,idTri,cdata.contact_history)) continue;
               cdata.i = iPart;
               cdata.deltan = -deltan;
@@ -477,28 +348,17 @@ void FixWallGranOMP::post_force_mesh(int vflag)
               cdata.delta[1] = -delta[1];
               cdata.delta[2] = -delta[2];
               post_force_eval_contact(cdata, v_wall,iMesh,FixMesh_list_[iMesh],mesh,iTri);
-  /* ----------- PROFILING ------------ */
-          //    contact_compute_time[tid] += MPI_Wtime() - computeStart;
-  /* ----------- PROFILING ------------ */
             }
           }
         }
       }
     }
-  //total_compute_time[tid] = MPI_Wtime() - threadStart;
-
-
 
   // clean-up contacts
-  //NP i.e. delete all which have not been detected this time-step
-  //NP have to do this here: values cannot be deleted before
-  //NP since must be available to copy contact history for coplanar neighs
-  //double cleanupTime = MPI_Wtime();
   for(int iMesh = 0; iMesh < n_FixMesh_; iMesh++)
   {
     FixContactHistoryMesh *fix_contact = FixMesh_list_[iMesh]->contactHistory();
       // clean-up contacts
-      //NP i.e. delete all which have not been detected this time-step
       if(fix_contact) {
         FixNeighlistMeshOMP * meshNeighlist = static_cast<FixNeighlistMeshOMP*>(FixMesh_list_[iMesh]->meshNeighlist());
         int * b = meshNeighlist->partition_begin(tid);
@@ -509,12 +369,6 @@ void FixWallGranOMP::post_force_mesh(int vflag)
         }
       }
   }
-
-    /*NL*/// if(comm->me == 3 && update->ntimestep == 3735)
-    /*NL*///   fprintf(screen,"proc 3 end\n");
-
-  //fprintf(screen, "[%d] CleanUpContacts took %g seconds.\n", tid, MPI_Wtime() - cleanupTime);
-  //fprintf(screen, "[%d] Total post_force time is %g seconds.\n", tid, MPI_Wtime() - startTime);
 }
 
 /* ----------------------------------------------------------------------
@@ -564,9 +418,6 @@ void FixWallGranOMP::post_force_primitive(int vflag)
 	    double delta[3];
       const double deltan = primitiveWall->resolveContact(x_[i],radius_?radius_[i]:r0_,delta);
 
-      /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[i])
-      /*NL*/    fprintf(screen,"handling primitive wall with particle id %d, deltan %f\n",atom->tag[i],deltan);
-
       if(deltan > skinDistance_) { //allow force calculation away from the wall
         if(c_history) vectorZeroizeN(c_history[i],dnum_);
       }
@@ -577,7 +428,6 @@ void FixWallGranOMP::post_force_primitive(int vflag)
           double rdist[3];
           primitiveWall->calcRadialDistance(x_[i],rdist);
             vectorCross3D(shearAxisVec_,rdist,v_wall);
-            /*NL*/ //printVec3D(screen,"v_wall cyl",v_wall);
         }
         cdata.i = i;
         cdata.contact_history = c_history ? c_history[i] : NULL;
@@ -627,16 +477,6 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
   else
     compute_force(cdata, v_wall); // LEGACY CODE (SPH)
 
-  /*NL*/ //if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-  /*NL*/ // if(strcmp(id,"cylwalls") == 0) {
-  /*NL*/ //if(6817 == atom->tag[iPart]){
-  /*NL*/  // fprintf(screen,"step "BIGINT_FORMAT " proc %d handling mesh wall with particle id %d, tri id %d, deltan %e, delr %e dx %e dy %e dz %e history is now %e %e %e\n",
-  /*NL*/  //                update->ntimestep,comm->me,atom->tag[iPart],mesh->id(iTri),deltan,delr,dx,dy,dz,c_history[0],c_history[1],c_history[2]);
-  /*NL*/ //  fprintf(screen,"step "BIGINT_FORMAT "handling mesh wall with particle id %d, tri id %d, deltan %e, delr %e dx %e dy %e dz %e f is now %f %f %f\n",
-  /*NL*/ //                  update->ntimestep,atom->tag[iPart],mesh->id(iTri),deltan,delr,dx,dy,dz,atom->f[iPart][0],atom->f[iPart][1],atom->f[iPart][2]);
-  /*NL*/ //  error->one(FLERR,"end");
-  /*NL*/ //}
-
   // if force should be stored or evaluated
   if(store_force_ || stress_flag_)
   {
@@ -668,7 +508,6 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
 
 /* ---------------------------------------------------------------------- */
 
-//NP modified C.K.
 void FixWallGranOMP::addHeatFlux(TriMesh *mesh, int ip, int wall_type, double delta_n, double area_ratio)
 {
     //r is the distance between the sphere center and wall
@@ -683,9 +522,7 @@ void FixWallGranOMP::addHeatFlux(TriMesh *mesh, int ip, int wall_type, double de
     double *Temp_p = fppa_T->vector_atom;
     double *heatflux = fppa_hf->vector_atom;
 
-    /*NL*/ //fprintf(screen,"size %d Temp %f\n",(*mesh->prop().getGlobalProperty< ScalarContainer<double> >("Temp")).size(),Temp_wall);
 
-    //NP adjust overlap that may be superficially large due to softening
     if(deltan_ratio)
        delta_n *= deltan_ratio[itype-1][wall_type-1];
 
@@ -705,8 +542,6 @@ void FixWallGranOMP::addHeatFlux(TriMesh *mesh, int ip, int wall_type, double de
     }
     if(cwl_ && addflag_)
         cwl_->add_heat_wall(ip,(Temp_wall-Temp_p[ip]) * hc);
-    /*NL*/ //fprintf(screen,"adding heat flux of %g to particle %d, wall %f Part %f hc %f\n",(Temp_wall-Temp_p[ip]) * hc,ip,Temp_wall,Temp_p[ip],hc);
-    /*NL*/ //fprintf(screen,"tcop %f tcowall %f Acont %f reff_wall %f r %f delta_n %f\n",tcop,tcowall,Acont,reff_wall,r,delta_n);
 }
 
 /* ---------------------------------------------------------------------- */

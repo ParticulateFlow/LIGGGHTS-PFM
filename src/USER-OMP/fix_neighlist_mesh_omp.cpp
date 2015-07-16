@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -38,17 +38,12 @@
 #include "update.h"
 #include <stdio.h>
 #include "thr_omp.h"
-#define NDEBUG
 #include <assert.h>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
 #define SMALL_DELTA skin/(70.*M_PI)
-
-/*NL*/ #define DEBUGMODE_LMP_FIX_NEIGHLIST_MESH false //(update->ntimestep>15400 && comm->me ==1)
-/*NL*/ #define DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID 0
-/*NL*/ #define DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID 60
 
 FixNeighlistMeshOMP::FixNeighlistMeshOMP(LAMMPS *lmp, int narg, char **arg)
 : FixNeighlistMesh(lmp,narg,arg)
@@ -121,18 +116,12 @@ struct ThreadComparator {
 
 /* ---------------------------------------------------------------------- */
 
-//NP this is called before FixContactHistoryMesh::pre_force()
-//NP because of the order of creation in FixWallGran::post_create()
-//NP this is important so building new neigh list before refreshing contact hist
-
 void FixNeighlistMeshOMP::pre_force(int vflag)
 {
     if(!buildNeighList) return;
 
     changingMesh = mesh_->isMoving() || mesh_->isDeforming();
     changingDomain = (domain->nonperiodic == 2) || domain->box_change;
-
-    /*NL*/ //fprintf(screen,"***building neighbor list at timestep "BIGINT_FORMAT"\n",update->ntimestep);
 
     buildNeighList = false;
 
@@ -141,7 +130,6 @@ void FixNeighlistMeshOMP::pre_force(int vflag)
     numAllContacts_ = 0;
 
     // copy current to old # of neighbors
-    //NP this is important for correct contact history copy
     memset(fix_nneighs_->vector_atom, 0, sizeof(double)*atom->nlocal);
 
     x = atom->x;
@@ -150,7 +138,6 @@ void FixNeighlistMeshOMP::pre_force(int vflag)
     if(neighbor->style != 1)
         error->all(FLERR,"Please use style 'bin' in the 'neighbor' command together with triangular walls");
 
-    //NP cutneighmax includes contactDistanceFactor, thus rmax includes this as well
     double rmax = 0.5*(neighbor->cutneighmax - neighbor->skin);
     double prev_skin = skin;
     double prev_distmax = distmax;
@@ -158,17 +145,14 @@ void FixNeighlistMeshOMP::pre_force(int vflag)
     if(changingMesh)
     {
       skin = neighbor->skin;
-      //NP cutneighmax includes contactDistanceFactor, thus distmax includes this as well
       distmax = neighbor->cutneighmax + SMALL_DELTA;
     }
     else
     {
       skin = 0.5*neighbor->skin;
-      //NP cutneighmax includes contactDistanceFactor, thus distmax includes this as well
       distmax = neighbor->cutneighmax - rmax + SMALL_DELTA;
     }
 
-    //NP from neighbor; get the binning
     mbinx = neighbor->mbinx;
     mbiny = neighbor->mbiny;
     mbinz = neighbor->mbinz;
@@ -188,27 +172,12 @@ void FixNeighlistMeshOMP::pre_force(int vflag)
       generate_bin_list(nall);
     }
 
-    /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID <= atom->get_map_size() && update->ntimestep > 0 &&
-    /*NL*/      atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID) >= 0)
-    /*NL*/ {
-    /*NL*/          if(!r) error->one(FLERR,"debugmode not made for SPH");
-    /*NL*/          int iTriDeb = mesh_->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID);
-    /*NL*/          int iAtomDeb = atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID);
-    /*NL*/          int ixDeb, iyDeb, izDeb;
-    /*NL*/          int iBinDeb = neighbor->coord2bin(atom->x[iAtomDeb],ixDeb, iyDeb, izDeb);
-    /*NL*/          fprintf(screen, "**step "BIGINT_FORMAT", particle id %d at bin %d (indixes %d %d %d) on proc %d, within skin to target tri %s\n",
-    /*NL*/                      update->ntimestep,DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID,
-    /*NL*/                      iBinDeb,ixDeb, iyDeb, izDeb,comm->me,
-    /*NL*/                      mesh_->resolveTriSphereNeighbuild(iTriDeb,atom->radius[iAtomDeb]*neighbor->contactDistanceFactor,atom->x[iAtomDeb],skin) ? "true" : "false" );
-    /*NL*/ }
-
   const bool use_parallel = nall > static_cast<size_t>(nthreads*nthreads);
   const bool load_balance = true;
   const bool sort = true;
 
   if(use_parallel) {
     if(load_balance) {
-      // DEPRECATED: strided access version, TODO: replace with Zoltan partitioning
       #if defined(_OPENMP)
       #pragma omp parallel default(none)
       #endif
@@ -247,7 +216,6 @@ void FixNeighlistMeshOMP::pre_force(int vflag)
     }
 
     if(sort && update->ntimestep >= nextsort) {
-      printf("%ld - %s, %s: sorting %lu triangles...\n", update->ntimestep, id, style, nall);
       sort_triangles_by_nchecked();
       nextsort = (update->ntimestep/sortfreq)*sortfreq + sortfreq;
     }
@@ -296,16 +264,12 @@ void FixNeighlistMeshOMP::pre_force(int vflag)
   if(ncontacts == 0) {
     partition_local_indices.push_back(0);
 
-    // NL printf("[%d] %d / %d particles in contact with this wall\n", comm->me, ncontacts, nlocal);
-
     if(globalNumAllContacts_) {
       MPI_Sum_Scalar(numAllContacts_,world);
     }
 
     return;
   }
-
-  // NL printf("[%d] %d / %d particles in contact with this wall\n", comm->me, ncontacts, nlocal);
 
   partition_local_indices.resize(ncontacts);
   partition_local_thread.resize(ncontacts);
@@ -395,20 +359,6 @@ void FixNeighlistMeshOMP::handleTriangle(int iTri)
       if(changingMesh || changingDomain)
       {
         getBinBoundariesForTriangle(iTri,ixMin,ixMax,iyMin,iyMax,izMin,izMax);
-    /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
-    /*NL*/ {
-    /*NL*/          double lo[3],hi[3];
-    /*NL*/          //b.getBoxBounds(lo,hi);
-    /*NL*/          vectorScalarSubtract3D(lo,distmax);
-    /*NL*/          vectorScalarAdd3D(hi,distmax);
-    /*NL*/          int ixDebLo, iyDebLo, izDebLo, ixDebHi, iyDebHi, izDebHi;
-    /*NL*/          neighbor->coord2bin(lo,ixDebLo, iyDebLo, izDebLo);
-    /*NL*/          neighbor->coord2bin(hi,ixDebHi, iyDebHi, izDebHi);
-    /*NL*/          fprintf(screen, "handleTriangle for tri id %d on proc %d, indices from here  are %d %d //  %d %d //  %d %d , bbox is %f %f //  %f %f //  %f %f  \n",
-    /*NL*/                      mesh_->id(iTri),comm->me,ixMin,ixMax,iyMin,iyMax,izMin,izMax,lo[0],hi[0],lo[1],hi[1],lo[2],hi[2]);
-    /*NL*/          fprintf(screen, "handleTriangle for tri id %d on proc %d, indices from neigh are %d %d //  %d %d //  %d %d , bbox is %f %f //  %f %f //  %f %f  \n",
-    /*NL*/                      mesh_->id(iTri),comm->me,ixDebLo,ixDebHi,iyDebLo,iyDebHi,izDebLo,izDebHi,lo[0],hi[0],lo[1],hi[1],lo[2],hi[2]);
-    /*NL*/ }
 
         for(int ix=ixMin;ix<=ixMax;ix++) {
           for(int iy=iyMin;iy<=iyMax;iy++) {
@@ -416,12 +366,7 @@ void FixNeighlistMeshOMP::handleTriangle(int iTri)
               int iBin = iz*mbiny*mbinx + iy*mbinx + ix;
               if(iBin < 0 || iBin >= maxhead) continue;
 
-              /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
-              /*NL*/          fprintf(screen, "       handleTriangle tri id %d on proc %d - checking bin %d\n",
-              /*NL*/                      mesh_->id(iTri),comm->me, iBin);
-
               int iAtom = binhead[iBin];
-              //NP only handle local atoms
               while(iAtom != -1 && iAtom < nlocal)
               {
                 if(! (mask[iAtom] & groupbit))
@@ -432,13 +377,8 @@ void FixNeighlistMeshOMP::handleTriangle(int iTri)
                 }
                 nchecked++;
 
-                /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
-                /*NL*/                                     && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID == atom->map(iAtom) )
-                /*NL*/          fprintf(screen, "   handleTriangle atom %d for tri id %d on proc %d\n",
-                /*NL*/                      atom->map(iAtom),mesh_->id(iTri),comm->me);
                 if(mesh_->resolveTriSphereNeighbuild(iTri,r ? r[iAtom]*contactDistanceFactor : 0. ,x[iAtom],r ? skin : (distmax+skin) ))
                 {
-                  //NP include iAtom in neighbor list
                   neighbors.push_back(iAtom);
                   // Incrementing fix_nneighs is a data race, fix this after parallel region!
                 }
@@ -453,9 +393,6 @@ void FixNeighlistMeshOMP::handleTriangle(int iTri)
         const int bincount = triangleBins.size();
         for(int i = 0; i < bincount; i++) {
           const int iBin = triangleBins[i];
-          /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
-          /*NL*/          fprintf(screen, "       handleTriangle tri id %d on proc %d - checking bin %d\n",
-          /*NL*/                      mesh_->id(iTri),comm->me, iBin);
 
           int iAtom = binhead[iBin];
           while(iAtom != -1 && iAtom < nlocal)
@@ -468,13 +405,8 @@ void FixNeighlistMeshOMP::handleTriangle(int iTri)
             }
             nchecked++;
 
-            /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
-            /*NL*/                                     && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID == atom->map(iAtom) )
-            /*NL*/          fprintf(screen, "   handleTriangle atom %d for tri id %d on proc %d\n",
-            /*NL*/                      atom->map(iAtom),mesh_->id(iTri),comm->me);
             if(mesh_->resolveTriSphereNeighbuild(iTri,r ? r[iAtom]*contactDistanceFactor : 0. ,x[iAtom],r ? skin : (distmax+skin) ))
             {
-              //NP include iAtom in neighbor list
               neighbors.push_back(iAtom);
               // Incrementing fix_nneighs is a data race, fix this after parallel region!
             }
@@ -484,8 +416,6 @@ void FixNeighlistMeshOMP::handleTriangle(int iTri)
         }
       }
     }
-
-    /*NL*/// fprintf(screen,"iTri %d numContacts %d\n",iTri, neighbors.size());
 }
 
 /* ---------------------------------------------------------------------- */

@@ -7,7 +7,8 @@
 
    This file was modified with respect to the release in LAMMPS
    Modifications are Copyright 2009-2012 JKU Linz
-                     Copyright 2012-     DCS Computing GmbH, Linz
+                     Copyright 2012-2014 DCS Computing GmbH, Linz
+                     Copyright 2013-     JKU Linz
 
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
@@ -32,7 +33,7 @@
 #include "atom.h"
 #include "comm.h"
 #include "group.h"
-#include "fix_contact_history.h" //NP modified C.K.
+#include "fix_contact_history.h"
 #include "error.h"
 
 #if defined(_OPENMP)
@@ -40,9 +41,6 @@
 #endif
 
 using namespace LAMMPS_NS;
-
-//NP modified C.K. changed shearpartner to contacthistory throughout file
-//NP modified C.K. added contactHistoryDistanceFactor
 
 /* ----------------------------------------------------------------------
    granular particles
@@ -57,7 +55,7 @@ void Neighbor::granular_nsq_no_newton_omp(NeighList *list)
   const int nlocal = (includegroup) ? atom->nfirst : atom->nlocal;
   const int bitmask = (includegroup) ? group->bitmask[includegroup] : 0;
 
-  FixContactHistory * const fix_history = list->fix_history; //NP modified C.K.
+  FixContactHistory * const fix_history = list->fix_history;
   NeighList * listgranhistory = list->listgranhistory;
 
   const int nthreads = comm->nthreads;
@@ -90,7 +88,7 @@ void Neighbor::granular_nsq_no_newton_omp(NeighList *list)
   double **firstshear;
   MyPage<int> *ipage_touch;
   MyPage<double> *dpage_shear;
-  int dnum; //NP modified C.K.
+  int dnum;
 
   double **x = atom->x;
   double *radius = atom->radius;
@@ -109,9 +107,9 @@ void Neighbor::granular_nsq_no_newton_omp(NeighList *list)
   ipage.reset();
 
   if (fix_history) {
-    npartner = fix_history->npartner_; //NP modified C.K.
-    partner = fix_history->partner_; //NP modified C.K.
-    contacthistory = fix_history->contacthistory_; //NP modified C.K.
+    npartner = fix_history->npartner_;
+    partner = fix_history->partner_;
+    contacthistory = fix_history->contacthistory_;
     listgranhistory = list->listgranhistory;
     firsttouch = listgranhistory->firstneigh;
     firstshear = listgranhistory->firstdouble;
@@ -119,7 +117,7 @@ void Neighbor::granular_nsq_no_newton_omp(NeighList *list)
     dpage_shear = listgranhistory->dpage+tid;
     ipage_touch->reset();
     dpage_shear->reset();
-    dnum = listgranhistory->dnum; //NP modified C.K.
+    dnum = listgranhistory->dnum;
   }
 
   for (i = ifrom; i < ito; i++) {
@@ -148,7 +146,7 @@ void Neighbor::granular_nsq_no_newton_omp(NeighList *list)
       dely = ytmp - x[j][1];
       delz = ztmp - x[j][2];
       rsq = delx*delx + dely*dely + delz*delz;
-      radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
+      radsum = (radi + radius[j]) * contactDistanceFactor;
       cutsq = (radsum+skin) * (radsum+skin);
 
       if (rsq <= cutsq) {
@@ -161,18 +159,18 @@ void Neighbor::granular_nsq_no_newton_omp(NeighList *list)
               if (partner[i][m] == tag[j]) break;
             if (m < npartner[i]) {
               touchptr[n] = 1;
-              for (d = 0; d < dnum; d++) {  //NP modified C.K.
+              for (d = 0; d < dnum; d++) {
                 shearptr[nn++] = contacthistory[i][m*dnum+d];
               }
             } else {
               touchptr[n] = 0;
-              for (d = 0; d < dnum; d++) {  //NP modified C.K.
+              for (d = 0; d < dnum; d++) {
                 shearptr[nn++] = 0.0;
               }
             }
           } else {
             touchptr[n] = 0;
-            for (d = 0; d < dnum; d++) {  //NP modified C.K.
+            for (d = 0; d < dnum; d++) {
               shearptr[nn++] = 0.0;
             }
           }
@@ -324,7 +322,7 @@ void Neighbor::granular_bin_no_newton_omp(NeighList *list)
 
   const int nlocal = (includegroup) ? atom->nfirst : atom->nlocal;
 
-  FixContactHistory * const fix_history = list->fix_history; //NP modified C.K.
+  FixContactHistory * const fix_history = list->fix_history;
   NeighList * listgranhistory = list->listgranhistory;
 
   const int nthreads = comm->nthreads;
@@ -356,7 +354,7 @@ void Neighbor::granular_bin_no_newton_omp(NeighList *list)
   double **contacthistory;
   int **firsttouch;
   double **firstshear;
-  int dnum; //NP modified C.K.
+  int dnum;
 
   // loop over each atom, storing neighbors
 
@@ -378,16 +376,16 @@ void Neighbor::granular_bin_no_newton_omp(NeighList *list)
   ipage.reset();
 
   if (fix_history) {
-    npartner = fix_history->npartner_; //NP modified C.K.
-    partner = fix_history->partner_; //NP modified C.K.
-    contacthistory = fix_history->contacthistory_; //NP modified C.K.
+    npartner = fix_history->npartner_;
+    partner = fix_history->partner_;
+    contacthistory = fix_history->contacthistory_;
     firsttouch = listgranhistory->firstneigh;
     firstshear = listgranhistory->firstdouble;
     ipage_touch = listgranhistory->ipage+tid;
     dpage_shear = listgranhistory->dpage+tid;
     ipage_touch->reset();
     dpage_shear->reset();
-    dnum = listgranhistory->dnum; //NP modified C.K.
+    dnum = listgranhistory->dnum;
   }
 
   for (i = ifrom; i < ito; i++) {
@@ -406,8 +404,6 @@ void Neighbor::granular_bin_no_newton_omp(NeighList *list)
     radi = radius[i];
     ibin = coord2bin(x[i]);
 
-    /*NL*/ //fprintf(screen,"looping atom tag %d, x %f %f %f\n",atom->tag[i],x[i][0],x[i][1],x[i][2]);
-
     // loop over all atoms in surrounding bins in stencil including self
     // only store pair if i < j
     // stores own/own pairs only once
@@ -423,15 +419,11 @@ void Neighbor::granular_bin_no_newton_omp(NeighList *list)
         dely = ytmp - x[j][1];
         delz = ztmp - x[j][2];
         rsq = delx*delx + dely*dely + delz*delz;
-        radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
+        radsum = (radi + radius[j]) * contactDistanceFactor;
         cutsq = (radsum+skin) * (radsum+skin);
-        /*NL*/ //fprintf(screen,"checking local indices %d %d\n",i,j);
 
         if (rsq <= cutsq) {
           neighptr[n] = j;
-          /*NL*/ //fprintf(screen,"  found local indices %d %d\n",i,j);
-          /*NL*/ //printVec3D(screen,"  xi",x[i]);
-          /*NL*/ //printVec3D(screen,"  xj",x[j]);
           if (fix_history) {
             if (rsq < radsum*radsum)
                 {
@@ -439,18 +431,18 @@ void Neighbor::granular_bin_no_newton_omp(NeighList *list)
                 if (partner[i][m] == tag[j]) break;
               if (m < npartner[i]) {
                 touchptr[n] = 1;
-                for (d = 0; d < dnum; d++) { //NP modified C.K.
+                for (d = 0; d < dnum; d++) {
                   shearptr[nn++] = contacthistory[i][m*dnum+d];
                 }
               } else {
                  touchptr[n] = 0;
-                 for (d = 0; d < dnum; d++) { //NP modified C.K.
+                 for (d = 0; d < dnum; d++) {
                    shearptr[nn++] = 0.0;
                  }
               }
             } else {
               touchptr[n] = 0;
-              for (d = 0; d < dnum; d++) { //NP modified C.K.
+              for (d = 0; d < dnum; d++) {
                 shearptr[nn++] = 0.0;
               }
             }
@@ -687,7 +679,7 @@ void Neighbor::granular_bin_newton_tri_omp(NeighList *list)
         dely = ytmp - x[j][1];
         delz = ztmp - x[j][2];
         rsq = delx*delx + dely*dely + delz*delz;
-        radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
+        radsum = (radi + radius[j]) * contactDistanceFactor;
         cutsq = (radsum+skin) * (radsum+skin);
 
         if (rsq <= cutsq) neighptr[n++] = j;

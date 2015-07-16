@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -21,13 +21,10 @@
 
 /* ----------------------------------------------------------------------
    Contributing authors:
-   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
-   Philippe Seil (JKU Linz)
-   Evan Smuts (U Cape Town, surface velocity rotation)
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "fix_mesh_surface_omp.h"
+#include "fix_mesh_surface_stress_servo_omp.h"
 #include <stdio.h>
 #include <string.h>
 #include "error.h"
@@ -45,16 +42,14 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-#define EPSILON_V 0.00001
-
-FixMeshSurfaceOMP::FixMeshSurfaceOMP(LAMMPS *lmp, int narg, char **arg)
-: FixMeshSurface(lmp, narg, arg)
+FixMeshSurfaceStressServoOMP::FixMeshSurfaceStressServoOMP(LAMMPS *lmp, int narg, char **arg)
+: FixMeshSurfaceStressServo(lmp, narg, arg)
 {
 }
 
 /* ---------------------------------------------------------------------- */
 
-FixMeshSurfaceOMP::~FixMeshSurfaceOMP()
+FixMeshSurfaceStressServoOMP::~FixMeshSurfaceStressServoOMP()
 {
 }
 
@@ -64,7 +59,7 @@ FixMeshSurfaceOMP::~FixMeshSurfaceOMP()
    called from fix wall/gran out of post_create()
 ------------------------------------------------------------------------- */
 
-void FixMeshSurfaceOMP::createWallNeighList(int igrp)
+void FixMeshSurfaceStressServoOMP::createWallNeighList(int igrp)
 {
   if(fix_mesh_neighlist_) return;
   char *neighlist_name = new char[strlen(id)+1+20];
@@ -86,19 +81,13 @@ void FixMeshSurfaceOMP::createWallNeighList(int igrp)
 
   delete []fixarg;
   delete []neighlist_name;
-
-  /*
-  //NP make sure a neighbor list is available
-  fix_mesh_neighlist_->pre_neighbor();
-  fix_mesh_neighlist_->pre_force(0);
-  */
 }
 
 /* ----------------------------------------------------------------------
    called from fix messflow/mesh out of post_create()
 ------------------------------------------------------------------------- */
 
-class FixNeighlistMesh* FixMeshSurfaceOMP::createOtherNeighList(int igrp,const char *nId)
+class FixNeighlistMesh* FixMeshSurfaceStressServoOMP::createOtherNeighList(int igrp,const char *nId)
 {
   FixNeighlistMesh* neighlist;
 

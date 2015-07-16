@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -27,7 +27,7 @@
 #include "update.h"
 #include "modify.h"
 #include "variable.h"
-#include "fix_multisphere.h"  //NP modified C.K.
+#include "fix_multisphere.h"
 #include "fix_gravity_partitioned_omp.h"
 #include "thr_omp.h"
 #include "domain.h"

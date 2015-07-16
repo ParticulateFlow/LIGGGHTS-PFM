@@ -12,14 +12,14 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-   Contributing author: Axel Kohlmeyer (Temple U), Richard Berger (JKU Linz)
+   Contributing authors: Axel Kohlmeyer (Temple U), Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include "atom.h"
 #include "update.h"
 #include "modify.h"
 #include "variable.h"
-#include "fix_multisphere.h"  //NP modified C.K.
+#include "fix_multisphere.h"
 #include "fix_gravity_omp.h"
 #include "thr_omp.h"
 #include "domain.h"

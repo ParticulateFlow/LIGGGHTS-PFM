@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -42,7 +42,6 @@
 #include <algorithm>
 
 // defining NDEBUG disables assertions
-#define NDEBUG
 #include <assert.h>
 
 namespace LIGGGHTS {
@@ -112,6 +111,10 @@ public:
   }
 
   virtual void init_granular() {
+    if(!atom->thread) {
+      error->all(FLERR, "OpenMP support requires atom_style granular/omp or sphere/omp\n");
+    }
+
     cmodel.connectToProperties(force->registry);
   }
 
@@ -209,7 +212,7 @@ public:
 
       if(pg->evflag)
       {
-        if(force->use_reduction) {
+        if(fix->use_reduction()) {
           // use reductions for compute
           ev_setup_thr(eflag, vflag, nall, pg->eatom, pg->vatom, thr);
 
@@ -261,7 +264,7 @@ public:
     // reduction of accumulators only
     // force->reduction stands for full reduction code
     // if a full reduction is used, this code is unnecessary
-    if(pg->evflag && !force->use_reduction)
+    if(pg->evflag && !fix->use_reduction())
     {
       for(int tid = 0; tid < nthreads; ++tid){
         ThrData * const thr = fix->get_thr(tid);

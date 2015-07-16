@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -26,25 +26,26 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(nve/sphere/partitioned/omp,FixNVESpherePartitionedOMP)
+FixStyle(mesh/surface/stress/servo/omp,FixMeshSurfaceStressServoOMP)
 
 #else
 
-#ifndef LMP_FIX_NVE_SPHERE_PARTITIONED_OMP_H
-#define LMP_FIX_NVE_SPHERE_PARTITIONED_OMP_H
+#ifndef LMP_FIX_MESH_SURFACE_STRESS_SERVO_OMP_H
+#define LMP_FIX_MESH_SURFACE_STRESS_SERVO_OMP_H
 
-#include "fix_nve_sphere.h"
+#include "fix_mesh_surface_stress_servo.h"
+
 
 namespace LAMMPS_NS {
 
-class FixNVESpherePartitionedOMP : public FixNVESphere {
- public:
-  FixNVESpherePartitionedOMP(class LAMMPS *lmp, int narg, char **arg) :
-    FixNVESphere(lmp, narg, arg) {};
+class FixMeshSurfaceStressServoOMP : public FixMeshSurfaceStressServo {
+  public:
+    FixMeshSurfaceStressServoOMP(class LAMMPS *, int, char **);
+    virtual ~FixMeshSurfaceStressServoOMP();
 
-  virtual void initial_integrate(int);
-  virtual void final_integrate();
-};
+    virtual void createWallNeighList(int igrp);
+    virtual class FixNeighlistMesh* createOtherNeighList(int igrp,const char *nId);
+}; //end class
 
 }
 

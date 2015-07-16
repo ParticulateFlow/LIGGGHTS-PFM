@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -21,36 +21,28 @@
 
 /* ----------------------------------------------------------------------
    Contributing authors:
-   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
-   Philippe Seil (JKU Linz)
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
 
-FixStyle(mesh/surface/omp,FixMeshSurfaceOMP)
-FixStyle(mesh/surface/planar/omp,FixMeshSurfaceOMP)
+FixStyle(mesh/surface/stress/omp,FixMeshSurfaceStressOMP)
 
 #else
 
-#ifndef LMP_FIX_SURFACE_MESH_OMP_H
-#define LMP_FIX_SURFACE_MESH_OMP_H
+#ifndef LMP_FIX_MESH_SURFACE_STRESS_OMP_H
+#define LMP_FIX_MESH_SURFACE_STRESS_OMP_H
 
-#include "fix_mesh.h"
-#include "tri_mesh.h"
-#include "fix_contact_history.h"
-#include "fix_neighlist_mesh_omp.h"
-#include "custom_value_tracker.h"
-#include "fix_mesh_surface.h"
+#include "fix_mesh_surface_stress.h"
 
 namespace LAMMPS_NS
 {
-  class FixMeshSurfaceOMP : public FixMeshSurface
+  class FixMeshSurfaceStressOMP : public FixMeshSurfaceStress
   {
       public:
 
-        FixMeshSurfaceOMP(LAMMPS *lmp, int narg, char **arg);
-        virtual ~FixMeshSurfaceOMP();
+        FixMeshSurfaceStressOMP(LAMMPS *lmp, int narg, char **arg);
+        virtual ~FixMeshSurfaceStressOMP();
 
         virtual void createWallNeighList(int igrp);
         virtual class FixNeighlistMesh* createOtherNeighList(int igrp,const char *nId);
@@ -58,5 +50,5 @@ namespace LAMMPS_NS
 
 } /* namespace LAMMPS_NS */
 
-#endif /* LMP_FIX_MESH_SURFACE_OMPH */
+#endif /* LMP_FIX_MESH_SURFACE_STRESS_OMP_H */
 #endif /* FIX_CLASS */

@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2013-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -24,29 +24,8 @@
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#ifdef FIX_CLASS
-
-FixStyle(nve/sphere/aos/omp,FixNVESphereAOSOMP)
-
+#ifdef PAIR_CLASS
+PairStyle(gran/omp,PairGranProxy)
 #else
-
-#ifndef LMP_FIX_NVE_SPHERE_AOS_OMP_H
-#define LMP_FIX_NVE_SPHERE_AOS_OMP_H
-
-#include "fix_nve_sphere.h"
-
-namespace LAMMPS_NS {
-
-class FixNVESphereAOSOMP : public FixNVESphere {
- public:
-  FixNVESphereAOSOMP(class LAMMPS *lmp, int narg, char **arg) :
-    FixNVESphere(lmp, narg, arg) {};
-
-  virtual void initial_integrate(int);
-  virtual void final_integrate();
-};
-
-}
-
-#endif
+#include "pair_gran_proxy.h"
 #endif

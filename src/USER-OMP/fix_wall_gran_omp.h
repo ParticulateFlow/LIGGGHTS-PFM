@@ -7,7 +7,8 @@
 
    This file was modified with respect to the release in LAMMPS
    Modifications are Copyright 2009-2012 JKU Linz
-                     Copyright 2012-     DCS Computing GmbH, Linz
+                     Copyright 2012-2014 DCS Computing GmbH, Linz
+                     Copyright 2013-     JKU Linz
 
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories

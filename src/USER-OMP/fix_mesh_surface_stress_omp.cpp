@@ -20,14 +20,11 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-   Contributing authors:
-   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
-   Philippe Seil (JKU Linz)
-   Evan Smuts (U Cape Town, surface velocity rotation)
+   Contributing author:
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "fix_mesh_surface_omp.h"
+#include "fix_mesh_surface_stress_omp.h"
 #include <stdio.h>
 #include <string.h>
 #include "error.h"
@@ -45,16 +42,14 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-#define EPSILON_V 0.00001
-
-FixMeshSurfaceOMP::FixMeshSurfaceOMP(LAMMPS *lmp, int narg, char **arg)
-: FixMeshSurface(lmp, narg, arg)
+FixMeshSurfaceStressOMP::FixMeshSurfaceStressOMP(LAMMPS *lmp, int narg, char **arg)
+: FixMeshSurfaceStress(lmp, narg, arg)
 {
 }
 
 /* ---------------------------------------------------------------------- */
 
-FixMeshSurfaceOMP::~FixMeshSurfaceOMP()
+FixMeshSurfaceStressOMP::~FixMeshSurfaceStressOMP()
 {
 }
 
@@ -64,7 +59,7 @@ FixMeshSurfaceOMP::~FixMeshSurfaceOMP()
    called from fix wall/gran out of post_create()
 ------------------------------------------------------------------------- */
 
-void FixMeshSurfaceOMP::createWallNeighList(int igrp)
+void FixMeshSurfaceStressOMP::createWallNeighList(int igrp)
 {
   if(fix_mesh_neighlist_) return;
   char *neighlist_name = new char[strlen(id)+1+20];
@@ -92,7 +87,7 @@ void FixMeshSurfaceOMP::createWallNeighList(int igrp)
    called from fix messflow/mesh out of post_create()
 ------------------------------------------------------------------------- */
 
-class FixNeighlistMesh* FixMeshSurfaceOMP::createOtherNeighList(int igrp,const char *nId)
+class FixNeighlistMesh* FixMeshSurfaceStressOMP::createOtherNeighList(int igrp,const char *nId)
 {
   FixNeighlistMesh* neighlist;
 
