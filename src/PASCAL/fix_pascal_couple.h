@@ -22,7 +22,7 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(couple/pascal,FixPaScalCouple)
+FixStyle(couple/pascal,FixParScaleCouple)
 
 #else
 
@@ -30,14 +30,14 @@ FixStyle(couple/pascal,FixPaScalCouple)
 #define LMP_FIX_PASCAL_COUPLE_H
 
 #include "fix.h"
-namespace PASCAL_NS { class PaScal; }
+namespace PASCAL_NS { class ParScale; }
 
 namespace LAMMPS_NS {
 
-class FixPaScalCouple : public Fix  {
+class FixParScaleCouple : public Fix  {
  public:
-  FixPaScalCouple(class LAMMPS *, int narg, char **arg);
-  ~FixPaScalCouple();
+  FixParScaleCouple(class LAMMPS *, int narg, char **arg);
+  ~FixParScaleCouple();
   virtual void post_create();
   void      updatePtrs();
 
@@ -71,8 +71,8 @@ class FixPaScalCouple : public Fix  {
   double    time_;
   int       iarg_;    
 
-  // PaScal Object
-  PASCAL_NS::PaScal *pasc_;
+  // ParScale Object
+  PASCAL_NS::ParScale *pasc_;
 };
 
 } //end namespace

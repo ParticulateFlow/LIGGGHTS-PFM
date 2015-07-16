@@ -45,9 +45,9 @@ using namespace PASCAL_NS;
 using namespace FixConst;
 
 /* ----------------------------------------------------------------------
-   Constructor, calls PaScal's constructor
+   Constructor, calls ParScale's constructor
 ------------------------------------------------------------------------- */
-FixPaScalCouple::FixPaScalCouple(LAMMPS *lmp, int narg, char **arg) :
+FixParScaleCouple::FixParScaleCouple(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   fix_shellTemperature_(0),
   fix_shellHeatFlux_(0),
@@ -87,7 +87,7 @@ FixPaScalCouple::FixPaScalCouple(LAMMPS *lmp, int narg, char **arg) :
   // TODO: meed parsing here!
   // TODO: need to parse filename with pascal input
 
-  // create PaScal instance
+  // create ParScale instance
   int pascal;
   if (me < nprocs) pascal = 1;
   else pascal = MPI_UNDEFINED;
@@ -95,10 +95,10 @@ FixPaScalCouple::FixPaScalCouple(LAMMPS *lmp, int narg, char **arg) :
   MPI_Comm comm_pascal;
   MPI_Comm_split(MPI_COMM_WORLD,pascal,0,&comm_pascal);
 
-  // Open PaScal input script and create PaScal Object
+  // Open ParScale input script and create ParScale Object
   if(0 == me)
-    fprintf(screen, "\n...creating PaScal object... \n");
-  if(pascal == 1) pasc_ = new PASCAL_NS::PaScal(0, NULL, comm_pascal,lmp);
+    fprintf(screen, "\n...creating ParScale object... \n");
+  if(pascal == 1) pasc_ = new PASCAL_NS::ParScale(0, NULL, comm_pascal,lmp);
   pascal_setup_ = true;
 
   char *runDirectory = new char[128];
@@ -135,21 +135,21 @@ FixPaScalCouple::FixPaScalCouple(LAMMPS *lmp, int narg, char **arg) :
   delete [] pascalFile;
   delete [] runDirectory;
 
-  fprintf(screen, "...PaScal object initialized! \n\n");
+  fprintf(screen, "...ParScale object initialized! \n\n");
 }
 
 /* ----------------------------------------------------------------------
-   free all memory for PaScal
+   free all memory for ParScale
 ------------------------------------------------------------------------- */
 
-FixPaScalCouple::~FixPaScalCouple()
+FixParScaleCouple::~FixParScaleCouple()
 {
   delete pasc_;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixPaScalCouple::post_create()
+void FixParScaleCouple::post_create()
 {
   if(dc_)
         dc_->post_create();
@@ -157,7 +157,7 @@ void FixPaScalCouple::post_create()
     error->all(FLERR,"internal error");
 
 
-  if(verbose_) fprintf(screen, "PaScal::post_create()!\n");
+  if(verbose_) fprintf(screen, "ParScale::post_create()!\n");
   // register fixes for quantities to be saved to disk
   // see fix_property_atom.cpp for meaning of fixargs
   if(!fix_shellTemperature_)
@@ -181,14 +181,14 @@ void FixPaScalCouple::post_create()
 
 /* ---------------------------------------------------------------------- */
 
-void FixPaScalCouple::updatePtrs()
+void FixParScaleCouple::updatePtrs()
 {
     //TODO
 }
 
 /* ---------------------------------------------------------------------- */
 
-int FixPaScalCouple::setmask()
+int FixParScaleCouple::setmask()
 {
   int mask = 0;
   mask |= PRE_EXCHANGE;
@@ -198,7 +198,7 @@ int FixPaScalCouple::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-void FixPaScalCouple::init()
+void FixParScaleCouple::init()
 {
     // TODO: warn if something is wrong
 
@@ -220,11 +220,11 @@ void FixPaScalCouple::init()
 }
 
 /* ----------------------------------------------------------------------
-   make some setup calls to PaScal if necessary
+   make some setup calls to ParScale if necessary
    set-up is
 ------------------------------------------------------------------------- */
 
-void FixPaScalCouple::setup(int vflag)
+void FixParScaleCouple::setup(int vflag)
 {
 
 }
@@ -234,7 +234,7 @@ void FixPaScalCouple::setup(int vflag)
    schedule next coupling
 ------------------------------------------------------------------------- */
 
-int* FixPaScalCouple::get_liggghts_map(int &length)
+int* FixParScaleCouple::get_liggghts_map(int &length)
 {
 
     int size_map = atom->get_map_size();
@@ -251,32 +251,32 @@ int* FixPaScalCouple::get_liggghts_map(int &length)
    schedule next coupling
 ------------------------------------------------------------------------- */
 
-void FixPaScalCouple::pre_exchange()
+void FixParScaleCouple::pre_exchange()
 {
     couple_this_step_ = true;
 
     if (next_reneighbor != update->ntimestep)
-        fprintf(screen,"'premature' LIGGGHTS-PaScal coupling because of high flow dynamics\n");
+        fprintf(screen,"'premature' LIGGGHTS-ParScale coupling because of high flow dynamics\n");
 
     next_reneighbor = update->ntimestep + couple_at_least_every_;
 }
 
 /* ----------------------------------------------------------------------
-   call PaScal to catch up with LIGGGHTS
+   call ParScale to catch up with LIGGGHTS
 ------------------------------------------------------------------------- */
-void FixPaScalCouple::end_of_step()
+void FixParScaleCouple::end_of_step()
 {
     time_ += update->dt;
 
     if(!couple_this_step_)
         return;
 
-    // assemble command and run in PaScal
-    // init upon first use of PaScal, but not afterwards
+    // assemble command and run in ParScale
+    // init upon first use of ParScale, but not afterwards
 
     char commandstr[200];
     sprintf(commandstr,"control run %f init %s",time_,pascal_setup_?"yes":"no");
-    fprintf(screen,"PaScal::runCommand()!\n");
+    fprintf(screen,"ParScale::runCommand()!\n");
     pasc_->runCommand(commandstr);
 
     // reset flags and time counter
@@ -300,12 +300,12 @@ void FixPaScalCouple::end_of_step()
 }
 
 //////////////////////////////////////////////////////////////
-void* LAMMPS_NS::FixPaScalCouple::find_pull_property(const char *name, const char *type, int &len1, int &len2)
+void* LAMMPS_NS::FixParScaleCouple::find_pull_property(const char *name, const char *type, int &len1, int &len2)
 { 
     return dc_->find_pull_property(name,type,len1,len2); 
 }
 
-void* LAMMPS_NS::FixPaScalCouple::find_push_property(const char *name, const char *type, int &len1, int &len2)
+void* LAMMPS_NS::FixParScaleCouple::find_push_property(const char *name, const char *type, int &len1, int &len2)
 { 
     return dc_->find_push_property(name,type,len1,len2); 
 }
