@@ -424,7 +424,10 @@
         factorApplied *= factor;
 
       const int len = size();
+
+      #if defined(_OPENMP)
       #pragma omp parallel for firstprivate(factorApplied)
+      #endif
       for(int i = 0; i < len; i++)
             for(int j = 0; j < NUM_VEC;j++)
                 for(int k = 0; k < LEN_VEC; k++)
@@ -438,7 +441,9 @@
 
       const int len = size();
 
+      #if defined(_OPENMP)
       #pragma omp parallel for firstprivate(delta)
+      #endif
       for(int i = 0; i < len; i++)
             for(int j = 0; j < NUM_VEC; j++)
                 for(int k = 0; k < LEN_VEC; k++)
@@ -463,7 +468,9 @@
       // ATTENTION: only correct for 3D vectors
       const int len = size();
 
+      #if defined(_OPENMP)
       #pragma omp parallel for firstprivate(dQ)
+      #endif
       for(int i = 0; i < len; i++)
             for(int j = 0; j < NUM_VEC; j++)
               MathExtraLiggghts::vec_quat_rotate(arr_[i][j],dQ);

@@ -402,8 +402,8 @@ void FixContactHistoryMesh::markAllContacts()
     {
       const int nneighs = fix_nneighs_->get_vector_atom_int(i);
       keepflag_[i] = keeppage_[0]->get(nneighs);
-      //if (!keepflag_[i])
-      //  error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
+      if (!keepflag_[i])
+        error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
     }
 }
 

@@ -561,7 +561,9 @@
     if (trans) {
       if (reset) {
         // perform total rotation for data in this class
+        #if defined(_OPENMP)
         #pragma omp parallel for firstprivate(totalQ)
+        #endif
         for(int i = 0; i < n; i++)
         {
           vectorZeroize3D(center_(i));
@@ -577,7 +579,9 @@
         }
       } else {
         // perform total rotation for data in this class
+        #if defined(_OPENMP)
         #pragma omp parallel for firstprivate(totalQ)
+        #endif
         for(int i = 0; i < n; i++)
         {
           vectorZeroize3D(center_(i));
@@ -596,7 +600,9 @@
     else {
       if (reset) {
         // perform total rotation for data in this class
+        #if defined(_OPENMP)
         #pragma omp parallel for firstprivate(totalQ)
+        #endif
         for(int i = 0; i < n; i++)
         {
           vectorZeroize3D(center_(i));
@@ -610,7 +616,9 @@
         }
       } else {
         // perform total rotation for data in this class
+        #if defined(_OPENMP)
         #pragma omp parallel for firstprivate(totalQ)
+        #endif
         for(int i = 0; i < n; i++)
         {
           vectorZeroize3D(center_(i));
@@ -667,7 +675,9 @@
 
     // perform total rotation for data in this class
     //NP move into origin, rotate and move back
+    #if defined(_OPENMP)
     #pragma omp parallel for shared(dQ, origin)
+    #endif
     for(int i = 0; i < n; i++)
     {
       vectorZeroize3D(center_(i));
