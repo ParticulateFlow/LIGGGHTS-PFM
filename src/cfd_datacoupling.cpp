@@ -44,7 +44,6 @@ CfdDatacoupling::CfdDatacoupling(class LAMMPS *lmp, int jarg, int, char **, clas
     Pointers(lmp)
 {
       iarg_ = jarg;
-      this->fc_ = fc_;
       is_parallel = true;
 
       npull_ = 0;

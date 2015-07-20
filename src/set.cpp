@@ -842,7 +842,7 @@ void Set::set(int keyword)
     // set quaternion orientation of ellipsoid or tri particle
 
     else if (keyword == QUAT) {
-      double *quat;
+      double *quat = NULL;
       if (avec_ellipsoid && atom->ellipsoid[i] >= 0)
         quat = avec_ellipsoid->bonus[atom->ellipsoid[i]].quat;
       else if (avec_tri && atom->tri[i] >= 0)
@@ -988,7 +988,7 @@ void Set::setrandom(int keyword)
   } else if (keyword == QUAT_RANDOM) {
     //NP modified R.B.
     int nlocal = atom->nlocal;
-    double *quat;
+    double *quat = NULL;
 
     if (domain->dimension == 3) {
       double s,t1,t2,theta1,theta2;

@@ -93,11 +93,11 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
   int flag_outside = 0;
 
-  double **points;
+  double **points = NULL;
   int ipoint = 0, npoints = 0;
   double vert_before_rot[3], vert_after_rot[3];
 
-  int **cells;
+  int **cells = NULL;
   int icell = 0, ncells = 0;
 
   int ntets = 0;

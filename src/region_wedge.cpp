@@ -306,8 +306,8 @@ RegWedge::~RegWedge(){
  inside = 0 if x,y,z is ouside and not on surface
  -----------------------------------------------------------------------------*/
 int RegWedge::inside(double x, double y, double z){
-  double lohi, distsq, sp1, sp2;
-  double del[2];
+  double lohi=0.0, distsq, sp1, sp2;
+  double del[2]={};
 
   if (axis == 'x'){
     lohi = x;
@@ -368,8 +368,8 @@ int RegWedge::surface_interior(double *x, double cutoff){
                           // to be changed depending on which axis the wedge
                           // is aligned to
   double delta;           // ... distance from surface to particle
-  double lohi;            // ... coord of particle in dimension of axis
-  double del[2];          // ... vector from center to particle
+  double lohi = 0.0;      // ... coord of particle in dimension of axis
+  double del[2] = {};     // ... vector from center to particle
   double delxyz[2];       // ... vector from nearest point on surface to particle
   double rr;              // ... distance from point to center
 

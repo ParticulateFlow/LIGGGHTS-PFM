@@ -741,7 +741,7 @@ void FixMultisphere::set_xv(int ghostflag)
   double **ez_space = multisphere_.ez_space_.begin();
   double **omega = multisphere_.omega_.begin();
 
-  int nloop;
+  int nloop = 0;
 
   if(ghostflag == LOOP_ALL) nloop = nlocal+nghost;
   else if(ghostflag == LOOP_LOCAL) nloop = nlocal;
@@ -891,7 +891,7 @@ void FixMultisphere::set_v(int ghostflag)
   double **ey_space = multisphere_.ey_space_.begin();
   double **ez_space = multisphere_.ez_space_.begin();
 
-  int nloop;
+  int nloop = 0;
 
   if(ghostflag == LOOP_ALL) nloop = nlocal+nghost;
   else if(ghostflag == LOOP_LOCAL) nloop = nlocal;

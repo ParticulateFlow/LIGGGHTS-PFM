@@ -176,7 +176,7 @@ int Region::surface(double x, double y, double z, double cutoff)
 {
   int ncontact;
   double xs,ys,zs;
-  double xnear[3],xorig[3];
+  double xnear[3],xorig[3]={};
 
   if (varshape && update->ntimestep != lastshape) {
     shape_update();

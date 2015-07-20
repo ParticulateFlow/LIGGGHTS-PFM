@@ -410,6 +410,7 @@ void BondGran::coeff(int narg, char **arg)
   if (!allocated) allocate();
 
   double r_break_one,sigman_break_one,tau_break_one,T_break_one;
+  r_break_one = sigman_break_one = tau_break_one = T_break_one = 0.0;
 
   if(breakmode == BREAKSTYLE_SIMPLE) r_break_one = force->numeric(FLERR,arg[5]);
   else

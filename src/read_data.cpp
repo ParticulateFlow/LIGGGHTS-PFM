@@ -1688,7 +1688,7 @@ void ReadData::parse_keyword(int first, int flag)
 
 void ReadData::skip_lines(int n)
 {
-  char *eof;
+  char *eof = NULL;
   for (int i = 0; i < n; i++) eof = fgets(line,MAXLINE,fp);
   if (eof == NULL) error->one(FLERR,"Unexpected end of data file");
 }

@@ -30,7 +30,6 @@
 #include "assert.h"
 
 static const double SMALL = 1.0e-6;
-static const double BIG = 1.0e20;
 
 using namespace LAMMPS_NS;
 using namespace LIGGGHTS;

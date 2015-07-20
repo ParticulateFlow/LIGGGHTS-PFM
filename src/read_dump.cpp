@@ -217,7 +217,7 @@ void ReadDump::setup_reader(int narg, char **arg)
 bigint ReadDump::seek(bigint nrequest, int exact)
 {
   int ifile,eofflag;
-  bigint ntimestep;
+  bigint ntimestep = 0;
 
   if (me == 0) {
 
@@ -258,8 +258,8 @@ bigint ReadDump::seek(bigint nrequest, int exact)
 
 bigint ReadDump::next(bigint ncurrent, bigint nlast, int nevery, int nskip)
 {
-  int ifile,eofflag;
-  bigint ntimestep;
+  int ifile,eofflag=0;
+  bigint ntimestep = 0;
 
   if (me == 0) {
 
@@ -710,7 +710,7 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
 
 void ReadDump::process_atoms(int n)
 {
-  int i,m,ifield,itype,itag;;
+  int i,m,ifield,itype=0,itag;
   int xbox,ybox,zbox;
 
   double **x = atom->x;

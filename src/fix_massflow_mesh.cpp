@@ -328,7 +328,7 @@ void FixMassflowMesh::post_integrate()
     double *radius = atom->radius;
     double *rmass = atom->rmass;
     double *counter = fix_counter_->vector_atom;
-    double dot,delta[3];
+    double dot,delta[3]={};
     double mass_this = 0.;
     int nparticles_this = 0.;
     double property_this = 0.;

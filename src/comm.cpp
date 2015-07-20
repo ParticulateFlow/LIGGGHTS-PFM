@@ -1009,7 +1009,7 @@ void Comm::borders()
 {
   int i,n,itype,iswap,dim,ineed,twoneed,smax,rmax;
   int nsend,nrecv,sendflag,nfirst,nlast,ngroup;
-  double lo,hi;
+  double lo = 0.0,hi = 0.0;
   int *type;
   double **x;
   double *buf,*mlo,*mhi;
@@ -1019,6 +1019,7 @@ void Comm::borders()
 
   // do swaps over all 3 dimensions
 
+  nfirst = 0;
   iswap = 0;
   smax = rmax = 0;
 

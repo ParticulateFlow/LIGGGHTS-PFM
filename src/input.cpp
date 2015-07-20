@@ -928,7 +928,7 @@ void Input::partition()
 {
   if (narg < 3) error->all(FLERR,"Illegal partition command");
 
-  int yesflag;
+  int yesflag = 0;
   if (strcmp(arg[0],"yes") == 0) yesflag = 1;
   else if (strcmp(arg[0],"no") == 0) yesflag = 0;
   else error->all(FLERR,"Illegal partition command");
@@ -1368,7 +1368,7 @@ void Input::neighbor_command()
 
 void Input::newton()
 {
-  int newton_pair,newton_bond;
+  int newton_pair=1,newton_bond=1;
 
   if (narg == 1) {
     if (strcmp(arg[0],"off") == 0) newton_pair = newton_bond = 0;

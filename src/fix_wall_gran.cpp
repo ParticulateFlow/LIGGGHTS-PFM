@@ -893,7 +893,7 @@ void FixWallGran::post_force_primitive(int vflag)
   cdata.jtype = atom_type_wall_;
 
   // contact properties
-  double delta[3],deltan,rdist[3];
+  double delta[3]={},deltan,rdist[3];
   double v_wall[] = {0.,0.,0.};
   double **c_history = 0;
 
@@ -961,7 +961,7 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
   cdata.area_ratio = 1.;
 
 
-  double force_old[3], f_pw[3];
+  double force_old[3]={}, f_pw[3];
 
   // if force should be stored - remember old force
   if(store_force_ || stress_flag_)
@@ -1142,7 +1142,7 @@ void FixWallGran::init_heattransfer()
 void FixWallGran::addHeatFlux(TriMesh *mesh,int ip, double delta_n, double area_ratio)
 {
     //r is the distance between the sphere center and wall
-    double tcop, tcowall, hc, Acont, r;
+    double tcop, tcowall, hc, Acont=0.0, r;
     double reff_wall = atom->radius[ip];
     int itype = atom->type[ip];
     double ri = atom->radius[ip];
