@@ -90,14 +90,6 @@ FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
   cell_size_ideal_rel_ = force->numeric(FLERR,arg[iarg++]);
   if(cell_size_ideal_rel_ < 3.)
     error->fix_error(FLERR,this,"'cell_size_relative' > 3 required");
-
-  //NP from FixPrint
-  // add nfirst to all computes that store invocation times
-  // since don't know a priori which are invoked via variables by this fix
-  // once in end_of_step() can set timestep for ones actually invoked
-
-  bigint nfirst = (update->ntimestep/nevery)*nevery + nevery;
-  modify->addstep_compute_all(nfirst);
 }
 
 /* ---------------------------------------------------------------------- */
