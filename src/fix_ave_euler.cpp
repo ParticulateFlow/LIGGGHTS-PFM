@@ -164,7 +164,7 @@ void FixAveEuler::init()
 void FixAveEuler::setup(int vflag)
 {
     setup_bins();
-    //end_of_step();
+    end_of_step();
 }
 
 /* ----------------------------------------------------------------------
