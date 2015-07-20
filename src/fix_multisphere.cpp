@@ -464,12 +464,12 @@ void FixMultisphere::initial_integrate(int vflag)
     /*NL*/ //bool eval =  true; //13500 < update->ntimestep && 14000 > update->ntimestep;
 
     /*NL*/ //if(tag(ibody) == 88 && eval) {
-    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
+    /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
     /*NL*/ //                                      update->ntimestep,comm->me,
     /*NL*/ //                                     xcm[ibody][0],xcm[ibody][1],xcm[ibody][2],
     /*NL*/ //                                      vcm[ibody][0],vcm[ibody][1],vcm[ibody][2],
     /*NL*/ //                                      data().omega_(ibody)[0],data().omega_(ibody)[1],data().omega_(ibody)[2]);
-    /*NL*/ //    fprintf(screen,"step "BIGINT_FORMAT" proc %d, fcm %f %f %f torquecm %f %f %f\n",
+    /*NL*/ //    fprintf(screen,"step " BIGINT_FORMAT " proc %d, fcm %f %f %f torquecm %f %f %f\n",
     /*NL*/ //                                     update->ntimestep,comm->me,
     /*NL*/ //                                      fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],
     /*NL*/ //                                      torquecm[ibody][0],torquecm[ibody][1],torquecm[ibody][2]);
@@ -537,7 +537,7 @@ void FixMultisphere::final_integrate()
     /*NL*/ //bool eval =  13500 < update->ntimestep && 14000 > update->ntimestep;
 
     /*NL*/ //if(tag(ibody) == 60 && eval) {
-    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" final integrate proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
+    /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " final integrate proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
     /*NL*/ //                                      update->ntimestep,comm->me,
     /*NL*/ //                                     xcm[ibody][0],xcm[ibody][1],xcm[ibody][2],
     /*NL*/ //                                      vcm[ibody][0],vcm[ibody][1],vcm[ibody][2],
@@ -632,7 +632,7 @@ void FixMultisphere::calc_force()
     if(!domain->is_owned_or_first_ghost(i))
         continue;
 
-    /*NL*///fprintf(screen,"A step "BIGINT_FORMAT",body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
+    /*NL*///fprintf(screen,"A step " BIGINT_FORMAT ",body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
 
     vectorCopy3D(f_atom[i],f_one);
     vectorCopy3D(torque_atom[i],torque_one);
@@ -660,7 +660,7 @@ void FixMultisphere::calc_force()
     /*NL*/ //bool eval = 3100 < update->ntimestep && 3175 > update->ntimestep;
 
     /*NL*/ //if((tag(ibody) == 88) && eval) {
-    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d atom tag %d, ghost %s,pos %f %f %f f %f %f %f torque_one %f %f %f, dx %f dy %f dz %f\n",
+    /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " proc %d atom tag %d, ghost %s,pos %f %f %f f %f %f %f torque_one %f %f %f, dx %f dy %f dz %f\n",
     /*NL*/ //                                      update->ntimestep,comm->me,atag[i],i>=nlocal?"yes":"no",
     /*NL*/ //                                      x[i][0],x[i][1],x[i][2],
     /*NL*/ //                                      f_one[0],f_one[1],f_one[2],
@@ -673,7 +673,7 @@ void FixMultisphere::calc_force()
   /*NL*/ //bool eval = 18000 < update->ntimestep && 20000 > update->ntimestep;
   /*NL*/ //ibody = map(238);
   /*NL*/ //if(ibody >= 0 && eval) {
-  /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" fcm on body after summation (proc %d) %f %f %f torquecm %f %f %f\n",
+  /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " fcm on body after summation (proc %d) %f %f %f torquecm %f %f %f\n",
   /*NL*/ //                                      update->ntimestep,comm->me,
   /*NL*/ //                                      fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],
   /*NL*/ //                                      torquecm[ibody][0],torquecm[ibody][1],torquecm[ibody][2]);
@@ -803,7 +803,7 @@ void FixMultisphere::set_xv(int ghostflag)
     /*NL*/ //bool eval = true; //50000 < update->ntimestep && 55000 > update->ntimestep;
 
     /*NL*/ //if(tag(ibody) == 1 && eval) {
-    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d atom tag %d ghost %s, boxes %d %d %d \n",
+    /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " proc %d atom tag %d ghost %s, boxes %d %d %d \n",
     /*NL*/ //                                      update->ntimestep,comm->me,atag[i],i>=nlocal?"yes":"no",
     /*NL*/ //                                      xbox,ybox,zbox);
     /*NL*/ //}
@@ -987,7 +987,7 @@ void FixMultisphere::pre_exchange()
         /*NL*/ //fprintf(screen,"delfag particle %d: %f\n",atom->tag[i],delflag[i]);
         if(round(delflag[i]) == 1.)
         {
-            /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
+            /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
             avec->copy(atom->nlocal-1,i,1);
             atom->nlocal--;
         }

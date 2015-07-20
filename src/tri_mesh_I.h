@@ -73,7 +73,7 @@
     double d(0.);
 
     /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
-    /*NL*/     fprintf(screen,"step "BIGINT_FORMAT": triangle %d: edgeActive %d %d %d cornerActive %d %d %d\n",
+    /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": triangle %d: edgeActive %d %d %d cornerActive %d %d %d\n",
     /*NL*/     update->ntimestep,id(nTri),
     /*NL*/     edgeActive(nTri)[0],edgeActive(nTri)[1],edgeActive(nTri)[2],
     /*NL*/     cornerActive(nTri)[0],cornerActive(nTri)[1],cornerActive(nTri)[2]);
@@ -131,7 +131,7 @@
     /*NL*/ double deltan = d - rSphere;
     /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/ // if(5879 == id(nTri))
-    /*NL*/     fprintf(screen,"step "BIGINT_FORMAT": deltan %f\n",
+    /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": deltan %f\n",
     /*NL*/                    update->ntimestep,deltan);
 
     /*NL*/ //printVec3D(screen,"bary tri_mesh_I",bary);
@@ -183,7 +183,7 @@
       }
 
       /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
-      /*NL*/     fprintf(screen,"step "BIGINT_FORMAT": resolveEdgeContact edge %d distFromNode %f edgeLen %f | bary %f %f %f \n",
+      /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": resolveEdgeContact edge %d distFromNode %f edgeLen %f | bary %f %f %f \n",
       /*NL*/     update->ntimestep,iEdge,distFromNode,edgeLen(iTri)[iEdge],bary[0],bary[1],bary[2]);
 
       return d;

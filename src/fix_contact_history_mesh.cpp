@@ -259,7 +259,7 @@ void FixContactHistoryMesh::setup_pre_force(int dummy)
 void FixContactHistoryMesh::pre_neighbor()
 {
     build_neighlist_ = true;
-    /*NL*/ //fprintf(screen,"***building neigh list at step "BIGINT_FORMAT"\n",update->ntimestep);
+    /*NL*/ //fprintf(screen,"***building neigh list at step " BIGINT_FORMAT "\n",update->ntimestep);
 }
 
 /* ----------------------------------------------------------------------
@@ -461,7 +461,7 @@ void FixContactHistoryMesh::cleanUpContact(int i) {
       if(partner_[i][j] > -1)
       {
         --npartner_[i];
-        /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {fprintf(screen,"step "BIGINT_FORMAT" deleting contact: tri id %d, npartner %d, nneighs %d\n",update->ntimestep,partner_[i][j],npartner_[i],nneighs);
+        /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {fprintf(screen,"step " BIGINT_FORMAT " deleting contact: tri id %d, npartner %d, nneighs %d\n",update->ntimestep,partner_[i][j],npartner_[i],nneighs);
         /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
         /*NL*/ //         fprintf(screen,"    neigh %d: tri id %d\n",kk,partner_[i][kk]); }
       }
@@ -521,7 +521,7 @@ void FixContactHistoryMesh::cleanUpContactJumps()
             //NP can happen when > 1 proc in periodic dimension
             if(iTri == -1 || (iTri > -1 && !fix_neighlist_mesh_->contactInList(iTri,i)))
             {
-                /*NL*/ //if(7998 == atom->tag[i]) fprintf(screen,"step "BIGINT_FORMAT" deleting contact jump: tri id %d, npartner %d\n",update->ntimestep,partner_[i][ipartner],npartner_[i]);
+                /*NL*/ //if(7998 == atom->tag[i]) fprintf(screen,"step " BIGINT_FORMAT " deleting contact jump: tri id %d, npartner %d\n",update->ntimestep,partner_[i][ipartner],npartner_[i]);
 
                 //NP delete non-existing contact
                 //NP need to swap here so that there are no "holes" in the contact list

@@ -141,7 +141,7 @@ inline void Multisphere::release(int iatom,int body,double *v_toInsert,double *o
 
     if(start_step_(ibody) >= 0 && step >= start_step_(ibody))
     {
-        /*NL*/// fprintf(screen,"releasing body %d at step "BIGINT_FORMAT"\n",body,update->ntimestep);
+        /*NL*/// fprintf(screen,"releasing body %d at step " BIGINT_FORMAT "\n",body,update->ntimestep);
 
         // set v and omega
         vcm_.set(ibody,v_toInsert);

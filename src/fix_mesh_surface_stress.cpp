@@ -283,7 +283,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
     if(trackStress())
     {
         /*NL*/ //if(strcmp(id,"servo")==0) printVec3D(screen,"added force",frc);
-        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT", added force %f %f %f\n",update->ntimestep,frc[0],frc[1],frc[2]);
+        /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT ", added force %f %f %f\n",update->ntimestep,frc[0],frc[1],frc[2]);
 
         // add contribution to triangle force
         vectorAdd3D(f(iTri),frc,f(iTri));

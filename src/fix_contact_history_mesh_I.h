@@ -33,7 +33,7 @@
   /*NL*/ if(10024 == update->ntimestep) {
   /*NL*/        int iDeb = atom->map(DEBUG_P_TAG);
   /*NL*/        int nn = static_cast<int>(round(fix_nneighs_->vector_atom[iDeb]));
-  /*NL*/        fprintf(screen,"***contact particle id %d with tri ID %d at step "BIGINT_FORMAT", nn %d iDeb %d\n",atom->tag[iP],idTri,update->ntimestep,nn,iDeb);
+  /*NL*/        fprintf(screen,"***contact particle id %d with tri ID %d at step " BIGINT_FORMAT ", nn %d iDeb %d\n",atom->tag[iP],idTri,update->ntimestep,nn,iDeb);
   /*NL*/        for(int kk = 0; kk < nn; kk++)
   /*NL*/           fprintf(screen,"       * neigh %d of part id %d: tri id %d\n",kk,DEBUG_P_TAG ,partner_[iDeb][kk]); }
   /*NL*/}
@@ -42,7 +42,7 @@
 
   inline bool FixContactHistoryMesh::handleContact(int iP, int idTri, double *&history)
   {
-    /*NL*/ //if(DEBUG_P_TAG == atom->tag[iP]) fprintf(screen,"***contact with tri ID %d (index %d) at step "BIGINT_FORMAT"\n",idTri,iP,update->ntimestep);
+    /*NL*/ //if(DEBUG_P_TAG == atom->tag[iP]) fprintf(screen,"***contact with tri ID %d (index %d) at step " BIGINT_FORMAT "\n",idTri,iP,update->ntimestep);
 
     // check if contact with iTri was there before
     // if so, set history to correct location and return
@@ -184,7 +184,7 @@
 
       if(npartner_[iP] >= nneighs)
       {
-        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT": for particle tag %d, proc %d npartner %d nneighs %d newcontact id %d\n",update->ntimestep,atom->tag[iP],comm->me,npartner_[iP],nneighs,idTri);
+        /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT ": for particle tag %d, proc %d npartner %d nneighs %d newcontact id %d\n",update->ntimestep,atom->tag[iP],comm->me,npartner_[iP],nneighs,idTri);
         /*NL*/ //for(int kk = 0; kk < nneighs; kk++)
         /*NL*/ //    fprintf(screen,"  neigh %d: tri id %d\n",kk,partner_[iP][kk]);
         error->one(FLERR,"internal error");
@@ -217,7 +217,7 @@
       npartner_[iP]++;
 
       /*NL*/ //if(DEBUG_P_TAG == atom->tag[iP]) {
-      /*NL*/ //   fprintf(screen,"step "BIGINT_FORMAT" adding contact # %d: tri id %d, npartner %d nneighs %d\n",update->ntimestep,npartner_[iP],idTri,npartner_[iP],nneighs);
+      /*NL*/ //   fprintf(screen,"step " BIGINT_FORMAT " adding contact # %d: tri id %d, npartner %d nneighs %d\n",update->ntimestep,npartner_[iP],idTri,npartner_[iP],nneighs);
       /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
       /*NL*/ //         fprintf(screen,"    neigh %d: tri id %d\n",kk,partner_[iP][kk]); }
   }

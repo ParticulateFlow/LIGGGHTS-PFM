@@ -537,7 +537,7 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
     radi = radius[i];
     ibin = coord2bin(x[i]);
 
-    /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" looping atom tag %d, x %f %f %f\n",update->ntimestep,atom->tag[i],x[i][0],x[i][1],x[i][2]);
+    /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " looping atom tag %d, x %f %f %f\n",update->ntimestep,atom->tag[i],x[i][0],x[i][1],x[i][2]);
 
     // loop over all atoms in surrounding bins in stencil including self
     // only store pair if i < j

@@ -917,7 +917,7 @@ void FixInsert::restart(char *buf)
   // if insert was already finished in run to be restarted
   if(next_reneighbor_re != 0) next_reneighbor = next_reneighbor_re;
 
-  /*NL*/// fprintf(screen,"next_reneighbor "BIGINT_FORMAT", next_reneighbor_re "BIGINT_FORMAT"  "
+  /*NL*/// fprintf(screen,"next_reneighbor " BIGINT_FORMAT ", next_reneighbor_re " BIGINT_FORMAT "  "
   /*NL*///       "ninserted %d ninsert %d\n",next_reneighbor,next_reneighbor_re,ninserted,ninsert);
 }
 
