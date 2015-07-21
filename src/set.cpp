@@ -167,9 +167,9 @@ void Set::command(int narg, char **arg)
       set(VY);
       iarg += 2;
     } else if (strcmp(arg[iarg],"vz") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
-      else if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
-      dvalue = force->numeric(FLERR,arg[iarg+1]);
+      else dvalue = force->numeric(FLERR,arg[iarg+1]);
       set(VZ);
       iarg += 2;
     } else if (strcmp(arg[iarg],"omegax") == 0) { //NP modified C.K.
