@@ -817,7 +817,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::growSurface(int iSrf, double by)
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::shareEdge(int iSrf, int jSrf, int &iEdge, int &jEdge)
 {
-    int iNode1,jNode1,iNode2,jNode2;
+    int iNode1=0,jNode1=0,iNode2,jNode2;
     if(this->share2Nodes(iSrf,jSrf,iNode1,jNode1,iNode2,jNode2)){
       // following implementation of shareNode(), the only remaining option to
       // share an edge is that the next node of iSrf is equal to the next or previous
