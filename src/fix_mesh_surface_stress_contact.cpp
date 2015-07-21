@@ -154,7 +154,7 @@ void FixMeshSurfaceStressContact::init()
 void FixMeshSurfaceStressContact::init_area_correction()
 {
     const double *Y, *nu, *Y_orig;
-    double expo, Yeff_ij, Yeff_orig_ij, ratio;
+    double expo = 1., Yeff_ij, Yeff_orig_ij, ratio;
 
     if(area_correction_)
     {

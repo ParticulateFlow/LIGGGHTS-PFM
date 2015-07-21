@@ -43,7 +43,7 @@ inline void __trace__()
 inline void __debug__(LAMMPS* lmp)
 {
     /*NL*///fprintf(lmp->screen,"bond_hist %d bond_per_atom %d\n",lmp->atom->bond_hist,lmp->atom->bond_per_atom);
-    /*NL*///fprintf(lmp->screen,"step "BIGINT_FORMAT" nparticles %d \n",lmp->update->ntimestep,lmp->atom->nlocal);
+    /*NL*///fprintf(lmp->screen,"step " BIGINT_FORMAT " nparticles %d \n",lmp->update->ntimestep,lmp->atom->nlocal);
     /*NL*///printVec3D(lmp->screen,"pos for tag 206",lmp->atom->x[lmp->atom->map(206)]);
     /*NL*///printVec3D(lmp->screen,"vel for tag 206",lmp->atom->v[lmp->atom->map(206)]);
     /*NL*/if(1==lmp->comm->me)printVec3D(lmp->screen,"f for atom 253",lmp->atom->f[253]);//lmp->atom->f[lmp->atom->map(1)]);

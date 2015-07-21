@@ -328,7 +328,7 @@ void FixMassflowMesh::post_integrate()
     double *radius = atom->radius;
     double *rmass = atom->rmass;
     double *counter = fix_counter_->vector_atom;
-    double dot,delta[3];
+    double dot,delta[3]={};
     double mass_this = 0.;
     int nparticles_this = 0.;
     double property_this = 0.;
@@ -369,7 +369,7 @@ void FixMassflowMesh::post_integrate()
         {
             const int iPart = neighborList[iNeigh];
 
-            /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"step "BIGINT_FORMAT": checking particle tag %d\n",update->ntimestep,atom->tag[iPart]);
+            /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"step " BIGINT_FORMAT ": checking particle tag %d\n",update->ntimestep,atom->tag[iPart]);
 
             // skip ghost particles
             if(iPart >= nlocal) continue;

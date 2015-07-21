@@ -306,8 +306,8 @@ RegWedge::~RegWedge(){
  inside = 0 if x,y,z is ouside and not on surface
  -----------------------------------------------------------------------------*/
 int RegWedge::inside(double x, double y, double z){
-  double lohi, distsq, sp1, sp2;
-  double del[2];
+  double lohi=0.0, distsq, sp1, sp2;
+  double del[2]={};
 
   if (axis == 'x'){
     lohi = x;
@@ -368,8 +368,8 @@ int RegWedge::surface_interior(double *x, double cutoff){
                           // to be changed depending on which axis the wedge
                           // is aligned to
   double delta;           // ... distance from surface to particle
-  double lohi;            // ... coord of particle in dimension of axis
-  double del[2];          // ... vector from center to particle
+  double lohi = 0.0;      // ... coord of particle in dimension of axis
+  double del[2] = {};     // ... vector from center to particle
   double delxyz[2];       // ... vector from nearest point on surface to particle
   double rr;              // ... distance from point to center
 
@@ -513,7 +513,7 @@ void RegWedge::printProperty(const char *name, double val){
 
 void RegWedge::printContacts(double *x, int n){
   for (int i = 0; i<n; i++){
-    printf("step "BIGINT_FORMAT" Contact %i\n",update->ntimestep,i);
+    printf("step " BIGINT_FORMAT " Contact %i\n",update->ntimestep,i);
     printf("\tx\t: %f\t%f\t%f\n",x[0],x[1],x[2]);
     printf("\tr\t: %f\n\tdx\t: %f\n\tdy\t: %f\n\tdz\t: %f\n",contact[i].r,contact[i].delx,contact[i].dely,contact[i].delz);
   }

@@ -209,7 +209,7 @@ void FixNeighlistMesh::pre_force(int)
     changingMesh = mesh_->isMoving() || mesh_->isDeforming();
     changingDomain = (domain->nonperiodic == 2) || domain->box_change;
 
-    /*NL*/ //fprintf(screen,"***building neighbor list at timestep "BIGINT_FORMAT"\n",update->ntimestep);
+    /*NL*/ //fprintf(screen,"***building neighbor list at timestep " BIGINT_FORMAT "\n",update->ntimestep);
 
     buildNeighList = false;
     numAllContacts_ = 0;
@@ -269,7 +269,7 @@ void FixNeighlistMesh::pre_force(int)
     /*NL*/          int iAtomDeb = atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID);
     /*NL*/          int ixDeb, iyDeb, izDeb;
     /*NL*/          int iBinDeb = neighbor->coord2bin(atom->x[iAtomDeb],ixDeb, iyDeb, izDeb);
-    /*NL*/          fprintf(screen, "**step "BIGINT_FORMAT", particle id %d at bin %d (indixes %d %d %d) on proc %d, within skin to target tri %s\n",
+    /*NL*/          fprintf(screen, "**step " BIGINT_FORMAT ", particle id %d at bin %d (indixes %d %d %d) on proc %d, within skin to target tri %s\n",
     /*NL*/                      update->ntimestep,DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID,
     /*NL*/                      iBinDeb,ixDeb, iyDeb, izDeb,comm->me,
     /*NL*/                      mesh_->resolveTriSphereNeighbuild(iTriDeb,atom->radius[iAtomDeb]*neighbor->contactDistanceFactor,atom->x[iAtomDeb],skin) ? "true" : "false" );
@@ -379,7 +379,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
                 {
                   //NP include iAtom in neighbor list
                   neighbors.push_back(iAtom);
-                  /*NL*/ //if(377==atom->tag[iAtom]) fprintf(screen,"proc %d, step "BIGINT_FORMAT" adding pair tri tag %d atom ta %d to NEIGHLIST\n",comm->me,update->ntimestep,mesh_->id(iTri),atom->tag[iAtom]);
+                  /*NL*/ //if(377==atom->tag[iAtom]) fprintf(screen,"proc %d, step " BIGINT_FORMAT " adding pair tri tag %d atom ta %d to NEIGHLIST\n",comm->me,update->ntimestep,mesh_->id(iTri),atom->tag[iAtom]);
                 }
                 if(bins) iAtom = bins[iAtom];
                 else iAtom = -1;

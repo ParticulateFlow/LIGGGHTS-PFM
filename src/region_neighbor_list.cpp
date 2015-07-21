@@ -30,7 +30,6 @@
 #include "assert.h"
 
 static const double SMALL = 1.0e-6;
-static const double BIG = 1.0e20;
 
 using namespace LAMMPS_NS;
 using namespace LIGGGHTS;
@@ -79,7 +78,7 @@ bool RegionNeighborList::hasOverlap(double * x, double radius) const {
  */
 void RegionNeighborList::insert(double * x, double radius) {
   int ibin = coord2bin(x);
-  assert(ibin >= 0 && ibin <= bins.size());
+  assert(ibin >= 0 && static_cast<size_t>(ibin) <= bins.size());
 
   bins[ibin].push_back(Particle(x, radius));
   ++ncount;

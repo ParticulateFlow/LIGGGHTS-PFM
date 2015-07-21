@@ -62,7 +62,6 @@ class FixWallRegionSph : public FixSph {
   int eflag;
   double ewall[4],ewall_all[4];
   int nlevels_respa;
-  double dt;
 
   double eng,fwall;
 

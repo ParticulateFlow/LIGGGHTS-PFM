@@ -268,7 +268,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
                                 double *delta,int iTri,double *v_wall)
 {
     double E,c[3],v_rel[3],v_rel_mag,cos_gamma,sin_gamma,sin_2gamma;
-    double contactPoint[3],surfNorm[3], tmp[3], tmp2[3];
+    double contactPoint[3]={},surfNorm[3], tmp[3], tmp2[3];
 
     // do not include if not in fix group
     if(!(atom->mask[ip] & groupbit)) return;
@@ -283,7 +283,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
     if(trackStress())
     {
         /*NL*/ //if(strcmp(id,"servo")==0) printVec3D(screen,"added force",frc);
-        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT", added force %f %f %f\n",update->ntimestep,frc[0],frc[1],frc[2]);
+        /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT ", added force %f %f %f\n",update->ntimestep,frc[0],frc[1],frc[2]);
 
         // add contribution to triangle force
         vectorAdd3D(f(iTri),frc,f(iTri));

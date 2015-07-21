@@ -98,11 +98,11 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
 {
   int n,m;
 
-  double **points;
+  double **points = NULL;
   int ipoint = 0,npoints = 0;
 
-  int **cells, *lines;
-  int icell,ncells = 0;
+  int **cells = NULL, *lines = NULL;
+  int icell = 0,ncells = 0;
 
   int ntris = 0;
   int iLine = 0;

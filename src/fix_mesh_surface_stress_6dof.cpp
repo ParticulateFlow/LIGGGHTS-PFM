@@ -514,7 +514,7 @@ void FixMeshSurfaceStress6DOF::final_integrate()
     //NP update forces
     FixMeshSurfaceStress::final_integrate();
 
-    /*NL*/ //fprintf(screen,"Integration step "BIGINT_FORMAT", added force %f %f %f\n",update->ntimestep, f_total(0), f_total(1), f_total(2));
+    /*NL*/ //fprintf(screen,"Integration step " BIGINT_FORMAT ", added force %f %f %f\n",update->ntimestep, f_total(0), f_total(1), f_total(2));
 
     // update vcm by 1/2 step
 

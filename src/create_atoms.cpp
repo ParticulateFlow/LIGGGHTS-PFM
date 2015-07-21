@@ -65,7 +65,7 @@ void CreateAtoms::command(int narg, char **arg)
   if (itype <= 0 || itype > atom->ntypes)
     error->all(FLERR,"Invalid atom type in create_atoms command");
 
-  int iarg;
+  int iarg = 0;
   if (strcmp(arg[1],"box") == 0) {
     style = BOX;
     iarg = 2;
@@ -325,7 +325,7 @@ void CreateAtoms::add_random()
 {
   double xlo,ylo,zlo,xhi,yhi,zhi,zmid;
   double lamda[3],*coord;
-  double *boxlo,*boxhi;
+  double *boxlo=NULL,*boxhi=NULL;
 
   // random number generator, same for all procs
 

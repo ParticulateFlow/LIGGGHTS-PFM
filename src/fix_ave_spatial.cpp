@@ -384,7 +384,7 @@ FixAveSpatial::FixAveSpatial(LAMMPS *lmp, int narg, char **arg) :
 
   // apply scaling factors
 
-  double scale;
+  double scale = 1.0;
   for (int idim = 0; idim < ndim; idim++) {
     if (dim[idim] == 0) scale = xscale;
     else if (dim[idim] == 1) scale = yscale;
@@ -763,11 +763,13 @@ void FixAveSpatial::end_of_step()
     MPI_Allreduce(&values_many[0][0],&values_sum[0][0],nbins*nvalues,
                   MPI_DOUBLE,MPI_SUM,world);
     for (m = 0; m < nbins; m++) {
-      if (count_sum[m] > 0.0)
-        for (j = 0; j < nvalues; j++)
+      if (count_sum[m] > 0.0) {
+        for (j = 0; j < nvalues; j++) {
           if (which[j] == DENSITY_NUMBER) values_sum[m][j] /= repeat;
           else if (which[j] == DENSITY_MASS) values_sum[m][j] *= mv2d/repeat;
           else values_sum[m][j] /= count_sum[m];
+        }
+      }
       count_sum[m] /= repeat;
     }
   } else {
@@ -1071,7 +1073,7 @@ void FixAveSpatial::setup_bins()
 void FixAveSpatial::atom2bin1d()
 {
   int i,ibin;
-  double *boxlo,*boxhi,*prd;
+  double *boxlo=NULL,*boxhi=NULL,*prd=NULL;
   double xremap;
   double lamda[3];
 
@@ -1142,7 +1144,7 @@ void FixAveSpatial::atom2bin1d()
 void FixAveSpatial::atom2bin2d()
 {
   int i,ibin,i1bin,i2bin;
-  double *boxlo,*boxhi,*prd;
+  double *boxlo=NULL,*boxhi=NULL,*prd=NULL;
   double xremap,yremap;
   double lamda[3];
 
@@ -1241,7 +1243,7 @@ void FixAveSpatial::atom2bin2d()
 void FixAveSpatial::atom2bin3d()
 {
   int i,ibin,i1bin,i2bin,i3bin;
-  double *boxlo,*boxhi,*prd;
+  double *boxlo=NULL,*boxhi=NULL,*prd=NULL;
   double xremap,yremap,zremap;
   double lamda[3];
 
