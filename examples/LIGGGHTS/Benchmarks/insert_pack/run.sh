@@ -1,0 +1,10 @@
+#/bin/bash
+
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 1000
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 2000
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 10000
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 25000
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 50000
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 75000
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 100000
+$LIGGGHTS_BINARY -in in.insertPack -var NPARTICLES 150000
