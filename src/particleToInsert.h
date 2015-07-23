@@ -24,6 +24,7 @@
 
 #include "memory.h"
 #include "pointers.h"
+#include "region_neighbor_list.h"
 
 using namespace LAMMPS_NS;
 
@@ -60,6 +61,7 @@ namespace LAMMPS_NS {
 
         virtual int insert();
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
+        virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList);
         virtual int set_x_v_omega(double *,double *,double *,double *);
 
         virtual void scale_pti(double r_scale);

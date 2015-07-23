@@ -2,6 +2,7 @@ PROJECT(LIGGGHTS C CXX)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 OPTION(USE_OPENMP "OpenMP parallelization" OFF)
+OPTION(TESTING "TESTING" OFF)
 
 SET(LIGGGHTS_MAJOR_VERSION 3)
 SET(LIGGGHTS_MINOR_VERSION 0)
@@ -87,7 +88,7 @@ IF(MPI_FOUND)
 ELSE(MPI_FOUND)
   MESSAGE(STATUS "MPI NOT found! Using MPI Stubs instead.")
   ADD_SUBDIRECTORY(STUBS)
-  TARGET_LINK_LIBRARIES(liggghts STUBS)
+  TARGET_LINK_LIBRARIES(liggghts mpi_stubs)
 ENDIF(MPI_FOUND)
 
 #=======================================
@@ -117,3 +118,9 @@ ENDIF()
 install(TARGETS liggghts liggghts_bin
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib)
+
+IF(TESTING)
+  enable_testing()
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  add_subdirectory(tests)
+ENDIF(TESTING)
