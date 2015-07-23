@@ -55,7 +55,7 @@ namespace ContactModels
       hsetup->add_history_value("contactN1X", "0");
       hsetup->add_history_value("contactN1Y", "0");
       hsetup->add_history_value("contactN1Z", "0");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "SURFACE/ROUGHNESS loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "SURFACE/ROUGHNESS loaded\n");
     }
 
     inline void registerSettings(Settings&) {}

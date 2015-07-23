@@ -58,7 +58,7 @@ namespace ContactModels
       ktToKn(false),
       displayedSettings(false)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "HOOKE loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HOOKE loaded\n");
     }
 
     inline void registerSettings(Settings & settings)

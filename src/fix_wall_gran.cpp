@@ -61,7 +61,6 @@
 #include "fix_property_global.h"
 #include <vector>
 #include "granular_wall.h"
-#define NDEBUG
 #include <assert.h>
 #include <string>
 #include <sstream>
@@ -878,8 +877,6 @@ void FixWallGran::post_force_mesh(int vflag)
         }
       }
     }
-
-
 
   // clean-up contacts
   //NP i.e. delete all which have not been detected this time-step

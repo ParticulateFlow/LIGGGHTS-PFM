@@ -60,13 +60,14 @@ void PairGranProxy::settings(int nargs, char ** args)
         const char * pair_style = hybrid->keywords[i];
         int64_t variant = Factory::instance().selectVariant(pair_style, nargs, args);
         impl = Factory::instance().create(pair_style, variant, lmp, this);
+        style = pair_style;
         break;
       }
     }
+  } else {
+    int64_t variant = Factory::instance().selectVariant(style, nargs, args);
+    impl = Factory::instance().create(style, variant, lmp, this);
   }
-
-  int64_t variant = Factory::instance().selectVariant(style, nargs, args);
-  impl = Factory::instance().create(style, variant, lmp, this);
 
   int length = strlen(style);
 

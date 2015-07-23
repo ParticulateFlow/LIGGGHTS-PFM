@@ -51,7 +51,7 @@ namespace ContactModels
       history_offset = hsetup->add_history_value("r_torquex_old", "1");
       hsetup->add_history_value("r_torquey_old", "1");
       hsetup->add_history_value("r_torquez_old", "1");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "EPSD loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "EPSD loaded\n");
     }
 
     void registerSettings(Settings&) {}

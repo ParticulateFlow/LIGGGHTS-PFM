@@ -44,7 +44,7 @@ namespace ContactModels {
 
     CohesionModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), cohEnergyDens(NULL)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "COHESION/SJKR loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "COHESION/SJKR loaded\n");
     }
 
     void registerSettings(Settings&) {}
