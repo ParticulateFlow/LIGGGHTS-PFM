@@ -50,33 +50,24 @@ namespace ContactModels {
       Pointers(lmp), 
       liquidVolume(0.0), 
       surfaceTension(0.0), 
-      switchModel(0.0), 
-      historyIndex(0.0)
+      subModel(0)
     {
-      //Check if liquidtracking fix is used
-      #if 1
-      int i = modify->find_fix("liquidtransfer");
-      if (i < 0) liquidtracking = false;
-      else liquidtracking = true;
-      #endif
-
-      //If no liquid tracking fix used "contflag" is required to indicate bridge 
-      if(!liquidtracking) {      
+      // "contflag" is required to indicate bridge
       history_offset = hsetup->add_history_value("contflag", "0");
-      }
     }
 
-    void registerSettings(Settings&) {}
+    void registerSettings(Settings& settings) {
+      NamedIntegerSetting* subModelSetting = settings.registerNamedIntegerSetting("subModel", subModel, 0);
+      subModelSetting->addOption("Mikami", 0);
+      subModelSetting->addOption("Willett", 1);
+      subModelSetting->setDefault("Mikami");
+    }
 
     void connectToProperties(PropertyRegistry & registry) {
       registry.registerProperty("liquidVolume", &MODEL_PARAMS::createLiquidVolume);
       registry.registerProperty("surfaceTension", &MODEL_PARAMS::createSurfaceTension);
-      registry.registerProperty("switchModel", &MODEL_PARAMS::createSwitchModel);
-      registry.registerProperty("historyIndex", &MODEL_PARAMS::createHistoryIndex);
       registry.connect("liquidVolume", liquidVolume,"cohesion_model capilary");
       registry.connect("surfaceTension", surfaceTension,"cohesion_model capilary");
-      registry.connect("switchModel", switchModel,"cohesion_model capilary");
-      registry.connect("historyIndex", historyIndex,"cohesion_model capilary");
     }
 
     void beginPass(CollisionData&, ForceData&, ForceData&){}
@@ -84,15 +75,10 @@ namespace ContactModels {
 
     void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
     {
-
-      if (liquidtracking) history_offset = 0; //if liquidtracking fix is used no "contflag" required
-      Index = static_cast<int> (historyIndex);
-
       //r is the distance between the sphere's centeres
       const double r = cdata.r;
       const double radi = cdata.radi;
       const double radj = cdata.radj;
-      double Fn_coh(0.0);
 
       if(cdata.touch) *cdata.touch |= TOUCH_COHESION_MODEL;
       double * const hist = &cdata.contact_history[history_offset];
@@ -103,21 +89,21 @@ namespace ContactModels {
       const double volLi = (4./3.)*M_PI*radi*radi*radi*liquidVolume;  
       const double volLj = (4./3.)*M_PI*radj*radj*radj*liquidVolume; 
 
-      double volBond;
-      if (liquidtracking) volBond = hist[Index];
-      else volBond = (volLi+volLj);   
+      const double volBond = (volLi+volLj);
       const double lBond = volBond/(R2*R2*R2);
+
+      double Fn_coh = 0.0;
     
       //Section - Model Selection
-     if (switchModel ==0) 
-     {
-      #   include "cohesion_model_capillary_model_Mikami.h"
-     }
+      switch(subModel) {
+        case 0:
+          Fn_coh = compute_force_mikami(lBond, radi, radj, delta);
+          break;
 
-     if (switchModel ==1) 
-     {
-      #   include "cohesion_model_capillary_model_Willett.h"
-     }
+        case 1:
+          Fn_coh = compute_force_willet(lBond, radi, radj, delta);
+          break;
+      }
 
       cdata.Fn += Fn_coh;
 
@@ -134,15 +120,11 @@ namespace ContactModels {
       j_forces.delta_F[1] -= fy;
       j_forces.delta_F[2] -= fz;
     
-      // store for noCollision (when no fix liquidtracking is used)
-      if (!liquidtracking) hist[0] = 1.0;
+      // store for noCollision
+      hist[0] = 1.0;
     }
 
     void noCollision(ContactData & cdata, ForceData & i_forces, ForceData & j_forces) {
-
-      if (liquidtracking) history_offset = 0; //if liquidtracking fix is used no "contflag" required
-      Index = static_cast<int> (historyIndex);
-
       const double r = sqrt(cdata.rsq);
       const double rinv = 1/r;
       const double radi = cdata.radi;
@@ -155,34 +137,26 @@ namespace ContactModels {
       const double volLi = (4./3.)*M_PI*radi*radi*radi*liquidVolume;
       const double volLj = (4./3.)*M_PI*radj*radj*radj*liquidVolume;
 
-      double volBond;
-      if (liquidtracking) volBond = hist[Index]; //Index '3' to be used only if tangential history model is used.
-      else volBond = (volLi+volLj);
+      const double volBond = (volLi+volLj);
       const double lBond = volBond/(R2*R2*R2);
       const double delta = dist/R2;
-
-      no_collision = false; 
 
       const double deltaMax = pow(volBond,(1./3.));
 
       //if liquid bridge exists "no_collision" is true. Force calculation only if liquid bridge exists. 
-      if (((dist < deltaMax) && (MathExtraLiggghts::compDouble(hist[0],1.0,1e-6)) && (!liquidtracking)) || ((hist[Index]>0) && (liquidtracking)))
-        no_collision = true;
-
-      if (no_collision)
+      if((dist < deltaMax) && (MathExtraLiggghts::compDouble(hist[0],1.0,1e-6)))
       {
+        switch(subModel) {
+          case 0:
+            Fn_coh = compute_force_mikami(lBond, radi, radj, delta);
+            break;
 
-       if (switchModel ==0) 
-       {
-        #   include "cohesion_model_capillary_model_Mikami.h"
-       }
+          case 1:
+            Fn_coh = compute_force_willet(lBond, radi, radj, delta);
+            break;
+        }
 
-       if (switchModel ==1) 
-       {
-        #   include "cohesion_model_capillary_model_Willett.h"
-       }
-
-       // apply normal force
+        // apply normal force
         const double fx = Fn_coh * cdata.delta[0] * rinv;
         const double fy = Fn_coh * cdata.delta[1] * rinv;
         const double fz = Fn_coh * cdata.delta[2] * rinv;
@@ -200,17 +174,89 @@ namespace ContactModels {
       }
       else
       {
-        if (!liquidtracking) hist[0]=0.0; //(when no fix liquidtracking is used)
+        hist[0] = 0.0;
 
         if(cdata.touch) *cdata.touch &= ~TOUCH_COHESION_MODEL;
       }
     }
 
+    /**
+     * Mikami's Capillary Force Model
+     * Mikami et al., CES 1998, 50(16)
+     */
+    double compute_force_mikami(double lBond, double radi, double radj, double delta) {
+      const double Aparam = -1.1*pow((max(1e-64,lBond)),-0.53);
+      const double Bparam = -0.0082*log(max(1e-64,lBond))+0.48;
+      const double Cparam = 0.0018*log(max(1e-64,lBond))+0.078;
+
+      if (delta > 0) {
+        return - M_PI*surfaceTension*sqrt(radi*radj)*(exp(Aparam*delta+Bparam)+Cparam);
+      }
+      return - M_PI*surfaceTension*sqrt(radi*radj)*(exp(Bparam)+Cparam);
+    }
+
+    /*
+     * Willett's Capillary Force Model
+     * Willett et al., Langmuir 2000,16
+     */
+    double compute_force_willet(double lBond, double radi, double radj, double delta) {
+      double Fn_coh = 0.0;
+      double tmpVar  = 2.3*log(max(1e-64,lBond));
+      double tmpVar2 = tmpVar*tmpVar;
+      double tmpVar3 = tmpVar*tmpVar2;
+
+      double f1 = (-0.44507)
+         + (-0.1119)    * tmpVar
+         + (-0.0121010) * tmpVar2
+         + (-0.000500)  * tmpVar3;
+
+      double f2 = (1.9222)
+         + (-0.0668)    * tmpVar
+         + (-0.0013375) * tmpVar2;
+
+      double f3 = (1.268)
+         + (0.19800)    * tmpVar
+         + (0.02232000) * tmpVar2
+         + (0.0008585)  * tmpVar3;
+
+      double f4 = (-0.010703)
+         + (0.03345)    * tmpVar
+         + (0.00185740) * tmpVar2;
+
+      if (delta > 0)
+      {
+        double tmpVar_1= 2.3 *log(0.5*delta);
+        Fn_coh = - 2.0 * M_PI
+                       * surfaceTension
+                       * sqrt(radi *radj)
+                       * (
+                          exp(
+                                f1
+                               -(
+                                    f2 * exp(
+                                               f3 * tmpVar_1
+                                              +f4 * tmpVar_1 * tmpVar_1
+                                            )
+                                )
+                             )
+                         );
+      }
+      else
+      {
+        Fn_coh = - 2.0 * M_PI
+                       * surfaceTension
+                       * sqrt(radi *radj)
+                       * exp(f1);
+      }
+
+      return Fn_coh;
+    }
+
+
   private:
-    double liquidVolume, surfaceTension, switchModel;
-    double historyIndex;
-    int history_offset, Index;
-    bool liquidtracking, no_collision;
+    double liquidVolume, surfaceTension;
+    int history_offset;
+    int subModel;
   };
 }
 }
