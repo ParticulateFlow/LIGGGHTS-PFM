@@ -16,7 +16,7 @@ for ii=1:nFiles
     iName = filelist(ii).name;
     disp(['Processing ',iName,' ...']);
     % values
-    rdata = importdata(fullfile(dirfile,iName));
+    rdata = importdata(fullfile(dirfile,iName), ' ');
 
     % get data from file name
     [flags] = regexp(iName,expr,'match');

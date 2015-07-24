@@ -16,7 +16,7 @@ for ii=1:nFiles
     iName = filelist(ii).name;
     disp(['Processing ',iName,' ...']);
     % values
-    rdata = importdata(fullfile(dirfile,iName)); % matlab-version
+    rdata = importdata(fullfile(dirfile,iName), ' ');
 
     data(ii).name = iName;
     data(ii).header = rdata.textdata;
