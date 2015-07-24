@@ -40,8 +40,9 @@ namespace LIGGGHTS {
 namespace ContactModels {
   using namespace std;
   using namespace LAMMPS_NS;
-  template<typename Style>
-  class CohesionModel<COHESION_CAPILLARY, Style> : protected Pointers {
+
+  template<>
+  class CohesionModel<COHESION_CAPILLARY> : protected Pointers {
   public:
     static const int MASK = CM_CONNECT_TO_PROPERTIES | CM_COLLISION | CM_NO_COLLISION;
 
