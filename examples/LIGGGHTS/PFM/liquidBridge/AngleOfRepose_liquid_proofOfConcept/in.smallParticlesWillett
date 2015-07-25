@@ -117,11 +117,11 @@ variable time equal step*dt
 fix			dmpTH all print 100 "${time} ${vave}" screen no title "t vave" file post/vave.txt
 label loop
   print "-----> Checking Velocity..."
-  if "${vave}<${vthre}" then "jump in.smallParticles endloop"
+  if "${vave}<${vthre}" then "jump SELF endloop"
   print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
   set group all vx 0. vy 0. vz 0.
   run 1000
-jump in.smallParticles loop
+jump SELF loop
 label endloop
 #################################################
 
@@ -141,11 +141,11 @@ variable vcmz equal vcm(all,z)
 variable vave equal sqrt(v_vcmx*v_vcmx+v_vcmy*v_vcmy+v_vcmz*v_vcmz)
 label loop2
   print "-----> Checking Velocity..."
-  if "${vave}<${vthre}" then "jump in.smallParticles endloop2"
+  if "${vave}<${vthre}" then "jump SELF endloop2"
   print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
   set group all vx 0. vy 0. vz 0.
   run 1000
-jump in.smallParticles loop2
+jump SELF loop2
 label endloop2
 #################################################
 
