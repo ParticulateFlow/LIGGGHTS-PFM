@@ -55,7 +55,7 @@ fix 		m6 all property/global liquidVolume scalar ${VLiqu}
 fix		    m7 all property/global surfaceTension scalar ${sigma}
 
 #New pair style
-pair_style 	gran model hertz tangential history cohesion capillary rolling_friction cdt subModel Willett #Hertzian with cohesion
+pair_style 	gran model hertz tangential history cohesion capillary rolling_friction cdt capillaryModel Willett #Hertzian with cohesion
 pair_coeff	* *
 
 timestep	${dt}

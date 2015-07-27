@@ -50,17 +50,17 @@ namespace ContactModels {
       Pointers(lmp), 
       liquidVolume(0.0), 
       surfaceTension(0.0), 
-      subModel(0)
+      capillaryModel(0)
     {
       // "contflag" is required to indicate bridge
       history_offset = hsetup->add_history_value("contflag", "0");
     }
 
     void registerSettings(Settings& settings) {
-      NamedIntegerSetting* subModelSetting = settings.registerNamedIntegerSetting("subModel", subModel, 0);
-      subModelSetting->addOption("Mikami", 0);
-      subModelSetting->addOption("Willett", 1);
-      subModelSetting->setDefault("Mikami");
+      NamedIntegerSetting* capillaryModelSetting = settings.registerNamedIntegerSetting("capillaryModel", capillaryModel, 0);
+      capillaryModelSetting->addOption("Mikami", 0);
+      capillaryModelSetting->addOption("Willett", 1);
+      capillaryModelSetting->setDefault("Mikami");
     }
 
     void connectToProperties(PropertyRegistry & registry) {
@@ -95,7 +95,7 @@ namespace ContactModels {
       double Fn_coh = 0.0;
     
       //Section - Model Selection
-      switch(subModel) {
+      switch(capillaryModel) {
         case 0:
           Fn_coh = compute_force_mikami(lBond, radi, radj, delta);
           break;
@@ -146,7 +146,7 @@ namespace ContactModels {
       //if liquid bridge exists "no_collision" is true. Force calculation only if liquid bridge exists. 
       if((dist < deltaMax) && (MathExtraLiggghts::compDouble(hist[0],1.0,1e-6)))
       {
-        switch(subModel) {
+        switch(capillaryModel) {
           case 0:
             Fn_coh = compute_force_mikami(lBond, radi, radj, delta);
             break;
@@ -256,7 +256,7 @@ namespace ContactModels {
   private:
     double liquidVolume, surfaceTension;
     int history_offset;
-    int subModel;
+    int capillaryModel;
   };
 }
 }
