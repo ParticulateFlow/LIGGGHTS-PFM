@@ -156,6 +156,9 @@ class FixInsert : public Fix {
   int print_stats_start_flag;
   int print_stats_during_flag;
 
+  // warn if box extent too small for insertion
+  bool warn_boxentent;
+
   class FixMultisphere *fix_multisphere;
   class MultisphereParallel *multisphere;
 
@@ -187,7 +190,7 @@ class FixInsert : public Fix {
 
   bool setup_flag;
 
-  int distribute_ninsert_this(int);
+  virtual int distribute_ninsert_this(int);
 };
 
 }

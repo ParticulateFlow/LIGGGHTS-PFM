@@ -368,19 +368,26 @@ void FixInsert::init_defaults()
   quat_random_ = false;
 
   print_stats_during_flag = 1;
+  warn_boxentent = true;
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixInsert::sanity_check()
 {
-    if(fix_distribution == NULL) error->fix_error(FLERR,this,"have to define a 'distributiontemplate'");
-    if(vectorMag4DSquared(quat_insert) != 1.) error->fix_error(FLERR,this,"quaternion not valid");
+    if(fix_distribution == NULL)
+      error->fix_error(FLERR,this,"have to define a 'distributiontemplate'");
 
-    if(ninsert > 0 && massinsert > 0.) error->fix_error(FLERR,this,"must not define both 'nparticles' and 'mass'");
-    if(nflowrate > 0. && massflowrate > 0.) error->fix_error(FLERR,this,"must not define both 'particlerate' and 'massrate'");
+    if(MathExtraLiggghts::abs(vectorMag4DSquared(quat_insert)-1.) > 1e-10)
+      error->fix_error(FLERR,this,"quaternion not valid");
 
-    if(insert_every == 0 && (massflowrate > 0. || nflowrate > 0.)) error->fix_error(FLERR,this,"must not define 'particlerate' or 'massrate' for 'insert_every' = 0");
+    if(ninsert > 0 && massinsert > 0.)
+      error->fix_error(FLERR,this,"must not define both 'nparticles' and 'mass'");
+    if(nflowrate > 0. && massflowrate > 0.)
+      error->fix_error(FLERR,this,"must not define both 'particlerate' and 'massrate'");
+
+    if(insert_every == 0 && (massflowrate > 0. || nflowrate > 0.))
+      error->fix_error(FLERR,this,"must not define 'particlerate' or 'massrate' for 'insert_every' = 0");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -426,16 +433,16 @@ void FixInsert::print_stats_start()
 
 void FixInsert::print_stats_during(int ninsert_this, double mass_inserted_this)
 {
-  int step = update->ntimestep;
+  bigint step = update->ntimestep;
 
   if (me == 0 && print_stats_during_flag)
   {
     if (screen)
-      fprintf(screen ,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step %d\n - a total of %d particle templates (mass %f) inserted so far.\n",
+      fprintf(screen ,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step " BIGINT_FORMAT "\n - a total of %d particle templates (mass %f) inserted so far.\n",
               id,ninsert_this,mass_inserted_this,step,ninserted,massinserted);
 
     if (logfile)
-      fprintf(logfile,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step %d\n - a total of %d particle templates (mass %f) inserted so far.\n",
+      fprintf(logfile,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step " BIGINT_FORMAT "\n - a total of %d particle templates (mass %f) inserted so far.\n",
               id,ninsert_this,mass_inserted_this,step,ninserted,massinserted);
   }
 }
@@ -617,7 +624,7 @@ void FixInsert::pre_exchange()
   int min_dim;
   domain->min_subbox_extent(min_subbox_extent,min_dim);
 
-  if(min_subbox_extent < 2.2 *max_r_bound())
+  if(warn_boxentent && min_subbox_extent < 2.2 *max_r_bound())
   {
       char msg[200];
       sprintf(msg,"Particle insertion on proc %d: sub-domain too small to insert particles: \nMax. bounding "
