@@ -75,6 +75,8 @@ FixNeighlistMesh::FixNeighlistMesh(LAMMPS *lmp, int narg, char **arg)
 
     caller_ = static_cast<FixMeshSurface*>(modify->find_fix_id(arg[3]));
     mesh_ = caller_->triMesh();
+
+    groupbit_wall_mesh = groupbit;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -369,7 +371,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
               //NP only handle local atoms
               while(iAtom != -1 && iAtom < nlocal)
               {
-                if(! (mask[iAtom] & groupbit))
+                if(! (mask[iAtom] & groupbit_wall_mesh))
                 {
                     if(bins) iAtom = bins[iAtom];
                     else iAtom = -1;
@@ -405,7 +407,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
           int iAtom = binhead[iBin];
           while(iAtom != -1 && iAtom < nlocal)
           {
-            if(! (mask[iAtom] & groupbit))
+            if(! (mask[iAtom] & groupbit_wall_mesh))
             {
                 if(bins) iAtom = bins[iAtom];
                 else iAtom = -1;
