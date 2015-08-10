@@ -44,6 +44,8 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   double max_r_bound();
   double max_rad();
   double min_rad();
+  int maxtype();
+  int mintype();
   int number_spheres();
 
   // single insertion
@@ -78,6 +80,9 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
 
   // scale factor if read from a file
   double scale_fact;
+
+  // atom type might be variable if read from file
+  int *atom_type_sphere;
 
   // bounding box
   double x_min[3], x_max[3];

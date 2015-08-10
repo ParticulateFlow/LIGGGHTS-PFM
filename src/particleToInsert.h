@@ -55,8 +55,15 @@ namespace LAMMPS_NS {
         double r_bound_ins;
 
         // per-sphere radius, position
+        // if atom_type_vector exists, each sphere has different type
         double *radius_ins;
         double **x_ins;
+        bool atom_type_vector_flag;
+        int *atom_type_vector;
+
+        // center of bounding sphere
+        
+        double x_bound_ins[3];
 
         // velocity and omega at insertion
         //NP is per-body

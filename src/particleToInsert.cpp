@@ -34,6 +34,7 @@
 #include "atom_vec.h"
 #include "fix.h"
 #include "vector_liggghts.h"
+#include "math_extra_liggghts.h"
 #include "modify.h"
 
 using namespace LAMMPS_NS;
@@ -46,6 +47,9 @@ ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) : Pointers(lmp)
 
         memory->create(x_ins,nspheres,3,"x_ins");
         radius_ins = new double[nspheres];
+
+        atom_type_vector = new int[nspheres];
+        atom_type_vector_flag = false;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -54,6 +58,7 @@ ParticleToInsert::~ParticleToInsert()
 {
         memory->destroy(x_ins);
         delete []radius_ins;
+        delete []atom_type_vector;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -76,7 +81,10 @@ int ParticleToInsert::insert()
         //{
                 /*NL*/ //fprintf(screen,"   proc %d inserting particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
                 inserted++;
-                atom->avec->create_atom(atom_type,x_ins[i]);
+                if(atom_type_vector_flag)
+                    atom->avec->create_atom(atom_type_vector[i],x_ins[i]);
+                else
+                    atom->avec->create_atom(atom_type,x_ins[i]);
                 int m = atom->nlocal - 1;
                 atom->mask[m] = 1 | groupbit;
                 vectorCopy3D(v_ins,atom->v[m]);
@@ -101,6 +109,9 @@ int ParticleToInsert::insert()
 
 int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear)
 {
+    if(nspheres > 1)
+        error->one(FLERR,"check_near_set_x_v_omega not implemented yet for nspheres>1");
+
     // check sphere against all others in xnear
     // if no overlap add to xnear
     double del[3], rsq, radsum;
@@ -134,6 +145,9 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
 
 int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList)
 {
+    if(nspheres > 1)
+        error->one(FLERR,"check_near_set_x_v_omega not implemented yet for nspheres>1");
+
     vectorCopy3D(x,x_ins[0]);
 
     if(neighList.hasOverlap(x_ins[0], radius_ins[0])) {
@@ -157,10 +171,23 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
 
 int ParticleToInsert::set_x_v_omega(double *x, double *v, double *omega, double *quat)
 {
+    double rel[3];
+
     // add insertion position
     // relative position of spheres to each other already stored at this point
+    // also take quat into account
     for(int j = 0; j < nspheres; j++)
-        vectorAdd3D(x_ins[j],x,x_ins[j]);
+    {
+        // if only one sphere, then x_bound = x_ins
+        if(1 == nspheres)
+            vectorAdd3D(x_ins[j],x,x_ins[j]);
+        else
+        {
+            vectorSubtract3D(x_ins[j],x_bound_ins,rel);
+            MathExtraLiggghts::vec_quat_rotate(rel,quat);
+            vectorAdd3D(rel,x,x_ins[j]);
+        }
+    }
 
     // set velocity and omega
     vectorCopy3D(v,v_ins);
