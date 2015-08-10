@@ -261,6 +261,12 @@ void FixNeighlistMesh::pre_force(int)
       generate_bin_list(nall);
     }
 
+    // manually trigger binning if no pairwise neigh lists exist
+    if(0 == neighbor->n_blist() && bins)
+        neighbor->bin_atoms();
+    else if(!bins)
+        error->one(FLERR,"wrong neighbor setting for fix neighlist/mesh");
+
     /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID <= atom->get_map_size() && update->ntimestep > 0 &&
     /*NL*/      atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID) >= 0)
     /*NL*/ {
