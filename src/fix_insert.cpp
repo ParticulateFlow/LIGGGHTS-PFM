@@ -665,6 +665,9 @@ void FixInsert::pre_exchange()
   /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 5\n");}
 
   // actual particle insertion
+
+  fix_distribution->pre_insert();
+
   //NP pti list is body list, so use ninserted_this as arg
   ninserted_spheres_this_local = fix_distribution->insert(ninserted_this_local);
 
