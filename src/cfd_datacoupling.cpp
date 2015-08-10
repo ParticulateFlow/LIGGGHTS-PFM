@@ -71,6 +71,8 @@ CfdDatacoupling::~CfdDatacoupling()
         memory->destroy(pulltypes_);
         memory->destroy(pushnames_);
         memory->destroy(pushtypes_);
+        memory->destroy(pushinvoked_);
+        memory->destroy(pullinvoked_);
 }
 
 /* ---------------------------------------------------------------------- */

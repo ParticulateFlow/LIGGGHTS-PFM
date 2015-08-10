@@ -62,7 +62,8 @@ CfdDatacouplingMPI::CfdDatacouplingMPI(LAMMPS *lmp,int iarg, int narg, char **ar
 
 CfdDatacouplingMPI::~CfdDatacouplingMPI()
 {
-    //NP should destroy allreduce array here
+    memory->sfree(allred_double);
+    memory->sfree(allred_int);
 }
 
 /* ---------------------------------------------------------------------- */
