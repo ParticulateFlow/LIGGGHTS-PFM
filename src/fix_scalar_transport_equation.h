@@ -35,22 +35,24 @@ class FixScalarTransportEquation : public Fix {
  public:
   FixScalarTransportEquation(class LAMMPS *, int, char **);
   ~FixScalarTransportEquation();
-  int setmask();
-  void post_create();
-  void pre_delete(bool unfixflag);
-  void init();
-  int modify_param(int narg, char **arg);
-  void updatePtrs();
-  void initial_integrate_respa(int,int,int);
-  void initial_integrate(int);
-  void pre_force(int vflag);
-  void final_integrate();
-  double compute_scalar();
+
+  virtual int setmask();
+  virtual void post_create();
+  virtual void pre_delete(bool unfixflag);
+  virtual void init();
+  virtual int modify_param(int narg, char **arg);
+  virtual void updatePtrs();
+  virtual void initial_integrate_respa(int,int,int);
+  virtual void initial_integrate(int);
+  virtual void pre_force(int vflag);
+  virtual void final_integrate();
+  virtual double compute_scalar();
   bool match_equation_id(const char*);
 
   double *get_capacity();
 
- private:
+ protected:
+
   int nlevels_respa;
 
   char *equation_id;

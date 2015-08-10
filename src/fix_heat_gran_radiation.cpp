@@ -28,7 +28,7 @@
 #include "fix_property_global.h"
 #include "math_const.h"
 #include "math_extra.h"
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "modify.h"
 #include "neigh_list.h"
 #include "force.h"
@@ -185,7 +185,7 @@ void FixHeatGranRad::init(){
 
   // find mechanical-parameter-granular "emissivity" and fetch data
   // if "emissivity" not found: error handling happens inside find_fix_property().
-  int max_type = pair_gran->mpg->max_type();
+  int max_type = pair_gran->get_properties()->max_type();
   if (emissivity){
     delete [] emissivity;
   }

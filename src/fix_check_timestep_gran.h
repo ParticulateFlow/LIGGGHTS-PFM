@@ -42,7 +42,7 @@ class FixCheckTimestepGran : public Fix {
   double compute_vector(int);
 
  private:
-  class MechParamGran* mpg;
+  class Properties* properties;
   class PairGran* pg;
   class FixWallGran* fwg;
   class FixPropertyGlobal* Y;
