@@ -92,9 +92,6 @@ void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from)
     // check memory allocation
     T* allred = check_grow<T>(len1*len2);
 
-    // zeroize before using allreduce
-    vectorZeroizeN(allred,len1*len2);
-
     // perform allreduce on incoming data
     T **from_t = (T**)from;
     MPI_Allreduce(&(from_t[0][0]),&(allred[0]),len1*len2,mpi_type_dc<T>(),MPI_SUM,world);
