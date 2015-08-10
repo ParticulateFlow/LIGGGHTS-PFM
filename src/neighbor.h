@@ -106,6 +106,7 @@ class Neighbor : protected Pointers {
   int exclude_setting();
   int neigh_once(){return build_once;} //NP modified C.K.
   int n_neighs(); //NP modified C.K.
+  int n_blist() {return nblist;} 
 
   //NP modified C.K.
   void multi_levels(double &, double &, int &);
