@@ -85,10 +85,12 @@ int ParticleToInsert::insert()
                 atom->density[m] = density_ins;
                 atom->rmass[m] = mass_ins;
 
+                //pre_set_arrays() called above
                 for (int j = 0; j < nfix; j++)
                    if (fix[j]->create_attribute) fix[j]->set_arrays(m);
         //}
     }
+    
     return inserted;
 }
 
