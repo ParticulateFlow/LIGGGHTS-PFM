@@ -25,6 +25,7 @@
 #include "update.h"
 #include "respa.h"
 #include "error.h"
+#include "neighbor.h"
 #include "memory.h"
 #include "modify.h"
 #include "group.h"
@@ -153,6 +154,11 @@ void FixCfdCouplingConvection::post_force(int)
 {
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
+
+  // communicate convective flux to ghosts, there might be new data
+  
+  if(0 == neighbor->ago)
+        fix_convectiveFlux->do_forward_comm();
 
   double *heatFlux = fix_heatFlux->vector_atom;
   double *convectiveFlux = fix_convectiveFlux->vector_atom;
