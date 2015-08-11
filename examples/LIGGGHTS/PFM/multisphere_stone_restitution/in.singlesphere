@@ -1,6 +1,6 @@
 #Multisphere
 
-atom_style	hybrid sphere molecular
+atom_style	sphere
 atom_modify	map array sort 0 0
 boundary	m m m
 newton		off
@@ -15,8 +15,6 @@ create_box	1 reg
 
 neighbor	0.004 bin
 neigh_modify	delay 0
-
-mass		1 1.0
 
 #Material properties required for new pair styles
 
@@ -59,7 +57,7 @@ thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
-dump		dmp all custom 200 post/dump*.single id type mol x y z vx vy vz fx fy fz omegax omegay omegaz radius
+dump		dmp all custom 200 post/dump*.single id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 #insert particles
 run		40000 upto
