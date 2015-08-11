@@ -33,7 +33,7 @@
 #include <map>
 #include <set>
 #include <string>
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "error.h"
 #include "modify.h"
 
@@ -149,7 +149,7 @@ typedef VectorProperty* (*VectorPropertyCreator)(PropertyRegistry & registry, co
 typedef MatrixProperty* (*MatrixPropertyCreator)(PropertyRegistry & registry, const char * caller, bool sanity_checks);
 
 class PropertyRegistry : protected Pointers {
-  MechParamGran mpg;
+  Properties properties;
 
 public:
   PropertyRegistry(LAMMPS* lmp);

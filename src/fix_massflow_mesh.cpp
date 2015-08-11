@@ -48,12 +48,16 @@ using namespace FixConst;
 
 FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
+  once_(false),
+  delete_atoms_(false),
+  mass_deleted_(0.),
+  nparticles_deleted_(0),
+  fix_orientation_(0),
   fix_mesh_(0),
   fix_counter_(0),
   fix_neighlist_(0),
   havePointAtOutlet_(false),
   insideOut_(false),
-  once_(false),
   mass_(0.),
   nparticles_(0),
   fix_property_(0),
@@ -65,9 +69,6 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
   t_count_(0.),
   delta_t_(0.),
   reset_t_count_(true),
-  delete_atoms_(false),
-  mass_deleted_(0.),
-  nparticles_deleted_(0),
   fix_ms_(0),
   ms_(0),
   ms_counter_(0)
@@ -175,7 +176,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             else error->all(FLERR,"Illegal delete command");
             iarg += 2;
             hasargs = true;
-        } else
+        } else if(strcmp("style","massflow/mesh") == 0)
             error->fix_error(FLERR,this,"unknown keyword");
     }
 
@@ -339,6 +340,9 @@ void FixMassflowMesh::post_integrate()
     bool fixColFound = false;
     if (fix_color) fixColFound=true;
 
+    fix_orientation_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("ex",
+        "property/atom","vector",0,0,style,false));
+
     TriMesh *mesh = fix_mesh_->triMesh();
     int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
 
@@ -438,21 +442,21 @@ void FixMassflowMesh::post_integrate()
                                        v[iPart][0],v[iPart][1],v[iPart][2]);
                     if(fp_)
                     {
-                        if (fixColFound)
-                        {
-                            fprintf(fp_," %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.0g \n ",
-                                   tag[iPart],2.*radius[iPart]/force->cg(),
-                                   x[iPart][0],x[iPart][1],x[iPart][2],
-                                   v[iPart][0],v[iPart][1],v[iPart][2],
-                                   fix_color->vector_atom[iPart]);
-                        }
-                        else
-                        {
-                            fprintf(fp_," %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g \n ",
+                        fprintf(fp_," %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g",
                                    tag[iPart],2.*radius[iPart]/force->cg(),
                                    x[iPart][0],x[iPart][1],x[iPart][2],
                                    v[iPart][0],v[iPart][1],v[iPart][2]);
+                        if (fixColFound)
+                            fprintf(fp_,"    %4.0g ", fix_color->vector_atom[iPart]);
+
+                        if(fix_orientation_)
+                        {
+                            double **orientation = NULL;
+                            orientation = fix_orientation_->array_atom;
+                            fprintf(fp_,"    %4.4g %4.4g %4.4g ",
+                                    orientation[iPart][0], orientation[iPart][1], orientation[iPart][2]);
                         }
+                        fprintf(fp_,"\n");
                         fflush(fp_);
                     }
                 }

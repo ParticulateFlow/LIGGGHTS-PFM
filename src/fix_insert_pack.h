@@ -44,6 +44,7 @@ class FixInsertPack : public FixInsert {
   FixInsertPack(class LAMMPS *, int, char **);
   ~FixInsertPack();
 
+  void init();
   virtual void restart(char *);
 
  protected:
@@ -64,6 +65,7 @@ class FixInsertPack : public FixInsert {
 
   // region to be used for insertion
   class Region *ins_region;
+  char *idregion;
   double region_volume,region_volume_local;
   int ntry_mc;
 

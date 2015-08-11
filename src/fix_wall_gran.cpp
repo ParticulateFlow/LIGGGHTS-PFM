@@ -971,7 +971,7 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
   if(cwl_ && addflag_)
   {
       double contactPoint[3];
-      vectorAdd3D(x_[cdata.i],cdata.delta,contactPoint);
+      vectorSubtract3D(x_[cdata.i],cdata.delta,contactPoint);
       cwl_->add_wall_1(iMesh,mesh->id(iTri),iPart,contactPoint,v_wall);
   }
 

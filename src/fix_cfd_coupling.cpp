@@ -109,7 +109,8 @@ FixCfdCoupling::FixCfdCoupling(LAMMPS *lmp, int narg, char **arg) :
 
 FixCfdCoupling::~FixCfdCoupling()
 {
-
+    delete rm_;
+    delete dc_;
 }
 
 /* ---------------------------------------------------------------------- */

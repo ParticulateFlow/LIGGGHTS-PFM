@@ -75,6 +75,8 @@ FixNeighlistMesh::FixNeighlistMesh(LAMMPS *lmp, int narg, char **arg)
 
     caller_ = static_cast<FixMeshSurface*>(modify->find_fix_id(arg[3]));
     mesh_ = caller_->triMesh();
+
+    groupbit_wall_mesh = groupbit;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -261,6 +263,12 @@ void FixNeighlistMesh::pre_force(int)
       generate_bin_list(nall);
     }
 
+    // manually trigger binning if no pairwise neigh lists exist
+    if(0 == neighbor->n_blist() && bins)
+        neighbor->bin_atoms();
+    else if(!bins)
+        error->one(FLERR,"wrong neighbor setting for fix neighlist/mesh");
+
     /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID <= atom->get_map_size() && update->ntimestep > 0 &&
     /*NL*/      atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID) >= 0)
     /*NL*/ {
@@ -363,7 +371,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
               //NP only handle local atoms
               while(iAtom != -1 && iAtom < nlocal)
               {
-                if(! (mask[iAtom] & groupbit))
+                if(! (mask[iAtom] & groupbit_wall_mesh))
                 {
                     if(bins) iAtom = bins[iAtom];
                     else iAtom = -1;
@@ -399,7 +407,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
           int iAtom = binhead[iBin];
           while(iAtom != -1 && iAtom < nlocal)
           {
-            if(! (mask[iAtom] & groupbit))
+            if(! (mask[iAtom] & groupbit_wall_mesh))
             {
                 if(bins) iAtom = bins[iAtom];
                 else iAtom = -1;

@@ -28,7 +28,7 @@
 #include "comm.h"
 #include "math_extra.h"
 #include "pair_gran.h"
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "fix_property_atom.h"
 #include "fix_property_global.h"
 #include "fix_gravity.h"
@@ -161,7 +161,7 @@ void FixMeshSurfaceStressContact::init_area_correction()
         PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
         if(!pair_gran)
             error->fix_error(FLERR,this,"'area_correction' requires using a granular pair style");
-        int max_type = pair_gran->mpg->max_type();
+        int max_type = pair_gran->get_properties()->max_type();
 
         if(force->pair_match("gran/hooke",0)) expo = 1.;
         else if(force->pair_match("gran/hertz",0)) expo = 2./3.;

@@ -64,7 +64,6 @@ class CfdDatacoupling : protected Pointers {
   // used to find properties
   virtual void* find_pull_property(const char *name, const char *type, int &len1, int &len2);
   virtual void* find_push_property(const char *name, const char *type, int &len1, int &len2);
-  void* find_property(int, const char*, const char*, int&, int&);
 
   // data members
 
@@ -101,6 +100,9 @@ class CfdDatacoupling : protected Pointers {
 
   int iarg_;
   class FixCfdCoupling *fc_;
+
+  // reference to Properties class in PairGran
+  class Properties *properties_;
 
   // multisphere
   class FixMultisphere *ms_;

@@ -67,7 +67,7 @@ FixMeshSurfaceStress::FixMeshSurfaceStress(LAMMPS *lmp, int narg, char **arg)
     stress_flag_ = true;
 
     vector_flag = 1;
-    size_vector = 6;
+    size_vector = 9;
     global_freq = 1;
     extvector = 1;
 
@@ -445,5 +445,6 @@ void FixMeshSurfaceStress::calc_total_force()
 double FixMeshSurfaceStress::compute_vector(int n)
 {
   if(n < 3) return f_total_[n];
-  else      return torque_total_[n-3];
+  else if(n < 6)     return torque_total_[n-3];
+  else return p_ref_(0)[n-6];
 }

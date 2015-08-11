@@ -77,6 +77,7 @@ class FixParticledistributionDiscrete : public Fix {
 
   class ParticleToInsert **pti_list;
   int n_pti, n_pti_max;
+  void pre_insert();
   int insert(int n);
 
   inline int n_particletemplates()

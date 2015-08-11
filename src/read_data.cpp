@@ -706,6 +706,10 @@ void ReadData::atoms()
     atom->data_atoms(nchunk,buffer);
     nread += nchunk;
 
+    for (int j = 0; j < modify->nfix; j++)
+        if (modify->fix[j]->create_attribute)
+            modify->fix[j]->pre_set_arrays();
+
     //NP modified C.K. add hook to set_arrays
     int nlocal_new = atom->nlocal;
     for(int ii = nlocal_old; ii < nlocal_new; ii++)

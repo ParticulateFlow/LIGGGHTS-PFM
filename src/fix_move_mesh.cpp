@@ -59,7 +59,7 @@ FixMoveMesh::FixMoveMesh(LAMMPS *lmp, int narg, char **arg)
     if(strcmp(arg[iarg++],"mesh"))
       error->all(FLERR,"Illegal fix move/mesh command, expecting keyword 'mesh'");
 
-    fix_mesh_ = static_cast<FixMesh*>(modify->find_fix_id(arg[iarg++]));
+    fix_mesh_ = dynamic_cast<FixMesh*>(modify->find_fix_id(arg[iarg++]));
     if(fix_mesh_ == 0)
         error->all(FLERR,"Illegal fix move/mesh command, illegal mesh ID provided");
 

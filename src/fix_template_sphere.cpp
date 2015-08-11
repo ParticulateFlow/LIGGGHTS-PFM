@@ -414,7 +414,14 @@ int FixTemplateSphere::number_spheres()
 
 /* ----------------------------------------------------------------------*/
 
-int FixTemplateSphere::type()
+int FixTemplateSphere::maxtype()
+{
+    return atom_type;
+}
+
+/* ----------------------------------------------------------------------*/
+
+int FixTemplateSphere::mintype()
 {
     return atom_type;
 }
