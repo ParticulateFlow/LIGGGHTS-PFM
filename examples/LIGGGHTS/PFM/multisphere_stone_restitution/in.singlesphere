@@ -26,19 +26,17 @@ fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.3
 fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.5
 fix 		m5 all property/global characteristicVelocity scalar 2.
 
-#New pair style
-pair_style 	gran/hertz/history #Hertzian without cohesion
+#pair style
+pair_style gran model hertz tangential history #Hertzian without cohesion
 pair_coeff	* *
 
 timestep	0.00001
 
 fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
-fix		zwalls all wall/gran/hertz/history primitive type 1 zplane 0.0
+fix zwalls all wall/gran model hertz tangential history primitive type 1 zplane 0.0
 
 #distributions for insertion
-#fix		pts1 all particletemplate/multisphere 1 atom_type 1 density constant 2500 nspheres 50 & 
-            ntry 1000000 spheres file stone1.multisphere scale 0.001 type 1
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.015
 fix		pdd1 all particledistribution/discrete 1.  1 pts1 1.0
 
@@ -50,7 +48,6 @@ fix		ins rigid_group insert/pack seed 100001 distributiontemplate pdd1 vel const
 		insert_every once overlapcheck yes region bc ntry_mc 10000 volumefraction_region 0.0004
 
 #integrator for multisphere rigid bodies
-#fix		integr rigid_group rigid/multisphere
 fix		integr rigid_group nve/sphere
 
 #output settings, include total thermal energy
@@ -61,15 +58,8 @@ thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
-#compute rigid body properties
-#compute		xcm all rigid frm xcm
-#compute		quat all rigid frm quat
-
 #insert the first particles so that dump is not empty
 dump		dmp all custom 200 post/dump*.single id type mol x y z vx vy vz fx fy fz omegax omegay omegaz radius
-#dump		dmp2 all local	200 output/dump.clumps c_xcm[1] c_xcm[2] c_xcm[3] c_quat[1] c_quat[2] c_quat[3] c_quat[4]
-
 
 #insert particles
-#run 		200
 run		40000 upto
