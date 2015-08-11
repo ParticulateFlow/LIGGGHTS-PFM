@@ -887,8 +887,11 @@ void ReadDump::process_atoms(int n)
   for (m = 0; m < modify->nfix; m++) {
     Fix *fix = modify->fix[m];
     if (fix->create_attribute)
+    {
+      fix->pre_set_arrays();
       for (i = nlocal_previous; i < nlocal; i++)
         fix->set_arrays(i);
+    }
   }
 }
 

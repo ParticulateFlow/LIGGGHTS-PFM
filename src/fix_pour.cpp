@@ -493,7 +493,11 @@ void FixPour::pre_exchange()
       atom->v[m][1] = vytmp;
       atom->v[m][2] = vztmp;
       for (j = 0; j < nfix; j++)
-        if (fix[j]->create_attribute) fix[j]->set_arrays(m);
+        if (fix[j]->create_attribute)
+        {
+            fix[j]->pre_set_arrays();
+            fix[j]->set_arrays(m);
+        }
     }
   }
 

@@ -61,10 +61,23 @@ FixPropertyAtom* Modify::add_fix_property_atom(int narg,char **arg,const char *c
    find a fix scalar transport equation
 ------------------------------------------------------------------------- */
 
-FixScalarTransportEquation* Modify::find_fix_scalar_transport_equation(const char *equation_id)
+FixScalarTransportEquation* Modify::find_fix_scalar_transport_equation_strict(const char *equation_id)
 {
+    
     for(int ifix = 0; ifix < nfix; ifix++)
       if(strcmp(fix[ifix]->style,"transportequation/scalar") == 0)
+      {
+          FixScalarTransportEquation *fix_ste = static_cast<FixScalarTransportEquation*>(fix[ifix]);
+          if(fix_ste->match_equation_id(equation_id)) return fix_ste;
+      }
+    return NULL;
+}
+
+FixScalarTransportEquation* Modify::find_fix_scalar_transport_equation(const char *equation_id)
+{
+    
+    for(int ifix = 0; ifix < nfix; ifix++)
+      if(dynamic_cast<FixScalarTransportEquation*>(fix[ifix]))
       {
           FixScalarTransportEquation *fix_ste = static_cast<FixScalarTransportEquation*>(fix[ifix]);
           if(fix_ste->match_equation_id(equation_id)) return fix_ste;

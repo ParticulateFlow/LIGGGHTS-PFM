@@ -122,6 +122,7 @@ class Modify : protected Pointers {
   int my_index(class Fix *fixptr);
   int index_first_fix_with_function(const int FUNCTION, bool integrate=false); //NP modified C.K.
   class FixScalarTransportEquation* find_fix_scalar_transport_equation(const char *equation_id); //NP modified C.K.
+  class FixScalarTransportEquation* find_fix_scalar_transport_equation_strict(const char *equation_id); 
   void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi); //NP modified C.K.
 
   void add_compute(int, char **, char *suffix = NULL);

@@ -28,7 +28,7 @@
 #include "force.h"
 #include "math_extra.h"
 #include "math_extra_liggghts.h"
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "modify.h"
 #include "neigh_list.h"
 #include "pair_gran.h"
@@ -142,7 +142,7 @@ void FixHeatGranCond::init()
 
   const double *Y, *nu, *Y_orig;
   double expo, Yeff_ij, Yeff_orig_ij, ratio;
-  int max_type = pair_gran->mpg->max_type();
+  int max_type = pair_gran->get_properties()->max_type();
 
   if (conductivity_) delete []conductivity_;
   conductivity_ = new double[max_type];
