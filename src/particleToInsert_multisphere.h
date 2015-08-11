@@ -55,6 +55,7 @@ namespace LAMMPS_NS {
 
            int insert();
            int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
+           int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList);
            int set_x_v_omega(double *,double *,double *, double *);
 
            void random_rotate(double,double,double);
