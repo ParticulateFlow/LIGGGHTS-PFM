@@ -119,7 +119,7 @@ FixRigidSmall::FixRigidSmall(LAMMPS *lmp, int narg, char **arg) :
 
   // parse optional args
 
-  int seed;
+  int seed = 1;
   langflag = 0;
   infile = NULL;
 
@@ -1014,11 +1014,11 @@ void FixRigidSmall::set_xv()
     double theta_body,theta;
     double *shape,*quatatom,*inertiaatom;
 
-    AtomVecEllipsoid::Bonus *ebonus;
+    AtomVecEllipsoid::Bonus *ebonus=NULL;
     if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
-    AtomVecLine::Bonus *lbonus;
+    AtomVecLine::Bonus *lbonus=NULL;
     if (avec_line) lbonus = avec_line->bonus;
-    AtomVecTri::Bonus *tbonus;
+    AtomVecTri::Bonus *tbonus=NULL;
     if (avec_tri) tbonus = avec_tri->bonus;
     double **omega = atom->omega;
     double **angmom = atom->angmom;
@@ -1164,9 +1164,9 @@ void FixRigidSmall::set_v()
   if (extended) {
     double *shape,*quatatom,*inertiaatom;
 
-    AtomVecEllipsoid::Bonus *ebonus;
+    AtomVecEllipsoid::Bonus *ebonus=NULL;
     if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
-    AtomVecTri::Bonus *tbonus;
+    AtomVecTri::Bonus *tbonus=NULL;
     if (avec_tri) tbonus = avec_tri->bonus;
     double **omega = atom->omega;
     double **angmom = atom->angmom;
@@ -1509,11 +1509,11 @@ void FixRigidSmall::setup_bodies_static()
 
   extended = orientflag = dorientflag = 0;
 
-  AtomVecEllipsoid::Bonus *ebonus;
+  AtomVecEllipsoid::Bonus *ebonus=NULL;
   if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
-  AtomVecLine::Bonus *lbonus;
+  AtomVecLine::Bonus *lbonus=NULL;
   if (avec_line) lbonus = avec_line->bonus;
-  AtomVecTri::Bonus *tbonus;
+  AtomVecTri::Bonus *tbonus=NULL;
   if (avec_tri) tbonus = avec_tri->bonus;
   double **mu = atom->mu;
   double *radius = atom->radius;
@@ -1638,7 +1638,7 @@ void FixRigidSmall::setup_bodies_static()
   // overwrite masstotal and center-of-mass with file values
   // inbody[i] = 0/1 if Ith rigid body is initialized by file
 
-  int *inbody;
+  int *inbody=NULL;
   if (infile) {
     memory->create(inbody,nlocal_body,"rigid/small:inbody");
     for (ibody = 0; ibody < nlocal_body; ibody++) inbody[ibody] = 0;
@@ -2048,7 +2048,7 @@ void FixRigidSmall::setup_bodies_dynamic()
   // extended particles add their rotation to angmom of body
 
   if (extended) {
-    AtomVecLine::Bonus *lbonus;
+    AtomVecLine::Bonus *lbonus=NULL;
     if (avec_line) lbonus = avec_line->bonus;
     double **omega = atom->omega;
     double **angmom = atom->angmom;
@@ -2109,7 +2109,7 @@ void FixRigidSmall::readfile(int which, double **array, int *inbody)
 {
   int j,nchunk,id,eofflag;
   int nlines;
-  FILE *fp;
+  FILE *fp=NULL;
   char *eof,*start,*next,*buf;
   char line[MAXLINE];
   
@@ -2223,7 +2223,7 @@ void FixRigidSmall::readfile(int which, double **array, int *inbody)
 
 void FixRigidSmall::write_restart_file(char *file)
 {
-  FILE *fp;
+  FILE *fp = NULL;
 
   // do not write file if bodies have not yet been intialized
 

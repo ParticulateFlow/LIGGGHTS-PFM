@@ -136,6 +136,7 @@ class Fix : protected Pointers {
 
   virtual void grow_arrays(int) {}
   virtual void copy_arrays(int, int, int) {}
+  virtual void pre_set_arrays() {}
   virtual void set_arrays(int) {}
   virtual void update_arrays(int, int) {}
   virtual int pack_border(int, int *, double *) {return 0;}

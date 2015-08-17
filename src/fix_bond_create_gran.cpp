@@ -506,7 +506,7 @@ void FixBondCreateGran::post_integrate()
   createcounttotal += createcount;
   atom->nbonds += createcount;
 
-  /*NL*/ if(createcount && comm->me == 0) fprintf(screen,"Created %d bonds at timestep "BIGINT_FORMAT"\n",createcount,update->ntimestep);
+  /*NL*/ if(createcount && comm->me == 0) fprintf(screen,"Created %d bonds at timestep " BIGINT_FORMAT "\n",createcount,update->ntimestep);
 
   // trigger reneighboring if any bonds were formed
 

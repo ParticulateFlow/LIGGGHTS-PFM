@@ -209,7 +209,7 @@ void ReadData::command(int narg, char **arg)
         char *file = new char[strlen(arg[0]) + 16];
         char *ptr = strchr(arg[0],'*');
         *ptr = '\0';
-        sprintf(file,"%s"BIGINT_FORMAT"%s",arg[0],update->ntimestep,ptr+1);
+        sprintf(file,"%s" BIGINT_FORMAT "%s",arg[0],update->ntimestep,ptr+1);
         *ptr = '*';
         open(file);
         delete [] file;
@@ -577,7 +577,7 @@ void ReadData::header(int flag, int add) //NP modified C.K.
         {
             sscanf(line,BIGINT_FORMAT,&natoms_add);
             if(add == 1) atom->natoms += natoms_add;
-            /*NL*///fprintf(screen,"proc %d natoms_add "BIGINT_FORMAT", atom->natoms "BIGINT_FORMAT"\n",comm->me,natoms_add,atom->natoms);
+            /*NL*///fprintf(screen,"proc %d natoms_add " BIGINT_FORMAT ", atom->natoms " BIGINT_FORMAT "\n",comm->me,natoms_add,atom->natoms);
             /*NL*///error->all("end");
         }
         else if (strstr(line,"atom types"))
@@ -705,6 +705,10 @@ void ReadData::atoms()
 
     atom->data_atoms(nchunk,buffer);
     nread += nchunk;
+
+    for (int j = 0; j < modify->nfix; j++)
+        if (modify->fix[j]->create_attribute)
+            modify->fix[j]->pre_set_arrays();
 
     //NP modified C.K. add hook to set_arrays
     int nlocal_new = atom->nlocal;
@@ -1688,7 +1692,7 @@ void ReadData::parse_keyword(int first, int flag)
 
 void ReadData::skip_lines(int n)
 {
-  char *eof;
+  char *eof = NULL;
   for (int i = 0; i < n; i++) eof = fgets(line,MAXLINE,fp);
   if (eof == NULL) error->one(FLERR,"Unexpected end of data file");
 }

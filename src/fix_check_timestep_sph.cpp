@@ -182,7 +182,7 @@ void FixCheckTimestepSph::calc_courant_estims_eval()
   int *ilist,*jlist,*numneigh,**firstneigh;
   double vmag,courant_time_one;
   double cmean;
-  int j_maxmu;
+  int j_maxmu = 0;
 
   double **x = atom->x;
   double **v = atom->v;

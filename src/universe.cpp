@@ -154,7 +154,7 @@ void Universe::reorder(char *style, char *arg)
 
   // create new uworld communicator
 
-  int ome,key;
+  int ome,key = 0;
   MPI_Comm_rank(uorig,&ome);
   for (int i = 0; i < nprocs; i++)
     if (uni2orig[i] == ome) key = i;

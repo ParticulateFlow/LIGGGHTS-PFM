@@ -230,7 +230,7 @@ void FixContactHistory::allocate_pages()
 
 /* ----------------------------------------------------------------------
    called by setup of run or minimize
-   called by write_restart as input script command
+   called by write_restart or write_data as input script command
    only invoke pre_exchange() if neigh list stores more current history info
      than npartner/partner arrays in this fix
    that will only be case if pair->compute() has been invoked since

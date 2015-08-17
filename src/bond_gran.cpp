@@ -289,7 +289,7 @@ void BondGran::compute(int eflag, int vflag)
     {
         if(r > 2. * r_break[type])
         {
-            /*NL*/// fprintf(screen,"step "BIGINT_FORMAT" broke bond between atom tags %d %d r %f, 2. * r_break[type] %f \n",
+            /*NL*/// fprintf(screen,"step " BIGINT_FORMAT " broke bond between atom tags %d %d r %f, 2. * r_break[type] %f \n",
             /*NL*///         update->ntimestep,atom->tag[i1],atom->tag[i2],r,2. * r_break[type]);
             bondlist[n][3] = 1;
             //NP error->all(FLERR,"broken");
@@ -410,6 +410,7 @@ void BondGran::coeff(int narg, char **arg)
   if (!allocated) allocate();
 
   double r_break_one,sigman_break_one,tau_break_one,T_break_one;
+  r_break_one = sigman_break_one = tau_break_one = T_break_one = 0.0;
 
   if(breakmode == BREAKSTYLE_SIMPLE) r_break_one = force->numeric(FLERR,arg[5]);
   else

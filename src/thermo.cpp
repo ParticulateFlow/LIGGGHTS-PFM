@@ -212,7 +212,7 @@ void Thermo::init()
   // add '/n' every 3 values if lineflag = MULTILINE
   // add trailing '/n' to last value
 
-  char *ptr;
+  char *ptr = NULL;
   for (i = 0; i < nfield; i++) {
     format[i][0] = '\0';
     if (lineflag == MULTILINE && i % 3 == 0) strcat(format[i],"\n");

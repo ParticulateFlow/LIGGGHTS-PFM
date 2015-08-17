@@ -65,7 +65,7 @@ void CreateAtoms::command(int narg, char **arg)
   if (itype <= 0 || itype > atom->ntypes)
     error->all(FLERR,"Invalid atom type in create_atoms command");
 
-  int iarg;
+  int iarg = 0;
   if (strcmp(arg[1],"box") == 0) {
     style = BOX;
     iarg = 2;
@@ -217,8 +217,11 @@ void CreateAtoms::command(int narg, char **arg)
   for (int m = 0; m < modify->nfix; m++) {
     Fix *fix = modify->fix[m];
     if (fix->create_attribute)
+    {
+      fix->pre_set_arrays();
       for (int i = nlocal_previous; i < nlocal; i++)
         fix->set_arrays(i);
+    }
   }
 
   // clean up
@@ -313,7 +316,11 @@ void CreateAtoms::add_single()
         atom->avec->create_atom(itype,xone);
         //NP modified C.K. add hook to set_arrays
           for (int j = 0; j < modify->nfix; j++)
-            if (modify->fix[j]->create_attribute) modify->fix[j]->set_arrays(atom->nlocal-1);
+            if (modify->fix[j]->create_attribute)
+            {
+                modify->fix[j]->pre_set_arrays();
+                modify->fix[j]->set_arrays(atom->nlocal-1);
+            }
    }
 }
 
@@ -325,7 +332,7 @@ void CreateAtoms::add_random()
 {
   double xlo,ylo,zlo,xhi,yhi,zhi,zmid;
   double lamda[3],*coord;
-  double *boxlo,*boxhi;
+  double *boxlo=NULL,*boxhi=NULL;
 
   // random number generator, same for all procs
 
@@ -397,7 +404,11 @@ void CreateAtoms::add_random()
         atom->avec->create_atom(itype,xone);
         //NP modified C.K. add hook to set_arrays
           for (int j = 0; j < modify->nfix; j++)
-            if (modify->fix[j]->create_attribute) modify->fix[j]->set_arrays(atom->nlocal-1);
+            if (modify->fix[j]->create_attribute)
+            {
+                modify->fix[j]->pre_set_arrays();
+                modify->fix[j]->set_arrays(atom->nlocal-1);
+            }
     }
   }
 
@@ -511,6 +522,10 @@ void CreateAtoms::add_lattice()
           atom->avec->create_atom(basistype[m],x);
           //NP modified C.K. add hook to set_arrays
           for (int k = 0; k < modify->nfix; k++)
-        if (modify->fix[k]->create_attribute) modify->fix[k]->set_arrays(atom->nlocal-1);
+            if (modify->fix[k]->create_attribute)
+            {
+                modify->fix[k]->pre_set_arrays();
+                modify->fix[k]->set_arrays(atom->nlocal-1);
+            }
         }
 }

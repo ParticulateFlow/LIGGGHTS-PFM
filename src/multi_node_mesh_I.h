@@ -391,7 +391,7 @@
     if(!node_orig_)
         error->one(FLERR,"Internal error in MultiNodeMesh<NUM_NODES>::storeNodePosOrig");
 
-    /*NL*///fprintf(this->screen,"step "BIGINT_FORMAT",proc %d storeNodePos %d %d, nLocal %d nGhost %d\n",this->update->ntimestep,this->comm->me,ilo,ihi,sizeLocal(),sizeGhost());
+    /*NL*///fprintf(this->screen,"step " BIGINT_FORMAT ",proc %d storeNodePos %d %d, nLocal %d nGhost %d\n",this->update->ntimestep,this->comm->me,ilo,ihi,sizeLocal(),sizeGhost());
     /*NL*///fprintf(this->screen,"  node_.size() %d node_orig_.size() %d  \n",this->node_.size(),this->node_orig_->size());
 
     //NP ensure node_orig is long enough

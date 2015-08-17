@@ -44,12 +44,14 @@ for ii=1:nFiles
 
     fname = data(ii).name;
     timesteps = data(ii).values(:,col_t);
+    ntimesteps = length(timesteps);
+    timestep_range = round(ntimesteps/3):ntimesteps;
 
     % plot position and velocity
     xpos = data(ii).values(:,col_X);
 
     figure(hFig(1)); hold on
-    hPlot(ii,1)=plot(timesteps(end/3:end),xpos(end/3:end),'Color',cmap(ii,:));
+    hPlot(ii,1)=plot(timesteps(timestep_range),xpos(timestep_range),'Color',cmap(ii,:));
     hPlot(ii,2)=line([0.2 0.8],[xpos(end) xpos(end)],'Color',cmap(ii+1,:),'LineStyle','-.');
     xlim([0 0.8]);
     % legend for postion plot
@@ -57,7 +59,7 @@ for ii=1:nFiles
     iCnt(1) = iCnt(1)+1;
 
     cline(1:length(xpos)) = xpos(end);
-    dlmwrite(fullfile(dirfile,['tc2_plot1_',num2str(ii),'.txt']), [ timesteps(end/3:end), xpos(end/3:end), cline(end/3:end)' ], ' ');
+    dlmwrite(fullfile(dirfile,['tc2_plot1_',num2str(ii),'.txt']), [ timesteps(timestep_range), xpos(timestep_range), cline(timestep_range)' ], ' ');
 
     % plot torque
     tqy = data(ii).values(:,col_tqY);

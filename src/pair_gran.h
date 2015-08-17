@@ -132,7 +132,8 @@ public:
 
   virtual double stressStrainExponent() = 0;
 
-  class MechParamGran *mpg;
+  class Properties* get_properties()
+  {return properties; }
 
   int fix_extra_dnum_index(class Fix *fix);
 
@@ -223,6 +224,8 @@ public:
   void allocate();
 
  private:
+
+  class Properties *properties;
 
   // shear history
   int dnum_all;

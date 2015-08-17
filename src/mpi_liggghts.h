@@ -39,7 +39,7 @@ namespace LAMMPS_NS
 template<typename T>
 inline MPI_Datatype mpi_type()
 {
-  printf("**************ILLEGAL CALL TO mpi_type()*************");
+  printf("\n\n\n**************LIGGGHTS MPI: ILLEGAL CALL TO mpi_type()*************\n\n\n");
   return 0;
 }
 

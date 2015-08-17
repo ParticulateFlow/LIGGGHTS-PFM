@@ -167,9 +167,9 @@ void Set::command(int narg, char **arg)
       set(VY);
       iarg += 2;
     } else if (strcmp(arg[iarg],"vz") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
-      else if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
-      dvalue = force->numeric(FLERR,arg[iarg+1]);
+      else dvalue = force->numeric(FLERR,arg[iarg+1]);
       set(VZ);
       iarg += 2;
     } else if (strcmp(arg[iarg],"omegax") == 0) { //NP modified C.K.
@@ -818,7 +818,7 @@ void Set::set(int keyword)
         double *c1 = avec_tri->bonus[atom->tri[i]].c1;
         double *c2 = avec_tri->bonus[atom->tri[i]].c2;
         double *c3 = avec_tri->bonus[atom->tri[i]].c3;
-        double c2mc1[2],c3mc1[3];
+        double c2mc1[3],c3mc1[3];
         MathExtra::sub3(c2,c1,c2mc1);
         MathExtra::sub3(c3,c1,c3mc1);
         double norm[3];
@@ -842,7 +842,7 @@ void Set::set(int keyword)
     // set quaternion orientation of ellipsoid or tri particle
 
     else if (keyword == QUAT) {
-      double *quat;
+      double *quat = NULL;
       if (avec_ellipsoid && atom->ellipsoid[i] >= 0)
         quat = avec_ellipsoid->bonus[atom->ellipsoid[i]].quat;
       else if (avec_tri && atom->tri[i] >= 0)
@@ -988,7 +988,7 @@ void Set::setrandom(int keyword)
   } else if (keyword == QUAT_RANDOM) {
     //NP modified R.B.
     int nlocal = atom->nlocal;
-    double *quat;
+    double *quat = NULL;
 
     if (domain->dimension == 3) {
       double s,t1,t2,theta1,theta2;

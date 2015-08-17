@@ -30,7 +30,7 @@
 #include <map>
 #include <set>
 #include <string>
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "error.h"
 #include "modify.h"
 #include "property_registry.h"
@@ -38,7 +38,7 @@
 using namespace std;
 using namespace LAMMPS_NS;
 
-PropertyRegistry::PropertyRegistry(LAMMPS* lmp) : Pointers(lmp), mpg(lmp)
+PropertyRegistry::PropertyRegistry(LAMMPS* lmp) : Pointers(lmp), properties(lmp)
 {
 }
 
@@ -49,7 +49,7 @@ PropertyRegistry::~PropertyRegistry()
 
 int PropertyRegistry::max_type()
 {
-  return mpg.max_type();
+  return properties.max_type();
 }
 
 LAMMPS * PropertyRegistry::getLAMMPS()

@@ -172,6 +172,15 @@ void MeshMoverLinearVariable::setup()
 {
     //NP in analogy to time_since_setup_ = 0 in fix move/mesh
     vectorZeroize3D(dX_);
+
+    // check if variable still exists
+    myvar1_ = input->variable->find(var1str_);
+    myvar2_ = input->variable->find(var2str_);
+    myvar3_ = input->variable->find(var3str_);
+
+    if (myvar1_ < 0) error->all(FLERR,"Variable name 1 for fix move/mesh linear/variable does not exist");
+    if (myvar2_ < 0) error->all(FLERR,"Variable name 2 for fix move/mesh linear/variable does not exist");
+    if (myvar3_ < 0) error->all(FLERR,"Variable name 3 for fix move/mesh linear/variable does not exist");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -430,6 +439,11 @@ void MeshMoverRotateVariable::setup()
 {
     //NP in analogy to time_since_setup_ = 0 in fix move/mesh
     totalPhi_ = 0.;
+
+    // check if variable still exists
+    myvar1_ = input->variable->find(var1str_);
+    if (myvar1_ < 0)
+        error->all(FLERR,"Variable name 1 for fix move/mesh rotate dynamic does not exist");
 }
 
 /* ---------------------------------------------------------------------- */

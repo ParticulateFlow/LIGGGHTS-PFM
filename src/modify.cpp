@@ -298,6 +298,7 @@ void Modify::setup(int vflag)
      if (!fix[i]->recent_restart && fix[i]->just_created && fix[i]->create_attribute)
      {
          fix[i]->just_created = 0;
+         fix[i]->pre_set_arrays();
          for(int j = 0; j < nlocal; j++)
            if(mask[j] & fix[i]->groupbit) fix[i]->set_arrays(j);
      }

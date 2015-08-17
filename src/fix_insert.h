@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -19,9 +19,14 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#ifdef FIX_CLASS
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
 
 //NP abstract class - so nothing here
+#ifdef FIX_CLASS
 
 #else
 
@@ -151,6 +156,9 @@ class FixInsert : public Fix {
   int print_stats_start_flag;
   int print_stats_during_flag;
 
+  // warn if box extent too small for insertion
+  bool warn_boxentent;
+
   class FixMultisphere *fix_multisphere;
   class MultisphereParallel *multisphere;
 
@@ -182,7 +190,7 @@ class FixInsert : public Fix {
 
   bool setup_flag;
 
-  int distribute_ninsert_this(int);
+  virtual int distribute_ninsert_this(int);
 };
 
 }

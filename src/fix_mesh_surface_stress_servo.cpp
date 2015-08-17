@@ -39,9 +39,11 @@
 #include "vector_liggghts.h"
 #include "fix_property_global.h"
 #include "modified_andrew.h"
+#include "math_extra_liggghts.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathExtraLiggghts;
 using MODIFIED_ANDREW_AUX::Circle;
 
 #define EPSILON 1.0e-7

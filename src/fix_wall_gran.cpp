@@ -789,7 +789,7 @@ void FixWallGran::post_force_mesh(int vflag)
 
             /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
             /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-            /*NL*/  fprintf(screen,"step "BIGINT_FORMAT": handling (moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
+            /*NL*/  fprintf(screen,"step " BIGINT_FORMAT ": handling (moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             if(deltan > skinDistance_) //allow force calculation away from the wall
             {
@@ -854,7 +854,7 @@ void FixWallGran::post_force_mesh(int vflag)
 
             /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_M_ID == mesh->id(iTri) &&
             /*NL*/    DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-            /*NL*/  fprintf(screen,"step "BIGINT_FORMAT": handling (non-moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
+            /*NL*/  fprintf(screen,"step " BIGINT_FORMAT ": handling (non-moving) tri id %d with particle id %d, deltan %f\n",update->ntimestep,mesh->id(iTri),atom->tag[iPart],deltan);
 
             //NP hack for SPH
             if(deltan > skinDistance_) //allow force calculation away from the wall
@@ -940,7 +940,7 @@ void FixWallGran::post_force_primitive(int vflag)
 
       if(!(mask[iPart] & groupbit)) continue;
 
-      double delta[3];
+      double delta[3]={};
       const double deltan = primitiveWall->resolveContact(x_[iPart],radius_?radius_[iPart]:r0_,delta);
 
       /*NL*/ if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
@@ -991,7 +991,7 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
   cdata.area_ratio = 1.;
 
 
-  double force_old[3], f_pw[3];
+  double force_old[3]={}, f_pw[3];
 
   // if force should be stored - remember old force
   if(store_force_ || stress_flag_)
@@ -1001,7 +1001,7 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
   if(cwl_ && addflag_)
   {
       double contactPoint[3];
-      vectorAdd3D(x_[cdata.i],cdata.delta,contactPoint);
+      vectorSubtract3D(x_[cdata.i],cdata.delta,contactPoint);
       cwl_->add_wall_1(iMesh,mesh->id(iTri),iPart,contactPoint,v_wall);
   }
 
@@ -1196,7 +1196,7 @@ void FixWallGran::init_heattransfer()
 void FixWallGran::addHeatFlux(TriMesh *mesh,int ip, double delta_n, double area_ratio)
 {
     //r is the distance between the sphere center and wall
-    double tcop, tcowall, hc, Acont, r;
+    double tcop, tcowall, hc, Acont=0.0, r;
     double reff_wall = atom->radius[ip];
     int itype = atom->type[ip];
     double ri = atom->radius[ip];

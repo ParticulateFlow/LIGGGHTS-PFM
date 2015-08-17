@@ -498,7 +498,7 @@ void Balance::dynamic_setup(char *str, int nitermax_in, double thresh_in)
 int Balance::dynamic()
 {
   int i,j,k,m,np,max;
-  double *split, *split_old = NULL; //NP modified C.K.
+  double *split = NULL, *split_old = NULL; //NP modified C.K.
 
   // no balancing if no atoms
 
@@ -785,7 +785,7 @@ void Balance::old_adjust(int iter, int n, bigint *count, double *split)
 {
   // need to allocate this if start using it again
 
-  double *cuts;
+  double *cuts = NULL;
 
   // damping factor
 
@@ -1030,7 +1030,7 @@ void Balance::dumpout(bigint tstep, FILE *bfp)
 void Balance::debug_output(int idim, int m, int np, double *split)
 {
   int i;
-  const char *dim;
+  const char *dim = NULL;
 
   double *boxlo = domain->boxlo;
   double *prd = domain->prd;

@@ -15,7 +15,8 @@ style () {
   wai=`whoami`
   vers=`cat version_liggghts.txt`
   bra=`cat version_liggghts_branch.txt`
-  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai\"" > version_liggghts.h
+  githash=`git log -1 --format="%H"`
+  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai, git commit $githash\"" > version_liggghts.h
 
   list=`grep -sl $1 $2*.h`
   if (test -e style_$3.tmp) then

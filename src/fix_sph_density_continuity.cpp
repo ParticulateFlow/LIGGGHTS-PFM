@@ -117,6 +117,10 @@ void FixSphDensityContinuity::init()
       idx_integ = i;
       break;
     }
+    if(strncmp("nve/xsph",modify->fix[i]->style,8) == 0) {
+      idx_integ = i;
+      break;
+    }
   }
 
   if(idx_integ == -1) error->fix_error(FLERR,this,"Requires to define a fix nve/sph also \n");

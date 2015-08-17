@@ -175,7 +175,7 @@ void Variable::set(int narg, char **arg)
     if (find(arg[0]) >= 0) return;
     if (nvar == maxvar) grow();
     style[nvar] = LOOP;
-    int nfirst,nlast;
+    int nfirst=0,nlast=0;
     if (narg == 3 || (narg == 4 && strcmp(arg[3],"pad") == 0)) {
       nfirst = 1;
       nlast = force->inumeric(FLERR,arg[2]);
@@ -551,7 +551,7 @@ char *Variable::retrieve(char *name)
   if (ivar == -1) return NULL;
   if (which[ivar] >= num[ivar]) return NULL;
 
-  char *str;
+  char *str = NULL;
   if (style[ivar] == INDEX || style[ivar] == WORLD ||
       style[ivar] == UNIVERSE || style[ivar] == STRING ||
       style[ivar] == SCALARFILE) {
@@ -627,7 +627,7 @@ void Variable::compute_atom(int ivar, int igroup,
                             double *result, int stride, int sumflag)
 {
   Tree *tree;
-  double *vstore;
+  double *vstore = NULL;
 
   if (style[ivar] == ATOM) {
     evaluate(data[ivar][0],&tree); //NP modified R.B.
@@ -2489,8 +2489,8 @@ int Variable::math_function(char *word, char *contents, Tree **tree,
 
   // evaluate args
 
-  Tree *newtree;
-  double value1,value2,value3; //NP modified R.B.
+  Tree *newtree = NULL;
+  double value1=0.0,value2=0.0,value3=0.0; //NP modified R.B.
 
   if (tree) {
     newtree = new Tree();
@@ -2846,7 +2846,7 @@ int Variable::group_function(char *word, char *contents, Tree **tree,
 
   // match word to group function
 
-  double value;
+  double value = 0.0;
 
   if (strcmp(word,"count") == 0) {
     if (narg == 1) value = group->count(igroup);
@@ -3106,7 +3106,7 @@ int Variable::special_function(char *word, char *contents, Tree **tree,
       strcmp(word,"max") == 0 || strcmp(word,"ave") == 0 ||
       strcmp(word,"trap") == 0) {
 
-    int method;
+    int method = 0;
     if (strcmp(word,"sum") == 0) method = SUM;
     else if (strcmp(word,"min") == 0) method = XMIN;
     else if (strcmp(word,"max") == 0) method = XMAX;
@@ -3118,7 +3118,7 @@ int Variable::special_function(char *word, char *contents, Tree **tree,
 
     Compute *compute = NULL;
     Fix *fix = NULL;
-    int index,nvec,nstride;
+    int index=0,nvec=0,nstride=0;
 
     if (strstr(arg1,"c_") == arg1) {
       ptr1 = strchr(arg1,'[');
@@ -3389,6 +3389,7 @@ void Variable::peratom2global(int flag, char *word,
       else if (strcmp(word,"fx") == 0) mine = atom->f[index][0];
       else if (strcmp(word,"fy") == 0) mine = atom->f[index][1];
       else if (strcmp(word,"fz") == 0) mine = atom->f[index][2];
+      else if ((strcmp(word,"radius") == 0) && atom->radius_flag) mine = atom->radius[index]; //NP modified D.Q.
       else if ((strcmp(word,"omegax") == 0) && atom->omega_flag) mine = atom->omega[index][0]; //NP modified C.K. begin
       else if ((strcmp(word,"omegay") == 0) && atom->omega_flag) mine = atom->omega[index][1];
       else if ((strcmp(word,"omegaz") == 0) && atom->omega_flag) mine = atom->omega[index][2];
@@ -3435,6 +3436,7 @@ int Variable::is_atom_vector(char *word)
   if (strcmp(word,"fx") == 0) return 1;
   if (strcmp(word,"fy") == 0) return 1;
   if (strcmp(word,"fz") == 0) return 1;
+  if ((strcmp(word,"radius") == 0) && atom->radius_flag)return 1; //NP modified D.Q.
   if ((strcmp(word,"omegax") == 0) && atom->omega_flag) return 1; //NP modified C.K. begin
   if ((strcmp(word,"omegay") == 0) && atom->omega_flag) return 1;
   if ((strcmp(word,"omegaz") == 0) && atom->omega_flag) return 1;
@@ -3481,6 +3483,9 @@ void Variable::atom_vector(char *word, Tree **tree,
     newtree->type = INTARRAY;
     newtree->nstride = 1;
     newtree->iarray = atom->type;
+  } else if ((strcmp(word,"radius") == 0) && atom->radius_flag) { //NP modified D.Q.
+    newtree->nstride = 1;
+    newtree->array = atom->radius;
   }
   else if (strcmp(word,"x") == 0) newtree->array = &atom->x[0][0];
   else if (strcmp(word,"y") == 0) newtree->array = &atom->x[0][1];

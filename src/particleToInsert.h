@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -17,6 +17,12 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifndef LMP_PARTICLE_TO_INSERT_H
@@ -49,8 +55,15 @@ namespace LAMMPS_NS {
         double r_bound_ins;
 
         // per-sphere radius, position
+        // if atom_type_vector exists, each sphere has different type
         double *radius_ins;
         double **x_ins;
+        bool atom_type_vector_flag;
+        int *atom_type_vector;
+
+        // center of bounding sphere
+        
+        double x_bound_ins[3];
 
         // velocity and omega at insertion
         //NP is per-body
