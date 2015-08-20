@@ -176,7 +176,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             else error->all(FLERR,"Illegal delete command");
             iarg += 2;
             hasargs = true;
-        } else if(strcmp("style","massflow/mesh") == 0)
+        } else if(strcmp(style,"massflow/mesh") == 0)
             error->fix_error(FLERR,this,"unknown keyword");
     }
 
