@@ -120,7 +120,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
   int nFieldArrays = 0;
   int itri = 0;
   char propertyname[256]={};
-  const char communication[]="comm_none";
+  const char communication[]="comm_exchange_borders";
 
   while (1)
   {
