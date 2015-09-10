@@ -34,11 +34,12 @@ class InputMeshTri : protected Input
     InputMeshTri(class LAMMPS *, int, char **);
     ~InputMeshTri();
 
-    void meshtrifile(const char *,class TriMesh *,bool verbose);
+    void meshtrifile(const char *, class TriMesh *, bool verbose, bool read_cell_data=false);
 
   private:
 
     bool verbose_;
+    bool read_cell_data_;
 
     void meshtrifile_vtk(class TriMesh *);
     void meshtrifile_stl(class TriMesh *);

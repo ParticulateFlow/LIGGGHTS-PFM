@@ -109,7 +109,7 @@ namespace LAMMPS_NS
         bool manipulated_;
 
         // flags and params to be passed to the mesh
-        bool verbose_,autoRemoveDuplicates_;
+        bool verbose_,autoRemoveDuplicates_,read_cell_data_;
 
         // mesh precision
         double precision_;
