@@ -36,6 +36,7 @@ CommandStyle(extract_surface,ExtractSurface)
 //#include "stdio.h"
 #include "pointers.h"
 #include <vtkDataSet.h>
+#include <vtkDataArray.h>
 
 namespace LAMMPS_NS {
 
@@ -59,6 +60,7 @@ class ExtractSurface : protected Pointers {
  private:
   int me;
   template<class TReader> vtkDataSet *read_file(const char*filename);
+  void extrude_point_via_normal(double x[3], vtkIdType id, vtkDataArray *n, double scale);
 };
 
 }
