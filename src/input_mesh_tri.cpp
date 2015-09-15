@@ -36,9 +36,11 @@
 #include "tri_mesh.h"
 
 using namespace LAMMPS_NS;
+enum{UNSUPPORTED_DATA_TYPE,INT,DOUBLE};
 
 InputMeshTri::InputMeshTri(LAMMPS *lmp, int argc, char **argv) : Input(lmp, argc, argv),
-verbose_(false)
+  verbose_(false),
+  read_cell_data_(false)
 {}
 
 InputMeshTri::~InputMeshTri()
@@ -48,9 +50,10 @@ InputMeshTri::~InputMeshTri()
    process all input from filename
 ------------------------------------------------------------------------- */
 
-void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh,bool verbose)
+void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh, bool verbose, bool read_cell_data)
 {
   verbose_ = verbose;
+  read_cell_data_ = read_cell_data;
   if(strlen(filename) < 5)
     error->all(FLERR,"Illegal command, file name too short for input of triangular mesh");
   const char *ext = &(filename[strlen(filename)-3]);
@@ -109,6 +112,15 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
 
   int nLines = 0;
   int nPointLines = 0;
+
+  bool parse_scalars = false;
+  bool parse_field = false;
+  bool parse_vectors = false;
+  int dataType = UNSUPPORTED_DATA_TYPE;
+  int nFieldArrays = 0;
+  int itri = 0;
+  char propertyname[256]={};
+  const char communication[]="comm_exchange_borders";
 
   while (1)
   {
@@ -241,7 +253,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
             error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
         if(ncells != atoi(arg[1]))
             error->all(FLERR,"Inconsistency in 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
-         icell = 0;
+        icell = 0;
         continue;
     }
 
@@ -252,6 +264,295 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
         else ntris++;
         icell++;
         continue;
+    }
+
+    // parsing cell data
+    if(read_cell_data_)
+    {
+        if(iLine == 7+nPointLines+2*ncells)
+        {
+            if(strcmp(arg[0],"CELL_DATA"))
+                error->all(FLERR,"Expecting 'CELL_DATA' section in ASCII VTK mesh file, cannot continue");
+            if(ncells != atoi(arg[1]))
+                error->all(FLERR,"Inconsistency in 'CELL_DATA' section in ASCII VTK mesh file, cannot continue");
+            continue;
+        }
+
+        if(strcmp(arg[0],"SCALARS") == 0)
+        {
+            if(parse_scalars || parse_field || parse_vectors)
+                error->all(FLERR,"Unexpected 'SCALARS' section in ASCII VTK mesh file, cannot continue");
+            if(narg > 3 && atoi(arg[3]) > 1)
+                error->all(FLERR,"Support for 'SCALARS' with more than 1 component in ASCII VTK mesh file not implemented, cannot continue");
+            strcpy(propertyname, arg[1]);
+            if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0)
+            {
+                mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                dataType = INT;
+            }
+            else if(strcmp(arg[2],"float") == 0 || strcmp(arg[2],"double") == 0)
+            {
+                mesh->prop().addElementProperty< ScalarContainer<double> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                dataType = DOUBLE;
+            }
+            else
+            {
+                dataType = UNSUPPORTED_DATA_TYPE;
+                error->warning(FLERR,"Data type for 'SCALARS' in ASCII VTK mesh file not implemented, skipping data");
+            }
+            parse_scalars = true;
+            icell = 0;
+            itri = 0;
+            continue;
+        }
+
+        if(strcmp(arg[0],"LOOKUP_TABLE") == 0)
+        {
+            if(!parse_scalars)
+                error->all(FLERR,"Unexpected 'LOOKUP_TABLE' section in ASCII VTK mesh file, cannot continue");
+            if(strcmp(arg[1],"default"))
+                error->all(FLERR,"Parsing of custom lookup table in ASCII VTK mesh file not implemented, cannot continue");
+            continue;
+        }
+
+        if(strcmp(arg[0],"FIELD") == 0)
+        {
+            if(parse_scalars || parse_field || parse_vectors)
+                error->all(FLERR,"Unexpected 'FIELD' section in ASCII VTK mesh file, cannot continue");
+            nFieldArrays = atoi(arg[2]);
+            parse_field = true;
+            icell = -1;
+            continue;
+        }
+
+        if(strcmp(arg[0],"COLOR_SCALARS") == 0)
+        {
+            if(parse_scalars || parse_field || parse_vectors)
+                error->all(FLERR,"Unexpected 'COLOR_SCALARS' section in ASCII VTK mesh file, cannot continue");
+            error->warning(FLERR,"Support for 'COLOR_SCALARS' section in ASCII VTK mesh file not implemented, skipping data");
+            continue;
+        }
+
+        if(strcmp(arg[0],"VECTORS") == 0)
+        {
+            if(parse_scalars || parse_field || parse_vectors)
+                error->all(FLERR,"Unexpected 'VECTORS' section in ASCII VTK mesh file, cannot continue");
+            strcpy(propertyname, arg[1]);
+            if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0)
+            {
+                mesh->prop().addElementProperty< VectorContainer<int,3> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+
+                dataType = INT;
+            }
+            else if(strcmp(arg[2],"float") == 0 || strcmp(arg[2],"double") == 0)
+            {
+                mesh->prop().addElementProperty< VectorContainer<double,3> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                dataType = DOUBLE;
+            }
+            else
+            {
+                dataType = UNSUPPORTED_DATA_TYPE;
+                error->warning(FLERR,"Data type for 'VECTORS' in ASCII VTK mesh file not implemented, skipping data");
+            }
+            parse_vectors = true;
+            icell = 0;
+            itri = 0;
+            continue;
+        }
+
+        if(strcmp(arg[0],"NORMALS") == 0)
+        {
+            if(parse_scalars || parse_field || parse_vectors)
+                error->all(FLERR,"Unexpected 'NORMALS' section in ASCII VTK mesh file, cannot continue");
+            error->warning(FLERR,"Support for 'NORMALS' section in ASCII VTK mesh file not implemented, skipping data");
+            continue;
+        }
+
+        if(strcmp(arg[0],"TEXTURE_COORDINATES") == 0)
+        {
+            if(parse_scalars || parse_field || parse_vectors)
+                error->all(FLERR,"Unexpected 'TEXTURE_COORDINATES' section in ASCII VTK mesh file, cannot continue");
+            error->warning(FLERR,"Support for 'TEXTURE_COORDINATES' section in ASCII VTK mesh file not implemented, skipping data");
+            continue;
+        }
+
+        if(strcmp(arg[0],"TENSORS") == 0)
+        {
+            if(parse_scalars || parse_field || parse_vectors)
+                error->all(FLERR,"Unexpected 'TENSORS' section in ASCII VTK mesh file, cannot continue");
+            error->warning(FLERR,"Support for 'TENSORS' section in ASCII VTK mesh file not implemented, skipping data");
+            continue;
+        }
+
+        if(parse_scalars)
+        {
+            switch(dataType)
+            {
+            case INT:
+                {
+                    ScalarContainer<int> *ep = mesh->prop().getElementProperty<ScalarContainer<int> >(propertyname);
+                    for(int i = 0; i < narg; ++i)
+                    {
+                        if(cells[icell][0] != -1)
+                        {
+                            ep->set(itri, atoi(arg[i]));
+                            ++itri;
+                        }
+                        ++icell;
+                    }
+                    break;
+                }
+            case DOUBLE:
+                {
+                    ScalarContainer<double> *ep = mesh->prop().getElementProperty<ScalarContainer<double> >(propertyname);
+                    for(int i = 0; i < narg; ++i)
+                    {
+                        if(cells[icell][0] != -1)
+                        {
+                            ep->set(itri, atof(arg[i]));
+                            ++itri;
+                        }
+                        ++icell;
+                    }
+                    break;
+                }
+            case UNSUPPORTED_DATA_TYPE:
+                icell += narg;
+                break;
+            }
+
+            if(icell == ncells)
+                parse_scalars = false;
+            continue;
+        }
+
+        if(parse_field)
+        {
+            if(icell < 0)
+            {
+                strcpy(propertyname, arg[0]);
+                if(atoi(arg[1]) > 1)
+                    error->all(FLERR,"Support for field arrays with more than 1 component in ASCII VTK mesh file not implemented, cannot continue");
+                if(ncells != atoi(arg[2]))
+                    error->all(FLERR,"Inconsistency in 'FIELD' section in ASCII VTK mesh file, cannot continue");
+                if(strcmp(arg[3],"int") == 0 || strcmp(arg[3],"long") == 0)
+                {
+                    mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                    dataType = INT;
+                }
+                else if(strcmp(arg[3],"float") == 0 || strcmp(arg[3],"double") == 0)
+                {
+                    mesh->prop().addElementProperty< ScalarContainer<double> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                    dataType = DOUBLE;
+                }
+                else
+                {
+                    dataType = UNSUPPORTED_DATA_TYPE;
+                    error->warning(FLERR,"Data type for 'FIELD' in ASCII VTK mesh file not implemented, skipping data");
+                }
+                icell = 0;
+                itri = 0;
+                continue;
+            }
+
+            switch(dataType)
+            {
+            case INT:
+                {
+                    ScalarContainer<int> *ep = mesh->prop().getElementProperty<ScalarContainer<int> >(propertyname);
+                    for(int i = 0; i < narg; ++i)
+                    {
+                        if(cells[icell][0] != -1)
+                        {
+                            ep->set(itri, atoi(arg[i]));
+                            ++itri;
+                        }
+                        ++icell;
+                    }
+                    break;
+                }
+            case DOUBLE:
+                {
+                    ScalarContainer<double> *ep = mesh->prop().getElementProperty<ScalarContainer<double> >(propertyname);
+                    for(int i = 0; i < narg; ++i)
+                    {
+                        if(cells[icell][0] != -1)
+                        {
+                            ep->set(itri, atof(arg[i]));
+                            ++itri;
+                        }
+                        ++icell;
+                    }
+                    break;
+                }
+            case UNSUPPORTED_DATA_TYPE:
+                icell += narg;
+                break;
+            }
+
+            if(icell == ncells)
+            {
+                --nFieldArrays;
+                if(nFieldArrays > 0)
+                    icell = -1;
+                else
+                    parse_field = false;
+            }
+            continue;
+        }
+
+        if(parse_vectors)
+        {
+            if(narg % 3)
+                error->all(FLERR,"Expecting multiple of 3 values of cell data in 'VECTORS' section of ASCII VTK mesh file, cannot continue");
+
+            switch(dataType)
+            {
+            case INT:
+                {
+                    VectorContainer<int,3> *ep = mesh->prop().getElementProperty<VectorContainer<int,3> >(propertyname);
+                    for(int i = 0; i < narg/3; ++i)
+                    {
+                        if(cells[icell][0] != -1)
+                        {
+                            int vector[3];
+                            vector[0] = atoi(arg[3*i + 0]);
+                            vector[1] = atoi(arg[3*i + 1]);
+                            vector[2] = atoi(arg[3*i + 2]);
+                            ep->set(itri, vector);
+                            ++itri;
+                        }
+                        ++icell;
+                    }
+                    break;
+                }
+            case DOUBLE:
+                {
+                    VectorContainer<double,3> *ep = mesh->prop().getElementProperty<VectorContainer<double,3> >(propertyname);
+                    for(int i = 0; i < narg/3; ++i)
+                    {
+                        if(cells[icell][0] != -1)
+                        {
+                            double vector[3];
+                            vector[0] = atof(arg[3*i + 0]);
+                            vector[1] = atof(arg[3*i + 1]);
+                            vector[2] = atof(arg[3*i + 2]);
+                            ep->set(itri, vector);
+                            ++itri;
+                        }
+                        ++icell;
+                    }
+                    break;
+                }
+            case UNSUPPORTED_DATA_TYPE:
+                icell += narg/3;
+                break;
+            }
+
+            if(icell == ncells)
+                parse_vectors = false;
+            continue;
+        }
     }
 
   }

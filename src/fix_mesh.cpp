@@ -55,6 +55,7 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
   manipulated_(false),
   verbose_(false),
   autoRemoveDuplicates_(false),
+  read_cell_data_(false),
   precision_(0.)
 {
     if(narg < 5)
@@ -112,6 +113,15 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
             precision_ = force->numeric(FLERR,arg[iarg_++]);
             if(precision_ < 0. || precision_ > 0.001)
               error->fix_error(FLERR,this,"0 < precision < 0.001 required");
+            hasargs = true;
+        } else if(strcmp(arg[iarg_],"cell_data") == 0) {
+            if(narg < iarg_+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'cell_data'");
+            if(strcmp(arg[iarg_+1],"yes") == 0)
+                read_cell_data_ = true;
+            else if(strcmp(arg[iarg_+1],"no"))
+                error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'cell_data'");
+            iarg_ += 2;
             hasargs = true;
         }
     }
@@ -214,7 +224,7 @@ void FixMesh::create_mesh(char *mesh_fname)
         // can be from STL file or VTK file
         InputMeshTri *mesh_input = new InputMeshTri(lmp,0,NULL);
         /*NL*///fprintf(screen,"READING MESH DATA\n");
-        mesh_input->meshtrifile(mesh_fname,static_cast<TriMesh*>(mesh_),verbose_);
+        mesh_input->meshtrifile(mesh_fname,static_cast<TriMesh*>(mesh_),verbose_,read_cell_data_);
         /*NL*///fprintf(screen,"END READING MESH DATA\n");
         delete mesh_input;
     }
