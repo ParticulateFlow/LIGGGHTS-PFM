@@ -29,6 +29,7 @@ RegionStyle(mesh/hex,RegHexMesh)
 
 #include "random_park.h"
 #include "region.h"
+#include "custom_value_tracker.h"
 #include <vtkHexahedron.h>
 #include <vtkPoints.h>
 
@@ -52,6 +53,9 @@ class RegHexMesh : public Region {
   double hex_vol(int i);
   double hex_acc_vol(int i);
 
+  inline CustomValueTracker& prop()
+  {return customValues_;}
+
  protected:
 
    int is_inside_hex(int iHex,double *pos);
@@ -72,6 +76,7 @@ class RegHexMesh : public Region {
    char *filename;
    double scale_fact;
    double off_fact[3], rot_angle[3];
+   bool read_cell_data_;
 
    int nHex,nHexMax;
    double ***node;
@@ -79,6 +84,9 @@ class RegHexMesh : public Region {
    double total_volume;
    double *volume;
    double *acc_volume;
+
+   // class holding fields
+   CustomValueTracker &customValues_;
 
    #include "region_mesh_hex_I.h"
 };

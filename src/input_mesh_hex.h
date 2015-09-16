@@ -33,11 +33,12 @@ class InputMeshHex : protected Input {
   ~InputMeshHex();
 
   void meshhexfile(class RegHexMesh *);
-  void meshhexfile(const char *,class RegHexMesh *,bool verbose); // analogon to file(const char *filename)
+  void meshhexfile(const char *, class RegHexMesh *, bool verbose, bool read_cell_data=false); // analogon to file(const char *filename)
 
  private:
   void meshhexfile_vtk(class RegHexMesh *);
   bool verbose_;
+  bool read_cell_data_;
 };
 
 }

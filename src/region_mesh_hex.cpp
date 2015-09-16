@@ -43,7 +43,9 @@ using namespace LAMMPS_NS;
 /* ---------------------------------------------------------------------- */
 
 RegHexMesh::RegHexMesh(LAMMPS *lmp, int narg, char **arg) :
-  Region(lmp, narg, arg)
+  Region(lmp, narg, arg),
+  read_cell_data_(false),
+  customValues_(*(new CustomValueTracker(lmp)))
 {
   if(narg < 14) error->all(FLERR,"Illegal region mesh/hex command");
   options(narg-14,&arg[14]);
@@ -68,6 +70,13 @@ RegHexMesh::RegHexMesh(LAMMPS *lmp, int narg, char **arg) :
   rot_angle[1] = atof(arg[12]);
   rot_angle[2] = atof(arg[13]);
 
+  if(narg > 15 && strcmp(arg[14],"cell_data") == 0) {
+    if(strcmp(arg[15],"yes") == 0)
+      read_cell_data_ = true;
+    else if(strcmp(arg[15],"no"))
+      error->all(FLERR,"Illegal region mesh/hex command, expecting 'yes' or 'no' for 'cell_data'");
+  }
+
   node = NULL;
   center = NULL;
   volume = NULL;
@@ -78,7 +87,7 @@ RegHexMesh::RegHexMesh(LAMMPS *lmp, int narg, char **arg) :
 
   // manage input
   InputMeshHex *my_input = new InputMeshHex(lmp, 0, NULL);
-  my_input->meshhexfile(filename,this,true);
+  my_input->meshhexfile(filename,this,true,read_cell_data_);
   delete my_input;
 
   // extent of hexmesh
@@ -97,6 +106,7 @@ RegHexMesh::RegHexMesh(LAMMPS *lmp, int narg, char **arg) :
 RegHexMesh::~RegHexMesh()
 {
   delete [] contact;
+  delete &customValues_;
 
   memory->destroy(node);
   memory->destroy(center);
