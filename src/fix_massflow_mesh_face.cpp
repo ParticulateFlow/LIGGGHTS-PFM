@@ -75,11 +75,8 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
   ms_(0),
   ms_counter_(0)
 {
-    double sidevec_[3];
-
     vectorZeroize3D(nvec_);
     vectorZeroize3D(pref_);
-    vectorZeroize3D(sidevec_);
     vectorZeroize3D(pointAtOutlet_);
 
     // parse args for this class
@@ -91,19 +88,9 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
     {
         hasargs = false;
 
-        if(strcmp(arg[iarg],"vec_side") == 0) {
-            if(narg < iarg+4)
-                error->fix_error(FLERR,this,"not enough arguments for 'vec_side'");
-            iarg++;
-            sidevec_[0] = atof(arg[iarg++]);
-            sidevec_[1] = atof(arg[iarg++]);
-            sidevec_[2] = atof(arg[iarg++]);
-            if(vectorMag3D(sidevec_) == 0.)
-                error->fix_error(FLERR,this,"vec_side > 0 required");
-            hasargs = true;
-        } else if(strcmp(arg[iarg],"mesh") == 0) {
+        if(strcmp(arg[iarg],"mesh") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'insert_stream'");
+                error->fix_error(FLERR,this,"not enough arguments for 'mesh'");
             iarg++;
             fix_mesh_ = static_cast<FixMeshSurface*>(modify->find_fix_id_style(arg[iarg++],"mesh/surface"));
             if(!fix_mesh_)
@@ -139,8 +126,6 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
         } else if(strcmp(arg[iarg],"inside_out") == 0) {
             insideOut_ = true;
             iarg++;
-            /////if(!havePointAtOutlet_)
-            /////    error->fix_error(FLERR,this,"the setting 'inside_out' has no meaning in case you do not use 'point_at_outlet'");
             hasargs = true;
         } else if (strcmp(arg[iarg],"file") == 0 || strcmp(arg[iarg],"append") == 0) {
             if(narg < iarg+2)
@@ -157,8 +142,8 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
             else
                 fp_ = fopen(filecurrent,"a");
             if (fp_ == NULL) {
-               char str[128];
-               sprintf(str,"Cannot open file %s",arg[iarg+1]);
+                char str[128];
+                sprintf(str,"Cannot open file %s",arg[iarg+1]);
                 error->fix_error(FLERR,this,str);
             }
             iarg += 2;
@@ -168,7 +153,7 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
                 error->fix_error(FLERR,this,"Illegal keyword entry");
             if (strcmp(arg[iarg+1],"yes") == 0) screenflag_ = true;
             else if (strcmp(arg[iarg+1],"no") == 0) screenflag_ = false;
-            else error->all(FLERR,"Illegal fix print command");
+            else error->fix_error(FLERR,this,"Illegal screen option");
             iarg += 2;
             hasargs = true;
         } else if (strcmp(arg[iarg],"delete_atoms") == 0) {
@@ -176,7 +161,7 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
                 error->fix_error(FLERR,this,"Illegal keyword entry");
             if (strcmp(arg[iarg+1],"yes") == 0) delete_atoms_ = true;
             else if (strcmp(arg[iarg+1],"no") == 0) delete_atoms_ = false;
-            else error->all(FLERR,"Illegal delete command");
+            else error->fix_error(FLERR,this,"Illegal delete_atoms option");
             iarg += 2;
             hasargs = true;
         } else if(strcmp(style,"massflow/mesh/face") == 0)
@@ -184,34 +169,20 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
     }
 
     if(fp_ && 1 < comm->nprocs && 0 == comm->me)
-      fprintf(screen,"**FixMassflowMesh: > 1 process - "
+      fprintf(screen,"**FixMassflowMeshFace: > 1 process - "
                      " will write to multiple files\n");
 
     // error checks on necessary args
 
     if(!once_ && delete_atoms_)
            error->fix_error(FLERR,this,"using 'delete_atoms yes' requires 'count once'");
-    if( !once_ && havePointAtOutlet_)
+    if(!once_ && havePointAtOutlet_)
         error->fix_error(FLERR,this,"setting 'point_at_outlet' requires 'count once'");
-    if( vectorMag3D(sidevec_)==0. && !havePointAtOutlet_)
-        error->fix_error(FLERR,this,"expecting keyword 'vec_side'");
-    if (!fix_mesh_)
+    if(!fix_mesh_)
         error->fix_error(FLERR,this,"expecting keyword 'mesh'");
 
     // get reference point on face
     // calculate normalvec
-
-    fix_mesh_->triMesh()->node(0,0,pref_);
-    fix_mesh_->triMesh()->surfaceNorm(0,nvec_);
-    double dot = vectorDot3D(nvec_,sidevec_);
-
-    /*NL*/ printVec3D(screen,"nvec_",nvec_);
-    /*NL*/ printVec3D(screen,"sidevec_",sidevec_);
-
-    if(fabs(dot) < 1e-6 && !havePointAtOutlet_ )
-        error->fix_error(FLERR,this,"need to change 'vec_side', it is currently in or to close to the mesh plane");
-    else if(dot < 0.)
-        vectorScalarMult3D(nvec_,-1.);
 
     restart_global = 1;
 
@@ -248,9 +219,9 @@ void FixMassflowMeshFace::post_create()
     fixarg[3]=fixid_;
     fixarg[4]="scalar"; // 1 scalar per particle to be registered
     fixarg[5]="yes";    // restart yes
-    fixarg[6]="no";    // communicate ghost no
-    fixarg[7]="no";    // communicate rev no
-    fixarg[8]="0";     // take 0 (UNDEFINED) as default
+    fixarg[6]="no";     // communicate ghost no
+    fixarg[7]="no";     // communicate rev no
+    fixarg[8]="0";      // take 0 (UNDEFINED) as default
     modify->add_fix(9,const_cast<char**>(fixarg));
 
     fix_counter_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixid_,"property/atom","scalar",0,0,style));
@@ -275,33 +246,24 @@ void FixMassflowMeshFace::post_create()
     }
 
 
-    //////////////////////////////////
-
+    // get face IDs from mesh
     TriMesh *mesh = fix_mesh_->triMesh();
-
-    fprintf(screen,"--> #1 Mesh is %s!\n",(mesh->isParallel())?"parallel":"not parallel");
 
     int nTriLocal = mesh->sizeLocal();
     int *face_ids_local = new int[nTriLocal];
 
-    fprintf(screen, "-->local #of tris reported by proc %d: %d\n", comm->me, nTriLocal);
-
     if(mesh->prop().getElementProperty<ScalarContainer<int> >("face_id"))
     {
-        fprintf(screen,"\n===\nmesh %s: prop %s found\n",mesh->mesh_id(),"face_id");
         ScalarContainer<int> *face_id = mesh->prop().getElementProperty<ScalarContainer<int> >("face_id");
-        /*int ncells = face_id->size();
-        for(int j = 0; j < ncells; j++)
-        {
-            fprintf(screen,"%d ", face_id->get(j));
-        }*/
-        fprintf(screen,"\nproc %d:\n", comm->me);
         for(int iTri = 0; iTri < nTriLocal; ++iTri)
         {
             fprintf(screen,"%d ", face_id->get(iTri));
             face_ids_local[iTri] = face_id->get(iTri);
         }
-        fprintf(screen,"\n");
+    }
+    else
+    {
+        error->fix_error(FLERR,this,"Mesh element property 'face_id' required");
     }
 
     int nTriGlobal = nTriLocal;
@@ -309,8 +271,6 @@ void FixMassflowMeshFace::post_create()
 
     if(mesh->isParallel())
     {
-        //fprintf(screen,"\n--->sizeGlobal() = %d\n", mesh->sizeGlobal());
-        //MPI_Sum_Scalar(nTriLocal,nTriGlobal,world);
         nTriGlobal = mesh->sizeGlobal();
         MPI_Allgather_Vector(face_ids_local, nTriLocal, face_ids_recv, world);
         delete [] face_ids_local;
@@ -320,7 +280,6 @@ void FixMassflowMeshFace::post_create()
         // NOTE: mesh->sizeGlobal() not initialized yet;
         face_ids_recv = face_ids_local;
     }
-    //fprintf(screen, "-->global #of tris: %d?\n",nTriGlobal);
 
 
     for(int iTri = 0; iTri < nTriGlobal; ++iTri)
@@ -328,7 +287,6 @@ void FixMassflowMeshFace::post_create()
         faceid2index_[face_ids_recv[iTri]] = 0;
     }
 
-    fprintf(screen,"---># of unique face ids reported by proc %d: %lu\n", comm->me, faceid2index_.size());
     int i = 0;
     for(std::map<int,int>::iterator it=faceid2index_.begin(); it!=faceid2index_.end(); ++it)
     {
@@ -344,12 +302,6 @@ void FixMassflowMeshFace::post_create()
     std::fill_n(nparticles_face_.begin(),      nfaceids, 0 );
     std::fill_n(mass_face_last_.begin(),       nfaceids, 0.);
     std::fill_n(nparticles_face_last_.begin(), nfaceids, 0 );
-
-    /*for(std::map<int,int>::iterator it=faceid2index_.begin(); it!=faceid2index_.end(); ++it)
-    {
-        fprintf(screen,"%d %d\n", it->first, it->second);
-    }
-    fprintf(screen,"\n");*/
 
     delete [] face_ids_recv;
 
@@ -370,8 +322,6 @@ void FixMassflowMeshFace::pre_delete(bool unfixflag)
 
 void FixMassflowMeshFace::init()
 {
-    //TriMesh *mesh = fix_mesh_->triMesh();
-    //fprintf(screen,"--> #2 Mesh is %s!\n",(mesh->isParallel())?"parallel":"not parallel");
     if (atom->rmass_flag == 0)
         error->fix_error(FLERR,this,"requires atoms have mass");
 
@@ -386,12 +336,6 @@ void FixMassflowMeshFace::init()
 
 void FixMassflowMeshFace::setup(int /*vflag*/)
 {
-    //TriMesh *mesh = fix_mesh_->triMesh();
-    //fprintf(screen,"--> #3 Mesh is %s!\n",(mesh->isParallel())?"parallel":"not parallel");
-    // check if face planar
-    //NP do this here since may only do this after mesh setup
-    //if(!fix_mesh_->triMesh()->isPlanar() && !havePointAtOutlet_)
-    //   error->fix_error(FLERR,this,"requires a planar face mass flow measurement or using 'point_at_outlet'");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -480,7 +424,6 @@ void FixMassflowMeshFace::post_integrate()
             // skip ghost particles
             if(iPart >= nlocal) continue;
 
-            //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) defines part %d\n", __LINE__, update->ntimestep, iTri, face_id, iPart);
             defined_this[iPart] = true;
 
             const int ibody = fix_ms_ ? ( (fix_ms_->belongs_to(iPart) > -1) ? (ms_->map(fix_ms_->belongs_to(iPart))) : -1 ) : -1;
@@ -524,17 +467,10 @@ void FixMassflowMeshFace::post_integrate()
             }
             else if(fix_counter_->get_vector_atom_int(iPart) == UNDEFINED)
             {
-                //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d is undefined\n", __LINE__, update->ntimestep, iTri, face_id, iPart);
                 fix_counter_->set_vector_atom_int(iPart, (dot <= 0.) ? INSIDE : OUTSIDE);
-                //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d is now %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, (fix_counter_->get_vector_atom_int(iPart) == INSIDE)?"INSIDE":"OUTSIDE");
                 classified_particles_this[iPart] = iTri;
                 continue;
             }
-
-            //fprintf(screen, "triangle %d: normal: %f %f %f\n", iTri, nvec_[0], nvec_[1], nvec_[2]);
-            //fprintf(screen, "triangle %d: point:  %f %f %f\n", iTri, pref_[0], pref_[1], pref_[2]);
-            //fprintf(screen, "particle %d: pos:    %f %f %f\n", iPart,x[iPart][0], x[iPart][1], x[iPart][2]);
-            //fprintf(screen, "dot product: %f\n", dot);
 
             if(classified_particles_this.find(iPart) != classified_particles_this.end()) // already classified by other triangle
             {
@@ -564,14 +500,9 @@ void FixMassflowMeshFace::post_integrate()
                         {
                             if (ibody > -1) (*ms_counter_)(ibody) = OUTSIDE;
                             else            fix_counter_->set_vector_atom_int(iPart, OUTSIDE);
-                            //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d is now definitely %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "OUTSIDE");
                             ignore_this.insert(iPart);
                         }
-
-                        //continue;
                     }
-                    //else //else triangles came to same result
-                    //  fprintf(screen,"--->%d: %ld: tri (face) %d (%d) confirms part %d is %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "OUTSIDE");
                 }
                 else
                 {
@@ -599,14 +530,9 @@ void FixMassflowMeshFace::post_integrate()
                         {
                             if (ibody > -1) (*ms_counter_)(ibody) = INSIDE;
                             else            fix_counter_->set_vector_atom_int(iPart, INSIDE);
-                            //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d is now definitely %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "INSIDE");
                             ignore_this.insert(iPart);
                         }
-
-                        //continue;
                     }
-                    //else //else triangles came to same result
-                    //  fprintf(screen,"--->%d: %ld: tri (face) %d (%d) confirms part %d is %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "INSIDE");
                 }
                 continue;
             }
@@ -619,12 +545,11 @@ void FixMassflowMeshFace::post_integrate()
                 {
                     if(handled_particles_this.find(iPart) != handled_particles_this.end())
                     {
-                        //watch out!
                         if(crossing_particles_this.find(iPart) != crossing_particles_this.end())
                         {
                             // previous triangle decided that particle has crossed borders from outside to inside
                             // this triangle sees the particle outside
-                            // check
+                            // check if it really moved inside
                             double pref_alt[3];
                             bool convex = true;
                             for(int i = 0; i < 3; ++i)
@@ -649,10 +574,9 @@ void FixMassflowMeshFace::post_integrate()
                                 ignore_this.insert(iPart);
                                 once_this.erase(iPart);
                                 crossing_particles_this.erase(iPart);
-                                //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d definitely not crossing borders, still %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "OUTSIDE");
-                                continue; // since transition from outside to inside doesn't get counted here, we don't have to undo anything
-
-                            } else { continue; } // crossing borders from inside to outside confirmed for now
+                                // since transition from outside to inside doesn't get counted here, we don't have to undo anything
+                            } //else // crossing borders from inside to outside confirmed for now
+                            continue;
                         }
                         else
                         {
@@ -677,7 +601,6 @@ void FixMassflowMeshFace::post_integrate()
 
                             if(convex) ignore_this.insert(iPart); // it's really outside, continue below
                             else continue; // did not cross boundary, still in
-
                         }
                     }// else this tri is the first to check this particle
 
@@ -698,38 +621,12 @@ void FixMassflowMeshFace::post_integrate()
                         atom_tags_delete_.push_back(atom->tag[iPart]);
                     }
 
-                    /*if (screenflag_ && screen)
-                        fprintf(screen,"%ld %d %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g \n ",
-                                       update->ntimestep, face_id, tag[iPart],2.*radius[iPart]/force->cg(),
-                                       x[iPart][0],x[iPart][1],x[iPart][2],
-                                       v[iPart][0],v[iPart][1],v[iPart][2]);
-                    if(fp_)
-                    {
-                        fprintf(fp_," %ld %d %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g",
-                                   update->ntimestep, face_id, tag[iPart],2.*radius[iPart]/force->cg(),
-                                   x[iPart][0],x[iPart][1],x[iPart][2],
-                                   v[iPart][0],v[iPart][1],v[iPart][2]);
-                        if (fixColFound)
-                            fprintf(fp_,"    %4.0g ", fix_color->vector_atom[iPart]);
-
-                        if(fix_orientation_)
-                        {
-                            double **orientation = NULL;
-                            orientation = fix_orientation_->array_atom;
-                            fprintf(fp_,"    %4.4g %4.4g %4.4g ",
-                                    orientation[iPart][0], orientation[iPart][1], orientation[iPart][2]);
-                        }
-                        fprintf(fp_,"\n");
-                        fflush(fp_);
-                    }*/
-
                     if(ibody > -1)
                         (*ms_counter_)(ibody) = OUTSIDE;
                     else
                         fix_counter_->set_vector_atom_int(iPart, OUTSIDE);
 
                     if(once_) once_this.insert(iPart);
-                    //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d is now %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "OUTSIDE");
 
                 }
                 /*else // iPart == OUTSIDE
@@ -782,10 +679,7 @@ void FixMassflowMeshFace::post_integrate()
                                 ignore_this.insert(iPart);
                                 once_this.erase(iPart);
                                 crossing_particles_this.erase(iPart);
-                                //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d definitely not crossing borders, still %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "INSIDE");
-                                ///
-                                /// since transition from inside to outside does get counted here, we have to undo some stuff:
-                                ///
+                                // since transition from inside to outside does get counted here, we have to undo some stuff:
                                 mass_this -= rmass[iPart];
                                 nparticles_this--;
                                 int old_face_id = face_ids->get(crossing_particles_this[iPart]);
@@ -807,27 +701,9 @@ void FixMassflowMeshFace::post_integrate()
                                         }
                                     }
                                 }
-                                /*if(fp_)
-                                {
-                                    fprintf(fp_," %ld %d %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g",
-                                               update->ntimestep, face_id, -tag[iPart],2.*radius[iPart]/force->cg(),
-                                               x[iPart][0],x[iPart][1],x[iPart][2],
-                                               v[iPart][0],v[iPart][1],v[iPart][2]);
-                                    if (fixColFound)
-                                        fprintf(fp_,"    %4.0g ", fix_color->vector_atom[iPart]);
-
-                                    if(fix_orientation_)
-                                    {
-                                        double **orientation = NULL;
-                                        orientation = fix_orientation_->array_atom;
-                                        fprintf(fp_,"    %4.4g %4.4g %4.4g ",
-                                                orientation[iPart][0], orientation[iPart][1], orientation[iPart][2]);
-                                    }
-                                    fprintf(fp_,"\n");
-                                    fflush(fp_);
-                                }*/
-                                continue; // we're done with this particle this timestep
-                            } else { continue; } // crossing borders from inside to outside confirmed for now
+                                // we're done with this particle this timestep
+                            } // else // crossing borders from inside to outside confirmed for now
+                            continue;
 
                         }
                         else
@@ -863,7 +739,6 @@ void FixMassflowMeshFace::post_integrate()
                         fix_counter_->set_vector_atom_int(iPart, INSIDE);
 
                     if(once_) once_this.insert(iPart);
-                    //fprintf(screen,"--->%d: %ld: tri (face) %d (%d) part %d is now %s\n", __LINE__, update->ntimestep, iTri, face_id, iPart, "INSIDE");
                 }
                 /*else // iPart == INSIDE
                 {
@@ -911,7 +786,6 @@ void FixMassflowMeshFace::post_integrate()
                 if(fix_counter_->get_vector_atom_int(iPart) != IGNORE)
                 {
                     fix_counter_->set_vector_atom_int(iPart, UNDEFINED);
-                    //fprintf(screen,"--->%d: %ld: part %d is now %s\n", __LINE__, update->ntimestep, iPart, "UNDEFINED");
                 }
             }
         }
