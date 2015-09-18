@@ -44,6 +44,7 @@ class FixInsert : public Fix {
   FixInsert(class LAMMPS *, int, char **);
   ~FixInsert();
 
+  virtual void post_create();
   virtual int setmask();
   virtual void init();
   virtual void setup_pre_exchange() {}

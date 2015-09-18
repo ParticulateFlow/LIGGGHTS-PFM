@@ -249,13 +249,6 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
   // memory not allocated initially
   ninsert_this_max_local = 0;
 
-  // check for missing or contradictory settings
-  sanity_check();
-
-  //min/max type to be inserted, need that to check if material properties defined for all materials
-  type_max = fix_distribution->max_type();
-  type_min = fix_distribution->min_type();
-
   // allgather arrays
   MPI_Comm_rank(world,&me);
   MPI_Comm_size(world,&nprocs);
@@ -273,15 +266,6 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
 
   print_stats_start_flag = 1;
 
-  // calc max insertion radius
-  int ntypes = atom->ntypes;
-  maxrad = 0.;
-  minrad = 1000.;
-  for(int i = 1; i <= ntypes; i++)
-  {
-     maxrad = MathExtraLiggghts::max(maxrad,max_rad(i));
-     minrad = MathExtraLiggghts::min(minrad,min_rad(i));
-  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -291,6 +275,28 @@ FixInsert::~FixInsert()
   delete random;
   delete [] recvcounts;
   delete [] displs;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsert::post_create()
+{
+  // check for missing or contradictory settings
+  sanity_check();
+
+  //min/max type to be inserted, need that to check if material properties defined for all materials
+  type_max = fix_distribution->max_type();
+  type_min = fix_distribution->min_type();
+
+  // calc max insertion radius
+  int ntypes = atom->ntypes;
+  maxrad = 0.;
+  minrad = 1000.;
+  for(int i = 1; i <= ntypes; i++)
+  {
+     maxrad = MathExtraLiggghts::max(maxrad,max_rad(i));
+     minrad = MathExtraLiggghts::min(minrad,min_rad(i));
+  }
 }
 
 /* ---------------------------------------------------------------------- */
