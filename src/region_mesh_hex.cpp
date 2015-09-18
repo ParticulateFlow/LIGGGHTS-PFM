@@ -325,8 +325,7 @@ double RegHexMesh::hex_acc_vol(int i)
 
 inline double RegHexMesh::volume_of_hex(int iHex)
 {
-    return volume_of_hex(node[iHex][0],node[iHex][1],node[iHex][2],node[iHex][3],
-                         node[iHex][4],node[iHex][5],node[iHex][6],node[iHex][7]);
+  return volume_of_hex(node[iHex]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -374,33 +373,17 @@ inline int RegHexMesh::is_inside_hex(int iHex,double *pos)
 
 /* ---------------------------------------------------------------------- */
 
-double RegHexMesh::volume_of_hex(double* v0, double* v1, double* v2, double* v3,
-                                 double* v4, double* v5, double* v6, double* v7)
+double RegHexMesh::volume_of_hex(double** v)
 {
-    vtkHexahedron *hexahedron = vtkHexahedron::New();
+  vtkNew<vtkHexahedron> hexahedron;
+  hexahedron->GetPointIds()->SetNumberOfIds(8);
 
-    hexahedron->GetPointIds()->SetNumberOfIds(8);
-    hexahedron->GetPointIds()->SetId(0,0);
-    hexahedron->GetPointIds()->SetId(1,1);
-    hexahedron->GetPointIds()->SetId(2,2);
-    hexahedron->GetPointIds()->SetId(3,3);
-    hexahedron->GetPointIds()->SetId(4,4);
-    hexahedron->GetPointIds()->SetId(5,5);
-    hexahedron->GetPointIds()->SetId(6,6);
-    hexahedron->GetPointIds()->SetId(7,7);
+  for(int i=0; i<8; ++i) {
+    hexahedron->GetPointIds()->SetId(i,i);
+    hexahedron->GetPoints()->SetPoint(0, v[i][0], v[i][1], v[i][2]);
+  }
 
-    hexahedron->GetPoints()->SetPoint(0, v0[0], v0[1], v0[2]);
-    hexahedron->GetPoints()->SetPoint(1, v1[0], v1[1], v1[2]);
-    hexahedron->GetPoints()->SetPoint(2, v2[0], v2[1], v2[2]);
-    hexahedron->GetPoints()->SetPoint(3, v3[0], v3[1], v3[2]);
-    hexahedron->GetPoints()->SetPoint(4, v4[0], v4[1], v4[2]);
-    hexahedron->GetPoints()->SetPoint(5, v5[0], v5[1], v5[2]);
-    hexahedron->GetPoints()->SetPoint(6, v6[0], v6[1], v6[2]);
-    hexahedron->GetPoints()->SetPoint(7, v7[0], v7[1], v7[2]);
-
-    double volume = vtkMeshQuality::HexVolume(hexahedron);
-    hexahedron->Delete();
-    return volume;
+  return vtkMeshQuality::HexVolume(hexahedron.GetPointer());
 }
 
 /* ---------------------------------------------------------------------- */
