@@ -24,6 +24,7 @@
 #ifndef VTK_MAJOR_VERSION
 #include <vtkConfigure.h>
 #endif
+#include <vtkNew.h>
 #include <vtkMeshQuality.h>
 #include "region_mesh_hex.h"
 #include "lammps.h"
@@ -153,7 +154,51 @@ int RegHexMesh::inside(double x, double y, double z)
 
 int RegHexMesh::surface_interior(double *x, double cutoff)
 {
-  error->one(FLERR,"This feature is not available for hex mesh regions");
+  // NOTE: no distinction between internal and external faces is made!
+
+  // check subdomain
+  if(!domain->is_in_subdomain(x)) return 0;
+
+  // check bbox, only if exists
+  if(bboxflag) {
+    if(x[0] < extent_xlo || x[0] > extent_xhi) return 0;
+    if(x[1] < extent_ylo || x[1] > extent_yhi) return 0;
+    if(x[2] < extent_zlo || x[2] > extent_zhi) return 0;
+  }
+
+  // brute force naive search
+  vtkNew<vtkHexahedron> hexahedron;
+  hexahedron->GetPointIds()->SetNumberOfIds(8);
+
+  for(int iHex=0; iHex<nHex; ++iHex) {
+    for(int j=0; j<8; ++j) {
+      hexahedron->GetPointIds()->SetId(j,j);
+      hexahedron->GetPoints()->SetPoint(j, node[iHex][j][0], node[iHex][j][1], node[iHex][j][2]);
+    }
+
+    double hexahedronCoords[3], hexahedronWeights[8];
+    int subId;
+    double dist2 = 0.;
+
+    int result = hexahedron->EvaluatePosition(x, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
+    if(result > 0) {
+      // if inside hexahedron, dist2 is set to 0; need to check each face for distance
+      double quadCoords[3], quadWeights[4], quadClosest[3];
+      const int nFaces = hexahedron->GetNumberOfFaces();
+      for(int i=0; i<nFaces; ++i) {
+        vtkCell *quad = hexahedron->GetFace(i);
+        result = quad->EvaluatePosition(x, quadClosest, subId, quadCoords, dist2, quadWeights);
+        if(result > 0) {
+          if(dist2 < cutoff*cutoff) {
+            add_contact(0,x,quadClosest[0],quadClosest[1],quadClosest[2]);
+            return 1;
+          }
+        }
+      }
+      return 0;
+    }
+  }
+
   return 0;
 }
 
@@ -161,8 +206,39 @@ int RegHexMesh::surface_interior(double *x, double cutoff)
 
 int RegHexMesh::surface_exterior(double *x, double cutoff)
 {
-  error->one(FLERR,"This feature is not available for hex mesh regions");
-  return 0;
+  // NOTE: no distinction between internal and external faces is made!
+
+  // check subdomain
+  if(!domain->is_in_subdomain(x)) return 0;
+
+  int nearby = 0;
+
+  // brute force naive search
+  vtkNew<vtkHexahedron> hexahedron;
+  hexahedron->GetPointIds()->SetNumberOfIds(8);
+
+  for(int iHex=0; iHex<nHex; ++iHex) {
+    for(int j=0; j<8; ++j) {
+      hexahedron->GetPointIds()->SetId(j,j);
+      hexahedron->GetPoints()->SetPoint(j, node[iHex][j][0], node[iHex][j][1], node[iHex][j][2]);
+    }
+
+    double hexahedronCoords[3], hexahedronWeights[8], hexahedronClosest[3];
+    int subId;
+    double dist2 = 0.;
+
+    int result = hexahedron->EvaluatePosition(x, hexahedronClosest, subId, hexahedronCoords, dist2, hexahedronWeights);
+    if(result == 0) {
+      if(dist2 < cutoff*cutoff) {
+        add_contact(0,x,hexahedronClosest[0],hexahedronClosest[1],hexahedronClosest[2]);
+        nearby = 1;
+      }
+    } else {
+      return 0; // inside
+    }
+  }
+
+  return nearby;
 }
 
 /* ---------------------------------------------------------------------- */
