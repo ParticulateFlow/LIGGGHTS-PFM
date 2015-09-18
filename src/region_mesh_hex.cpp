@@ -125,29 +125,25 @@ RegHexMesh::~RegHexMesh()
 
 int RegHexMesh::inside(double x, double y, double z)
 {
-   double pos[3];
-   pos[0] = x; pos[1] = y; pos[2] = z;
+  double pos[3];
+  pos[0] = x; pos[1] = y; pos[2] = z;
 
-   // check subdomain
-   if(!domain->is_in_subdomain(pos)) return 0;
+  // check subdomain
+  if(!domain->is_in_subdomain(pos)) return 0;
 
-   // check bbox, only if exists
-   if(bboxflag)
-   {
-       if(pos[0] < extent_xlo || pos[0] > extent_xhi) return 0;
-       if(pos[1] < extent_ylo || pos[1] > extent_yhi) return 0;
-       if(pos[2] < extent_zlo || pos[2] > extent_zhi) return 0;
-   }
+  // check bbox, only if exists
+  if(bboxflag) {
+    if(pos[0] < extent_xlo || pos[0] > extent_xhi) return 0;
+    if(pos[1] < extent_ylo || pos[1] > extent_yhi) return 0;
+    if(pos[2] < extent_zlo || pos[2] > extent_zhi) return 0;
+  }
 
-   // brute force naive search
-   for(int i = 0; i < nHex; i++)
-   {
-      if(is_inside_hex(i,pos) > 0) return 1;
-   }
+  // brute force naive search
+  for(int i=0; i<nHex; ++i) {
+    if(is_inside_hex(i,pos) > 0) return 1;
+  }
 
-   //fprintf(screen,"checking pos %f %f %f, result %d; ntet %d\n",x,y,z,inside_mesh,nTet);
-
-   return 0;
+  return 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -245,80 +241,79 @@ int RegHexMesh::surface_exterior(double *x, double cutoff)
 
 void RegHexMesh::generate_random(double *pos)
 {
-    if(!interior) error->all(FLERR,"Impossible to generate random points on hex mesh region with side = out");
-    mesh_randpos(pos);
+  if(!interior) error->all(FLERR,"Impossible to generate random points on hex mesh region with side = out");
+  mesh_randpos(pos);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void RegHexMesh::generate_random_cut(double *pos,double cut)
 {
-    // function actually not called at the moment
-    if(!interior) error->all(FLERR,"Impossible to generate random points on hex mesh region with side = out");
-    error->all(FLERR,"This feature is not available for hex mesh regions");
+  // function actually not called at the moment
+  if(!interior) error->all(FLERR,"Impossible to generate random points on hex mesh region with side = out");
+  error->all(FLERR,"This feature is not available for hex mesh regions");
 }
 
 /* ---------------------------------------------------------------------- */
 
 void RegHexMesh::add_hex(double **n)
 {
-    double ctr[3];
+  double ctr[3];
 
-    if(nHex == nHexMax) grow_arrays();
+  if(nHex == nHexMax) grow_arrays();
 
-    vectorZeroize3D(ctr);
-    for(int i=0; i<8; ++i)
-    {
-        vectorCopy3D(n[i],node[nHex][i]);
-        vectorAdd3D(ctr,node[nHex][i],ctr);
-    }
-    vectorScalarDiv3D(ctr,8.);
-    vectorCopy3D(ctr,center[nHex]);
+  vectorZeroize3D(ctr);
+  for(int i=0; i<8; ++i) {
+    vectorCopy3D(n[i],node[nHex][i]);
+    vectorAdd3D(ctr,node[nHex][i],ctr);
+  }
+  vectorScalarDiv3D(ctr,8.);
+  vectorCopy3D(ctr,center[nHex]);
 
-    volume[nHex] = volume_of_hex(nHex);
-    total_volume += volume[nHex];
-    acc_volume[nHex] = volume[nHex];
-    if(nHex > 0) acc_volume[nHex] += acc_volume[nHex-1];
-    ++nHex;
+  volume[nHex] = volume_of_hex(nHex);
+  total_volume += volume[nHex];
+  acc_volume[nHex] = volume[nHex];
+  if(nHex > 0) acc_volume[nHex] += acc_volume[nHex-1];
+  ++nHex;
 }
 
 /* ---------------------------------------------------------------------- */
 
 void RegHexMesh::grow_arrays()
 {
-    nHexMax += DELTA_HEX;
-    node = (double***)(memory->grow(node,nHexMax, 8, 3, "vtk_hex_node"));
-    center = (double**)(memory->grow(center,nHexMax, 3, "vtk_hex_center"));
-    volume = (double*)(memory->srealloc(volume,nHexMax*sizeof(double),"vtk_hex_volume"));
-    acc_volume = (double*)(memory->srealloc(acc_volume,nHexMax*sizeof(double),"vtk_hex_acc_volume"));
+  nHexMax += DELTA_HEX;
+  node = (double***)(memory->grow(node,nHexMax, 8, 3, "vtk_hex_node"));
+  center = (double**)(memory->grow(center,nHexMax, 3, "vtk_hex_center"));
+  volume = (double*)(memory->srealloc(volume,nHexMax*sizeof(double),"vtk_hex_volume"));
+  acc_volume = (double*)(memory->srealloc(acc_volume,nHexMax*sizeof(double),"vtk_hex_acc_volume"));
 }
 
 /* ---------------------------------------------------------------------- */
 
 int RegHexMesh::n_hex()
 {
-    return nHex;
+  return nHex;
 }
 
 /* ---------------------------------------------------------------------- */
 
 double RegHexMesh::total_vol()
 {
-    return total_volume;
+  return total_volume;
 }
 
 /* ---------------------------------------------------------------------- */
 
 double RegHexMesh::hex_vol(int i)
 {
-    return volume[i];
+  return volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
 
 double RegHexMesh::hex_acc_vol(int i)
 {
-    return acc_volume[i];
+  return acc_volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
@@ -368,40 +363,37 @@ double RegHexMesh::volume_of_hex(double** v)
 
 inline void RegHexMesh::set_extent()
 {
-    extent_xlo = extent_ylo = extent_zlo =  BIG;
-    extent_xhi = extent_yhi = extent_zhi = -BIG;
+  extent_xlo = extent_ylo = extent_zlo =  BIG;
+  extent_xhi = extent_yhi = extent_zhi = -BIG;
 
-    for(int i = 0; i < nHex; i++)
-        for(int j=0;j<8;j++)
-        {
-            if(node[i][j][0] < extent_xlo) extent_xlo = node[i][j][0];
-            if(node[i][j][1] < extent_ylo) extent_ylo = node[i][j][1];
-            if(node[i][j][2] < extent_zlo) extent_zlo = node[i][j][2];
+  for(int i=0; i<nHex; ++i) {
+    for(int j=0; j<8; ++j) {
+      if(node[i][j][0] < extent_xlo) extent_xlo = node[i][j][0];
+      if(node[i][j][1] < extent_ylo) extent_ylo = node[i][j][1];
+      if(node[i][j][2] < extent_zlo) extent_zlo = node[i][j][2];
 
-            if(node[i][j][0] > extent_xhi) extent_xhi = node[i][j][0];
-            if(node[i][j][1] > extent_yhi) extent_yhi = node[i][j][1];
-            if(node[i][j][2] > extent_zhi) extent_zhi = node[i][j][2];
-        }
+      if(node[i][j][0] > extent_xhi) extent_xhi = node[i][j][0];
+      if(node[i][j][1] > extent_yhi) extent_yhi = node[i][j][1];
+      if(node[i][j][2] > extent_zhi) extent_zhi = node[i][j][2];
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */
 
 inline void RegHexMesh::mesh_randpos(double *pos)
 {
-    hex_randpos(mesh_randcell(), pos);
-    //if(pos[0] == 0. && pos[1] == 0. && pos[2] == 0.)
-    //    error->one(FLERR,"illegal RegHexMesh::mesh_randpos");
+  hex_randpos(mesh_randcell(), pos);
 }
 
 /* ---------------------------------------------------------------------- */
 
 inline int RegHexMesh::mesh_randcell()
 {
-
-    double rd = total_volume * random->uniform();
-    int chosen = 0;
-    while (rd > acc_volume[chosen] && chosen < nHex-1) chosen++;
-    return chosen;
+  double rd = total_volume * random->uniform();
+  int chosen = 0;
+  while (rd > acc_volume[chosen] && chosen < nHex-1) ++chosen;
+  return chosen;
 }
 
 #endif
