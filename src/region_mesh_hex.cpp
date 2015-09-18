@@ -332,43 +332,21 @@ inline double RegHexMesh::volume_of_hex(int iHex)
 
 inline int RegHexMesh::is_inside_hex(int iHex,double *pos)
 {
-    /*double vol1,vol2,vol3,vol4;
+  vtkNew<vtkHexahedron> hexahedron;
+  hexahedron->GetPointIds()->SetNumberOfIds(8);
 
-    vol1 = volume_of_tet(node[iHex][0], node[iHex][1], node[iHex][2], pos          );
-    vol2 = volume_of_tet(node[iHex][0], node[iHex][1], pos,           node[iHex][3]);
-    vol3 = volume_of_tet(node[iHex][0], pos,           node[iHex][2], node[iHex][3]);
-    vol4 = volume_of_tet(pos          , node[iHex][1], node[iHex][2], node[iHex][3]);
-
-    if(vol1 > 0. && vol2 > 0. && vol3 > 0. && vol4 > 0.) return 1;*/
-    vtkHexahedron *hexahedron = vtkHexahedron::New();
-
-    hexahedron->GetPointIds()->SetNumberOfIds(8);
-    hexahedron->GetPointIds()->SetId(0,0);
-    hexahedron->GetPointIds()->SetId(1,1);
-    hexahedron->GetPointIds()->SetId(2,2);
-    hexahedron->GetPointIds()->SetId(3,3);
-    hexahedron->GetPointIds()->SetId(4,4);
-    hexahedron->GetPointIds()->SetId(5,5);
-    hexahedron->GetPointIds()->SetId(6,6);
-    hexahedron->GetPointIds()->SetId(7,7);
-
-    hexahedron->GetPoints()->SetPoint(0, node[iHex][0][0], node[iHex][0][1], node[iHex][0][2]);
-    hexahedron->GetPoints()->SetPoint(1, node[iHex][1][0], node[iHex][1][1], node[iHex][1][2]);
-    hexahedron->GetPoints()->SetPoint(2, node[iHex][2][0], node[iHex][2][1], node[iHex][2][2]);
-    hexahedron->GetPoints()->SetPoint(3, node[iHex][3][0], node[iHex][3][1], node[iHex][3][2]);
-    hexahedron->GetPoints()->SetPoint(4, node[iHex][4][0], node[iHex][4][1], node[iHex][4][2]);
-    hexahedron->GetPoints()->SetPoint(5, node[iHex][5][0], node[iHex][5][1], node[iHex][5][2]);
-    hexahedron->GetPoints()->SetPoint(6, node[iHex][6][0], node[iHex][6][1], node[iHex][6][2]);
+  for(int i=0; i<8; ++i) {
+    hexahedron->GetPointIds()->SetId(i,i);
     hexahedron->GetPoints()->SetPoint(7, node[iHex][7][0], node[iHex][7][1], node[iHex][7][2]);
+  }
 
-    double hexahedronCoords[3], hexahedronWeights[8];//, hexahedronClosest[3];
-    int subId;
-    double dist2;
+  double hexahedronCoords[3], hexahedronWeights[8];//, hexahedronClosest[3];
+  int subId;
+  double dist2 = 0.;
 
-    int result = hexahedron->EvaluatePosition(pos, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
-    hexahedron->Delete();
-    if(result > 0) return 1;
-    return 0;
+  if(hexahedron->EvaluatePosition(pos, NULL, subId, hexahedronCoords, dist2, hexahedronWeights) > 0)
+    return 1;
+  return 0;
 }
 
 /* ---------------------------------------------------------------------- */
