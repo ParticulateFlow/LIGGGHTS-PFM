@@ -66,8 +66,7 @@ class RegHexMesh : public Region {
 
    void grow_arrays();
    void set_extent();
-   double volume_of_hex(double* v0, double* v1, double* v2, double* v3,
-                        double* v4, double* v5, double* v6, double* v7);
+   double volume_of_hex(double** v);
    double volume_of_hex(int iHex);
 
    void mesh_randpos(double *pos);
