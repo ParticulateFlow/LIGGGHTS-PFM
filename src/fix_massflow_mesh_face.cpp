@@ -678,11 +678,11 @@ void FixMassflowMeshFace::post_integrate()
                                 else            fix_counter_->set_vector_atom_int(iPart, INSIDE);
                                 ignore_this.insert(iPart);
                                 once_this.erase(iPart);
+                                int old_face_id = face_ids->get(crossing_particles_this[iPart]);
                                 crossing_particles_this.erase(iPart);
                                 // since transition from inside to outside does get counted here, we have to undo some stuff:
                                 mass_this -= rmass[iPart];
                                 nparticles_this--;
-                                int old_face_id = face_ids->get(crossing_particles_this[iPart]);
                                 mass_face_this[faceid2index_[old_face_id]] -= rmass[iPart];
                                 nparticles_face_this[faceid2index_[old_face_id]]--;
                                 if(fix_property_) property_this -= fix_property_->vector_atom[iPart];
