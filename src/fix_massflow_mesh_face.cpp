@@ -250,15 +250,14 @@ void FixMassflowMeshFace::post_create()
     TriMesh *mesh = fix_mesh_->triMesh();
 
     int nTriLocal = mesh->sizeLocal();
-    int *face_ids_local = new int[nTriLocal];
+    int *tri_face_ids_local = new int[nTriLocal];
 
     if(mesh->prop().getElementProperty<ScalarContainer<int> >("face_id"))
     {
         ScalarContainer<int> *face_id = mesh->prop().getElementProperty<ScalarContainer<int> >("face_id");
         for(int iTri = 0; iTri < nTriLocal; ++iTri)
         {
-            fprintf(screen,"%d ", face_id->get(iTri));
-            face_ids_local[iTri] = face_id->get(iTri);
+            tri_face_ids_local[iTri] = face_id->get(iTri);
         }
     }
     else
@@ -267,24 +266,26 @@ void FixMassflowMeshFace::post_create()
     }
 
     int nTriGlobal = nTriLocal;
-    int *face_ids_recv = NULL;
+    int *tri_face_ids_recv = NULL;
 
     if(mesh->isParallel())
     {
         nTriGlobal = mesh->sizeGlobal();
-        MPI_Allgather_Vector(face_ids_local, nTriLocal, face_ids_recv, world);
-        delete [] face_ids_local;
+        MPI_Allgather_Vector(tri_face_ids_local, nTriLocal, tri_face_ids_recv, world);
+        delete [] tri_face_ids_local;
     }
     else // every proc has full mesh information
     {
         // NOTE: mesh->sizeGlobal() not initialized yet;
-        face_ids_recv = face_ids_local;
+        tri_face_ids_recv = tri_face_ids_local;
     }
 
 
+    // faceid2index_->first:  unique face id
+    // faceid2index_->second: index in std::vector member variables
     for(int iTri = 0; iTri < nTriGlobal; ++iTri)
     {
-        faceid2index_[face_ids_recv[iTri]] = 0;
+        faceid2index_[tri_face_ids_recv[iTri]] = 0;
     }
 
     int i = 0;
@@ -303,7 +304,7 @@ void FixMassflowMeshFace::post_create()
     std::fill_n(mass_face_last_.begin(),       nfaceids, 0.);
     std::fill_n(nparticles_face_last_.begin(), nfaceids, 0 );
 
-    delete [] face_ids_recv;
+    delete [] tri_face_ids_recv;
 
     size_array_rows = nfaceids; // rows in global array
     size_array_cols = 6;        // columns in global array
@@ -382,6 +383,9 @@ void FixMassflowMeshFace::post_integrate()
     TriMesh *mesh = fix_mesh_->triMesh();
     int nTriAll = mesh->sizeLocal() + mesh->sizeGhost();
 
+    ScalarContainer<int> *tri_face_ids = mesh->prop().getElementProperty<ScalarContainer<int> >("face_id");
+    int nfaceids = faceid2index_.size();
+
     // update time for counter
     // also store values for last invokation
     t_count_ += update->dt;
@@ -395,8 +399,6 @@ void FixMassflowMeshFace::post_integrate()
         mass_face_last_ = mass_face_;
     }
 
-    ScalarContainer<int> *face_ids = mesh->prop().getElementProperty<ScalarContainer<int> >("face_id");
-    int nfaceids = face_ids->size();
     std::vector<double> mass_face_this(nfaceids, 0.0);
     std::vector<int> nparticles_face_this(nfaceids, 0);
     std::map<int, int> handled_particles_this;
@@ -411,7 +413,7 @@ void FixMassflowMeshFace::post_integrate()
 
     for(int iTri = 0; iTri < nTriAll; iTri++)
     {
-        int face_id = face_ids->get(iTri);
+        int face_id = tri_face_ids->get(iTri);
         mesh->surfaceNorm(iTri,nvec_);
         mesh->node(iTri,0,pref_);
 
@@ -678,7 +680,7 @@ void FixMassflowMeshFace::post_integrate()
                                 else            fix_counter_->set_vector_atom_int(iPart, INSIDE);
                                 ignore_this.insert(iPart);
                                 once_this.erase(iPart);
-                                int old_face_id = face_ids->get(crossing_particles_this[iPart]);
+                                int old_face_id = tri_face_ids->get(crossing_particles_this[iPart]);
                                 crossing_particles_this.erase(iPart);
                                 // since transition from inside to outside does get counted here, we have to undo some stuff:
                                 mass_this -= rmass[iPart];
@@ -797,7 +799,7 @@ void FixMassflowMeshFace::post_integrate()
         {
             int iPart = it->first;
             fprintf(screen,"%ld %d %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g \n ",
-                       update->ntimestep, face_ids->get(it->second), tag[iPart],
+                       update->ntimestep, tri_face_ids->get(it->second), tag[iPart],
                        2.*radius[iPart]/force->cg(),
                        x[iPart][0],x[iPart][1],x[iPart][2],
                        v[iPart][0],v[iPart][1],v[iPart][2]);
@@ -809,7 +811,7 @@ void FixMassflowMeshFace::post_integrate()
         {
             int iPart = it->first;
             fprintf(fp_," %ld %d %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g",
-                       update->ntimestep, face_ids->get(it->second), tag[iPart],
+                       update->ntimestep, tri_face_ids->get(it->second), tag[iPart],
                        2.*radius[iPart]/force->cg(),
                        x[iPart][0],x[iPart][1],x[iPart][2],
                        v[iPart][0],v[iPart][1],v[iPart][2]);
