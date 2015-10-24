@@ -260,9 +260,7 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
   {
     if (mask[i] & groupbit)
     {
-      //vectorCopy3D(vrec[i],v[i]);
-        // add difference vrec between recurrence velocity field and mean particle velocity to current particle velocities
-      vectorAdd3D(v[i],vrec[i],v[i]);
+      vectorCopy3D(vrec[i],v[i]);
     }
   }
 }
