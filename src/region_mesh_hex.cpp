@@ -332,10 +332,10 @@ inline int RegHexMesh::is_inside_hex(int iHex,double *pos)
 
   for(int i=0; i<8; ++i) {
     hexahedron->GetPointIds()->SetId(i,i);
-    hexahedron->GetPoints()->SetPoint(7, node[iHex][7][0], node[iHex][7][1], node[iHex][7][2]);
+    hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
   }
 
-  double hexahedronCoords[3], hexahedronWeights[8];//, hexahedronClosest[3];
+  double hexahedronCoords[3], hexahedronWeights[8];
   int subId;
   double dist2 = 0.;
 
@@ -353,7 +353,7 @@ double RegHexMesh::volume_of_hex(double** v)
 
   for(int i=0; i<8; ++i) {
     hexahedron->GetPointIds()->SetId(i,i);
-    hexahedron->GetPoints()->SetPoint(0, v[i][0], v[i][1], v[i][2]);
+    hexahedron->GetPoints()->SetPoint(i, v[i][0], v[i][1], v[i][2]);
   }
 
   return vtkMeshQuality::HexVolume(hexahedron.GetPointer());
