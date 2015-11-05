@@ -49,9 +49,11 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
     fix_vrec_(0),
     fix_dragforce_(0),
     fix_volumeweight_(0),
+    fix_tracerconcentration_(0),
     use_force_(false),
     use_dens_(false),
     use_type_(false),
+    use_tracer_(false),
     use_property_(false)
 {
     int iarg = 3;
@@ -99,6 +101,20 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
                 use_force_ = false;
             else
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_force'");
+            iarg++;
+            hasargs = true;
+        }
+        else if(strcmp(arg[iarg],"transfer_tracer") == 0)
+        {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_tracer'");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                use_tracer_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                use_tracer_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_tracer'");
             iarg++;
             hasargs = true;
         }
@@ -185,12 +201,28 @@ void FixCfdCouplingRecurrence::post_create()
         fixarg[1]="all";
         fixarg[2]="property/atom";
         fixarg[3]="volumeweight";
-        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[4]="scalar"; // 1 scalar per particle to be registered
         fixarg[5]="no";    // restart
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="1.";
         fix_volumeweight_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+    
+     // register tracer concentration
+    if(!fix_tracerconcentration_ && use_tracer_)
+    {
+        const char* fixarg[11];
+        fixarg[0]="tracerconcentration";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="tracerconcentration";
+        fixarg[4]="scalar"; // 1 scalar per particle to be registered
+        fixarg[5]="yes";    // restart
+        fixarg[6]="no";     // communicate ghost
+        fixarg[7]="no";     // communicate rev
+        fixarg[8]="0.";
+        fix_tracerconcentration_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 }
 
@@ -201,6 +233,7 @@ void FixCfdCouplingRecurrence::pre_delete(bool unfixflag)
     if(unfixflag && fix_vrec_) modify->delete_fix("vrec");
     if(unfixflag && fix_dragforce_) modify->delete_fix("dragforce");
     if(unfixflag && fix_volumeweight_) modify->delete_fix("volumeweight");
+    if(unfixflag && fix_tracerconcentration_) modify->delete_fix("tracerconcentration");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -240,6 +273,7 @@ void FixCfdCouplingRecurrence::init()
     // values to come from OF
     fix_coupling_->add_pull_property("vrec","vector-atom");
     if(use_force_) fix_coupling_->add_pull_property("dragforce","vector-atom");
+    if(use_tracer_) fix_coupling_->add_pull_property("tracerconcentration","scalar-atom");
 
 
     vectorZeroize3D(dragforce_total);
@@ -261,6 +295,10 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
     if (mask[i] & groupbit)
     {
       vectorCopy3D(vrec[i],v[i]);
+      if(use_tracer_)
+      {
+	vectorCopy3D(vrec[i],v[i]);
+      }
     }
   }
 }

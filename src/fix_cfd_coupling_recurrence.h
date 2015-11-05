@@ -59,9 +59,10 @@ class FixCfdCouplingRecurrence : public Fix  {
   class FixPropertyAtom* fix_vrec_;
   class FixPropertyAtom* fix_dragforce_;  // drag due to recurrence fields
   class FixPropertyAtom* fix_volumeweight_;
+  class FixPropertyAtom* fix_tracerconcentration_;
 
  private:
-  bool use_force_, use_dens_, use_type_;
+  bool use_force_, use_dens_, use_type_, use_tracer_;
 
   bool use_property_;
   char property_name[200];
