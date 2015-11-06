@@ -267,7 +267,8 @@ void FixCfdCouplingRecurrence::init()
     if(use_type_) fix_coupling_->add_push_property("type","scalar-atom");
     if(use_dens_) fix_coupling_->add_push_property("density","scalar-atom");
     fix_coupling_->add_push_property("volumeweight","scalar-atom");
-
+    if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
+    
     if(use_property_) fix_coupling_->add_push_property(property_name,property_type);
 
     // values to come from OF
