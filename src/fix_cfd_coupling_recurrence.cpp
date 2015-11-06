@@ -108,7 +108,7 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
         {
             if(narg < iarg+2)
                 error->fix_error(FLERR,this,"not enough arguments for 'transfer_tracer'");
-            iarg++;
+            iarg++;   if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
             if(strcmp(arg[iarg],"yes") == 0)
                 use_tracer_ = true;
             else if(strcmp(arg[iarg],"no") == 0)
@@ -174,7 +174,7 @@ void FixCfdCouplingRecurrence::post_create()
     }
 
     // register dragforce
-    if(!fix_dragforce_ && use_force_)
+    if(!fix_dragforce_ && use_force_)   if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
     {
         const char* fixarg[11];
         fixarg[0]="dragforce";
@@ -186,7 +186,7 @@ void FixCfdCouplingRecurrence::post_create()
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="0.";
-        fixarg[9]="0.";
+        fixarg[9]="0.";   if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
         fixarg[10]="0.";
         fix_dragforce_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
     }
@@ -267,7 +267,6 @@ void FixCfdCouplingRecurrence::init()
     if(use_type_) fix_coupling_->add_push_property("type","scalar-atom");
     if(use_dens_) fix_coupling_->add_push_property("density","scalar-atom");
     fix_coupling_->add_push_property("volumeweight","scalar-atom");
-    if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
     
     if(use_property_) fix_coupling_->add_push_property(property_name,property_type);
 
