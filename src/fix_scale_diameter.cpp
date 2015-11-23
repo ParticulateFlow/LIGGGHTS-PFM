@@ -45,7 +45,7 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
   scale_region(NULL),
   idregion(NULL),
   radius_(1.0),
-  scale_to_(0.0),
+  scale_to_(1.0),
   scale_range_(1.0)
 {
   if (narg < 5) error->all(FLERR,"Not enough arguments for fix scale/diameter command");
