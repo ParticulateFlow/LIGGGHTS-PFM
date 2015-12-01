@@ -23,8 +23,6 @@
 
 <LI>seed = random number generator seed (integer value) 
 
-<LI>n_spheres = number of spheres in the template 
-
 <LI>zero or more keyword/value pairs can be appended 
 
 <LI>keyword = <I>atom_type</I> or <I>density</I> or <I>volume_limit</I> or <I>radius</I> 
@@ -33,7 +31,7 @@
 <I>density</I> values = random_style param1 (param2)
   random_style = 'constant' or 'uniform' or 'gaussian'
   param1 = density for 'constant', low value of density for 'uniform', expectancy value for 'gaussian'
-    param2 = omitted for 'constant', high value of density for 'uniform', sigma value for 'gaussian'
+  param2 = omitted for 'constant', high value of density for 'uniform', sigma value for 'gaussian'
 <I>volume_limit</I> value = lowest particle volume allowed in simulation
 <I>radius</I> values = random_style param1 (param2)
   random_style = 'constant' or 'uniform number' or 'uniform mass' or 'gaussian number'
@@ -56,7 +54,7 @@
 </P>
 <P>It is thus possible to define a uniform or gaussian distribution on top of the discrete distribution defined by <A HREF = "fix_particledistribution_discrete.html">fix_particledistribution_discrete</A>.
 </P>
-<P>IMPORTANT NOTE: As opposed to the number-based distributions used by <A HREF = "fix_pour.html">fix_pour</A> and <A HREF = "fix_pour_legacy.html">fix_pour_legacy</A>, this fix uses the more common distribution based on mass-% for the radius distribution (as does <A HREF = "fix_particledistribution_discrete.html">fix_particledistribution_discrete</A>).
+<P>IMPORTANT NOTE: As opposed to the number-based distributions used by <A HREF = "fix_pour.html">fix_pour_legacy</A>, this fix uses the more common distribution based on mass-% for the radius distribution (as does <A HREF = "fix_particledistribution_discrete.html">fix_particledistribution_discrete</A>).
 </P>
 <P>LIGGGHTS will throw an error if the particle volume is too small compared to machine precision. 
 If you are sure you know what you are doing you can override the default limit of 1e-12.
