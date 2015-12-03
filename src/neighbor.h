@@ -33,6 +33,7 @@ class Neighbor : protected Pointers {
   friend class Cuda;
   //NP modified C.K.
   friend class FixNeighlistMesh;
+  friend class FixNeighlistMeshOMP;
   friend class OneLevelGrid;
   /*NL*/ friend class Lbalance;
   //NP modified St.A.

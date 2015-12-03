@@ -116,6 +116,17 @@ struct ForceData {
     delta_torque[2] = 0.0;
   }
 };
+
+struct ForceUpdate {
+  double * f;
+  double * torque;
+  ForceData forces;
+
+  ForceUpdate(double * f, double * torque, ForceData & forces) : f(f), torque(torque), forces(forces)
+  {
+  }
+};
+
 }
 
 class IContactHistorySetup {

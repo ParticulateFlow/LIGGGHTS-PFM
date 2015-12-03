@@ -43,7 +43,9 @@ namespace Walls {
     virtual ~IGranularWall();
     virtual void settings(int nargs, char ** args) = 0;
     virtual void init_granular() = 0;
-    virtual void compute_force(FixWallGran * fwg, ContactModels::CollisionData & cdata, double * v_wall) = 0;
+    virtual void compute_force(FixWallGran * fwg, ContactModels::CollisionData & cdata, double * v_wall,
+                               ContactModels::ForceData & i_forces,
+                               ContactModels::ForceData & j_forces) = 0;
   };
 
   class Factory : public Utils::AbstractFactory<IGranularWall> {
