@@ -482,7 +482,7 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
 
     if(store_force_ || stress_flag_)
     {
-      vectorSubtract3D(f_[iPart], force_old, j_forces.delta_F);
+      vectorSubtract3D(f_[iPart], force_old, i_forces.delta_F);
     }
   }
 
@@ -490,7 +490,7 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
   if(store_force_ || stress_flag_)
   {
     if(store_force_)
-        vectorAdd3D (wallforce_[iPart], j_forces.delta_F, wallforce_[iPart]);
+        vectorAdd3D (wallforce_[iPart], i_forces.delta_F, wallforce_[iPart]);
 
     if(stress_flag_ && fix_mesh->trackStress())
     {
@@ -501,7 +501,7 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
         #pragma omp critical
         static_cast<FixMeshSurfaceStress*>(fix_mesh)->add_particle_contribution
         (
-           iPart,j_forces.delta_F,delta,iTri,v_wall
+           iPart,i_forces.delta_F,delta,iTri,v_wall
         );
     }
   }
