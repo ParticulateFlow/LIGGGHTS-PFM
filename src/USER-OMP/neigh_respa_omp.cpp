@@ -46,9 +46,11 @@ void Neighbor::respa_nsq_no_newton_omp(NeighList *list)
 #endif
   NEIGH_OMP_SETUP(nlocal);
 
-  int i,j,n,itype,jtype,n_inner,n_middle;
+  int i,j,n,itype,jtype,n_inner,n_middle=0;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
-  int *neighptr,*neighptr_inner,*neighptr_middle;
+  int * neighptr        = NULL;
+  int * neighptr_inner  = NULL;
+  int * neighptr_middle = NULL;
 
   // loop over each atom, storing neighbors
 
@@ -71,7 +73,10 @@ void Neighbor::respa_nsq_no_newton_omp(NeighList *list)
   int *numneigh_inner = listinner->numneigh;
   int **firstneigh_inner = listinner->firstneigh;
 
-  int *ilist_middle,*numneigh_middle,**firstneigh_middle;
+  int *       ilist_middle = NULL;
+  int *    numneigh_middle = NULL;
+  int ** firstneigh_middle = NULL;
+
   if (respamiddle) {
     ilist_middle = listmiddle->ilist;
     numneigh_middle = listmiddle->numneigh;
@@ -84,7 +89,7 @@ void Neighbor::respa_nsq_no_newton_omp(NeighList *list)
   ipage.reset();
   ipage_inner.reset();
 
-  MyPage<int> *ipage_middle;
+  MyPage<int> *ipage_middle = NULL;
   if (respamiddle) {
     ipage_middle = listmiddle->ipage + tid;
     ipage_middle->reset();
@@ -197,9 +202,11 @@ void Neighbor::respa_nsq_newton_omp(NeighList *list)
 #endif
   NEIGH_OMP_SETUP(nlocal);
 
-  int i,j,n,itype,jtype,itag,jtag,n_inner,n_middle;
+  int i,j,n,itype,jtype,itag,jtag,n_inner,n_middle=0;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
-  int *neighptr,*neighptr_inner,*neighptr_middle;
+  int * neighptr        = NULL;
+  int * neighptr_inner  = NULL;
+  int * neighptr_middle = NULL;
 
   // loop over each atom, storing neighbors
 
@@ -222,7 +229,10 @@ void Neighbor::respa_nsq_newton_omp(NeighList *list)
   int *numneigh_inner = listinner->numneigh;
   int **firstneigh_inner = listinner->firstneigh;
 
-  int *ilist_middle,*numneigh_middle,**firstneigh_middle;
+  int *       ilist_middle = NULL;
+  int *    numneigh_middle = NULL;
+  int ** firstneigh_middle = NULL;
+
   if (respamiddle) {
     ilist_middle = listmiddle->ilist;
     numneigh_middle = listmiddle->numneigh;
@@ -235,7 +245,7 @@ void Neighbor::respa_nsq_newton_omp(NeighList *list)
   ipage.reset();
   ipage_inner.reset();
 
-  MyPage<int> *ipage_middle;
+  MyPage<int> *ipage_middle = NULL;
   if (respamiddle) {
     ipage_middle = listmiddle->ipage + tid;
     ipage_middle->reset();
@@ -369,9 +379,11 @@ void Neighbor::respa_bin_no_newton_omp(NeighList *list)
 #endif
   NEIGH_OMP_SETUP(nlocal);
 
-  int i,j,k,n,itype,jtype,ibin,n_inner,n_middle;
+  int i,j,k,n,itype,jtype,ibin,n_inner,n_middle=0;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
-  int *neighptr,*neighptr_inner,*neighptr_middle;
+  int * neighptr        = NULL;
+  int * neighptr_inner  = NULL;
+  int * neighptr_middle = NULL;
 
   // loop over each atom, storing neighbors
 
@@ -395,7 +407,10 @@ void Neighbor::respa_bin_no_newton_omp(NeighList *list)
   int *numneigh_inner = listinner->numneigh;
   int **firstneigh_inner = listinner->firstneigh;
 
-  int *ilist_middle,*numneigh_middle,**firstneigh_middle;
+  int *       ilist_middle = NULL;
+  int *    numneigh_middle = NULL;
+  int ** firstneigh_middle = NULL;
+
   if (respamiddle) {
     ilist_middle = listmiddle->ilist;
     numneigh_middle = listmiddle->numneigh;
@@ -408,7 +423,7 @@ void Neighbor::respa_bin_no_newton_omp(NeighList *list)
   ipage.reset();
   ipage_inner.reset();
 
-  MyPage<int> *ipage_middle;
+  MyPage<int> *ipage_middle = NULL;
   if (respamiddle) {
     ipage_middle = listmiddle->ipage + tid;
     ipage_middle->reset();
@@ -532,9 +547,11 @@ void Neighbor::respa_bin_newton_omp(NeighList *list)
 #endif
   NEIGH_OMP_SETUP(nlocal);
 
-  int i,j,k,n,itype,jtype,ibin,n_inner,n_middle;
+  int i,j,k,n,itype,jtype,ibin,n_inner,n_middle=0;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
-  int *neighptr,*neighptr_inner,*neighptr_middle;
+  int * neighptr        = NULL;
+  int * neighptr_inner  = NULL;
+  int * neighptr_middle = NULL;
 
   // loop over each atom, storing neighbors
 
@@ -558,7 +575,10 @@ void Neighbor::respa_bin_newton_omp(NeighList *list)
   int *numneigh_inner = listinner->numneigh;
   int **firstneigh_inner = listinner->firstneigh;
 
-  int *ilist_middle,*numneigh_middle,**firstneigh_middle;
+  int *       ilist_middle = NULL;
+  int *    numneigh_middle = NULL;
+  int ** firstneigh_middle = NULL;
+
   if (respamiddle) {
     ilist_middle = listmiddle->ilist;
     numneigh_middle = listmiddle->numneigh;
@@ -571,7 +591,7 @@ void Neighbor::respa_bin_newton_omp(NeighList *list)
   ipage.reset();
   ipage_inner.reset();
 
-  MyPage<int> *ipage_middle;
+  MyPage<int> *ipage_middle = NULL;
   if (respamiddle) {
     ipage_middle = listmiddle->ipage + tid;
     ipage_middle->reset();
@@ -736,9 +756,11 @@ void Neighbor::respa_bin_newton_tri_omp(NeighList *list)
 #endif
   NEIGH_OMP_SETUP(nlocal);
 
-  int i,j,k,n,itype,jtype,ibin,n_inner,n_middle;
+  int i,j,k,n,itype,jtype,ibin,n_inner,n_middle=0;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
-  int *neighptr,*neighptr_inner,*neighptr_middle;
+  int * neighptr        = NULL;
+  int * neighptr_inner  = NULL;
+  int * neighptr_middle = NULL;
 
   // loop over each atom, storing neighbors
 
@@ -762,7 +784,10 @@ void Neighbor::respa_bin_newton_tri_omp(NeighList *list)
   int *numneigh_inner = listinner->numneigh;
   int **firstneigh_inner = listinner->firstneigh;
 
-  int *ilist_middle,*numneigh_middle,**firstneigh_middle;
+  int *       ilist_middle = NULL;
+  int *    numneigh_middle = NULL;
+  int ** firstneigh_middle = NULL;
+
   if (respamiddle) {
     ilist_middle = listmiddle->ilist;
     numneigh_middle = listmiddle->numneigh;
@@ -775,7 +800,7 @@ void Neighbor::respa_bin_newton_tri_omp(NeighList *list)
   ipage.reset();
   ipage_inner.reset();
 
-  MyPage<int> *ipage_middle;
+  MyPage<int> *ipage_middle = NULL;
   if (respamiddle) {
     ipage_middle = listmiddle->ipage + tid;
     ipage_middle->reset();
