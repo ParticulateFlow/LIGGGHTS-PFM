@@ -399,23 +399,23 @@ void FixWallGranOMP::post_force_primitive(int vflag)
   int * const mask = atom->mask;
 
   for(size_t iWall = 0; iWall < primitiveWalls_.size(); ++iWall) {
-	  PrimitiveWall * primitiveWall = primitiveWalls_[iWall];
-	  double **c_history = 0;
+    PrimitiveWall * primitiveWall = primitiveWalls_[iWall];
+    double **c_history =  NULL;
 
-	  if(dnum() > 0) {
-	    c_history = primitiveWallsHistory_[iWall]->array_atom;
-	  }
+    if(dnum() > 0) {
+      c_history = primitiveWallsHistory_[iWall]->array_atom;
+    }
 
-	  int *neighborList;
-	  const int nNeigh = primitiveWall->getNeighbors(neighborList);
+    int *neighborList = NULL;
+    const int nNeigh = primitiveWall->getNeighbors(neighborList);
 
-	  for (int iCont = 0; iCont < nNeigh ; ++iCont) {
-	    const int i = neighborList[iCont];
+    for (int iCont = 0; iCont < nNeigh ; ++iCont) {
+      const int i = neighborList[iCont];
 
-	    if(!(mask[i] & Fix::groupbit)) continue;
-	    if(i < ifrom || i >= ito) continue;
+      if(!(mask[i] & Fix::groupbit)) continue;
+      if(i < ifrom || i >= ito) continue;
 
-	    double delta[3];
+      double delta[3] = {};
       const double deltan = primitiveWall->resolveContact(x_[i],radius_?radius_[i]:r0_,delta);
 
       if(deltan > skinDistance_) { //allow force calculation away from the wall
@@ -427,7 +427,7 @@ void FixWallGranOMP::post_force_primitive(int vflag)
         {
           double rdist[3];
           primitiveWall->calcRadialDistance(x_[i],rdist);
-            vectorCross3D(shearAxisVec_,rdist,v_wall);
+          vectorCross3D(shearAxisVec_,rdist,v_wall);
         }
         cdata.i = i;
         cdata.contact_history = c_history ? c_history[i] : NULL;
@@ -437,7 +437,7 @@ void FixWallGranOMP::post_force_primitive(int vflag)
         cdata.delta[2] = -delta[2];
         post_force_eval_contact(cdata,v_wall);
       }
-	  }
+    }
   }
 }
 
@@ -457,11 +457,8 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
   cdata.area_ratio = 1.;
 
 
-  double force_old[3], f_pw[3];
-
-  // if force should be stored - remember old force
-  if(store_force_ || stress_flag_)
-    vectorCopy3D(f_[iPart],force_old);
+  ForceData i_forces;
+  ForceData j_forces;
 
   // add to cwl
   if(cwl_ && addflag_)
@@ -472,18 +469,28 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
       cwl_->add_wall_1(iMesh,mesh->id(iTri),iPart,contactPoint, v_wall);
   }
 
-  if(impl)
-    impl->compute_force(this, cdata, v_wall);
-  else
+  if(impl) {
+    impl->compute_force(this, cdata, v_wall, i_forces, j_forces);
+  } else {
+    double force_old[3]={};
+
+    // if force should be stored - remember old force
+    if(store_force_ || stress_flag_)
+      vectorCopy3D(f_[iPart],force_old);
+
     compute_force(cdata, v_wall); // LEGACY CODE (SPH)
+
+    if(store_force_ || stress_flag_)
+    {
+      vectorSubtract3D(f_[iPart], force_old, j_forces.delta_F);
+    }
+  }
 
   // if force should be stored or evaluated
   if(store_force_ || stress_flag_)
   {
-    vectorSubtract3D(f_[iPart],force_old,f_pw);
-
     if(store_force_)
-        vectorAdd3D (wallforce_[iPart], f_pw, wallforce_[iPart]);
+        vectorAdd3D (wallforce_[iPart], j_forces.delta_F, wallforce_[iPart]);
 
     if(stress_flag_ && fix_mesh->trackStress())
     {
@@ -494,7 +501,7 @@ inline void FixWallGranOMP::post_force_eval_contact(CollisionData & cdata, doubl
         #pragma omp critical
         static_cast<FixMeshSurfaceStress*>(fix_mesh)->add_particle_contribution
         (
-           iPart,f_pw,delta,iTri,v_wall
+           iPart,j_forces.delta_F,delta,iTri,v_wall
         );
     }
   }

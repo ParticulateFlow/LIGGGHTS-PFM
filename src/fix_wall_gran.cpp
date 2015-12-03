@@ -990,12 +990,8 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
   cdata.meff = rmass_ ? rmass_[iPart] : atom->mass[atom->type[iPart]];
   cdata.area_ratio = 1.;
 
-
-  double force_old[3]={}, f_pw[3];
-
-  // if force should be stored - remember old force
-  if(store_force_ || stress_flag_)
-    vectorCopy3D(f_[iPart],force_old);
+  ForceData i_forces;
+  ForceData j_forces;
 
   // add to cwl
   if(cwl_ && addflag_)
@@ -1005,28 +1001,28 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
       cwl_->add_wall_1(iMesh,mesh->id(iTri),iPart,contactPoint,v_wall);
   }
 
-  if(impl)
-    impl->compute_force(this, cdata, v_wall);
-  else
+  if(impl) {
+    impl->compute_force(this, cdata, v_wall, i_forces, j_forces);
+  } else {
+    double force_old[3]={};
+
+    // if force should be stored - remember old force
+    if(store_force_ || stress_flag_)
+      vectorCopy3D(f_[iPart],force_old);
+
     compute_force(cdata, v_wall); // LEGACY CODE (SPH)
 
-  /*NL*/ //if(DEBUGMODE_LMP_FIX_WALL_GRAN && DEBUG_LMP_FIX_FIX_WALL_GRAN_P_ID == atom->tag[iPart])
-  /*NL*/ // if(strcmp(id,"cylwalls") == 0) {
-  /*NL*/ //if(6817 == atom->tag[iPart]){
-  /*NL*/  // fprintf(screen,"step "BIGINT_FORMAT " proc %d handling mesh wall with particle id %d, tri id %d, deltan %e, delr %e dx %e dy %e dz %e history is now %e %e %e\n",
-  /*NL*/  //                update->ntimestep,comm->me,atom->tag[iPart],mesh->id(iTri),deltan,delr,dx,dy,dz,c_history[0],c_history[1],c_history[2]);
-  /*NL*/ //  fprintf(screen,"step "BIGINT_FORMAT "handling mesh wall with particle id %d, tri id %d, deltan %e, delr %e dx %e dy %e dz %e f is now %f %f %f\n",
-  /*NL*/ //                  update->ntimestep,atom->tag[iPart],mesh->id(iTri),deltan,delr,dx,dy,dz,atom->f[iPart][0],atom->f[iPart][1],atom->f[iPart][2]);
-  /*NL*/ //  error->one(FLERR,"end");
-  /*NL*/ //}
+    if(store_force_ || stress_flag_)
+    {
+      vectorSubtract3D(f_[iPart], force_old, j_forces.delta_F);
+    }
+  }
 
   // if force should be stored or evaluated
   if(store_force_ || stress_flag_)
   {
-    vectorSubtract3D(f_[iPart],force_old,f_pw);
-
     if(store_force_)
-        vectorAdd3D (wallforce_[iPart], f_pw, wallforce_[iPart]);
+        vectorAdd3D (wallforce_[iPart], j_forces.delta_F, wallforce_[iPart]);
 
     if(stress_flag_ && fix_mesh->trackStress())
     {
@@ -1036,7 +1032,7 @@ inline void FixWallGran::post_force_eval_contact(CollisionData & cdata, double *
         delta[2] = -cdata.delta[2];
         static_cast<FixMeshSurfaceStress*>(fix_mesh)->add_particle_contribution
         (
-           iPart,f_pw,delta,iTri,v_wall
+           iPart,j_forces.delta_F,delta,iTri,v_wall
         );
     }
   }
