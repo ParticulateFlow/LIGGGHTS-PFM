@@ -44,7 +44,7 @@
 #include "neigh_request.h"
 #include "memory.h"
 #include "error.h"
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "fix_rigid.h"
 #include "fix_pour.h"
 #include "fix_particledistribution_discrete.h"
@@ -67,7 +67,7 @@ PairGran::PairGran(LAMMPS *lmp) : Pair(lmp)
   suffix = NULL;
   neighprev = 0;
 
-  mpg = new MechParamGran(lmp);
+  properties = new Properties(lmp);
 
   history = 0;
   dnum_pairgran = 0;
@@ -114,7 +114,7 @@ PairGran::~PairGran()
     delete [] maxrad_dynamic;
     delete [] maxrad_frozen;
   }
-  delete mpg;
+  delete properties;
 
   // tell cpl that pair gran is deleted
   if(cpl_) cpl_->reference_deleted();

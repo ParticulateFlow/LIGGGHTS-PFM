@@ -154,10 +154,10 @@ FixParticledistributionDiscrete::FixParticledistributionDiscrete(LAMMPS *lmp, in
   mintype = 10000;
   for(int i = 0; i < ntemplates; i++)
   {
-    if(templates[i]->type() > maxtype)
-      maxtype = templates[i]->type();
-    if(templates[i]->type() < mintype)
-      mintype = templates[i]->type();
+    if(templates[i]->maxtype() > maxtype)
+      maxtype = templates[i]->maxtype();
+    if(templates[i]->mintype() < mintype)
+      mintype = templates[i]->mintype();
   }
 
   // check which template has the most spheres
@@ -459,6 +459,22 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
 }
 
 /* ----------------------------------------------------------------------
+   preparations before insertion
+------------------------------------------------------------------------- */
+
+void FixParticledistributionDiscrete::pre_insert()
+{
+    // allow fixes to e.g. update some pointers before set_arrays is called
+    // set_arrays called in ParticleToInsert::insert()
+
+    int nfix = modify->nfix;
+    Fix **fix = modify->fix;
+
+    for (int j = 0; j < nfix; j++)
+        if (fix[j]->create_attribute) fix[j]->pre_set_arrays();
+}
+
+/* ----------------------------------------------------------------------
    set particle properties - only pti needs to know which properties to set
    loop to n, not n_pti, since not all particles may have been inserted
 ------------------------------------------------------------------------- */
@@ -505,8 +521,13 @@ double FixParticledistributionDiscrete::min_rad(int type)
     //get minrad
     double minrad_type = 1000.;
     for(int i = 0; i < ntemplates;i++)
-      if( templates[i]->type() == type  && templates[i]->min_rad() < minrad_type)
+    {
+      if(
+            (type >= templates[i]->mintype() && type <= templates[i]->maxtype()) &&
+            (templates[i]->min_rad() < minrad_type)
+        )
         minrad_type = templates[i]->min_rad();
+    }
 
     return minrad_type;
 }
@@ -518,8 +539,13 @@ double FixParticledistributionDiscrete::max_rad(int type)
     //get maxrad
     double maxrad_type = 0.;
     for(int i = 0; i < ntemplates;i++)
-      if( templates[i]->type() == type  && templates[i]->max_rad() > maxrad_type)
+    {
+      if(
+          (type >= templates[i]->mintype() && type <= templates[i]->maxtype()) &&
+          (templates[i]->max_rad() > maxrad_type)
+        )
         maxrad_type = templates[i]->max_rad();
+    }
 
     return maxrad_type;
 }

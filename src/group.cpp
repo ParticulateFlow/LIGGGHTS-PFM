@@ -197,7 +197,7 @@ void Group::assign(int narg, char **arg)
 
     if (narg < 3) error->all(FLERR,"Illegal group command");
 
-    int category;
+    int category = 0;
     if (strcmp(arg[1],"type") == 0) category = TYPE;
     else if (strcmp(arg[1],"molecule") == 0) category = MOLECULE;
     else if (strcmp(arg[1],"id") == 0) category = ID;
@@ -220,9 +220,8 @@ void Group::assign(int narg, char **arg)
       else if (strcmp(arg[2],"<>") == 0) condition = BETWEEN;
       else error->all(FLERR,"Illegal group command");
       
-      tagint bound1,bound2;
-      bound1 = force->tnumeric(FLERR,arg[3]);
-      bound2 = -1;
+      tagint bound1 = force->tnumeric(FLERR,arg[3]);
+      tagint bound2 = -1;
 
       if (condition == BETWEEN) {
         if (narg != 5) error->all(FLERR,"Illegal group command");

@@ -145,8 +145,8 @@ void FixInsertStreamMoving::finalize_insertion(int ninserted_spheres_this_local)
     int ilo = atom->nlocal - ninserted_spheres_this_local;
     int ihi = atom->nlocal;
 
-    int tri_id;
-    double bary[3], dist_normal;
+    int tri_id = 0;
+    double bary[3]={}, dist_normal;
     double **x = atom->x;
     double dt = update->dt;
 
@@ -225,7 +225,7 @@ void FixInsertStreamMoving::end_of_step()
     int nlocal = atom->nlocal;
     double **release_data = fix_release->array_atom;
     double time_elapsed, dist_elapsed[3], v_integrate[3], *v_toInsert, *omega_toInsert;
-    double x_ins[3], bary[3], dist_extrude0[3], dist_extrude[3];
+    double x_ins[3]={}, bary[3]={}, dist_extrude0[3]={}, dist_extrude[3]={};
     double dt = update->dt;
 
     double **x = atom->x;
@@ -333,8 +333,8 @@ void FixInsertStreamMoving::reset_releasedata(bigint newstep,bigint oldstep)
   int nlocal = atom->nlocal;
   double **x = atom->x;
   double **release_data = fix_release->array_atom;
-  double bary[3], dist_normal;
-  int tri_id;
+  double bary[3]={}, dist_normal;
+  int tri_id = 0;
 
   for(int i = 0; i < nlocal; i++)
   {

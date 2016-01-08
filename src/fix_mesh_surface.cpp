@@ -223,8 +223,12 @@ void FixMeshSurface::createWallNeighList(int igrp)
         static_cast<FixNeighlistMesh*>(modify->find_fix_id(neighlist_name));
 
     // fix added with "all", correct this now
-    fix_mesh_neighlist_->igroup = igrp;
-    fix_mesh_neighlist_->groupbit = group->bitmask[igrp];
+    // groupbit identical to groupbit of this fix
+    fix_mesh_neighlist_->igroup = igroup;
+    fix_mesh_neighlist_->groupbit = group->bitmask[igroup];
+
+    // neighlist build will use this: merging of wall and mesh groupbit
+    fix_mesh_neighlist_->groupbit_wall_mesh = group->bitmask[igroup] | igrp;
 
     delete []fixarg;
     delete []neighlist_name;

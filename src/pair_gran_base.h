@@ -280,9 +280,9 @@ public:
 
           cmodel.collision(cdata, i_forces, j_forces);
 
-          /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" xi %f %f %f xj %f %f %f\n",update->ntimestep,x[i][0],x[i][1],x[i][2],x[j][0],x[j][1],x[j][2]);
-          /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" iforces %f %f %f\n",update->ntimestep,i_forces.delta_F[0],i_forces.delta_F[1],i_forces.delta_F[2]);
-          /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" mol %d %d i %d j %d, nlocal %d\n",update->ntimestep,atom->molecule[i],atom->molecule[j],i,j,atom->nlocal);
+          /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " xi %f %f %f xj %f %f %f\n",update->ntimestep,x[i][0],x[i][1],x[i][2],x[j][0],x[j][1],x[j][2]);
+          /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " iforces %f %f %f\n",update->ntimestep,i_forces.delta_F[0],i_forces.delta_F[1],i_forces.delta_F[2]);
+          /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " mol %d %d i %d j %d, nlocal %d\n",update->ntimestep,atom->molecule[i],atom->molecule[j],i,j,atom->nlocal);
           /*NL*/ //error->one(FLERR,"end");
 
           // if there is a collision, there will always be a force

@@ -15,7 +15,8 @@ style () {
   wai=`whoami`
   vers=`cat version_liggghts.txt`
   bra=`cat version_liggghts_branch.txt`
-  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai\"" > version_liggghts.h
+  githash=`git log -1 --format="%H"`
+  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai, git commit $githash\"" > version_liggghts.h
 
   list=`grep -sl $1 $2*.h`
   if (test -e style_$3.tmp) then
@@ -67,6 +68,7 @@ if (test $1 = "style") then
 
   style ANGLE_CLASS     angle_      angle      force
   style ATOM_CLASS      atom_vec_   atom       atom      atom_vec_hybrid
+  style PARTITIONER_CLASS      partitioner_   partitioner       atom
   style BODY_CLASS      body_       body       atom_vec_body
   style BOND_CLASS      bond_       bond       force
   style COMMAND_CLASS   ""          command    input

@@ -34,7 +34,6 @@ class ComputeRDF : public Compute {
   void compute_array();
 
  private:
-  int first;
   int nbin;                         // # of rdf bins
   int npairs;                     // # of rdf pairs
   double delr,delrinv;                 // bin width and its inverse

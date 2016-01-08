@@ -1,0 +1,96 @@
+<HTML>
+<CENTER><A HREF = "http://lammps.sandia.gov">LAMMPS WWW Site</A> - <A HREF = "Manual.html">LAMMPS Documentation</A> - <A HREF = "Section_commands.html#comm">LAMMPS Commands</A> 
+</CENTER>
+
+
+
+
+
+
+<HR>
+
+<H3>fix remove command 
+</H3>
+<P><B>Syntax:</B>
+</P>
+<PRE>fix ID group-ID remove nevery N massrate massrate_value style style_value [delete_below delete_below_value] seed seed_value keyword value ... 
+</PRE>
+<UL><LI>ID, group-ID are documented in <A HREF = "fix.html">fix</A> command 
+
+<LI>remove = style name of this fix command 
+
+<LI>nevery = obligatory keyword 
+
+<LI>N = remove particles every this many timesteps 
+
+<LI>massrate = obligatory keyword 
+
+<LI>massrate_value = rate at which to remove particles 
+
+<LI>style = obligatory keyword 
+
+<LI>style_value = <I>shrink</I> or <I>delete</I> 
+
+<LI>delete_below = obligatory keyword if style_value is <I>shrink</I> 
+
+<LI>delete_below_value = radius below which particles are removed if style_value is <I>shrink</I> 
+
+<LI>seed = obligatory keyword 
+
+<LI>seed_value = random # seed (positive integer) 
+
+<LI>zero or more keyword/value pairs may be appended 
+
+<LI>keywords = <I>region</I> or <I>atomtype</I> 
+
+<PRE>  <I>region</I> value = region-ID
+    region-ID = ID of the region where the particles will be removed
+  <I>atomtype</I> value = type
+    type = type of atoms to remove 
+</PRE>
+
+</UL>
+<P><B>Examples:</B>
+</P>
+<PRE>fix 1 all remove nevery 500 massrate 3.5 style delete seed 5143 region del_region atomtype 1
+fix 1 all remove nevery 500 massrate 3.5 style shrink delete_below 0.001 seed 7543 region del_region 
+</PRE>
+<P><B>Description:</B>
+</P>
+<P>Remove atoms from the simulation at the specified rate.
+</P>
+<P>For style <I>delete</I>, all atoms belonging to the group are deleted immediately.
+</P>
+<P>For style <I>shrink</I>, atoms belonging to the group are shrunk and get deleted only
+if their radius is smaller than the value set via <I>delete_below</I>.
+</P>
+<P>The region from which particles are removed can be specified using the <I>region</I>
+keyword.
+</P>
+<P>The <I>atomtype</I> options allows to restrict deletion to a single type of atoms.
+</P>
+<HR>
+
+<P><B>Restart, fix_modify, output, run start/stop, minimize info:</B>
+</P>
+<P>Information about the state of this fix is written to <A HREF = "restart.html">binary restart
+files</A>.  None of the <A HREF = "fix_modify.html">fix_modify</A> options
+are relevant to this fix.  No global or per-atom quantities are stored
+by this fix for access by various <A HREF = "Section_howto.html#howto_15">output commands</A>.
+No parameter of this fix can be used with the <I>start/stop</I> keywords of the
+<A HREF = "run.html">run</A> command.
+This fix is not invoked during <A HREF = "minimize.html">energy minimization</A>.
+</P>
+<P><B>Restrictions:</B>
+</P>
+<P>Style <I>shrink</I> is not supported for multisphere particles
+</P>
+<P><B>Related commands:</B>
+</P>
+<P><A HREF = "delete_atoms.html">delete_atoms</A>
+</P>
+<P><B>Default:</B>
+</P>
+<P>none
+</P>
+</HTML>

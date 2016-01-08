@@ -57,7 +57,6 @@ class FixSphDensityCorr : public FixSph {
   class FixPropertyAtom* fix_quantity;
   char *quantity_name;
 
-  double quantity_0;
   double *quantity;
 
   int corrStyle;

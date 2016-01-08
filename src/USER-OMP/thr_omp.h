@@ -22,6 +22,7 @@
 #include "error.h"
 #include "fix_omp.h"
 #include "thr_data.h"
+#include "math.h"
 
 namespace LAMMPS_NS {
 
@@ -74,6 +75,8 @@ class ThrOMP {
   void reduce_thr(void * const style, const int eflag, const int vflag,
                   ThrData * const thr);
 
+  void reduce_accumulators_only(const int eflag, const int vflag, ThrData *const thr);
+
   // thread safe variant error abort support.
   // signals an error condition in any thread by making
   // thr_error > 0, if condition "cond" is true.
@@ -111,6 +114,13 @@ class ThrOMP {
   void v_tally_thr(Pair * const, const int, const int, const int,
                    const int, const double * const, ThrData * const);
 
+  void v_tally_patchup(Pair * const pair, const int j, const double * const v);
+
+
+  void v_tally_thr_new(Pair * const pair, const int i, const int j,
+                       const int nlocal, const int newton_pair,
+                       const double * const v, bool same_thread, bool use_patchup_list, ThrData * const thr);
+
   void ev_tally_thr(Pair * const, const int, const int, const int, const int,
                     const double, const double, const double, const double,
                     const double, const double, ThrData * const);
@@ -118,6 +128,24 @@ class ThrOMP {
                         const int, const double, const double, const double,
                         const double, const double, const double,
                         const double, const double, ThrData * const);
+  void ev_tally_xyz_omp(Pair * const, const int, const int, const int,
+                          const int, const double, const double, const double,
+                          const double, const double, const double,
+                          const double, const double, bool same_thread);
+
+
+  void ev_tally_xyz_omp_new(Pair * const pair, const int i, const int j, const int nlocal,
+                            const int newton_pair,
+                            const double fx, const double fy, const double fz,
+                            const double delx, const double dely, const double delz,
+                            bool same_thread, bool use_patchup_list, ThrData * const);
+
+
+  void ev_tally_xyz_patchup(Pair * const pair, const int j,
+                          const double fx, const double fy, const double fz,
+                          const double delx, const double dely, const double delz);
+
+
   void ev_tally3_thr(Pair * const, const int, const int, const int, const double,
                      const double, const double * const, const double * const,
                      const double * const, const double * const, ThrData * const);
@@ -182,6 +210,24 @@ static inline void loop_setup_thr(int &ifrom, int &ito, int &tid,
   tid = 0;
   ifrom = 0;
   ito = inum;
+#endif
+}
+
+static inline void loop_setup_thr(int &twidth, int &tstride, int &ioffset, int &tid,
+                                  int inum, int nthreads)
+{
+#if defined(_OPENMP)
+  tid = omp_get_thread_num();
+
+  const int tside  = ((int)sqrt(inum)) + 1;
+  twidth = (nthreads > 1) ? (tside / nthreads) : inum;
+  tstride = nthreads * twidth;
+  ioffset = tid*twidth;
+#else
+  tid = 0;
+  twidth = inum;
+  tstride = 0;
+  ioffset = 0;
 #endif
 }
 

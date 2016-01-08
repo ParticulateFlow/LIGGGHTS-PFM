@@ -163,6 +163,60 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
 
 /* ---------------------------------------------------------------------- */
 
+int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList)
+{
+
+    // check every sphere against all others in xnear
+    // if no overlap add to xnear
+    double disp_glob[3];
+    double ex_space_try[3], ey_space_try[3], ez_space_try[3];
+
+    // rotate if needed
+
+
+    // calculate x_ins for this quaternion
+    // do this in a "try" step since we do not know if we will succeed
+
+    //if(!isUnitQuat4D(quat_ins)) error->one(FLERR,"quaternion rotation untested in ParticleToInsertMultisphere");
+    MathExtraLiggghts::vec_quat_rotate(ex_space,quat,ex_space_try);
+    MathExtraLiggghts::vec_quat_rotate(ey_space,quat,ey_space_try);
+    MathExtraLiggghts::vec_quat_rotate(ez_space,quat,ez_space_try);
+    for(int j = 0; j < nspheres; j++)
+    {
+        MathExtraLiggghts::local_coosys_to_cartesian(disp_glob,displace[j],ex_space_try,ey_space_try,ez_space_try);
+        vectorAdd3D(x,disp_glob,x_ins[j]);
+    }
+
+    for(int j = 0; j < nspheres; j++)
+    {
+        if(neighList.hasOverlap(x_ins[j], radius_ins[j])) {
+            return 0;
+        }
+    }
+
+    // no overlap with any other - success
+
+    vectorCopy3D(x,xcm_ins);
+    vectorCopy4D(quat,quat_ins);
+    vectorCopy3D(v,v_ins);
+    vectorCopy3D(omega,omega_ins);
+
+    // set axis to the value we succeeded for, x_ins already up to date
+    vectorCopy3D(ex_space_try,ex_space);
+    vectorCopy3D(ey_space_try,ey_space);
+    vectorCopy3D(ez_space_try,ez_space);
+
+    // add to neighList
+    for(int j = 0; j < nspheres; j++)
+    {
+       neighList.insert(x_ins[j], radius_ins[j]);
+    }
+
+    return nspheres;
+}
+
+/* ---------------------------------------------------------------------- */
+
 int ParticleToInsertMultisphere::insert()
 {
     int inserted = 0;

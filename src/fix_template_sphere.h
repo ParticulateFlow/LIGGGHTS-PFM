@@ -53,7 +53,8 @@ class FixTemplateSphere : public Fix {
   virtual double max_rad();
   virtual double max_r_bound();
   virtual int number_spheres();
-  int type();
+  virtual int maxtype();
+  virtual int mintype();
   class Region *region();
 
   // single particle generation, used by fix pour/dev

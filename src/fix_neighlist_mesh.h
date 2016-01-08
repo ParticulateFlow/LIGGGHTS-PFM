@@ -103,6 +103,9 @@ class FixNeighlistMesh : public Fix
     inline class FixPropertyAtom* fix_nneighs()
     { return fix_nneighs_; };
 
+    // groupbit merged from groupbit of this fix and fix wall/gran (if exists)
+    int groupbit_wall_mesh;
+
     std::vector<int> particle_indices;
     std::vector<int> particle_triangles;
 

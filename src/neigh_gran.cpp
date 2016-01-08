@@ -21,6 +21,12 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #include "neighbor.h"
 #include "neigh_list.h"
 #include "atom.h"
@@ -44,20 +50,20 @@ using namespace LAMMPS_NS;
 
 void Neighbor::granular_nsq_no_newton(NeighList *list)
 {
-  int i,j,m,n,nn,bitmask,d; //NP modified C.K.
+  int i,j,m,n,nn=0,bitmask=0,d; //NP modified C.K.
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
   double radi,radsum,cutsq;
-  int *neighptr,*touchptr;
-  double *shearptr;
+  int *neighptr,*touchptr = NULL;
+  double *shearptr = NULL;
 
   NeighList *listgranhistory;
-  int *npartner,**partner;
-  double **contacthistory; //NP modified C.K.
+  int *npartner = NULL,**partner = NULL;
+  double **contacthistory = NULL; //NP modified C.K.
   int **firsttouch;
   double **firstshear;
-  MyPage<int> *ipage_touch;
-  MyPage<double> *dpage_shear;
-  int dnum; //NP modified C.K.
+  MyPage<int> *ipage_touch = NULL;
+  MyPage<double> *dpage_shear = NULL;
+  int dnum = 0; //NP modified C.K.
 
   double **x = atom->x;
   double *radius = atom->radius;
@@ -183,7 +189,7 @@ void Neighbor::granular_nsq_no_newton(NeighList *list)
 
 void Neighbor::granular_nsq_newton(NeighList *list)
 {
-  int i,j,n,itag,jtag,bitmask;
+  int i,j,n,itag,jtag,bitmask=0;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
   double radi,radsum,cutsq;
   int *neighptr;
@@ -277,21 +283,21 @@ void Neighbor::granular_nsq_newton(NeighList *list)
 
 void Neighbor::granular_bin_no_newton_ghost(NeighList *list)
 {
-  int i,j,k,m,n,nn,ibin,d;
+  int i,j,k,m,n,nn=0,ibin,d;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
   int xbin,ybin,zbin,xbin2,ybin2,zbin2;
   double radi,radsum,cutsq;
-  int *neighptr,*touchptr;
-  double *shearptr;
+  int *neighptr,*touchptr = NULL;
+  double *shearptr = NULL;
 
   NeighList *listgranhistory;
-  int *npartner,**partner;
-  double **contacthistory;
-  int **firsttouch;
-  double **firstshear;
-  MyPage<int> *ipage_touch;
-  MyPage<double> *dpage_shear;
-  int dnum; //NP modified C.K.
+  int *npartner = NULL,**partner = NULL;
+  double **contacthistory = NULL;
+  int **firsttouch = NULL;
+  double **firstshear = NULL;
+  MyPage<int> *ipage_touch = NULL;
+  MyPage<double> *dpage_shear = NULL;
+  int dnum = 0; //NP modified C.K.
 
   // bin local & ghost atoms
 
@@ -465,20 +471,20 @@ void Neighbor::granular_bin_no_newton_ghost(NeighList *list)
 
 void Neighbor::granular_bin_no_newton(NeighList *list)
 {
-  int i,j,k,m,n,nn,ibin,d;
+  int i,j,k,m,n,nn=0,ibin,d;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
   double radi,radsum,cutsq;
-  int *neighptr,*touchptr;
-  double *shearptr;
+  int *neighptr,*touchptr = NULL;
+  double *shearptr = NULL;
 
   NeighList *listgranhistory;
-  int *npartner,**partner;
-  double **contacthistory;
-  int **firsttouch;
-  double **firstshear;
-  MyPage<int> *ipage_touch;
-  MyPage<double> *dpage_shear;
-  int dnum; //NP modified C.K.
+  int *npartner = NULL,**partner = NULL;
+  double **contacthistory = NULL;
+  int **firsttouch = NULL;
+  double **firstshear = NULL;
+  MyPage<int> *ipage_touch = NULL;
+  MyPage<double> *dpage_shear = NULL;
+  int dnum = 0; //NP modified C.K.
 
   // bin local & ghost atoms
 
@@ -537,7 +543,7 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
     radi = radius[i];
     ibin = coord2bin(x[i]);
 
-    /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" looping atom tag %d, x %f %f %f\n",update->ntimestep,atom->tag[i],x[i][0],x[i][1],x[i][2]);
+    /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " looping atom tag %d, x %f %f %f\n",update->ntimestep,atom->tag[i],x[i][0],x[i][1],x[i][2]);
 
     // loop over all atoms in surrounding bins in stencil including self
     // only store pair if i < j

@@ -114,12 +114,6 @@ namespace LAMMPS_NS {
     // for area calculation
     class ModifiedAndrew *mod_andrew_;
 
-    //NP TODO: Is somewhere a better place for this function?!
-    // signum function
-    template <typename T> int sgn(T val) {
-      return (T(0) < val) - (val < T(0));
-    }
-
   }; //end class
 
 }

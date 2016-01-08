@@ -205,7 +205,7 @@ void FixMultisphere::unpack_comm_image_displace(int n, int first, double *buf)
     {
         aimage[i] = static_cast<int>(buf[m++]);
         bufToVector3D(displace_[i],buf,m);
-        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" proc %d COMM: atom tag %d has image %d\n",update->ntimestep,comm->me,atom->tag[i],aimage[i]);
+        /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " proc %d COMM: atom tag %d has image %d\n",update->ntimestep,comm->me,atom->tag[i],aimage[i]);
     }
 }
 

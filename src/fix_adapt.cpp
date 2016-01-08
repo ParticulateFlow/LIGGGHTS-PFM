@@ -342,7 +342,7 @@ void FixAdapt::change_settings()
     Adapt *ad = &adapt[m];
 
     //NP modified C.K.
-    double value;
+    double value = 0.0;
     if (input->variable->equalstyle(ad->ivar)) value = input->variable->compute_equal(ad->ivar);
     else if(input->variable->atomstyle(ad->ivar)) input->variable->compute_atom(ad->ivar, igroup, fppat->vector_atom, 1, 0);
     else error->all(FLERR,"Wrong variable style in fix adapt - must use a scalar property");

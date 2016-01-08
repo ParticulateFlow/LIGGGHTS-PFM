@@ -98,16 +98,17 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
 {
   int n,m;
 
-  double **points;
+  double **points = NULL;
   int ipoint = 0,npoints = 0;
 
-  int **cells, *lines;
-  int icell,ncells = 0;
+  int **cells = NULL, *lines = NULL;
+  int icell = 0,ncells = 0;
 
   int ntris = 0;
   int iLine = 0;
 
   int nLines = 0;
+  int nPointLines = 0;
 
   while (1)
   {
@@ -163,26 +164,28 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
       continue;
     }
 
+    // Note that the first line of an ASCII VTK files start with '#' and will be skipped
+
     //increase line counter
     iLine++;
 
-    if(iLine < 3) continue;
+    if(iLine < 2) continue;
 
-    if(iLine == 3)
+    if(iLine == 2)
     {
         if(strcmp(arg[0],"ASCII"))
             error->all(FLERR,"Expecting ASCII VTK mesh file, cannot continue");
         continue;
     }
 
-    if(iLine == 4)
+    if(iLine == 3)
     {
-        if(strcmp(arg[0],"DATASET UNSTRUCTURED_GRID"))
+        if(strcmp(arg[0],"DATASET") || strcmp(arg[1],"UNSTRUCTURED_GRID"))
             error->all(FLERR,"Expecting ASCII VTK unstructured grid mesh file, cannot continue");
         continue;
     }
 
-    if(iLine == 5)
+    if(iLine == 4)
     {
         if(strcmp(arg[0],"POINTS"))
             error->all(FLERR,"Expecting 'POINTS' section in ASCII VTK mesh file, cannot continue");
@@ -191,19 +194,24 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
         continue;
     }
 
-    if(iLine <= 5+npoints)
+    if(ipoint < npoints)
     {
-        if(narg != 3)
-            error->all(FLERR,"Expecting 3 values for each point in 'POINTS' section of ASCII VTK mesh file, cannot continue");
+        if(narg % 3)
+            error->all(FLERR,"Expecting multiple of 3 values of point data in 'POINTS' section of ASCII VTK mesh file, cannot continue");
 
-        points[ipoint][0] = atof(arg[0]);
-        points[ipoint][1] = atof(arg[1]);
-        points[ipoint][2] = atof(arg[2]);
-        ipoint++;
+        for(int i = 0; i < narg/3; ++i)
+        {
+            for(int j = 0; j < 3; ++j)
+            {
+                points[ipoint][j] = atof(arg[3*i+j]);
+            }
+            ++ipoint;
+        }
+        ++nPointLines;
         continue;
     }
 
-    if(iLine == 6+npoints)
+    if(iLine == 5+nPointLines)
     {
         if(strcmp(arg[0],"CELLS"))
             error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
@@ -214,7 +222,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
     }
 
     //copy data of all which have 3 values - can be tri, polygon etc
-    if(iLine <= 6+npoints+ncells)
+    if(iLine <= 5+nPointLines+ncells)
     {
         if(narg == 4)
             for (int j=0;j<3;j++) cells[icell][j] = atoi(arg[1+j]);
@@ -227,7 +235,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
         continue;
     }
 
-    if(iLine == 7+npoints+ncells)
+    if(iLine == 6+nPointLines+ncells)
     {
         if(strcmp(arg[0],"CELL_TYPES"))
             error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
@@ -238,9 +246,9 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
     }
 
     //only take triangles (cell type 5 according to VTK standard) - count them
-    if(iLine <= 7+npoints+2*ncells)
+    if(iLine <= 6+nPointLines+2*ncells)
     {
-        if(strcmp(arg[0],"5")) cells[icell][0] = -1; //remove if not a tet
+        if(strcmp(arg[0],"5")) cells[icell][0] = -1; //remove if not a tri
         else ntris++;
         icell++;
         continue;

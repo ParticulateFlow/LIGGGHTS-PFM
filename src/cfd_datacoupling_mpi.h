@@ -29,8 +29,9 @@
 #define LMP_CFD_DATACOUPLING_MPI_H
 
 #include "cfd_datacoupling.h"
-#include "multisphere.h"
+#include "multisphere_parallel.h"
 #include "error.h"
+#include "properties.h"
 #include "mpi.h"
 
 namespace LAMMPS_NS {
@@ -92,9 +93,6 @@ void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from)
     // check memory allocation
     T* allred = check_grow<T>(len1*len2);
 
-    // zeroize before using allreduce
-    vectorZeroizeN(allred,len1*len2);
-
     // perform allreduce on incoming data
     T **from_t = (T**)from;
     MPI_Allreduce(&(from_t[0][0]),&(allred[0]),len1*len2,mpi_type_dc<T>(),MPI_SUM,world);
@@ -118,19 +116,21 @@ void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from)
     else if(strcmp(type,"scalar-multisphere") == 0)
     {
         T *to_t = (T*) to;
-        if(!ms_data_)
+        MultisphereParallel *ms_data = properties_->ms_data();
+        if(!ms_data)
             error->one(FLERR,"Transferring a multisphere property from/to LIGGGHTS requires a fix multisphere");
         for (int i = 0; i < len1; i++)
-            if ((m = ms_data_->map(i+1)) >= 0)
+            if ((m = ms_data->map(i+1)) >= 0)
                 to_t[m] = allred[i];
     }
     else if(strcmp(type,"vector-multisphere") == 0)
     {
         T **to_t = (T**) to;
-        if(!ms_data_)
+        MultisphereParallel *ms_data = properties_->ms_data();
+        if(!ms_data)
             error->one(FLERR,"Transferring a multisphere property from/to LIGGGHTS requires a fix multisphere");
         for (int i = 0; i < len1; i++)
-            if ((m = ms_data_->map(i+1)) >= 0)
+            if ((m = ms_data->map(i+1)) >= 0)
                 for (int j = 0; j < len2; j++)
                     to_t[m][j] = allred[i*len2 + j];
     }
@@ -157,7 +157,9 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to)
     int *tag = atom->tag;
     int nlocal = atom->nlocal;
     int nbodies = 0;
-    if(ms_data_) nbodies = ms_data_->n_body();
+
+    MultisphereParallel *ms_data = properties_->ms_data();
+    if(ms_data) nbodies = ms_data->n_body();
 
     // get reference where to write the data
     void * from = find_push_property(name,type,len1,len2);
@@ -201,22 +203,22 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to)
     else if(strcmp(type,"scalar-multisphere") == 0)
     {
         T *from_t = (T*) from;
-        if(!ms_data_)
+        if(!ms_data)
             error->one(FLERR,"Transferring a multisphere property from/to LIGGGHTS requires a fix multisphere");
         for (int i = 0; i < nbodies; i++) // loops over # local bodies
         {
-            id = ms_data_->tag(i);
+            id = ms_data->tag(i);
             allred[id-1] = from_t[i];
         }
     }
     else if(strcmp(type,"vector-multisphere") == 0)
     {
         T **from_t = (T**) from;
-        if(!ms_data_)
+        if(!ms_data)
             error->one(FLERR,"Transferring a multisphere property from/to LIGGGHTS requires a fix multisphere");
         for (int i = 0; i < nbodies; i++) // loops over # local bodies
         {
-            id = ms_data_->tag(i);
+            id = ms_data->tag(i);
             for (int j = 0; j < len2; j++)
             {
                 allred[(id-1)*len2 + j] = from_t[i][j];

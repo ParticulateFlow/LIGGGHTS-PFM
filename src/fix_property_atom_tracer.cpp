@@ -186,7 +186,7 @@ void FixPropertyAtomTracer::end_of_step()
     if(ts < step_ || marker_style_ == MARKER_NONE || (marker_style_ == MARKER_DIRAC && !first_mark_))
         return;
 
-    /*NL*/ //fprintf(screen,"FixPropertyAtomTracer::end_of_step(), proc %d, step "BIGINT_FORMAT"\n",comm->me,update->ntimestep);
+    /*NL*/ //fprintf(screen,"FixPropertyAtomTracer::end_of_step(), proc %d, step " BIGINT_FORMAT "\n",comm->me,update->ntimestep);
 
     //NP mark all particles in region
     int nlocal = atom->nlocal;

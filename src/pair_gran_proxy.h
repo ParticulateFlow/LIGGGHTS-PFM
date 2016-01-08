@@ -26,6 +26,7 @@
 
 #ifdef PAIR_CLASS
 PairStyle(gran,PairGranProxy)
+PairStyle(gran/omp,PairGranProxy)
 #else
 
 #ifndef PAIR_GRAN_PROXY_H

@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -17,6 +17,12 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include "math.h"
@@ -63,6 +69,9 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       int iregion = domain->find_region(arg[iarg+1]);
       if (iregion == -1) error->fix_error(FLERR,this,"region ID does not exist");
+      int n = strlen(arg[iarg+1]) + 1;
+      idregion = new char[n];
+      strcpy(idregion,arg[iarg+1]);
       ins_region = domain->regions[iregion];
       iarg += 2;
       hasargs = true;
@@ -115,7 +124,7 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
 
 FixInsertPack::~FixInsertPack()
 {
-
+  delete []idregion;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -129,6 +138,7 @@ FixInsertPack::~FixInsertPack()
 void FixInsertPack::init_defaults()
 {
       ins_region = NULL;
+      idregion = 0;
       ntry_mc = 100000;
 
       volumefraction_region = 0.0;
@@ -140,6 +150,21 @@ void FixInsertPack::init_defaults()
       insertion_ratio = 0.;
 
       warn_region = true;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsertPack::init()
+{
+    FixInsert::init();
+
+    if (ins_region)
+    {
+        int iregion = domain->find_region(idregion);
+        if (iregion == -1)
+            error->fix_error(FLERR,this,"region ID does not exist");
+        ins_region = domain->regions[iregion];
+    }
 }
 
 /* ----------------------------------------------------------------------

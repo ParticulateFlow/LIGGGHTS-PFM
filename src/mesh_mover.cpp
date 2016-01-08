@@ -103,12 +103,12 @@ MeshMoverLinearVariable::MeshMoverLinearVariable(LAMMPS *lmp,AbstractMesh *_mesh
       strcpy(var1str_,&var1[2]);
       myvar1_ = input->variable->find(var1str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var2[2]) + 1;
       var2str_ = new char[n];
       strcpy(var2str_,&var2[2]);
       myvar2_ = input->variable->find(var2str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var3[2]) + 1;
       var3str_ = new char[n];
       strcpy(var3str_,&var3[2]);
       myvar3_ = input->variable->find(var3str_);
@@ -172,6 +172,15 @@ void MeshMoverLinearVariable::setup()
 {
     //NP in analogy to time_since_setup_ = 0 in fix move/mesh
     vectorZeroize3D(dX_);
+
+    // check if variable still exists
+    myvar1_ = input->variable->find(var1str_);
+    myvar2_ = input->variable->find(var2str_);
+    myvar3_ = input->variable->find(var3str_);
+
+    if (myvar1_ < 0) error->all(FLERR,"Variable name 1 for fix move/mesh linear/variable does not exist");
+    if (myvar2_ < 0) error->all(FLERR,"Variable name 2 for fix move/mesh linear/variable does not exist");
+    if (myvar3_ < 0) error->all(FLERR,"Variable name 3 for fix move/mesh linear/variable does not exist");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -339,6 +348,10 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
+
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
@@ -426,6 +439,11 @@ void MeshMoverRotateVariable::setup()
 {
     //NP in analogy to time_since_setup_ = 0 in fix move/mesh
     totalPhi_ = 0.;
+
+    // check if variable still exists
+    myvar1_ = input->variable->find(var1str_);
+    if (myvar1_ < 0)
+        error->all(FLERR,"Variable name 1 for fix move/mesh rotate dynamic does not exist");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -462,6 +480,9 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
 
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec,nodes)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)

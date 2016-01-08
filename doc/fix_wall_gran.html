@@ -13,6 +13,8 @@
 
 <H3>fix wall/gran  command 
 </H3>
+<H3>fix wall/gran/omp  command 
+</H3>
 <P><B>Syntax:</B>
 </P>
 <PRE>fix ID group-ID style model_type model_name wallstyle wallstyleargs general_keywords general_values model_keywords model_values  ... 
@@ -61,11 +63,11 @@
   <I>store_force</I> value = 'yes' or 'no'
     yes, no = determines if the wall force exerted on the particles is stored in a <A HREF = "fix_property.html">fix property/atom</A> with id force_(ID), where (ID) is the id of the fix wall/gran command.
   <I>store_force_contact</I> value = 'yes' or 'no'
-    yes, no = determines if the force for each particle-wall contact is stored in a <A HREF = "fix_property.html">fix property/atom</A> with id contactforces_(ID), where (ID) is the id of the fix wall/gran command.  
+    yes, no = determines if the force for each particle-wall contact is stored in a <A HREF = "fix_property.html">fix property/atom</A> with id contactforces_(ID), where (ID) is the id of the fix wall/gran command.      
 </PRE>
-<LI>following the general_keyword/value pairs, zero or more model_keyword/model_valuezero pairs may be appended in arbitrary order 
+<LI>following the general_keyword/value pairs, zero or more model_keyword/model_value pairs may be appended in arbitrary order 
 
-  model_type/model_name pairs = described for each model separately <A HREF = "Section_gran_models.html">here</A> 
+  model_keyword/model_value pairs = described for each model separately <A HREF = "Section_gran_models.html">here</A> 
 
 </UL>
 <P><B>Examples:</B>
@@ -148,6 +150,30 @@ is the id of the fix wall/gran command.
 <P>The effect of keyword <I>rolling_friction</I>, <I>cohesion</I>, <I>tangential_damping</I>,
 <I>viscous</I> and <I>absolute_damping</I> is explanted in <A HREF = "pair_gran.html">pair gran</A>
 </P>
+<HR>
+
+<P>Styles with a <I>cuda</I>, <I>gpu</I>, <I>omp</I>, or <I>opt</I> suffix are functionally
+the same as the corresponding style without the suffix.  They have
+been optimized to run faster, depending on your available hardware, as
+discussed in <A HREF = "Section_accelerate.html">Section_accelerate</A> of the
+manual.  The accelerated styles take the same arguments and should
+produce the same results, except for round-off and precision issues.
+</P>
+<P>These accelerated styles are part of the USER-CUDA, GPU, USER-OMP and OPT
+packages, respectively.  They are only enabled if LAMMPS was built with
+those packages.  See the <A HREF = "Section_start.html#start_3">Making LAMMPS</A>
+section for more info.
+</P>
+<P>You can specify the accelerated styles explicitly in your input script
+by including their suffix, or you can use the <A HREF = "Section_start.html#start_7">-suffix command-line
+switch</A> when you invoke LAMMPS, or you can
+use the <A HREF = "suffix.html">suffix</A> command in your input script.
+</P>
+<P>See <A HREF = "Section_accelerate.html">Section_accelerate</A> of the manual for
+more instructions on how to use the accelerated styles effectively.
+</P>
+<HR>
+
 <P><B>Restart, fix_modify, output, run start/stop, minimize info:</B>
 </P>
 <P>If applicable, contact history is written to <A HREF = "restart.html">binary restart files</A>

@@ -42,11 +42,13 @@ Finish::Finish(LAMMPS *lmp) : Pointers(lmp) {}
 
 void Finish::end(int flag)
 {
-  int i,m,nneigh,nneighfull;
+  int i,m,nneigh=0,nneighfull=0;
   int histo[10];
   int loopflag,minflag,prdflag,tadflag,timeflag,fftflag,histoflag,neighflag;
   double time,tmp,ave,max,min;
   double time_loop,time_other;
+  double time_max_loop;
+  double time_max;
 
   int me,nprocs;
   MPI_Comm_rank(world,&me);
@@ -102,6 +104,7 @@ void Finish::end(int flag)
 
     time_loop = timer->array[TIME_LOOP];
     MPI_Allreduce(&time_loop,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+    MPI_Allreduce(&time_loop,&time_max_loop,1,MPI_DOUBLE,MPI_MAX,world);
     time_loop = tmp/nprocs;
 
     // overall loop time
@@ -119,6 +122,16 @@ void Finish::end(int flag)
                           "for %d steps with " BIGINT_FORMAT " atoms\n",
                           time_loop,ntasks,nprocs,comm->nthreads,
                           update->nsteps,atom->natoms);
+      if (screen) fprintf(screen,
+                          "Max time of %g on %d procs (%d MPI x %d OpenMP) "
+                          "for %d steps with " BIGINT_FORMAT " atoms\n",
+                          time_max_loop,ntasks,nprocs,comm->nthreads,
+                          update->nsteps,atom->natoms);
+      if (logfile) fprintf(logfile,
+                          "Max time of %g on %d procs (%d MPI x %d OpenMP) "
+                          "for %d steps with " BIGINT_FORMAT " atoms\n",
+                          time_max_loop,ntasks,nprocs,comm->nthreads,
+                          update->nsteps,atom->natoms);
     }
 #else
     if (me == 0) {
@@ -130,6 +143,14 @@ void Finish::end(int flag)
                            "Loop time of %g on %d procs for %d steps with "
                            BIGINT_FORMAT " atoms\n",
                            time_loop,nprocs,update->nsteps,atom->natoms);
+      if (screen) fprintf(screen,
+                          "Max time of %g on %d procs for %d steps with "
+                          BIGINT_FORMAT " atoms\n",
+                          time_max_loop,nprocs,update->nsteps,atom->natoms);
+      if (logfile) fprintf(logfile,
+                           "Max time of %g on %d procs for %d steps with "
+                           BIGINT_FORMAT " atoms\n",
+                           time_max_loop,nprocs,update->nsteps,atom->natoms);
     }
 #endif
 
@@ -378,6 +399,7 @@ void Finish::end(int flag)
 
     time = timer->array[TIME_PAIR];
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+    MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
     if (me == 0) {
       if (screen)
@@ -386,11 +408,18 @@ void Finish::end(int flag)
       if (logfile)
         fprintf(logfile,"Pair  time (%%) = %g (%g)\n",
                 time,time/time_loop*100.0);
+      if (screen)
+        fprintf(screen,"Max Pair time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
+      if (logfile)
+        fprintf(logfile,"Max Pair time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
     }
 
     if (atom->molecular) {
       time = timer->array[TIME_BOND];
       MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+      MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
       time = tmp/nprocs;
       if (me == 0) {
         if (screen)
@@ -399,12 +428,19 @@ void Finish::end(int flag)
         if (logfile)
           fprintf(logfile,"Bond  time (%%) = %g (%g)\n",
                   time,time/time_loop*100.0);
+        if (screen)
+          fprintf(screen,"Max Bond time (ib) = %g (%g)\n",
+                  time_max,((time_max - time)/time)*100.0);
+        if (logfile)
+          fprintf(logfile,"Max Bond time (ib) = %g (%g)\n",
+                  time_max,((time_max - time)/time)*100.0);
       }
     }
 
     if (force->kspace) {
       time = timer->array[TIME_KSPACE];
       MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+      MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
       time = tmp/nprocs;
       if (me == 0) {
         if (screen)
@@ -413,11 +449,18 @@ void Finish::end(int flag)
         if (logfile)
           fprintf(logfile,"Kspce time (%%) = %g (%g)\n",
                   time,time/time_loop*100.0);
+        if (screen)
+          fprintf(screen,"Max Kspce time (ib) = %g (%g)\n",
+                  time_max,((time_max - time)/time)*100.0);
+        if (logfile)
+          fprintf(logfile,"Max Kspce time (ib) = %g (%g)\n",
+                  time_max,((time_max - time)/time)*100.0);
       }
     }
 
     time = timer->array[TIME_NEIGHBOR];
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+    MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
     if (me == 0) {
       if (screen)
@@ -426,10 +469,17 @@ void Finish::end(int flag)
       if (logfile)
         fprintf(logfile,"Neigh time (%%) = %g (%g)\n",
                 time,time/time_loop*100.0);
+      if (screen)
+        fprintf(screen,"Max Neigh time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
+      if (logfile)
+        fprintf(logfile,"Max Neigh time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
     }
 
     time = timer->array[TIME_COMM];
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+    MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
     if (me == 0) {
       if (screen)
@@ -438,10 +488,17 @@ void Finish::end(int flag)
       if (logfile)
         fprintf(logfile,"Comm  time (%%) = %g (%g)\n",
                 time,time/time_loop*100.0);
+      if (screen)
+        fprintf(screen,"Max Comm time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
+      if (logfile)
+        fprintf(logfile,"Max Comm time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
     }
 
     time = timer->array[TIME_OUTPUT];
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+    MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
     if (me == 0) {
       if (screen)
@@ -450,11 +507,18 @@ void Finish::end(int flag)
       if (logfile)
         fprintf(logfile,"Outpt time (%%) = %g (%g)\n",
                 time,time/time_loop*100.0);
+      if (screen)
+        fprintf(screen,"Max Outpt time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
+      if (logfile)
+        fprintf(logfile,"Max Outpt time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
     }
 
     if(modify->timing) {
       time = timer->array[TIME_MODIFY];
       MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+      MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
       time = tmp/nprocs;
       if (me == 0) {
         if (screen)
@@ -463,6 +527,32 @@ void Finish::end(int flag)
         if (logfile)
           fprintf(logfile,"Modfy time (%%) = %g (%g)\n",
                   time,time/time_loop*100.0);
+        if (screen)
+          fprintf(screen,"Max Modfy time (ib) = %g (%g)\n",
+                  time_max,((time_max - time)/time)*100.0);
+        if (logfile)
+          fprintf(logfile,"Max Modfy time (ib) = %g (%g)\n",
+                  time_max,((time_max - time)/time)*100.0);
+      }
+
+      if(modify->timing > 1) {
+        double * modify_times = NULL;
+        if (me == 0) modify_times = new double[comm->nprocs];
+        MPI_Gather(&timer->array[TIME_MODIFY], 1, MPI_DOUBLE, modify_times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        if (me == 0) {
+            for (int p = 0; p < comm->nprocs; ++p) {
+              if (screen)
+                fprintf(screen,"  Modify   time [%d] (%%) = %g (%g)\n", p,
+                    modify_times[p],modify_times[p]/time_loop*100.0);
+
+              if(logfile)
+                fprintf(logfile,"  Modify   time [%d] (%%) = %g (%g)\n", p,
+                        modify_times[p],modify_times[p]/time_loop*100.0);
+            }
+        }
+
+        delete [] modify_times;
       }
 
       if(modify->timing > 1) {
@@ -488,6 +578,7 @@ void Finish::end(int flag)
 
     time = time_other;
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
+    MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
     if (me == 0) {
       if (screen)
@@ -496,6 +587,12 @@ void Finish::end(int flag)
       if (logfile)
         fprintf(logfile,"Other time (%%) = %g (%g)\n",
                 time,time/time_loop*100.0);
+      if (screen)
+        fprintf(screen,"Max Other time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
+      if (logfile)
+        fprintf(logfile,"Max Other time (ib) = %g (%g)\n",
+                time_max,((time_max - time)/time)*100.0);
     }
 
     if(modify->timing) {

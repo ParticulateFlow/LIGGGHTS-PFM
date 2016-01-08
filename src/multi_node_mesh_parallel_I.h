@@ -880,6 +880,7 @@
           MPI_Request request;
           MPI_Status status;
 
+          nfirst = 0;
           iswap = 0;
           smax = rmax = 0;
 

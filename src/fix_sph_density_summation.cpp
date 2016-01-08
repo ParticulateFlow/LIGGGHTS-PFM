@@ -145,7 +145,7 @@ template <int MASSFLAG>
 void FixSPHDensitySum::post_integrate_eval()
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
-  double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,s,W;
+  double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,s=0.,W;
   double sli,sliInv,slj,slCom,slComInv,cut,imass,jmass;
   int *ilist,*jlist,*numneigh,**firstneigh;
 

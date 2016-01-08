@@ -60,6 +60,11 @@ namespace MathExtraLiggghts {
   inline double max(double *input, int n,int &which);
   inline double abs(double a);
 
+  // signum function
+  template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+  }
+
   //NP modified C.K. barycentric operations on tets
   inline void matrix_invert_4x4_special(double matrix[4][4]);
   inline void transpose3(const double m[3][3], double ans[3][3]);

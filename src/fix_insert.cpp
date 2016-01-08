@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -17,6 +17,12 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include "math.h"
@@ -362,19 +368,26 @@ void FixInsert::init_defaults()
   quat_random_ = false;
 
   print_stats_during_flag = 1;
+  warn_boxentent = true;
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixInsert::sanity_check()
 {
-    if(fix_distribution == NULL) error->fix_error(FLERR,this,"have to define a 'distributiontemplate'");
-    if(vectorMag4DSquared(quat_insert) != 1.) error->fix_error(FLERR,this,"quaternion not valid");
+    if(fix_distribution == NULL)
+      error->fix_error(FLERR,this,"have to define a 'distributiontemplate'");
 
-    if(ninsert > 0 && massinsert > 0.) error->fix_error(FLERR,this,"must not define both 'nparticles' and 'mass'");
-    if(nflowrate > 0. && massflowrate > 0.) error->fix_error(FLERR,this,"must not define both 'particlerate' and 'massrate'");
+    if(MathExtraLiggghts::abs(vectorMag4DSquared(quat_insert)-1.) > 1e-10)
+      error->fix_error(FLERR,this,"quaternion not valid");
 
-    if(insert_every == 0 && (massflowrate > 0. || nflowrate > 0.)) error->fix_error(FLERR,this,"must not define 'particlerate' or 'massrate' for 'insert_every' = 0");
+    if(ninsert > 0 && massinsert > 0.)
+      error->fix_error(FLERR,this,"must not define both 'nparticles' and 'mass'");
+    if(nflowrate > 0. && massflowrate > 0.)
+      error->fix_error(FLERR,this,"must not define both 'particlerate' and 'massrate'");
+
+    if(insert_every == 0 && (massflowrate > 0. || nflowrate > 0.))
+      error->fix_error(FLERR,this,"must not define 'particlerate' or 'massrate' for 'insert_every' = 0");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -420,16 +433,16 @@ void FixInsert::print_stats_start()
 
 void FixInsert::print_stats_during(int ninsert_this, double mass_inserted_this)
 {
-  int step = update->ntimestep;
+  bigint step = update->ntimestep;
 
   if (me == 0 && print_stats_during_flag)
   {
     if (screen)
-      fprintf(screen ,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step %d\n - a total of %d particle templates (mass %f) inserted so far.\n",
+      fprintf(screen ,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step " BIGINT_FORMAT "\n - a total of %d particle templates (mass %f) inserted so far.\n",
               id,ninsert_this,mass_inserted_this,step,ninserted,massinserted);
 
     if (logfile)
-      fprintf(logfile,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step %d\n - a total of %d particle templates (mass %f) inserted so far.\n",
+      fprintf(logfile,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step " BIGINT_FORMAT "\n - a total of %d particle templates (mass %f) inserted so far.\n",
               id,ninsert_this,mass_inserted_this,step,ninserted,massinserted);
   }
 }
@@ -611,7 +624,7 @@ void FixInsert::pre_exchange()
   int min_dim;
   domain->min_subbox_extent(min_subbox_extent,min_dim);
 
-  if(min_subbox_extent < 2.2 *max_r_bound())
+  if(warn_boxentent && min_subbox_extent < 2.2 *max_r_bound())
   {
       char msg[200];
       sprintf(msg,"Particle insertion on proc %d: sub-domain too small to insert particles: \nMax. bounding "
@@ -652,6 +665,9 @@ void FixInsert::pre_exchange()
   /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 5\n");}
 
   // actual particle insertion
+
+  fix_distribution->pre_insert();
+
   //NP pti list is body list, so use ninserted_this as arg
   ninserted_spheres_this_local = fix_distribution->insert(ninserted_this_local);
 
@@ -917,7 +933,7 @@ void FixInsert::restart(char *buf)
   // if insert was already finished in run to be restarted
   if(next_reneighbor_re != 0) next_reneighbor = next_reneighbor_re;
 
-  /*NL*/// fprintf(screen,"next_reneighbor "BIGINT_FORMAT", next_reneighbor_re "BIGINT_FORMAT"  "
+  /*NL*/// fprintf(screen,"next_reneighbor " BIGINT_FORMAT ", next_reneighbor_re " BIGINT_FORMAT "  "
   /*NL*///       "ninserted %d ninsert %d\n",next_reneighbor,next_reneighbor_re,ninserted,ninsert);
 }
 

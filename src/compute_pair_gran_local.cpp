@@ -76,7 +76,7 @@ ComputePairGranLocal::ComputePairGranLocal(LAMMPS *lmp, int narg, char **arg) :
     else if (strcmp(arg[iarg],"history") == 0) hflag = 1;
     else if (strcmp(arg[iarg],"contactArea") == 0) aflag = 1;
     else if (strcmp(arg[iarg],"heatFlux") == 0) hfflag = 1;
-    else error->all(FLERR,"Invalid keyword in compute pair/gran/local or wall/gran/local command");
+    else error->compute_error(FLERR,this,"Invalid keyword");
   }
 
   // default: pair data
@@ -89,7 +89,7 @@ ComputePairGranLocal::ComputePairGranLocal(LAMMPS *lmp, int narg, char **arg) :
   pairgran = NULL;
 
   if(update->ntimestep > 0 && !modify->fix_restart_in_progress())
-    error->all(FLERR,"Need to define compute pair/gran/local or wall/gran/local before first run");
+    error->compute_error(FLERR,this,"Need to define this compute before first run");
 }
 
 /* ---------------------------------------------------------------------- */
