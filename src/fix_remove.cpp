@@ -125,7 +125,7 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
 
 FixRemove::~FixRemove()
 {
-
+  delete random_;
 }
 
 /* ---------------------------------------------------------------------- */

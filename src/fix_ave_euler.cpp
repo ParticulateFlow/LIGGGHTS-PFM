@@ -153,6 +153,7 @@ FixAveEuler::~FixAveEuler()
   memory->destroy(ncount_);
   memory->destroy(mass_);
   memory->destroy(stress_);
+  delete random_;
 }
 
 /* ---------------------------------------------------------------------- */
