@@ -401,6 +401,8 @@ void Finish::end(int flag)
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
+    double imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
     if (me == 0) {
       if (screen)
         fprintf(screen,"Pair  time (%%) = %g (%g)\n",
@@ -410,10 +412,10 @@ void Finish::end(int flag)
                 time,time/time_loop*100.0);
       if (screen)
         fprintf(screen,"Max Pair time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
       if (logfile)
         fprintf(logfile,"Max Pair time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
     }
 
     if (atom->molecular) {
@@ -421,6 +423,8 @@ void Finish::end(int flag)
       MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
       MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
       time = tmp/nprocs;
+      imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
       if (me == 0) {
         if (screen)
           fprintf(screen,"Bond  time (%%) = %g (%g)\n",
@@ -430,10 +434,10 @@ void Finish::end(int flag)
                   time,time/time_loop*100.0);
         if (screen)
           fprintf(screen,"Max Bond time (ib) = %g (%g)\n",
-                  time_max,((time_max - time)/time)*100.0);
+                  time_max, imbalance);
         if (logfile)
           fprintf(logfile,"Max Bond time (ib) = %g (%g)\n",
-                  time_max,((time_max - time)/time)*100.0);
+                  time_max, imbalance);
       }
     }
 
@@ -442,6 +446,8 @@ void Finish::end(int flag)
       MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
       MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
       time = tmp/nprocs;
+      imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
       if (me == 0) {
         if (screen)
           fprintf(screen,"Kspce time (%%) = %g (%g)\n",
@@ -451,10 +457,10 @@ void Finish::end(int flag)
                   time,time/time_loop*100.0);
         if (screen)
           fprintf(screen,"Max Kspce time (ib) = %g (%g)\n",
-                  time_max,((time_max - time)/time)*100.0);
+                  time_max, imbalance);
         if (logfile)
           fprintf(logfile,"Max Kspce time (ib) = %g (%g)\n",
-                  time_max,((time_max - time)/time)*100.0);
+                  time_max, imbalance);
       }
     }
 
@@ -462,6 +468,8 @@ void Finish::end(int flag)
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
+    imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
     if (me == 0) {
       if (screen)
         fprintf(screen,"Neigh time (%%) = %g (%g)\n",
@@ -471,16 +479,18 @@ void Finish::end(int flag)
                 time,time/time_loop*100.0);
       if (screen)
         fprintf(screen,"Max Neigh time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
       if (logfile)
         fprintf(logfile,"Max Neigh time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
     }
 
     time = timer->array[TIME_COMM];
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
+    imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
     if (me == 0) {
       if (screen)
         fprintf(screen,"Comm  time (%%) = %g (%g)\n",
@@ -490,16 +500,18 @@ void Finish::end(int flag)
                 time,time/time_loop*100.0);
       if (screen)
         fprintf(screen,"Max Comm time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
       if (logfile)
         fprintf(logfile,"Max Comm time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
     }
 
     time = timer->array[TIME_OUTPUT];
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
+    imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
     if (me == 0) {
       if (screen)
         fprintf(screen,"Outpt time (%%) = %g (%g)\n",
@@ -509,10 +521,10 @@ void Finish::end(int flag)
                 time,time/time_loop*100.0);
       if (screen)
         fprintf(screen,"Max Outpt time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
       if (logfile)
         fprintf(logfile,"Max Outpt time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
     }
 
     if(modify->timing) {
@@ -520,6 +532,8 @@ void Finish::end(int flag)
       MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
       MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
       time = tmp/nprocs;
+      imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
       if (me == 0) {
         if (screen)
           fprintf(screen,"Modfy time (%%) = %g (%g)\n",
@@ -529,10 +543,10 @@ void Finish::end(int flag)
                   time,time/time_loop*100.0);
         if (screen)
           fprintf(screen,"Max Modfy time (ib) = %g (%g)\n",
-                  time_max,((time_max - time)/time)*100.0);
+                  time_max, imbalance);
         if (logfile)
           fprintf(logfile,"Max Modfy time (ib) = %g (%g)\n",
-                  time_max,((time_max - time)/time)*100.0);
+                  time_max, imbalance);
       }
 
       if(modify->timing > 1) {
@@ -580,6 +594,8 @@ void Finish::end(int flag)
     MPI_Allreduce(&time,&tmp,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&time,&time_max,1,MPI_DOUBLE,MPI_MAX,world);
     time = tmp/nprocs;
+    imbalance = time > 0.0 ? ((time_max - time)/time)*100.0 : 0.0;
+
     if (me == 0) {
       if (screen)
         fprintf(screen,"Other time (%%) = %g (%g)\n",
@@ -589,10 +605,10 @@ void Finish::end(int flag)
                 time,time/time_loop*100.0);
       if (screen)
         fprintf(screen,"Max Other time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
       if (logfile)
         fprintf(logfile,"Max Other time (ib) = %g (%g)\n",
-                time_max,((time_max - time)/time)*100.0);
+                time_max, imbalance);
     }
 
     if(modify->timing) {
