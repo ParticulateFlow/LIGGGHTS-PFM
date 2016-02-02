@@ -348,6 +348,10 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
+
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
@@ -476,6 +480,9 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
 
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec,nodes)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
