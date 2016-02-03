@@ -45,6 +45,10 @@
 #include <string>
 /*NL*/#include "debug_liggghts.h"
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
@@ -83,6 +87,7 @@ Modify::Modify(LAMMPS *lmp) : Pointers(lmp)
   list_min_pre_exchange = list_min_pre_neighbor = NULL;
   list_min_pre_force = list_min_post_force = NULL;
   list_min_energy = NULL;
+  list_post_force_omp = NULL;
 
   end_of_step_every = NULL;
 
@@ -158,6 +163,7 @@ Modify::~Modify()
   delete [] list_min_pre_force;
   delete [] list_min_post_force;
   delete [] list_min_energy;
+  delete [] list_post_force_omp;
 
   delete [] end_of_step_every;
   delete [] list_timeflag;
@@ -187,6 +193,7 @@ void Modify::init()
   list_init(PRE_NEIGHBOR,n_pre_neighbor,list_pre_neighbor);
   list_init(PRE_FORCE,n_pre_force,list_pre_force);
   list_init(POST_FORCE,n_post_force,list_post_force);
+  list_init(POST_FORCE | PARALLEL_OPENMP,n_post_force_omp,list_post_force_omp);
   list_init(FINAL_INTEGRATE,n_final_integrate,list_final_integrate);
   list_init(ITERATE_IMPLICITLY,n_iterate_implicitly,list_iterate_implicitly); //NP modified C.K.
   list_init_end_of_step(END_OF_STEP,n_end_of_step,list_end_of_step);
@@ -416,7 +423,7 @@ void Modify::post_force(int vflag)
   /*NL*/// if(20950 < update->ntimestep) {fprintf(screen,"proc %d executing post_force for %s\n",
   /*NL*///                                      comm->me,fix[list_post_force[i]]->style);
   /*NL*/// __debug__(lmp);}
-  call_method_on_fixes(&Fix::post_force, vflag, list_post_force, n_post_force);
+  call_method_on_fixes_omp(&Fix::post_force, vflag, list_post_force, n_post_force, list_post_force_omp, n_post_force_omp);
 }
 
 /* ----------------------------------------------------------------------
@@ -763,8 +770,11 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
     //NP modified C.K.
     if (strncmp(fix[ifix]->style,"insert/",7) == 0)
       error->all(FLERR,"Using a fix insert/* ID twice, which is not possible. Please use different ID");
-    if (strcmp(arg[2],fix[ifix]->style) != 0)
+    if (strcmp(arg[2],fix[ifix]->style) != 0) {
+      printf("%s\n", arg[2]);
+      printf("%s\n", fix[ifix]->style);
       error->all(FLERR,"Replacing a fix, but new style != old style");
+    }
     if (fix[ifix]->igroup != igroup && comm->me == 0)
       error->warning(FLERR,"Replacing a fix, but new group != old group");
     //NP modified C.K.
@@ -1422,6 +1432,94 @@ void Modify::call_method_on_fixes(FixMethodWithVFlag method, int vflag, int *& i
       (fix[ilist[i]]->*method)(vflag);
     }
   }
+}
+
+/* ----------------------------------------------------------------------
+   calls a member method with vflag parameter on all fixes in the
+   specified list. if fix is marked as PARALLEL_OPENMP it will be
+   called in a parallel context
+------------------------------------------------------------------------- */
+
+void Modify::call_method_on_fixes_omp(FixMethodWithVFlag method, int vflag, int *& ilist, int & inum, int *& plist, int & pnum) {
+#if defined(_OPENMP)
+  if(timing) {
+    int i = 0;
+    while (i < inum) {
+      int ifix = ilist[i];
+      if(!(fmask[ifix] & PARALLEL_OPENMP)) {
+        fix[ifix]->begin_time_recording();
+        (fix[ifix]->*method)(vflag);
+        fix[ifix]->end_time_recording();
+      }
+      else
+      {
+        int me;
+        MPI_Comm_rank(world,&me);
+
+        #pragma omp parallel default(none) shared(method, vflag, ifix, i, inum, ilist,me)
+        {
+          while(i < inum) {
+            ifix = ilist[i];
+            if (fmask[ifix] & PARALLEL_OPENMP) {
+              #pragma omp single
+              fix[ifix]->begin_time_recording();
+
+              (fix[ifix]->*method)(vflag);
+
+              #pragma omp barrier
+
+              #pragma omp single
+              {
+                fix[ifix]->end_time_recording();
+                i++;
+              }
+            }
+            else break;
+          }
+        }
+        continue;
+      }
+      i++;
+    }
+  }
+  else
+  {
+    int i = 0;
+    while (i < inum) {
+      int ifix = ilist[i];
+      if(!(fmask[ifix] & PARALLEL_OPENMP)) {
+        (fix[ifix]->*method)(vflag);
+      }
+      else
+      {
+        int me;
+        MPI_Comm_rank(world,&me);
+
+        #pragma omp parallel default(none) shared(method, vflag, ifix, i, inum, ilist,me)
+        {
+          while(i < inum) {
+            ifix = ilist[i];
+            if (fmask[ifix] & PARALLEL_OPENMP) {
+              (fix[ifix]->*method)(vflag);
+
+              #pragma omp barrier
+
+              #pragma omp single
+              {
+                i++;
+              }
+            }
+            else break;
+          }
+        }
+        continue;
+      }
+      i++;
+    }
+  }
+#else
+  call_method_on_fixes(method, vflag, ilist, inum);
+#endif
 }
 
 /* ----------------------------------------------------------------------

@@ -22,6 +22,7 @@
 /* ----------------------------------------------------------------------
    Contributing author:
    Daniel Queteschiner, daniel.queteschiner@dcs-computing.com
+   Richard Berger <richard.berger@jku.at>
 ------------------------------------------------------------------------- */
 
 #ifdef LAMMPS_VTK
@@ -84,7 +85,7 @@ enum{X,Y,Z, // required for vtk, must come first
      Q, MUX,MUY,MUZ,MU,RADIUS,DIAMETER,
      OMEGAX,OMEGAY,OMEGAZ,ANGMOMX,ANGMOMY,ANGMOMZ,
      TQX,TQY,TQZ,SPIN,ERADIUS,ERVEL,ERFORCE,
-     DENSITY, RHO, P, //NP modified C.K. included DENSITY .. A.A. included RHO and P
+     DENSITY, RHO, P, THREAD, //NP modified C.K. included DENSITY .. A.A. included RHO and P .. R.B. included THREAD
      VARIABLE,COMPUTE,FIX,INAME,DNAME,
      ATTRIBUTES}; // must come last
 enum{LT,LE,GT,GE,EQ,NEQ};
@@ -856,6 +857,12 @@ int DumpCustomVTK::count()
         int *ivector = atom->ivector[iwhich];
         for (i = 0; i < nlocal; i++)
           dchoose[i] = ivector[i];
+        ptr = dchoose;
+        nstride = 1;
+      }
+      else if (thresh_array[ithresh] == THREAD) {
+        int *thread = atom->thread;
+        for (i = 0; i < nlocal; i++) dchoose[i] = comm->me * comm->nprocs + thread[i];
         ptr = dchoose;
         nstride = 1;
       }
@@ -1857,6 +1864,10 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
       pack_choice[ERFORCE] = &DumpCustomVTK::pack_erforce;
       vtype[ERFORCE] = DOUBLE;
       name[ERFORCE] = arg[iarg];
+    } else if (strcmp(arg[iarg],"thread") == 0) {
+      pack_choice[THREAD] = &DumpCustomVTK::pack_thread;
+      vtype[THREAD] = INT;
+      name[THREAD] = arg[iarg];
 
     // compute value = c_ID
     // if no trailing [], then arg is set to 0, else arg is int between []
@@ -2301,6 +2312,7 @@ int DumpCustomVTK::modify_param(int narg, char **arg)
     else if (strcmp(arg[1],"density") == 0) thresh_array[nthresh] = DENSITY; //NP modified C.K.
     else if (strcmp(arg[1],"p") == 0) thresh_array[nthresh] = P; //NP modified C.K.
     else if (strcmp(arg[1],"rho") == 0) thresh_array[nthresh] = RHO; //NP modified C.K.
+    else if (strcmp(arg[1],"thread") == 0) thresh_array[nthresh] = THREAD; //NP modified R.B.
     else if (strcmp(arg[1],"mux") == 0) thresh_array[nthresh] = MUX;
     else if (strcmp(arg[1],"muy") == 0) thresh_array[nthresh] = MUY;
     else if (strcmp(arg[1],"muz") == 0) thresh_array[nthresh] = MUZ;
@@ -3331,6 +3343,18 @@ void DumpCustomVTK::pack_erforce(int n)
 
   for (int i = 0; i < nchoose; i++) {
     buf[n] = erforce[clist[i]];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustomVTK::pack_thread(int n)
+{
+  int *thread = atom->thread;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = comm->me * comm->nprocs + thread[clist[i]];
     n += size_one;
   }
 }

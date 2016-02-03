@@ -23,6 +23,7 @@
    Contributing authors:
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Philippe Seil (JKU Linz)
+   Richard Berger (JKU Linz)
    Evan Smuts (U Cape Town, surface velocity rotation)
 ------------------------------------------------------------------------- */
 
@@ -211,6 +212,8 @@ void FixMesh::create_mesh(char *mesh_fname)
             mesh_ = new TriMeshDeformable(lmp);
         else if(strcmp(style,"mesh/surface/planar") == 0)
             mesh_ = new TriMeshPlanar(lmp);
+        else if(strcmp(style,"mesh/surface/planar/omp") == 0)
+            mesh_ = new TriMeshPlanar(lmp);
         else
             mesh_ = new TriMesh(lmp);
 
@@ -241,6 +244,8 @@ void FixMesh::create_mesh_restart()
     if(strcmp(style,"mesh/surface/stress/deform") == 0)
         mesh_ = new TriMeshDeformable(lmp);
     else if(strcmp(style,"mesh/surface/planar") == 0)
+        mesh_ = new TriMeshPlanar(lmp);
+    else if(strcmp(style,"mesh/surface/planar/omp") == 0)
         mesh_ = new TriMeshPlanar(lmp);
     else if(strncmp(style,"mesh/surface",12) == 0)
         mesh_ = new TriMesh(lmp);

@@ -34,10 +34,12 @@
 #include "kspace.h"
 
 #include "math_const.h"
+#include "contact_interface.h"
 
 #include <string.h>
 
 using namespace LAMMPS_NS;
+using namespace LIGGGHTS::ContactModels;
 using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
@@ -404,6 +406,29 @@ void ThrOMP::reduce_thr(void *style, const int eflag, const int vflag,
   }
 }
 
+void ThrOMP::reduce_accumulators_only(const int eflag, const int vflag, ThrData *const thr)
+{
+  switch (thr_style) {
+    case THR_PAIR: {
+      Pair * const pair = lmp->force->pair;
+      // reduce virial
+      if (eflag & 1) {
+        pair->eng_vdwl += thr->eng_vdwl;
+        pair->eng_coul += thr->eng_coul;
+        thr->eng_vdwl = 0.0;
+        thr->eng_coul = 0.0;
+      }
+      if (vflag & 3) {
+        for (int i=0; i < 6; ++i) {
+          pair->virial[i] += thr->virial_pair[i];
+          thr->virial_pair[i] = 0.0;
+        }
+      }
+      break;
+    }
+  }
+}
+
 /* ----------------------------------------------------------------------
    tally eng_vdwl and eng_coul into per thread global and per-atom accumulators
 ------------------------------------------------------------------------- */
@@ -487,6 +512,48 @@ void ThrOMP::v_tally_thr(Pair * const pair, const int i, const int j,
 }
 
 /* ----------------------------------------------------------------------
+   tally virial into per thread global and per-atom accumulators
+------------------------------------------------------------------------- */
+void ThrOMP::v_tally_thr_new(Pair * const pair, const int i, const int j,
+                         const int nlocal, const int newton_pair,
+                         const double * const v, bool same_thread, bool use_patchup_list, ThrData * const thr)
+{
+  if (pair->vflag_global) {
+    double * const va = thr->virial_pair;
+    if (newton_pair) {
+      v_tally(va,v);
+    } else {
+      if (i < nlocal) v_tally(va,0.5,v);
+      if (j < nlocal) v_tally(va,0.5,v);
+    }
+  }
+
+  if (pair->vflag_atom) {
+    if (newton_pair || i < nlocal) {
+      double * const va = pair->vatom[i];
+      v_tally(va,0.5,v);
+    }
+    if (newton_pair || j < nlocal) {
+      if(same_thread){
+        // if the update is on a particle of the same thread we have no race condition
+        // if the update is not on the same thread, this update must be either caused by
+        // work duplication (full neighbor list) or using patchup lists
+        double * const va = pair->vatom[j];
+        v_tally(va,0.5,v);
+      } else if(use_patchup_list) {
+          thr->patchupVatomUpdates.push_back(VatomUpdate(j, v));
+      }
+    }
+  }
+}
+
+void ThrOMP::v_tally_patchup(Pair * const pair, const int j, const double * const v)
+{
+  double * const va = pair->vatom[j];
+  v_tally(va,0.5,v);
+}
+
+/* ----------------------------------------------------------------------
    tally eng_vdwl and virial into per thread global and per-atom accumulators
    need i < nlocal test since called by bond_quartic and dihedral_charmm
 ------------------------------------------------------------------------- */
@@ -539,6 +606,138 @@ void ThrOMP::ev_tally_xyz_thr(Pair * const pair, const int i, const int j,
     v[5] = dely*fz;
 
     v_tally_thr(pair, i, j, nlocal, newton_pair, v, thr);
+  }
+}
+
+void ThrOMP::ev_tally_xyz_omp(Pair * const pair, const int i, const int j, const int nlocal, const int newton_pair,
+                        const double evdwl, const double ecoul,
+                        const double fx, const double fy, const double fz,
+                        const double delx, const double dely, const double delz,
+                        bool same_thread)
+{
+  if (pair->eflag_either) {
+    #pragma omp critical
+    if (pair->eflag_global) {
+      if (newton_pair) {
+        pair->eng_vdwl += evdwl;
+        pair->eng_coul += ecoul;
+      } else {
+        const double evdwlhalf = 0.5*evdwl;
+        const double ecoulhalf = 0.5*ecoul;
+        if (i < nlocal) {
+          pair->eng_vdwl += evdwlhalf;
+          pair->eng_coul += ecoulhalf;
+        }
+        if (j < nlocal) {
+          pair->eng_vdwl += evdwlhalf;
+          pair->eng_coul += ecoulhalf;
+        }
+      }
+    }
+    if (pair->eflag_atom) {
+      const double epairhalf = 0.5 * (evdwl + ecoul);
+
+      if (newton_pair || i < nlocal) {
+        pair->eatom[i] += epairhalf;
+      }
+      if (newton_pair || j < nlocal) {
+        if(same_thread) {
+          pair->eatom[j] += epairhalf;
+        }
+      }
+    }
+  }
+
+  if (pair->vflag_either) {
+    double * const virial = pair->virial;
+    double v[6];
+    v[0] = delx*fx;
+    v[1] = dely*fy;
+    v[2] = delz*fz;
+    v[3] = delx*fy;
+    v[4] = delx*fz;
+    v[5] = dely*fz;
+
+    if (pair->vflag_global) {
+      #pragma omp critical
+      if (newton_pair) {
+        virial[0] += v[0];
+        virial[1] += v[1];
+        virial[2] += v[2];
+        virial[3] += v[3];
+        virial[4] += v[4];
+        virial[5] += v[5];
+      } else {
+        if (i < nlocal) {
+          virial[0] += 0.5*v[0];
+          virial[1] += 0.5*v[1];
+          virial[2] += 0.5*v[2];
+          virial[3] += 0.5*v[3];
+          virial[4] += 0.5*v[4];
+          virial[5] += 0.5*v[5];
+        }
+        if (j < nlocal) {
+          virial[0] += 0.5*v[0];
+          virial[1] += 0.5*v[1];
+          virial[2] += 0.5*v[2];
+          virial[3] += 0.5*v[3];
+          virial[4] += 0.5*v[4];
+          virial[5] += 0.5*v[5];
+        }
+      }
+    }
+
+    if (pair->vflag_atom) {
+      double * const * const vatom = pair->vatom;
+
+      #pragma omp critical
+      {
+        if (newton_pair || i < nlocal) {
+          vatom[i][0] += 0.5*v[0];
+          vatom[i][1] += 0.5*v[1];
+          vatom[i][2] += 0.5*v[2];
+          vatom[i][3] += 0.5*v[3];
+          vatom[i][4] += 0.5*v[4];
+          vatom[i][5] += 0.5*v[5];
+        }
+        if (newton_pair || j < nlocal) {
+          if(same_thread){
+            vatom[j][0] += 0.5*v[0];
+            vatom[j][1] += 0.5*v[1];
+            vatom[j][2] += 0.5*v[2];
+            vatom[j][3] += 0.5*v[3];
+            vatom[j][4] += 0.5*v[4];
+            vatom[j][5] += 0.5*v[5];
+          }
+        }
+      }
+    }
+  }
+}
+
+/* --------------------------------------------------------------------- */
+// mixture of reduction code and non-reduction code
+/* --------------------------------------------------------------------- */
+
+void ThrOMP::ev_tally_xyz_omp_new(Pair * const pair, const int i, const int j, const int nlocal, const int newton_pair,
+                        const double fx, const double fy, const double fz,
+                        const double delx, const double dely, const double delz,
+                        bool same_thread, bool use_patchup_list, ThrData * const thr)
+{
+  // removed code, since always called with
+  // evdwl = 0.0
+  // ecoul = 0.0
+
+  if (pair->vflag_either) {
+    double v[6];
+    v[0] = delx*fx;
+    v[1] = dely*fy;
+    v[2] = delz*fz;
+    v[3] = delx*fy;
+    v[4] = delx*fz;
+    v[5] = dely*fz;
+
+    v_tally_thr_new(pair, i, j, nlocal, newton_pair, v, same_thread, use_patchup_list, thr);
   }
 }
 
