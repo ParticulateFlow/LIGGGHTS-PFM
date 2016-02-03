@@ -50,15 +50,15 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
   scale_to_(1.0),
   scale_range_(1.0)
 {
-  if (narg < 5) error->all(FLERR,"Not enough arguments for fix scale/diameter command");
+  if (narg < 5) error->fix_error(FLERR,this,"Not enough arguments for fix scale/diameter command");
   nevery = force->inumeric(FLERR,arg[3]);
-  if (nevery < 0) error->all(FLERR,"Illegal fix scale/diameter command");
+  if (nevery < 0) error->fix_error(FLERR,this,"Illegal fix scale/diameter command");
 
   int iarg = 4;
   bool hasargs = true;
   while(iarg < narg && hasargs) {
     if (strcmp(arg[iarg],"region") == 0) {
-        if (iarg+2 > narg) error->fix_error(FLERR,this,"Not enough arguments for 'region' option");
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"Not enough arguments for 'region' option");
       int iregion = domain->find_region(arg[iarg+1]);
       if (iregion == -1) error->fix_error(FLERR,this,"Region ID does not exist");
       int n = strlen(arg[iarg+1]) + 1;
