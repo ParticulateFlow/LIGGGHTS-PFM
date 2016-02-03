@@ -41,23 +41,10 @@ inline void pcoords_to_cart(int iHex, double *pcoords, double *pos)
     vtkHexahedron *hexahedron = vtkHexahedron::New();
 
     hexahedron->GetPointIds()->SetNumberOfIds(8);
-    hexahedron->GetPointIds()->SetId(0,0);
-    hexahedron->GetPointIds()->SetId(1,1);
-    hexahedron->GetPointIds()->SetId(2,2);
-    hexahedron->GetPointIds()->SetId(3,3);
-    hexahedron->GetPointIds()->SetId(4,4);
-    hexahedron->GetPointIds()->SetId(5,5);
-    hexahedron->GetPointIds()->SetId(6,6);
-    hexahedron->GetPointIds()->SetId(7,7);
-
-    hexahedron->GetPoints()->SetPoint(0, node[iHex][0][0], node[iHex][0][1], node[iHex][0][2]);
-    hexahedron->GetPoints()->SetPoint(1, node[iHex][1][0], node[iHex][1][1], node[iHex][1][2]);
-    hexahedron->GetPoints()->SetPoint(2, node[iHex][2][0], node[iHex][2][1], node[iHex][2][2]);
-    hexahedron->GetPoints()->SetPoint(3, node[iHex][3][0], node[iHex][3][1], node[iHex][3][2]);
-    hexahedron->GetPoints()->SetPoint(4, node[iHex][4][0], node[iHex][4][1], node[iHex][4][2]);
-    hexahedron->GetPoints()->SetPoint(5, node[iHex][5][0], node[iHex][5][1], node[iHex][5][2]);
-    hexahedron->GetPoints()->SetPoint(6, node[iHex][6][0], node[iHex][6][1], node[iHex][6][2]);
-    hexahedron->GetPoints()->SetPoint(7, node[iHex][7][0], node[iHex][7][1], node[iHex][7][2]);
+    for(int i=0; i<8; ++i) {
+        hexahedron->GetPointIds()->SetId(i,i);
+        hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
+    }
 
     int subId;
     double weights[8]={};

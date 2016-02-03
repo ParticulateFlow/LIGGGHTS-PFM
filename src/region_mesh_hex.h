@@ -52,9 +52,13 @@ class RegHexMesh : public Region {
   double total_vol();
   double hex_vol(int i);
   double hex_acc_vol(int i);
+  void hex_bounds(int iHex, double bounds[6]);
 
   inline CustomValueTracker& prop()
   {return customValues_;}
+
+  int get_hex(const char* property, int value);
+  int match_hex_cut(int iHex, double *pos,double cut);
 
  protected:
 
@@ -87,6 +91,7 @@ class RegHexMesh : public Region {
    // class holding fields
    CustomValueTracker &customValues_;
 
+public:
    #include "region_mesh_hex_I.h"
 };
 
