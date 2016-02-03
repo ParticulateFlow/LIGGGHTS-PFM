@@ -68,6 +68,7 @@ if (test $1 = "style") then
 
   style ANGLE_CLASS     angle_      angle      force
   style ATOM_CLASS      atom_vec_   atom       atom      atom_vec_hybrid
+  style PARTITIONER_CLASS      partitioner_   partitioner       atom
   style BODY_CLASS      body_       body       atom_vec_body
   style BOND_CLASS      bond_       bond       force
   style COMMAND_CLASS   ""          command    input

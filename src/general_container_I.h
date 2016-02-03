@@ -345,11 +345,7 @@
   template<typename T, int NUM_VEC, int LEN_VEC>
   void GeneralContainer<T,NUM_VEC,LEN_VEC>::setAll(T def)
   {
-      int len = size();
-      for(int n = 0; n < len; n++)
-          for(int i = 0; i < NUM_VEC; i++)
-                          for(int j = 0; j < LEN_VEC; j++)
-                                  arr_[n][i][j] = def;
+      std::fill(_begin(), _end(), def);
   }
 
   template<typename T, int NUM_VEC, int LEN_VEC>
@@ -427,7 +423,11 @@
       for(int i = 0; i < scalePower_; i++)
         factorApplied *= factor;
 
-      int len = size();
+      const int len = size();
+
+      #if defined(_OPENMP)
+      #pragma omp parallel for firstprivate(factorApplied)
+      #endif
       for(int i = 0; i < len; i++)
             for(int j = 0; j < NUM_VEC;j++)
                 for(int k = 0; k < LEN_VEC; k++)
@@ -439,8 +439,11 @@
   {
       if(isTranslationInvariant()) return;
 
-      int len = size();
+      const int len = size();
 
+      #if defined(_OPENMP)
+      #pragma omp parallel for firstprivate(delta)
+      #endif
       for(int i = 0; i < len; i++)
             for(int j = 0; j < NUM_VEC; j++)
                 for(int k = 0; k < LEN_VEC; k++)
@@ -463,7 +466,11 @@
       if(isRotationInvariant()) return;
 
       // ATTENTION: only correct for 3D vectors
-      int len = size();
+      const int len = size();
+
+      #if defined(_OPENMP)
+      #pragma omp parallel for firstprivate(dQ)
+      #endif
       for(int i = 0; i < len; i++)
             for(int j = 0; j < NUM_VEC; j++)
               MathExtraLiggghts::vec_quat_rotate(arr_[i][j],dQ);
@@ -716,6 +723,18 @@
         destroy<T>(tmp);
 
         return m;
+  }
+
+  template<typename T, int NUM_VEC, int LEN_VEC>
+  void GeneralContainer<T,NUM_VEC,LEN_VEC>::copy(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other)
+  {
+    std::copy(other._begin(), other._end(), _begin());
+  }
+
+  template<typename T, int NUM_VEC, int LEN_VEC>
+  void GeneralContainer<T,NUM_VEC,LEN_VEC>::copy_n(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other, const size_t n)
+  {
+    std::copy(other._begin(), other._begin() + (n*NUM_VEC*LEN_VEC+1), _begin());
   }
 
 #endif

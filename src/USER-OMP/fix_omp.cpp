@@ -13,7 +13,7 @@
 
 /* ----------------------------------------------------------------------
    OpenMP based threading support for LAMMPS
-   Contributing author: Axel Kohlmeyer (Temple U)
+   Contributing authors: Axel Kohlmeyer (Temple U), Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include "atom.h"
@@ -42,6 +42,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <pthread.h>
+#include <string>
+#include <sstream>
+#include <unistd.h>
+
 #include "suffix.h"
 
 #if defined(LMP_USER_CUDA)
@@ -63,17 +68,134 @@ static int get_tid()
   return tid;
 }
 
+/*
+ * This function binds the current thread to a single cpu
+ *
+ * If the current cpuset size matches the number of threads, each thread is bound sequentially
+ * If the cpuset size is larger than the number of threads, assume SMP-style placement of MPI
+ * processes. This functionality will probably become obsolete once OpenMP 4.0 is well supported.
+ *
+ * Examples:
+ *
+ * 16cores, nprocs=2, nthreads=8 (pre-bound)
+ * rank 0: [B B B B B B B B . . . . . . . .] => [0 1 2 3 4 5 6 7 8 . . . . . . . . .]
+ * rank 1: [. . . . . . . . B B B B B B B B] => [. . . . . . . . . 0 1 2 3 4 5 6 7 8]
+ *
+ * 16cores, nprocs=2, nthreads=8 (no binding)
+ * rank 0: [B B B B B B B B B B B B B B B B] => [0 1 2 3 4 5 6 7 8 . . . . . . . . .]
+ * rank 1: [B B B B B B B B B B B B B B B B] => [. . . . . . . . . 0 1 2 3 4 5 6 7 8]
+ *
+ */
+static bool set_thread_affinity(int rank, int nprocs, int tid, int nthreads)
+{
+  pthread_t thread = pthread_self();
+  cpu_set_t cpuset;
+
+  pthread_getaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
+
+  int nprocs_local = CPU_COUNT(&cpuset);
+
+  // also eliminates nmaxbind < nthreads case
+  if(nthreads > nprocs_local)
+  {
+    if(rank == 0 && tid == 0) fprintf(stderr, "WARNING: Oversubscribing system! More threads than processing units (PUs)!\n");
+    return false;
+  }
+
+  // determine the amount of cpus which can be bound to
+  int nmaxbind = CPU_COUNT(&cpuset);
+
+  int local_id;
+
+  if(nmaxbind > nthreads)
+  {
+    // we have more cpus to bind to than actually needed
+    // someone was lazy and relies on automatic placement
+    // assume each node has nprocs_per_node ranks and uses
+    // SMP-style placement
+    int nprocs_per_node = nprocs_local / nthreads;
+    local_id = rank % nprocs_per_node;
+    if(rank == 0 && tid == 0) fprintf(stderr, "INFO: Setting thread-affinity automatically! Assuming SMP style placement of MPI ranks!\n");
+  }
+  else
+  {
+    // nmaxbind == threads
+    // somebody outside made sure we only get what we need
+    // start with first bindable cpu
+    local_id = 0;
+  }
+
+  // generate cpuset for this thread
+  cpu_set_t final_cpuset;
+  CPU_ZERO(&final_cpuset);
+
+  int bind_offset = local_id * nthreads;
+  int bindable_tid  = 0;
+  int available_tid = 0;
+  for (int j = 0; j < CPU_SETSIZE; j++)
+  {
+    if (CPU_ISSET(j, &cpuset))
+    {
+      if(bindable_tid >= bind_offset)
+      {
+        if(available_tid == tid)
+        {
+          CPU_SET(j, &final_cpuset);
+          pthread_setaffinity_np(thread, sizeof(cpu_set_t), &final_cpuset);
+          return true;
+        }
+        available_tid++;
+      }
+      bindable_tid++;
+    }
+  }
+
+  return false;
+}
+
+static int get_num_cpus() {
+  // FIXME Linux only
+  return sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+static std::string thread_affinity_string(int tid)
+{
+  pthread_t thread = pthread_self();
+  cpu_set_t cpuset;
+
+  pthread_getaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
+  int ncpus = get_num_cpus();
+
+  std::stringstream ss;
+  ss << "Thread " << tid << ": [";
+
+  for (int j = 0; j < ncpus; j++)
+  {
+    if (CPU_ISSET(j, &cpuset))
+      ss << "x";
+    else
+      ss << ".";
+  }
+
+  ss << "]";
+  return ss.str();
+}
+
 /* ---------------------------------------------------------------------- */
 
-FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg) 
+FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
   :  Fix(lmp, narg, arg),
      thr(NULL), last_omp_style(NULL), last_pair_hybrid(NULL),
-     _nthr(-1), _neighbor(true), _mixed(false), _reduced(true)
+     _nthr(-1), _neighbor(true), _mixed(false), _reduced(true),
+     _use_reduction(false)
 {
   if ((narg < 4) || (narg > 7)) error->all(FLERR,"Illegal package omp command");
   if (strcmp(arg[1],"all") != 0) error->all(FLERR,"fix OMP has to operate on group 'all'");
 
   int nthreads = 1;
+  bool use_binding = false;
+  bool verbose = true;
+
   if (narg > 3) {
 #if defined(_OPENMP)
     if (strcmp(arg[3],"*") == 0)
@@ -106,6 +228,12 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
       _mixed = true;
     else if (strcmp(arg[iarg],"double") == 0)
       _mixed = false;
+    else if (strcmp(arg[iarg],"reduction") == 0)
+      _use_reduction = true;
+    else if (strcmp(arg[iarg],"thread-binding") == 0)
+      use_binding = true;
+    else if (strcmp(arg[iarg],"verbose") == 0)
+      verbose = true;
     else
       error->all(FLERR,"Illegal package omp mode requested");
     ++iarg;
@@ -118,16 +246,24 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
 
     if (screen) {
       if (reset_thr)
-	fprintf(screen,"set %d OpenMP thread(s) per MPI task\n", nthreads);
+        fprintf(screen,"set %d OpenMP thread(s) per MPI task\n", nthreads);
       fprintf(screen,"using %s neighbor list subroutines\n", nmode);
       fprintf(screen,"prefer %s precision OpenMP force kernels\n", kmode);
+      if(_use_reduction)
+        fprintf(screen,"Using Array Reduction\n");
+      if (use_binding)
+        fprintf(screen,"Binding threads to cores\n");
     }
-    
+
     if (logfile) {
       if (reset_thr)
-	fprintf(logfile,"set %d OpenMP thread(s) per MPI task\n", nthreads);
+        fprintf(logfile,"set %d OpenMP thread(s) per MPI task\n", nthreads);
       fprintf(logfile,"using %s neighbor list subroutines\n", nmode);
       fprintf(logfile,"prefer %s precision OpenMP force kernels\n", kmode);
+      if(_use_reduction)
+        fprintf(logfile,"Using Array Reduction\n");
+      if (use_binding)
+        fprintf(logfile,"Binding threads to cores\n");
     }
   }
 
@@ -135,13 +271,33 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
   // and then have each thread create an instance of this class to
   // encourage the OS to use storage that is "close" to each thread's CPU.
   thr = new ThrData *[nthreads];
+  std::vector<std::string> affinity(nthreads);
   _nthr = nthreads;
 #if defined(_OPENMP)
-#pragma omp parallel default(none)
+#pragma omp parallel default(none) shared(nthreads, affinity, verbose)
 #endif
   {
     const int tid = get_tid();
-    thr[tid] = new ThrData(tid);
+    thr[tid] = new ThrData(tid, _use_reduction);
+    set_thread_affinity(comm->me, comm->nprocs, tid, nthreads);
+    if(verbose) {
+      affinity[tid] = thread_affinity_string(tid);
+    }
+  }
+
+  if(verbose) {
+    for(int i = 0; i < comm->nprocs; i++) {
+      MPI_Barrier(world);
+      if(i == comm->me) {
+        if(screen)  fprintf(screen,  "Rank %d:\n", i);
+        if(logfile) fprintf(logfile, "Rank %d:\n", i);
+
+        for(int j = 0; j < nthreads; j++) {
+          if(screen)  fprintf(screen,  "  %s\n", affinity[j].c_str());
+          if(logfile) fprintf(logfile, "  %s\n", affinity[j].c_str());
+        }
+      }
+    }
   }
 }
 
@@ -256,7 +412,7 @@ void FixOMP::init()
     CheckStyleForOMP(improper);
     CheckHybridForOMP(improper,Improper);
   }
-  
+
   if (kspace_split >= 0) {
     CheckStyleForOMP(kspace);
   }
@@ -320,14 +476,20 @@ void FixOMP::pre_force(int)
   double *de = atom->de;
   double *drho = atom->drho;
 
-#if defined(_OPENMP)
-#pragma omp parallel default(none) shared(f,torque,erforce,de,drho)
-#endif
-  {
-    const int tid = get_tid();
-    thr[tid]->check_tid(tid);
-    thr[tid]->init_force(nall,f,torque,erforce,de,drho);
-  } // end of omp parallel region
+  if(_use_reduction) {
+    #if defined(_OPENMP)
+    #pragma omp parallel default(none) shared(f,torque,erforce,de,drho)
+    #endif
+    {
+      const int tid = get_tid();
+      thr[tid]->check_tid(tid);
+      thr[tid]->init_force(nall,f,torque,erforce,de,drho);
+    } // end of omp parallel region
+  } else {
+    for(int tid = 0; tid < comm->nthreads; tid++) {
+      thr[tid]->init_force(nall,f,torque,erforce,de,drho);
+    }
+  }
 
   _reduced = false;
 }
