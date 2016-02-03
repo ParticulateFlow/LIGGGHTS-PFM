@@ -16,9 +16,10 @@ ID, group-ID are documented in "fix"_fix.html command :ulb,l
 adapt = style name of this fix command :l
 N = scale diameter every this many timesteps :l
 region = obligatory keyword :l
-region_value = ID of a spherical "region"_region.html where the particles will be scaled :l
+region_value = ID of a spherical or cylindrical "region"_region.html where the particles will be scaled :l
 scale = obligatory keyword :l
 scale_value = scaling factor for change in diameter at region center :l
+scale_width = outer fraction of radius to be used for actual scaling [0;1] :l
 :ule
 
 [Examples:]
