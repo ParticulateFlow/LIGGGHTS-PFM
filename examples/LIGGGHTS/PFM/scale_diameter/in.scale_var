@@ -43,8 +43,9 @@ fix ins all insert/stream seed 100001 distributiontemplate pdd1 nparticles 5000 
     overlapcheck yes insertion_face ins_mesh extrude_length 0.6
 
 # scaling
+variable myscale equal 0.35+0.3*sin(0.001*step)
 region scale_reg sphere 0.0 0.0 1.5 0.5 units box
-fix scale all scale/diameter 10 region scale_reg scale 0.5 1.0
+fix scale all scale/diameter 10 region scale_reg scale v_myscale 1.0
 
 # apply nve integration
 fix integr all nve/sphere
@@ -58,7 +59,7 @@ compute_modify  thermo_temp dynamic yes
 
 # insert the first particles so that dump is not empty
 run     1
-dump    dmp all custom/vtk 250 post/scale*.vtk id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump    dmp all custom/vtk 250 post/scale_var*.vtk id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 
 run     100000
 
