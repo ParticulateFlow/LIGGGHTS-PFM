@@ -37,6 +37,8 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
+enum{XCYLINDER, YCYLINDER, ZCYLINDER, SPHERE};
+
 /* ---------------------------------------------------------------------- */
 
 FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
@@ -63,8 +65,12 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
       idregion = new char[n];
       strcpy(idregion,arg[iarg+1]);
       scale_region = domain->regions[iregion];
-      if(strcmp(scale_region->style,"sphere") != 0)
-        error->fix_error(FLERR,this,"Region must be of style 'sphere'");
+      if(strcmp(scale_region->style,"sphere") == 0)
+        region_style = SPHERE;
+      else if(strcmp(scale_region->style,"cylinder") == 0)
+        region_style = XCYLINDER;
+      else
+        error->fix_error(FLERR,this,"Region must be of style 'sphere' or 'cylinder'");
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"scale") == 0) {
@@ -80,10 +86,29 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
   if(!scale_region)
     error->fix_error(FLERR,this,"No region defined");
 
-  radius_ = 0.5*(scale_region->extent_xhi - scale_region->extent_xlo);
-  center_[0] = scale_region->extent_xhi - radius_;
-  center_[1] = scale_region->extent_yhi - radius_;
-  center_[2] = scale_region->extent_zhi - radius_;
+  if(region_style == SPHERE) {
+    radius_ = 0.5*(scale_region->extent_xhi - scale_region->extent_xlo);
+    center_[0] = scale_region->extent_xhi - radius_;
+    center_[1] = scale_region->extent_yhi - radius_;
+    center_[2] = scale_region->extent_zhi - radius_;
+  } else {
+    center_[0] = 0.5*(scale_region->extent_xhi + scale_region->extent_xlo);
+    center_[1] = 0.5*(scale_region->extent_yhi + scale_region->extent_ylo);
+    center_[2] = 0.5*(scale_region->extent_zhi + scale_region->extent_zlo);
+
+    double dim[3] = {scale_region->extent_xhi - scale_region->extent_xlo,
+                     scale_region->extent_yhi - scale_region->extent_ylo,
+                     scale_region->extent_zhi - scale_region->extent_zlo};
+    if(dim[0] == dim[1]) {
+      radius_ = 0.5*dim[0];
+      region_style = ZCYLINDER;
+    } else if(dim[0] == dim[2]) {
+      radius_ = 0.5*dim[0];
+      region_style = YCYLINDER;
+    } else {
+      radius_ = 0.5*dim[1];
+    }
+  }
 
   fix_property_ = NULL;
 }
@@ -189,7 +214,23 @@ void FixScaleDiameter::change_settings()
       const double delx = center_[0] - x[i][0];
       const double dely = center_[1] - x[i][1];
       const double delz = center_[2] - x[i][2];
-      const double rsq = delx * delx + dely * dely + delz * delz;
+
+      double rsq = 0.;
+
+      switch(region_style) {
+      case SPHERE:
+        rsq = delx * delx + dely * dely + delz * delz;
+        break;
+      case XCYLINDER:
+        rsq = dely * dely + delz * delz;
+        break;
+      case YCYLINDER:
+        rsq = delx * delx + delz * delz;
+        break;
+      case ZCYLINDER:
+        rsq = delx * delx + dely * dely;
+        break;
+      }
 
       const double scale = scale_to_ + scale_range_*(sqrt(rsq)/radius_);
       const double old_radius = radius[i];

@@ -54,6 +54,7 @@ class FixScaleDiameter : public Fix {
   class FixPropertyAtom *fix_property_;
   class Region *scale_region;
   char *idregion;
+  int region_style;
   double center_[3];
   double radius_;
   double scale_to_;
