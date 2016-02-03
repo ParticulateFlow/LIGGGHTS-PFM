@@ -20,9 +20,29 @@
 
 #if defined(_OPENMP)
 #include <omp.h>
+#else
+typedef int omp_lock_t;
+static void omp_init_lock(omp_lock_t*) {}
+static void omp_destroy_lock(omp_lock_t*) {}
+static void omp_set_lock(omp_lock_t *) {}
+static void omp_unset_lock(omp_lock_t *) {}
 #endif
 
+#include <vector>
+#include "contact_interface.h"
+
+using namespace LIGGGHTS::ContactModels;
+
 namespace LAMMPS_NS {
+
+struct VatomUpdate {
+  double v[6];
+  int index;
+  int _padding[3];
+  VatomUpdate(int i, const double * const virial) : index(i) {
+    for(int j = 0; j < 6; ++j) v[j] = virial[j];
+  }
+};
 
 // per thread data accumulators
 // there should be one instance
@@ -32,8 +52,8 @@ class ThrData {
   friend class ThrOMP;
 
  public:
-  ThrData(int tid);
-  ~ThrData() {};
+  ThrData(int tid, bool use_reduction);
+  ~ThrData();
 
   void check_tid(int);    // thread id consistency check
   int get_tid() const { return _tid; }; // our thread id.
@@ -67,6 +87,12 @@ class ThrData {
   void *get_drho1d() const { return _drho1d; };
   void *get_rho1d_6() const { return _rho1d_6; };
   void *get_drho1d_6() const { return _drho1d_6; };
+
+  // patchup support
+  std::vector<ForceUpdate> patchupForceUpdates;
+  std::vector<VatomUpdate>   patchupVatomUpdates;
+
+  void reset_patchup();
 
  private:
   double eng_vdwl;        // non-bonded non-coulomb energy
@@ -122,12 +148,17 @@ class ThrData {
  public:
   // compute global per thread virial contribution from global forces and positions
   void virial_fdotr_compute(double **, int, int, int);
+  void virial_fdotr_compute_omp(double * const * const x, double * const * const f, int nthreads, int nlocal, int nghost, int nfirst);
 
   double memory_usage();
 
+  omp_lock_t update_lock;
+  omp_lock_t ev_lock;
+  bool _use_reduction;
+
  // disabled default methods
  private:
-  ThrData() : _tid(-1) {};
+  ThrData() : _tid(-1), _use_reduction(false) {};
 };
 
 ////////////////////////////////////////////////////////////////////////
