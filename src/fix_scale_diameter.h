@@ -57,8 +57,12 @@ class FixScaleDiameter : public Fix {
   int region_style;
   double center_[3];
   double radius_;
+  double radius_inner_;
   double scale_to_;
+  int scale_to_var_, scale_to_style_;
+  char *scale_to_str_;
   double scale_range_;
+  double scale_width_;
 };
 
 }

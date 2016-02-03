@@ -33,10 +33,12 @@
 #include "error.h"
 #include "fix_property_atom.h"
 #include "region.h"
+#include "variable.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
+enum{NONE,CONSTANT,EQUAL,ATOM};
 enum{XCYLINDER, YCYLINDER, ZCYLINDER, SPHERE};
 
 /* ---------------------------------------------------------------------- */
@@ -47,8 +49,13 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
   scale_region(NULL),
   idregion(NULL),
   radius_(1.0),
+  radius_inner_(0.0),
   scale_to_(1.0),
-  scale_range_(1.0)
+  scale_to_var_(-1),
+  scale_to_style_(NONE),
+  scale_to_str_(NULL),
+  scale_range_(1.0),
+  scale_width_(0.0)
 {
   if (narg < 5) error->fix_error(FLERR,this,"Not enough arguments for fix scale/diameter command");
   nevery = force->inumeric(FLERR,arg[3]);
@@ -74,10 +81,25 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"scale") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix scale/diameter command");
-      scale_to_ = atof(arg[iarg+1]);
-      scale_range_ = 1. - scale_to_;
-      iarg += 2;
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"Illegal fix scale/diameter command");
+      ++iarg;
+      if (strstr(arg[iarg],"v_") == arg[iarg]) {
+        const int n = strlen(&arg[iarg][2]) + 1;
+        scale_to_str_ = new char[n];
+        strcpy(scale_to_str_,&arg[iarg][2]);
+        scale_to_style_ = EQUAL;
+      } else {
+        scale_to_ = force->numeric(FLERR,arg[iarg]);
+        if(scale_to_ <= 0.)
+          error->fix_error(FLERR,this,"scale_to_ > 0 required");
+        scale_to_style_ = CONSTANT;
+        scale_range_ = 1. - scale_to_;
+      }
+      ++iarg;
+      scale_width_ = force->numeric(FLERR,arg[iarg]);
+      if(scale_width_ > 1.0 || scale_width_ <= 0.0)
+        error->fix_error(FLERR,this,"scale_width must be in range ]0;1]");
+      ++iarg;
       hasargs = true;
     } else break;
   }
@@ -109,6 +131,9 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
       radius_ = 0.5*dim[1];
     }
   }
+
+  scale_width_ *= radius_;
+  radius_inner_ = radius_ - scale_width_;
 
   fix_property_ = NULL;
 }
@@ -175,6 +200,13 @@ int FixScaleDiameter::setmask()
 
 void FixScaleDiameter::init()
 {
+  if (scale_to_str_) {
+    scale_to_var_ = input->variable->find(scale_to_str_);
+    if (scale_to_var_ < 0)
+      error->fix_error(FLERR,this,"Variable name does not exist");
+    if (!input->variable->equalstyle(scale_to_var_))
+      error->fix_error(FLERR,this,"Variable is invalid style");
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -206,6 +238,13 @@ void FixScaleDiameter::change_settings()
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
+  if (scale_to_style_ == EQUAL) {
+    scale_to_ = input->variable->compute_equal(scale_to_var_);
+    if(scale_to_ <= 0.)
+      error->fix_error(FLERR,this,"scale_to_ > 0 required");
+    scale_range_ = 1. - scale_to_;
+  }
+
   for (int i = 0; i < nlocal; ++i) {
     if (mask[i] & groupbit) {
       if (!scale_region->match(x[i][0],x[i][1],x[i][2]))
@@ -232,7 +271,10 @@ void FixScaleDiameter::change_settings()
         break;
       }
 
-      const double scale = scale_to_ + scale_range_*(sqrt(rsq)/radius_);
+      if(rsq < radius_inner_*radius_inner_)
+        continue;
+
+      const double scale = scale_to_ + scale_range_*((sqrt(rsq)-radius_inner_)/scale_width_);
       const double old_radius = radius[i];
 
       if (fix_property_->vector_atom[i] <= 0.0) {
