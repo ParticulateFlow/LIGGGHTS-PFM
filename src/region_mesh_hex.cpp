@@ -148,6 +148,69 @@ int RegHexMesh::inside(double x, double y, double z)
 
 /* ---------------------------------------------------------------------- */
 
+// test if point inside hex AND within a minimum distance from surface
+int RegHexMesh::match_hex_cut(int iHex, double *pos, double cutoff)
+{
+  double x[3];
+  vectorCopy3D(pos,x);
+
+  if(interior) {
+    vtkNew<vtkHexahedron> hexahedron;
+    hexahedron->GetPointIds()->SetNumberOfIds(8);
+
+    for(int j=0; j<8; ++j) {
+      hexahedron->GetPointIds()->SetId(j,j);
+      hexahedron->GetPoints()->SetPoint(j, node[iHex][j][0], node[iHex][j][1], node[iHex][j][2]);
+    }
+
+    double *bounds = hexahedron->GetBounds();
+    if(x[0] < bounds[0] || x[0] > bounds[1]) return 0; // outside bb of hex
+    if(x[1] < bounds[2] || x[1] > bounds[3]) return 0; // outside bb of hex
+    if(x[2] < bounds[4] || x[2] > bounds[5]) return 0; // outside bb of hex
+
+
+    double hexahedronCoords[3], hexahedronWeights[8];
+    int subId;
+    double dist2 = 0.;
+
+    // inside(=1), outside(=0) cell, or (-1) computational problem encountered
+    int result = hexahedron->EvaluatePosition(x, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
+
+    if(result > 0) {
+      // if inside hexahedron, dist2 is set to 0; need to check each face for distance
+      double quadCoords[3], quadWeights[4], quadClosest[3];
+      bool undefinedQuad = false;
+      const int nFaces = hexahedron->GetNumberOfFaces();
+      for(int i=0; i<nFaces; ++i) {
+        vtkCell *quad = hexahedron->GetFace(i);
+        result = quad->EvaluatePosition(x, quadClosest, subId, quadCoords, dist2, quadWeights);
+        if(result > 0) {
+          if(dist2 < cutoff*cutoff) {
+            add_contact(0,x,quadClosest[0],quadClosest[1],quadClosest[2]);
+            return 1;
+          }
+        } else if (result < 0) {
+          undefinedQuad = true;
+        }
+      }
+      if(undefinedQuad) {
+        add_contact(0,x,x[0],x[1],x[2]);
+        return 1;
+      }
+
+      return 0;
+    } else if (result < 0) {
+      add_contact(0,x,x[0],x[1],x[2]);
+      return 1;
+    }
+
+    return 0;
+  }
+  else return surface_exterior(x,cutoff);
+}
+
+/* ---------------------------------------------------------------------- */
+// test if point inside mesh AND within a minimum distance from surface
 int RegHexMesh::surface_interior(double *x, double cutoff)
 {
   // NOTE: no distinction between internal and external faces is made!
@@ -166,6 +229,8 @@ int RegHexMesh::surface_interior(double *x, double cutoff)
   vtkNew<vtkHexahedron> hexahedron;
   hexahedron->GetPointIds()->SetNumberOfIds(8);
 
+  bool undefinedHex = false;
+
   for(int iHex=0; iHex<nHex; ++iHex) {
     for(int j=0; j<8; ++j) {
       hexahedron->GetPointIds()->SetId(j,j);
@@ -176,10 +241,12 @@ int RegHexMesh::surface_interior(double *x, double cutoff)
     int subId;
     double dist2 = 0.;
 
+    // inside(=1), outside(=0) cell, or (-1) computational problem encountered
     int result = hexahedron->EvaluatePosition(x, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
     if(result > 0) {
       // if inside hexahedron, dist2 is set to 0; need to check each face for distance
       double quadCoords[3], quadWeights[4], quadClosest[3];
+      bool undefinedQuad = false;
       const int nFaces = hexahedron->GetNumberOfFaces();
       for(int i=0; i<nFaces; ++i) {
         vtkCell *quad = hexahedron->GetFace(i);
@@ -189,10 +256,24 @@ int RegHexMesh::surface_interior(double *x, double cutoff)
             add_contact(0,x,quadClosest[0],quadClosest[1],quadClosest[2]);
             return 1;
           }
+        } else if (result < 0) {
+          undefinedQuad = true;
         }
       }
+      if(undefinedQuad) {
+        add_contact(0,x,x[0],x[1],x[2]);
+        return 1;
+      }
+
       return 0;
+    } else if (result < 0) {
+      undefinedHex = true;
     }
+  }
+
+  if(undefinedHex) {
+    add_contact(0,x,x[0],x[1],x[2]);
+    return 1;
   }
 
   return 0;
@@ -200,12 +281,19 @@ int RegHexMesh::surface_interior(double *x, double cutoff)
 
 /* ---------------------------------------------------------------------- */
 
+// test if point outside mesh AND within a minimum distance from surface
 int RegHexMesh::surface_exterior(double *x, double cutoff)
 {
   // NOTE: no distinction between internal and external faces is made!
 
   // check subdomain
   if(!domain->is_in_subdomain(x)) return 0;
+
+  if(bboxflag) {
+    if(x[0] < extent_xlo-cutoff || x[0] > extent_xhi+cutoff) return 0;
+    if(x[1] < extent_ylo-cutoff || x[1] > extent_yhi+cutoff) return 0;
+    if(x[2] < extent_zlo-cutoff || x[2] > extent_zhi+cutoff) return 0;
+  }
 
   int nearby = 0;
 
@@ -223,13 +311,22 @@ int RegHexMesh::surface_exterior(double *x, double cutoff)
     int subId;
     double dist2 = 0.;
 
+    // inside(=1), outside(=0) cell, or (-1) computational problem encountered
     int result = hexahedron->EvaluatePosition(x, hexahedronClosest, subId, hexahedronCoords, dist2, hexahedronWeights);
     if(result == 0) {
       if(dist2 < cutoff*cutoff) {
         add_contact(0,x,hexahedronClosest[0],hexahedronClosest[1],hexahedronClosest[2]);
         nearby = 1;
       }
-    } else {
+    } else if(result < 0) {
+      double *bounds = hexahedron->GetBounds();
+      if(x[0] < bounds[0]-cutoff || x[0] > bounds[1]+cutoff) continue;
+      if(x[1] < bounds[2]-cutoff || x[1] > bounds[3]+cutoff) continue;
+      if(x[2] < bounds[4]-cutoff || x[2] > bounds[5]+cutoff) continue;
+
+      add_contact(0,x,x[0],x[1],x[2]);
+      nearby = 1;
+    } else { // result == 1
       return 0; // inside
     }
   }
@@ -318,6 +415,35 @@ double RegHexMesh::hex_acc_vol(int i)
 
 /* ---------------------------------------------------------------------- */
 
+void RegHexMesh::hex_bounds(int iHex, double bounds[6])
+{
+  vtkNew<vtkHexahedron> hexahedron;
+  hexahedron->GetPointIds()->SetNumberOfIds(8);
+
+  for(int i=0; i<8; ++i) {
+    hexahedron->GetPointIds()->SetId(i,i);
+    hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
+  }
+
+  hexahedron->GetBounds(bounds);
+}
+
+/* ---------------------------------------------------------------------- */
+
+int RegHexMesh::get_hex(const char* property, int value)
+{
+  ScalarContainer<int> *values = customValues_.getElementProperty<ScalarContainer<int> >(property);
+  if(values) {
+    for(int iHex=0; iHex<nHex; ++iHex) {
+      if((*values)(iHex) == value)
+        return iHex;
+    }
+  }
+  return -1;
+}
+
+/* ---------------------------------------------------------------------- */
+
 inline double RegHexMesh::volume_of_hex(int iHex)
 {
   return volume_of_hex(node[iHex]);
@@ -335,11 +461,21 @@ inline int RegHexMesh::is_inside_hex(int iHex,double *pos)
     hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
   }
 
+  double *bounds = hexahedron->GetBounds();
+  if(pos[0] < bounds[0] || pos[0] > bounds[1]) return 0; // outside bb of hex
+  if(pos[1] < bounds[2] || pos[1] > bounds[3]) return 0; // outside bb of hex
+  if(pos[2] < bounds[4] || pos[2] > bounds[5]) return 0; // outside bb of hex
+
   double hexahedronCoords[3], hexahedronWeights[8];
   int subId;
   double dist2 = 0.;
 
-  if(hexahedron->EvaluatePosition(pos, NULL, subId, hexahedronCoords, dist2, hexahedronWeights) > 0)
+  // inside(=1), outside(=0) cell, or (-1) computational problem encountered
+  int result = hexahedron->EvaluatePosition(pos, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
+  if(result > 0)
+    return 1;
+  else if(result < 0) // if in doubt, assume position is inside, cause this function is used to determine
+                      // particles that potentially overlap with newly inserted particles in this region
     return 1;
   return 0;
 }
