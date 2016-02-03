@@ -35,6 +35,8 @@ FixStyle(wall/gran,FixWallGran)
 #include <vector>
 #include "fix_contact_property_atom_wall.h"
 #include "compute_pair_gran_local.h"
+#include "primitive_wall.h"
+#include "fix_property_atom.h"
 
 namespace LCM = LIGGGHTS::ContactModels;
 
@@ -101,6 +103,8 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   int n_contacts_all(int);
   int n_contacts_local();
   int n_contacts_local(int);
+  int n_ghosts_all();
+  int n_ghosts_local();
   int is_moving();
 
   void register_compute_wall_local(ComputePairGranLocal *,int&);
@@ -240,8 +244,8 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   // true if any of the meshes tracks stresses
   bool stress_flag_;
 
-  class PrimitiveWall *primitiveWall_;
-  class FixPropertyAtom *fix_history_primitive_;
+  std::vector<PrimitiveWall*> primitiveWalls_;
+  std::vector<FixPropertyAtom*> primitiveWallsHistory_;
 
   // class to keep track of wall contacts
   bool rebuildPrimitiveNeighlist_;

@@ -239,6 +239,8 @@ class DumpCustomVTK : public Dump {
   void pack_eradius(int);
   void pack_ervel(int);
   void pack_erforce(int);
+
+  void pack_thread(int); //NP modified R.B.
 };
 
 }
