@@ -37,15 +37,16 @@
 #include "mpi_liggghts.h"
 #include "math_extra_liggghts.h"
 #include "fix_massflow_mesh_face.h"
-
 #include <algorithm>
 
 using namespace LAMMPS_NS;
 using namespace MathExtraLiggghts;
+using namespace MathConst;
 using namespace FixConst;
 
 enum {UNDEFINED=0, INSIDE, OUTSIDE, IGNORE};
 
+#define FAVRE_AVERAGED
 /* ---------------------------------------------------------------------- */
 
 FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
@@ -57,15 +58,19 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
   fix_orientation_(0),
   fix_mesh_(0),
   fix_counter_(0),
+  fix_prevx_(0),
   fix_neighlist_(0),
   havePointAtOutlet_(false),
   insideOut_(false),
   mass_(0.),
   nparticles_(0),
+  average_vx_out_(0.),
+  average_vy_out_(0.),
+  average_vz_out_(0.),
   fix_property_(0),
   property_sum_(0.),
   screenflag_(false),
-  fp_(0),
+  fp_(NULL),
   mass_last_(0.),
   nparticles_last_(0.),
   t_count_(0.),
@@ -73,14 +78,15 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
   reset_t_count_(true),
   fix_ms_(0),
   ms_(0),
-  ms_counter_(0)
+  ms_counter_(0),
+  cg_(1.),
+  cg3_(1.)
 {
     vectorZeroize3D(nvec_);
     vectorZeroize3D(pref_);
     vectorZeroize3D(pointAtOutlet_);
 
     // parse args for this class
-
     int iarg = 3;
 
     bool hasargs = true;
@@ -164,37 +170,39 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
             else error->fix_error(FLERR,this,"Illegal delete_atoms option");
             iarg += 2;
             hasargs = true;
+        } else if (strcmp(arg[iarg],"cg") == 0) { // TODO: remove if cg-fg are in separate simulations
+            if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
+            cg_ = atof(arg[iarg+1]);
+            cg3_ = cg_*cg_*cg_;
+            iarg += 2;
+            hasargs = true;
         } else if(strcmp(style,"massflow/mesh/face") == 0)
             error->fix_error(FLERR,this,"unknown keyword");
     }
 
     if(fp_ && 1 < comm->nprocs && 0 == comm->me)
-      fprintf(screen,"**FixMassflowMeshFace: > 1 process - "
-                     " will write to multiple files\n");
+      fprintf(screen,"**FixMassflowMeshFace: > 1 process - will write to multiple files\n");
 
     // error checks on necessary args
 
     if(!once_ && delete_atoms_)
-           error->fix_error(FLERR,this,"using 'delete_atoms yes' requires 'count once'");
+        error->fix_error(FLERR,this,"using 'delete_atoms yes' requires 'count once'");
     if(!once_ && havePointAtOutlet_)
         error->fix_error(FLERR,this,"setting 'point_at_outlet' requires 'count once'");
     if(!fix_mesh_)
         error->fix_error(FLERR,this,"expecting keyword 'mesh'");
 
-    // get reference point on face
-    // calculate normalvec
-
     restart_global = 1;
 
     vector_flag = 1;
-    size_vector = 6;
+    size_vector = 10;
     if(fix_property_)
-        size_vector = 7;
-    global_freq = 1; //NP available always
+        ++size_vector;
+    global_freq = 1; // available always
 
     array_flag = 1;
     size_array_rows = 1; // rows in global array
-    size_array_cols = 1; // columns in global array
+    size_array_cols = 10; // columns in global array
 }
 
 /* ---------------------------------------------------------------------- */
@@ -210,21 +218,45 @@ void FixMassflowMeshFace::post_create()
 {
     // add per-particle count flag
 
-    const char * fixarg[9];
+    if(!fix_counter_)
+    {
+        const char * fixarg[9];
 
-    sprintf(fixid_,"massflow_%s",id);
-    fixarg[0]=fixid_;
-    fixarg[1]="all";
-    fixarg[2]="property/atom";
-    fixarg[3]=fixid_;
-    fixarg[4]="scalar"; // 1 scalar per particle to be registered
-    fixarg[5]="yes";    // restart yes
-    fixarg[6]="no";     // communicate ghost no
-    fixarg[7]="no";     // communicate rev no
-    fixarg[8]="0";      // take 0 (UNDEFINED) as default
-    modify->add_fix(9,const_cast<char**>(fixarg));
+        sprintf(fixid_,"massflowface_%s",id);
+        fixarg[0]=fixid_;
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]=fixid_;
+        fixarg[4]="scalar"; // 1 scalar per particle to be registered
+        fixarg[5]="yes";    // restart yes
+        fixarg[6]="no";     // communicate ghost no
+        fixarg[7]="no";     // communicate rev no
+        fixarg[8]="0";      // take 0 (UNDEFINED) as default
+        modify->add_fix(9,const_cast<char**>(fixarg));
 
-    fix_counter_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixid_,"property/atom","scalar",0,0,style));
+        fix_counter_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixid_,"property/atom","scalar",0,0,style));
+    }
+
+    if(!fix_prevx_)
+    {
+        char * var_name = new char[16+strlen(id)];
+        sprintf(var_name,"massflowface_x_%s",id);
+
+        const char* fixarg[11];
+        fixarg[0]=var_name;
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]=var_name;
+        fixarg[4]="vector";
+        fixarg[5]="yes";
+        fixarg[6]="no";
+        fixarg[7]="no";
+        fixarg[8]="0.";
+        fixarg[9]="0.";
+        fixarg[10]="0.";
+        fix_prevx_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+        delete [] var_name;
+    }
 
     // add neighbor list
 
@@ -297,24 +329,35 @@ void FixMassflowMeshFace::post_create()
     int nfaceids = faceid2index_.size();
     mass_face_.resize(nfaceids);
     nparticles_face_.resize(nfaceids);
+    average_vx_face_out_.resize(nfaceids);
+    average_vy_face_out_.resize(nfaceids);
+    average_vz_face_out_.resize(nfaceids);
     mass_face_last_.resize(nfaceids);
     nparticles_face_last_.resize(nfaceids);
+    distributions_face_.resize(nfaceids);
+    // shouldn't be necessary (?):
     std::fill_n(mass_face_.begin(),            nfaceids, 0.);
     std::fill_n(nparticles_face_.begin(),      nfaceids, 0 );
+    std::fill_n(average_vx_face_out_.begin(),  nfaceids, 0.);
+    std::fill_n(average_vy_face_out_.begin(),  nfaceids, 0.);
+    std::fill_n(average_vz_face_out_.begin(),  nfaceids, 0.);
     std::fill_n(mass_face_last_.begin(),       nfaceids, 0.);
     std::fill_n(nparticles_face_last_.begin(), nfaceids, 0 );
 
     delete [] tri_face_ids_recv;
 
     size_array_rows = nfaceids; // rows in global array
-    size_array_cols = 6;        // columns in global array
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMassflowMeshFace::pre_delete(bool unfixflag)
 {
-    if (unfixflag) modify->delete_fix(fixid_);
+    if (unfixflag)
+    {
+        modify->delete_fix(fixid_);
+        modify->delete_fix(fix_prevx_->id);
+    }
 }
 
 /* ----------------------------------------------------------------------
@@ -331,6 +374,11 @@ void FixMassflowMeshFace::init()
 
     if(!fix_ms_ && static_cast<FixMultisphere*>(modify->find_fix_style_strict("multisphere",0)))
         error->fix_error(FLERR,this,"fix multisphere must come before fix massflow/mesh in input script");
+
+
+    // TODO: enable if cg and fg are in separate simulations
+    //cg_ = force->cg();
+    //cg3_ = cg_*cg_*cg_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -350,7 +398,7 @@ int FixMassflowMeshFace::setmask()
 }
 
 /* ----------------------------------------------------------------------
-   evaluate mass which went thru face
+   evaluate mass which went through face
    all nearby particles
    0 = default value for counter, set if particle is not
        a neighbor of the TriMesh
@@ -369,9 +417,13 @@ void FixMassflowMeshFace::post_integrate()
     double dot,delta[3]={};
     double mass_this = 0.;
     int nparticles_this = 0.;
+    double average_vx_out_this = 0.0;
+    double average_vy_out_this = 0.0;
+    double average_vz_out_this = 0.0;
     double property_this = 0.;
     double deltan;
     int *tag = atom->tag;
+    double **prevx = fix_prevx_->array_atom;
 
     class FixPropertyAtom* fix_color=static_cast<FixPropertyAtom*>(modify->find_fix_property("color","property/atom","scalar",0,0,style,false));
     bool fixColFound = false;
@@ -389,19 +441,34 @@ void FixMassflowMeshFace::post_integrate()
     // update time for counter
     // also store values for last invokation
     t_count_ += update->dt;
+
     if(!reset_t_count_)
     {
+        average_vx_out_ = 0.;
+        average_vy_out_ = 0.;
+        average_vz_out_ = 0.;
         nparticles_last_ = nparticles_;
         mass_last_ = mass_;
         reset_t_count_ = true;
 
+        std::fill_n(average_vx_face_out_.begin(),  nfaceids, 0.);
+        std::fill_n(average_vy_face_out_.begin(),  nfaceids, 0.);
+        std::fill_n(average_vz_face_out_.begin(),  nfaceids, 0.);
         nparticles_face_last_ = nparticles_face_;
         mass_face_last_ = mass_face_;
+        distributions_face_.clear();
+        distributions_face_.resize(nfaceids);
     }
 
+    std::vector<std::vector<double> > radius_dist_face_local_this(nfaceids);
+    std::vector<std::vector<double> > mass_dist_face_local_this(nfaceids);
+    std::vector<std::vector<int> > atomtype_dist_face_local_this(nfaceids);
     std::vector<double> mass_face_this(nfaceids, 0.0);
     std::vector<int> nparticles_face_this(nfaceids, 0);
-    std::map<int, int> handled_particles_this;
+    std::vector<double> average_vx_face_out_this(nfaceids, 0.);
+    std::vector<double> average_vy_face_out_this(nfaceids, 0.);
+    std::vector<double> average_vz_face_out_this(nfaceids, 0.);
+
     std::map<int, int> classified_particles_this;
     std::map<int, int> crossing_particles_this;
     std::set<int> ignore_this;
@@ -419,6 +486,7 @@ void FixMassflowMeshFace::post_integrate()
 
         const std::vector<int> & neighborList = fix_neighlist_->get_contact_list(iTri);
         const int numneigh = neighborList.size();
+
         for(int iNeigh = 0; iNeigh < numneigh; iNeigh++)
         {
             const int iPart = neighborList[iNeigh];
@@ -439,15 +507,14 @@ void FixMassflowMeshFace::post_integrate()
 
             if(havePointAtOutlet_)
             {
-                //get the vector from the particle center
-                //to the next triangle
+                // get the vector from the particle center to the next triangle
                 deltan = fix_mesh_->triMesh()->resolveTriSphereContact(iPart,iTri,radius[iPart],x[iPart],delta);
                 if(deltan < radius[iPart])
                 {
-                    vectorSubtract3D(x[iPart],pointAtOutlet_,nvec_); //vector pointing to the particle location
+                    vectorSubtract3D(x[iPart],pointAtOutlet_,nvec_); // vector pointing to the particle location
                     dot = vectorDot3D(delta,nvec_);
                 }
-                else //particle is not overlapping with mesh, so continue
+                else // particle is not overlapping with mesh, so continue
                     continue;
 
                 if(insideOut_) dot =-dot;
@@ -465,152 +532,77 @@ void FixMassflowMeshFace::post_integrate()
                 if((*ms_counter_)(ibody) == UNDEFINED)
                     (*ms_counter_)(ibody) = (dot <= 0.) ? INSIDE : OUTSIDE;
                 classified_particles_this[iPart] = iTri;
+                prevx[iPart][0] = x[iPart][0];
+                prevx[iPart][1] = x[iPart][1];
+                prevx[iPart][2] = x[iPart][2];
                 continue;
             }
             else if(fix_counter_->get_vector_atom_int(iPart) == UNDEFINED)
             {
                 fix_counter_->set_vector_atom_int(iPart, (dot <= 0.) ? INSIDE : OUTSIDE);
                 classified_particles_this[iPart] = iTri;
+                prevx[iPart][0] = x[iPart][0];
+                prevx[iPart][1] = x[iPart][1];
+                prevx[iPart][2] = x[iPart][2];
                 continue;
             }
 
+            // A particle might be in the neighbor list of more than one triangle,
+            // for complex geometries it might get tricky to correctly classifiy the particle position
+            // the following code is not perfect but covers a broad range of situations
             if(classified_particles_this.find(iPart) != classified_particles_this.end()) // already classified by other triangle
             {
-                if(dot > 0.) // OUTSIDE
-                {
-                    if((ibody > -1) ? ((*ms_counter_)(ibody) == INSIDE) : (fix_counter_->get_vector_atom_int(iPart) == INSIDE))
-                    {
-                        // have to check if it's actually inside or outside
-                        double pref_alt[3];
-                        bool convex = true;
-                        for(int i = 0; i < 3; ++i)
-                        {
-                            mesh->node(classified_particles_this[iPart],i,pref_alt);
-                            double dot_tri = 0.;
-                            vectorSubtract3D(pref_alt,pref_,delta);
-                            dot_tri = vectorDot3D(delta,nvec_);
-                            if(insideOut_) dot_tri =-dot_tri;
+                if( confirm_classification(ibody, iPart, classified_particles_this[iPart], dot > 0. ? OUTSIDE : INSIDE) )
+                    ignore_this.insert(iPart);
 
-                            if(dot_tri > 0.)
-                            {
-                                convex = false;
-                                break;
-                            }
-                        }
-
-                        if(convex)
-                        {
-                            if (ibody > -1) (*ms_counter_)(ibody) = OUTSIDE;
-                            else            fix_counter_->set_vector_atom_int(iPart, OUTSIDE);
-                            ignore_this.insert(iPart);
-                        }
-                    }
-                }
-                else
-                {
-                    if((ibody > -1) ? ((*ms_counter_)(ibody) == OUTSIDE) : (fix_counter_->get_vector_atom_int(iPart) == OUTSIDE))
-                    {
-                        // have to check if it's actually inside or outside
-                        double pref_alt[3];
-                        bool convex = true;
-                        for(int i = 0; i < 3; ++i)
-                        {
-                            mesh->node(classified_particles_this[iPart],i,pref_alt);
-                            double dot_tri = 0.;
-                            vectorSubtract3D(pref_alt,pref_,delta);
-                            dot_tri = vectorDot3D(delta,nvec_);
-                            if(insideOut_) dot_tri =-dot_tri;
-
-                            if(dot_tri > 0.)
-                            {
-                                convex = false;
-                                break;
-                            }
-                        }
-
-                        if(!convex)
-                        {
-                            if (ibody > -1) (*ms_counter_)(ibody) = INSIDE;
-                            else            fix_counter_->set_vector_atom_int(iPart, INSIDE);
-                            ignore_this.insert(iPart);
-                        }
-                    }
-                }
                 continue;
             }
 
             // WE'RE JUST COUNTING PARTICLES CROSSING BORDERS FROM INSIDE TO OUTSIDE
             if(dot > 0.) // particle is now OUTSIDE
             {
-                //particle was not on nvec_ side before
+                // particle was not OUTSIDE before
                 if((ibody > -1) ? ((*ms_counter_)(ibody) == INSIDE) : (fix_counter_->get_vector_atom_int(iPart) == INSIDE))
                 {
-                    if(handled_particles_this.find(iPart) != handled_particles_this.end())
+                    // make sure that particle really crossed the tri
                     {
-                        if(crossing_particles_this.find(iPart) != crossing_particles_this.end())
-                        {
-                            // previous triangle decided that particle has crossed borders from outside to inside
-                            // this triangle sees the particle outside
-                            // check if it really moved inside
-                            double pref_alt[3];
-                            bool convex = true;
-                            for(int i = 0; i < 3; ++i)
-                            {
-                                mesh->node(crossing_particles_this[iPart],i,pref_alt);
-                                double dot_tri = 0.;
-                                vectorSubtract3D(pref_alt,pref_,delta);
-                                dot_tri = vectorDot3D(delta,nvec_);
-                                if(insideOut_) dot_tri =-dot_tri;
+                        double dir[3]; MathExtra::sub3(prevx[iPart], x[iPart], dir);
+                        double v0[3];  mesh->node(iTri,0,v0);
+                        double v1[3];  mesh->node(iTri,1,v1);
+                        double v2[3];  mesh->node(iTri,2,v2);
 
-                                if(dot_tri > 0.)
-                                {
-                                    convex = false;
-                                    break;
-                                }
-                            }
-
-                            if(convex)
-                            {
-                                if (ibody > -1) (*ms_counter_)(ibody) = OUTSIDE;
-                                else            fix_counter_->set_vector_atom_int(iPart, OUTSIDE);
-                                ignore_this.insert(iPart);
-                                once_this.erase(iPart);
-                                crossing_particles_this.erase(iPart);
-                                // since transition from outside to inside doesn't get counted here, we don't have to undo anything
-                            } //else // crossing borders from inside to outside confirmed for now
+                        if(!MathExtraLiggghts::line_triangle_intersect(x[iPart], dir, v0, v1, v2))
                             continue;
-                        }
-                        else
-                        {
-                            // previous triangle saw it inside and particle was inside last time
-                            // check if it really moved outside now
-                            double pref_alt[3];
-                            bool convex = true;
-                            for(int i = 0; i < 3; ++i)
-                            {
-                                mesh->node(handled_particles_this[iPart],i,pref_alt);
-                                double dot_tri = 0.;
-                                vectorSubtract3D(pref_alt,pref_,delta);
-                                dot_tri = vectorDot3D(delta,nvec_);
-                                if(insideOut_) dot_tri =-dot_tri;
+                        ignore_this.insert(iPart);
+                    }
+                    // each particle holds whole MS mass
+                    mass_this += rmass[iPart]; // total mass crossing any mesh face
+                    nparticles_this++; // total number of cg particles crossing any mesh face
+#ifdef FAVRE_AVERAGED
+                    average_vx_out_this += rmass[iPart]*v[iPart][0];
+                    average_vy_out_this += rmass[iPart]*v[iPart][1];
+                    average_vz_out_this += rmass[iPart]*v[iPart][2];
+#else
+                    average_vx_out_this += v[iPart][0];
+                    average_vy_out_this += v[iPart][1];
+                    average_vz_out_this += v[iPart][2];
+#endif
+                    mass_face_this[faceid2index_[face_id]] += rmass[iPart]; // total mass crossing current face
 
-                                if(dot_tri > 0.)
-                                {
-                                    convex = false;
-                                    break;
-                                }
-                            }
+                    radius_dist_face_local_this  [faceid2index_[face_id]].push_back(radius[iPart]);
+                    mass_dist_face_local_this    [faceid2index_[face_id]].push_back(rmass[iPart]);
+                    atomtype_dist_face_local_this[faceid2index_[face_id]].push_back(atom->type[iPart]);
 
-                            if(convex) ignore_this.insert(iPart); // it's really outside, continue below
-                            else continue; // did not cross boundary, still in
-                        }
-                    }// else this tri is the first to check this particle
-
-                    //NP each particle holds whole MS mass
-                    mass_this += rmass[iPart];
-                    nparticles_this ++;
-                    mass_face_this[faceid2index_[face_id]] += rmass[iPart];
-                    nparticles_face_this[faceid2index_[face_id]]++;
+                    nparticles_face_this[faceid2index_[face_id]]++; // number of cg particles crossing current face
+#ifdef FAVRE_AVERAGED
+                    average_vx_face_out_this[faceid2index_[face_id]] += rmass[iPart]*v[iPart][0];
+                    average_vy_face_out_this[faceid2index_[face_id]] += rmass[iPart]*v[iPart][1];
+                    average_vz_face_out_this[faceid2index_[face_id]] += rmass[iPart]*v[iPart][2];
+#else
+                    average_vx_face_out_this[faceid2index_[face_id]] += v[iPart][0];
+                    average_vy_face_out_this[faceid2index_[face_id]] += v[iPart][1];
+                    average_vz_face_out_this[faceid2index_[face_id]] += v[iPart][2];
+#endif
                     crossing_particles_this[iPart] = iTri;
 
                     if(fix_property_)
@@ -631,133 +623,30 @@ void FixMassflowMeshFace::post_integrate()
                     if(once_) once_this.insert(iPart);
 
                 }
-                /*else // iPart == OUTSIDE
-                {
-                    if(handled_particles_this.find(iPart) != handled_particles_this.end())
-                    {
-                        if(crossing_particles_this.find(iPart) != crossing_particles_this.end())
-                        {
-                            // previous triangle decided that particle has crossed borders from inside to outside
-                            // this triangle sees the particle outside;
-                            // we're fine
-                        } // else particle didn't cross border; outside of previous triangle confirmed, nothing to do, we're fine
-                    } // else this triangle is the first to check the particle, still outside, nothing to do, we're fine
-                }*/
             }
             else // dot <= 0 INSIDE
             {
                 if((ibody > -1) ? ((*ms_counter_)(ibody) == OUTSIDE) : (fix_counter_->get_vector_atom_int(iPart) == OUTSIDE))
                 {
-                    if(handled_particles_this.find(iPart) != handled_particles_this.end())
+                    // make sure that particle really crossed the tri
                     {
-                        if(crossing_particles_this.find(iPart) != crossing_particles_this.end())
-                        {
-                            // previous triangle decided that particle has crossed borders from inside to outside
-                            // this triangle sees the particle inside
-                            // check if it really moved outside
-                            double pref_alt[3];
-                            bool convex = true;
+                        double dir[3]; MathExtra::sub3(prevx[iPart], x[iPart], dir);
+                        double v0[3];  mesh->node(iTri,0,v0);
+                        double v1[3];  mesh->node(iTri,1,v1);
+                        double v2[3];  mesh->node(iTri,2,v2);
 
-                            for(int i = 0; i < 3; ++i)
-                            {
-                                mesh->node(crossing_particles_this[iPart],i,pref_alt);
-                                double dot_tri = 0.;
-                                vectorSubtract3D(pref_alt,pref_,delta);
-                                dot_tri = vectorDot3D(delta,nvec_);
-                                if(insideOut_) dot_tri =-dot_tri;
-
-                                if(dot_tri > 0.)
-                                {
-                                    convex = false;
-                                    break;
-                                }
-                            }
-
-
-                            if(!convex)
-                            {
-                                if (ibody > -1) (*ms_counter_)(ibody) = INSIDE;
-                                else            fix_counter_->set_vector_atom_int(iPart, INSIDE);
-                                ignore_this.insert(iPart);
-                                once_this.erase(iPart);
-                                int old_face_id = tri_face_ids->get(crossing_particles_this[iPart]);
-                                crossing_particles_this.erase(iPart);
-                                // since transition from inside to outside does get counted here, we have to undo some stuff:
-                                mass_this -= rmass[iPart];
-                                nparticles_this--;
-                                mass_face_this[faceid2index_[old_face_id]] -= rmass[iPart];
-                                nparticles_face_this[faceid2index_[old_face_id]]--;
-                                if(fix_property_) property_this -= fix_property_->vector_atom[iPart];
-                                if(delete_atoms_)
-                                {
-                                    int ndelete = atom_tags_delete_.size();
-                                    for(int i = 0; i < ndelete; ++i)
-                                    {
-                                        if(atom_tags_delete_[i] == atom->tag[iPart])
-                                        {
-                                            if(ndelete > 1)
-                                            {
-                                                atom_tags_delete_[i] = atom_tags_delete_[ndelete-1];
-                                            }
-                                            atom_tags_delete_.pop_back();
-                                        }
-                                    }
-                                }
-                                // we're done with this particle this timestep
-                            } // else // crossing borders from inside to outside confirmed for now
+                        if(!MathExtraLiggghts::line_triangle_intersect(x[iPart], dir, v0, v1, v2))
                             continue;
+                    }
 
-                        }
-                        else
-                        {
-                            // previous triangle saw it ouside and particle was outside last time
-                            // check if it really moved inside now
-                            double pref_alt[3];
-                            bool convex = true;
-                            for(int i = 0; i < 3; ++i)
-                            {
-                                mesh->node(handled_particles_this[iPart],i,pref_alt);
-                                double dot_tri = 0.;
-                                vectorSubtract3D(pref_alt,pref_,delta);
-                                dot_tri = vectorDot3D(delta,nvec_);
-                                if(insideOut_) dot_tri =-dot_tri;
+                    ignore_this.insert(iPart);
 
-                                if(dot_tri > 0.)
-                                {
-                                    convex = false;
-                                    break;
-                                }
-                            }
-
-                            if(!convex) ignore_this.insert(iPart); // it's really inside, continue below
-                            else continue; // did not cross boundary, still out
-                        }
-                    } // else this tri is the first to check this particle, we're fine
-
-                    crossing_particles_this[iPart] = iTri;
                     if(ibody > -1)
                         (*ms_counter_)(ibody) = INSIDE;
                     else
                         fix_counter_->set_vector_atom_int(iPart, INSIDE);
-
-                    if(once_) once_this.insert(iPart);
                 }
-                /*else // iPart == INSIDE
-                {
-                    if(handled_particles_this.find(iPart) != handled_particles_this.end())
-                    {
-                        if(crossing_particles_this.find(iPart) != crossing_particles_this.end())
-                        {
-                            // previous triangle decided that particle has crossed borders from outside to inside
-                            // this triangle sees the particle inside;
-                            // confirmed so far, we're fine
-                        } // else particle didn't cross border; inside of previous triangle confirmed, nothing to do, we're fine
-                    } // else this triangle is the first to check the particle, still inside, nothing to do, we're fine
-                }*/
             }
-
-            handled_particles_this[iPart] = iTri;
-
         }
     }
 
@@ -775,6 +664,10 @@ void FixMassflowMeshFace::post_integrate()
 
     for(int iPart = 0; iPart < nlocal; ++iPart)
     {
+        prevx[iPart][0] = x[iPart][0];
+        prevx[iPart][1] = x[iPart][1];
+        prevx[iPart][2] = x[iPart][2];
+
         if(!defined_this[iPart])
         {
             const int ibody = fix_ms_ ? ( (fix_ms_->belongs_to(iPart) > -1) ? (ms_->map(fix_ms_->belongs_to(iPart))) : -1 ) : -1;
@@ -805,6 +698,7 @@ void FixMassflowMeshFace::post_integrate()
                        v[iPart][0],v[iPart][1],v[iPart][2]);
         }
     }
+
     if(fp_)
     {
         for(std::map<int,int>::iterator it=crossing_particles_this.begin(); it!=crossing_particles_this.end(); ++it)
@@ -830,22 +724,67 @@ void FixMassflowMeshFace::post_integrate()
         }
     }
 
+    // sum global values from all processes
     MPI_Sum_Scalar(mass_this,world);
     MPI_Sum_Scalar(nparticles_this,world);
+    MPI_Sum_Scalar(average_vx_out_this,world);
+    MPI_Sum_Scalar(average_vy_out_this,world);
+    MPI_Sum_Scalar(average_vz_out_this,world);
     if(fix_property_) MPI_Sum_Scalar(property_this,world);
 
+
+    if(nparticles_this > 0) // some particles crossed the mesh faces
+    {
+        double *radius_dist_this_recv = NULL; // gather from all procs
+        double *mass_dist_this_recv = NULL;
+        int *atomtype_dist_this_recv = NULL;
+        int nparticles_face_i_this_all = 0;
+
+        for(int i=0; i<nfaceids; ++i)
+        {
+            MPI_Allgather_Vector(&radius_dist_face_local_this  [i][0], nparticles_face_this[i], radius_dist_this_recv, world);
+            MPI_Allgather_Vector(&mass_dist_face_local_this    [i][0], nparticles_face_this[i], mass_dist_this_recv, world);
+            MPI_Allgather_Vector(&atomtype_dist_face_local_this[i][0], nparticles_face_this[i], atomtype_dist_this_recv, world);
+            MPI_Sum_Scalar(nparticles_face_this[i], nparticles_face_i_this_all, world);
+
+            for(int p = 0; p < nparticles_face_i_this_all; ++p)
+            {
+                double rad  = radius_dist_this_recv[p]/cg_; // fg particle radius
+                double mass = mass_dist_this_recv[p]/cg3_;  // fg particle mass
+                int type    = atomtype_dist_this_recv[p];
+                distributions_face_[i][ConstantParticleTemplateSphere(rad, mass, type)] += cg3_; // number of fg particles!
+            }
+
+            delete [] radius_dist_this_recv; radius_dist_this_recv = NULL;
+            delete [] mass_dist_this_recv; mass_dist_this_recv = NULL;
+            delete [] atomtype_dist_this_recv; atomtype_dist_this_recv = NULL;
+            nparticles_face_i_this_all = 0;
+        }
+    }
+
+    // sum per face values from all processes
     MPI_Sum_Vector(&mass_face_this[0],nfaceids,world);
     MPI_Sum_Vector(&nparticles_face_this[0],nfaceids,world);
+    MPI_Sum_Vector(&average_vx_face_out_this[0],nfaceids,world);
+    MPI_Sum_Vector(&average_vy_face_out_this[0],nfaceids,world);
+    MPI_Sum_Vector(&average_vz_face_out_this[0],nfaceids,world);
 
     mass_ += mass_this;
-    nparticles_ += nparticles_this;
+    nparticles_ += nparticles_this; // total number of cg particles that crossed any mesh face since last inquiry
+    average_vx_out_ += average_vx_out_this;
+    average_vy_out_ += average_vy_out_this;
+    average_vz_out_ += average_vz_out_this;
     property_sum_ += property_this;
+
+    // global, same values across all processors
     for(int i=0; i<nfaceids; ++i)
     {
         mass_face_[i] += mass_face_this[i];
         nparticles_face_[i] += nparticles_face_this[i];
+        average_vx_face_out_[i] += average_vx_face_out_this[i];
+        average_vy_face_out_[i] += average_vy_face_out_this[i];
+        average_vz_face_out_[i] += average_vz_face_out_this[i];
     }
-
 }
 
 /* ----------------------------------------------------------------------
@@ -856,7 +795,7 @@ void FixMassflowMeshFace::post_integrate()
 
 void FixMassflowMeshFace::pre_exchange()
 {
-    if (delete_atoms_)
+    if(delete_atoms_)
     {
         double mass_deleted_this_ = 0.;
         int nparticles_deleted_this_ = 0.;
@@ -873,8 +812,8 @@ void FixMassflowMeshFace::pre_exchange()
 
             atom->avec->copy(atom->nlocal-1,iPart,1);
 
-            //NP manipulate atom map array
-            //NP need to do this since atom map is needed for deletion
+            // manipulate atom map array
+            // need to do this since atom map is needed for deletion
             atom_map_array[atom->tag[atom->nlocal-1]] = iPart;
 
             atom->nlocal--;
@@ -890,7 +829,7 @@ void FixMassflowMeshFace::pre_exchange()
         mass_deleted_ += mass_deleted_this_;
         nparticles_deleted_ += nparticles_deleted_this_;
 
-        //NP tags and maps
+        // tags and maps
         if(nparticles_deleted_this_)
         {
             if (atom->tag_enable) {
@@ -953,7 +892,7 @@ double FixMassflowMeshFace::compute_scalar()
 }
 
 /* ----------------------------------------------------------------------
-   output mass
+   always returns fg number of particles (also when coarse-grained!)
 ------------------------------------------------------------------------- */
 
 double FixMassflowMeshFace::compute_vector(int index)
@@ -970,16 +909,45 @@ double FixMassflowMeshFace::compute_vector(int index)
     case 0:
         return mass_;
     case 1:
-        return static_cast<double>(nparticles_);
+        return cg3_*static_cast<double>(nparticles_); // total # of particles passed through mesh since sim start
     case 2:
         return delta_t_ == 0. ? 0. : (mass_-mass_last_)/delta_t_;
     case 3:
-        return delta_t_ == 0. ? 0. : static_cast<double>(nparticles_-nparticles_last_)/delta_t_;
+        return delta_t_ == 0. ? 0. : cg3_*static_cast<double>(nparticles_-nparticles_last_)/delta_t_;
     case 4:
         return mass_deleted_;
     case 5:
-        return static_cast<double>(nparticles_deleted_);
+        return cg3_*static_cast<double>(nparticles_deleted_);
     case 6:
+        return cg3_*static_cast<double>(nparticles_-nparticles_last_);
+    case 7:
+#ifdef FAVRE_AVERAGED
+        if (mass_ > 0.)
+            return average_vx_out_/mass_;
+#else
+        if (nparticles_ > nparticles_last_)
+            return average_vx_out_/(nparticles_-nparticles_last_);
+#endif
+        return 0.;
+    case 8:
+#ifdef FAVRE_AVERAGED
+        if (mass_ > 0.)
+            return average_vy_out_/mass_;
+#else
+        if (nparticles_ > nparticles_last_)
+            return average_vy_out_/(nparticles_-nparticles_last_);
+#endif
+        return 0.;
+    case 9:
+#ifdef FAVRE_AVERAGED
+        if (mass_ > 0.)
+            return average_vz_out_/mass_;
+#else
+        if (nparticles_ > nparticles_last_)
+            return average_vz_out_/(nparticles_-nparticles_last_);
+#endif
+        return 0.;
+    case 10:
         if(fix_property_)
             return property_sum_;
     default:
@@ -1002,19 +970,103 @@ double FixMassflowMeshFace::compute_array(int i, int j)
   case 0:
       return mass_face_[i];
   case 1:
-      return static_cast<double>(nparticles_face_[i]);
+      return cg3_*static_cast<double>(nparticles_face_[i]);
   case 2:
       return delta_t_ == 0. ? 0. : (mass_face_[i]-mass_face_last_[i])/delta_t_;
   case 3:
-      return delta_t_ == 0. ? 0. : static_cast<double>(nparticles_face_[i]-nparticles_face_last_[i])/delta_t_;
+      return delta_t_ == 0. ? 0. : cg3_*static_cast<double>(nparticles_face_[i]-nparticles_face_last_[i])/delta_t_;
   case 4:
       return mass_deleted_;
   case 5:
-      return static_cast<double>(nparticles_deleted_);
+      return cg3_*static_cast<double>(nparticles_deleted_);
   case 6:
-      if(fix_property_)
-          return property_sum_;
+      return cg3_*static_cast<double>(nparticles_face_[i]-nparticles_face_last_[i]);
+  case 7:
+#ifdef FAVRE_AVERAGED
+      if (mass_face_[i] > 0.)
+          return average_vx_face_out_[i]/mass_face_[i];
+#else
+      if (nparticles_face_[i]-nparticles_face_last_[i])
+          return average_vx_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+#endif
+      return 0.;
+  case 8:
+#ifdef FAVRE_AVERAGED
+      if (mass_face_[i] > 0.)
+          return average_vy_face_out_[i]/mass_face_[i];
+#else
+      if (nparticles_face_[i]-nparticles_face_last_[i])
+          return average_vy_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+#endif
+      return 0.;
+  case 9:
+#ifdef FAVRE_AVERAGED
+      if (mass_face_[i] > 0.)
+          return average_vz_face_out_[i]/mass_face_[i];
+#else
+      if (nparticles_face_[i]-nparticles_face_last_[i])
+          return average_vz_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+#endif
+      return 0.;
   default:
       return 0.;
   }
+}
+
+
+double FixMassflowMeshFace::compute_array_by_id(int face_id, int j)
+{
+  if(faceid2index_.find(face_id) == faceid2index_.end())
+      error->fix_error(FLERR, this, "Invalid face id!");
+
+  return compute_array(faceid2index_[face_id], j);
+}
+
+
+const DiscreteParticleDistribution& FixMassflowMeshFace::get_distribution_by_id(int face_id)
+{
+  if(faceid2index_.find(face_id) == faceid2index_.end())
+    error->fix_error(FLERR, this, "Invalid face id!");
+
+  return distributions_face_[faceid2index_[face_id]];
+}
+
+
+bool FixMassflowMeshFace::confirm_classification(int ibody, int iPart, int tri, int current_side)
+{
+  int opposite_side = current_side == OUTSIDE ? INSIDE : OUTSIDE;
+
+  if((ibody > -1) ? ((*ms_counter_)(ibody) == opposite_side) : (fix_counter_->get_vector_atom_int(iPart) == opposite_side))
+  {
+    double pref_alt[3];
+    double delta[3];
+    bool convex = true;
+    TriMesh *mesh = fix_mesh_->triMesh();
+
+    for(int i = 0; i < 3; ++i)
+    {
+      mesh->node(tri,i,pref_alt);
+      double dot_tri = 0.;
+      vectorSubtract3D(pref_alt,pref_,delta);
+      dot_tri = vectorDot3D(delta,nvec_);
+
+      if(insideOut_) dot_tri =-dot_tri;
+
+      if(dot_tri > 0.)
+      {
+        convex = false;
+        break;
+      }
+    }
+
+    if(convex ? (current_side == OUTSIDE) : (current_side == INSIDE))
+    {
+      if (ibody > -1) (*ms_counter_)(ibody) = current_side;
+      else            fix_counter_->set_vector_atom_int(iPart, current_side);
+
+      return true;
+    }
+  }
+
+  return false;
 }

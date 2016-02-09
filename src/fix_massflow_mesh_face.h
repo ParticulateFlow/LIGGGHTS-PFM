@@ -28,15 +28,17 @@ FixStyle(massflow/mesh/face,FixMassflowMeshFace)
 #ifndef LMP_FIX_MASSFLOW_MESH_FACE_H
 #define LMP_FIX_MASSFLOW_MESH_FACE_H
 
-#include "fix.h"
 #include <vector>
 #include <map>
-
+#include "fix.h"
+#include "constParticleTemplateSphere.h"
 
 namespace LAMMPS_NS {
 
 class FixMassflowMeshFace : public Fix {
 
+  friend class FixParticledistributionDiscreteFace;
+  friend class FixInsertPackFace;
  public:
 
   FixMassflowMeshFace(class LAMMPS *lmp, int narg, char ** arg);
@@ -59,6 +61,18 @@ class FixMassflowMeshFace : public Fix {
   double compute_vector(int index);
   double compute_array(int i, int j);
 
+  double compute_array_by_id(int face_id, int j);
+
+  const std::map<int, int>& get_face_ids() const
+  {
+    return faceid2index_;
+  }
+
+  int get_face_ids_size() const
+  {
+    return faceid2index_.size();
+  }
+
  protected:
 
   // true if any given particle is
@@ -73,10 +87,17 @@ class FixMassflowMeshFace : public Fix {
 
   class FixPropertyAtom* fix_orientation_;
 
+  const DiscreteParticleDistribution& get_distribution_by_id(int face_id);
+  const std::vector<DiscreteParticleDistribution>& get_distributions()
+  { return distributions_face_; }
+
  private:
+
+  bool confirm_classification(int ibody, int iPart, int tri, int current_side);
 
   class FixMeshSurface *fix_mesh_;
   class FixPropertyAtom *fix_counter_;
+  class FixPropertyAtom *fix_prevx_;
   char fixid_[200];
   class FixNeighlistMesh *fix_neighlist_;
   double nvec_[3];
@@ -89,8 +110,14 @@ class FixMassflowMeshFace : public Fix {
   // mass and particles which was counted
   double mass_;
   int nparticles_;
+  double average_vx_out_;
+  double average_vy_out_;
+  double average_vz_out_;
   std::vector<double> mass_face_;
   std::vector<int> nparticles_face_;
+  std::vector<double> average_vx_face_out_;
+  std::vector<double> average_vy_face_out_;
+  std::vector<double> average_vz_face_out_;
 
   // additional property to sum
   class FixPropertyAtom *fix_property_;
@@ -112,6 +139,10 @@ class FixMassflowMeshFace : public Fix {
   class MultisphereParallel *ms_;
   class ScalarContainer<int> *ms_counter_;
   std::map<int, int> faceid2index_;
+  double cg_, cg3_;
+
+  std::vector<DiscreteParticleDistribution> distributions_face_;
+
 }; //end class
 
 }
