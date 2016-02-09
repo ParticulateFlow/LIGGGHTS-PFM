@@ -99,6 +99,8 @@ namespace MathExtraLiggghts {
   inline void random_unit_quat(LAMMPS_NS::RanPark *random,double *quat);
 
   inline bool is_int(char *str);
+
+  inline bool line_triangle_intersect(const double *origin, const double *dir, const double *v0, const double *v1, const double *v2);
 };
 
 /* ----------------------------------------------------------------------
@@ -609,5 +611,65 @@ bool MathExtraLiggghts::is_int(char *str)
 
     return true;
 }
+
+
+/* ----------------------------------------------------------------------
+   check if line and triangle intersect
+------------------------------------------------------------------------- */
+
+bool MathExtraLiggghts::line_triangle_intersect(const double *origin, const double *dir, const double *v0, const double *v1, const double *v2)
+{
+  // Compute the offset origin, edges, and normal.
+  double edge1[3]; MathExtra::sub3(v1, v0, edge1);// = v1 - v0;
+  double edge2[3]; MathExtra::sub3(v2, v0, edge2);// = v2 - v0;
+  double normal[3]; MathExtra::cross3(edge1, edge2, normal);// = Cross(edge1, edge2);
+
+  // Solve Q + t*D = b1*E1 + b2*E2 (Q = diff, D = line direction,
+  // E1 = edge1, E2 = edge2, N = Cross(E1,E2)) by
+  //   |Dot(D,N)|*b1 = sign(Dot(D,N))*Dot(D,Cross(Q,E2))
+  //   |Dot(D,N)|*b2 = sign(Dot(D,N))*Dot(D,Cross(E1,Q))
+  //   |Dot(D,N)|*t = -sign(Dot(D,N))*Dot(Q,N)
+  //MathExtra::norm3(dir);
+  double DdN = MathExtra::dot3(dir, normal);
+  double sign;
+  if (DdN > 0.)
+  {
+      sign = 1.;
+  }
+  else if (DdN < 0.)
+  {
+      sign = -1.;
+      DdN = -DdN;
+  }
+  else
+  {
+      // Line and triangle are parallel, call it a "no intersection"
+      // even if the line and triangle are coplanar and intersecting.
+      return false;
+  }
+
+  double diff[3]; MathExtra::sub3(origin, v0, diff);// = origin - v0;
+  double cross[3]; MathExtra::cross3(diff, edge2, cross);
+  double DdQxE2 = sign*MathExtra::dot3(dir, cross);//sign*DotCross(dir, diff, edge2);
+  if (DdQxE2 >= 0.)
+  {
+      MathExtra::cross3(edge1, diff, cross);
+      double DdE1xQ = sign*MathExtra::dot3(dir, cross);//sign*DotCross(dir, edge1, diff);
+      if (DdE1xQ >= 0.)
+      {
+          if (DdQxE2 + DdE1xQ <= DdN)
+          {
+              // Line intersects triangle.
+              return true;
+          }
+          // else: b1+b2 > 1, no intersection
+      }
+      // else: b2 < 0, no intersection
+  }
+  // else: b1 < 0, no intersection
+
+  return false;
+}
+
 
 #endif
