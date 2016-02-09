@@ -851,9 +851,11 @@ int FixInsert::load_xnear(int)
 {
   // load up neighbor list with local and ghosts
 
+  neighList.reset();
+  if(maxrad <= 0.)
+    return 0;
 
   BoundingBox bb = getBoundingBox();
-  neighList.reset();
 
 #ifdef LIGGGHTS_DEBUG
   printf("subdomain bounding box: [%g, %g] x [%g, %g] x [%g, %g]\n", domain->sublo[0], domain->subhi[0], domain->sublo[1], domain->subhi[1], domain->sublo[2], domain->subhi[2]);
