@@ -851,9 +851,6 @@ int FixInsert::load_xnear(int)
 {
   // load up neighbor list with local and ghosts
 
-  double **x = atom->x;
-  double *radius = atom->radius;
-  const int nall = atom->nlocal + atom->nghost;
 
   BoundingBox bb = getBoundingBox();
   neighList.reset();
@@ -863,6 +860,10 @@ int FixInsert::load_xnear(int)
 #endif
 
   if(neighList.setBoundingBox(bb, maxrad)) {
+    double **x = atom->x;
+    double *radius = atom->radius;
+    const int nall = atom->nlocal + atom->nghost;
+
     for (int i = 0; i < nall; ++i)
     {
       if (is_nearby(i))
