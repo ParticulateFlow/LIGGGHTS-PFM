@@ -39,7 +39,7 @@
 #include "memory.h"
 #include "error.h"
 #include "fix_multisphere.h"
-#include "fix_particledistribution_discrete.h"
+#include "fix_particledistribution.h"
 #include "fix_template_sphere.h"
 #include "fix_insert.h"
 #include "math_extra_liggghts.h"
