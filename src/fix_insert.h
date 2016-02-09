@@ -101,7 +101,7 @@ class FixInsert : public Fix {
   /*---INSERTION QUANTITIES---what, where and how exactly will we insert*/
 
   //particle distribution
-  class FixParticledistributionDiscrete *fix_distribution;
+  class FixParticledistribution *fix_distribution;
 
   // insert 'ninsert_per' particles every 'insert_every' steps
   // 'ninsert_per' is the default, actual # of inserted particles
@@ -172,7 +172,7 @@ class FixInsert : public Fix {
   virtual void sanity_check();
   virtual void calc_insertion_properties() = 0;
 
-  virtual void pre_insert() {};
+  virtual void pre_insert() {}
   virtual int calc_ninsert_this();
   virtual int load_xnear(int);
   virtual int count_nnear();
@@ -182,7 +182,7 @@ class FixInsert : public Fix {
   virtual void x_v_omega(int,int&,int&,double&) = 0;
   virtual double insertion_fraction() = 0;
 
-  virtual void finalize_insertion(int){};
+  virtual void finalize_insertion(int) {}
 
  protected:
   void generate_random_velocity(double * velocity);
