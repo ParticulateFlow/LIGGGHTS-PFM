@@ -1,4 +1,3 @@
-
 /* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
@@ -30,28 +29,16 @@ FixStyle(particledistribution/discrete,FixParticledistributionDiscrete)
 #ifndef LMP_FIX_PARTICLEDISTRIBUTION_DISCRETE_H
 #define LMP_FIX_PARTICLEDISTRIBUTION_DISCRETE_H
 
-#include "fix.h"
-
-enum{RAN_STYLE_CONSTANT_FPD,RAN_STYLE_UNIFORM_FPD,RAN_STYLE_GAUSSIAN_FPD};
+#include "fix_particledistribution.h"
 
 
 namespace LAMMPS_NS {
 
-class FixParticledistributionDiscrete : public Fix {
+class FixParticledistributionDiscrete : public FixParticledistribution {
  public:
   friend class FixPourDev;
   FixParticledistributionDiscrete(class LAMMPS *, int, char **);
   ~FixParticledistributionDiscrete();
-  void write_restart(FILE *);
-  void restart(char *);
-
-  int setmask();
-
-  double vol_expect();
-  double mass_expect();
-
-  int max_type();
-  int min_type();
 
   double min_rad(int);
   double max_rad(int);
@@ -63,38 +50,18 @@ class FixParticledistributionDiscrete : public Fix {
   double max_r_bound()
   { return maxrbound; }
 
-  int max_nspheres();
-
-  int random_init_single(int);         //NP tells the distribution how many particles are to be generated
-  class Region* randomize_single();    //NP generates one random particle
-
   void random_init_list(int);
-  int randomize_list(int,int,int);     //NP generates a list of random particles
+  int randomize_list(int,int,int);     // generate a list of random particles
 
-  void finalize_insertion();
-
-  class ParticleToInsert *pti;
-
-  class ParticleToInsert **pti_list;
-  int n_pti, n_pti_max;
-  void pre_insert();
   int insert(int n);
+  void finalize_insertion();
 
   inline int n_particletemplates()
   { return ntemplates; }
   inline class FixTemplateSphere** particletemplates()
   { return templates; }
 
- protected:
-
-  //NP called at insertion
-  int ninserted;
-  int ninsert;
-
-  class RanPark *random;
-  int seed;
-
-  int iarg;
+protected:
 
   // particle templates
   int ntemplates;
@@ -104,19 +71,6 @@ class FixParticledistributionDiscrete : public Fix {
   int *distorder;
   class FixTemplateSphere **templates;
 
-  // mass and volume expectancy of this discrete distribution
-  double volexpect;
-  double massexpect;
-
-  // min/maximum particle type to be inserted
-  int maxtype;
-  int mintype;
-
-  // maximum number of spheres a template has
-  int maxnspheres;
-
-  // maximum radius and bounding sphere radius
-  double minrad,maxrad,maxrbound;
 };
 
 }
