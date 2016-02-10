@@ -41,6 +41,7 @@ class BoundingBox
   public:
 
     BoundingBox();
+    explicit BoundingBox(double bounds[6]);
     BoundingBox(double xLo, double xHi, double yLo, double yHi, double zLo, double zHi);
     virtual ~BoundingBox();
 
