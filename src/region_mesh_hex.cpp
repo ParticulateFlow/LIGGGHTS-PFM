@@ -40,8 +40,6 @@
 #define DELTA_HEX 1000
 #define BIG 1.e20
 
-#define USE_SEARCH_TREE
-
 namespace LAMMPS_NS {
 
 class AABBNode {
