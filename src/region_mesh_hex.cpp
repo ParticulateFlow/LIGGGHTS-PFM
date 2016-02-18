@@ -136,7 +136,7 @@ class AABBNode {
   void findCell(const double *p, std::vector<int>& potential_cells)
   {
     if(isInside(p)) {
-      if(cell_ > -1) {
+      if(isLeaf()) {
         potential_cells.push_back(cell_);
       } else {
         if(left_)  left_->findCell(p, potential_cells);
@@ -151,6 +151,11 @@ class AABBNode {
     return (p[0] >= xLo && p[0] < xHi &&
             p[1] >= yLo && p[1] < yHi &&
             p[2] >= zLo && p[2] < zHi);
+  }
+
+  bool isLeaf()
+  {
+    return (cell_ > -1);
   }
 
   void grow(double bounds[6])
