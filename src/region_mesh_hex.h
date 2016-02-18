@@ -32,6 +32,7 @@ RegionStyle(mesh/hex,RegHexMesh)
 #include "custom_value_tracker.h"
 #include <vtkHexahedron.h>
 #include <vtkPoints.h>
+#include <vtkNew.h>
 
 namespace LAMMPS_NS {
 
@@ -53,10 +54,13 @@ class RegHexMesh : public Region {
   double hex_vol(int i);
   double hex_acc_vol(int i);
   void hex_bounds(int iHex, double bounds[6]);
+  const double* hex_center(int iHex)
+  { return center[iHex]; }
 
   inline CustomValueTracker& prop()
-  {return customValues_;}
+  { return customValues_; }
 
+  int get_hex(double *pos);
   int get_hex(const char* property, int value);
   int match_hex_cut(int iHex, double *pos,double cut);
 
@@ -91,7 +95,16 @@ class RegHexMesh : public Region {
    // class holding fields
    CustomValueTracker &customValues_;
 
-public:
+   class AABBTree *tree_;
+   std::vector<int> potential_cells;
+   vtkNew<vtkHexahedron> hexahedron;
+   vtkNew<vtkTetra> tetra;
+   vtkNew<vtkIdList> ptIds;
+   vtkNew<vtkPoints> pts;
+   double pCoords[3];
+   double weights[8];
+
+ public:
    #include "region_mesh_hex_I.h"
 };
 
