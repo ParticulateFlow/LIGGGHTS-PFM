@@ -742,23 +742,27 @@ void FixMassflowMeshFace::post_integrate()
 
         for(int i=0; i<nfaceids; ++i)
         {
-            MPI_Allgather_Vector(&radius_dist_face_local_this  [i][0], nparticles_face_this[i], radius_dist_this_recv, world);
-            MPI_Allgather_Vector(&mass_dist_face_local_this    [i][0], nparticles_face_this[i], mass_dist_this_recv, world);
-            MPI_Allgather_Vector(&atomtype_dist_face_local_this[i][0], nparticles_face_this[i], atomtype_dist_this_recv, world);
             MPI_Sum_Scalar(nparticles_face_this[i], nparticles_face_i_this_all, world);
 
-            for(int p = 0; p < nparticles_face_i_this_all; ++p)
+            if(nparticles_face_i_this_all > 0)
             {
-                double rad  = radius_dist_this_recv[p]/cg_; // fg particle radius
-                double mass = mass_dist_this_recv[p]/cg3_;  // fg particle mass
-                int type    = atomtype_dist_this_recv[p];
-                distributions_face_[i][ConstantParticleTemplateSphere(rad, mass, type)] += cg3_; // number of fg particles!
-            }
+                MPI_Allgather_Vector(&radius_dist_face_local_this  [i][0], nparticles_face_this[i], radius_dist_this_recv, world);
+                MPI_Allgather_Vector(&mass_dist_face_local_this    [i][0], nparticles_face_this[i], mass_dist_this_recv, world);
+                MPI_Allgather_Vector(&atomtype_dist_face_local_this[i][0], nparticles_face_this[i], atomtype_dist_this_recv, world);
 
-            delete [] radius_dist_this_recv; radius_dist_this_recv = NULL;
-            delete [] mass_dist_this_recv; mass_dist_this_recv = NULL;
-            delete [] atomtype_dist_this_recv; atomtype_dist_this_recv = NULL;
-            nparticles_face_i_this_all = 0;
+                for(int p = 0; p < nparticles_face_i_this_all; ++p)
+                {
+                    double rad  = radius_dist_this_recv[p]/cg_; // fg particle radius
+                    double mass = mass_dist_this_recv[p]/cg3_;  // fg particle mass
+                    int type    = atomtype_dist_this_recv[p];
+                    distributions_face_[i][ConstantParticleTemplateSphere(rad, mass, type)] += cg3_; // number of fg particles!
+                }
+
+                delete [] radius_dist_this_recv; radius_dist_this_recv = NULL;
+                delete [] mass_dist_this_recv; mass_dist_this_recv = NULL;
+                delete [] atomtype_dist_this_recv; atomtype_dist_this_recv = NULL;
+                nparticles_face_i_this_all = 0;
+            }
         }
     }
 

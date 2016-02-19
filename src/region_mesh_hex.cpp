@@ -24,8 +24,9 @@
 #ifndef VTK_MAJOR_VERSION
 #include <vtkConfigure.h>
 #endif
-#include <vtkNew.h>
 #include <vtkMeshQuality.h>
+#include <vtkTetra.h>
+#include <float.h>
 #include "region_mesh_hex.h"
 #include "lammps.h"
 #include "memory.h"
@@ -39,6 +40,174 @@
 #define DELTA_HEX 1000
 #define BIG 1.e20
 
+namespace LAMMPS_NS {
+
+class AABBNode {
+ public:
+  AABBNode() :
+    left_(NULL), right_(NULL),
+    xLo(0.), xHi(0.),
+    yLo(0.), yHi(0.),
+    zLo(0.), zHi(0.),
+    cell_(-1) {}
+
+  AABBNode(double xlo, double xhi, double ylo, double yhi, double zlo, double zhi, int cell=-1) :
+    left_(NULL), right_(NULL),
+    xLo(xlo), xHi(xhi),
+    yLo(ylo), yHi(yhi),
+    zLo(zlo), zHi(zhi),
+    cell_(cell) {}
+
+  AABBNode(double bounds[6], int cell=-1) :
+    left_(NULL), right_(NULL),
+    xLo(bounds[0]), xHi(bounds[1]),
+    yLo(bounds[2]), yHi(bounds[3]),
+    zLo(bounds[4]), zHi(bounds[5]),
+    cell_(cell) {}
+
+  ~AABBNode() { delete left_; delete right_; }
+
+
+  void build(RegHexMesh *mesh, const std::vector<int>& subnodes)
+  {
+    int splitAxis = 0;
+    double splitPlane = 0.5*(xHi + xLo);
+    if(xHi - xLo < yHi - yLo) {
+      splitAxis = 1;
+      splitPlane = 0.5*(yHi + yLo);
+    }
+    if(yHi - yLo < zHi - zLo) {
+      splitAxis = 2;
+      splitPlane = 0.5*(zHi + zLo);
+    }
+
+    std::vector<int> leftsubnodes;
+    std::vector<int> rightsubnodes;
+    double center[3];
+    double bounds[6];
+
+    for(unsigned int i=0; i<subnodes.size(); ++i) {
+      mesh->hex_bounds(subnodes[i], bounds);
+      getCenter(bounds, center);
+
+      if(center[splitAxis] < splitPlane) {
+        leftsubnodes.push_back(subnodes[i]);
+      } else {
+        rightsubnodes.push_back(subnodes[i]);
+      }
+    }
+
+    if(!leftsubnodes.empty()) {
+      mesh->hex_bounds(leftsubnodes[0], bounds);
+      left_ = new AABBNode(bounds);
+      if(leftsubnodes.size() < 2) {
+        left_->cell_ = leftsubnodes[0];
+      } else {
+        for(unsigned int i=1; i<leftsubnodes.size(); ++i) {
+          mesh->hex_bounds(leftsubnodes[i], bounds);
+          left_->grow(bounds);
+          left_->build(mesh, leftsubnodes);
+        }
+      }
+    }
+
+    if(!rightsubnodes.empty()) {
+      mesh->hex_bounds(rightsubnodes[0], bounds);
+      right_ = new AABBNode(bounds);
+      if(rightsubnodes.size() < 2) {
+        right_->cell_ = rightsubnodes[0];
+      } else {
+        for(unsigned int i=1; i<rightsubnodes.size(); ++i) {
+          mesh->hex_bounds(rightsubnodes[i], bounds);
+          right_->grow(bounds);
+          right_->build(mesh, rightsubnodes);
+        }
+      }
+    }
+  }
+
+  void getCenter(double bounds[6], double center[3])
+  {
+    center[0] = 0.5*(bounds[0] + bounds[1]);
+    center[1] = 0.5*(bounds[2] + bounds[3]);
+    center[2] = 0.5*(bounds[4] + bounds[5]);
+  }
+
+  void findCell(const double *p, std::vector<int>& potential_cells)
+  {
+    if(isInside(p)) {
+      if(isLeaf()) {
+        potential_cells.push_back(cell_);
+      } else {
+        if(left_)  left_->findCell(p, potential_cells);
+        if(right_) right_->findCell(p, potential_cells);
+      }
+    }
+  }
+
+  bool isInside(const double *p)
+  {
+    // test for >= and < as in Domain class
+    return (p[0] >= xLo && p[0] < xHi &&
+            p[1] >= yLo && p[1] < yHi &&
+            p[2] >= zLo && p[2] < zHi);
+  }
+
+  bool isLeaf()
+  {
+    return (cell_ > -1);
+  }
+
+  void grow(double bounds[6])
+  {
+    if(bounds[0] < xLo) xLo = bounds[0];
+    if(bounds[1] > xHi) xHi = bounds[1];
+    if(bounds[2] < yLo) yLo = bounds[2];
+    if(bounds[3] > yHi) yHi = bounds[3];
+    if(bounds[4] < zLo) zLo = bounds[4];
+    if(bounds[5] > zHi) zHi = bounds[5];
+  }
+
+ private:
+  AABBNode *left_;
+  AABBNode *right_;
+  double xLo, xHi, yLo, yHi, zLo, zHi;
+  int cell_;
+};
+
+
+class AABBTree {
+ public:
+  AABBTree() : root_(NULL) {}
+  ~AABBTree() { delete root_; }
+
+  void build(RegHexMesh *mesh)
+  {
+    int nodes = mesh->n_hex();
+    root_ = new AABBNode(mesh->extent_xlo, mesh->extent_xhi,
+                         mesh->extent_ylo, mesh->extent_yhi,
+                         mesh->extent_zlo, mesh->extent_zhi,
+                         (nodes > 1) ? -1 : 0);
+
+    if(nodes > 1) {
+      std::vector<int> subnodes(nodes, 0);
+      for(int i=1; i<nodes; ++i) subnodes[i] = i;
+      root_->build(mesh, subnodes);
+    }
+  }
+
+  void findCell(const double *p, std::vector<int>& potential_cells)
+  {
+    if(root_)
+      root_->findCell(p, potential_cells);
+  }
+
+ private:
+  AABBNode *root_;
+};
+
+}
+
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
@@ -46,7 +215,8 @@ using namespace LAMMPS_NS;
 RegHexMesh::RegHexMesh(LAMMPS *lmp, int narg, char **arg) :
   Region(lmp, narg, arg),
   read_cell_data_(false),
-  customValues_(*(new CustomValueTracker(lmp)))
+  customValues_(*(new CustomValueTracker(lmp))),
+  tree_(NULL)
 {
   if(narg < 14) error->all(FLERR,"Illegal region mesh/hex command");
 
@@ -96,13 +266,20 @@ RegHexMesh::RegHexMesh(LAMMPS *lmp, int narg, char **arg) :
 
   // extent of hexmesh
 
-  if (interior) {
+  set_extent();
+  tree_ = new AABBTree();
+  tree_->build(this);
+
+  if(interior) {
     bboxflag = 1;
-    set_extent();
   } else bboxflag = 0;
 
   cmax = 1;
   contact = new Contact[cmax];
+
+  for(int i=0; i<8; ++i) {
+    hexahedron->GetPointIds()->SetId(i,i);
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -116,6 +293,7 @@ RegHexMesh::~RegHexMesh()
   memory->destroy(center);
   memory->sfree(volume);
   memory->sfree(acc_volume);
+  delete tree_;
 }
 
 /* ----------------------------------------------------------------------
@@ -131,16 +309,12 @@ int RegHexMesh::inside(double x, double y, double z)
   // check subdomain
   if(!domain->is_in_subdomain(pos)) return 0;
 
-  // check bbox, only if exists
-  if(bboxflag) {
-    if(pos[0] < extent_xlo || pos[0] > extent_xhi) return 0;
-    if(pos[1] < extent_ylo || pos[1] > extent_yhi) return 0;
-    if(pos[2] < extent_zlo || pos[2] > extent_zhi) return 0;
-  }
-
-  // brute force naive search
-  for(int i=0; i<nHex; ++i) {
-    if(is_inside_hex(i,pos) > 0) return 1;
+  potential_cells.clear();
+  tree_->findCell(pos, potential_cells);
+  for(unsigned int i=0; i < potential_cells.size(); ++i) {
+    if(is_inside_hex(potential_cells[i],pos) > 0) {
+      return 1;
+    }
   }
 
   return 0;
@@ -155,11 +329,7 @@ int RegHexMesh::match_hex_cut(int iHex, double *pos, double cutoff)
   vectorCopy3D(pos,x);
 
   if(interior) {
-    vtkNew<vtkHexahedron> hexahedron;
-    hexahedron->GetPointIds()->SetNumberOfIds(8);
-
     for(int j=0; j<8; ++j) {
-      hexahedron->GetPointIds()->SetId(j,j);
       hexahedron->GetPoints()->SetPoint(j, node[iHex][j][0], node[iHex][j][1], node[iHex][j][2]);
     }
 
@@ -168,28 +338,26 @@ int RegHexMesh::match_hex_cut(int iHex, double *pos, double cutoff)
     if(x[1] < bounds[2] || x[1] > bounds[3]) return 0; // outside bb of hex
     if(x[2] < bounds[4] || x[2] > bounds[5]) return 0; // outside bb of hex
 
-
-    double hexahedronCoords[3], hexahedronWeights[8];
     int subId;
     double dist2 = 0.;
 
     // inside(=1), outside(=0) cell, or (-1) computational problem encountered
-    int result = hexahedron->EvaluatePosition(x, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
+    int result = hexahedron->EvaluatePosition(x, NULL, subId, pCoords, dist2, weights);
 
     if(result > 0) {
       // if inside hexahedron, dist2 is set to 0; need to check each face for distance
-      double quadCoords[3], quadWeights[4], quadClosest[3];
+      double quadClosest[3];
       bool undefinedQuad = false;
       const int nFaces = hexahedron->GetNumberOfFaces();
       for(int i=0; i<nFaces; ++i) {
         vtkCell *quad = hexahedron->GetFace(i);
-        result = quad->EvaluatePosition(x, quadClosest, subId, quadCoords, dist2, quadWeights);
+        result = quad->EvaluatePosition(x, quadClosest, subId, pCoords, dist2, weights);
         if(result > 0) {
           if(dist2 < cutoff*cutoff) {
             add_contact(0,x,quadClosest[0],quadClosest[1],quadClosest[2]);
             return 1;
           }
-        } else if (result < 0) {
+        } else if(result < 0) {
           undefinedQuad = true;
         }
       }
@@ -199,7 +367,7 @@ int RegHexMesh::match_hex_cut(int iHex, double *pos, double cutoff)
       }
 
       return 0;
-    } else if (result < 0) {
+    } else if(result < 0) {
       add_contact(0,x,x[0],x[1],x[2]);
       return 1;
     }
@@ -218,55 +386,45 @@ int RegHexMesh::surface_interior(double *x, double cutoff)
   // check subdomain
   if(!domain->is_in_subdomain(x)) return 0;
 
-  // check bbox, only if exists
-  if(bboxflag) {
-    if(x[0] < extent_xlo || x[0] > extent_xhi) return 0;
-    if(x[1] < extent_ylo || x[1] > extent_yhi) return 0;
-    if(x[2] < extent_zlo || x[2] > extent_zhi) return 0;
-  }
-
-  // brute force naive search
-  vtkNew<vtkHexahedron> hexahedron;
-  hexahedron->GetPointIds()->SetNumberOfIds(8);
-
   bool undefinedHex = false;
 
-  for(int iHex=0; iHex<nHex; ++iHex) {
+  potential_cells.clear();
+  tree_->findCell(x, potential_cells);
+  for(unsigned int i=0; i < potential_cells.size(); ++i) {
     for(int j=0; j<8; ++j) {
-      hexahedron->GetPointIds()->SetId(j,j);
-      hexahedron->GetPoints()->SetPoint(j, node[iHex][j][0], node[iHex][j][1], node[iHex][j][2]);
+      hexahedron->GetPoints()->SetPoint(j, node[potential_cells[i]][j][0], node[potential_cells[i]][j][1], node[potential_cells[i]][j][2]);
     }
 
-    double hexahedronCoords[3], hexahedronWeights[8];
     int subId;
     double dist2 = 0.;
 
     // inside(=1), outside(=0) cell, or (-1) computational problem encountered
-    int result = hexahedron->EvaluatePosition(x, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
+    int result = hexahedron->EvaluatePosition(x, NULL, subId, pCoords, dist2, weights);
     if(result > 0) {
       // if inside hexahedron, dist2 is set to 0; need to check each face for distance
-      double quadCoords[3], quadWeights[4], quadClosest[3];
+      double quadClosest[3];
       bool undefinedQuad = false;
       const int nFaces = hexahedron->GetNumberOfFaces();
       for(int i=0; i<nFaces; ++i) {
         vtkCell *quad = hexahedron->GetFace(i);
-        result = quad->EvaluatePosition(x, quadClosest, subId, quadCoords, dist2, quadWeights);
+        result = quad->EvaluatePosition(x, quadClosest, subId, pCoords, dist2, weights);
         if(result > 0) {
           if(dist2 < cutoff*cutoff) {
             add_contact(0,x,quadClosest[0],quadClosest[1],quadClosest[2]);
             return 1;
           }
-        } else if (result < 0) {
+        } else if(result < 0) {
           undefinedQuad = true;
         }
       }
+
       if(undefinedQuad) {
         add_contact(0,x,x[0],x[1],x[2]);
         return 1;
       }
 
       return 0;
-    } else if (result < 0) {
+    } else if(result < 0) {
       undefinedHex = true;
     }
   }
@@ -298,21 +456,17 @@ int RegHexMesh::surface_exterior(double *x, double cutoff)
   int nearby = 0;
 
   // brute force naive search
-  vtkNew<vtkHexahedron> hexahedron;
-  hexahedron->GetPointIds()->SetNumberOfIds(8);
-
   for(int iHex=0; iHex<nHex; ++iHex) {
     for(int j=0; j<8; ++j) {
-      hexahedron->GetPointIds()->SetId(j,j);
       hexahedron->GetPoints()->SetPoint(j, node[iHex][j][0], node[iHex][j][1], node[iHex][j][2]);
     }
 
-    double hexahedronCoords[3], hexahedronWeights[8], hexahedronClosest[3];
+    double hexahedronClosest[3];
     int subId;
     double dist2 = 0.;
 
     // inside(=1), outside(=0) cell, or (-1) computational problem encountered
-    int result = hexahedron->EvaluatePosition(x, hexahedronClosest, subId, hexahedronCoords, dist2, hexahedronWeights);
+    int result = hexahedron->EvaluatePosition(x, hexahedronClosest, subId, pCoords, dist2, weights);
     if(result == 0) {
       if(dist2 < cutoff*cutoff) {
         add_contact(0,x,hexahedronClosest[0],hexahedronClosest[1],hexahedronClosest[2]);
@@ -417,15 +571,38 @@ double RegHexMesh::hex_acc_vol(int i)
 
 void RegHexMesh::hex_bounds(int iHex, double bounds[6])
 {
-  vtkNew<vtkHexahedron> hexahedron;
-  hexahedron->GetPointIds()->SetNumberOfIds(8);
+  bounds[0] = node[iHex][0][0];
+  bounds[2] = node[iHex][0][1];
+  bounds[4] = node[iHex][0][2];
 
-  for(int i=0; i<8; ++i) {
-    hexahedron->GetPointIds()->SetId(i,i);
-    hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
+  bounds[1] = node[iHex][0][0];
+  bounds[3] = node[iHex][0][1];
+  bounds[5] = node[iHex][0][2];
+
+  for(int j=1; j<8; ++j) {
+    if(node[iHex][j][0] < bounds[0]) bounds[0] = node[iHex][j][0];
+    if(node[iHex][j][1] < bounds[2]) bounds[2] = node[iHex][j][1];
+    if(node[iHex][j][2] < bounds[4]) bounds[4] = node[iHex][j][2];
+
+    if(node[iHex][j][0] > bounds[1]) bounds[1] = node[iHex][j][0];
+    if(node[iHex][j][1] > bounds[3]) bounds[3] = node[iHex][j][1];
+    if(node[iHex][j][2] > bounds[5]) bounds[5] = node[iHex][j][2];
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+int RegHexMesh::get_hex(double *pos)
+{
+  potential_cells.clear();
+  tree_->findCell(pos, potential_cells);
+  for(unsigned int i=0; i < potential_cells.size(); ++i) {
+    if(is_inside_hex(potential_cells[i],pos) > 0) {
+      return potential_cells[i];
+    }
   }
 
-  hexahedron->GetBounds(bounds);
+  return -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -453,30 +630,32 @@ inline double RegHexMesh::volume_of_hex(int iHex)
 
 inline int RegHexMesh::is_inside_hex(int iHex,double *pos)
 {
-  vtkNew<vtkHexahedron> hexahedron;
-  hexahedron->GetPointIds()->SetNumberOfIds(8);
-
   for(int i=0; i<8; ++i) {
-    hexahedron->GetPointIds()->SetId(i,i);
     hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
   }
 
-  double *bounds = hexahedron->GetBounds();
-  if(pos[0] < bounds[0] || pos[0] > bounds[1]) return 0; // outside bb of hex
-  if(pos[1] < bounds[2] || pos[1] > bounds[3]) return 0; // outside bb of hex
-  if(pos[2] < bounds[4] || pos[2] > bounds[5]) return 0; // outside bb of hex
-
-  double hexahedronCoords[3], hexahedronWeights[8];
   int subId;
   double dist2 = 0.;
 
   // inside(=1), outside(=0) cell, or (-1) computational problem encountered
-  int result = hexahedron->EvaluatePosition(pos, NULL, subId, hexahedronCoords, dist2, hexahedronWeights);
+  int result = hexahedron->EvaluatePosition(pos, NULL, subId, pCoords, dist2, weights);
   if(result > 0)
     return 1;
-  else if(result < 0) // if in doubt, assume position is inside, cause this function is used to determine
-                      // particles that potentially overlap with newly inserted particles in this region
-    return 1;
+  else if(result < 0) {
+    hexahedron->Triangulate(0, ptIds.GetPointer(), pts.GetPointer()); // generates 5 tetrahedra
+
+    for(int t=0; t<5; ++t) {
+      for(int i=0; i<4; ++i) {
+        tetra->GetPointIds()->SetId(i,ptIds->GetId(4*t+i));
+        tetra->GetPoints()->SetPoint(i,pts->GetPoint(4*t+i));
+      }
+      if(vtkMeshQuality::TetVolume(tetra.GetPointer()) < DBL_MIN)
+        continue;
+      result = tetra->EvaluatePosition(pos, NULL, subId, pCoords, dist2, weights);
+      if(result > 0)
+        return 1;
+    }
+  }
   return 0;
 }
 
@@ -484,11 +663,7 @@ inline int RegHexMesh::is_inside_hex(int iHex,double *pos)
 
 double RegHexMesh::volume_of_hex(double** v)
 {
-  vtkNew<vtkHexahedron> hexahedron;
-  hexahedron->GetPointIds()->SetNumberOfIds(8);
-
   for(int i=0; i<8; ++i) {
-    hexahedron->GetPointIds()->SetId(i,i);
     hexahedron->GetPoints()->SetPoint(i, v[i][0], v[i][1], v[i][2]);
   }
 
