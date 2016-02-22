@@ -87,6 +87,8 @@ FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
   // random number generator, seed is hardcoded
   random_ = new RanPark(lmp,15485863);
 
+  if (strlen(style) > strlen("ave/euler")) return;
+
   // parse args
   if (narg < 6) error->all(FLERR,"Illegal fix ave/euler command");
   int iarg = 3;
