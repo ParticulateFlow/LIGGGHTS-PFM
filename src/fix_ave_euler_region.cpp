@@ -438,6 +438,13 @@ double FixAveEulerRegion::cell_center(int i, int j)
   return region_grid_mesh_hex_->hex_center(i)[j];
 }
 
+/* ---------------------------------------------------------------------- */
+
+void FixAveEulerRegion::cell_bounds(int i, double bounds[6])
+{
+  return region_grid_mesh_hex_->hex_bounds(i, bounds);
+}
+
 /* ----------------------------------------------------------------------
    return I,J array value
    if I exceeds current bins, return 0.0 instead of generating an error

@@ -69,6 +69,7 @@ class FixAveEulerRegion : public FixAveEuler {
   inline double cell_v_max(int i, int j)
   { return v_max_[i][j]; }
 
+  void cell_bounds(int i, double bounds[6]);
 
  private:
 
