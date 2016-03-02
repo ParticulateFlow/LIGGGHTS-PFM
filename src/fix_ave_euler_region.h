@@ -63,11 +63,22 @@ class FixAveEulerRegion : public FixAveEuler {
   inline int cell(int cell_id)
   { return cellid2index_[cell_id]; }
 
+  inline double cell_v_min(int i, int j)
+  { return v_min_[i][j]; }
+
+  inline double cell_v_max(int i, int j)
+  { return v_max_[i][j]; }
+
+
  private:
 
   void setup_bins();
   void bin_atoms();
   void calculate_eu();
+
+  // cell-based min/max velocity
+  double **v_min_;
+  double **v_max_;
 
   char *idregion_grid_;
   class Region *region_grid_;

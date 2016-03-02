@@ -106,6 +106,8 @@ FixAveEulerRegion::FixAveEulerRegion(LAMMPS *lmp, int narg, char **arg) :
 FixAveEulerRegion::~FixAveEulerRegion()
 {
   delete [] idregion_grid_;
+  memory->destroy(v_min_);
+  memory->destroy(v_max_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -209,6 +211,8 @@ void FixAveEulerRegion::setup_bins()
     memory->grow(ncount_,ncells_max_,  "ave/euler:ncount_");
     memory->grow(mass_,ncells_max_,    "ave/euler:mass_");
     memory->grow(stress_,ncells_max_,7,"ave/euler:stress_");
+    memory->grow(v_min_,  ncells_max_,3,"ave/euler:v_min_");
+    memory->grow(v_max_,  ncells_max_,3,"ave/euler:v_max_");
   }
 
   // calculate weight_[icell]
@@ -328,6 +332,8 @@ void FixAveEulerRegion::calculate_eu()
     radius_[icell] = 0.;
     mass_[icell] = 0.;
     vectorZeroizeN(stress_[icell],7);
+    vectorZeroize3D(v_min_[icell]);
+    vectorZeroize3D(v_max_[icell]);
 
     // skip if no particles in cell
 
@@ -345,6 +351,8 @@ void FixAveEulerRegion::calculate_eu()
       radius_[icell] += radius[iatom];
       mass_[icell] += rmass[iatom];
       ncount_[icell]++;
+      vectorComponentMin3D(v_min_[icell],v[iatom],v_min_[icell]);
+      vectorComponentMax3D(v_max_[icell],v[iatom],v_max_[icell]);
     }
   }
 
@@ -355,6 +363,8 @@ void FixAveEulerRegion::calculate_eu()
     MPI_Sum_Vector(radius_,ncells_,world);
     MPI_Sum_Vector(mass_,ncells_,world);
     MPI_Sum_Vector(ncount_,ncells_,world);
+    MPI_Min_Vector(&(v_min_[0][0]),3*ncells_,world);
+    MPI_Max_Vector(&(v_max_[0][0]),3*ncells_,world);
   }
 
   // perform further calculations
@@ -444,6 +454,10 @@ double FixAveEulerRegion::compute_array(int i, int j)
   else if(j == 7) return stress_[i][0];   // 0
   else if(j < 14) return stress_[i][j-7]; // 1 - 6
   else if(j < 15) return radius_[i];
+  else if(j < 18) return v_min_[i][j-15];
+  else if(j < 21) return v_max_[i][j-18];
+  else if(j == 21) return ncount_[i];
+
   else return 0.0;
 }
 
