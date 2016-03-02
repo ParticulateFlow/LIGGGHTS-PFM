@@ -249,8 +249,11 @@ void FixForceControlRegion::post_force(int vflag)
         sp_vec_[0] = pre*target_->cell_stress(tcell, 0)/(target_->cell_count(tcell)*cg3_);// cg
         sp_vec_[1] = pre*target_->cell_stress(tcell, 1)/(target_->cell_count(tcell)*cg3_);// cg
         sp_vec_[2] = pre*target_->cell_stress(tcell, 2)/(target_->cell_count(tcell)*cg3_);// cg
-        /// TODO: get stress directions from region mesh/hex (vector properties stored in vtk file)
-        axis_[0] = axis_[1] = axis_[2] = 1.; // one of 1, -1 or 0
+        // get stress directions from region mesh/hex (vector properties stored in vtk file)
+        double *stress_ctrl_dir = actual_->cell_vector_property(*it_cell, "stress_ctrl_dir");
+        axis_[0] = stress_ctrl_dir[0];
+        axis_[1] = stress_ctrl_dir[1];
+        axis_[2] = stress_ctrl_dir[2];
         break;
       }
     case VELOCITY:
