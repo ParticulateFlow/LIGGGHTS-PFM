@@ -59,7 +59,11 @@ class ExtractSurface : protected Pointers {
 
  private:
   int me;
+  bool binary;
   template<class TReader> vtkDataSet *read_file(const char*filename);
+  void triangulate(int narg, char **arg, vtkDataSet* dset);
+  void extrude(int narg, char **arg, vtkDataSet* dset);
+  bool collinear(double *a, double *b, double *c);
   void extrude_point_via_normal(double x[3], vtkIdType id, vtkDataArray *n, double scale);
 };
 
