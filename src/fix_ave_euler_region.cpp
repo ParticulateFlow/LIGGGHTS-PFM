@@ -415,6 +415,13 @@ void FixAveEulerRegion::calculate_eu()
 
 /* ---------------------------------------------------------------------- */
 
+double FixAveEulerRegion::cell_volume(int i)
+{
+  return region_grid_mesh_hex_->hex_vol(i);
+}
+
+/* ---------------------------------------------------------------------- */
+
 double FixAveEulerRegion::cell_center(int i, int j)
 {
   return region_grid_mesh_hex_->hex_center(i)[j];

@@ -52,6 +52,8 @@ class FixAveEulerRegion : public FixAveEuler {
 
   double compute_array_by_id(int cell_id, int j);
 
+  double cell_volume(int i);
+
   double cell_center(int i, int j);
 
  private:

@@ -57,6 +57,12 @@ class FixAveEuler : public Fix {
 
   int ncells_pack();
 
+  inline int ncells()
+  { return ncells_; }
+
+  virtual double cell_volume(int)
+  { return cell_volume_; }
+
   // inline access functions for cell based values
 
   virtual double cell_center(int i, int j)
@@ -76,6 +82,9 @@ class FixAveEuler : public Fix {
 
   inline double cell_stress(int i,int j)
   { return stress_[i][j+1]; }
+
+  inline int cell_count(int i)
+  { return ncount_[i]; }
 
  protected:
   inline int ntry_per_cell()
