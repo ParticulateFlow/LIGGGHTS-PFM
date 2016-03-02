@@ -445,6 +445,13 @@ void FixAveEulerRegion::cell_bounds(int i, double bounds[6])
   return region_grid_mesh_hex_->hex_bounds(i, bounds);
 }
 
+/* ---------------------------------------------------------------------- */
+
+double* FixAveEulerRegion::cell_vector_property(int i, const char* property)
+{
+  return (*region_grid_mesh_hex_->prop().getElementProperty<VectorContainer<double,3> >(property))(i);
+}
+
 /* ----------------------------------------------------------------------
    return I,J array value
    if I exceeds current bins, return 0.0 instead of generating an error

@@ -71,6 +71,8 @@ class FixAveEulerRegion : public FixAveEuler {
 
   void cell_bounds(int i, double bounds[6]);
 
+  double* cell_vector_property(int i, const char* property);
+
  private:
 
   void setup_bins();
