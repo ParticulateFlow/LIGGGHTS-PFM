@@ -167,6 +167,7 @@ void FixForceControlRegion::post_create()
   for (int icell=0; icell<ncells; ++icell) {
     active_.insert(icell);
   }
+  modifier_.resize(ncells, false);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -257,9 +258,12 @@ void FixForceControlRegion::post_force(int vflag)
         pv_vec_[0] = -actual_->cell_v_av(*it_cell, 0);
         pv_vec_[1] = -actual_->cell_v_av(*it_cell, 1);
         pv_vec_[2] = -actual_->cell_v_av(*it_cell, 2);
-        sp_vec_[0] = -target_->cell_v_av(tcell, 0);
-        sp_vec_[1] = -target_->cell_v_av(tcell, 1);
-        sp_vec_[2] = -target_->cell_v_av(tcell, 2);
+        double massflow_correction = 1.;
+        if (modifier_[tcell] && actual_->cell_vol_fr(*it_cell) > 0.)
+          massflow_correction = target_->cell_vol_fr(tcell)/actual_->cell_vol_fr(*it_cell);
+        sp_vec_[0] = -massflow_correction*target_->cell_v_av(tcell, 0);
+        sp_vec_[1] = -massflow_correction*target_->cell_v_av(tcell, 1);
+        sp_vec_[2] = -massflow_correction*target_->cell_v_av(tcell, 2);
         axis_[0] = axis_[1] = axis_[2] = 1.;
         break;
       }
@@ -401,6 +405,18 @@ int FixForceControlRegion::modify_param(int narg, char **arg)
     } else if (strcmp(arg[0],"deactivate") == 0) {
       while (start_id <= end_id) {
         active_.erase(actual_->cell(start_id));
+        ++start_id;
+      }
+    } else if (strcmp(arg[0],"massflow_correction_on") == 0) {
+      while (start_id <= end_id) {
+        int tcell = target_->cell(start_id);
+        modifier_[tcell] = true;
+        ++start_id;
+      }
+    } else if (strcmp(arg[0],"massflow_correction_off") == 0) {
+      while (start_id <= end_id) {
+        int tcell = target_->cell(start_id);
+        modifier_[tcell] = false;
         ++start_id;
       }
     }

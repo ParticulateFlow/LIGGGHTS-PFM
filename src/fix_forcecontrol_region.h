@@ -33,6 +33,7 @@ FixStyle(forcecontrol/region,FixForceControlRegion)
 
 #include "fix.h"
 #include <set>
+#include <vector>
 
 namespace LAMMPS_NS {
 
@@ -77,6 +78,7 @@ class FixForceControlRegion : public Fix {
   double const_part_;
   double sinesq_part_;
   std::set<int> active_;
+  std::vector<bool> modifier_;
 };
 
 }
