@@ -34,6 +34,7 @@ FixStyle(ave/euler/region,FixAveEulerRegion)
 
 #include "fix_ave_euler.h"
 #include <map>
+#include <vector>
 
 namespace LAMMPS_NS {
 
@@ -56,6 +57,12 @@ class FixAveEulerRegion : public FixAveEuler {
 
   double cell_center(int i, int j);
 
+  inline int cell_id(int i)
+  { return cellid_[i]; }
+
+  inline int cell(int cell_id)
+  { return cellid2index_[cell_id]; }
+
  private:
 
   void setup_bins();
@@ -67,6 +74,7 @@ class FixAveEulerRegion : public FixAveEuler {
   class RegHexMesh *region_grid_mesh_hex_;
 
   std::map<int, int> cellid2index_;
+  std::vector<int> cellid_;
 };
 
 }

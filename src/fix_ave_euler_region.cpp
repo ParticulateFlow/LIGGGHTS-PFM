@@ -133,6 +133,7 @@ void FixAveEulerRegion::post_create()
         if (cellid2index_.find(cell_id) != cellid2index_.end())
           error->warning(FLERR, "Cell ids in hexahedral mesh are not unique!");
         cellid2index_[cell_id] = iHex;
+        cellid_.push_back(cell_id);
       }
     }
   } else {
