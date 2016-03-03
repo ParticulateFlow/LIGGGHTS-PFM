@@ -55,7 +55,6 @@
 
 using namespace LAMMPS_NS;
 
-#define POLYDATA
 /* ---------------------------------------------------------------------- */
 
 ExtrudeSurface::ExtrudeSurface(LAMMPS *lmp) : Pointers(lmp)
