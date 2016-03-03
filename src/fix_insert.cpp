@@ -39,7 +39,7 @@
 #include "memory.h"
 #include "error.h"
 #include "fix_multisphere.h"
-#include "fix_particledistribution_discrete.h"
+#include "fix_particledistribution.h"
 #include "fix_template_sphere.h"
 #include "fix_insert.h"
 #include "math_extra_liggghts.h"
@@ -101,9 +101,9 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
     if(strcmp(arg[iarg],"distributiontemplate") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       int ifix = modify->find_fix(arg[iarg+1]);
-      if(ifix < 0 || strcmp(modify->fix[ifix]->style,"particledistribution/discrete"))
+      if(ifix < 0 || strncmp(modify->fix[ifix]->style,"particledistribution", 20))
         error->fix_error(FLERR,this,"Fix insert requires you to define a valid ID for a fix of type particledistribution/discrete");
-      fix_distribution = static_cast<FixParticledistributionDiscrete*>(modify->fix[ifix]);
+      fix_distribution = static_cast<FixParticledistribution*>(modify->fix[ifix]);
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"maxattempt") == 0) {
@@ -249,13 +249,6 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
   // memory not allocated initially
   ninsert_this_max_local = 0;
 
-  // check for missing or contradictory settings
-  sanity_check();
-
-  //min/max type to be inserted, need that to check if material properties defined for all materials
-  type_max = fix_distribution->max_type();
-  type_min = fix_distribution->min_type();
-
   // allgather arrays
   MPI_Comm_rank(world,&me);
   MPI_Comm_size(world,&nprocs);
@@ -273,15 +266,6 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
 
   print_stats_start_flag = 1;
 
-  // calc max insertion radius
-  int ntypes = atom->ntypes;
-  maxrad = 0.;
-  minrad = 1000.;
-  for(int i = 1; i <= ntypes; i++)
-  {
-     maxrad = MathExtraLiggghts::max(maxrad,max_rad(i));
-     minrad = MathExtraLiggghts::min(minrad,min_rad(i));
-  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -291,6 +275,28 @@ FixInsert::~FixInsert()
   delete random;
   delete [] recvcounts;
   delete [] displs;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsert::post_create()
+{
+  // check for missing or contradictory settings
+  sanity_check();
+
+  //min/max type to be inserted, need that to check if material properties defined for all materials
+  type_max = fix_distribution->max_type();
+  type_min = fix_distribution->min_type();
+
+  // calc max insertion radius
+  int ntypes = atom->ntypes;
+  maxrad = 0.;
+  minrad = 1000.;
+  for(int i = 1; i <= ntypes; i++)
+  {
+     maxrad = MathExtraLiggghts::max(maxrad,max_rad(i));
+     minrad = MathExtraLiggghts::min(minrad,min_rad(i));
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -845,18 +851,21 @@ int FixInsert::load_xnear(int)
 {
   // load up neighbor list with local and ghosts
 
-  double **x = atom->x;
-  double *radius = atom->radius;
-  const int nall = atom->nlocal + atom->nghost;
+  neighList.reset();
+  if(maxrad <= 0.)
+    return 0;
 
   BoundingBox bb = getBoundingBox();
-  neighList.reset();
 
 #ifdef LIGGGHTS_DEBUG
   printf("subdomain bounding box: [%g, %g] x [%g, %g] x [%g, %g]\n", domain->sublo[0], domain->subhi[0], domain->sublo[1], domain->subhi[1], domain->sublo[2], domain->subhi[2]);
 #endif
 
   if(neighList.setBoundingBox(bb, maxrad)) {
+    double **x = atom->x;
+    double *radius = atom->radius;
+    const int nall = atom->nlocal + atom->nghost;
+
     for (int i = 0; i < nall; ++i)
     {
       if (is_nearby(i))

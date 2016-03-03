@@ -1,0 +1,219 @@
+# measure mass flow through mesh surface (broken down to individual faces)
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block -1 1 -1 1 -0.2 1.2 units box
+create_box  1 reg
+
+neighbor    0.002 bin
+neigh_modify    delay 0
+
+
+# material properties required for granular pair styles
+
+fix m1 all property/global youngsModulus peratomtype 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.8
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.05
+
+# pair style
+pair_style gran model hertz tangential history
+pair_coeff * *
+
+timestep   0.00001
+
+fix gravi all gravity 9.81 vector 1.0 1.0 -1.0
+
+extract_surface meshes/test.vtk file meshes/testsurface.vtk meshes/testextrusion.vtk extrude_length 0.1 min_rad 0.025
+
+fix surface all mesh/surface file meshes/testsurface.vtk type 1 verbose yes cell_data yes
+
+fix massflowout all massflow/mesh/face mesh surface count once file post/testmassflow.txt inside_out
+#fix massflowout all massflow/mesh/face mesh surface count multiple file post/testmassflow.txt inside_out
+
+# insertion
+variable d equal 0.02
+create_atoms 1 single -0.55 -0.55 1.1
+create_atoms 1 single -0.65 -0.65 1.1
+create_atoms 1 single -0.45 -0.45 1.1
+create_atoms 1 single -0.45 -0.65 1.1
+create_atoms 1 single -0.65 -0.45 1.1
+set group all density 3000 diameter $d
+
+# apply nve integration
+fix integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic no extra 0
+
+run 1
+
+dump    dmp all custom/vtk 1000 post/massflow*.vtk id type radius x y z vx vy vz fx fy fz
+
+# total amount of atoms passed through each face
+variable totalatomsout1    equal f_massflowout[1][2]
+variable totalatomsout2    equal f_massflowout[2][2]
+variable totalatomsout3    equal f_massflowout[3][2]
+variable totalatomsout4    equal f_massflowout[4][2]
+variable totalatomsout5    equal f_massflowout[5][2]
+variable totalatomsout6    equal f_massflowout[6][2]
+variable totalatomsout7    equal f_massflowout[7][2]
+variable totalatomsout8    equal f_massflowout[8][2]
+variable totalatomsout9    equal f_massflowout[9][2]
+variable totalatomsout10   equal f_massflowout[10][2]
+variable totalatomsout11   equal f_massflowout[11][2]
+variable totalatomsout12   equal f_massflowout[12][2]
+variable totalatomsout13   equal f_massflowout[13][2]
+variable totalatomsout14   equal f_massflowout[14][2]
+variable totalatomsout15   equal f_massflowout[15][2]
+variable totalatomsout16   equal f_massflowout[16][2]
+variable totalatomsout17   equal f_massflowout[17][2]
+variable totalatomsout18   equal f_massflowout[18][2]
+variable totalatomsout19   equal f_massflowout[19][2]
+variable totalatomsout20   equal f_massflowout[20][2]
+variable totalatomsout21   equal f_massflowout[21][2]
+variable totalatomsout22   equal f_massflowout[22][2]
+variable totalatomsout23   equal f_massflowout[23][2]
+variable totalatomsout24   equal f_massflowout[24][2]
+
+# current amount of atoms passed through each face
+variable atomsout1    equal f_massflowout[1][7]
+variable atomsout2    equal f_massflowout[2][7]
+variable atomsout3    equal f_massflowout[3][7]
+variable atomsout4    equal f_massflowout[4][7]
+variable atomsout5    equal f_massflowout[5][7]
+variable atomsout6    equal f_massflowout[6][7]
+variable atomsout7    equal f_massflowout[7][7]
+variable atomsout8    equal f_massflowout[8][7]
+variable atomsout9    equal f_massflowout[9][7]
+variable atomsout10   equal f_massflowout[10][7]
+variable atomsout11   equal f_massflowout[11][7]
+variable atomsout12   equal f_massflowout[12][7]
+variable atomsout13   equal f_massflowout[13][7]
+variable atomsout14   equal f_massflowout[14][7]
+variable atomsout15   equal f_massflowout[15][7]
+variable atomsout16   equal f_massflowout[16][7]
+variable atomsout17   equal f_massflowout[17][7]
+variable atomsout18   equal f_massflowout[18][7]
+variable atomsout19   equal f_massflowout[19][7]
+variable atomsout20   equal f_massflowout[20][7]
+variable atomsout21   equal f_massflowout[21][7]
+variable atomsout22   equal f_massflowout[22][7]
+variable atomsout23   equal f_massflowout[23][7]
+variable atomsout24   equal f_massflowout[24][7]
+
+variable vxout1    equal f_massflowout[1][8]
+variable vxout2    equal f_massflowout[2][8]
+variable vxout3    equal f_massflowout[3][8]
+variable vxout4    equal f_massflowout[4][8]
+variable vxout5    equal f_massflowout[5][8]
+variable vxout6    equal f_massflowout[6][8]
+variable vxout7    equal f_massflowout[7][8]
+variable vxout8    equal f_massflowout[8][8]
+variable vxout9    equal f_massflowout[9][8]
+variable vxout10   equal f_massflowout[10][8]
+variable vxout11   equal f_massflowout[11][8]
+variable vxout12   equal f_massflowout[12][8]
+variable vxout13   equal f_massflowout[13][8]
+variable vxout14   equal f_massflowout[14][8]
+variable vxout15   equal f_massflowout[15][8]
+variable vxout16   equal f_massflowout[16][8]
+variable vxout17   equal f_massflowout[17][8]
+variable vxout18   equal f_massflowout[18][8]
+variable vxout19   equal f_massflowout[19][8]
+variable vxout20   equal f_massflowout[20][8]
+variable vxout21   equal f_massflowout[21][8]
+variable vxout22   equal f_massflowout[22][8]
+variable vxout23   equal f_massflowout[23][8]
+variable vxout24   equal f_massflowout[24][8]
+
+variable vyout1    equal f_massflowout[1][9]
+variable vyout2    equal f_massflowout[2][9]
+variable vyout3    equal f_massflowout[3][9]
+variable vyout4    equal f_massflowout[4][9]
+variable vyout5    equal f_massflowout[5][9]
+variable vyout6    equal f_massflowout[6][9]
+variable vyout7    equal f_massflowout[7][9]
+variable vyout8    equal f_massflowout[8][9]
+variable vyout9    equal f_massflowout[9][9]
+variable vyout10   equal f_massflowout[10][9]
+variable vyout11   equal f_massflowout[11][9]
+variable vyout12   equal f_massflowout[12][9]
+variable vyout13   equal f_massflowout[13][9]
+variable vyout14   equal f_massflowout[14][9]
+variable vyout15   equal f_massflowout[15][9]
+variable vyout16   equal f_massflowout[16][9]
+variable vyout17   equal f_massflowout[17][9]
+variable vyout18   equal f_massflowout[18][9]
+variable vyout19   equal f_massflowout[19][9]
+variable vyout20   equal f_massflowout[20][9]
+variable vyout21   equal f_massflowout[21][9]
+variable vyout22   equal f_massflowout[22][9]
+variable vyout23   equal f_massflowout[23][9]
+variable vyout24   equal f_massflowout[24][9]
+
+variable vzout1    equal f_massflowout[1][10]
+variable vzout2    equal f_massflowout[2][10]
+variable vzout3    equal f_massflowout[3][10]
+variable vzout4    equal f_massflowout[4][10]
+variable vzout5    equal f_massflowout[5][10]
+variable vzout6    equal f_massflowout[6][10]
+variable vzout7    equal f_massflowout[7][10]
+variable vzout8    equal f_massflowout[8][10]
+variable vzout9    equal f_massflowout[9][10]
+variable vzout10   equal f_massflowout[10][10]
+variable vzout11   equal f_massflowout[11][10]
+variable vzout12   equal f_massflowout[12][10]
+variable vzout13   equal f_massflowout[13][10]
+variable vzout14   equal f_massflowout[14][10]
+variable vzout15   equal f_massflowout[15][10]
+variable vzout16   equal f_massflowout[16][10]
+variable vzout17   equal f_massflowout[17][10]
+variable vzout18   equal f_massflowout[18][10]
+variable vzout19   equal f_massflowout[19][10]
+variable vzout20   equal f_massflowout[20][10]
+variable vzout21   equal f_massflowout[21][10]
+variable vzout22   equal f_massflowout[22][10]
+variable vzout23   equal f_massflowout[23][10]
+variable vzout24   equal f_massflowout[24][10]
+
+variable mstep equal step
+
+fix extratotalatoms all print 1000 "${mstep} ${totalatomsout1} ${totalatomsout2} ${totalatomsout3} ${totalatomsout4} ${totalatomsout5} ${totalatomsout6} ${totalatomsout7} ${totalatomsout8} ${totalatomsout9} ${totalatomsout10} ${totalatomsout11} ${totalatomsout12} ${totalatomsout13} ${totalatomsout14} ${totalatomsout15} ${totalatomsout16} ${totalatomsout17} ${totalatomsout18} ${totalatomsout19} ${totalatomsout20} ${totalatomsout21} ${totalatomsout22} ${totalatomsout23} ${totalatomsout24} " screen no title "step totalatomsout" file post/totalatomsout.txt
+
+fix extraatoms all print 1000 "${mstep} ${atomsout1} ${atomsout2} ${atomsout3} ${atomsout4} ${atomsout5} ${atomsout6} ${atomsout7} ${atomsout8} ${atomsout9} ${atomsout10} ${atomsout11} ${atomsout12} ${atomsout13} ${atomsout14} ${atomsout15} ${atomsout16} ${atomsout17} ${atomsout18} ${atomsout19} ${atomsout20} ${atomsout21} ${atomsout22} ${atomsout23} ${atomsout24} " screen no title "step atomsout" file post/atomsout.txt
+
+fix extravx all print 1000 "${mstep} ${vxout1} ${vxout2} ${vxout3} ${vxout4} ${vxout5} ${vxout6} ${vxout7} ${vxout8} ${vxout9} ${vxout10} ${vxout11} ${vxout12} ${vxout13} ${vxout14} ${vxout15} ${vxout16} ${vxout17} ${vxout18} ${vxout19} ${vxout20} ${vxout21} ${vxout22} ${vxout23} ${vxout24} " screen no title "step vxout" file post/vxout.txt
+
+fix extravy all print 1000 "${mstep} ${vyout1} ${vyout2} ${vyout3} ${vyout4} ${vyout5} ${vyout6} ${vyout7} ${vyout8} ${vyout9} ${vyout10} ${vyout11} ${vyout12} ${vyout13} ${vyout14} ${vyout15} ${vyout16} ${vyout17} ${vyout18} ${vyout19} ${vxout20} ${vyout21} ${vyout22} ${vyout23} ${vyout24} " screen no title "step vyout" file post/vyout.txt
+
+fix extravz all print 1000 "${mstep} ${vzout1} ${vzout2} ${vzout3} ${vzout4} ${vzout5} ${vzout6} ${vzout7} ${vzout8} ${vzout9} ${vzout10} ${vzout11} ${vzout12} ${vzout13} ${vzout14} ${vzout15} ${vzout16} ${vzout17} ${vzout18} ${vzout19} ${vzout20} ${vzout21} ${vzout22} ${vzout23} ${vzout24} " screen no title "step vzout" file post/vzout.txt
+
+run		30000
+
+velocity all zero linear 
+unfix gravi
+fix gravi all gravity 9.81 vector -1.0 -1.0 1.0
+
+run		30000
+
+velocity all zero linear 
+unfix gravi
+fix gravi all gravity 9.81 vector 1.0 1.0 -1.0
+
+run		30000
+
+dump e_data all mesh/vtk 1 post/surface*.vtk face_id
+
+run 1

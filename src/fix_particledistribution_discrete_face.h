@@ -22,23 +22,26 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(particledistribution/discrete,FixParticledistributionDiscrete)
+FixStyle(particledistribution/discrete/face,FixParticledistributionDiscreteFace)
 
 #else
 
-#ifndef LMP_FIX_PARTICLEDISTRIBUTION_DISCRETE_H
-#define LMP_FIX_PARTICLEDISTRIBUTION_DISCRETE_H
+#ifndef LMP_FIX_PARTICLEDISTRIBUTION_DISCRETE_FACE_H
+#define LMP_FIX_PARTICLEDISTRIBUTION_DISCRETE_FACE_H
 
+#include <vector>
 #include "fix_particledistribution.h"
 
 
 namespace LAMMPS_NS {
 
-class FixParticledistributionDiscrete : public FixParticledistribution {
+class FixMassflowMeshFace;
+
+class FixParticledistributionDiscreteFace : public FixParticledistribution {
  public:
   friend class FixPourDev;
-  FixParticledistributionDiscrete(class LAMMPS *, int, char **);
-  ~FixParticledistributionDiscrete();
+  FixParticledistributionDiscreteFace(class LAMMPS *, int, char **);
+  ~FixParticledistributionDiscreteFace();
 
   double min_rad(int);
   double max_rad(int);
@@ -53,24 +56,15 @@ class FixParticledistributionDiscrete : public FixParticledistribution {
   void random_init_list(int);
   int randomize_list(int,int,int);     // generate a list of random particles
 
+  std::vector<std::vector<ParticleToInsert*> > pti_list_face_local;
+
   int insert(int n);
-  void finalize_insertion();
 
-  inline int n_particletemplates()
-  { return ntemplates; }
-  inline class FixTemplateSphere** particletemplates()
-  { return templates; }
+  void set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local);
 
-protected:
+ protected:
 
-  // particle templates
-  int ntemplates;
-  double *distweight;
-  double *cumweight;
-  int *parttogen;
-  int *distorder;
-  class FixTemplateSphere **templates;
-
+  void delete_pit_list_face_local();
 };
 
 }

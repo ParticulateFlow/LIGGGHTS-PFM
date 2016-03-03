@@ -5,9 +5,7 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -19,35 +17,31 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#ifndef LMP_INPUT_MESH_TRI_H
-#define LMP_INPUT_MESH_TRI_H
+#if defined(LAMMPS_VTK) //NP do not use #ifdef here (VS C++ bug)
+#ifndef LMP_INPUT_MESH_HEX_H
+#define LMP_INPUT_MESH_HEX_H
 
 #include "stdio.h"
 #include "input.h"
 
 namespace LAMMPS_NS {
 
-class InputMeshTri : protected Input
-{
-  public:
+class InputMeshHex : protected Input {
+ public:
 
-    InputMeshTri(class LAMMPS *, int, char **);
-    ~InputMeshTri();
+  InputMeshHex(class LAMMPS *, int, char **);
+  ~InputMeshHex();
 
-    void meshtrifile(const char *, class TriMesh *, bool verbose, bool read_cell_data=false);
+  void meshhexfile(class RegHexMesh *);
+  void meshhexfile(const char *, class RegHexMesh *, bool verbose, bool read_cell_data=false); // analogon to file(const char *filename)
 
-  private:
-
-    bool verbose_;
-    bool read_cell_data_;
-
-    void meshtrifile_vtk(class TriMesh *);
-    void meshtrifile_stl(class TriMesh *);
-    inline void addTriangle(class TriMesh *mesh,
-         double *a, double *b, double *c,int lineNumber);
-
+ private:
+  void meshhexfile_vtk(class RegHexMesh *);
+  bool verbose_;
+  bool read_cell_data_;
 };
 
 }
 
+#endif
 #endif
