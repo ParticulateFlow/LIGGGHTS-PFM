@@ -57,6 +57,9 @@ class FixAveEulerRegion : public FixAveEuler {
 
   double cell_center(int i, int j);
 
+  inline bool has_cell_id(int cell_id)
+  { return cellid2index_.find(cell_id) != cellid2index_.end(); }
+
   inline int cell_id(int i)
   { return cellid_[i]; }
 
