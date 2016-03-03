@@ -402,24 +402,26 @@ int FixForceControlRegion::modify_param(int narg, char **arg)
 
     if (strcmp(arg[0],"activate") == 0) {
       while (start_id <= end_id) {
-        active_.insert(actual_->cell(start_id));
+        if (actual_->has_cell_id(start_id))
+          active_.insert(actual_->cell(start_id));
         ++start_id;
       }
     } else if (strcmp(arg[0],"deactivate") == 0) {
       while (start_id <= end_id) {
-        active_.erase(actual_->cell(start_id));
+        if (actual_->has_cell_id(start_id))
+          active_.erase(actual_->cell(start_id));
         ++start_id;
       }
     } else if (strcmp(arg[0],"massflow_correction_on") == 0) {
       while (start_id <= end_id) {
-        int tcell = target_->cell(start_id);
-        modifier_[tcell] = true;
+        if (target_->has_cell_id(start_id))
+          modifier_[target_->cell(start_id)] = true;
         ++start_id;
       }
     } else if (strcmp(arg[0],"massflow_correction_off") == 0) {
       while (start_id <= end_id) {
-        int tcell = target_->cell(start_id);
-        modifier_[tcell] = false;
+        if (target_->has_cell_id(start_id))
+          modifier_[target_->cell(start_id)] = false;
         ++start_id;
       }
     }
