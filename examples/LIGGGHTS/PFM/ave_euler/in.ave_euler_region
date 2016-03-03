@@ -1,0 +1,73 @@
+# ave/euler/region example
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block -0.5 0.5 -0.5 0.5 0.0 1.5 units box
+create_box  1 reg
+
+neighbor    0.025 bin
+neigh_modify delay 0
+
+# material properties required for pair styles
+
+fix m1 all property/global youngsModulus peratomtype 5.e7
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.7
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.05
+
+# pair style
+pair_style  gran model hertz tangential history #Hertzian without cohesion
+pair_coeff  * *
+
+timestep    0.000005
+
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix xwalls1 all wall/gran model hertz tangential history primitive type 1 xplane -0.5
+fix xwalls2 all wall/gran model hertz tangential history primitive type 1 xplane  0.5
+fix ywalls1 all wall/gran model hertz tangential history primitive type 1 yplane -0.5
+fix ywalls2 all wall/gran model hertz tangential history primitive type 1 yplane  0.5
+fix zwalls1 all wall/gran model hertz tangential history primitive type 1 zplane  0.0
+
+# region and insertion
+variable r equal 0.04
+region ave_reg mesh/hex file meshes/test.vtk scale 1. move 0. 0. 0. rotate 0. 0. 0. units box
+region ins_reg block -0.5 0.5 -0.5 0.5 1.3 1.5 units box
+
+fix pts1 all particletemplate/sphere 33331 atom_type 1 density constant 2000 radius constant ${r}
+fix pdd1 all particledistribution/discrete 5331 1 pts1 1.0
+
+fix ins all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. -0.1 &
+    insert_every 2000 overlapcheck yes all_in no volumefraction_region 0.3 region ins_reg
+
+# stress computation
+fix stress all ave/euler/region nevery 10 region ave_reg
+
+# apply nve integration
+fix integr all nve/sphere
+
+# output settings, include total thermal energy
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke vol
+thermo          2000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+# insert the first particles so that dump is not empty
+run 1
+dump dmp all custom/vtk 2000 post/ave_euler_region*.vtk id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+dump dmpstress all euler/vtk 2000 post/stress_ave_euler_region*.vtk
+
+run 250000
+
+unfix ins
+
+run 150000
+

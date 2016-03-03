@@ -46,20 +46,26 @@ class FixAveEuler : public Fix {
   FixAveEuler(class LAMMPS *, int, char **);
   ~FixAveEuler();
 
-  void post_create();
-  int setmask();
-  void init();
+  virtual void post_create();
+  virtual int setmask();
+  virtual void init();
   void setup(int vflag);
 
   void end_of_step();
 
-  double compute_array(int i, int j);
+  virtual double compute_array(int i, int j);
 
   int ncells_pack();
 
+  inline int ncells()
+  { return ncells_; }
+
+  virtual double cell_volume(int)
+  { return cell_volume_; }
+
   // inline access functions for cell based values
 
-  inline double cell_center(int i, int j)
+  virtual double cell_center(int i, int j)
   { return center_[i][j]; }
 
   inline double cell_v_av(int i, int j)
@@ -77,17 +83,21 @@ class FixAveEuler : public Fix {
   inline double cell_stress(int i,int j)
   { return stress_[i][j+1]; }
 
- private:
+  inline int cell_count(int i)
+  { return ncount_[i]; }
 
+ protected:
   inline int ntry_per_cell()
   { return 50; }
 
-  void setup_bins();
-  void bin_atoms();
-  void calculate_eu();
+ private:
+  virtual void setup_bins();
+  virtual void bin_atoms();
+  virtual void calculate_eu();
   void allreduce();
   inline int coord2bin(double *x); //NP modified A.A.
 
+ protected:
   bool parallel_;
 
   int exec_every_;
