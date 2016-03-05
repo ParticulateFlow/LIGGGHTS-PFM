@@ -309,7 +309,7 @@ double FixInsertPackFace::insertion_fraction()
     fraction_face_local[i] /= fraction_face_all[i];
   }
 
-    return region_volume_local/region_volume;
+  return region_volume_local/region_volume;
 }
 
 /* ---------------------------------------------------------------------- */
