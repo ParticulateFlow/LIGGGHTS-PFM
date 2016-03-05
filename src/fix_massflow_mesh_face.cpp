@@ -926,8 +926,8 @@ double FixMassflowMeshFace::compute_vector(int index)
         return cg3_*static_cast<double>(nparticles_-nparticles_last_);
     case 7:
 #ifdef FAVRE_AVERAGED
-        if (mass_ > 0.)
-            return average_vx_out_/mass_;
+        if (mass_ > mass_last_)
+            return average_vx_out_/(mass_-mass_last_);
 #else
         if (nparticles_ > nparticles_last_)
             return average_vx_out_/(nparticles_-nparticles_last_);
@@ -935,8 +935,8 @@ double FixMassflowMeshFace::compute_vector(int index)
         return 0.;
     case 8:
 #ifdef FAVRE_AVERAGED
-        if (mass_ > 0.)
-            return average_vy_out_/mass_;
+        if (mass_ > mass_last_)
+            return average_vy_out_/(mass_-mass_last_);
 #else
         if (nparticles_ > nparticles_last_)
             return average_vy_out_/(nparticles_-nparticles_last_);
@@ -944,8 +944,8 @@ double FixMassflowMeshFace::compute_vector(int index)
         return 0.;
     case 9:
 #ifdef FAVRE_AVERAGED
-        if (mass_ > 0.)
-            return average_vz_out_/mass_;
+        if (mass_ > mass_last_)
+            return average_vz_out_/(mass_-mass_last_);
 #else
         if (nparticles_ > nparticles_last_)
             return average_vz_out_/(nparticles_-nparticles_last_);
@@ -987,28 +987,28 @@ double FixMassflowMeshFace::compute_array(int i, int j)
       return cg3_*static_cast<double>(nparticles_face_[i]-nparticles_face_last_[i]);
   case 7:
 #ifdef FAVRE_AVERAGED
-      if (mass_face_[i] > 0.)
-          return average_vx_face_out_[i]/mass_face_[i];
+      if (mass_face_[i] > mass_face_last_[i])
+          return average_vx_face_out_[i]/(mass_face_[i]-mass_face_last_[i]);
 #else
-      if (nparticles_face_[i]-nparticles_face_last_[i])
+      if (nparticles_face_[i] > nparticles_face_last_[i])
           return average_vx_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
 #endif
       return 0.;
   case 8:
 #ifdef FAVRE_AVERAGED
-      if (mass_face_[i] > 0.)
-          return average_vy_face_out_[i]/mass_face_[i];
+      if (mass_face_[i] > mass_face_last_[i])
+          return average_vy_face_out_[i]/(mass_face_[i]-mass_face_last_[i]);
 #else
-      if (nparticles_face_[i]-nparticles_face_last_[i])
+      if (nparticles_face_[i] > nparticles_face_last_[i])
           return average_vy_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
 #endif
       return 0.;
   case 9:
 #ifdef FAVRE_AVERAGED
-      if (mass_face_[i] > 0.)
-          return average_vz_face_out_[i]/mass_face_[i];
+      if (mass_face_[i] > mass_face_last_[i])
+          return average_vz_face_out_[i]/(mass_face_[i]-mass_face_last_[i]);
 #else
-      if (nparticles_face_[i]-nparticles_face_last_[i])
+      if (nparticles_face_[i] > nparticles_face_last_[i])
           return average_vz_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
 #endif
       return 0.;

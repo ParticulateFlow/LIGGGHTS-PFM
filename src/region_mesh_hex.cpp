@@ -106,8 +106,8 @@ class AABBNode {
         for(unsigned int i=1; i<leftsubnodes.size(); ++i) {
           mesh->hex_bounds(leftsubnodes[i], bounds);
           left_->grow(bounds);
-          left_->build(mesh, leftsubnodes);
         }
+        left_->build(mesh, leftsubnodes);
       }
     }
 
@@ -120,8 +120,8 @@ class AABBNode {
         for(unsigned int i=1; i<rightsubnodes.size(); ++i) {
           mesh->hex_bounds(rightsubnodes[i], bounds);
           right_->grow(bounds);
-          right_->build(mesh, rightsubnodes);
         }
+        right_->build(mesh, rightsubnodes);
       }
     }
   }

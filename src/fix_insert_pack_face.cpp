@@ -309,7 +309,7 @@ double FixInsertPackFace::insertion_fraction()
     fraction_face_local[i] /= fraction_face_all[i];
   }
 
-    return region_volume_local/region_volume;
+  return region_volume_local/region_volume;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -365,6 +365,8 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
 
   me = comm->me;
   nprocs = comm->nprocs;
+
+  insertion_fraction();
 
   // for exact_number==1 have to allgather to exactly match ninsert_this
 
