@@ -366,6 +366,8 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
   me = comm->me;
   nprocs = comm->nprocs;
 
+  insertion_fraction();
+
   // for exact_number==1 have to allgather to exactly match ninsert_this
 
   int nfaces = fraction_face_local.size();
