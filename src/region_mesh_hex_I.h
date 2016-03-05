@@ -47,7 +47,6 @@ inline void pcoords_to_cart(int iHex, double *pcoords, double *pos)
     /*vtkHexahedron::EvaluateLocation(int& vtkNotUsed(subId), double pcoords[3],
                                        double x[3], double *weights)*/
     hexahedron->EvaluateLocation(subId, pcoords, pos, weights);
-    hexahedron->Delete();
 }
 
 
