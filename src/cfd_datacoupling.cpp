@@ -130,6 +130,8 @@ void CfdDatacoupling::pull(const char *name, const char *type, void *&, const ch
         {
             found = 1;
             pullinvoked_[i] = 1;
+            // TL:
+            // pullednow_[i] = 1;
         }
         // name matches, but type not
         else if(strcmp(name,pullnames_[i]) == 0)
@@ -164,6 +166,8 @@ void CfdDatacoupling::push(const char *name, const char *type, void *&, const ch
         {
             found = 1;
             pushinvoked_[i] = 1;
+            // TL:
+            // pushednow_[i] = 1;
         }
         // name matches, but type not
         else if(strcmp(name,pushnames_[i]) == 0)
@@ -327,3 +331,36 @@ void CfdDatacoupling::allocate_external(double**&, int, const char *, double)
 {
     error->all(FLERR,"CFD datacoupling setting used in LIGGGHTS is incompatible with setting in OF");
 }
+
+/* ----------------------------------------------------------------------
+   check if property has been recently pulled/pushed
+------------------------------------------------------------------------- */
+/*
+int* CfdDatacoupling::pushednow(const char *name)
+{
+    for(int i = 0; i < npush_; i++)
+    {
+        if(strcmp(name,pushnames_[i]) == 0)
+        {
+            return &pushednow_[i]
+        }
+    }
+    if(comm->me == 0 && screen)
+        fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::pushednow(const char *name).\n",name);
+    lmp->error->all(FLERR,"This error is fatal");
+}
+
+int* CfdDatacoupling::pullednow(const char *name)
+{
+    for(int i = 0; i < npull_; i++)
+    {
+        if(strcmp(name,pullnames_[i]) == 0)
+        {
+            return &pullednow_[i]
+        }
+    }
+    if(comm->me == 0 && screen)
+        fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::pullednow(const char *name).\n",name);
+    lmp->error->all(FLERR,"This error is fatal");
+}
+*/
