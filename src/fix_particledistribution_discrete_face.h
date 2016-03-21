@@ -58,6 +58,8 @@ class FixParticledistributionDiscreteFace : public FixParticledistribution {
 
   std::vector<std::vector<ParticleToInsert*> > pti_list_face_local;
 
+  void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0.);
+
   int insert(int n);
 
   void set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local);

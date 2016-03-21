@@ -41,6 +41,7 @@
 #include "fix_multisphere.h"
 #include "fix_particledistribution.h"
 #include "fix_template_sphere.h"
+#include "fix_property_atom.h"
 #include "fix_insert.h"
 #include "math_extra_liggghts.h"
 #include "mpi_liggghts.h"
@@ -163,6 +164,14 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
       else error->fix_error(FLERR,this,"");
       iarg += 2;
       hasargs = true;
+    } else if (strcmp(arg[iarg],"set_property") == 0) {
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"");
+      int n = strlen(arg[iarg+1]) + 1;
+      property_name = new char[n];
+      strcpy(property_name,arg[iarg+1]);
+      fix_property_value = force->numeric(FLERR,arg[iarg+2]);
+      iarg += 3;
+      hasargs = true;
     } else if (strcmp(arg[iarg],"random_distribute") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       if(strcmp(arg[iarg+1],"uncorrelated")==0) exact_number = 0;
@@ -275,6 +284,7 @@ FixInsert::~FixInsert()
   delete random;
   delete [] recvcounts;
   delete [] displs;
+  delete [] property_name;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -375,6 +385,10 @@ void FixInsert::init_defaults()
 
   print_stats_during_flag = 1;
   warn_boxentent = true;
+
+  property_name = 0;
+  fix_property = 0;
+  fix_property_value = 0.;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -483,6 +497,12 @@ void FixInsert::init()
     // in case of new fix insert in a restarted simulation, have to add current time-step
     if(next_reneighbor > 0 && next_reneighbor < ntimestep)
         error->fix_error(FLERR,this,"'start' step can not be before current step");
+
+    if(property_name)
+    {
+        fix_property = static_cast<FixPropertyAtom*>(modify->find_fix_property(property_name,"property/atom","scalar",1,1,this->style,true));
+    }
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -524,6 +544,8 @@ double FixInsert::max_r_bound()
 
 double FixInsert::extend_cut_ghost()
 {
+    if(!fix_multisphere)
+        return 0.;
     //NP this is to extend ghost region
     return 2.*fix_distribution->max_r_bound();
 }
@@ -672,7 +694,7 @@ void FixInsert::pre_exchange()
 
   // actual particle insertion
 
-  fix_distribution->pre_insert();
+  fix_distribution->pre_insert(ninserted_this_local,fix_property,fix_property_value);
 
   //NP pti list is body list, so use ninserted_this as arg
   ninserted_spheres_this_local = fix_distribution->insert(ninserted_this_local);

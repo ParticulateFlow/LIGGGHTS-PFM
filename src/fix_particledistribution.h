@@ -36,6 +36,7 @@ enum{RAN_STYLE_CONSTANT_FPD,RAN_STYLE_UNIFORM_FPD,RAN_STYLE_GAUSSIAN_FPD};
 namespace LAMMPS_NS {
 
 class ParticleToInsert;
+class FixPropertyAtom;
 
 class FixParticledistribution : public Fix {
  public:
@@ -77,7 +78,7 @@ class FixParticledistribution : public Fix {
   class ParticleToInsert **pti_list;
   int n_pti, n_pti_max;
 
-  virtual void pre_insert();
+  virtual void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0.);
   virtual int insert(int n);
   virtual void finalize_insertion();
 

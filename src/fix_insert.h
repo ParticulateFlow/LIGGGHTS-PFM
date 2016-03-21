@@ -39,6 +39,8 @@
 
 namespace LAMMPS_NS {
 
+class FixPropertyAtom;
+
 class FixInsert : public Fix {
  public:
   FixInsert(class LAMMPS *, int, char **);
@@ -188,6 +190,10 @@ class FixInsert : public Fix {
   void generate_random_velocity(double * velocity);
 
  private:
+
+  char *property_name;
+  FixPropertyAtom *fix_property;
+  double fix_property_value;
 
   bool setup_flag;
 

@@ -32,7 +32,7 @@
 #include "domain.h"
 #include "atom.h"
 #include "atom_vec.h"
-#include "fix.h"
+#include "fix_property_atom.h"
 #include "vector_liggghts.h"
 #include "math_extra_liggghts.h"
 #include "modify.h"
@@ -50,6 +50,9 @@ ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) : Pointers(lmp)
 
         atom_type_vector = new int[nspheres];
         atom_type_vector_flag = false;
+
+        fix_property = 0;
+        fix_property_value = 0.;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -93,9 +96,14 @@ int ParticleToInsert::insert()
                 atom->density[m] = density_ins;
                 atom->rmass[m] = mass_ins;
 
-                //pre_set_arrays() called above
+                //pre_set_arrays() called via FixParticleDistribution
                 for (int j = 0; j < nfix; j++)
-                   if (fix[j]->create_attribute) fix[j]->set_arrays(m);
+                    if (fix[j]->create_attribute) fix[j]->set_arrays(m);
+
+                // apply fix property setting coming from fix insert
+                // this overrides the set_arrays call above
+                if(fix_property)
+                    fix_property->vector_atom[m] = fix_property_value;
         //}
     }
     

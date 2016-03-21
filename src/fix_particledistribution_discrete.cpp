@@ -376,6 +376,26 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
 }
 
 /* ----------------------------------------------------------------------
+   preparations before insertion
+------------------------------------------------------------------------- */
+
+void FixParticledistributionDiscrete::pre_insert(int n, FixPropertyAtom *fp, double val)
+{
+    FixParticledistribution::pre_insert();
+
+    // set fix property as desired by fix insert
+    // loop to n, not n_pti
+    if(fp)
+    {
+        for(int i = 0; i < n; i++)
+        {
+            pti_list[i]->fix_property = fp;
+            pti_list[i]->fix_property_value = val;
+        }
+    }
+}
+
+/* ----------------------------------------------------------------------
    set particle properties - only pti needs to know which properties to set
    loop to n, not n_pti, since not all particles may have been inserted
 ------------------------------------------------------------------------- */

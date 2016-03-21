@@ -35,6 +35,8 @@
 using namespace LAMMPS_NS;
 
 namespace LAMMPS_NS {
+    class FixPropertyAtom;
+
     class ParticleToInsert : protected Pointers
     {
      public:
@@ -71,6 +73,10 @@ namespace LAMMPS_NS {
         //NP   rigid body constraint afterwards
         double v_ins[3];
         double omega_ins[3];
+
+        // value of a fix property/atom at insertion
+        FixPropertyAtom *fix_property;
+        double fix_property_value;
 
         virtual int insert();
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
