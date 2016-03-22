@@ -168,7 +168,7 @@ int FixParticledistributionDiscreteFace::randomize_list(int ntotal,int insert_gr
    preparations before insertion
 ------------------------------------------------------------------------- */
 
-void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp, double val)
+void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp, double val, int idx, int ival)
 {
   FixParticledistribution::pre_insert();
 
@@ -183,6 +183,20 @@ void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp,
       {
         (*it_pti)->fix_property = fp;
         (*it_pti)->fix_property_value = val;
+      }
+    }
+  }
+  else if(idx >= 0)
+  {
+    std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+    for(; it_face!=pti_list_face_local.end(); it_face++)
+    {
+      std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+      for(; it_pti!=it_face->end(); it_pti++)
+      {
+        (*it_pti)->property_index = idx;
+        (*it_pti)->fix_property_value = val;
+        (*it_pti)->fix_property_ivalue = ival;
       }
     }
   }

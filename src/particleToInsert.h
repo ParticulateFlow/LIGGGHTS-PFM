@@ -77,6 +77,8 @@ namespace LAMMPS_NS {
         // value of a fix property/atom at insertion
         FixPropertyAtom *fix_property;
         double fix_property_value;
+        int fix_property_ivalue;
+        int property_index;
 
         virtual int insert();
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);

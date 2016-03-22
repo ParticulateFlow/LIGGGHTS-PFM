@@ -379,7 +379,7 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
    preparations before insertion
 ------------------------------------------------------------------------- */
 
-void FixParticledistributionDiscrete::pre_insert(int n, FixPropertyAtom *fp, double val)
+void FixParticledistributionDiscrete::pre_insert(int n, FixPropertyAtom *fp, double val, int idx, int ival)
 {
     FixParticledistribution::pre_insert();
 
@@ -391,6 +391,15 @@ void FixParticledistributionDiscrete::pre_insert(int n, FixPropertyAtom *fp, dou
         {
             pti_list[i]->fix_property = fp;
             pti_list[i]->fix_property_value = val;
+        }
+    }
+    else if(idx >= 0)
+    {
+        for(int i = 0; i < n; i++)
+        {
+            pti_list[i]->property_index = idx;
+            pti_list[i]->fix_property_value = val;
+            pti_list[i]->fix_property_ivalue = ival;
         }
     }
 }

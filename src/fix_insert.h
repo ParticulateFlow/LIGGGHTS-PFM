@@ -194,6 +194,8 @@ class FixInsert : public Fix {
   char *property_name;
   FixPropertyAtom *fix_property;
   double fix_property_value;
+  int fix_property_ivalue;
+  int property_index;
 
   bool setup_flag;
 
