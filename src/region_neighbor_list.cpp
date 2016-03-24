@@ -25,6 +25,7 @@
 #include "lmptype.h"
 #include "mpi.h"
 #include "bounding_box.h"
+#include "neighbor.h"
 #include "region_neighbor_list.h"
 #include <limits>
 #include "assert.h"
@@ -40,7 +41,7 @@ using namespace std;
 /**
  * @brief Default constructor which will create an empty neighbor list
  */
-RegionNeighborList::RegionNeighborList() {
+RegionNeighborList::RegionNeighborList(LAMMPS *lmp) : Pointers(lmp) {
 }
 
 
@@ -48,9 +49,10 @@ RegionNeighborList::RegionNeighborList() {
  * @brief Determine if the given particle overlaps with any particle in this neighbor list
  * @param x        position of particle to check
  * @param radius   radius of particle to check
+ * @param type     type of particle to check
  * @return true if particle has an overlap with a particle in this neighbor list, false otherwise
  */
-bool RegionNeighborList::hasOverlap(double * x, double radius) const {
+bool RegionNeighborList::hasOverlap(double * x, double radius, int type) const {
   int ibin = coord2bin(x);
 
   for(std::vector<int>::const_iterator it = stencil.begin(); it != stencil.end(); ++it) {
@@ -60,6 +62,7 @@ bool RegionNeighborList::hasOverlap(double * x, double radius) const {
 
     for(ParticleBin::const_iterator pit = bin.begin(); pit != bin.end(); ++pit) {
       const Particle & p = *pit;
+      if(type_exclusion(type, p.type)) continue;
       double del[3];
       vectorSubtract3D(x, p.x, del);
       const double rsq = vectorMag3DSquared(del);
@@ -73,15 +76,27 @@ bool RegionNeighborList::hasOverlap(double * x, double radius) const {
 
 
 /**
+ * @brief Test if pair i,j is excluded from neighbor list due to type setting from neigh_modify command
+ * @param itype    type of particle i
+ * @param jtype    type of particle j
+ * @return true if pair should be excluded, false if included
+ */
+bool RegionNeighborList::type_exclusion(int itype, int jtype) const {
+  return neighbor->exclude_setting() && neighbor->nex_type && neighbor->ex_type[itype][jtype];
+}
+
+
+/**
  * @brief Insert a new particle into neighbor list
  * @param x        position in 3D
  * @param radius   particle radius
+ * @param type     particle type
  */
-void RegionNeighborList::insert(double * x, double radius) {
+void RegionNeighborList::insert(double * x, double radius, int type) {
   int ibin = coord2bin(x);
   assert(ibin >= 0 && static_cast<size_t>(ibin) <= bins.size());
 
-  bins[ibin].push_back(Particle(x, radius));
+  bins[ibin].push_back(Particle(x, radius, type));
   ++ncount;
 }
 

@@ -28,6 +28,7 @@
 #include <vector>
 #include "vector_liggghts.h"
 #include "bounding_box.h"
+#include "pointers.h"
 
 namespace LIGGGHTS {
 
@@ -37,10 +38,12 @@ namespace LIGGGHTS {
 struct Particle {
   double x[3];
   double radius;
+  int type;
 
-  Particle(double * pos, double rad) {
+  Particle(double * pos, double rad, int type) {
     LAMMPS_NS::vectorCopy3D(pos, x);
     radius = rad;
+    this->type = type;
   }
 };
 
@@ -52,7 +55,7 @@ struct Particle {
  * Instead of accessing internal data structures directly, manipulations and queries
  * can only occur through the given interface.
  */
-class RegionNeighborList
+class RegionNeighborList : protected LAMMPS_NS::Pointers
 {
   typedef std::vector<Particle> ParticleBin;
 
@@ -72,12 +75,13 @@ class RegionNeighborList
 
   double bin_distance(int i, int j, int k);
   int coord2bin(double *x) const;
+  bool type_exclusion(int itype, int jtype) const;
 
 public:
-    RegionNeighborList();
+    RegionNeighborList(LAMMPS_NS::LAMMPS *lmp);
 
-    bool hasOverlap(double * x, double radius) const;
-    void insert(double * x, double radius);
+    bool hasOverlap(double * x, double radius, int type) const;
+    void insert(double * x, double radius, int type);
     size_t count() const;
     void reset();
     bool setBoundingBox(LAMMPS_NS::BoundingBox & bb, double maxrad);

@@ -60,7 +60,8 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
-  Fix(lmp, narg, arg)
+  Fix(lmp, narg, arg),
+  neighList(lmp)
 {
   if (narg < 7) error->fix_error(FLERR,this,"not enough arguments");
 
@@ -921,13 +922,14 @@ int FixInsert::load_xnear(int)
   if(neighList.setBoundingBox(bb, maxrad)) {
     double **x = atom->x;
     double *radius = atom->radius;
+    int *type = atom->type;
     const int nall = atom->nlocal + atom->nghost;
 
     for (int i = 0; i < nall; ++i)
     {
       if (is_nearby(i))
       {
-        neighList.insert(x[i], radius[i]);
+        neighList.insert(x[i], radius[i], type[i]);
       }
     }
   }
