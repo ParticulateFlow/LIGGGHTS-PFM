@@ -132,7 +132,9 @@ void ExtrudeSurface::command(int narg, char **arg)
       for(int i = 0; i < ncells; ++i) {
         cellData->InsertNextValue(i);
       }
+#if VTK_MAJOR_VERSION < 6
       dset->Update(); // force an update so we can set cell data
+#endif
       dset->GetCellData()->SetScalars(cellData);
     }
 
@@ -215,8 +217,13 @@ void ExtrudeSurface::extrude(int /*narg*/, char **arg, vtkDataSet* dset)
 #endif
   skinNormals->SetFeatureAngle(1.0);
 
+#if VTK_MAJOR_VERSION < 6
   vtkPolyData *input = skinNormals->GetOutput();
   input->Update();
+#else
+  skinNormals->Update();
+  vtkPolyData *input = skinNormals->GetOutput();
+#endif
 
   vtkIdType numPts, numCells;
 

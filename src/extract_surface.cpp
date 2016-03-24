@@ -126,7 +126,9 @@ void ExtractSurface::command(int narg, char **arg)
       for(int i = 0; i < ncells; ++i) {
         cellData->InsertNextValue(i);
       }
+#if VTK_MAJOR_VERSION < 6
       ugrid->Update(); // force an update so we can set cell data
+#endif
       ugrid->GetCellData()->SetScalars(cellData);
     }
 
@@ -149,7 +151,9 @@ void ExtractSurface::command(int narg, char **arg)
     for (int i = 0; i < ncells; ++i) {
       cellData->InsertNextValue(i);
     }
+#if VTK_MAJOR_VERSION < 6
     polyData->Update(); // force an update so we can set cell data
+#endif
     polyData->GetCellData()->AddArray(cellData);
 
     // triangulate surface
@@ -163,8 +167,13 @@ void ExtractSurface::command(int narg, char **arg)
     skinNormals->SetFeatureAngle(1.0);
     skinNormals->SetInputConnection(surfaceFilter->GetOutputPort());
 
+#if VTK_MAJOR_VERSION < 6
     vtkPolyData *input = skinNormals->GetOutput();
     input->Update();
+#else
+    skinNormals->Update();
+    vtkPolyData *input = skinNormals->GetOutput();
+#endif
 
     vtkIdType numCells = input->GetNumberOfCells();
     if(!ugrid->GetCellData()->HasArray("stress_ctrl_dir")) {
@@ -176,7 +185,9 @@ void ExtractSurface::command(int narg, char **arg)
       for(int i = 0; i < ncells; ++i) {
         normalsArray->SetTuple(i, nullvec) ;
       }
+#if VTK_MAJOR_VERSION < 6
       ugrid->Update();
+#endif
       ugrid->GetCellData()->SetVectors(normalsArray);
 
       vtkSmartPointer<vtkIntArray> surfcellids = vtkIntArray::SafeDownCast(input->GetCellData()->GetScalars("cell_id"));
@@ -289,7 +300,6 @@ void ExtractSurface::extrude(int /*narg*/, char **arg, vtkDataSet* dset)
   const double scale_in = atom_radius-ScaleFactor;
 
   vtkPolyData *input = vtkPolyData::SafeDownCast(dset);
-  input->Update();
 
   vtkIdType numPts, numCells;
 
