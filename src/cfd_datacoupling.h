@@ -58,6 +58,7 @@ class CfdDatacoupling : protected Pointers {
   void check_datatransfer();
 
   // TL:
+  // to be used in fix_cfd_coupling_chemistry: if pushednow(m_i)==1 {reset m_i, pushednow(m_i)==0}
   // int *pushednow(const char *name);
   // int *pullednow(const char *name);
 
