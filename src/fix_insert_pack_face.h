@@ -81,6 +81,7 @@ class FixInsertPackFace : public FixInsert {
   // warn if region extends outside box
   bool warn_region;
   double cg_, cg3_;
+  int type_offset;
   std::map<int, double> remaining_ptis;
   std::vector<double> fraction_face_local;
   std::vector<double> min_face_extent_local;

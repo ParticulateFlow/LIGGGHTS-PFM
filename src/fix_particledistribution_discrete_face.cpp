@@ -73,9 +73,10 @@ void FixParticledistributionDiscreteFace::delete_pit_list_face_local()
 
 /* ----------------------------------------------------------------------*/
 
-void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local, double cg)
+void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local, double cg, int type_offset)
 {
   // TODO: cg = force->cg() can be used when differently resolved levels are separate simulations -> remove parameter
+  //       also, type_offset will be 0 in that case
   delete_pit_list_face_local();
 
   n_pti_max = 0;
@@ -99,8 +100,9 @@ void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMesh
     DiscreteParticleDistribution::const_iterator it_dist = distributions[iface].begin();
     for(int idist=0; it_dist!=distributions[iface].end(); ++it_dist, ++idist)
     {
-      if(it_dist->first.atomtype_ > maxtype) maxtype = it_dist->first.atomtype_;
-      else if (it_dist->first.atomtype_ < mintype)  mintype = it_dist->first.atomtype_;
+      int type = it_dist->first.atomtype_ + type_offset;
+      if(type > maxtype) maxtype = type;
+      else if (type < mintype)  mintype = type;
 
       double radius = it_dist->first.radius_ * cg;
       if(radius > maxrad) maxrad = radius;
@@ -110,7 +112,7 @@ void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMesh
       for(int itemplate=0; itemplate<ntemplates_to_insert; ++itemplate)
       {
         pti = new ParticleToInsert(lmp);
-        pti->atom_type = it_dist->first.atomtype_;
+        pti->atom_type = type;
         pti->radius_ins[0] =  pti->r_bound_ins = radius;
         pti->density_ins = it_dist->first.density_;
         pti->volume_ins = radius * radius * radius * 4.*M_PI/3.;

@@ -108,6 +108,11 @@ FixInsertPackFace::FixInsertPackFace(LAMMPS *lmp, int narg, char **arg) :
       cg3_ = cg_*cg_*cg_;
       iarg += 2;
       hasargs = true;
+    } else if (strcmp(arg[iarg],"type_offset") == 0) { // TODO: remove when cg and fg are separate simulations -> same type numbers
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
+      type_offset = atoi(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
     } else if (strcmp(style,"insert/pack/face") == 0) {
       error->fix_error(FLERR,this,"unknown keyword");
     }
@@ -182,6 +187,7 @@ void FixInsertPackFace::init_defaults()
   warn_region = true;
   cg_ = 1.0;
   cg3_ = 1.0;
+  type_offset = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -465,7 +471,7 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
 
   // send result to each proc
   FixParticledistributionDiscreteFace *fix_pddf = (FixParticledistributionDiscreteFace*)fix_distribution;
-  fix_pddf->set_distribution_local(massflowface, distributions_face_local_all[me], cg_);
+  fix_pddf->set_distribution_local(massflowface, distributions_face_local_all[me], cg_, type_offset);
   maxrad = std::max(maxrad, fix_pddf->max_rad());
 
   delete [] fraction_face_local_all;
