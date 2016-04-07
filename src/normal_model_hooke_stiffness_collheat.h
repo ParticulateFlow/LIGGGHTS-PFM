@@ -140,8 +140,10 @@ namespace ContactModels
       double * const contflag = &cdata.contact_history[history_offset];
       
       // check how contflag[0] is initialized!!!
+
       if (contflag[0]<0.5)
       {
+        Temp = fix_temp->vector_atom;
 	const int i = cdata.i;
         const int j = cdata.j;
         const int itype = cdata.itype;
@@ -164,14 +166,14 @@ namespace ContactModels
 	
 	const double Ac = M_PI*0.9745*pow(meff/Yeff[itype][jtype],0.4)*pow(reff*vrel,0.8);
 	const double tc = 2.87*pow(meff/Yeff[itype][jtype],0.4)*pow(reff*vrel,-0.2);
-	
+
 	const double numerator = 0.87 * (Temp[i] - Temp[j]) * Ac * sqrt(tc);
 	const double denominator = 1.0/sqrt(densityi*ci*kappai) + 1.0/sqrt(densityj*cj*kappaj);
 	const double qc = numerator/denominator;
 	
 	const double dTempi = - qc / (ci * mi);
 	const double dTempj = qc / (cj * mj);
-	
+
 	Temp[i] += dTempi;
 	Temp[j] += dTempj;	
       }
