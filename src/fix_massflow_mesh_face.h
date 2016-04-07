@@ -119,6 +119,13 @@ class FixMassflowMeshFace : public Fix {
   std::vector<double> average_vy_face_out_;
   std::vector<double> average_vz_face_out_;
 
+  // additional property to check
+  char *property_check_name_;
+  class FixPropertyAtom *fix_property_check_;
+  double d_property_check_;
+  int i_property_check_;
+  int property_check_index_;
+  bool property_check_int_;
   // additional property to sum
   class FixPropertyAtom *fix_property_;
   double property_sum_;
