@@ -62,7 +62,7 @@ class FixParticledistributionDiscreteFace : public FixParticledistribution {
 
   int insert(int n);
 
-  void set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local);
+  void set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local, double cg);
 
  protected:
 

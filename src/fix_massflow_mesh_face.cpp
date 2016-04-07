@@ -67,7 +67,13 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
   average_vx_out_(0.),
   average_vy_out_(0.),
   average_vz_out_(0.),
-  fix_property_(0),
+  property_check_name_(NULL),
+  fix_property_check_(NULL),
+  d_property_check_(0.),
+  i_property_check_(0),
+  property_check_index_(-1),
+  property_check_int_(false),
+  fix_property_(NULL),
   property_sum_(0.),
   screenflag_(false),
   fp_(NULL),
@@ -101,6 +107,16 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
             fix_mesh_ = static_cast<FixMeshSurface*>(modify->find_fix_id_style(arg[iarg++],"mesh/surface"));
             if(!fix_mesh_)
                 error->fix_error(FLERR,this,"fix mesh ID does not exist");
+            hasargs = true;
+        } else if(strcmp(arg[iarg],"check_property") == 0) {
+            if(narg < iarg+3)
+                error->fix_error(FLERR,this,"not enough arguments for 'check_property'");
+            int n = strlen(arg[iarg+1]) + 1;
+            property_check_name_ = new char[n];
+            strcpy(property_check_name_,arg[iarg+1]);
+            d_property_check_ = force->numeric(FLERR,arg[iarg+2]);
+            i_property_check_ = static_cast<int>(d_property_check_);
+            iarg += 3;
             hasargs = true;
         } else if(strcmp(arg[iarg],"sum_property") == 0) {
             if(narg < iarg+2)
@@ -210,6 +226,7 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
 FixMassflowMeshFace::~FixMassflowMeshFace()
 {
    if(fp_) fclose(fp_);
+   delete [] property_check_name_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -375,6 +392,44 @@ void FixMassflowMeshFace::init()
     if(!fix_ms_ && static_cast<FixMultisphere*>(modify->find_fix_style_strict("multisphere",0)))
         error->fix_error(FLERR,this,"fix multisphere must come before fix massflow/mesh in input script");
 
+    if(property_check_name_)
+    {
+        fix_property_check_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(property_check_name_,"property/atom","scalar",1,1,this->style,false));
+        if(!fix_property_check_)
+        {
+            if(strstr(property_check_name_,"i_") == property_check_name_)
+            {
+                int flag;
+                property_check_index_ = atom->find_custom(&property_check_name_[2],flag);
+                if(property_check_index_ < 0 || flag != 0)
+                {
+                    char errmsg[500];
+                    sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_check_name_,this->style);
+                    error->all(FLERR,errmsg);
+                }
+                d_property_check_ = 0.;
+                property_check_int_ = true;
+            }
+            else if(strstr(property_check_name_,"d_") == property_check_name_)
+            {
+                int flag;
+                property_check_index_ = atom->find_custom(&property_check_name_[2],flag);
+                if(property_check_index_ < 0 || flag != 1)
+                {
+                    char errmsg[500];
+                    sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_check_name_,this->style);
+                    error->all(FLERR,errmsg);
+                }
+                i_property_check_ = 0;
+            }
+            else
+            {
+                char errmsg[500];
+                sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_check_name_,this->style);
+                error->all(FLERR,errmsg);
+            }
+        }
+    }
 
     // TODO: enable if cg and fg are in separate simulations
     //cg_ = force->cg();
@@ -495,6 +550,26 @@ void FixMassflowMeshFace::post_integrate()
             if(iPart >= nlocal) continue;
 
             defined_this[iPart] = true;
+
+            // skip particles that don't have wanted property
+            if(fix_property_check_)
+            {
+                if(fix_property_check_->vector_atom[iPart] != d_property_check_)
+                    continue;
+            }
+            else if(property_check_index_ >= 0)
+            {
+                if(property_check_int_)
+                {
+                    if(atom->ivector[property_check_index_][iPart] != i_property_check_)
+                        continue;
+                }
+                else
+                {
+                    if(atom->dvector[property_check_index_][iPart] != d_property_check_)
+                        continue;
+                }
+            }
 
             const int ibody = fix_ms_ ? ( (fix_ms_->belongs_to(iPart) > -1) ? (ms_->map(fix_ms_->belongs_to(iPart))) : -1 ) : -1;
 

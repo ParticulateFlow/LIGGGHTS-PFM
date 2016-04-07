@@ -73,8 +73,9 @@ void FixParticledistributionDiscreteFace::delete_pit_list_face_local()
 
 /* ----------------------------------------------------------------------*/
 
-void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local)
+void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local, double cg)
 {
+  // TODO: cg = force->cg() can be used when differently resolved levels are separate simulations -> remove parameter
   delete_pit_list_face_local();
 
   n_pti_max = 0;
@@ -101,18 +102,19 @@ void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMesh
       if(it_dist->first.atomtype_ > maxtype) maxtype = it_dist->first.atomtype_;
       else if (it_dist->first.atomtype_ < mintype)  mintype = it_dist->first.atomtype_;
 
-      if(it_dist->first.radius_ > maxrad) maxrad = it_dist->first.radius_;
-      else if (it_dist->first.radius_ < minrad)  minrad = it_dist->first.radius_;
+      double radius = it_dist->first.radius_ * cg;
+      if(radius > maxrad) maxrad = radius;
+      else if(radius < minrad)  minrad = radius;
 
       int ntemplates_to_insert = distributions_face_local[iface][idist];
       for(int itemplate=0; itemplate<ntemplates_to_insert; ++itemplate)
       {
         pti = new ParticleToInsert(lmp);
         pti->atom_type = it_dist->first.atomtype_;
-        pti->radius_ins[0] =  pti->r_bound_ins =it_dist->first.radius_;
+        pti->radius_ins[0] =  pti->r_bound_ins = radius;
         pti->density_ins = it_dist->first.density_;
-        pti->volume_ins = it_dist->first.radius_ * it_dist->first.radius_ * it_dist->first.radius_ * 4.*M_PI/3.;
-        pti->mass_ins = it_dist->first.mass_;
+        pti->volume_ins = radius * radius * radius * 4.*M_PI/3.;
+        pti->mass_ins = it_dist->first.mass_ * cg * cg *cg;
         // init insertion position
         vectorZeroize3D(pti->x_ins[0]);
         vectorZeroize3D(pti->v_ins);

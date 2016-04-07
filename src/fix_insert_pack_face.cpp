@@ -399,9 +399,9 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
     for (int idist=0; it_dist!=distributions_face[iface].end(); ++it_dist, ++idist) {
       std::vector<int> accumulatedTemplateParticles_facei(distributions_face[iface].size(), 0);
 
-      // TODO: scale number of particles by cg3_ factor!!! (if this is not the finest grained level)
-      double nparticles = it_dist->second;
-      double diameter = 2. * it_dist->first.radius_;
+      // scale number of particles by cg3_ factor (massflowface gives numbers for fully resolved level)
+      double nparticles = it_dist->second / cg3_;
+      double diameter = 2. * it_dist->first.radius_ * cg_;
       double volume_single = (1./6.)*MY_PI*diameter*diameter*diameter;
 
       for (int iproc = 0; iproc < nprocs; ++iproc) {
@@ -411,7 +411,7 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
         // rounding_all tries to avoid that first proc is preferred for insertion
         int nparts = diameter < procminfaceextent? static_cast<int>(procvolfracface*nparticles + rounding_all[iproc]) : 0;
         while(nparts > 0 && nparts + accumulatedTemplateParticles_facei[idist] > nparticles) {
-          --nparts; // just in case some wierd rounding issues occured
+          --nparts; // just in case some weird rounding issues occured
         }
         double volume = nparts*volume_single;
         while (nparts > 0 && volume + accumulatedParticleVolume_facei[iproc] > procvolfracface*volume_face_absolut[iface]) {
@@ -465,7 +465,7 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
 
   // send result to each proc
   FixParticledistributionDiscreteFace *fix_pddf = (FixParticledistributionDiscreteFace*)fix_distribution;
-  fix_pddf->set_distribution_local(massflowface, distributions_face_local_all[me]);
+  fix_pddf->set_distribution_local(massflowface, distributions_face_local_all[me], cg_);
   maxrad = std::max(maxrad, fix_pddf->max_rad());
 
   delete [] fraction_face_local_all;
