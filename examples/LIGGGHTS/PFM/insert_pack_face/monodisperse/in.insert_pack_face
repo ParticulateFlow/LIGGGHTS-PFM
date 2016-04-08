@@ -1,0 +1,85 @@
+# measure mass flow through mesh surface and use it for insertion of particles with a different resolution
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block -1 1 -1 1 -0.5 1.5 units box
+create_box  2 reg
+
+neighbor    0.005 bin
+# 1) mutually exclude types representing different resolution levels from neighbor list build
+neigh_modify delay 0 exclude type 1 2
+
+
+# material properties required for granular pair styles
+
+fix m1 all property/global youngsModulus peratomtype 5.e6 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 2 0.9 0.85 0.85 0.8
+fix m4 all property/global coefficientFriction peratomtypepair 2 0.05 0.05 0.05 0.05
+# 2) define a property that will hold the coarse grain level for each particle
+fix m5 all property/atom/lammps i_cg_level
+
+# pair style
+pair_style gran model hertz tangential history
+pair_coeff * *
+
+timestep   0.00001
+
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix pts1 all particletemplate/sphere 98531 atom_type 1 density constant 2000 radius constant 0.02
+fix pdd1 all particledistribution/discrete 746325 1 pts1 1.0
+
+# region to insert cg 4 particles
+region insregioncg4 block -0.65 0.65 -0.65 0.65 1.1 1.3 units box
+
+# cg 4 particle insertion
+fix ins_cg4 all insert/pack seed 5330 distributiontemplate pdd1 &
+    maxattempt 200 insert_every once overlapcheck yes all_in yes set_property i_cg_level 4 &
+    vel constant 0. 0. 0. region insregioncg4 volumefraction_region 0.1
+
+# 3) generate surface with face ids and the insertion volume, can be removed if files already exist
+extract_surface meshes/test.vtk file meshes/testsurface.vtk meshes/testextrusion.vtk extrude_length 0.035 min_rad 0.01
+
+# 4) load surface file with face ids (cell_data option)
+fix surface all mesh/surface file meshes/testsurface.vtk type 1 verbose yes cell_data yes
+
+# 5) measure mass flow through face restricting to particles with property i_cg_level 4,
+#    also specify that all calculations should consider the coarse grain factor (cg 4)
+fix massflowcg4 all massflow/mesh/face mesh surface count once check_property i_cg_level 4 cg 4 inside_out #file post/testmassflowprop.txt
+
+# 6) load volume file with face ids for insertion
+region hexregion mesh/hex file meshes/testextrusion.vtk scale 1. move 0. 0. 0. rotate 0. 0. 0. cell_data yes units box
+
+# 7) insert particles based on the massflow measured, set property i_cg_level 2,
+#    also specify that all calculations should consider the coarse grain factor (cg 2)
+#    and an atom type different from the measured particle shall be used
+fix ins_cg2 all insert/pack/face seed 7331 random_distribute exact maxattempt 100 insert_every 500 &
+    overlapcheck yes set_property i_cg_level 2 all_in yes type_offset 1 region hexregion ntry_mc 10000 massflow_face massflowcg4 cg 2
+
+# apply nve integration
+fix integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke vol
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic no extra 0
+
+run 1
+
+dump dmp all custom/vtk 1000 post/insert*.vtk id type radius mass x y z vx vy vz fx fy fz i_cg_level
+
+region removeregion block -0.5 0.5 -0.5 0.5 0.0 1.0 side out units box
+fix remove_cg2 all remove nevery 500 massrate 1000 style delete seed 5143 region removeregion atomtype 2
+
+run 60000 upto
+
