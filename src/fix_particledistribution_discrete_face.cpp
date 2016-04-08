@@ -20,6 +20,7 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_particledistribution_discrete_face.h"
+#include "atom.h"
 #include "modify.h"
 #include "error.h"
 #include "random_park.h"
@@ -41,6 +42,9 @@ FixParticledistributionDiscreteFace::FixParticledistributionDiscreteFace(LAMMPS 
     error->all(FLERR,"Illegal fix particledistribution/discrete/face command, not enough arguments");
   seed = atoi(arg[3]) + comm->me;
   random = new RanPark(lmp,seed);
+
+  mintype = 1;
+  maxtype = atom->ntypes;
 
   maxrad = maxrbound = 0.0;
 }
@@ -80,8 +84,6 @@ void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMesh
   delete_pit_list_face_local();
 
   n_pti_max = 0;
-  maxtype = 0;
-  mintype = 10000;
   volexpect=0.;
   massexpect=0.;
   double masstotal = 0.;
@@ -101,8 +103,6 @@ void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMesh
     for(int idist=0; it_dist!=distributions[iface].end(); ++it_dist, ++idist)
     {
       int type = it_dist->first.atomtype_ + type_offset;
-      if(type > maxtype) maxtype = type;
-      else if (type < mintype)  mintype = type;
 
       double radius = it_dist->first.radius_ * cg;
       if(radius > maxrad) maxrad = radius;
