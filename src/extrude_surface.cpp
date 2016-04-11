@@ -51,7 +51,10 @@
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 #include <vtkGenericCell.h>
+#include <vtkTriangle.h>
 #include "error.h"
+
+#define SMALL_AREA 5e-7
 
 using namespace LAMMPS_NS;
 
@@ -161,6 +164,20 @@ void ExtrudeSurface::triangulate(int narg, char **arg, vtkDataSet* dset)
   triangleFilter->SetInputData(dset);
 #endif
   triangleFilter->Update();
+
+  // remove degenerate triangles
+  vtkPolyData *pd = triangleFilter->GetOutput();
+  vtkIdType numCells = pd->GetNumberOfCells();
+  vtkIdType cellId;
+
+  // mark cells for deletion
+  for (cellId=0; cellId < numCells; ++cellId) {
+    vtkTriangle *tri = dynamic_cast<vtkTriangle*>(pd->GetCell(cellId));
+    if (tri->ComputeArea() < SMALL_AREA)
+      pd->DeleteCell(cellId);
+  }
+  // actually remove cells marked for deletion
+  pd->RemoveDeletedCells();
 
   vtkSmartPointer<vtkAppendFilter> appendFilter = vtkSmartPointer<vtkAppendFilter>::New();
 #if VTK_MAJOR_VERSION < 6
