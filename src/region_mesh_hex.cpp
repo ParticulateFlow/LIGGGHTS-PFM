@@ -71,14 +71,12 @@ class AABBNode {
   void build(RegHexMesh *mesh, const std::vector<int>& subnodes)
   {
     int splitAxis = 0;
-    double splitPlane = 0.5*(xHi + xLo);
+    double splitPlane[3] = { 0.5*(xHi + xLo), 0.5*(yHi + yLo), 0.5*(zHi + zLo) };
     if(xHi - xLo < yHi - yLo) {
       splitAxis = 1;
-      splitPlane = 0.5*(yHi + yLo);
     }
     if(yHi - yLo < zHi - zLo) {
       splitAxis = 2;
-      splitPlane = 0.5*(zHi + zLo);
     }
 
     std::vector<int> leftsubnodes;
@@ -86,16 +84,21 @@ class AABBNode {
     double center[3];
     double bounds[6];
 
-    for(unsigned int i=0; i<subnodes.size(); ++i) {
-      mesh->hex_bounds(subnodes[i], bounds);
-      getCenter(bounds, center);
+    do {
+      leftsubnodes.clear();
+      rightsubnodes.clear();
+      for(unsigned int i=0; i<subnodes.size(); ++i) {
+        mesh->hex_bounds(subnodes[i], bounds);
+        getCenter(bounds, center);
 
-      if(center[splitAxis] < splitPlane) {
-        leftsubnodes.push_back(subnodes[i]);
-      } else {
-        rightsubnodes.push_back(subnodes[i]);
+        if(center[splitAxis] < splitPlane[splitAxis]) {
+          leftsubnodes.push_back(subnodes[i]);
+        } else {
+          rightsubnodes.push_back(subnodes[i]);
+        }
       }
-    }
+      splitAxis = (splitAxis + 1) % 3; // may have to try a different axis
+    } while(leftsubnodes.empty() || rightsubnodes.empty());
 
     if(!leftsubnodes.empty()) {
       mesh->hex_bounds(leftsubnodes[0], bounds);
