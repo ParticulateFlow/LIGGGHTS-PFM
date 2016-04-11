@@ -51,7 +51,9 @@
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 #include <vtkGenericCell.h>
+#if 0 // combination VTK 6.0.0 and c++11 gives compiler error
 #include <vtkTriangle.h>
+#endif
 #include "error.h"
 
 #define SMALL_AREA 5e-7
@@ -172,8 +174,25 @@ void ExtrudeSurface::triangulate(int narg, char **arg, vtkDataSet* dset)
 
   // mark cells for deletion
   for (cellId=0; cellId < numCells; ++cellId) {
+#if 0 // combination VTK 6.0.0 and c++11 gives compiler error
     vtkTriangle *tri = dynamic_cast<vtkTriangle*>(pd->GetCell(cellId));
     if (tri->ComputeArea() < SMALL_AREA)
+#else
+    vtkPoints *pts = pd->GetCell(cellId)->GetPoints();
+    double a[3], b[3], c[3], ab[3], ac[3], cross[3];
+    pts->GetPoint(0, a);
+    pts->GetPoint(1, c);
+    pts->GetPoint(2, b);
+    ab[0] = b[0] - a[0];
+    ab[1] = b[1] - a[1];
+    ab[2] = b[2] - a[2];
+    ac[0] = c[0] - a[0];
+    ac[1] = c[1] - a[1];
+    ac[2] = c[2] - a[2];
+    MathExtra::cross3(ab, ac, cross);
+    double area = 0.5 * MathExtra::len3(cross);
+    if (area < SMALL_AREA)
+#endif
       pd->DeleteCell(cellId);
   }
   // actually remove cells marked for deletion
