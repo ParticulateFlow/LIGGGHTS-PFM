@@ -393,6 +393,7 @@ void FixInsert::init_defaults()
   fix_property_value = 0.;
   fix_property_ivalue = 0;
   property_index = -1;
+  property_iindex = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -510,14 +511,13 @@ void FixInsert::init()
             if(strstr(property_name,"i_") == property_name)
             {
                 int flag;
-                property_index = atom->find_custom(&property_name[2],flag);
-                if(property_index < 0 || flag != 0)
+                property_iindex = atom->find_custom(&property_name[2],flag);
+                if(property_iindex < 0 || flag != 0)
                 {
                     char errmsg[500];
                     sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
                     error->all(FLERR,errmsg);
                 }
-                fix_property_value = 0.;
             }
             else if(strstr(property_name,"d_") == property_name)
             {
@@ -529,7 +529,6 @@ void FixInsert::init()
                     sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
                     error->all(FLERR,errmsg);
                 }
-                fix_property_ivalue = 0;
             }
             else
             {
@@ -730,7 +729,7 @@ void FixInsert::pre_exchange()
 
   // actual particle insertion
 
-  fix_distribution->pre_insert(ninserted_this_local,fix_property,fix_property_value,property_index,fix_property_ivalue);
+  fix_distribution->pre_insert(ninserted_this_local,fix_property,fix_property_value,property_index,fix_property_ivalue,property_iindex);
 
   //NP pti list is body list, so use ninserted_this as arg
   ninserted_spheres_this_local = fix_distribution->insert(ninserted_this_local);

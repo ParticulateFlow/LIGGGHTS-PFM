@@ -196,6 +196,7 @@ class FixInsert : public Fix {
   double fix_property_value;
   int fix_property_ivalue;
   int property_index;
+  int property_iindex;
 
   bool setup_flag;
 

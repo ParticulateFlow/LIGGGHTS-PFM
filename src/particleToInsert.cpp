@@ -55,6 +55,7 @@ ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) : Pointers(lmp)
         fix_property_value = 0.;
         fix_property_ivalue = 0;
         property_index = -1;
+        property_iindex = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -106,18 +107,10 @@ int ParticleToInsert::insert()
                 // this overrides the set_arrays call above
                 if(fix_property)
                     fix_property->vector_atom[m] = fix_property_value;
+                else if(property_iindex >= 0)
+                    atom->ivector[property_iindex][m] = fix_property_ivalue;
                 else if(property_index >= 0)
-                {
-                    if(fix_property_ivalue)
-                    {
-                        atom->ivector[property_index][m] = fix_property_ivalue;
-                    }
-                    else if(fix_property_value)
-                    {
-                        atom->dvector[property_index][m] = fix_property_value;
-                    }
-                    // else default value already set to 0 when growing arrays in create_atom
-                }
+                    atom->dvector[property_index][m] = fix_property_value;
         //}
     }
     

@@ -71,7 +71,7 @@ int FixParticledistribution::setmask()
    preparations before insertion
 ------------------------------------------------------------------------- */
 
-void FixParticledistribution::pre_insert(int n, FixPropertyAtom *fp, double val, int idx, int ival)
+void FixParticledistribution::pre_insert(int n, FixPropertyAtom *fp, double val, int idx, int ival, int iidx)
 {
   // allow fixes to e.g. update some pointers before set_arrays is called
   // set_arrays called in ParticleToInsert::insert()

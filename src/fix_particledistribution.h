@@ -78,7 +78,7 @@ class FixParticledistribution : public Fix {
   class ParticleToInsert **pti_list;
   int n_pti, n_pti_max;
 
-  virtual void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0., int idx=-1, int ival=0);
+  virtual void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0., int idx=-1, int ival=0, int iidx=-1);
   virtual int insert(int n);
   virtual void finalize_insertion();
 

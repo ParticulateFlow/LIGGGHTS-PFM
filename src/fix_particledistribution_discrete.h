@@ -53,7 +53,7 @@ class FixParticledistributionDiscrete : public FixParticledistribution {
   void random_init_list(int);
   int randomize_list(int,int,int);     // generate a list of random particles
 
-  void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0., int idx=-1, int ival=0);
+  void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0., int idx=-1, int ival=0, int iidx=-1);
   int insert(int n);
   void finalize_insertion();
 
