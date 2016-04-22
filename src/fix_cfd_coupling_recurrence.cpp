@@ -318,7 +318,9 @@ void FixCfdCouplingRecurrence::post_force(int)
       {
         if (mask[i] & groupbit)
         {
-            vectorAdd3D(f[i],dragforce[i],f[i]);
+            //vectorAdd3D(f[i],dragforce[i],f[i]);
+            // I'm the only force!
+            vectorCopy3D(dragforce[i],f[i]);
             vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
         }
       }
