@@ -295,10 +295,6 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
     if (mask[i] & groupbit)
     {
       vectorCopy3D(vrec[i],v[i]);
-      if(use_tracer_)
-      {
-	vectorCopy3D(vrec[i],v[i]);
-      }
     }
   }
 }
