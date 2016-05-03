@@ -163,6 +163,7 @@ int FixParticledistributionDiscreteFace::randomize_list(int ntotal,int insert_gr
     error->one(FLERR,"Faulty implementation: FixParticledistributionDiscreteFace::randomize_list() called for more particles than defined in random_init_list()");
   }
 
+  groupbit = insert_groupbit;
   ninsert = n_pti_max;
   ninserted = ninsert;
   return ninsert;
