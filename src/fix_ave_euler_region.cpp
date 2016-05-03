@@ -51,6 +51,8 @@ using namespace FixConst;
 
 FixAveEulerRegion::FixAveEulerRegion(LAMMPS *lmp, int narg, char **arg) :
   FixAveEuler(lmp, narg, arg),
+  v_min_(NULL),
+  v_max_(NULL),
   idregion_grid_(NULL),
   region_grid_(NULL),
   region_grid_mesh_hex_(NULL)
@@ -122,7 +124,9 @@ void FixAveEulerRegion::post_create()
     arg[2]="stress/atom";
     arg[3]="pair";
 
-    modify->add_compute(4,(char**)arg);
+    // create compute if it doesn't exist otherwise reuse
+    if(modify->find_compute(arg[0]) < 0)
+       modify->add_compute(4,(char**)arg);
     compute_stress_ = static_cast<ComputeStressAtom*>(modify->compute[modify->find_compute(arg[0])]);
   }
 
