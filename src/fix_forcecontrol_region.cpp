@@ -396,9 +396,13 @@ void FixForceControlRegion::post_force(int vflag)
 int FixForceControlRegion::modify_param(int narg, char **arg)
 {
     if (narg < 2) error->fix_error(FLERR,this,"Illegal fix_modify command");
+    int usedarg = 2;
     int start_id = atoi(arg[1]);
     int end_id = start_id;
-    if (narg > 2) end_id = atoi(arg[2]);
+    if (narg > 2) {
+      ++usedarg;
+      end_id = atoi(arg[2]);
+    }
 
     if (strcmp(arg[0],"activate") == 0) {
       while (start_id <= end_id) {
@@ -426,7 +430,7 @@ int FixForceControlRegion::modify_param(int narg, char **arg)
       }
     }
     else error->all(FLERR,"Illegal fix_modify command");
-    return 2;
+    return usedarg;
 }
 
 /* ---------------------------------------------------------------------- */
