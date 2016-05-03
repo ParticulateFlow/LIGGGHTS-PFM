@@ -51,6 +51,8 @@ using namespace FixConst;
 
 FixAveEulerRegion::FixAveEulerRegion(LAMMPS *lmp, int narg, char **arg) :
   FixAveEuler(lmp, narg, arg),
+  v_min_(NULL),
+  v_max_(NULL),
   idregion_grid_(NULL),
   region_grid_(NULL),
   region_grid_mesh_hex_(NULL)
