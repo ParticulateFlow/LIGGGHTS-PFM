@@ -58,6 +58,8 @@ CfdDatacoupling::CfdDatacoupling(class LAMMPS *lmp, int jarg, int, char **, clas
       pushtypes_ = NULL;
       pushinvoked_ = NULL;
       pullinvoked_ = NULL;
+   //   latestpull_ = NULL;
+   //   latestpush_ = NULL;
 
       properties_ = NULL;
 
@@ -77,6 +79,8 @@ CfdDatacoupling::~CfdDatacoupling()
         memory->destroy(pushtypes_);
         memory->destroy(pushinvoked_);
         memory->destroy(pullinvoked_);
+//	memory->destroy(latestpush_);
+//        memory->destroy(latestpull_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -96,7 +100,10 @@ void CfdDatacoupling::init()
     // empty list of requested properties
     // models do their init afterwards so list will be filled
     for(int i = 0; i < nvalues_max_; i++)
-      pushinvoked_[i] = pullinvoked_[i] = 0;
+    {
+        pushinvoked_[i] = pullinvoked_[i] = 0;
+//	latestpush_[i] = latestpull_[i] = -1;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -107,10 +114,12 @@ void CfdDatacoupling::grow_()
     memory->grow(pullnames_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:valnames");
     memory->grow(pulltypes_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:valtypes");
     memory->grow(pushinvoked_,MAXLENGTH,"FixCfdCoupling:pushinvoked_");
+    //memory->grow(latestpush_,MAXLENGTH,"FixCfdCoupling:latestpush_");
 
     memory->grow(pushnames_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:pushnames_");
     memory->grow(pushtypes_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:pushtypes_");
     memory->grow(pullinvoked_,MAXLENGTH,"FixCfdCoupling:pullinvoked_");
+    //memory->grow(latestpull_,MAXLENGTH,"FixCfdCoupling:latestpull_");
 }
 
 /* ----------------------------------------------------------------------
@@ -131,7 +140,7 @@ void CfdDatacoupling::pull(const char *name, const char *type, void *&, const ch
             found = 1;
             pullinvoked_[i] = 1;
             // TL:
-            // pullednow_[i] = 1;
+            // latestpull_[i] = update->ntimestep;
         }
         // name matches, but type not
         else if(strcmp(name,pullnames_[i]) == 0)
@@ -167,7 +176,7 @@ void CfdDatacoupling::push(const char *name, const char *type, void *&, const ch
             found = 1;
             pushinvoked_[i] = 1;
             // TL:
-            // pushednow_[i] = 1;
+            // latestpush_[i] = update->ntimestep;
         }
         // name matches, but type not
         else if(strcmp(name,pushnames_[i]) == 0)
@@ -336,31 +345,31 @@ void CfdDatacoupling::allocate_external(double**&, int, const char *, double)
    check if property has been recently pulled/pushed
 ------------------------------------------------------------------------- */
 /*
-int* CfdDatacoupling::pushednow(const char *name)
+bigint* CfdDatacoupling::latestpush(const char *name)
 {
     for(int i = 0; i < npush_; i++)
     {
         if(strcmp(name,pushnames_[i]) == 0)
         {
-            return &pushednow_[i]
+            return &latestpush_[i]
         }
     }
     if(comm->me == 0 && screen)
-        fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::pushednow(const char *name).\n",name);
+        fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::latestpush(const char *name).\n",name);
     lmp->error->all(FLERR,"This error is fatal");
 }
 
-int* CfdDatacoupling::pullednow(const char *name)
+bigint* CfdDatacoupling::latestpull(const char *name)
 {
     for(int i = 0; i < npull_; i++)
     {
         if(strcmp(name,pullnames_[i]) == 0)
         {
-            return &pullednow_[i]
+            return &latestpull_[i]
         }
     }
     if(comm->me == 0 && screen)
-        fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::pullednow(const char *name).\n",name);
+        fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::latestpull(const char *name).\n",name);
     lmp->error->all(FLERR,"This error is fatal");
 }
 */
