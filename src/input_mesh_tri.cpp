@@ -565,6 +565,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
   }
 
   memory->destroy<double>(points);
+  memory->destroy<int>(lines);
   memory->destroy<int>(cells);
 }
 
