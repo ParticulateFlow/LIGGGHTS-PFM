@@ -130,6 +130,8 @@ void FixMeshSurfaceStress::post_create_pre_restart()
     //NP restart: no mesh elements present because created in restart()
     //Np -->register properties and set values for non-restart properties here
 
+    FixMesh::post_create_pre_restart();
+
     if(stress_flag_)
         regStress();
 
