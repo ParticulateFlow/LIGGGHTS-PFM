@@ -50,10 +50,11 @@ InputMeshTri::~InputMeshTri()
    process all input from filename
 ------------------------------------------------------------------------- */
 
-void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh, bool verbose, bool read_cell_data)
+void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh, bool verbose, bool read_cell_data, bool restart)
 {
   verbose_ = verbose;
   read_cell_data_ = read_cell_data;
+  restart_ = restart;
   if(strlen(filename) < 5)
     error->all(FLERR,"Illegal command, file name too short for input of triangular mesh");
   const char *ext = &(filename[strlen(filename)-3]);
@@ -80,8 +81,11 @@ void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh, bool v
 
   if(is_stl)
   {
-      if (comm->me == 0) fprintf(screen,"\nReading STL file '%s' \n",filename);
-      meshtrifile_stl(mesh);
+      if (!read_cell_data_ && !restart_)
+      {
+          if (comm->me == 0) fprintf(screen,"\nReading STL file '%s' \n",filename);
+          meshtrifile_stl(mesh);
+      }
   }
   else if(is_vtk)
   {
@@ -202,7 +206,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
         if(strcmp(arg[0],"POINTS"))
             error->all(FLERR,"Expecting 'POINTS' section in ASCII VTK mesh file, cannot continue");
         npoints = atoi(arg[1]);
-        memory->create<double>(points,npoints,3,"input_mesh:points");
+        if(!read_cell_data_ && !restart_) memory->create<double>(points,npoints,3,"input_mesh:points");
         continue;
     }
 
@@ -213,9 +217,12 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
 
         for(int i = 0; i < narg/3; ++i)
         {
-            for(int j = 0; j < 3; ++j)
+            if(!read_cell_data_ && !restart_)
             {
-                points[ipoint][j] = atof(arg[3*i+j]);
+                for(int j = 0; j < 3; ++j)
+                {
+                    points[ipoint][j] = atof(arg[3*i+j]);
+                }
             }
             ++ipoint;
         }
@@ -229,7 +236,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
             error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
         ncells = atoi(arg[1]);
         memory->create<int>(cells,ncells,3,"input_mesh:cells");
-        memory->create<int>(lines,ncells,"input_mesh:lines");
+        if(!read_cell_data_ && !restart_) memory->create<int>(lines,ncells,"input_mesh:lines");
         continue;
     }
 
@@ -241,7 +248,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
         else
             cells[icell][0] = -1;
 
-        lines[icell] = nLines;
+        if(!read_cell_data_ && !restart_) lines[icell] = nLines;
 
         icell++;
         continue;
@@ -287,12 +294,12 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
             strcpy(propertyname, arg[1]);
             if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0)
             {
-                mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes");
                 dataType = INT;
             }
             else if(strcmp(arg[2],"float") == 0 || strcmp(arg[2],"double") == 0)
             {
-                mesh->prop().addElementProperty< ScalarContainer<double> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                mesh->prop().addElementProperty< ScalarContainer<double> >(propertyname,communication,"frame_invariant","restart_yes");
                 dataType = DOUBLE;
             }
             else
@@ -340,13 +347,13 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
             strcpy(propertyname, arg[1]);
             if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0)
             {
-                mesh->prop().addElementProperty< VectorContainer<int,3> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                mesh->prop().addElementProperty< VectorContainer<int,3> >(propertyname,communication,"frame_invariant","restart_yes");
 
                 dataType = INT;
             }
             else if(strcmp(arg[2],"float") == 0 || strcmp(arg[2],"double") == 0)
             {
-                mesh->prop().addElementProperty< VectorContainer<double,3> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                mesh->prop().addElementProperty< VectorContainer<double,3> >(propertyname,communication,"frame_invariant","restart_yes");
                 dataType = DOUBLE;
             }
             else
@@ -386,39 +393,46 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
 
         if(parse_scalars)
         {
-            switch(dataType)
+            if(restart_)
             {
-            case INT:
-                {
-                    ScalarContainer<int> *ep = mesh->prop().getElementProperty<ScalarContainer<int> >(propertyname);
-                    for(int i = 0; i < narg; ++i)
-                    {
-                        if(cells[icell][0] != -1)
-                        {
-                            ep->set(itri, atoi(arg[i]));
-                            ++itri;
-                        }
-                        ++icell;
-                    }
-                    break;
-                }
-            case DOUBLE:
-                {
-                    ScalarContainer<double> *ep = mesh->prop().getElementProperty<ScalarContainer<double> >(propertyname);
-                    for(int i = 0; i < narg; ++i)
-                    {
-                        if(cells[icell][0] != -1)
-                        {
-                            ep->set(itri, atof(arg[i]));
-                            ++itri;
-                        }
-                        ++icell;
-                    }
-                    break;
-                }
-            case UNSUPPORTED_DATA_TYPE:
                 icell += narg;
-                break;
+            }
+            else
+            {
+                switch(dataType)
+                {
+                case INT:
+                    {
+                        ScalarContainer<int> *ep = mesh->prop().getElementProperty<ScalarContainer<int> >(propertyname);
+                        for(int i = 0; i < narg; ++i)
+                        {
+                            if(cells[icell][0] != -1)
+                            {
+                                ep->set(itri, atoi(arg[i]));
+                                ++itri;
+                            }
+                            ++icell;
+                        }
+                        break;
+                    }
+                case DOUBLE:
+                    {
+                        ScalarContainer<double> *ep = mesh->prop().getElementProperty<ScalarContainer<double> >(propertyname);
+                        for(int i = 0; i < narg; ++i)
+                        {
+                            if(cells[icell][0] != -1)
+                            {
+                                ep->set(itri, atof(arg[i]));
+                                ++itri;
+                            }
+                            ++icell;
+                        }
+                        break;
+                    }
+                case UNSUPPORTED_DATA_TYPE:
+                    icell += narg;
+                    break;
+                }
             }
 
             if(icell == ncells)
@@ -437,12 +451,12 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
                     error->all(FLERR,"Inconsistency in 'FIELD' section in ASCII VTK mesh file, cannot continue");
                 if(strcmp(arg[3],"int") == 0 || strcmp(arg[3],"long") == 0)
                 {
-                    mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                    mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes");
                     dataType = INT;
                 }
                 else if(strcmp(arg[3],"float") == 0 || strcmp(arg[3],"double") == 0)
                 {
-                    mesh->prop().addElementProperty< ScalarContainer<double> >(propertyname,communication,"frame_invariant","restart_yes",1,ntris);
+                    mesh->prop().addElementProperty< ScalarContainer<double> >(propertyname,communication,"frame_invariant","restart_yes");
                     dataType = DOUBLE;
                 }
                 else
@@ -455,39 +469,46 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
                 continue;
             }
 
-            switch(dataType)
+            if(restart_)
             {
-            case INT:
-                {
-                    ScalarContainer<int> *ep = mesh->prop().getElementProperty<ScalarContainer<int> >(propertyname);
-                    for(int i = 0; i < narg; ++i)
-                    {
-                        if(cells[icell][0] != -1)
-                        {
-                            ep->set(itri, atoi(arg[i]));
-                            ++itri;
-                        }
-                        ++icell;
-                    }
-                    break;
-                }
-            case DOUBLE:
-                {
-                    ScalarContainer<double> *ep = mesh->prop().getElementProperty<ScalarContainer<double> >(propertyname);
-                    for(int i = 0; i < narg; ++i)
-                    {
-                        if(cells[icell][0] != -1)
-                        {
-                            ep->set(itri, atof(arg[i]));
-                            ++itri;
-                        }
-                        ++icell;
-                    }
-                    break;
-                }
-            case UNSUPPORTED_DATA_TYPE:
                 icell += narg;
-                break;
+            }
+            else
+            {
+                switch(dataType)
+                {
+                case INT:
+                    {
+                        ScalarContainer<int> *ep = mesh->prop().getElementProperty<ScalarContainer<int> >(propertyname);
+                        for(int i = 0; i < narg; ++i)
+                        {
+                            if(cells[icell][0] != -1)
+                            {
+                                ep->set(itri, atoi(arg[i]));
+                                ++itri;
+                            }
+                            ++icell;
+                        }
+                        break;
+                    }
+                case DOUBLE:
+                    {
+                        ScalarContainer<double> *ep = mesh->prop().getElementProperty<ScalarContainer<double> >(propertyname);
+                        for(int i = 0; i < narg; ++i)
+                        {
+                            if(cells[icell][0] != -1)
+                            {
+                                ep->set(itri, atof(arg[i]));
+                                ++itri;
+                            }
+                            ++icell;
+                        }
+                        break;
+                    }
+                case UNSUPPORTED_DATA_TYPE:
+                    icell += narg;
+                    break;
+                }
             }
 
             if(icell == ncells)
@@ -506,47 +527,54 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
             if(narg % 3)
                 error->all(FLERR,"Expecting multiple of 3 values of cell data in 'VECTORS' section of ASCII VTK mesh file, cannot continue");
 
-            switch(dataType)
+            if(restart_)
             {
-            case INT:
-                {
-                    VectorContainer<int,3> *ep = mesh->prop().getElementProperty<VectorContainer<int,3> >(propertyname);
-                    for(int i = 0; i < narg/3; ++i)
-                    {
-                        if(cells[icell][0] != -1)
-                        {
-                            int vector[3];
-                            vector[0] = atoi(arg[3*i + 0]);
-                            vector[1] = atoi(arg[3*i + 1]);
-                            vector[2] = atoi(arg[3*i + 2]);
-                            ep->set(itri, vector);
-                            ++itri;
-                        }
-                        ++icell;
-                    }
-                    break;
-                }
-            case DOUBLE:
-                {
-                    VectorContainer<double,3> *ep = mesh->prop().getElementProperty<VectorContainer<double,3> >(propertyname);
-                    for(int i = 0; i < narg/3; ++i)
-                    {
-                        if(cells[icell][0] != -1)
-                        {
-                            double vector[3];
-                            vector[0] = atof(arg[3*i + 0]);
-                            vector[1] = atof(arg[3*i + 1]);
-                            vector[2] = atof(arg[3*i + 2]);
-                            ep->set(itri, vector);
-                            ++itri;
-                        }
-                        ++icell;
-                    }
-                    break;
-                }
-            case UNSUPPORTED_DATA_TYPE:
                 icell += narg/3;
-                break;
+            }
+            else
+            {
+                switch(dataType)
+                {
+                case INT:
+                    {
+                        VectorContainer<int,3> *ep = mesh->prop().getElementProperty<VectorContainer<int,3> >(propertyname);
+                        for(int i = 0; i < narg/3; ++i)
+                        {
+                            if(cells[icell][0] != -1)
+                            {
+                                int vector[3];
+                                vector[0] = atoi(arg[3*i + 0]);
+                                vector[1] = atoi(arg[3*i + 1]);
+                                vector[2] = atoi(arg[3*i + 2]);
+                                ep->set(itri, vector);
+                                ++itri;
+                            }
+                            ++icell;
+                        }
+                        break;
+                    }
+                case DOUBLE:
+                    {
+                        VectorContainer<double,3> *ep = mesh->prop().getElementProperty<VectorContainer<double,3> >(propertyname);
+                        for(int i = 0; i < narg/3; ++i)
+                        {
+                            if(cells[icell][0] != -1)
+                            {
+                                double vector[3];
+                                vector[0] = atof(arg[3*i + 0]);
+                                vector[1] = atof(arg[3*i + 1]);
+                                vector[2] = atof(arg[3*i + 2]);
+                                ep->set(itri, vector);
+                                ++itri;
+                            }
+                            ++icell;
+                        }
+                        break;
+                    }
+                case UNSUPPORTED_DATA_TYPE:
+                    icell += narg/3;
+                    break;
+                }
             }
 
             if(icell == ncells)
@@ -554,18 +582,20 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
             continue;
         }
     }
-
   }
 
-  //now that everything is parsed, write the data into the mesh
-  for(int i = 0; i < ncells; i++)
+  if(!read_cell_data_ && !restart_)
   {
-      if(cells[i][0] == -1) continue;
-      addTriangle(mesh,points[cells[i][0]],points[cells[i][1]],points[cells[i][2]],lines[i]);
+      //now that everything is parsed, write the data into the mesh
+      for(int i = 0; i < ncells; i++)
+      {
+          if(cells[i][0] == -1) continue;
+          addTriangle(mesh,points[cells[i][0]],points[cells[i][1]],points[cells[i][2]],lines[i]);
+      }
   }
 
-  memory->destroy<double>(points);
-  memory->destroy<int>(lines);
+  if(!read_cell_data_ && !restart_) memory->destroy<double>(points);
+  if(!read_cell_data_ && !restart_) memory->destroy<int>(lines);
   memory->destroy<int>(cells);
 }
 

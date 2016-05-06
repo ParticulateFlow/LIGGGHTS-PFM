@@ -57,6 +57,7 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
   verbose_(false),
   autoRemoveDuplicates_(false),
   read_cell_data_(false),
+  have_restart_data_(false),
   precision_(0.)
 {
     if(narg < 5)
@@ -73,10 +74,9 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
 
     iarg_ = 3;
 
-    char mesh_fname[256];
     if(strcmp(arg[iarg_++],"file"))
         error->fix_error(FLERR,this,"expecting keyword 'file'");
-    strcpy(mesh_fname,arg[iarg_++]);
+    strcpy(mesh_fname_,arg[iarg_++]);
 
     // parse args
 
@@ -130,8 +130,9 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
     // construct a mesh - can be surface or volume mesh
     // just create object and return if reading data from restart file
     //NP do not parse further args
-    if(modify->have_restart_data(this)) create_mesh_restart();
-    else create_mesh(mesh_fname);
+    have_restart_data_ = modify->have_restart_data(this);
+    if(have_restart_data_) create_mesh_restart();
+    else create_mesh();
 
     /*NL*/ //if(comm->me == 0) fprintf(screen,"# elements before parallel %d\n",mesh_->size());
 
@@ -191,6 +192,19 @@ FixMesh::~FixMesh()
 
 /* ---------------------------------------------------------------------- */
 
+void FixMesh::post_create_pre_restart()
+{
+    // register costum properties from input file
+    if(read_cell_data_)
+    {
+        InputMeshTri *mesh_input = new InputMeshTri(lmp,0,NULL);
+        mesh_input->meshtrifile(mesh_fname_,static_cast<TriMesh*>(mesh_),verbose_,read_cell_data_,have_restart_data_);
+        delete mesh_input;
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMesh::post_create()
 {
     // check if all element property container have same length
@@ -201,7 +215,7 @@ void FixMesh::post_create()
 
 /* ---------------------------------------------------------------------- */
 
-void FixMesh::create_mesh(char *mesh_fname)
+void FixMesh::create_mesh()
 {
     //NP cannot do this object-oriented since cannot call
     //NP virtual functions out of constructor
@@ -227,7 +241,7 @@ void FixMesh::create_mesh(char *mesh_fname)
         // can be from STL file or VTK file
         InputMeshTri *mesh_input = new InputMeshTri(lmp,0,NULL);
         /*NL*///fprintf(screen,"READING MESH DATA\n");
-        mesh_input->meshtrifile(mesh_fname,static_cast<TriMesh*>(mesh_),verbose_,read_cell_data_);
+        mesh_input->meshtrifile(mesh_fname_,static_cast<TriMesh*>(mesh_),verbose_);
         /*NL*///fprintf(screen,"END READING MESH DATA\n");
         delete mesh_input;
     }
