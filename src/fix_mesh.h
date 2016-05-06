@@ -45,6 +45,7 @@ namespace LAMMPS_NS
         FixMesh(LAMMPS *lmp, int narg, char **arg);
         virtual ~FixMesh();
 
+        virtual void post_create_pre_restart();
         virtual void post_create();
         virtual void pre_delete(bool unfixflag);
 
@@ -85,7 +86,7 @@ namespace LAMMPS_NS
         virtual void rotateMesh(double const axisX, double const axisY, double const axisZ, double const phi);
         virtual void scaleMesh(double const factor);
 
-        void create_mesh(char *mesh_fname);
+        void create_mesh();
         void create_mesh_restart();
 
         int iarg_;
@@ -109,10 +110,12 @@ namespace LAMMPS_NS
         bool manipulated_;
 
         // flags and params to be passed to the mesh
-        bool verbose_,autoRemoveDuplicates_,read_cell_data_;
+        bool verbose_,autoRemoveDuplicates_,read_cell_data_,have_restart_data_;
 
         // mesh precision
         double precision_;
+
+        char mesh_fname_[256];
   };
 
 } /* namespace LAMMPS_NS */
