@@ -52,7 +52,7 @@ class FixCfdCouplingChemistry : public Fix  {
 
 
   class FixCfdCoupling* fix_coupling_;
-//  class FixPropertyAtom* fix_Tgas_;
+//  class FixPropertyAtom* fix_tgas_;
 //  class FixPropertyAtom* fix_rhogas_;
 //  class FixPropertyAtom** fix_massfrac_;
 //  class FixPropertyAtom** fix_masschange_;
