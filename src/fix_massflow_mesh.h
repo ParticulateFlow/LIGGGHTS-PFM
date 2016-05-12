@@ -96,6 +96,7 @@ class FixMassflowMesh : public Fix {
   // data write
   bool screenflag_;
   FILE *fp_;
+  bool writeTime_; //switch to write time to the outfile
 
   // data for particle and mass flow calculation
   double mass_last_;
