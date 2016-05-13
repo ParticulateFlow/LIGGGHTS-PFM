@@ -126,12 +126,14 @@ void FixAveEulerRegion::post_create()
 
     // create compute if it doesn't exist otherwise reuse
     if(modify->find_compute(arg[0]) < 0)
-       modify->add_compute(4,(char**)arg);
+      modify->add_compute(4,(char**)arg);
+
     compute_stress_ = static_cast<ComputeStressAtom*>(modify->compute[modify->find_compute(arg[0])]);
   }
 
 
   if (region_grid_mesh_hex_) {
+    ncells_ = region_grid_mesh_hex_->n_hex();
     ScalarContainer<int> *values = region_grid_mesh_hex_->prop().getElementProperty<ScalarContainer<int> >("cell_id");
     if (values) {
       for (int iHex=0; iHex<region_grid_mesh_hex_->n_hex(); ++iHex) {
