@@ -86,6 +86,12 @@ class FixAveEuler : public Fix {
   inline int cell_count(int i)
   { return ncount_[i]; }
 
+  inline int cell_head(int i)
+  { return cellhead_[i]; }
+
+  inline int cell_ptr(int i)
+  { return cellptr_[i]; }
+
  protected:
   inline int ntry_per_cell()
   { return 50; }
