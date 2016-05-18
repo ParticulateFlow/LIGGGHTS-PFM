@@ -323,7 +323,8 @@ void FixForceControlRegion::post_force(int vflag)
           double fadey = 1.0;
           double fadez = 1.0;
 
-
+          if (const_part_ < 0.9999)
+          {
           if (axis_[0] != 0.) {
             double extent_x = bounds[1] - bounds[0];
 
@@ -356,6 +357,7 @@ void FixForceControlRegion::post_force(int vflag)
               fadez = sin(M_PI*0.5*(x[i][2] - bounds[5])/(sinesq_part_*extent_z));
               fadez *= fadez;
             }
+          }
           }
 
           double dtfm = dtf_ / rmass[i];
