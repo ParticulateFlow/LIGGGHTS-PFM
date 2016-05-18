@@ -315,8 +315,9 @@ void FixForceControlRegion::post_force(int vflag)
     double bounds[6];
     actual_->cell_bounds(*it_cell, bounds);
 
-    if (xvalue!=0. || yvalue!=0. || zvalue!=0.) {
-      for (int i = 0; i < nlocal; i++) {
+    if (xvalue != 0. || yvalue != 0. || zvalue != 0.) {
+      for (int i = actual_->cell_head(*it_cell); i >= 0; i = actual_->cell_ptr(i)) {
+        if (i >= nlocal) continue;
         if (mask[i] & groupbit) {
 
           double fadex = 1.0;
