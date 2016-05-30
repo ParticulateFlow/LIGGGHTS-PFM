@@ -1,4 +1,4 @@
-/* ----------------------------------------------------------------------
+﻿/* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
 
@@ -47,20 +47,19 @@ class FixCfdCouplingChemistry : public Fix  {
   virtual void post_force(int);
 
  protected:
-
-
-
+  int num_species_;                          // # of species
+  char **species_names_;                      // list of species names
+  int iarg_, narg_;
 
   class FixCfdCoupling* fix_coupling_;
-//  class FixPropertyAtom* fix_Tgas_;
-//  class FixPropertyAtom* fix_rhogas_;
-//  class FixPropertyAtom** fix_massfrac_;
-//  class FixPropertyAtom** fix_masschange_;
-//  class FixPropertyAtom* fix_reactionheat_;
+  class FixPropertyAtom* fix_tgas_;         // data pulled from cfdemCoupling - partTemp_
+  class FixPropertyAtom* fix_rhogas_;       // data pulled from cfdemCoupling - partRho_
+  class FixPropertyAtom** fix_massfrac_;    // data pulled from cfdemCoupling - concentrations_
+  class FixPropertyAtom** fix_masschange_;  // data pushed to cfdemCoupling - changeOfSpeciesMass_
+  class FixPropertyAtom* fix_reactionheat_; // data pushed to cfdemCoupling - reactionHeat_
 
  private:
   bool use_Re_;
-
 
 };
 
