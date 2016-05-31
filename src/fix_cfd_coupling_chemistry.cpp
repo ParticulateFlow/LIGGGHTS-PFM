@@ -65,7 +65,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         hasargs = false;
 
         // checking in liggghts_run if arguments are set up correctly
-        if(strcmp(arg[iarg_],"n_species") == 0)
+        if(strcmp(arg[iarg_++],"n_species") == 0)
         {
             if(iarg_ + 2 > narg)
                 error -> fix_error (FLERR, this, "Fix couple/cfd/chemistry: Wrong number of arguments");
