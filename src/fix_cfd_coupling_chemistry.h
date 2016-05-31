@@ -52,19 +52,11 @@ class FixCfdCouplingChemistry : public Fix  {
   int iarg_, narg_;
 
   class FixCfdCoupling* fix_coupling_;
-<<<<<<< HEAD
   class FixPropertyAtom* fix_tgas_;         // data pulled from cfdemCoupling - partTemp_
   class FixPropertyAtom* fix_rhogas_;       // data pulled from cfdemCoupling - partRho_
   class FixPropertyAtom** fix_massfrac_;    // data pulled from cfdemCoupling - concentrations_
   class FixPropertyAtom** fix_masschange_;  // data pushed to cfdemCoupling - changeOfSpeciesMass_
   class FixPropertyAtom* fix_reactionheat_; // data pushed to cfdemCoupling - reactionHeat_
-=======
-//  class FixPropertyAtom* fix_tgas_;
-//  class FixPropertyAtom* fix_rhogas_;
-//  class FixPropertyAtom** fix_massfrac_;
-//  class FixPropertyAtom** fix_masschange_;
-//  class FixPropertyAtom* fix_reactionheat_;
->>>>>>> bbd2d2ca3900e8e2a0b6d14d8e32ffe63aaa1475
 
  private:
   bool use_Re_;

@@ -291,13 +291,13 @@ void FixCfdCouplingChemistry::init()
 
 void FixCfdCouplingChemistry::post_force(int)
 {
-  
+
 // for all species names i and reaction heat
 // if dc_->pushednow(i)
 // clear masschange(i),reactionheat
 // pushednow(i)=false
-  
-  
-  
+
+
+
 }
 
