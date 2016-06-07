@@ -53,11 +53,11 @@ class FixCfdCouplingChemistry : public Fix  {
   char **mod_spec_names_;
 
   class FixCfdCoupling* fix_coupling;
-  class FixPropertyAtom* fix_tgas;              // data pulled from cfdemCoupling - partTemp_
-  class FixPropertyAtom* fix_rhogas;          // data pulled from cfdemCoupling - partRho_
-  //class FixPropertyAtom** fix_massfrac_;      // data pulled from cfdemCoupling - concentrations_
-  //class FixPropertyAtom** fix_masschange_;    // data pushed to cfdemCoupling - changeOfSpeciesMass_
-  //class FixPropertyAtom* fix_reactionheat_;   // data pushed to cfdemCoupling - reactionHeat_
+  class FixPropertyAtom* fix_tgas;                  // data pulled from cfdemCoupling - partTemp_
+  class FixPropertyAtom* fix_rhogas;                // data pulled from cfdemCoupling - partRho_
+  class FixPropertyAtom** fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
+  class FixPropertyAtom** fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
+  class FixPropertyAtom* fix_reactionheat_;       // data pushed to cfdemCoupling - reactionHeat_
 
  private:
   bool use_Re_;
