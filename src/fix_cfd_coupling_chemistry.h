@@ -20,6 +20,7 @@
 /* ----------------------------------------------------------------------
    Contributing authors:
    Thomas Lichtenegger (JKU Linz)
+   M.Efe Kinaci (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
