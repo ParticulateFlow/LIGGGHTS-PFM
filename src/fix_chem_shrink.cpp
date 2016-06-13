@@ -56,9 +56,9 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_concC_   =   NULL;
     fix_changeOfA_   =   NULL;
     fix_changeOfC_   =   NULL;
-    fix_tpart_       =   NULL;
-    fix_rhogas_      =   NULL;
-    fix_reactionheat_    =   0;
+    // fix_tpart_       =   NULL;
+    // fix_rhogas_      =   NULL;
+    // fix_reactionheat_    =   0;
 
     iarg_ = 3;
     if (narg < 14)
@@ -106,18 +106,34 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
         error -> all (FLERR,"keyword k for reaction rate is missing");
     k   =   atof(arg[iarg_++]);
 
+    // flags for vector output
+    scalar_flag =   1;
+    global_freq =   1;
+    extscalar   =   1;
+
 }
 
 /* ---------------------------------------------------------------------- */
 
 FixChemShrink::~FixChemShrink()
 {
+    if(fix_changeOfA_)  delete  []fix_changeOfA_;
+    if(fix_changeOfC_)  delete  []fix_changeOfC_;
+
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::pre_delete(bool unfixflag)
 {
+    if(unfixflag && fix_concA_) modify  ->  delete_fix(speciesA);
+    if(unfixflag && fix_concC_) modify  ->  delete_fix(speciesC);
+    // if(unfixflag && fix_rhogas_)    modify  -> delete_fix("partRho");
+    // if(unfixflag && fix_tgas_)  modify  ->  delete_fix("partTemp");
+
+    if(unfixflag && fix_changeOfA_) modify  ->  delete_fix("changeOfSpeciessMass_A");
+    if(unfixflag && fix_changeOfC_) modify  ->  delete_fix("changeOfSpeciesMass_C");
+
 
 }
 
@@ -134,6 +150,65 @@ int FixChemShrink::setmask()
 
 void FixChemShrink::post_create()
 {
+    // register concentration species A
+    if (!fix_concA_)
+    {
+        const char* fixarg[9];
+        fixarg[0]=speciesA;
+        fixarg[2]="property/atom";
+        fixarg[3]=speciesA;
+        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[5]="yes";    // restart
+        fixarg[6]="no";     // communicate ghost
+        fixarg[7]="no";     // communicate rev
+        fixarg[8]="0.";
+        fix_concA_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+
+    // register concentration species C
+    if (!fix_concC_)
+    {
+        const char* fixarg[9];
+        fixarg[0]=speciesC;
+        fixarg[2]="property/atom";
+        fixarg[3]=speciesC;
+        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[5]="yes";    // restart
+        fixarg[6]="no";     // communicate ghost
+        fixarg[7]="no";     // communicate rev
+        fixarg[8]="0.";
+        fix_concC_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+
+    // register change of species mass A
+    if (!fix_changeOfA_)
+    {
+        const char* fixarg[9];
+        fixarg[0]="changeOfSpeciessMass_A";
+        fixarg[2]="property/atom";
+        fixarg[3]="changeOfSpeciessMass_A";
+        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[5]="yes";    // restart
+        fixarg[6]="no";     // communicate ghost
+        fixarg[7]="no";     // communicate rev
+        fixarg[8]="0.";
+        modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+
+    // register change of species mass C
+    if (!fix_changeOfA_)
+    {
+        const char* fixarg[9];
+        fixarg[0]="changeOfSpeciessMass_C";
+        fixarg[2]="property/atom";
+        fixarg[3]="changeOfSpeciessMass_C";
+        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[5]="yes";    // restart
+        fixarg[6]="no";     // communicate ghost
+        fixarg[7]="no";     // communicate rev
+        fixarg[8]="0.";
+        modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
 
 }
 
@@ -141,6 +216,14 @@ void FixChemShrink::post_create()
 
 void FixChemShrink::init()
 {
+    if (!atom -> radius_flag || !atom -> density_flag)
+        error -> all(FLERR,"Fix chem/shrink cna only be used with sphere atom style");
+
+    // references
+    fix_concA_            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
+    fix_concC_          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
+    fix_changeOfA_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_A","property/atom","scalar",0,0,style));
+    fix_changeOfC_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_C","property/atom","scalar",0,0,style));
 
 }
 
@@ -148,6 +231,8 @@ void FixChemShrink::init()
 
 void FixChemShrink::post_force(int)
 {
+    // radius_ -> atom -> radius;
+
     // forAll,i
     // reaction()
 

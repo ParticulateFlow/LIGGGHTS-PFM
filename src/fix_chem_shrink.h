@@ -55,9 +55,9 @@ public:
 
   class FixPropertyAtom *fix_concA_, *fix_concC_;           //  concentration of species A and C
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;   //  change of concentration of species A and C
-  class FixPropertyAtom *fix_rhogas_;                       //  density of gas
-  class FixPropertyAtom *fix_tpart_;                        //  temperature of gas
-  class FixPropertyAtom *fix_reactionheat_;                 //  DeltaQ
+  // class FixPropertyAtom *fix_rhogas_;                       //  density of gas
+  // class FixPropertyAtom *fix_tgas_;                        //  temperature of gas
+  // class FixPropertyAtom *fix_reactionheat_;                 //  DeltaQ
 
   // values from user
   double k;                                         // reaction rate coefficient
