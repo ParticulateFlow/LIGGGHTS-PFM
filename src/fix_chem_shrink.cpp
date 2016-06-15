@@ -48,16 +48,16 @@ using namespace FixConst;
 FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg)
 {
-    if (strncmp(style,"chem/shrink",14) == 0 && (!atom->radius_flag))
-            error -> all (FLERR,"Fix chem/shrink needs particle radius");
+    if (strncmp(style,"chem/shrink",14) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
+            error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
 
     // defaults
     fix_concA_   =   NULL;
     fix_concC_   =   NULL;
     fix_changeOfA_   =   NULL;
     fix_changeOfC_   =   NULL;
+    fix_rhogas_      =   NULL;
     // fix_tpart_       =   NULL;
-    // fix_rhogas_      =   NULL;
     // fix_reactionheat_    =   0;
 
     iarg_ = 3;
@@ -128,7 +128,7 @@ void FixChemShrink::pre_delete(bool unfixflag)
 {
     if(unfixflag && fix_concA_) modify  ->  delete_fix(speciesA);
     if(unfixflag && fix_concC_) modify  ->  delete_fix(speciesC);
-    // if(unfixflag && fix_rhogas_)    modify  -> delete_fix("partRho");
+    if(unfixflag && fix_rhogas_)    modify  -> delete_fix("partRho");
     // if(unfixflag && fix_tgas_)  modify  ->  delete_fix("partTemp");
 
     if(unfixflag && fix_changeOfA_) modify  ->  delete_fix("changeOfSpeciessMass_A");
@@ -210,6 +210,22 @@ void FixChemShrink::post_create()
         modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
+    // register rhogas (partRho)
+    if (!fix_rhogas_)
+    {
+        const char* fixarg[9];
+        fixarg[0]="partRho";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="partRho";
+        fixarg[4]="scalar";              // 1 vector per particle to be registered
+        fixarg[5]="no";                  // restart yes
+        fixarg[6]="yes";                 // communicate ghost no
+        fixarg[7]="no";                  // communicate rev
+        fixarg[8]="0.";
+        fix_rhogas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -220,8 +236,8 @@ void FixChemShrink::init()
         error -> all(FLERR,"Fix chem/shrink cna only be used with sphere atom style");
 
     // references
-    fix_concA_            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
-    fix_concC_          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
+    fix_concA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
+    fix_concC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
     fix_changeOfA_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_A","property/atom","scalar",0,0,style));
     fix_changeOfC_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_C","property/atom","scalar",0,0,style));
 
@@ -231,12 +247,31 @@ void FixChemShrink::init()
 
 void FixChemShrink::post_force(int)
 {
-    // radius_ -> atom -> radius;
+    /*radius_ = atom ->  radius;
+    pmass_  = atom ->  rmass;*/
+    /* ----------------- compute particle surface area ------------------------ */
+    /*double FixChemShrink::partSurfArea(radius_)
+    {
+        double A_p =   4*M_PI*(radius_);
+        return (A_p);
+    };*/
 
-    // forAll,i
-    // reaction()
+    /* ---------------------------------------------------------------------- */
+    /*void FixChemShrink::reaction()
+    {
+        // rate of change of the total number of moles of A
+        fix_changeOfA_  =   -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
 
+        // rate of change of the total number of moles of C
+        fix_changeOfC_  =   fix_changeOfA_*(molMass_C_/molMass_A_);
 
-    // void reaction
+        // rate of change of the total number of moles of B
+        pmass_          =   -fix_changeOfA_*(molMass_B_/molMass_A_);
+     };*/
+    /* forAll(Concentartions,i)
+     {
+        reaction()
+
+     };*/
 }
 

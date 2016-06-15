@@ -44,6 +44,9 @@ public:
   void post_create();
   void pre_delete(bool unfixflag);
 
+  /*void reaction();
+  double partSurfArea();*/
+
   int setmask();
   virtual void init();
   virtual void post_force(int);
@@ -53,16 +56,17 @@ public:
  protected:
   char* speciesA, *speciesC;
 
-  class FixPropertyAtom *fix_concA_, *fix_concC_;           //  concentration of species A and C
-  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;   //  change of concentration of species A and C
-  // class FixPropertyAtom *fix_rhogas_;                       //  density of gas
-  // class FixPropertyAtom *fix_tgas_;                        //  temperature of gas
-  // class FixPropertyAtom *fix_reactionheat_;                 //  DeltaQ
+  class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C
+  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C
+  class FixPropertyAtom *fix_rhogas_;                           //  density of gas
+  // class FixPropertyAtom *fix_tgas_;                          //  temperature of gas
+  // class FixPropertyAtom *fix_reactionheat_;                  //  DeltaQ
 
   // values from user
   double k;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
-  double *radius_;                                  // radius of particle
+  double radius_;                                  // radius of particle
+  double pmass_;                                   // particle mass
   int iarg_;
 
 
