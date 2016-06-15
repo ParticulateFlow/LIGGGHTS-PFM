@@ -250,24 +250,11 @@ void FixChemShrink::post_force(int)
     /*radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;*/
     /* ----------------- compute particle surface area ------------------------ */
-    /*double FixChemShrink::partSurfArea(radius_)
-    {
-        double A_p =   4*M_PI*(radius_);
-        return (A_p);
-    };*/
-
+    
+    
+// reaction();
     /* ---------------------------------------------------------------------- */
-    /*void FixChemShrink::reaction()
-    {
-        // rate of change of the total number of moles of A
-        fix_changeOfA_  =   -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
-
-        // rate of change of the total number of moles of C
-        fix_changeOfC_  =   fix_changeOfA_*(molMass_C_/molMass_A_);
-
-        // rate of change of the total number of moles of B
-        pmass_          =   -fix_changeOfA_*(molMass_B_/molMass_A_);
-     };*/
+   
     /* forAll(Concentartions,i)
      {
         reaction()
@@ -275,3 +262,23 @@ void FixChemShrink::post_force(int)
      };*/
 }
 
+
+ /*void FixChemShrink::reaction()
+    {
+        double dA = -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
+        double dC = -dA*(molMass_C_/molMass_A_);
+        // rate of change of the total number of moles of A
+        fix_changeOfA_  +=  dA; 
+
+        // rate of change of the total number of moles of C
+        fix_changeOfC_  +=   dC
+
+        // rate of change of the total number of moles of B
+        pmass_          +=   dA*(molMass_B_/molMass_A_);
+     };*/
+
+ /*double FixChemShrink::partSurfArea(double radius)
+    {
+        double A_p =   4*M_PI*radius*radius;
+        return (A_p);
+    };*/

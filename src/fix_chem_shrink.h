@@ -45,7 +45,7 @@ public:
   void pre_delete(bool unfixflag);
 
   /*void reaction();
-  double partSurfArea();*/
+  double partSurfArea(double);*/
 
   int setmask();
   virtual void init();
