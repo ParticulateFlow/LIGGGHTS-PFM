@@ -44,8 +44,9 @@ public:
   void post_create();
   void pre_delete(bool unfixflag);
 
-  /*void reaction();
-  double partSurfArea(double);*/
+  void reaction();
+  double partSurfArea(double);
+  void updatePtrs();
 
   int setmask();
   virtual void init();
@@ -65,9 +66,17 @@ public:
   // values from user
   double k;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
-  double radius_;                                  // radius of particle
-  double pmass_;                                   // particle mass
+  double *radius_;                                  // radius of particle
+  double *pmass_;                                   // particle mass
+  double *pdensity_;
   int iarg_;
+
+  // pointer updaters
+  double *changeOfA_;
+  double *changeOfC_;
+  double *rhogas_;
+  double *concA_;
+  double *concC_;
 
 
 };
