@@ -107,6 +107,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     k   =   atof(arg[iarg_++]);
 
     // flags for vector output
+    peratom_flag =  1;  //0/1 per-atom data is stored
+    peratom_freq =  1;
     scalar_flag =   1;
     global_freq =   1;
     extscalar   =   1;
@@ -157,7 +159,7 @@ void FixChemShrink::post_create()
         fixarg[0]=speciesA;
         fixarg[2]="property/atom";
         fixarg[3]=speciesA;
-        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[4]="scalar"; // 1 scalar per particle to be registered
         fixarg[5]="yes";    // restart
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
@@ -172,7 +174,7 @@ void FixChemShrink::post_create()
         fixarg[0]=speciesC;
         fixarg[2]="property/atom";
         fixarg[3]=speciesC;
-        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[4]="scalar"; // 1 scalar per particle to be registered
         fixarg[5]="yes";    // restart
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
@@ -187,7 +189,7 @@ void FixChemShrink::post_create()
         fixarg[0]="changeOfSpeciessMass_A";
         fixarg[2]="property/atom";
         fixarg[3]="changeOfSpeciessMass_A";
-        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[4]="scalar"; // 1 scalar per particle to be registered
         fixarg[5]="yes";    // restart
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
@@ -202,7 +204,7 @@ void FixChemShrink::post_create()
         fixarg[0]="changeOfSpeciessMass_C";
         fixarg[2]="property/atom";
         fixarg[3]="changeOfSpeciessMass_C";
-        fixarg[4]="scalar"; // 1 vector per particle to be registered
+        fixarg[4]="scalar"; // 1 scalar per particle to be registered
         fixarg[5]="yes";    // restart
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
@@ -218,13 +220,24 @@ void FixChemShrink::post_create()
         fixarg[1]="all";
         fixarg[2]="property/atom";
         fixarg[3]="partRho";
-        fixarg[4]="scalar";              // 1 vector per particle to be registered
+        fixarg[4]="scalar";              // 1 scalar per particle to be registered
         fixarg[5]="no";                  // restart yes
         fixarg[6]="yes";                 // communicate ghost no
         fixarg[7]="no";                  // communicate rev
         fixarg[8]="0.";
         fix_rhogas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
+
+}
+
+/* ---------------------------------------------------------------------- */
+void FixChemShrink::updatePtrs()
+{
+    changeOfA_  =   fix_changeOfA_  -> vector_atom;
+    changeOfC_  =   fix_changeOfC_  -> vector_atom;
+    rhogas_     =   fix_rhogas_     -> vector_atom;
+    concA_      =   fix_concA_      -> vector_atom;
+    concC_      =   fix_concC_      -> vector_atom;
 
 }
 
@@ -240,45 +253,53 @@ void FixChemShrink::init()
     fix_concC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
     fix_changeOfA_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_A","property/atom","scalar",0,0,style));
     fix_changeOfC_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_C","property/atom","scalar",0,0,style));
-
+    updatePtrs();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::post_force(int)
 {
-    /*radius_ = atom ->  radius;
-    pmass_  = atom ->  rmass;*/
-    /* ----------------- compute particle surface area ------------------------ */
-    
-    
-// reaction();
-    /* ---------------------------------------------------------------------- */
-   
-    /* forAll(Concentartions,i)
-     {
-        reaction()
+    radius_ = atom ->  radius;
+    pmass_  = atom ->  rmass;
+    pdensity_ = atom -> density;
 
-     };*/
+    reaction();
 }
 
-
- /*void FixChemShrink::reaction()
+/* ---------------------------------------------------------------------- */
+void FixChemShrink::reaction()
     {
-        double dA = -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
-        double dC = -dA*(molMass_C_/molMass_A_);
-        // rate of change of the total number of moles of A
-        fix_changeOfA_  +=  dA; 
+        updatePtrs();
+        int nlocal  =   atom->nlocal;
 
-        // rate of change of the total number of moles of C
-        fix_changeOfC_  +=   dC
+        for (int i = 0; i<nlocal; i++)
+        {
+            // double dA   = -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
+            double dA   =   -k*rhogas_[i]*concA_[i]*4*M_PI*radius_[i]*radius_[i];
+            double dC   =   -dA*(molMass_C_/molMass_A_);
+            //double dA   = -k*rhogas_*concA_*4*M_PI*radius_*radius_;//partSurfArea(radius_);
+            //double dC   = -dA*(molMass_C_/molMass_A_);
 
-        // rate of change of the total number of moles of B
-        pmass_          +=   dA*(molMass_B_/molMass_A_);
-     };*/
+            // rate of change of the total number of moles of A
+            // fix_changeOfA_  +=  dA;
+            changeOfA_[i]   +=  dA;
 
- /*double FixChemShrink::partSurfArea(double radius)
+            // rate of change of the total number of moles of C
+            // fix_changeOfC_  +=  dC;
+            changeOfC_[i]   +=  dC;
+
+            // rate of change of the total number of moles of B
+            pmass_[i]          +=  dA*(molMass_B_/molMass_A_);
+
+            // change of radius of particle -assumption: density of particle is constant
+            radius_[i]         -=   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
+        }
+     };
+
+/* ----------------- compute particle surface area ------------------------ */
+ double FixChemShrink::partSurfArea(double radius)
     {
         double A_p =   4*M_PI*radius*radius;
         return (A_p);
-    };*/
+    };
