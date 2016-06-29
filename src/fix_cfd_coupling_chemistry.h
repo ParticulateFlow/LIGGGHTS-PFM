@@ -45,6 +45,7 @@ class FixCfdCouplingChemistry : public Fix  {
 
   int setmask();
   virtual void init();
+  virtual void initial_integrate(int);
   virtual void post_force(int);
 
  protected:

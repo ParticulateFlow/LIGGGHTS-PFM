@@ -290,6 +290,15 @@ void FixCfdCouplingChemistry::init()
 
 /* ---------------------------------------------------------------------- */
 
+void FixCfdCouplingChemistry::initial_integrate(int)
+{
+  // for all species, reaction heat
+  //if current timestep - 1 == latestpush(species name)
+  //   reset fix_masschange_(species name)
+  
+  // -1 is needed because time step is advanced before this function is called
+}
+
 void FixCfdCouplingChemistry::post_force(int)
 {
     int *mask = atom -> mask;
