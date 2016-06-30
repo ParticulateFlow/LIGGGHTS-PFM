@@ -59,8 +59,8 @@ class CfdDatacoupling : protected Pointers {
 
   // TL:
   // to be used in fix_cfd_coupling_chemistry: if latestpush(m_i)==now {reset m_i}
-  // bigint *latestpush(const char *name);
-  // bigint *latestpull(const char *name);
+  // bigint latestpush(const char *name);
+  // bigint latestpull(const char *name);
 
  protected:
 

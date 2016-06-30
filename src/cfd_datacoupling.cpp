@@ -345,13 +345,13 @@ void CfdDatacoupling::allocate_external(double**&, int, const char *, double)
    check if property has been recently pulled/pushed
 ------------------------------------------------------------------------- */
 /*
-bigint* CfdDatacoupling::latestpush(const char *name)
+bigint CfdDatacoupling::latestpush(const char *name)
 {
     for(int i = 0; i < npush_; i++)
     {
         if(strcmp(name,pushnames_[i]) == 0)
         {
-            return &latestpush_[i]
+            return latestpush_[i];
         }
     }
     if(comm->me == 0 && screen)
@@ -359,13 +359,13 @@ bigint* CfdDatacoupling::latestpush(const char *name)
     lmp->error->all(FLERR,"This error is fatal");
 }
 
-bigint* CfdDatacoupling::latestpull(const char *name)
+bigint CfdDatacoupling::latestpull(const char *name)
 {
     for(int i = 0; i < npull_; i++)
     {
         if(strcmp(name,pullnames_[i]) == 0)
         {
-            return &latestpull_[i]
+            return latestpull_[i];
         }
     }
     if(comm->me == 0 && screen)
