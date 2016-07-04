@@ -235,3 +235,18 @@ void FixCfdCoupling::add_pull_property(const char *name, const char *type)
 {
     dc_->add_pull_property(name,type);
 }
+
+/* ---------------------------------------------------------------------- */
+
+bigint FixCfdCoupling::latestpull(const char *name)
+{
+    dc_->latestpull(name);
+}
+/* ---------------------------------------------------------------------- */
+
+bigint FixCfdCoupling::latestpush(const char *name)
+{
+    dc_->latestpush(name);
+}
+/* ---------------------------------------------------------------------- */
+

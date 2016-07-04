@@ -39,10 +39,12 @@
 #include "fix_cfd_coupling_chemistry.h"
 #include "fix_property_atom.h"
 
+
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
 /* ---------------------------------------------------------------------- */
+
 
 FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg)
@@ -286,17 +288,25 @@ void FixCfdCouplingChemistry::init()
         fix_massfrac_[i]    =   static_cast<FixPropertyAtom*>(modify->find_fix_property(species_names_[i],"property/atom","scalar",0,0,style));
         fix_masschange_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
     }
+
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixCfdCouplingChemistry::initial_integrate(int)
+void FixCfdCouplingChemistry::initial_integrate(bigint)
 {
-  // for all species, reaction heat
-  //if current timestep - 1 == latestpush(species name)
-  //   reset fix_masschange_(species name)
-  
-  // -1 is needed because time step is advanced before this function is called
+    // for all species, reaction heat
+    // if current timestep - 1 == latestpush(species name)
+    // reset fix_masschange_(species name)
+
+    // -1 is needed because time step is advanced before this function is called
+    for (int i = 0; i < num_species; i++)
+    {
+        if (update -> ntimestep - 1 == fix_coupling -> latestpush(species_names_[i]))
+        {
+            fix_masschange_[i] = NULL;
+        }
+    }
 }
 
 void FixCfdCouplingChemistry::post_force(int)

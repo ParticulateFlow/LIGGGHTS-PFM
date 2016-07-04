@@ -37,6 +37,7 @@ FixStyle(couple/cfd/chemistry,FixCfdCouplingChemistry)
 namespace LAMMPS_NS {
 
 class FixCfdCouplingChemistry : public Fix  {
+
  public:
   FixCfdCouplingChemistry(class LAMMPS *, int, char **);
   ~FixCfdCouplingChemistry();
@@ -45,7 +46,7 @@ class FixCfdCouplingChemistry : public Fix  {
 
   int setmask();
   virtual void init();
-  virtual void initial_integrate(int);
+  virtual void initial_integrate(bigint);
   virtual void post_force(int);
 
  protected:
@@ -53,6 +54,7 @@ class FixCfdCouplingChemistry : public Fix  {
   char **species_names_;                        // list of species names
   int iarg_;                                    // int narg_
   char **mod_spec_names_;
+
 
   class FixCfdCoupling* fix_coupling;
   class FixPropertyAtom* fix_tgas;                  // data pulled from cfdemCoupling - partTemp_
