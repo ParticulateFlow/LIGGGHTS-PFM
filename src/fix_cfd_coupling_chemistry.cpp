@@ -299,22 +299,26 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
     // if current timestep - 1 == latestpush(species name)
     // reset fix_masschange_(species name)
     // -1 is needed because time step is advanced before this function is called
+    int nlocal = atom -> nlocal;
+    double *reactionHeat_ = fix_reactionheat_ -> vector_atom;
+
     for (int i = 0; i < num_species; i++)
     {
-        if (update -> ntimestep - 1 == fix_coupling -> latestpush(species_names_[i]))
+        for (int j=0;j<nlocal;j++)
         {
-            fix_masschange_[i] = NULL;
+            if (update -> ntimestep - 1 == fix_coupling -> latestpush(species_names_[i]))
+            {
+                fix_masschange_[i] = NULL;
+            }
+            if (fix_masschange_[i] == NULL)
+            {
+                reactionHeat_[j] = NULL;
+            }
         }
     }
+    //for (int j = 0; j < modify->nfix; j++)
 
-    double *reactionHeat = fix_reactionheat_ -> vector_atom;
-    for (int m = 0; m < reactionHeat; m++)
-    {
-        if (update -> ntimestep - 1 == fix_coupling -> latestpush(reactionHeat))
-        {
-            fix_reactionheat_   = NULL;
-        }
-    }
+
 }
 
 void FixCfdCouplingChemistry::post_force(int)
