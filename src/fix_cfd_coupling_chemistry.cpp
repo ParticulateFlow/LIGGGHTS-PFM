@@ -298,13 +298,21 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
     // for all species, reaction heat
     // if current timestep - 1 == latestpush(species name)
     // reset fix_masschange_(species name)
-
     // -1 is needed because time step is advanced before this function is called
     for (int i = 0; i < num_species; i++)
     {
         if (update -> ntimestep - 1 == fix_coupling -> latestpush(species_names_[i]))
         {
             fix_masschange_[i] = NULL;
+        }
+    }
+
+    double *reactionHeat = fix_reactionheat_ -> vector_atom;
+    for (int m = 0; m < reactionHeat; m++)
+    {
+        if (update -> ntimestep - 1 == fix_coupling -> latestpush(reactionHeat))
+        {
+            fix_reactionheat_   = NULL;
         }
     }
 }
