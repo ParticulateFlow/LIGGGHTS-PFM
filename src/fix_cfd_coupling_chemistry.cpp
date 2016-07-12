@@ -316,17 +316,17 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
             }
         }
     }
-    //for (int j = 0; j < modify->nfix; j++)
+
 
 
 }
 
 void FixCfdCouplingChemistry::post_force(int)
 {
-    int *mask = atom -> mask;
+    /*int *mask = atom -> mask;
     int nlocal = atom -> nlocal;
     double *tgas = fix_tgas->vector_atom;
-    double *rhogas = fix_rhogas->vector_atom;
+    double *rhogas = fix_rhogas->vector_atom;*/
 
 
     // for all species names i and reaction heat
