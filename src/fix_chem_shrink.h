@@ -53,15 +53,18 @@ public:
   virtual void post_force(int);
 
 
-
  protected:
   char* speciesA, *speciesC;
+  char* massA, *massC;
 
   class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C
   class FixPropertyAtom *fix_rhogas_;                           //  density of gas
-  // class FixPropertyAtom *fix_tgas_;                          //  temperature of gas
-  // class FixPropertyAtom *fix_reactionheat_;                  //  DeltaQ
+  class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
+  class FixPropertyAtom *fix_reactionheat_;                     //  DeltaQ
+
+  // can be used to data transfer for change of species mass
+  class FixCfdCouplingChemistry *fcc;
 
   // values from user
   double k;                                         // reaction rate coefficient
@@ -77,6 +80,7 @@ public:
   double *rhogas_;
   double *concA_;
   double *concC_;
+  double *tgas_;
 
 
 };
@@ -85,4 +89,5 @@ public:
 
 #endif
 #endif
+
 

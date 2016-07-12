@@ -48,8 +48,8 @@ using namespace FixConst;
 FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg)
 {
-    if (strncmp(style,"chem/shrink",14) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
-            error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
+   /* if (strncmp(style,"chem/shrink",15) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
+            error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");*/
 
     // defaults
     fix_concA_   =   NULL;
@@ -57,11 +57,13 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_changeOfA_   =   NULL;
     fix_changeOfC_   =   NULL;
     fix_rhogas_      =   NULL;
-    // fix_tpart_       =   NULL;
-    // fix_reactionheat_    =   0;
+    fix_tgas_       =   NULL;
+    fix_reactionheat_    =   0;
 
+    int n;
+    char cha[30];
     iarg_ = 3;
-    if (narg < 14)
+    if (narg < 15)
         error -> all (FLERR,"not enough arguments");
 
     // check and define species A
@@ -104,7 +106,21 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     // define reaction rate coefficient
     if (strcmp(arg[iarg_++], "k") != 0)
         error -> all (FLERR,"keyword k for reaction rate is missing");
-    k   =   atof(arg[iarg_++]);
+    k   =   atof(arg[iarg_]);
+
+    // define changed species mass A
+    massA = new char [n];
+    n = strlen(arg[5]+1);
+    strcpy(cha,"Changed_");
+    strcat(cha,speciesA);
+    strcpy(massA,cha);
+
+    // define changed species mass A
+    massC = new char [n];
+    n = strlen(arg[9]+1);
+    strcpy(cha,"Changed_");
+    strcat(cha,speciesC);
+    strcpy(massC,cha);
 
     // flags for vector output
     peratom_flag =  1;  //0/1 per-atom data is stored
@@ -128,15 +144,14 @@ FixChemShrink::~FixChemShrink()
 
 void FixChemShrink::pre_delete(bool unfixflag)
 {
-    if(unfixflag && fix_concA_) modify  ->  delete_fix(speciesA);
-    if(unfixflag && fix_concC_) modify  ->  delete_fix(speciesC);
-    if(unfixflag && fix_rhogas_)    modify  -> delete_fix("partRho");
-    // if(unfixflag && fix_tgas_)  modify  ->  delete_fix("partTemp");
+    if(unfixflag && fix_concA_)         modify  ->  delete_fix(speciesA);
+    if(unfixflag && fix_concC_)         modify  ->  delete_fix(speciesC);
+    if(unfixflag && fix_rhogas_)        modify  -> delete_fix("partRho");
+    if(unfixflag && fix_tgas_)          modify  ->  delete_fix("partTemp");
+    if(unfixflag && fix_reactionheat_)  modify  ->  delete_fix("reactionHeat");
 
-    if(unfixflag && fix_changeOfA_) modify  ->  delete_fix("changeOfSpeciessMass_A");
-    if(unfixflag && fix_changeOfC_) modify  ->  delete_fix("changeOfSpeciesMass_C");
-
-
+    if(unfixflag && fix_changeOfA_) modify  ->  delete_fix(massA);
+    if(unfixflag && fix_changeOfC_) modify  ->  delete_fix(massC);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -152,18 +167,18 @@ int FixChemShrink::setmask()
 
 void FixChemShrink::post_create()
 {
-    // register concentration species A
-    if (!fix_concA_)
+   //register concentration species A
+   if (!fix_concA_)
     {
         const char* fixarg[9];
-        fixarg[0]=speciesA;
-        fixarg[2]="property/atom";
-        fixarg[3]=speciesA;
-        fixarg[4]="scalar"; // 1 scalar per particle to be registered
-        fixarg[5]="yes";    // restart
-        fixarg[6]="no";     // communicate ghost
-        fixarg[7]="no";     // communicate rev
-        fixarg[8]="0.";
+        fixarg[0]= speciesA;
+        fixarg[2]= "property/atom";
+        fixarg[3]= speciesA;
+        fixarg[4]= "scalar"; // 1 scalar per particle to be registered
+        fixarg[5]= "yes";    // restart
+        fixarg[6]= "no";     // communicate ghost
+        fixarg[7]= "no";     // communicate rev
+        fixarg[8]= "0.";
         fix_concA_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
@@ -171,14 +186,14 @@ void FixChemShrink::post_create()
     if (!fix_concC_)
     {
         const char* fixarg[9];
-        fixarg[0]=speciesC;
-        fixarg[2]="property/atom";
-        fixarg[3]=speciesC;
-        fixarg[4]="scalar"; // 1 scalar per particle to be registered
-        fixarg[5]="yes";    // restart
-        fixarg[6]="no";     // communicate ghost
-        fixarg[7]="no";     // communicate rev
-        fixarg[8]="0.";
+        fixarg[0]= speciesC;
+        fixarg[2]= "property/atom";
+        fixarg[3]= speciesC;
+        fixarg[4]= "scalar"; // 1 scalar per particle to be registered
+        fixarg[5]= "yes";    // restart
+        fixarg[6]= "no";     // communicate ghost
+        fixarg[7]= "no";     // communicate rev
+        fixarg[8]= "0.";
         fix_concC_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
@@ -186,51 +201,83 @@ void FixChemShrink::post_create()
     if (!fix_changeOfA_)
     {
         const char* fixarg[9];
-        fixarg[0]="changeOfSpeciessMass_A";
-        fixarg[2]="property/atom";
-        fixarg[3]="changeOfSpeciessMass_A";
-        fixarg[4]="scalar"; // 1 scalar per particle to be registered
-        fixarg[5]="yes";    // restart
-        fixarg[6]="no";     // communicate ghost
-        fixarg[7]="no";     // communicate rev
-        fixarg[8]="0.";
-        modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        fixarg[0]= massA;
+        fixarg[2]= "property/atom";
+        fixarg[3]= massA;
+        fixarg[4]= "scalar"; // 1 scalar per particle to be registered
+        fixarg[5]= "yes";    // restart
+        fixarg[6]= "no";     // communicate ghost
+        fixarg[7]= "no";     // communicate rev
+        fixarg[8]= "0.";
+        fix_changeOfA_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     // register change of species mass C
-    if (!fix_changeOfA_)
+    if (!fix_changeOfC_)
     {
         const char* fixarg[9];
-        fixarg[0]="changeOfSpeciessMass_C";
-        fixarg[2]="property/atom";
-        fixarg[3]="changeOfSpeciessMass_C";
-        fixarg[4]="scalar"; // 1 scalar per particle to be registered
-        fixarg[5]="yes";    // restart
-        fixarg[6]="no";     // communicate ghost
-        fixarg[7]="no";     // communicate rev
-        fixarg[8]="0.";
-        modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        fixarg[0]= massC;
+        fixarg[2]= "property/atom";
+        fixarg[3]= massC;
+        fixarg[4]= "scalar"; // 1 scalar per particle to be registered
+        fixarg[5]= "yes";    // restart
+        fixarg[6]= "no";     // communicate ghost
+        fixarg[7]= "no";     // communicate rev
+        fixarg[8]= "0.";
+        fix_changeOfC_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     // register rhogas (partRho)
     if (!fix_rhogas_)
     {
         const char* fixarg[9];
-        fixarg[0]="partRho";
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="partRho";
-        fixarg[4]="scalar";              // 1 scalar per particle to be registered
-        fixarg[5]="no";                  // restart yes
-        fixarg[6]="yes";                 // communicate ghost no
-        fixarg[7]="no";                  // communicate rev
-        fixarg[8]="0.";
+        fixarg[0]= "partRho";
+        fixarg[1]= "all";
+        fixarg[2]= "property/atom";
+        fixarg[3]= "partRho";
+        fixarg[4]= "scalar";              // 1 scalar per particle to be registered
+        fixarg[5]= "no";                  // restart yes
+        fixarg[6]= "yes";                 // communicate ghost no
+        fixarg[7]= "no";                  // communicate rev
+        fixarg[8]= "0.";
         fix_rhogas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+
+    // register tgas (partTemp)
+    if (!fix_tgas_)
+    {
+        const char* fixarg[9];
+        fixarg[0]= "partTemp";
+        fixarg[1]= "all";
+        fixarg[2]= "property/atom";
+        fixarg[3]= "partTemp";
+        fixarg[4]= "scalar";             // 1 vector per particle to be registered
+        fixarg[5]= "yes";                // restart yes
+        fixarg[6]= "no";                 // communicate ghost no
+        fixarg[7]= "no";                 // communicate rev
+        fixarg[8]= "0.";
+        fix_tgas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+
+    // register reactionheat
+    if (!fix_reactionheat_)
+    {
+        const char* fixarg[9];
+        fixarg[0]= "reactionHeat";
+        fixarg[2]= "property/atom";
+        fixarg[3]= "reactionHeat";
+        fixarg[4]= "scalar"; // 1 vector per particle to be registered
+        fixarg[5]= "yes";    // restart
+        fixarg[6]= "no";     // communicate ghost
+        fixarg[7]= "no";     // communicate rev
+        fixarg[8]= "0.";
+        fix_reactionheat_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
 }
 
 /* ---------------------------------------------------------------------- */
+
 void FixChemShrink::updatePtrs()
 {
     changeOfA_  =   fix_changeOfA_  -> vector_atom;
@@ -238,6 +285,7 @@ void FixChemShrink::updatePtrs()
     rhogas_     =   fix_rhogas_     -> vector_atom;
     concA_      =   fix_concA_      -> vector_atom;
     concC_      =   fix_concC_      -> vector_atom;
+    //tgas_       =   fix_tgas_       -> vector_atom;
 
 }
 
@@ -246,13 +294,13 @@ void FixChemShrink::updatePtrs()
 void FixChemShrink::init()
 {
     if (!atom -> radius_flag || !atom -> density_flag)
-        error -> all(FLERR,"Fix chem/shrink cna only be used with sphere atom style");
+        error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style");
 
     // references
     fix_concA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
     fix_concC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
-    fix_changeOfA_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_A","property/atom","scalar",0,0,style));
-    fix_changeOfC_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_C","property/atom","scalar",0,0,style));
+    fix_changeOfA_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massA,"property/atom","scalar",0,0,style));
+    fix_changeOfC_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massC,"property/atom","scalar",0,0,style));
     updatePtrs();
 }
 
@@ -268,6 +316,7 @@ void FixChemShrink::post_force(int)
 }
 
 /* ---------------------------------------------------------------------- */
+
 void FixChemShrink::reaction()
     {
         updatePtrs();
@@ -276,10 +325,8 @@ void FixChemShrink::reaction()
         for (int i = 0; i<nlocal; i++)
         {
             // double dA   = -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
-            double dA   =   -k*rhogas_[i]*concA_[i]*4*M_PI*radius_[i]*radius_[i];
+            double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i]);
             double dC   =   -dA*(molMass_C_/molMass_A_);
-            //double dA   = -k*rhogas_*concA_*4*M_PI*radius_*radius_;//partSurfArea(radius_);
-            //double dC   = -dA*(molMass_C_/molMass_A_);
 
             // rate of change of the total number of moles of A
             // fix_changeOfA_  +=  dA;
@@ -293,13 +340,15 @@ void FixChemShrink::reaction()
             pmass_[i]          +=  dA*(molMass_B_/molMass_A_);
 
             // change of radius of particle -assumption: density of particle is constant
-            radius_[i]         -=   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
+            radius_[i]         =   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
         }
-     };
+     }
 
 /* ----------------- compute particle surface area ------------------------ */
- double FixChemShrink::partSurfArea(double radius)
+
+double FixChemShrink::partSurfArea(double radius)
     {
         double A_p =   4*M_PI*radius*radius;
         return (A_p);
-    };
+    }
+
