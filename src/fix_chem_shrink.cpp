@@ -62,6 +62,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
     int n;
     char cha[30];
+
     iarg_ = 3;
     if (narg < 15)
         error -> all (FLERR,"not enough arguments");
@@ -69,44 +70,69 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     // check and define species A
     if (strcmp(arg[iarg_++],"speciesA") != 0)
         error -> all (FLERR, "missing keyword speciesA");
+
+    printf("arg 3: %s \n",arg[3]); // check
+
     speciesA = new char [strlen(arg[iarg_])+1];
     strcpy(speciesA, arg[iarg_++]);
+
+    printf("arg 4: %s \n",arg[4]); // check
     if (speciesA == 0)
         error -> all (FLERR, "speciesA not defined");
 
     // check and define molecular mass of A
     if (strcmp(arg[iarg_++],"molMassA") != 0)
         error -> all (FLERR, "keyword molMassA for species A is missing");
+    printf("arg 5: %s \n",arg[5]); // check
+
     molMass_A_  =   atof(arg[iarg_++]);
-    if (molMass_A_ < 1)
+    printf("arg 6: %f \n",molMass_A_); // check
+
+    if (molMass_A_ == 0)
         error -> all (FLERR,"molMass species A is not defined");
 
     // check and define Species C
     if (strcmp(arg[iarg_++],"speciesC") != 0)
         error -> all (FLERR, "missing keyword speciesC");
+    printf("arg 7: %s \n",arg[7]); // check
+
     speciesC = new char [strlen(arg[iarg_])+1];
+
     strcpy(speciesC, arg[iarg_++]);
     if (speciesC == 0)
         error -> all (FLERR, "speciesC not defined");
+    printf("arg 8: %s \n",arg[8]); // check
 
     // check and define molecular mass of C
     if (strcmp(arg[iarg_++],"molMassC") != 0)
         error -> all (FLERR, "keyword molMassC for species C is missing");
+    printf("arg 9: %s \n",arg[9]); // check
+
     molMass_C_  =   atof(arg[iarg_++]);
-    if (molMass_C_ < 1)
+    printf("arg 10: %f \n",molMass_C_ ); // check
+
+    if (molMass_C_ == 0)
         error -> all (FLERR,"molMass species C is not defined");
 
     // define the molecular mass of solid molecule
     if (strcmp(arg[iarg_++],"molMassB") != 0)
         error -> all (FLERR, "keyword molMassB for species B is missing");
+    printf("arg 11: %s \n",arg[11]); // check
+
     molMass_B_  =   atof(arg[iarg_++]);
-    if (molMass_B_ < 1)
+    printf("arg 12: %f \n",molMass_B_); // check
+
+    if (molMass_B_ == 0)
         error -> all (FLERR,"molMass species solid is not defined");
 
     // define reaction rate coefficient
     if (strcmp(arg[iarg_++], "k") != 0)
         error -> all (FLERR,"keyword k for reaction rate is missing");
-    k   =   atof(arg[iarg_]);
+    printf("arg 13: %s \n",arg[13]); // check
+
+    k   =   atof(arg[iarg_++]);
+    printf("arg 14: %.4e \n",k); // check
+    printf("arg 15: %s \n",arg[15]); // check
 
     // define changed species mass A
     massA = new char [n];
@@ -181,6 +207,7 @@ void FixChemShrink::post_create()
     {
         const char* fixarg[9];
         fixarg[0]= speciesA;
+        fixarg[1]= "all";
         fixarg[2]= "property/atom";
         fixarg[3]= speciesA;
         fixarg[4]= "scalar"; // 1 scalar per particle to be registered
@@ -191,11 +218,12 @@ void FixChemShrink::post_create()
         modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
-    // register concentration species C
+   // register concentration species C
     if (!fix_concC_)
     {
         const char* fixarg[9];
         fixarg[0]= speciesC;
+        fixarg[1]= "all";
         fixarg[2]= "property/atom";
         fixarg[3]= speciesC;
         fixarg[4]= "scalar"; // 1 scalar per particle to be registered
@@ -211,6 +239,7 @@ void FixChemShrink::post_create()
     {
         const char* fixarg[9];
         fixarg[0]= massA;
+        fixarg[1]= "all";
         fixarg[2]= "property/atom";
         fixarg[3]= massA;
         fixarg[4]= "scalar"; // 1 scalar per particle to be registered
@@ -226,6 +255,7 @@ void FixChemShrink::post_create()
     {
         const char* fixarg[9];
         fixarg[0]= massC;
+        fixarg[1]= "all";
         fixarg[2]= "property/atom";
         fixarg[3]= massC;
         fixarg[4]= "scalar"; // 1 scalar per particle to be registered
@@ -273,6 +303,7 @@ void FixChemShrink::post_create()
     {
         const char* fixarg[9];
         fixarg[0]= "reactionHeat";
+        fixarg[1]= "all";
         fixarg[2]= "property/atom";
         fixarg[3]= "reactionHeat";
         fixarg[4]= "scalar"; // 1 vector per particle to be registered
@@ -302,7 +333,7 @@ void FixChemShrink::updatePtrs()
 
 void FixChemShrink::init()
 {
-    if (!atom -> radius_flag || !atom -> density_flag)
+   if (!atom -> radius_flag || !atom -> density_flag)
         error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style");
 
     // references
