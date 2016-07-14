@@ -173,8 +173,19 @@ void CfdDatacoupling::push(const char *name, const char *type, void *&, const ch
     {
         if(strcmp(name,pushnames_[i]) == 0 && strcmp(type,pushtypes_[i]) == 0)
         {
+            printf("pushnames : %s \n", pushnames_[0]);
+            printf("pushnames : %s \n", pushnames_[1]);
+            printf("pushnames : %s \n", pushnames_[2]);
+            printf("pushnames : %s \n", pushnames_[3]);
+            printf("pushnames : %s \n", pushnames_[4]);
+            printf("pushnames : %s \n", pushnames_[5]);
+            printf("pushnames : %s \n", pushnames_[i]);
             found = 1;
             pushinvoked_[i] = 1;
+            // EKI
+            printf("push invoked : %s \n",pushinvoked_[i]);
+
+
             // TL:
             latestpush_[i] = update->ntimestep;
         }

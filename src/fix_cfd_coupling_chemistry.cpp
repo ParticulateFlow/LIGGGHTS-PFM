@@ -68,6 +68,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
     if (strcmp(arg[iarg_++],"n_species") != 0)
         error -> all (FLERR, "missing keyword 'n_species'");
     num_species = atoi(arg[iarg_++]);
+    printf("num species: %i \n",num_species);
     if (num_species < 1)
         error -> all (FLERR, "'n_species' > 0 is required");
     if (strcmp(arg[iarg_++],"species_names") != 0)
