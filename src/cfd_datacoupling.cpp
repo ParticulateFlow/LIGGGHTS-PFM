@@ -153,8 +153,11 @@ void CfdDatacoupling::pull(const char *name, const char *type, void *&, const ch
 
         // ---------------------------------------------- //
         // OF Pull properties debug check
+        if (comm->me == 0 && screen)
+        {
         fprintf(screen,"latest pull: %li \n", latestpull_[i]);
         fprintf(screen,"pullnames: %s \n", pullnames_[i]);
+        }
         // ---------------------------------------------- //
     }
     if(!found)
@@ -197,8 +200,11 @@ void CfdDatacoupling::push(const char *name, const char *type, void *&, const ch
 
         // ---------------------------------------------- //
         // OF Pushed properties debug check
+        if (comm->me == 0 && screen)
+        {
         fprintf(screen,"latest push: %li \n", latestpush_[i]);
         fprintf(screen,"pushnames: %s \n", pushnames_[i]);
+        }
         // ---------------------------------------------- //
     }
     if(!found && error_push())
