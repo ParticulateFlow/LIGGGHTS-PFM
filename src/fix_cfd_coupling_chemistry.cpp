@@ -317,9 +317,6 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
             }
         }
     }
-
-
-
 }
 
 void FixCfdCouplingChemistry::post_force(int)
