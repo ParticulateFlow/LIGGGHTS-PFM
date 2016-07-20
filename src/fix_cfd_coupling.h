@@ -55,6 +55,7 @@ class FixCfdCoupling : public Fix {
   //void push(char *name,char *type,void *&ptr);
   void add_push_property(const char *name, const char *type);
   void add_pull_property(const char *name, const char *type);
+
   // EKI
   bigint latestpush(const char *name);
   bigint latestpull(const char *name);

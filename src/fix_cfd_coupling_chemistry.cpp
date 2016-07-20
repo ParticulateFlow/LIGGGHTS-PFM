@@ -204,6 +204,7 @@ void FixCfdCouplingChemistry::post_create()
     {
         const char* fixarg[9];
         fixarg[0]="reactionHeat";
+        fixarg[1]="all";
         fixarg[2]="property/atom";
         fixarg[3]="reactionHeat";
         fixarg[4]="scalar"; // 1 vector per particle to be registered
@@ -268,13 +269,15 @@ void FixCfdCouplingChemistry::init()
     // if(use_Re_) fix_coupling->add_pull_property("Re","scalar-atom");
     fix_coupling    ->  add_pull_property("partTemp","scalar-atom");
     fix_coupling    ->  add_pull_property("partRho","scalar-atom");
+    for (int i=0; i<num_species; i++)
+    {
+        fix_coupling -> add_pull_property(species_names_[i],"scalar-atom");
+    }
 
     //  values to be transfered to OF
     fix_coupling    ->  add_push_property("reactionHeat","scalar-atom");
-
     for (int i = 0; i<num_species; i++)
     {
-        fix_coupling    ->  add_push_property(species_names_[i],"scalar-atom");
         fix_coupling    ->  add_push_property(mod_spec_names_[i],"scalar-atom");
     }
 
