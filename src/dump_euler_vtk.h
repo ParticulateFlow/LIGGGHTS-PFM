@@ -58,6 +58,7 @@ class DumpEulerVTK : public Dump {
   // buffer for data from all procs
   int n_all_, n_all_max_;
   double *buf_all_;
+  char *fix_euler_name_;
 
 };
 
