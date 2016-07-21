@@ -631,7 +631,7 @@ inline double RegHexMesh::volume_of_hex(int iHex)
 
 /* ---------------------------------------------------------------------- */
 
-inline int RegHexMesh::is_inside_hex(int iHex,double *pos)
+int RegHexMesh::is_inside_hex(int iHex,double *pos)
 {
   for(int i=0; i<8; ++i) {
     hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
