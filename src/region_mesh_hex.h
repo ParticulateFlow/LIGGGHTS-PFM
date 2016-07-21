@@ -62,11 +62,11 @@ class RegHexMesh : public Region {
 
   int get_hex(double *pos);
   int get_hex(const char* property, int value);
-  int match_hex_cut(int iHex, double *pos,double cut);
+  int match_hex_cut(int iHex,double *pos,double cut);
+  int is_inside_hex(int iHex,double *pos);
 
  protected:
 
-   int is_inside_hex(int iHex,double *pos);
 
    // functions are actually not called at the moment
    virtual void generate_random(double *);
