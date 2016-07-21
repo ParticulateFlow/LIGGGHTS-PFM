@@ -22,7 +22,7 @@
 <PRE>fix ID group-ID mesh/surface file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keywords surface_values
 fix ID group-ID mesh/surface/planar file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keywords surface_values 
 </PRE>
-<UL><LI>ID, is documented in <A HREF = "fix.html">fix</A> command, the group-ID is ignored for this command. 
+<UL><LI>ID is documented in <A HREF = "fix.html">fix</A> command. 
 
 <LI>mesh/surface or mesh/surface/planar = style name of this fix command  
 
@@ -32,13 +32,15 @@ fix ID group-ID mesh/surface/planar file filename premesh_keywords premesh_value
 
 <LI>zero or more premesh_keywords/premesh_value pairs may be appended 
 
-<LI>premesh_keyword = <I>type</I> or <I>precision</I> or <I>heal</I> or <I>verbose</I> 
+<LI>premesh_keyword = <I>type</I> or <I>precision</I> or <I>heal</I> or <I>verbose</I> or <I>cell_data</I> 
 
-<LI>  <I>type</I> value = atom type (material type) of the wall imported from the STL file
+<PRE>  <I>type</I> value = atom type (material type) of the wall imported from the STL file
   <I>precision</I> value = length mesh nodes this far away at maximum will be recognized as identical (length units)
   <I>heal</I> value = auto_remove_duplicates or no
   <I>verbose</I> value = yes or no
-zero or more mesh_keywords/mesh_value pairs may be appended 
+  <I>cell_data</I> value = yes or no to load per element data from VTK files 
+</PRE>
+<LI>zero or more mesh_keywords/mesh_value pairs may be appended 
 
 <LI>mesh_keyword = <I>scale</I> or <I>move</I> or <I>rotate</I> or <I>temperature</I> 
 
@@ -88,8 +90,8 @@ ASCII STL files or legacy ASCII VTK files. Style <I>mesh/surface</I> is a genera
 consist of only 1 planar face. 
 </P>
 <P>Generall, you can apply scaling, offset and rotation to the imported mesh via keywords <I>scale</I>, 
-<I>move</I>, <I>rotate</I>. Operations are applied in the order as they are specified. The group-ID is 
-ignored for this command. For periodic boundaries, the mesh is mapped. 
+<I>move</I>, <I>rotate</I>. Operations are applied in the order as they are specified. The group-ID defines
+which particles will "see" the mesh, in case it is used as a granular wall.
 </P>
 <P>One fix represents one wall with a specific material, where the material is identified 
 via keyword <I>type</I>. If multiple meshes with different materials are desired, the respective 

@@ -16,16 +16,17 @@ fix mesh/surface/omp command :h3
 fix ID group-ID mesh/surface file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keywords surface_values
 fix ID group-ID mesh/surface/planar file filename premesh_keywords premesh_values mesh_keywords mesh_values surface_keywords surface_values :pre
 
-ID, is documented in "fix"_fix.html command. :ulb,l
+ID is documented in "fix"_fix.html command. :ulb,l
 mesh/surface or mesh/surface/planar = style name of this fix command  :l
 file = obligatory keyword :l
 filename = name of STL or VTK file containing the triangle mesh data :l
 zero or more premesh_keywords/premesh_value pairs may be appended :l
-premesh_keyword = {type} or {precision} or {heal} or {verbose} :l
+premesh_keyword = {type} or {precision} or {heal} or {verbose} or {cell_data} :l
   {type} value = atom type (material type) of the wall imported from the STL file
   {precision} value = length mesh nodes this far away at maximum will be recognized as identical (length units)
   {heal} value = auto_remove_duplicates or no
   {verbose} value = yes or no
+  {cell_data} value = yes or no to load per element data from VTK files :pre
 zero or more mesh_keywords/mesh_value pairs may be appended :l
 mesh_keyword = {scale} or {move} or {rotate} or {temperature} :l
   {scale} value = factor
