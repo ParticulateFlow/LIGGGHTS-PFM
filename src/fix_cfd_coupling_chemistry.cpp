@@ -68,7 +68,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
     if (strcmp(arg[iarg_++],"n_species") != 0)
         error -> all (FLERR, "missing keyword 'n_species'");
     num_species = atoi(arg[iarg_++]);
-    printf("num species: %i \n",num_species);
+
     if (num_species < 1)
         error -> all (FLERR, "'n_species' > 0 is required");
     if (strcmp(arg[iarg_++],"species_names") != 0)
@@ -86,7 +86,16 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         strcpy(mod,"Modified_");
         strcat(mod,species_names_[i]);
         strcpy(mod_spec_names_[i],mod);
-        printf("modified species is: %s \n", mod_spec_names_[i]);
+
+
+        // Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly)
+        if (comm->me == 0 && screen)
+        {
+            fprintf(screen,"Fix_cfd_coupling_chemistry_control - 1 (are the speciesdetermined correctly)");
+            fprintf(screen,"num species: %i \n",num_species);
+            fprintf(screen,"modified species is: %s \n", mod_spec_names_[i]);
+        }
+        // ----------------------------------------------------------------------
 
     }
     fix_massfrac_ = new FixPropertyAtom*[num_species];
@@ -129,8 +138,8 @@ FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
 {
     for (int i=0;i<num_species;i++) delete [] species_names_[i];
     for (int i=0;i<num_species;i++) delete [] mod_spec_names_[i];
-    delete [] species_names_;
-    delete [] mod_spec_names_;
+/*    delete [] species_names_;
+    delete [] mod_spec_names_;*/
     if(fix_massfrac_)       delete []fix_massfrac_;
     if(fix_masschange_)     delete []fix_masschange_;
 }
@@ -245,7 +254,7 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[5]="no";                     // restart
             fixarg[6]="no";                     // communicate ghost
             fixarg[7]="no";                     // communicate rev
-            fixarg[8]="1.";
+            fixarg[8]="0.";
             modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
         }
     }
