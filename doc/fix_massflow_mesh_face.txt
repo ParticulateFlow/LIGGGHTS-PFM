@@ -1,0 +1,125 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix massflow/mesh/face command :h3
+
+[Syntax:]
+
+fix ID group-ID massflow/mesh mesh mesh-ID vec_side vx vy vz keyword value ... :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+massflow/mesh/face = style name of this fix command   :l
+mesh = obligatory keyword :l
+mesh-ID = ID of a "fix mesh/surface"_fix_mesh_surface.html command :l
+zero or more keyword/value pairs may be appended to args :l
+keywords = {check_property} or {count} or {point_at_outlet} or {append} or {file} or {screen} or {delete_atoms} :l
+  {check_property} property value
+    property = name of atom property to check
+    value = reference atom property value to check against
+  {count} value = {once} or {multiple}
+    once = count particles only once
+    multiple = allow particles to be counted multiple times 
+  {point_at_outlet}  pointX pointY pointZ
+    pointX pointY pointZ = coordinates of point on the outlet side of the surface 
+  {inside_out}  
+    use this in connection with {point_at_outlet} to flip direction particle counting 
+  {file} value = filename 
+  {append} value = filename 
+   filename = name of the file to print diameter, position and velocity values of the particles
+  {screen} value = {yes} or {no} 
+  {delete_atoms} value = {yes} or {no}  
+    yes = to remove the particles that pass through the mesh surface
+  {cg} value
+    value = coarse grain ratio of measured particles :pre
+
+:ule
+
+[Examples:]
+
+fix massflowcg2t all massflow/mesh/face mesh surfacet count once check_property i_cglevel 2 cg 2 inside_out :pre
+fix massflowcg2b all massflow/mesh/face mesh surfaceb count multiple check_property i_cglevel 2 cg 2 file post/massflowprop.txt :pre
+
+[LIGGGHTS vs. LAMMPS Info:]
+
+This LIGGGHTS command is not available in LAMMPS.
+
+[Description:]
+
+Fix massflow/mesh/face tracks how many particles penetrate through each face of
+a mesh surface, as defined by a "fix mesh/surface"_fix_mesh_surface.html command.
+It counts the total number of particles and the associated mass. It calculates the
+averaged velocity of the crossing particles and stores their size distribution as
+well as their atom types. Only particles part of {group} are eligible for counting.
+If {check_property} is specified, only particles with the given property value are
+considered. {check_property} may refer to a "fix poperty/atom"_fix_property.html
+or a fix property/atom/lammps.
+
+Particles are counted if they cross from the inner side of the mesh to the outer
+side of the mesh. The outer side can be defined by the winding order of the mesh
+vertices or by specifying a point at the outlet side of the mesh (keyword {point_at_outlet}). 
+
+The following restriction applies in case {point_at_outlet} is used: the {count} 
+value has to be set to once.
+
+The keyword {point_at_outlet} is especially useful in case a cylindrically-shaped
+surface is used. The {point_at_outlet} value should be on the cylinder axis in
+this case. If you like to track particles moving away from the cylinder axis,
+specify the {point_at_outlet} on the axis, and use the keyword 
+{inside_out} to flip the direction.
+
+If {count} = once, then each particle is only counted once, for {count} = multiple
+a particle contributes to the statistics each time it crosses the mesh face.
+This can happen e.g. in the case of periodic boundary conditions or in re-circulating
+flow conditions.
+
+The timestep of the crossing, the ID of the crossed face, the atom ID, as well as
+the diameter, position and velocity of the particles can be written into a file
+using the {file} keyword and specifying a filename. 
+
+If the {screen} keyword is used, output by this fix to the screen and
+logfile can be turned on or off as desired.  
+
+If the {delete_atoms} keyword is used then the particles passing through the mesh 
+surface are deleted at the next re-neighboring step.
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+Information about this fix is written to "binary restart files"_restart.html .
+
+This fix computes a per-atom vector (the marker) which can be accessed by
+various "output commands"_Section_howto.html#howto_15. The per-atom vector 
+(i.e., the marker) can be accessed by dumps by using "f_massflowface_ID".
+This fix also computes a global vector of length 10. This vector can be 
+accessed via "f_ID", where ID is the fix id. The first vector component 
+is equal to the total mass which has crossed the mesh surface, the second vector 
+component indicates the (resolved) particle count. The third vector component 
+is equal to the total mass which has crossed the mesh surface since the last output 
+divided by the time since the last output (i.e., the mass flow rate), the fourth vector 
+component indicates the (resolved) particle count since the last output divided by the time
+since the last output (i.e., the number rate of particles). The fifth and sixth vector
+components are the deleted mass and the number of deleted particles. The seventh component
+vector component indicates the (resolved) particle count since the last output.
+The last three vector components are the favre-averaged velocity components.
+
+This vector can also be accessed by various "output commands"_Section_howto.html#howto_15.
+
+[Restrictions:] 
+
+The mesh surface must provide the element property 'face_id', e.g. by loading it from
+a VTK file using the {cell_data} option of the "fix mesh/surface"_fix_mesh_surface.html
+command. All triangles with the same ID are considered to form a face.
+
+[Related commands:]
+
+"compute nparticles/tracer/region"_compute_nparticles_tracer_region.html,
+"fix massflow/mesh"_fix_massflow_mesh.html
+
+[Default:] 
+
+{count} = multiple, {inside_out} = false, {delete_atoms} = false, {cg} = 1
