@@ -1,0 +1,142 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix insert/pack/face command :h3
+
+[Syntax:]
+
+fix ID group-ID insert/pack/face seed seed_value general_keywords general_values pack_face_keywords pack_face_values ... :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+insert/pack/face = style names of this fix command :l
+seed = obligatory keyword :l
+seed_value = random # seed (positive integer) :l
+one or more general keyword/value pairs can be appended :l
+general_keywords = {verbose} or {maxattampt} or {insert_every} or {all_in} :l
+  {verbose} = yes or no
+  {maxattempt} value = ma
+    ma = max # of insertion attempts per atom (positive integer)
+  {insert_every} value = ie
+    ie = every how many time-steps particles are inserted - insertion happens periodically (positive integer)
+  {start} value = ts
+    ts = time-step at which insertion should start (positive integer larger than current time-step)
+  {all_in} value = yes or no :pre
+
+following the general keyword/value section, one or more pack_face keyword/value pairs can be appended for the fix insert/pack/face command :l
+pack_face_keywords = {region} or {massflow_face} or {cg} or {type_offset} or {ntry_mc} :l
+  {region} value = region-ID
+    region-ID = ID of the region mesh/hex where the particles will be generated
+  {massflow_face} values = fix-ID
+    fix-ID =  ID of a "fix massflow/mesh/face"_fix_massflow_mesh_face.html command
+  {cg} value = cg
+    cg = coarse grain ratio of particles to insert
+  {type_offset} value = to
+    to = offset in atom type compared to particles measured by "fix massflow/mesh/face"_fix_massflow_mesh_face.html
+  {ntry_mc} values = n
+    n = number of Monte-Carlo steps for calculating the region's volume  (positive integer) :pre
+:ule
+
+[Examples:]
+
+fix ins resolved insert/pack/face seed 1001 maxattempt 500 insert_every 500 all_in yes region hexregion massflow_face massflow cg 1 type_offset 1 ntry_mc 10000 :pre
+
+[Description:]
+
+Insert particles recorded by "fix massflow/mesh/face"_fix_massflow_mesh_face.html
+into a granular run every few timesteps within the specified region,
+as defined via the {region} keyword. The region of type mesh/hex must
+hold the element property 'face_id' corresponding to the 'face_id' property
+of the mesh used in fix massflow/mesh/face. This command uses a distributiontemplate
+generated automatically from the data collected by fix massflow/mesh/face to define
+the properties of the inserted particles.
+
+The {verbose} keyword controls whether statistics about particle
+insertion is output to the screen each time particles are inserted.
+
+At each insertion step, fix insert/pack/face tries to insert all particles
+recorded by fix massflow/mesh/face since the last insertion.
+
+The frequency of the particle insertion can be controlled by the 
+keyword {insert_every}, which defines the number of time-steps between 
+two insertions.
+
+The {start} keyword can be used to set the time-step at which the insertion 
+should start.
+
+Inserted particles are assigned the atom types recorded by fix massflow/mesh/face
+which can be altered via the {type_offset} keyword. The particles are assigned to
+2 groups: the default group "all" and the group specified in the fix insert command.
+
+Overlap is checked for at insertion, both within the inserted particle package
+and with other existig particles. The number of insertion attempts per particle
+can be specified via the {maxattempt} keyword. Each timestep particles are inserted,
+the command will make up to a total of M tries to insert the new particles without
+overlaps, where M = # of inserted particles * {maxattempt}.
+If unsuccessful at completing all insertions, a warning will be printed.
+
+The {all_in} flag determines if the particle is completely contained 
+in the insertion region ({all_in yes}) or only the particle center 
+({all_in no}).
+
+The initial velocity is determined by the face- and mass-averaged data
+gathered by fix massflow/mesh/face.
+
+[Description for fix insert/pack/face:]
+
+This command must use the {region} keyword to define an insertion
+volume. The specified region must have been previously defined with a
+"region mesh/hex"_region.html command. Dynamic regions are not supported
+as insertion region. Each timestep particles are inserted, they are placed
+randomly inside the hexahedral cell of the insertion volume that corresponds
+to the face of the surface mesh used by fix massflow/mesh/face. 
+
+The {massflow_face} must be used to specify a
+"fix massflow/mesh/face"_fix_massflow_mesh_face.html command that
+determines the number and parameters of the particles to insert.
+
+The {cg} value determines the coarse grain ratio of the particles to insert.
+
+The {type_offset} option can be used to change the atom type of the
+inserted particles from the atom type of the particles recorded by
+fix massflow/mesh/face. The given offset is added to the original atom type.
+
+To determine the volume of each hexahedron of the insertion region,
+a Monte Carlo approach is used. The {ntry_mc} keyword is used to control
+the number of MC tries that are used for the volume calculation.
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+Information about this fix is written to "binary restart
+files"_restart.html.  This means you can restart a simulation
+while inserting particles, when the restart file was written during the
+insertion operation. 
+
+None of the "fix_modify"_fix_modify.html options are relevant to this
+fix. A global vector is stored by this fix for access by various "output
+commands"_Section_howto.html#4_15. The first component of the vector is the
+number of particles already inserted, the second component is the mass
+of particles already inserted. No parameter of this fix can be
+used with the {start/stop} keywords of the "run"_run.html command.
+This fix is not invoked during "energy minimization"_minimize.html.
+
+[Restrictions:]
+
+Dynamic regions are not supported as insertion region.
+
+[Related commands:]
+
+"fix insert/pack"_fix_insert_pack.html, "fix insert/rate/region"_fix_insert_rate_region.html,
+"fix insert/stream"_fix_insert_stream.html, "fix deposit"_fix_deposit.html,
+"fix pour"_fix_pour.html", region"_region.html
+
+[Default:]
+
+The defaults are maxattempt = 50, all_in = no, start = next time-step,
+cg = 1, type_offset = 0, ntry_mc = 100000
+
