@@ -55,6 +55,7 @@ using namespace FixConst;
 FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   parallel_(true),
+  dirty_(true),
   exec_every_(1),
   box_change_size_(false),
   box_change_domain_(false),
@@ -181,6 +182,8 @@ void FixAveEuler::post_create()
 int FixAveEuler::setmask()
 {
   int mask = 0;
+  mask |= POST_INTEGRATE;
+  mask |= PRE_FORCE;
   mask |= END_OF_STEP;
   return mask;
 }
@@ -225,6 +228,17 @@ void FixAveEuler::setup(int vflag)
 {
     setup_bins();
     end_of_step();
+}
+
+/* ---------------------------------------------------------------------- */
+void FixAveEuler::post_integrate()
+{
+  dirty_ = true;
+}
+/* ---------------------------------------------------------------------- */
+void FixAveEuler::pre_force(int)
+{
+  dirty_ = true;
 }
 
 /* ----------------------------------------------------------------------
@@ -412,7 +426,7 @@ void FixAveEuler::end_of_step()
     }
 
     // bin atoms
-    bin_atoms();
+    if (dirty_) bin_atoms();
 
     // calculate Eulerian grid properties
     // performs allreduce if necessary
@@ -479,6 +493,7 @@ void FixAveEuler::bin_atoms()
       cellptr_[i] = cellhead_[ibin];
       cellhead_[ibin] = i;
   }
+  dirty_ = false;
 }
 
 /* ----------------------------------------------------------------------

@@ -50,7 +50,8 @@
       keywords = <I>output</I>
       <I>output</I> values = face or interpolate 
       dump-identifier = 'stress' or 'id' or 'wear' or 'vel' or 'stresscomponents' or 'owner' or 'area' or 'aedges' or 'acorners' or 'nneigs' or any ID of a <A HREF = "fix_mesh_surface.html">fix mesh/surface</A>
-  <I>euler/vtk</I> args = none
+  <I>euler/vtk</I> args = zero or one fix-identifier
+      fix-identifier = ID of a fix ave/euler or fix ave/euler/region command
   <I>decomposition/vtk</I> args = none 
 </PRE>
 <PRE>  <I>local</I> args = list of local attributes
@@ -395,7 +396,9 @@ commands, you can specify which meshes to dump. If no meshes are specified,
 all meshes used in the simulation are dumped.
 </P>
 <P>The <I>euler/vtk</I> style dumps the output of a <A HREF = "fix_ave_euler.html">fix ave/euler</A>
-command into a series of VTK files. No further args are expected.
+or <A HREF = "fix_ave_euler_region.html">fix ave/euler/region</A> command into a series of VTK
+files. If no further args are specified, the first fix of type ave/euler or
+ave/euler/region will be used.
 </P>
 <P>The <I>decomposition/vtk</I> style dumps the processor grid decomposition
 into a series of VTK files. No further args are expected.
