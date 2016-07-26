@@ -1,0 +1,90 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix forcecontrol/region command :h3
+
+[Syntax:]
+
+fix ID group-ID forcecontrol/region control_keywords control_values :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+forcecontrol/region = style name of this fix command :l
+control_keyword/value pairs :l
+control_keywords = {ctrlPV} (obligatory) or {actual_val} (obligatory) or {target_val} (obligatory) or {kp} or {ki} or {kd} or {cg} :l
+{ctrlPV} values = stress or velocity
+    stress = use stress as control process value
+    velocity = use velocity as control process value
+{actual_val} values = fix-ID
+    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html command that holds the actual values for the controller
+{target_val} values = fix-ID
+    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html command that holds the target values for the controller
+{kp} values = k
+    k = proportional constant for PID controller 
+{ki} values = k
+    k = integral constant for PID controller
+{kd} values = k
+    k = differential constant for PID controller
+{cg} values = cg
+    cg = coarse grain ratio of the target particles :pre
+:ule
+
+[Examples:]
+
+fix stressctrl resolved forcecontrol/region ctrlPV stress actual_val resolvedave target_val coarseave kp 1. ki 10000. cg 2
+fix velocityctrl coarse forcecontrol/region ctrlPV velocity actual_val coarseave target_val resolvedave kp 0.1 :pre
+
+[Description:]
+
+This fix applies cell-wise forces on particles inside a hexhedral grid
+until either a granular pressure (for {ctrlPV} = stress) or an average
+velocity (for {ctrlPV} = velocity) is reached.
+The actual cell-wise stress or velocity values are calculated by a
+"fix ave/euler/region"_fix_ave_euler_region.html, which is defined via
+the keyword {actual_val}. 
+The cell-wise target stress or velocity values are calculated by a
+"fix ave/euler/region"_fix_ave_euler_region.html, which is defined via
+the keyword {target_val}. 
+
+For {ctrlPV} = stress the controller force is applied only in a boundary
+layer of a cell with a thickness of 1.3 times the maximum particle diameter
+d_max. After this layer the force decays in a sine squared fashion within
+0.25*d_max. The direction of the force is determined via the grid geometry
+which should hold a vectorial element property with the label 'stress_ctrl_dir'
+(e.g. by specifying a cell_data property in the VTK geometry file).
+
+For {ctrlPV} = velocity the controller force is kept constant over
+the whole cell.
+
+The controller itself is a proportional-integral-derivative (PID)
+controller which is defined by 3 constants {kp}, {ki}, {kd}:
+
+output = kp * error + ki * errorsum + kd * errorchange
+
+where 'error' is the current deviation of the control process value to the target value, 
+'errorsum' is the time integration (sum) of the error values and 'errorchange' its derivative.
+
+The {cg} parameter allows to specify the coarse grain ratio of the target particles
+in adaptive resolution simulations.
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+This fix supports "fix_modify"_fix_modify.html with option {activate}/{deactivate} = cell-ID
+to turn on/off the force controller for individual grid cells.
+
+This fix also supports "fix_modify"_fix_modify.html with option {massflow_correction_on}/{massflow_correction_off} = cell-ID
+to turn on/off corrections to a 'velocity' controller to achieve proper mass flow rates.
+
+[Related commands:]
+
+"fix ave/euler/region"_fix_ave_euler_region.html, "region mesh/hex"_region.html
+
+[Default:] 
+
+kp = 1, ki = 0, kd = 0, cg = 1
+
