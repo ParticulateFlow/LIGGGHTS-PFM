@@ -73,6 +73,7 @@ public:
   double *pmass_;                                   // particle mass
   double *pdensity_;
   int iarg_;
+  double *mass_;
 
   // pointer updaters
   double *changeOfA_;
