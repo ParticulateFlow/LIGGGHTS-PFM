@@ -62,50 +62,64 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
     num_species = 0;
     int n;
     char mod[30];
+    n_species = 0;
 
-    if (iarg_ + 2 > narg)
+   if (narg < iarg_ + 3)
         error -> all (FLERR,"Fix couple/cfd/chemistry: Wrong number of arguments");
-    if (strcmp(arg[iarg_++],"n_species") != 0)
-        error -> all (FLERR, "missing keyword 'n_species'");
-    num_species = atoi(arg[iarg_++]);
 
-    if (num_species < 1)
-        error -> all (FLERR, "'n_species' > 0 is required");
-    if (strcmp(arg[iarg_++],"species_names") != 0)
-        error -> all (FLERR, "Expecting keyword 'species_names'");
-    if (iarg_  + num_species > narg)
-        error -> all (FLERR,"Wrong number of arguments");
-    species_names_ = new char*[num_species];
-    mod_spec_names_ = new char*[num_species];
-    for (int i = 0; i < num_species; i++)
+   bool hasargs = true;
+   while (iarg_ < narg && hasargs)
     {
-        n = strlen(arg[iarg_+i]) + 1;
-        species_names_[i] = new char [n];
-        mod_spec_names_[i] = new char [n];
-        strcpy(species_names_[i], arg[iarg_+i]);
-        strcpy(mod,"Modified_");
-        strcat(mod,species_names_[i]);
-        strcpy(mod_spec_names_[i],mod);
-
-
-        // Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly)
-        if (comm->me == 0 && screen)
+        hasargs = false;
+        if (strcmp(arg[iarg_],"n_species") == 0)
         {
-            fprintf(screen,"Fix_cfd_coupling_chemistry_control - 1 (are the speciesdetermined correctly)");
-            fprintf(screen,"num species: %i \n",num_species);
-            fprintf(screen,"modified species is: %s \n", mod_spec_names_[i]);
+            n_species = 1;
+            iarg_++;
+            num_species = atoi(arg[iarg_]);
+            hasargs = true;
+            iarg_ ++;
         }
-        // ----------------------------------------------------------------------
+        else if (strcmp(arg[iarg_],"species_names") == 0)
+        {
+            if (n_species != 1)
+                error -> fix_error (FLERR,this, "have to define keyword 'n_species' before 'species_names'");
+            if (iarg_ + num_species > narg)
+                error -> fix_error(FLERR,this, "Wrong number of arguments");
+            if (num_species < 1)
+                error -> fix_error(FLERR,this,"n_species > 0 is required");
+            iarg_++;
 
-    }
-    fix_massfrac_ = new FixPropertyAtom*[num_species];
-    fix_masschange_ =   new FixPropertyAtom*[num_species];
+            species_names_ = new char*[num_species];
+            mod_spec_names_ = new char*[num_species];
+            for (int i = 0; i < num_species; i++)
+            {
+                n = strlen(arg[iarg_+i]) + 1;
+                species_names_[i] = new char [n];
+                mod_spec_names_[i] = new char [n];
+                strcpy(species_names_[i], arg[iarg_+i]);
+                strcpy(mod,"Modified_");
+                strcat(mod,species_names_[i]);
+                strcpy(mod_spec_names_[i],mod);
 
-    /*bool hasargs = true;
-    while(iarg_ < narg && hasargs)
-    {
-     if(strcmp(arg[iarg],"transfer_Re") == 0)
-     {
+                // Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly)
+                if (comm->me == 0 && screen)
+                {
+                    fprintf(screen,"Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly) \n");
+                    fprintf(screen,"num species: %i \n",num_species);
+                    fprintf(screen,"modified species is: %s \n", mod_spec_names_[i]);
+                }
+                // ----------------------------------------------------------------------
+            }
+
+            fix_massfrac_ = new FixPropertyAtom*[num_species];
+            fix_masschange_ =   new FixPropertyAtom*[num_species];
+            iarg_++;
+            hasargs = true;
+        }
+        /* else if
+         * {
+           if(strcmp(arg[iarg],"transfer_Re") == 0)
+           {
             if(narg < iarg+2)
                  error->fix_error(FLERR,this,"not enough arguments for 'transfer_Re'");
              iarg++;
@@ -121,10 +135,9 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
          else if (strcmp(this->style,"couple/cfd/chemistry") == 0)
          {
              error->fix_error(FLERR,this,"unknown keyword");
-         }
+         }*/
 
-    }*/
-
+    }
     // flags for vector output
     vector_flag = 1;
     size_vector = 3;

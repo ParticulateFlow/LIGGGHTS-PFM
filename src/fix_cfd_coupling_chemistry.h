@@ -54,6 +54,7 @@ class FixCfdCouplingChemistry : public Fix  {
   char **species_names_;                        // list of species names
   int iarg_;                                    // int narg_
   char **mod_spec_names_;
+  int n_species;
 
 
   class FixCfdCoupling* fix_coupling;

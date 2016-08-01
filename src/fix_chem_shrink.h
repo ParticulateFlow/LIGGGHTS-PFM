@@ -83,6 +83,9 @@ public:
   double *concC_;
   double *tgas_;
 
+  // while loop integers
+  int spcA;
+  int spcC;
 
 };
 

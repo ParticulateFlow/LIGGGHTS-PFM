@@ -48,8 +48,8 @@ using namespace FixConst;
 FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg)
 {
-    if (strncmp(style,"chem/shrink",15) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
-            error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
+    //if (strncmp(style,"chem/shrink",15) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
+    //        error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
 
     // defaults
     fix_concA_          =   NULL;
@@ -68,81 +68,108 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     k = 0;
     int n = 16;
     char cha[30];
+    spcA = 0;
+    spcC = 0;
 
+    //if (narg < 15)
+    //    error -> all (FLERR,"not enough arguments");
 
-    if (narg < 15)
-        error -> all (FLERR,"not enough arguments");
-
-    // check and define species A
-    if (strcmp(arg[iarg_++],"speciesA") != 0)
-        error -> all (FLERR, "missing keyword speciesA");
-    speciesA = new char [strlen(arg[iarg_])+1];
-    strcpy(speciesA, arg[iarg_++]);
-    if (speciesA == 0)
-        error -> all (FLERR, "speciesA not defined");
-
-    // check and define molecular mass of A
-    if (strcmp(arg[iarg_++],"molMassA") != 0)
-        error -> all (FLERR, "keyword molMassA for species A is missing");
-    molMass_A_  =   atof(arg[iarg_++]);
-    if (molMass_A_ == 0)
-        error -> all (FLERR,"molMass species A is not defined");
-
-    // check and define Species C
-    if (strcmp(arg[iarg_++],"speciesC") != 0)
-        error -> all (FLERR, "missing keyword speciesC");
-    speciesC = new char [strlen(arg[iarg_])+1];
-    strcpy(speciesC, arg[iarg_++]);
-    if (speciesC == 0)
-        error -> all (FLERR, "speciesC not defined");
-
-
-    // check and define molecular mass of C
-    if (strcmp(arg[iarg_++],"molMassC") != 0)
-        error -> all (FLERR, "keyword molMassC for species C is missing");
-    molMass_C_  =   atof(arg[iarg_++]);
-    if (molMass_C_ == 0)
-        error -> all (FLERR,"molMass species C is not defined");
-
-    // define the molecular mass of solid molecule
-    if (strcmp(arg[iarg_++],"molMassB") != 0)
-        error -> all (FLERR, "keyword molMassB for species B is missing");
-    molMass_B_  =   atof(arg[iarg_++]);
-    if (molMass_B_ == 0)
-        error -> all (FLERR,"molMass species solid is not defined");
-
-    // define reaction rate coefficient
-    if (strcmp(arg[iarg_++], "k") != 0)
-        error -> all (FLERR,"keyword k for reaction rate is missing");
-    k   =   atof(arg[iarg_++]);
-
-    // print the arguments on screen
-    if (comm -> me == 0 && screen)
+    bool hasargs = true;
+    while (iarg_ < narg && hasargs)
     {
-        fprintf(screen,"arg 3: %s \n",arg[3]); // check
-        fprintf(screen,"arg 4: %s \n",arg[4]); // check
-        fprintf(screen,"arg 5: %s \n",arg[5]); // check
+        hasargs = false;
 
-        fprintf(screen,"arg 6: %f \n",arg[6]); // check
-        fprintf(screen,"arg 6: %f \n",molMass_A_); // check
+        if(strcmp(arg[iarg_],"speciesA") == 0)
+        {
+            if (narg < iarg_ + 2)
+                error -> fix_error(FLERR, this, "not enough arguments for 'speciesA'");
+            spcA = 1;
+            iarg_++;
+            speciesA = new char [strlen(arg[iarg_]) + 1];
+            strcpy(speciesA,arg[iarg_]);
+            iarg_ ++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"molMassA") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "Wrong number of arguments");
+            if (spcA != 1)
+                error -> fix_error(FLERR, this, "have to define keyword 'speciesA' before 'molMassA'");
+            if (strlen(speciesA) < 1)
+                error -> fix_error(FLERR, this, "speciesA not defined");
+            iarg_++;
+            molMass_A_ = atof(arg[iarg_]);
+            if (molMass_A_ < 1)
+                error -> fix_error(FLERR, this, "molar mass of A is not defined");
+            iarg_ ++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"speciesC") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "not enough arguments for 'speciesC'");
+            spcC = 1;
+            iarg_++;
+            speciesC = new char [strlen(arg[iarg_])+1];
+            strcpy(speciesC,arg[iarg_]);
+            iarg_ ++;
+            hasargs = true;
+        }
+       else if (strcmp(arg[iarg_],"molMassC") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "Wrong number of arguments");
+            if (spcC != 1)
+                error -> fix_error(FLERR, this, "have to define keyword 'speciesC' before 'molMassC'");
+            if (strlen(speciesC) < 1)
+                error -> fix_error(FLERR, this, "speciesC not defined");
+            iarg_++;
+            molMass_C_ = atof(arg[iarg_]);
+            if (molMass_C_ < 1)
+                error -> fix_error(FLERR, this, "molar mass of C is not defined");
+            iarg_ ++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"molMassB") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "Wrong number of arguments");
+            iarg_++;
+            molMass_B_ = atof(arg[iarg_]);
+            if (molMass_B_ < 1)
+                error -> fix_error(FLERR, this, "molar mass of B is not defined");
+            iarg_ ++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"k") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "Wrong number of arguments");
+            iarg_ ++;
+            k = atof(arg[iarg_]);
+            if (k == 0)
+                error -> fix_error(FLERR, this, "k is not defined");
+            iarg_ ++;
+            hasargs = true;
+        }
 
-        fprintf(screen,"arg 7: %s \n",arg[7]); // check
-        fprintf(screen,"arg 8: %s \n",arg[8]); // check
-        fprintf(screen,"arg 9: %s \n",arg[9]); // check
-
-        fprintf(screen,"arg 9: %f \n",arg[10]); // check
-        fprintf(screen,"arg 10: %f \n",molMass_C_ ); // check
-
-        fprintf(screen,"arg 11: %s \n",arg[11]); // check
-
-        fprintf(screen,"arg 9: %f \n",arg[12]); // check
-        fprintf(screen,"arg 12: %f \n",molMass_B_); // check
-
-        fprintf(screen,"arg 13: %s \n",arg[13]); // check
-
-        fprintf(screen,"arg 9: %e \n",arg[14]); // check
-        fprintf(screen,"arg 14: %e \n",k); // check
-        fprintf(screen,"arg 15: %s \n",arg[15]); // check
+        // print the arguments on screen
+        if (comm -> me == 0 && screen)
+        {
+            fprintf(screen,"arg 3: %s \n",arg[3]); // check
+            fprintf(screen,"arg 4: %s \n",arg[4]); // check
+            fprintf(screen,"arg 5: %s \n",arg[5]); // check
+            fprintf(screen,"arg 6: %f \n",molMass_A_); // check
+            fprintf(screen,"arg 7: %s \n",arg[7]); // check
+            fprintf(screen,"arg 8: %s \n",arg[8]); // check
+            fprintf(screen,"arg 9: %s \n",arg[9]); // check
+            fprintf(screen,"arg 10: %f \n",molMass_C_ ); // check
+            fprintf(screen,"arg 11: %s \n",arg[11]); // check
+            fprintf(screen,"arg 12: %f \n",molMass_B_); // check
+            fprintf(screen,"arg 13: %s \n",arg[13]); // check
+            fprintf(screen,"arg 14: %e \n",k); // check
+        }
     }
 
     // define changed species mass A
@@ -151,24 +178,12 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     strcat(cha,speciesA);
     strcpy(massA,cha);
 
-    // define changed species mass A
+    // define changed species mass C
     massC = new char [n];
     strcpy(cha,"Modified_");
     strcat(cha,speciesC);
     strcpy(massC,cha);
 
-    if (comm -> me == 0 && screen)
-    {
-        fprintf(screen,"massA: %s \n", massA);
-        fprintf(screen,"massC: %s \n", massC);
-    }
-
-    // flags for vector output
-    /*peratom_flag =  1;  //0/1 per-atom data is stored
-    peratom_freq =  1;
-    scalar_flag =   1;
-    global_freq =   1;
-    extscalar   =   1;*/
 
     vector_flag =   1;
     size_vector =   3;
@@ -176,14 +191,19 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     extvector   =   1;
 
     if (comm -> me == 0 && screen)
+    {
+        fprintf(screen,"massA: %s \n", massA);
+        fprintf(screen,"massC: %s \n", massC);
         fprintf(screen,"constructor succesfully completed \n");
+    }
 }
+
 
 /* ---------------------------------------------------------------------- */
 
 FixChemShrink::~FixChemShrink()
 {
-    if (comm -> me == 0 && screen)
+  if (comm -> me == 0 && screen)
         fprintf(screen,"deconstruct succesfully completed \n");
 }
 
@@ -336,7 +356,6 @@ void FixChemShrink::post_create()
 
 }
 
-
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::updatePtrs()
@@ -399,8 +418,6 @@ void FixChemShrink::reaction()
                 fprintf(screen, " double rmass equlas : %f \n", atom -> rmass[i]);
                 fprintf(screen, " density: %f", pdensity_[i]);
                 fprintf(screen,"testing reaction inside for loop \n");
-                fprintf(screen, " the atom -> mass result is == \n", mass_[i]);
-                fprintf(screen, " 2 - the atom -> mass result is == \n", mass_);
 
             }
         }
