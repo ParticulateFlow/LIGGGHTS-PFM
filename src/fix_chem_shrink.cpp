@@ -70,6 +70,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     char cha[30];
     spcA = 0;
     spcC = 0;
+    pmass_ = NULL;
 
     //if (narg < 15)
     //    error -> all (FLERR,"not enough arguments");
@@ -194,7 +195,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     {
         fprintf(screen,"massA: %s \n", massA);
         fprintf(screen,"massC: %s \n", massC);
-        fprintf(screen,"constructor succesfully completed \n");
+        fprintf(screen,"constructor successfully completed \n");
     }
 }
 
@@ -204,7 +205,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 FixChemShrink::~FixChemShrink()
 {
   if (comm -> me == 0 && screen)
-        fprintf(screen,"deconstruct succesfully completed \n");
+        fprintf(screen,"deconstruct successfully completed \n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -222,7 +223,7 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
 
         if (comm -> me == 0 && screen)
-            fprintf(screen,"pre-delete succesfully completed \n");
+            fprintf(screen,"pre-delete successfully completed \n");
     }
 }
 
@@ -352,7 +353,7 @@ void FixChemShrink::post_create()
     }
 
     if (comm -> me == 0 && screen)
-        fprintf(screen,"post-create succesfully completed \n");
+        fprintf(screen,"post-create successfully completed \n");
 
 }
 
@@ -368,7 +369,7 @@ void FixChemShrink::updatePtrs()
     //tgas_       =   fix_tgas_       -> vector_atom;
 
     if (comm -> me == 0 && screen)
-            fprintf(screen,"updatePtrs is at least opening \n");
+            fprintf(screen,"updatePtrs successfully \n");
 
 }
 
@@ -378,19 +379,23 @@ void FixChemShrink::reaction()
     {
         updatePtrs();
         int nlocal  =   atom->nlocal;
-        int nall = nlocal + atom -> nghost;
+        // int nall = nlocal + atom -> nghost;
+        double TimeStep = update -> dt;
 
-        for (int i = 0; i<nall; i++)
+
+        for (int i = 0; i<nlocal; i++)
         {
-            if (comm -> me == 0 && screen)
+            if (screen)
             {
-                fprintf(screen, " double k equlas : %e \n", k);
-                fprintf(screen, " double rhogas_[i] equlas : %f \n", rhogas_[i]);
-                fprintf(screen, " double concA equlas : %f  \n", concA_[i]);
-                fprintf(screen, " double radius_[i] equlas : %f \n", radius_[i]);
+                fprintf(screen, " double k : %e \n", k);
+                fprintf(screen, " double rhogas_[i] : %f \n", rhogas_[i]);
+                fprintf(screen, " double concA : %f  \n", concA_[i]);
+                fprintf(screen, " double radius_[i] : %f \n", radius_[i]);
+                fprintf(screen, " timestep:%f \n", TimeStep);
             }
             // double dA   = -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
-            double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i]);
+            double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep;
+            double dB   =    dA*(molMass_B_/molMass_A_);
             double dC   =   -dA*(molMass_C_/molMass_A_);
 
             // rate of change of the total number of moles of A
@@ -401,35 +406,28 @@ void FixChemShrink::reaction()
             // fix_changeOfC_  +=  dC;
             changeOfC_[i]       +=  dC;
 
-            // rate of change of the total number of moles of B
-            pmass_[i]          +=  dA*(molMass_B_/molMass_A_);
+            // mass of particle subtracted by mass change of particle (delta m)
+            pmass_[i]           +=  dB;
 
             // change of radius of particle -assumption: density of particle is constant
             radius_[i]         =   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
 
 
-            if (comm -> me == 0 && screen)
+            if (screen)
             {
-                fprintf(screen, " double dA equlas : %e \n", dA);
-                fprintf(screen, " double dC equlas : %e \n", dC);
-                fprintf(screen, " double changeOfA equlas : %f  \n", changeOfA_[i]);
-                fprintf(screen, " double changeOfC equlas : %f \n", changeOfC_[i]);
-                fprintf(screen, " double pmass equlas : %f \n", pmass_[i]);
-                fprintf(screen, " double rmass equlas : %f \n", atom -> rmass[i]);
-                fprintf(screen, " density: %f", pdensity_[i]);
-                fprintf(screen,"testing reaction inside for loop \n");
+                fprintf(screen, " double dA: %e \n", dA);
+                fprintf(screen, " double dC: %e \n", dC);
+                fprintf(screen, " double changeOfA: %f  \n", changeOfA_[i]);
+                fprintf(screen, " double changeOfC: %f \n", changeOfC_[i]);
+                fprintf(screen, " double pmass: %f \n", pmass_[i]);
+                fprintf(screen, " density: %f \n", pdensity_[i]);
+                fprintf(screen, " testing reaction inside for loop \n");
 
             }
         }
-
-         if (comm -> me == 0 && screen)
-         {
-             fprintf(screen,"testing reaction outside for loop \n");
-             fprintf(screen,"nlocal number is = %i \n", nlocal);
-             fprintf(screen,"nall number is = %i \n", nall);
-         }
-
-     }
+        if (screen)
+            fprintf(screen,"nlocal number is = %i \n", nlocal);
+    }
 
 /* ----------------- compute particle surface area ------------------------ */
 
@@ -469,7 +467,6 @@ void FixChemShrink::post_force(int)
     radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
-    mass_ = atom -> mass;
 
     reaction();
 
