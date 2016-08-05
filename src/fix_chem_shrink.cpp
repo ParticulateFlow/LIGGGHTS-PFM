@@ -35,6 +35,7 @@
 #include "modify.h"
 #include "comm.h"
 #include "math.h"
+#include "atom_vec.h"
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
 #include "fix_chem_shrink.h"
@@ -66,6 +67,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     molMass_C_ = 0;
     molMass_B_ = 0;
     k = 0;
+    rmin = 0;
     int n = 16;
     char cha[30];
     spcA = 0;
@@ -154,6 +156,17 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             iarg_ ++;
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"rmin") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "Wrong number of arguments");
+            iarg_++;
+            rmin = atof(arg[iarg_]);
+            if (rmin == 0)
+                error -> fix_error(FLERR, this, "rmin is not defined");
+            iarg_++;
+            hasargs = true;
+        }
 
         // print the arguments on screen
         if (comm -> me == 0 && screen)
@@ -170,6 +183,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             fprintf(screen,"arg 12: %f \n",molMass_B_); // check
             fprintf(screen,"arg 13: %s \n",arg[13]); // check
             fprintf(screen,"arg 14: %e \n",k); // check
+            fprintf(screen,"arg 15: %s \n",arg[15]); // check
+            fprintf(screen,"arg 16: %f \n",rmin); // check
         }
     }
 
@@ -190,6 +205,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     size_vector =   3;
     global_freq =   1;
     extvector   =   1;
+    atom -> rmass_flag = 1;
 
     if (comm -> me == 0 && screen)
     {
@@ -378,10 +394,10 @@ void FixChemShrink::updatePtrs()
 void FixChemShrink::reaction()
     {
         updatePtrs();
-        int nlocal  =   atom->nlocal;
+        int nlocal  =   atom -> nlocal;
+        // int natoms  =   atom -> natoms;
         // int nall = nlocal + atom -> nghost;
         double TimeStep = update -> dt;
-
 
         for (int i = 0; i<nlocal; i++)
         {
@@ -411,7 +427,6 @@ void FixChemShrink::reaction()
 
             // change of radius of particle -assumption: density of particle is constant
             radius_[i]         =   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
-
 
             if (screen)
             {
@@ -467,9 +482,42 @@ void FixChemShrink::post_force(int)
     radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
+    int nlocal = atom -> nlocal;
 
-    reaction();
+    for (int i = 0; i < nlocal; i++)
+    {
+        if (radius_[i] >= rmin)
+        {
+            reaction();
+        }
+        else if (radius_[i] < rmin)
+        {
+            delete_atoms();
+
+            // stop simulation if particle radius is zero
+            // atom -> radius = radius_;
+        }
+
+
+    }
 
     if (comm -> me == 0 && screen)
         fprintf(screen,"post_force succesfully completed \n");
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixChemShrink::delete_atoms()
+{
+    AtomVec *avec = atom->avec;
+    int nlocal = atom->nlocal;
+
+    int i = 0;
+    while (i < nlocal) {
+        avec->copy(nlocal-1,i,1);
+        nlocal--;
+        i++;
+      }
+
+    atom->nlocal = nlocal;
 }

@@ -51,6 +51,7 @@ public:
   int setmask();
   virtual void init();
   virtual void post_force(int);
+  void delete_atoms();
 
 
  protected:
@@ -74,6 +75,7 @@ public:
   double *pdensity_;
   int iarg_;
   double *mass_;
+  double rmin;
 
   // pointer updaters
   double *changeOfA_;
@@ -86,6 +88,11 @@ public:
   // while loop integers
   int spcA;
   int spcC;
+
+  // delete atoms
+  int *dlist;
+
+
 
 };
 
