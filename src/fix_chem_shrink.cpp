@@ -492,14 +492,12 @@ void FixChemShrink::post_force(int)
         }
         else if (radius_[i] < rmin)
         {
+            dlist[i] = radius_[i] < rmin;
             delete_atoms();
-
-            // stop simulation if particle radius is zero
-            // atom -> radius = radius_;
         }
-
-
     }
+
+    memory->destroy(dlist);
 
     if (comm -> me == 0 && screen)
         fprintf(screen,"post_force succesfully completed \n");
@@ -510,13 +508,15 @@ void FixChemShrink::post_force(int)
 void FixChemShrink::delete_atoms()
 {
     AtomVec *avec = atom->avec;
-    int nlocal = atom->nlocal;
+    int nlocal = atom -> nlocal;
 
     int i = 0;
     while (i < nlocal) {
+        if (dlist[i]) {
         avec->copy(nlocal-1,i,1);
+        dlist[i] = dlist[nlocal-1];
         nlocal--;
-        i++;
+        } else i++;
       }
 
     atom->nlocal = nlocal;
