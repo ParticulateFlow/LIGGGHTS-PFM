@@ -220,7 +220,13 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
 FixChemShrink::~FixChemShrink()
 {
-  if (comm -> me == 0 && screen)
+    delete [] massA;
+    delete [] massC;
+
+    delete [] speciesA;
+    delete [] speciesC;
+
+    if (comm -> me == 0 && screen)
         fprintf(screen,"deconstruct successfully completed \n");
 }
 
@@ -393,7 +399,7 @@ void FixChemShrink::updatePtrs()
 
 void FixChemShrink::reaction()
     {
-        updatePtrs();
+    /*    updatePtrs();
         int nlocal  =   atom -> nlocal;
         // int natoms  =   atom -> natoms;
         // int nall = nlocal + atom -> nghost;
@@ -441,22 +447,22 @@ void FixChemShrink::reaction()
             }
         }
         if (screen)
-            fprintf(screen,"nlocal number is = %i \n", nlocal);
+            fprintf(screen,"nlocal number is = %i \n", nlocal);*/
     }
 
 /* ----------------- compute particle surface area ------------------------ */
 
 double FixChemShrink::partSurfArea(double radius)
     {
-        double A_p =   4*M_PI*radius*radius;
-        return (A_p);
+       /* double A_p =   4*M_PI*radius*radius;
+        return (A_p);*/
     }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::init()
 {
-   if (!atom -> radius_flag || !atom -> density_flag)
+   /*if (!atom -> radius_flag || !atom -> density_flag)
         error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style");
 
     // references
@@ -472,14 +478,14 @@ void FixChemShrink::init()
     // updatePtrs();
 
     if (comm -> me == 0 && screen)
-        fprintf(screen,"init succesfully completed  \n");
+        fprintf(screen,"init succesfully completed  \n");*/
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::post_force(int)
 {
-    radius_ = atom ->  radius;
+    /*radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
     int nlocal = atom -> nlocal;
@@ -497,17 +503,15 @@ void FixChemShrink::post_force(int)
         }
     }
 
-    memory->destroy(dlist);
-
     if (comm -> me == 0 && screen)
-        fprintf(screen,"post_force succesfully completed \n");
+        fprintf(screen,"post_force succesfully completed \n");*/
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::delete_atoms()
 {
-    AtomVec *avec = atom->avec;
+    /*AtomVec *avec = atom->avec;
     int nlocal = atom -> nlocal;
 
     int i = 0;
@@ -520,4 +524,21 @@ void FixChemShrink::delete_atoms()
       }
 
     atom->nlocal = nlocal;
+    memory->destroy(dlist);
+    int comp_flag = 0;
+
+    if (atom->molecular == 0 && comp_flag)
+    {
+        int *tag = atom -> tag;
+        for (i = 0; i < nlocal; i++) tag[i] = 0;
+        atom->tag_extend();
+    }
+
+    bigint nblocal = atom->nlocal;
+    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
+    if (atom->map_style) {
+      atom->nghost = 0;
+      atom->map_init();
+      atom->map_set();
+    }*/
 }
