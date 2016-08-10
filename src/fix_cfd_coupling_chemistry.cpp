@@ -149,10 +149,15 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
 
 FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
 {
-    for (int i=0;i<num_species;i++) delete [] species_names_[i];
-    for (int i=0;i<num_species;i++) delete [] mod_spec_names_[i];
-/*    delete [] species_names_;
-    delete [] mod_spec_names_;*/
+    for (int i=0;i<num_species;i++)
+    {
+        if (species_names_[i]) delete [] species_names_[i];
+        if (mod_spec_names_[i]) delete [] mod_spec_names_[i];
+    }
+
+    delete [] species_names_;
+    delete [] mod_spec_names_;
+
     if(fix_massfrac_)       delete []fix_massfrac_;
     if(fix_masschange_)     delete []fix_masschange_;
 }
@@ -166,14 +171,14 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
 
     if(unfixflag && fix_reactionheat_)  modify -> delete_fix("reactionHeat");
 
-    if(unfixflag)
+    /*if(unfixflag)
     {
         for (int i=0; i<num_species; i++)
         {
           if (fix_massfrac_[i])     modify -> delete_fix(species_names_[i]);
           if (fix_masschange_[i])   modify -> delete_fix(mod_spec_names_[i]);
         }
-    }
+    }*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -346,9 +351,9 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
 
 void FixCfdCouplingChemistry::post_force(int)
 {
-    /*int *mask = atom -> mask;
+    int *mask = atom -> mask;
     int nlocal = atom -> nlocal;
-    double *tgas = fix_tgas->vector_atom;
+    /*double *tgas = fix_tgas->vector_atom;
     double *rhogas = fix_rhogas->vector_atom;*/
 
 
@@ -356,6 +361,5 @@ void FixCfdCouplingChemistry::post_force(int)
     // if dc_->pushednow(i)
     // clear masschange(i),reactionheat
     // pushednow(i)=false
-
 }
 
