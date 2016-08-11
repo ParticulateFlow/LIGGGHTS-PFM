@@ -53,7 +53,9 @@ class FixForceControlRegion : public Fix {
   int modify_param(int narg, char **arg);
 
  private:
-  double xvalue,yvalue,zvalue;
+  double *xvalue;
+  double *yvalue;
+  double *zvalue;
   double foriginal[4],foriginal_all[4];
   int force_flag;
 
@@ -61,9 +63,9 @@ class FixForceControlRegion : public Fix {
   double vel_max_[3];
   double vel_min_[3];
   double ctrl_op_[3];
-  double sp_vec_[3];
-  double pv_vec_[3];
-  double err_[3], sum_err_[3];
+  double sp_vec_[3]; // set point
+  double pv_vec_[3]; // process value
+  double err_[3];
   double kp_,ki_,kd_;
 
   int ctrl_style_;
@@ -75,10 +77,16 @@ class FixForceControlRegion : public Fix {
   double cg_, cg3_;
   int ncells_max_;
   double **old_pv_vec_;
+  double **sum_err_;
   double const_part_;
   double sinesq_part_;
+  double used_part_;
   std::set<int> active_;
   std::vector<bool> modifier_;
+  const double acceptable_deviation_min;
+  const double acceptable_deviation_max;
+  bool limit_velocity_;
+  double limit[3];
 };
 
 }
