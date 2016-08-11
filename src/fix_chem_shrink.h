@@ -51,6 +51,7 @@ public:
   int setmask();
   virtual void init();
   virtual void post_force(int);
+  // virtual void post_force();
   void delete_atoms();
 
 

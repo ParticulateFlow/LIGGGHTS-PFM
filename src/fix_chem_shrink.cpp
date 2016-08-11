@@ -220,11 +220,11 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
 FixChemShrink::~FixChemShrink()
 {
-    delete [] massA;
-    delete [] massC;
+    delete massA;
+    delete massC;
 
-    delete [] speciesA;
-    delete [] speciesC;
+    delete speciesA;
+    delete speciesC;
 
     if (comm -> me == 0 && screen)
         fprintf(screen,"deconstruct successfully completed \n");
@@ -484,12 +484,18 @@ void FixChemShrink::init()
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::post_force(int)
+//void FixChemShrink::post_force()
 {
     radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
     int nlocal = atom -> nlocal;
 
+    // allocate and initialize dlist
+    memory->create(dlist,nlocal,"delete_atoms:dlist");
+    for (int i = 0; i < nlocal; i++) dlist[i] = 0;
+
+    // check radius - do reaction or delete
     for (int i = 0; i < nlocal; i++)
     {
         if (radius_[i] >= rmin)
@@ -500,8 +506,10 @@ void FixChemShrink::post_force(int)
         {
             dlist[i] = radius_[i] < rmin;
             delete_atoms();
+            memory -> destroy(dlist);
         }
     }
+
 
     if (comm -> me == 0 && screen)
         fprintf(screen,"post_force succesfully completed \n");
@@ -513,6 +521,7 @@ void FixChemShrink::delete_atoms()
 {
     AtomVec *avec = atom->avec;
     int nlocal = atom -> nlocal;
+    int *mask = atom -> mask;
 
     int i = 0;
     while (i < nlocal) {
@@ -523,22 +532,18 @@ void FixChemShrink::delete_atoms()
         } else i++;
       }
 
-    atom->nlocal = nlocal;
-    memory->destroy(dlist);
-    int comp_flag = 0;
+      atom->nlocal = nlocal;
+      memory->destroy(dlist);
+      MPI_Allreduce(&nlocal,&atom->natoms,1,MPI_INT,MPI_SUM,world);
+      //int comp_flag = 0;
 
-    if (atom->molecular == 0 && comp_flag)
+  /*  if (atom->molecular == 0 && comp_flag)
     {
         int *tag = atom -> tag;
         for (i = 0; i < nlocal; i++) tag[i] = 0;
         atom->tag_extend();
-    }
+    }*/
 
-    bigint nblocal = atom->nlocal;
-    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
-    if (atom->map_style) {
-      atom->nghost = 0;
-      atom->map_init();
-      atom->map_set();
-    }
+    //int nblocal = atom->nlocal;
+
 }

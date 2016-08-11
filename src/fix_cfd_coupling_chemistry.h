@@ -40,14 +40,15 @@ class FixCfdCouplingChemistry : public Fix  {
 
  public:
   FixCfdCouplingChemistry(class LAMMPS *, int, char **);
-  ~FixCfdCouplingChemistry();
   void post_create();
+  ~FixCfdCouplingChemistry();
   void pre_delete(bool unfixflag);
 
   int setmask();
   virtual void init();
   virtual void initial_integrate(bigint);
   virtual void post_force(int);
+  //virtual void post_force();
 
  protected:
   int num_species;                              // # of species
