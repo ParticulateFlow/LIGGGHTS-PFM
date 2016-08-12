@@ -126,12 +126,14 @@ void FixAveEulerRegion::post_create()
 
     // create compute if it doesn't exist otherwise reuse
     if(modify->find_compute(arg[0]) < 0)
-       modify->add_compute(4,(char**)arg);
+      modify->add_compute(4,(char**)arg);
+
     compute_stress_ = static_cast<ComputeStressAtom*>(modify->compute[modify->find_compute(arg[0])]);
   }
 
 
   if (region_grid_mesh_hex_) {
+    ncells_ = region_grid_mesh_hex_->n_hex();
     ScalarContainer<int> *values = region_grid_mesh_hex_->prop().getElementProperty<ScalarContainer<int> >("cell_id");
     if (values) {
       for (int iHex=0; iHex<region_grid_mesh_hex_->n_hex(); ++iHex) {
@@ -152,6 +154,8 @@ void FixAveEulerRegion::post_create()
 int FixAveEulerRegion::setmask()
 {
   int mask = 0;
+  mask |= POST_INTEGRATE;
+  mask |= PRE_FORCE;
   mask |= END_OF_STEP;
   return mask;
 }
@@ -293,6 +297,60 @@ void FixAveEulerRegion::bin_atoms()
 
     cellptr_[i] = cellhead_[ibin];
     cellhead_[ibin] = i;
+  }
+  dirty_ = false;
+}
+
+/* ---------------------------------------------------------------------- */
+
+bool FixAveEulerRegion::is_inside_bounds(double bounds[6], double *pos)
+{
+  if(pos[0] < bounds[0] || pos[0] > bounds[1]) return false; // outside bb of hex
+  if(pos[1] < bounds[2] || pos[1] > bounds[3]) return false; // outside bb of hex
+  if(pos[2] < bounds[4] || pos[2] > bounds[5]) return false; // outside bb of hex
+  return true;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixAveEulerRegion::lazy_bin_atoms(int icell)
+{
+  // skip if no particles in cell
+  if (cellhead_[icell] == -1)
+    return;
+
+  double **x = atom->x;
+  int *mask = atom->mask;
+  int nall = atom->nlocal + atom->nghost;
+  double bounds[6];
+
+  region_grid_mesh_hex_->hex_bounds(icell,bounds);
+  int previous_idx = -1;
+  for (int iatom = cellhead_[icell]; iatom >= 0; ) {
+
+    if (iatom > nall || // particle does no longer exist
+        !(mask[iatom] & groupbit) || // particle does not belong to our group (e.g. due to deletions & copying inside atom array)
+        !domain->is_in_subdomain(x[iatom]) || // particle no longer in subdomain
+        !is_inside_bounds(bounds, x[iatom]) || // particle no longer inside AABB of this cell
+        (region_grid_mesh_hex_->is_inside_hex(icell,x[iatom]) <= 0) ) { // particle no longer inside this cell
+
+      if (iatom == cellhead_[icell]) {
+        cellhead_[icell] = cellptr_[iatom];
+        cellptr_[iatom] = -1;
+        iatom = cellhead_[icell];
+      } else if (previous_idx < 0) {
+        cellptr_[cellhead_[icell]] = cellptr_[iatom];
+        cellptr_[iatom] = -1;
+        iatom = cellptr_[cellhead_[icell]];
+      } else {
+        cellptr_[previous_idx] = cellptr_[iatom];
+        cellptr_[iatom] = -1;
+        iatom = cellptr_[previous_idx];
+      }
+    } else {
+      previous_idx = iatom;
+      iatom = cellptr_[iatom];
+    }
   }
 }
 

@@ -47,6 +47,14 @@ DumpEulerVTK::DumpEulerVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, 
   if (narg < 5)
     error->all(FLERR,"Illegal dump euler/vtk command");
 
+  fix_euler_name_ = NULL;
+
+  if (narg > 6) {
+    int n = strlen(arg[6]) + 1;
+    fix_euler_name_ = new char[n];
+    strcpy(fix_euler_name_,arg[6]);
+  }
+
   // CURRENTLY ONLY PROC 0 writes
 
   format_default = NULL;
@@ -56,13 +64,20 @@ DumpEulerVTK::DumpEulerVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, 
 
 DumpEulerVTK::~DumpEulerVTK()
 {
+  delete fix_euler_name_;
 }
 
 /* ---------------------------------------------------------------------- */
 
 void DumpEulerVTK::init_style()
 {
-  fix_euler_ = static_cast<FixAveEuler*>(modify->find_fix_style("ave/euler",0));
+  if (fix_euler_name_) {
+    fix_euler_ = static_cast<FixAveEuler*>(modify->find_fix_id(fix_euler_name_));
+  }
+  if(!fix_euler_) {
+    if (fix_euler_name_) error->warning(FLERR, "dump euler/vtk failed to find named fix ave/euler*");
+    fix_euler_ = static_cast<FixAveEuler*>(modify->find_fix_style("ave/euler",0));
+  }
   if(!fix_euler_)
     error->all(FLERR,"Illegal dump euler/vtk command, need a fix ave/euler");
 

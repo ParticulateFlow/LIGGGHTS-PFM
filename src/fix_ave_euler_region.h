@@ -80,7 +80,9 @@ class FixAveEulerRegion : public FixAveEuler {
 
   void setup_bins();
   void bin_atoms();
+  void lazy_bin_atoms(int i);
   void calculate_eu();
+  bool is_inside_bounds(double bounds[6], double *pos);
 
   // cell-based min/max velocity
   double **v_min_;

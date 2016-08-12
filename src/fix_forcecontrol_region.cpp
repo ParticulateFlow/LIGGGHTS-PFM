@@ -37,6 +37,7 @@
 #include "memory.h"
 #include "error.h"
 #include "force.h"
+#include "math_extra_liggghts.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -47,14 +48,23 @@ enum{NONE,STRESS,VELOCITY};
 
 FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
-  kp_(0.01),
+  xvalue(NULL),
+  yvalue(NULL),
+  zvalue(NULL),
+  kp_(1.),
   ki_(0.),
   kd_(0.),
   ctrl_style_(NONE),
   cg_(1),
   ncells_max_(0),
   old_pv_vec_(NULL),
-  const_part_(0.0)
+  sum_err_(NULL),
+  const_part_(1.0),
+  sinesq_part_(0.0),
+  used_part_(1.0),
+  acceptable_deviation_min(0.97),
+  acceptable_deviation_max(1.03),
+  limit_velocity_(false)
 {
   if (narg < 6) error->all(FLERR,"Illegal fix addforce command");
 
@@ -65,8 +75,6 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   extscalar = 1;
   extvector = 1;
 
-  xvalue = yvalue = zvalue = 0.;
-
   vectorZeroize3D(axis_);
   vectorZeroize3D(ctrl_op_);
 
@@ -76,11 +84,9 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
       if (narg < iarg+2) error->fix_error(FLERR,this,"not enough arguments for 'ctrlPV'");
       if (strcmp(arg[iarg+1],"stress") == 0) {
         ctrl_style_ = STRESS;
-        const_part_ = 0.75;
-      }
-      else if (strcmp(arg[iarg+1],"velocity") == 0) {
+      } else if (strcmp(arg[iarg+1],"velocity") == 0) {
         ctrl_style_ = VELOCITY;
-        const_part_ = 1.0;
+        limit_velocity_ = true;
       }
       else error->fix_error(FLERR,this,"only 'stress' and 'velocity' are valid arguments for ctrlPV");
       iarg = iarg + 2;
@@ -113,14 +119,6 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
       target_ = static_cast<FixAveEulerRegion*>(modify->fix[ifix]);
 
       ++iarg;
-    } else if(strcmp(arg[iarg],"axis") == 0) {
-      if (narg < iarg+4) error->fix_error(FLERR,this,"not enough arguments for 'axis'");
-      axis_[0] = force->numeric(FLERR,arg[iarg+1]);
-      axis_[1] = force->numeric(FLERR,arg[iarg+2]);
-      axis_[2] = force->numeric(FLERR,arg[iarg+3]);
-      // normalize axis
-      vectorNormalize3D(axis_);
-      iarg = iarg+4;
     } else if(strcmp(arg[iarg],"kp") == 0) {
       if (narg < iarg+2) error->fix_error(FLERR,this,"not enough arguments");
       kp_ = force->numeric(FLERR,arg[iarg+1]);
@@ -133,6 +131,11 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
       if (narg < iarg+2) error->fix_error(FLERR,this,"not enough arguments");
       kd_ = force->numeric(FLERR,arg[iarg+1]);
       iarg = iarg+2;
+    } else if (strcmp(arg[iarg],"velocity_limit") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
+      if (strcmp(arg[iarg+1],"on") == 0)
+        limit_velocity_ = true;
+      iarg += 2;
     } else if (strcmp(arg[iarg],"cg") == 0) { // TODO: remove when cg and fg are separate simulations -> cg_ = force->cg();
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       cg_ = atof(arg[iarg+1]);
@@ -145,7 +148,6 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   if(!target_)
     error->fix_error(FLERR, this, "missing ave/euler/region for target_val");
 
-  sinesq_part_ = 1.0 - const_part_;
   cg3_ = cg_*cg_*cg_;
   force_flag = 0;
   foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
@@ -155,7 +157,11 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
 
 FixForceControlRegion::~FixForceControlRegion()
 {
+  memory->destroy(xvalue);
+  memory->destroy(yvalue);
+  memory->destroy(zvalue);
   memory->destroy(old_pv_vec_);
+  memory->destroy(sum_err_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -168,6 +174,15 @@ void FixForceControlRegion::post_create()
     active_.insert(icell);
   }
   modifier_.resize(ncells, false);
+
+  double maxrd,minrd;
+  modify->max_min_rad(maxrd,minrd);
+  if (ctrl_style_ == STRESS)
+  {
+    const_part_ = (2.*maxrd/cg_)*1.2; // TODO: change when cg and fg are separate simulations
+    used_part_ = (2.*maxrd/cg_)*1.4;
+    sinesq_part_ = used_part_ - const_part_;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -212,43 +227,70 @@ void FixForceControlRegion::post_force(int vflag)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double *rmass = atom->rmass;
-
-  double vx, vy, vz;
   int ncells = actual_->ncells();
+  double fx, fy, fz;
+  double vx, vy, vz;
 
   // reallocate old_pv_vec_ array if necessary
   if (ncells > ncells_max_) {
+    memory->grow(xvalue,ncells,"forcecontrol/region:xvalue");
+    memory->grow(yvalue,ncells,"forcecontrol/region:yvalue");
+    memory->grow(zvalue,ncells,"forcecontrol/region:zvalue");
     memory->grow(old_pv_vec_,ncells,3,"forcecontrol/region:old_pv_mag_");
+    memory->grow(sum_err_,ncells,3,"forcecontrol/region:sum_err_");
+
     for (; ncells_max_ < ncells; ++ncells_max_) {
-      for (int i = 0; i < 3; ++i)
-        old_pv_vec_[ncells_max_][i] = 0.0;
+      xvalue[ncells_max_] = 0.0;
+      yvalue[ncells_max_] = 0.0;
+      zvalue[ncells_max_] = 0.0;
+
+      for (int i = 0; i < 3; ++i) {
+          old_pv_vec_[ncells_max_][i] = 0.0;
+          sum_err_[ncells_max_][i] = 0.0;
+      }
     }
   }
-
 
   std::set<int>::iterator it_cell = active_.begin();
   for (; it_cell!=active_.end(); ++it_cell) { // active actual_ cell indices
 
     int cell_id = actual_->cell_id(*it_cell);
+
     // skip cell if target_ cell has less than half of equivalent cg particle
     // mostly this happens when a stream of particles enters an empty cell
-    if (target_->compute_array_by_id(cell_id,3) < actual_->cell_vol_fr(*it_cell)*0.5)
+    if (target_->compute_array_by_id(cell_id,3) <= actual_->cell_vol_fr(*it_cell)*0.5) {
       continue;
+    }
 
     int tcell = target_->cell(cell_id);
+
+    // clear controller history for empty cells
+    if (actual_->cell_count(*it_cell) < 1 || target_->cell_count(tcell) < 1) {
+      old_pv_vec_[*it_cell][0] = 0.;
+      old_pv_vec_[*it_cell][1] = 0.;
+      old_pv_vec_[*it_cell][2] = 0.;
+
+      sum_err_[*it_cell][0] = 0.;
+      sum_err_[*it_cell][1] = 0.;
+      sum_err_[*it_cell][2] = 0.;
+
+      continue;
+    }
 
     switch (ctrl_style_) {
     case STRESS:
       {
-        // stress target is supposed to come from higher cg level
-        double rsq = actual_->cell_radius(*it_cell)*actual_->cell_radius(*it_cell);
-        double pre = (2.*M_PI*rsq/3.)*actual_->cell_volume(*it_cell);
-        pv_vec_[0] = pre*actual_->cell_stress(*it_cell, 0)/actual_->cell_count(*it_cell); // fg
-        pv_vec_[1] = pre*actual_->cell_stress(*it_cell, 1)/actual_->cell_count(*it_cell); // fg
-        pv_vec_[2] = pre*actual_->cell_stress(*it_cell, 2)/actual_->cell_count(*it_cell); // fg
-        sp_vec_[0] = pre*target_->cell_stress(tcell, 0)/(target_->cell_count(tcell)*cg3_);// cg
-        sp_vec_[1] = pre*target_->cell_stress(tcell, 1)/(target_->cell_count(tcell)*cg3_);// cg
-        sp_vec_[2] = pre*target_->cell_stress(tcell, 2)/(target_->cell_count(tcell)*cg3_);// cg
+        // get stress directions from region mesh/hex (vector properties stored in vtk file)
+        double rsq = actual_->cell_radius(*it_cell)*actual_->cell_radius(*it_cell); // fg radius squared
+        double pre = (2.*M_PI*rsq/3.);//*actual_->cell_volume(*it_cell);
+
+        pv_vec_[0] = -(pre*actual_->cell_stress(*it_cell, 0)/actual_->cell_count(*it_cell)); // fg
+        pv_vec_[1] = -(pre*actual_->cell_stress(*it_cell, 1)/actual_->cell_count(*it_cell)); // fg
+        pv_vec_[2] = -(pre*actual_->cell_stress(*it_cell, 2)/actual_->cell_count(*it_cell)); // fg
+        sp_vec_[0] = -(pre*target_->cell_stress(tcell, 0)/(target_->cell_count(tcell)*cg3_));// cg
+        sp_vec_[1] = -(pre*target_->cell_stress(tcell, 1)/(target_->cell_count(tcell)*cg3_));// cg
+        sp_vec_[2] = -(pre*target_->cell_stress(tcell, 2)/(target_->cell_count(tcell)*cg3_));// cg
+
         // get stress directions from region mesh/hex (vector properties stored in vtk file)
         double *stress_ctrl_dir = actual_->cell_vector_property(*it_cell, "stress_ctrl_dir");
         axis_[0] = stress_ctrl_dir[0];
@@ -258,18 +300,26 @@ void FixForceControlRegion::post_force(int vflag)
       }
     case VELOCITY:
       {
-        pv_vec_[0] = -actual_->cell_v_av(*it_cell, 0);
-        pv_vec_[1] = -actual_->cell_v_av(*it_cell, 1);
-        pv_vec_[2] = -actual_->cell_v_av(*it_cell, 2);
+        pv_vec_[0] = actual_->cell_v_av(*it_cell, 0);
+        pv_vec_[1] = actual_->cell_v_av(*it_cell, 1);
+        pv_vec_[2] = actual_->cell_v_av(*it_cell, 2);
+
         double massflow_correction = 1.;
+
         if (modifier_[tcell] && actual_->cell_vol_fr(*it_cell) > 0.)
           massflow_correction = target_->cell_vol_fr(tcell)/actual_->cell_vol_fr(*it_cell);
-        sp_vec_[0] = -massflow_correction*target_->cell_v_av(tcell, 0);
-        sp_vec_[1] = -massflow_correction*target_->cell_v_av(tcell, 1);
-        sp_vec_[2] = -massflow_correction*target_->cell_v_av(tcell, 2);
+
+        sp_vec_[0] = massflow_correction*target_->cell_v_av(tcell, 0);
+        sp_vec_[1] = massflow_correction*target_->cell_v_av(tcell, 1);
+        sp_vec_[2] = massflow_correction*target_->cell_v_av(tcell, 2);
+
         axis_[0] = axis_[1] = axis_[2] = 1.;
+
         break;
       }
+    default:
+      error->fix_error(FLERR, this, "unknown ctrl style");
+      break;
     }
 
     // simple PID-controller
@@ -278,113 +328,199 @@ void FixForceControlRegion::post_force(int vflag)
     err_[0] = sp_vec_[0] - pv_vec_[0];
     err_[1] = sp_vec_[1] - pv_vec_[1];
     err_[2] = sp_vec_[2] - pv_vec_[2];
-    sum_err_[0] += err_[0] * dtv_;
-    sum_err_[1] += err_[1] * dtv_;
-    sum_err_[2] += err_[2] * dtv_;
+
+    if (ctrl_style_ == STRESS) {
+      err_[0] *= axis_[0];
+      err_[1] *= axis_[1];
+      err_[2] *= axis_[2];
+    }
+
+    sum_err_[*it_cell][0] += err_[0] * dtv_;
+    sum_err_[*it_cell][1] += err_[1] * dtv_;
+    sum_err_[*it_cell][2] += err_[2] * dtv_;
+
     // derivative term
     // force used instead of the error in order to avoid signal spikes in case of change of the set point
     double dfdt[3];
-    dfdt[0] = -( pv_vec_[0] - old_pv_vec_[*it_cell][0])/dtv_;
-    dfdt[1] = -( pv_vec_[1] - old_pv_vec_[*it_cell][1])/dtv_;
-    dfdt[2] = -( pv_vec_[2] - old_pv_vec_[*it_cell][2])/dtv_;
+    dfdt[0] = -(pv_vec_[0] - old_pv_vec_[*it_cell][0])/dtv_;
+    dfdt[1] = -(pv_vec_[1] - old_pv_vec_[*it_cell][1])/dtv_;
+    dfdt[2] = -(pv_vec_[2] - old_pv_vec_[*it_cell][2])/dtv_;
 
     // vel points opposite to force vector
-    ctrl_op_[0] =  err_[0] * kp_ + sum_err_[0] * ki_ + dfdt[0] * kd_;
-    ctrl_op_[1] =  err_[1] * kp_ + sum_err_[1] * ki_ + dfdt[1] * kd_;
-    ctrl_op_[2] =  err_[2] * kp_ + sum_err_[2] * ki_ + dfdt[2] * kd_;
+    ctrl_op_[0] = err_[0] * kp_ + sum_err_[*it_cell][0] * ki_ + dfdt[0] * kd_;
+    ctrl_op_[1] = err_[1] * kp_ + sum_err_[*it_cell][1] * ki_ + dfdt[1] * kd_;
+    ctrl_op_[2] = err_[2] * kp_ + sum_err_[*it_cell][2] * ki_ + dfdt[2] * kd_;
+
     // save process value for next timestep
     old_pv_vec_[*it_cell][0] = pv_vec_[0];
     old_pv_vec_[*it_cell][1] = pv_vec_[1];
     old_pv_vec_[*it_cell][2] = pv_vec_[2];
 
-    xvalue+=ctrl_op_[0];
-    yvalue+=ctrl_op_[1];
-    zvalue+=ctrl_op_[2];
+    if (ctrl_style_ == STRESS) {
+      // do not apply an outward force; particles should relax in that direction automatically
+      xvalue[*it_cell] = (axis_[0] < 0.) ? std::min(0., ctrl_op_[0]) : std::max(0., ctrl_op_[0]);
+      yvalue[*it_cell] = (axis_[1] < 0.) ? std::min(0., ctrl_op_[1]) : std::max(0., ctrl_op_[1]);
+      zvalue[*it_cell] = (axis_[2] < 0.) ? std::min(0., ctrl_op_[2]) : std::max(0., ctrl_op_[2]);
+    } else {
+      xvalue[*it_cell] = ctrl_op_[0];
+      yvalue[*it_cell] = ctrl_op_[1];
+      zvalue[*it_cell] = ctrl_op_[2];
+    }
 
     // TODO: remove
     foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
     force_flag = 0;
 
-    vel_min_[0] = target_->cell_v_min(tcell, 0);
-    vel_min_[1] = target_->cell_v_min(tcell, 1);
-    vel_min_[2] = target_->cell_v_min(tcell, 2);
-    vel_max_[0] = target_->cell_v_max(tcell, 0);
-    vel_max_[1] = target_->cell_v_max(tcell, 1);
-    vel_max_[2] = target_->cell_v_max(tcell, 2);
+    if (xvalue[*it_cell]!=0. || yvalue[*it_cell]!=0. || zvalue[*it_cell]!=0.) {
+      double bounds[6];
+      actual_->cell_bounds(*it_cell, bounds);
 
-    double bounds[6];
-    actual_->cell_bounds(*it_cell, bounds);
+      vel_min_[0] = target_->cell_v_min(tcell, 0);
+      vel_min_[1] = target_->cell_v_min(tcell, 1);
+      vel_min_[2] = target_->cell_v_min(tcell, 2);
+      vel_max_[0] = target_->cell_v_max(tcell, 0);
+      vel_max_[1] = target_->cell_v_max(tcell, 1);
+      vel_max_[2] = target_->cell_v_max(tcell, 2);
 
-    if (xvalue!=0. || yvalue!=0. || zvalue!=0.) {
-      for (int i = 0; i < nlocal; i++) {
+      // allow 3% deviation
+      // allow 3% deviation from min/max velocity
+      vel_min_[0] *= (vel_min_[0] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
+      vel_min_[1] *= (vel_min_[1] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
+      vel_min_[2] *= (vel_min_[2] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
+      vel_max_[0] *= (vel_max_[0] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
+      vel_max_[1] *= (vel_max_[1] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
+      vel_max_[2] *= (vel_max_[2] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
+
+      for (int i = actual_->cell_head(*it_cell); i >= 0; i = actual_->cell_ptr(i)) {
+        if (i >= nlocal)
+          continue;
         if (mask[i] & groupbit) {
-
           double fadex = 1.0;
           double fadey = 1.0;
           double fadez = 1.0;
 
+          if (ctrl_style_ == STRESS  && sinesq_part_ > 0.0) {
+            if (axis_[0] != 0.) {
+              if (axis_[0] < 0. && x[i][0] < bounds[1] - const_part_) {
+                if(x[i][0] < bounds[1] - used_part_) {
+                  fadex = 0.;
+                } else {
+                  fadex = sin(M_PI*0.5*(x[i][0] - (bounds[1]-used_part_))/sinesq_part_);
+                  fadex *= fadex;
+                }
+              } else if (axis_[0] > 0. && x[i][0] > bounds[0] + const_part_) {
+                if(x[i][0] > bounds[0] + used_part_) {
+                  fadex = 0.;
+                } else {
+                  fadex = sin(M_PI*0.5*(x[i][0] - (bounds[0]+used_part_))/sinesq_part_);
+                  fadex *= fadex;
+                }
+              }
+            }
 
-          if (axis_[0] != 0.) {
-            double extent_x = bounds[1] - bounds[0];
+            if (axis_[1] != 0.) {
+              if (axis_[1] < 0. && x[i][1] < bounds[3] - const_part_) {
+                if(x[i][1] < bounds[3] - used_part_) {
+                  fadey = 0.;
+                } else {
+                  fadey = sin(M_PI*0.5*(x[i][1] - (bounds[3]-used_part_))/sinesq_part_);
+                  fadey *= fadey;
+                }
+              } else if (axis_[1] > 0. && x[i][1] > bounds[2] + const_part_) {
+                if(x[i][1] > bounds[2] + used_part_) {
+                  fadey = 0.;
+                } else {
+                  fadey = sin(M_PI*0.5*(x[i][1] - (bounds[2]+used_part_))/sinesq_part_);
+                  fadey *= fadey;
+                }
+              }
+            }
 
-            if (axis_[0] < 0. && x[i][0] < bounds[1] - const_part_*extent_x) {
-              fadex = sin(M_PI*0.5*(x[i][0] - bounds[0])/(sinesq_part_*extent_x));
-              fadex *= fadex;
-            } else if (axis_[0] > 0. && x[i][0] > bounds[0] + const_part_*extent_x) {
-              fadex = sin(M_PI*0.5*(x[i][0] - bounds[1])/(sinesq_part_*extent_x));
-              fadex *= fadex;
+            if (axis_[2] != 0.) {
+              if (axis_[2] < 0. && x[i][2] < bounds[5] - const_part_) {
+                if(x[i][2] < bounds[5] - used_part_) {
+                  fadez = 0.;
+                } else {
+                  fadez = sin(M_PI*0.5* (x[i][2] - (bounds[5]-used_part_))/sinesq_part_);
+                  fadez *= fadez;
+                }
+              } else if (axis_[2] > 0. && x[i][2] > bounds[4] + const_part_) {
+                if(x[i][2] > bounds[4] + used_part_) {
+                  fadez = 0.;
+                } else {
+                  fadez = sin(M_PI*0.5* (x[i][2] - (bounds[4]+used_part_))/sinesq_part_);
+                  fadez *= fadez;
+                }
+              }
             }
           }
-          if (axis_[1] != 0.) {
-            double extent_y = bounds[3] - bounds[2];
 
-            if (axis_[1] < 0. && x[i][1] < bounds[3] - const_part_*extent_y) {
-              fadey = sin(M_PI*0.5*(x[i][1] - bounds[2])/(sinesq_part_*extent_y));
-              fadey *= fadey;
-            } else if (axis_[1] > 0. && x[i][1] > bounds[2] + const_part_*extent_y) {
-              fadey = sin(M_PI*0.5*(x[i][1] - bounds[3])/(sinesq_part_*extent_y));
-              fadey *= fadey;
+
+          if (limit_velocity_) {
+            limit[0]=limit[1]=limit[2]=1.;
+            double dtfm = dtf_ / rmass[i];
+
+            fx = fadex * xvalue[*it_cell];
+
+            if (fabs(fx) > fabs(f[i][0]*0.005)) {
+              vx = v[i][0] + dtfm * (f[i][0] + fx);
+
+              if (vx > vel_max_[0]) {
+                if (vx - dtfm * fx < vel_max_[0])
+                  limit[0] = (vel_max_[0] - v[i][0] - dtfm * f[i][0])/(dtfm * fx);
+                else if (fx > 0.)
+                  limit[0] = 0.;
+              } else if (vx < vel_min_[0]) {
+                if (vx - dtfm * fx > vel_min_[0])
+                  limit[0] = (vel_min_[0] - v[i][0] - dtfm * f[i][0])/(dtfm * fx);
+                else if (fx < 0)
+                  limit[0] = 0.;
+              }
             }
-          }
-          if (axis_[2] != 0.) {
-            double extent_z = bounds[5] - bounds[4];
 
-            if (axis_[2] < 0. && x[i][2] < bounds[5] - const_part_*extent_z) {
-              fadez = sin(M_PI*0.5*(x[i][2] - bounds[4])/(sinesq_part_*extent_z));
-              fadez *= fadez;
-            } else if (axis_[2] > 0. && x[i][2] > bounds[4] + const_part_*extent_z) {
-              fadez = sin(M_PI*0.5*(x[i][2] - bounds[5])/(sinesq_part_*extent_z));
-              fadez *= fadez;
+            fy = fadey * yvalue[*it_cell];
+
+            if (fabs(fy) > fabs(f[i][1]*0.005)) {
+              vy = v[i][1] + dtfm * (f[i][1] + fy);
+              if (vy > vel_max_[1]) {
+                if (vy - dtfm * fy < vel_max_[1])
+                  limit[1] = (vel_max_[1] - v[i][1] - dtfm * f[i][1])/(dtfm * fy);
+                else if (fy > 0.)
+                  limit[1] = 0.;
+              } else if (vy < vel_min_[1]) {
+                if (vy - dtfm * fy > vel_min_[1])
+                  limit[1] = (vel_min_[1] - v[i][1] - dtfm * f[i][1])/(dtfm * fy);
+                else if (fy < 0.)
+                  limit[1] = 0.;
+              }
             }
+
+            fz = fadez * zvalue[*it_cell];
+
+            if (fabs(fz) > fabs(f[i][2]*0.005)) {
+              vz = v[i][2] + dtfm * (f[i][2] + fz);
+              if (vz > vel_max_[2]) {
+                if (vz - dtfm * fz < vel_max_[2])
+                  limit[2] = (vel_max_[2] - v[i][2] - dtfm * f[i][2])/(dtfm * fz);
+                else if (fz > 0.)
+                  limit[2] = 0.;
+              } else if (vz < vel_min_[2]) {
+                if (vz - dtfm * fz > vel_min_[2])
+                  limit[2] = (vel_min_[2] - v[i][2] - dtfm * f[i][2])/(dtfm * fz);
+                else if (fz < 0.)
+                  limit[2] = 0.;
+              }
+            }
+
+            double a = std::min(limit[0], std::min(limit[1], limit[2]));
+            f[i][0] += a * fx;
+            f[i][1] += a * fy;
+            f[i][2] += a * fz;
+          } else {
+            f[i][0] += fadex * xvalue[*it_cell];
+            f[i][1] += fadey * yvalue[*it_cell];
+            f[i][2] += fadez * zvalue[*it_cell];
           }
-
-          double dtfm = dtf_ / rmass[i];
-          vx = v[i][0] + dtfm * (f[i][0] + fadex * xvalue);
-          vy = v[i][1] + dtfm * (f[i][1] + fadey * yvalue);
-          vz = v[i][2] + dtfm * (f[i][2] + fadez * zvalue);
-
-          double limit[3];
-          limit[0]=limit[1]=limit[2]=1.;
-
-          if (vx > vel_max_[0])
-            limit[0] = (fadex*xvalue == 0.) ? 1. : ( std::max(0., std::min(1., ((vel_max_[0] - v[i][0]) / dtfm - f[i][0])/(fadex*xvalue))) );
-          else if (vx < vel_min_[0])
-            limit[0] = (fadex*xvalue == 0.) ? 1. : ( std::max(0., std::min(1., ((vel_min_[0] - v[i][0]) / dtfm - f[i][0])/(fadex*xvalue))) );
-
-          if (vy > vel_max_[1])
-            limit[1] = (fadey*yvalue == 0.) ? 1. : ( std::max(0., std::min(1., ((vel_max_[1] - v[i][1]) / dtfm - f[i][1])/(fadey*yvalue))) );
-          else if (vy < vel_min_[1])
-            limit[1] = (fadey*yvalue == 0.) ? 1. : ( std::max(0., std::min(1., ((vel_min_[1] - v[i][1]) / dtfm - f[i][1])/(fadey*yvalue))) );
-
-          if (vz > vel_max_[2])
-            limit[2] = (fadez*zvalue == 0.) ? 1. : ( std::max(0., std::min(1., ((vel_max_[2] - v[i][2]) / dtfm - f[i][2])/(fadez*zvalue))) );
-          else if (vz < vel_min_[2])
-            limit[2] = (fadez*zvalue == 0.) ? 1. : ( std::max(0., std::min(1., ((vel_min_[2] - v[i][2]) / dtfm - f[i][2])/(fadez*zvalue))) );
-
-          double a = std::min(limit[0], std::min(limit[1], limit[2]));
-          f[i][0] += a * fadex * xvalue;
-          f[i][1] += a * fadey * yvalue;
-          f[i][2] += a * fadez * zvalue;
         }
       }
     }
@@ -396,11 +532,11 @@ void FixForceControlRegion::post_force(int vflag)
 int FixForceControlRegion::modify_param(int narg, char **arg)
 {
     if (narg < 2) error->fix_error(FLERR,this,"Illegal fix_modify command");
-    int usedarg = 2;
+    int nusedarg = 2;
     int start_id = atoi(arg[1]);
     int end_id = start_id;
     if (narg > 2) {
-      ++usedarg;
+      ++nusedarg;
       end_id = atoi(arg[2]);
     }
 
@@ -430,7 +566,8 @@ int FixForceControlRegion::modify_param(int narg, char **arg)
       }
     }
     else error->all(FLERR,"Illegal fix_modify command");
-    return usedarg;
+
+    return nusedarg;
 }
 
 /* ---------------------------------------------------------------------- */

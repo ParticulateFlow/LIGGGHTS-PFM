@@ -50,6 +50,8 @@ class FixAveEuler : public Fix {
   virtual int setmask();
   virtual void init();
   void setup(int vflag);
+  void post_integrate();
+  void pre_force(int);
 
   void end_of_step();
 
@@ -86,6 +88,12 @@ class FixAveEuler : public Fix {
   inline int cell_count(int i)
   { return ncount_[i]; }
 
+  inline int cell_head(int i)
+  { if (dirty_) lazy_bin_atoms(i); return cellhead_[i]; }
+
+  inline int cell_ptr(int i)
+  { return cellptr_[i]; }
+
  protected:
   inline int ntry_per_cell()
   { return 50; }
@@ -93,12 +101,14 @@ class FixAveEuler : public Fix {
  private:
   virtual void setup_bins();
   virtual void bin_atoms();
+  virtual void lazy_bin_atoms(int i) { bin_atoms(); }
   virtual void calculate_eu();
   void allreduce();
   inline int coord2bin(double *x); //NP modified A.A.
 
  protected:
   bool parallel_;
+  bool dirty_;
 
   int exec_every_;
   bool box_change_size_, box_change_domain_;
