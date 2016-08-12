@@ -516,7 +516,7 @@ package"_Section_accelerate.html.
 
 :line
 
-compute syles :h4
+compute styles :h4
 
 See the "compute"_compute.html command for one-line descriptions of
 each style or click on the style itself for a full description:
@@ -641,7 +641,7 @@ package"_Section_accelerate.html.
 
 :line
 
-dump syles :h4
+dump styles :h4
 
 Click on the style itself for a full description:
 
@@ -654,7 +654,7 @@ These are accelerated styles, which can be used if LAMMPS is built with the "app
 
  :tb(c=4,ea=c)
 
-fix syles :h4
+fix styles :h4
 
 See the "fix"_fix.html command for one-line descriptions
 of each style or click on the style itself for a full description:
@@ -686,6 +686,7 @@ of each style or click on the style itself for a full description:
 "enforce2d"_fix_enforce2d.html,
 "evaporate"_fix_evaporate.html,
 "external"_fix_external.html,
+"forcecontrol/region"_fix_forcecontrol_region.html,
 "freeze"_fix_freeze.html,
 "gcmc"_fix_gcmc.html,
 "gld"_fix_gld.html,
@@ -768,6 +769,7 @@ of each style or click on the style itself for a full description:
 "reax/c/bonds"_fix_reax_bonds.html,
 "reax/c/species"_fix_reaxc_species.html,
 "recenter"_fix_recenter.html,
+"remove"_fix_remove.html,
 "restrain"_fix_restrain.html,
 "rigid"_fix_rigid.html,
 "rigid/nph"_fix_rigid.html,

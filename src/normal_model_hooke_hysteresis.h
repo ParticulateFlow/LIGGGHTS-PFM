@@ -50,7 +50,7 @@ namespace ContactModels
         kn2kc(NULL),
         phiF(NULL)
     {
-      history_offset = hsetup->add_history_value("deltaMax", "1");
+      history_offset = hsetup->add_history_value("deltaMax", "0");
       /*NL*/ if(Pointers::comm->me == 0 && Pointers::screen) fprintf(Pointers::screen, "HOOKE/HYSTERESIS loaded\n");
     }
 
