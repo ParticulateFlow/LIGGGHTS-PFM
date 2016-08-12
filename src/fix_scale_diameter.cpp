@@ -121,10 +121,10 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
     double dim[3] = {scale_region->extent_xhi - scale_region->extent_xlo,
                      scale_region->extent_yhi - scale_region->extent_ylo,
                      scale_region->extent_zhi - scale_region->extent_zlo};
-    if(dim[0] == dim[1]) {
+    if(fabs(dim[0] - dim[1]) < 1e-6) {
       radius_ = 0.5*dim[0];
       region_style = ZCYLINDER;
-    } else if(dim[0] == dim[2]) {
+    } else if(fabs(dim[0] - dim[2]) < 1e-6) {
       radius_ = 0.5*dim[0];
       region_style = YCYLINDER;
     } else {
