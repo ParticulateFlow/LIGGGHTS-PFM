@@ -51,7 +51,6 @@ public:
   int setmask();
   virtual void init();
   virtual void post_force(int);
-  // virtual void post_force();
   void delete_atoms();
 
 
@@ -65,18 +64,23 @@ public:
   class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
   class FixPropertyAtom *fix_reactionheat_;                     //  DeltaQ
 
-  // can be used to data transfer for change of species mass
-  class FixCfdCouplingChemistry *fcc;
+
+  int iarg_;
 
   // values from user
   double k;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
+
+  // particle properties
   double *radius_;                                  // radius of particle
   double *pmass_;                                   // particle mass
   double *pdensity_;
-  int iarg_;
-  double *mass_;
+
+
+  // minimum radius value -rmin input from user
   double rmin;
+  double rdefault;
+  double radius_origin;
 
   // pointer updaters
   double *changeOfA_;
@@ -90,11 +94,11 @@ public:
   int spcA;
   int spcC;
 
+  // TimeStep
+  double TimeStep;
+
   // delete atoms
   int *dlist;
-
-
-
 };
 
 }

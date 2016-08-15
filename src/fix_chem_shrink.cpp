@@ -30,6 +30,8 @@
 #include "atom.h"
 #include "update.h"
 #include "respa.h"
+#include "region.h"
+#include "domain.h"
 #include "error.h"
 #include "memory.h"
 #include "modify.h"
@@ -61,21 +63,19 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_tgas_           =   NULL;
     fix_reactionheat_   =   0;
 
-
     iarg_ = 3;
+    k = 0;
     molMass_A_ = 0;
     molMass_C_ = 0;
     molMass_B_ = 0;
-    k = 0;
+    pmass_ = NULL;
     rmin = 0;
-    int n = 16;
-    char cha[30];
+    rdefault = 0;
+    radius_origin = 0;
     spcA = 0;
     spcC = 0;
-    pmass_ = NULL;
-
-    //if (narg < 15)
-    //    error -> all (FLERR,"not enough arguments");
+    int n = 16;
+    char cha[30];
 
     bool hasargs = true;
     while (iarg_ < narg && hasargs)
@@ -166,9 +166,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
                 error -> fix_error(FLERR, this, "rmin is not defined");
             iarg_++;
             hasargs = true;
+        }else if (strcmp(arg[iarg_],"rmin") != 0)
+        {
+            rmin = rdefault;
+            iarg_++;
+            hasargs = true;
         }
 
-        // print the arguments on screen
+   /*     // print the arguments on screen
         if (comm -> me == 0 && screen)
         {
             fprintf(screen,"arg 3: %s \n",arg[3]); // check
@@ -185,7 +190,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             fprintf(screen,"arg 14: %e \n",k); // check
             fprintf(screen,"arg 15: %s \n",arg[15]); // check
             fprintf(screen,"arg 16: %f \n",rmin); // check
-        }
+        } */
     }
 
     // define changed species mass A
@@ -200,19 +205,12 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     strcat(cha,speciesC);
     strcpy(massC,cha);
 
+    time_depend = 1;
+    force_reneighbor =1;
+    nevery = 1;
+    next_reneighbor = update ->ntimestep + nevery;
 
-    vector_flag =   1;
-    size_vector =   3;
-    global_freq =   1;
-    extvector   =   1;
-    atom -> rmass_flag = 1;
-
-    if (comm -> me == 0 && screen)
-    {
-        fprintf(screen,"massA: %s \n", massA);
-        fprintf(screen,"massC: %s \n", massC);
-        fprintf(screen,"constructor successfully completed \n");
-    }
+    restart_global = 1;
 }
 
 
@@ -401,13 +399,11 @@ void FixChemShrink::reaction()
     {
         updatePtrs();
         int nlocal  =   atom -> nlocal;
-        // int natoms  =   atom -> natoms;
-        // int nall = nlocal + atom -> nghost;
-        double TimeStep = update -> dt;
+        TimeStep = update -> dt;
 
         for (int i = 0; i<nlocal; i++)
         {
-            if (screen)
+         if (screen)
             {
                 fprintf(screen, " double k : %e \n", k);
                 fprintf(screen, " double rhogas_[i] : %f \n", rhogas_[i]);
@@ -415,24 +411,23 @@ void FixChemShrink::reaction()
                 fprintf(screen, " double radius_[i] : %f \n", radius_[i]);
                 fprintf(screen, " timestep:%f \n", TimeStep);
             }
-            // double dA   = -k*fix_rhogas_*fix_concA_*partSurfArea(radius_);
+
+            // Current time step mass change
             double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep;
             double dB   =    dA*(molMass_B_/molMass_A_);
             double dC   =   -dA*(molMass_C_/molMass_A_);
 
-            // rate of change of the total number of moles of A
-            // fix_changeOfA_  +=  dA;
+            // total rate of change for species A
             changeOfA_[i]       +=  dA;
 
-            // rate of change of the total number of moles of C
-            // fix_changeOfC_  +=  dC;
+            // total rate of change for species C
             changeOfC_[i]       +=  dC;
 
-            // mass of particle subtracted by mass change of particle (delta m)
-            pmass_[i]           +=  dB;
+            // Mass of single particle
+            pmass_[i]               +=  dB;
 
             // change of radius of particle -assumption: density of particle is constant
-            radius_[i]         =   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
+            radius_[i]                  =   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
 
             if (screen)
             {
@@ -443,9 +438,9 @@ void FixChemShrink::reaction()
                 fprintf(screen, " double pmass: %f \n", pmass_[i]);
                 fprintf(screen, " density: %f \n", pdensity_[i]);
                 fprintf(screen, " testing reaction inside for loop \n");
-
             }
         }
+
         if (screen)
             fprintf(screen,"nlocal number is = %i \n", nlocal);
     }
@@ -462,8 +457,16 @@ double FixChemShrink::partSurfArea(double radius)
 
 void FixChemShrink::init()
 {
-   if (!atom -> radius_flag || !atom -> density_flag)
-        error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style");
+/*   if (!atom -> radius_flag || !atom -> density_flag)
+        error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style"); */
+
+    // error checks
+    if (!atom->radius_flag)
+      error->fix_error(FLERR,this,"requires atom attribute radius (per-particle)");
+    if (!atom->rmass_flag)
+      error->fix_error(FLERR,this,"requires atom attribute mass (per-particle)");
+    if (!atom->tag_enable || 0 == atom->map_style)
+      error->fix_error(FLERR,this,"requires atom tags and an atom map");
 
     // references
     fix_concA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
@@ -475,8 +478,6 @@ void FixChemShrink::init()
     fix_rhogas_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_=   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
 
-    // updatePtrs();
-
     if (comm -> me == 0 && screen)
         fprintf(screen,"init succesfully completed  \n");
 }
@@ -484,19 +485,19 @@ void FixChemShrink::init()
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrink::post_force(int)
-//void FixChemShrink::post_force()
 {
     radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
     int nlocal = atom -> nlocal;
+    int i;
 
     // allocate and initialize dlist
     memory->create(dlist,nlocal,"delete_atoms:dlist");
-    for (int i = 0; i < nlocal; i++) dlist[i] = 0;
+    for (i = 0; i < nlocal; i++) dlist[i] = 0;
 
     // check radius - do reaction or delete
-    for (int i = 0; i < nlocal; i++)
+    for (i = 0; i < nlocal; i++)
     {
         if (radius_[i] >= rmin)
         {
@@ -504,12 +505,32 @@ void FixChemShrink::post_force(int)
         }
         else if (radius_[i] < rmin)
         {
-            dlist[i] = radius_[i] < rmin;
             delete_atoms();
-            memory -> destroy(dlist);
-        }
+         }
     }
 
+    bigint nblocal = atom->nlocal;
+    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
+
+    if (screen)
+        fprintf(screen,"!!! nlocal number is = %i \n", nlocal);
+    if (screen)
+        fprintf(screen,"!!! Atom number is = %li \n", atom->natoms);
+
+    //NP tags and maps
+      if (atom->molecular == 0) {
+      int *tag = atom->tag;
+      for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
+      atom->tag_extend();
+    }
+
+    if (atom->tag_enable) {
+      if (atom->map_style) {
+        atom->nghost = 0;
+        atom->map_init();
+        atom->map_set();
+      }
+    }
 
     if (comm -> me == 0 && screen)
         fprintf(screen,"post_force succesfully completed \n");
@@ -519,14 +540,15 @@ void FixChemShrink::post_force(int)
 
 void FixChemShrink::delete_atoms()
 {
-    AtomVec *avec = atom->avec;
-    int nlocal = atom -> nlocal;
+    int nlocal = atom->nlocal;
     int *mask = atom -> mask;
+    double *rmass = atom -> rmass;
 
     int i = 0;
     while (i < nlocal) {
+        dlist[i] = radius_[i] < rmin;
         if (dlist[i]) {
-        avec->copy(nlocal-1,i,1);
+        atom -> avec -> copy(nlocal-1,i,1);
         dlist[i] = dlist[nlocal-1];
         nlocal--;
         } else i++;
@@ -534,16 +556,6 @@ void FixChemShrink::delete_atoms()
 
       atom->nlocal = nlocal;
       memory->destroy(dlist);
-      MPI_Allreduce(&nlocal,&atom->natoms,1,MPI_INT,MPI_SUM,world);
-      //int comp_flag = 0;
-
-  /*  if (atom->molecular == 0 && comp_flag)
-    {
-        int *tag = atom -> tag;
-        for (i = 0; i < nlocal; i++) tag[i] = 0;
-        atom->tag_extend();
-    }*/
-
-    //int nblocal = atom->nlocal;
-
 }
+
+/* ---------------------------------------------------------------------- */
