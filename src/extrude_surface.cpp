@@ -42,6 +42,7 @@
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkDataSetSurfaceFilter.h>
 #include <vtkPolyDataNormals.h>
+#include <vtkGeometryFilter.h>
 #include <vtkTriangleFilter.h>
 #include <vtkAppendFilter.h>
 #include <vtkPolyData.h>
@@ -143,12 +144,21 @@ void ExtrudeSurface::command(int narg, char **arg)
       dset->GetCellData()->SetScalars(cellData);
     }
 
+    vtkNew<vtkGeometryFilter> geometryFilter;
+#if VTK_MAJOR_VERSION < 6
+    geometryFilter->SetInput(dset);
+#else
+    geometryFilter->SetInputData(dset);
+#endif
+    geometryFilter->Update();
+    vtkPolyData *pd = geometryFilter->GetOutput();
+
     // triangulate surface
-    triangulate(narg, arg, dset);
+    triangulate(narg, arg, pd);
 
     // extrude faces to get regions for insertion
     if (narg >= 8) {
-      extrude(narg, arg, dset);
+      extrude(narg, arg, pd);
     }
 
     dset->Delete();
