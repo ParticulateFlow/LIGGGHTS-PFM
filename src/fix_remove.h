@@ -81,6 +81,7 @@ class FixRemove : public Fix {
   double mass_removed_,mass_to_remove_;
   int time_origin_;
   double dt_;
+  bool verbose_;
 
   class FixMultisphere *fix_ms_;
   class MultisphereParallel *ms_;
