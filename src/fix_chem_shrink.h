@@ -52,7 +52,7 @@ public:
   virtual void init();
   virtual void post_force(int);
   void delete_atoms();
-
+  void default_radius();
 
  protected:
   char* speciesA, *speciesC;
@@ -70,17 +70,18 @@ public:
   // values from user
   double k;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
+  double hertzpct;
 
   // particle properties
   double *radius_;                                  // radius of particle
   double *pmass_;                                   // particle mass
   double *pdensity_;
 
-
   // minimum radius value -rmin input from user
   double rmin;
   double rdefault;
   double radius_origin;
+  bool rdef;
 
   // pointer updaters
   double *changeOfA_;
@@ -99,6 +100,14 @@ public:
 
   // delete atoms
   int *dlist;
+
+  // get values for default radius minimum
+  double vmax_;
+  double **Yeff_;
+  const double *Y, *nu;
+
+
+
 };
 
 }

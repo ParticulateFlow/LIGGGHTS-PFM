@@ -41,7 +41,14 @@
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
 #include "fix_chem_shrink.h"
+#include "pair_gran.h"
 #include "fix_property_atom.h"
+#include "fix_property_global.h"
+#include "properties.h"
+#include "property_registry.h"
+#include "global_properties.h"
+#include "force.h"
+
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -61,7 +68,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_changeOfC_      =   NULL;
     fix_rhogas_         =   NULL;
     fix_tgas_           =   NULL;
-    fix_reactionheat_   =   0;
+    fix_reactionheat_   =   NULL;
 
     iarg_ = 3;
     k = 0;
@@ -69,15 +76,17 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     molMass_C_ = 0;
     molMass_B_ = 0;
     pmass_ = NULL;
-    rmin = 0;
-    rdefault = 0;
-    radius_origin = 0;
+    rmin = 0.;
+    rdefault = 0.;
+    hertzpct = 0.;
     spcA = 0;
     spcC = 0;
+    Yeff_ = NULL;
     int n = 16;
     char cha[30];
 
     bool hasargs = true;
+    rdef = false;
     while (iarg_ < narg && hasargs)
     {
         hasargs = false;
@@ -166,31 +175,21 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
                 error -> fix_error(FLERR, this, "rmin is not defined");
             iarg_++;
             hasargs = true;
-        }else if (strcmp(arg[iarg_],"rmin") != 0)
+        }else if (strcmp(arg[iarg_],"rdef") == 0)
         {
-            rmin = rdefault;
+            if (screen)
+                fprintf(screen, "rmin is not given, default radius value is used! \n");
+            rdef = true;
+            iarg_++;
+            if (strcmp(arg[iarg_],"hertzpct") != 0)
+                error -> fix_error(FLERR, this, "please enter a percentage to caclculate the hertz timestep for");
+            iarg_++;
+            hertzpct = atof(arg[iarg_]);
+            if (hertzpct == 0)
+                error -> fix_error(FLERR, this, "hertzpct can not be 0");
             iarg_++;
             hasargs = true;
         }
-
-   /*     // print the arguments on screen
-        if (comm -> me == 0 && screen)
-        {
-            fprintf(screen,"arg 3: %s \n",arg[3]); // check
-            fprintf(screen,"arg 4: %s \n",arg[4]); // check
-            fprintf(screen,"arg 5: %s \n",arg[5]); // check
-            fprintf(screen,"arg 6: %f \n",molMass_A_); // check
-            fprintf(screen,"arg 7: %s \n",arg[7]); // check
-            fprintf(screen,"arg 8: %s \n",arg[8]); // check
-            fprintf(screen,"arg 9: %s \n",arg[9]); // check
-            fprintf(screen,"arg 10: %f \n",molMass_C_ ); // check
-            fprintf(screen,"arg 11: %s \n",arg[11]); // check
-            fprintf(screen,"arg 12: %f \n",molMass_B_); // check
-            fprintf(screen,"arg 13: %s \n",arg[13]); // check
-            fprintf(screen,"arg 14: %e \n",k); // check
-            fprintf(screen,"arg 15: %s \n",arg[15]); // check
-            fprintf(screen,"arg 16: %f \n",rmin); // check
-        } */
     }
 
     // define changed species mass A
@@ -386,7 +385,6 @@ void FixChemShrink::updatePtrs()
     changeOfA_  =   fix_changeOfA_  -> vector_atom;
     changeOfC_  =   fix_changeOfC_  -> vector_atom;
     rhogas_     =   fix_rhogas_     -> vector_atom;
-    //tgas_       =   fix_tgas_       -> vector_atom;
 
     if (comm -> me == 0 && screen)
             fprintf(screen,"updatePtrs successfully \n");
@@ -399,7 +397,6 @@ void FixChemShrink::reaction()
     {
         updatePtrs();
         int nlocal  =   atom -> nlocal;
-        TimeStep = update -> dt;
 
         for (int i = 0; i<nlocal; i++)
         {
@@ -424,25 +421,11 @@ void FixChemShrink::reaction()
             changeOfC_[i]       +=  dC;
 
             // Mass of single particle
-            pmass_[i]               +=  dB;
+            pmass_[i]           +=  dB;
 
             // change of radius of particle -assumption: density of particle is constant
-            radius_[i]                  =   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
-
-            if (screen)
-            {
-                fprintf(screen, " double dA: %e \n", dA);
-                fprintf(screen, " double dC: %e \n", dC);
-                fprintf(screen, " double changeOfA: %f  \n", changeOfA_[i]);
-                fprintf(screen, " double changeOfC: %f \n", changeOfC_[i]);
-                fprintf(screen, " double pmass: %f \n", pmass_[i]);
-                fprintf(screen, " density: %f \n", pdensity_[i]);
-                fprintf(screen, " testing reaction inside for loop \n");
-            }
+            radius_[i]           =   pow(0.75*pmass_[i]/(M_PI*pdensity_[i]),0.333333);
         }
-
-        if (screen)
-            fprintf(screen,"nlocal number is = %i \n", nlocal);
     }
 
 /* ----------------- compute particle surface area ------------------------ */
@@ -457,9 +440,6 @@ double FixChemShrink::partSurfArea(double radius)
 
 void FixChemShrink::init()
 {
-/*   if (!atom -> radius_flag || !atom -> density_flag)
-        error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style"); */
-
     // error checks
     if (!atom->radius_flag)
       error->fix_error(FLERR,this,"requires atom attribute radius (per-particle)");
@@ -478,6 +458,20 @@ void FixChemShrink::init()
     fix_rhogas_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_=   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
 
+    if (rdef)
+    {
+        PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+        if(!pair_gran)
+            error->fix_error(FLERR,this,"'area_correction' requires using a granular pair style");
+        int max_type = pair_gran->get_properties()->max_type();
+
+        Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
+        nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
+
+        force->registry.registerProperty("Yeff_", &MODEL_PARAMS::createYeff);
+        force->registry.connect("Yeff_", Yeff_,this->style);
+    }
+
     if (comm -> me == 0 && screen)
         fprintf(screen,"init succesfully completed  \n");
 }
@@ -489,12 +483,21 @@ void FixChemShrink::post_force(int)
     radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
+    TimeStep = update -> dt;
     int nlocal = atom -> nlocal;
     int i;
 
     // allocate and initialize dlist
     memory->create(dlist,nlocal,"delete_atoms:dlist");
     for (i = 0; i < nlocal; i++) dlist[i] = 0;
+
+    if (rdef)
+    {
+        default_radius();
+    }
+
+    if (screen)
+        fprintf(screen,"rmin value: %f \n", rmin);
 
     // check radius - do reaction or delete
     for (i = 0; i < nlocal; i++)
@@ -506,7 +509,7 @@ void FixChemShrink::post_force(int)
         else if (radius_[i] < rmin)
         {
             delete_atoms();
-         }
+        }
     }
 
     bigint nblocal = atom->nlocal;
@@ -541,8 +544,6 @@ void FixChemShrink::post_force(int)
 void FixChemShrink::delete_atoms()
 {
     int nlocal = atom->nlocal;
-    int *mask = atom -> mask;
-    double *rmass = atom -> rmass;
 
     int i = 0;
     while (i < nlocal) {
@@ -559,3 +560,65 @@ void FixChemShrink::delete_atoms()
 }
 
 /* ---------------------------------------------------------------------- */
+
+void FixChemShrink::default_radius()
+{
+    int nlocal  = atom->nlocal;
+    double **v  = atom -> v;
+    double vmag;
+    int *mask   = atom -> mask;
+    int *type   = atom -> type;
+
+    double m_;
+    double denom;
+    double numer;
+
+    vmax_ = 0;
+
+    for (int i = 0; i < nlocal; i++)
+    {
+        if (mask[i] & groupbit)
+        {
+            vmag = sqrt(v[i][0]*v[i][0]+v[i][1]*v[i][1]+v[i][2]*v[i][2]);
+            if(vmag > vmax_) vmax_=vmag;
+        }
+    }
+
+    MPI_Max_Scalar(vmax_,world);
+    vmax_ = (2.*vmax_);
+
+    if (screen)
+    {
+        fprintf(screen,"vmax value is: %f \n", vmax_);
+    }
+
+    PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+    int max_type = pair_gran->get_properties()->max_type();
+
+    for (int a = 1; a < max_type + 1; a++)
+    {
+        for (int b = a; b < max_type + 1; b++)
+        {
+            const double Eeff = Yeff_[a][b];
+
+            for (int i = 0; i < nlocal; i++)
+            {
+                if (mask[i] & groupbit)
+                {
+                    if (type[i]!=a || type[i]!=b) continue;
+                    // Hertzain time step can be calculated with
+                    // 2.87 * radius *( m / (Y*vmax))^0.2
+                    // here it is considered that Hertzian ts is 20 percent of normal dt
+                    // with this the minimum radius is calculated
+                    m_ = 4 * M_PI / (3 * pdensity_[i]);
+                    denom = Eeff*Eeff*vmax_;
+                    numer = 2*m_*m_;
+                    rdefault = (hertzpct / 2.87)  * TimeStep * pow(numer/denom,-0.2);
+                }
+            }
+        }
+    }
+
+    MPI_Max_Scalar(rdefault,world);
+    rmin = rdefault;
+}
