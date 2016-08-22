@@ -56,7 +56,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
     fix_rhogas          =  NULL;
     fix_massfrac_       =  NULL;
     fix_masschange_     =  NULL;
-    fix_reactionheat_   =  0;
+    fix_reactionheat_   =  NULL;
 
     iarg_ = 3;
     num_species = 0;
