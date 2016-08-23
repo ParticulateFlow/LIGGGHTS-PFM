@@ -667,6 +667,7 @@ of each style or click on the style itself for a full description:
 "ave/atom"_fix_ave_atom.html,
 "ave/correlate"_fix_ave_correlate.html,
 "ave/euler"_fix_ave_euler.html,
+"ave/euler/region"_fix_ave_euler_region.html,
 "ave/histo"_fix_ave_histo.html,
 "ave/spatial"_fix_ave_spatial.html,
 "ave/time"_fix_ave_time.html,

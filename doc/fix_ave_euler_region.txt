@@ -14,7 +14,7 @@ fix ave/euler/region command :h3
 fix ID group-ID ave/euler/region nevery N region reg-ID keywords values :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
-ave/euler = style name of this fix command :l
+ave/euler/region = style name of this fix command :l
 nevery = obligatory keyword :l
 N = calculate average values every this many timesteps :l
 region = obligatory keyword :l
