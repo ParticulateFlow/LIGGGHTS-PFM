@@ -55,6 +55,12 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   ki_(0.),
   kd_(0.),
   ctrl_style_(NONE),
+  dtf_(1.0),
+  dtv_(1.0),
+  dtv_inverse_(1.0),
+  fadex_ (1.0),
+  fadey_ (1.0),
+  fadez_ (1.0),
   cg_(1),
   ncells_max_(0),
   old_pv_vec_(NULL),
@@ -382,8 +388,7 @@ void FixForceControlRegion::post_force(int vflag)
       vel_max_[1] = target_->cell_v_max(tcell, 1);
       vel_max_[2] = target_->cell_v_max(tcell, 2);
 
-      // allow 3% deviation
-      // allow 3% deviation from min/max velocity
+      // allow small deviation from min/max velocity
       vel_min_[0] *= (vel_min_[0] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
       vel_min_[1] *= (vel_min_[1] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
       vel_min_[2] *= (vel_min_[2] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
@@ -395,25 +400,25 @@ void FixForceControlRegion::post_force(int vflag)
         if (i >= nlocal)
           continue;
         if (mask[i] & groupbit) {
-          double fadex = 1.0;
-          double fadey = 1.0;
-          double fadez = 1.0;
+          fadex_ = fadey_ = fadez_ = 1.0;
 
-          if (ctrl_style_ == STRESS  && sinesq_part_ > 0.0) {
+          if (ctrl_style_ == VELOCITY) {
+            fadex_ = fadey_ = fadez_ = rmass[i]*dtv_inverse_;
+          } else if (ctrl_style_ == STRESS  && sinesq_part_ > 0.0) {
             if (axis_[0] != 0.) {
               if (axis_[0] < 0. && x[i][0] < bounds[1] - const_part_) {
                 if(x[i][0] < bounds[1] - used_part_) {
-                  fadex = 0.;
+                  fadex_ = 0.;
                 } else {
-                  fadex = sin(M_PI*0.5*(x[i][0] - (bounds[1]-used_part_))/sinesq_part_);
-                  fadex *= fadex;
+                  fadex_ = sin(M_PI*0.5*(x[i][0] - (bounds[1]-used_part_))/sinesq_part_);
+                  fadex_ *= fadex_;
                 }
               } else if (axis_[0] > 0. && x[i][0] > bounds[0] + const_part_) {
                 if(x[i][0] > bounds[0] + used_part_) {
-                  fadex = 0.;
+                  fadex_ = 0.;
                 } else {
-                  fadex = sin(M_PI*0.5*(x[i][0] - (bounds[0]+used_part_))/sinesq_part_);
-                  fadex *= fadex;
+                  fadex_ = sin(M_PI*0.5*(x[i][0] - (bounds[0]+used_part_))/sinesq_part_);
+                  fadex_ *= fadex_;
                 }
               }
             }
@@ -421,17 +426,17 @@ void FixForceControlRegion::post_force(int vflag)
             if (axis_[1] != 0.) {
               if (axis_[1] < 0. && x[i][1] < bounds[3] - const_part_) {
                 if(x[i][1] < bounds[3] - used_part_) {
-                  fadey = 0.;
+                  fadey_ = 0.;
                 } else {
-                  fadey = sin(M_PI*0.5*(x[i][1] - (bounds[3]-used_part_))/sinesq_part_);
-                  fadey *= fadey;
+                  fadey_ = sin(M_PI*0.5*(x[i][1] - (bounds[3]-used_part_))/sinesq_part_);
+                  fadey_ *= fadey_;
                 }
               } else if (axis_[1] > 0. && x[i][1] > bounds[2] + const_part_) {
                 if(x[i][1] > bounds[2] + used_part_) {
-                  fadey = 0.;
+                  fadey_ = 0.;
                 } else {
-                  fadey = sin(M_PI*0.5*(x[i][1] - (bounds[2]+used_part_))/sinesq_part_);
-                  fadey *= fadey;
+                  fadey_ = sin(M_PI*0.5*(x[i][1] - (bounds[2]+used_part_))/sinesq_part_);
+                  fadey_ *= fadey_;
                 }
               }
             }
@@ -439,28 +444,28 @@ void FixForceControlRegion::post_force(int vflag)
             if (axis_[2] != 0.) {
               if (axis_[2] < 0. && x[i][2] < bounds[5] - const_part_) {
                 if(x[i][2] < bounds[5] - used_part_) {
-                  fadez = 0.;
+                  fadez_ = 0.;
                 } else {
-                  fadez = sin(M_PI*0.5* (x[i][2] - (bounds[5]-used_part_))/sinesq_part_);
-                  fadez *= fadez;
+                  fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[5]-used_part_))/sinesq_part_);
+                  fadez_ *= fadez_;
                 }
               } else if (axis_[2] > 0. && x[i][2] > bounds[4] + const_part_) {
                 if(x[i][2] > bounds[4] + used_part_) {
-                  fadez = 0.;
+                  fadez_ = 0.;
                 } else {
-                  fadez = sin(M_PI*0.5* (x[i][2] - (bounds[4]+used_part_))/sinesq_part_);
-                  fadez *= fadez;
+                  fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[4]+used_part_))/sinesq_part_);
+                  fadez_ *= fadez_;
                 }
               }
             }
           }
 
 
-          if (limit_velocity_) {
-            limit[0]=limit[1]=limit[2]=1.;
+          if (limit_velocity_ && !modifier_[tcell]) {
+            limit[0] = limit[1] = limit[2] = 1.0;
             double dtfm = dtf_ / rmass[i];
 
-            fx = fadex * xvalue[*it_cell];
+            fx = fadex_ * xvalue[*it_cell];
 
             if (fabs(fx) > fabs(f[i][0]*0.005)) {
               vx = v[i][0] + dtfm * (f[i][0] + fx);
@@ -478,7 +483,7 @@ void FixForceControlRegion::post_force(int vflag)
               }
             }
 
-            fy = fadey * yvalue[*it_cell];
+            fy = fadey_ * yvalue[*it_cell];
 
             if (fabs(fy) > fabs(f[i][1]*0.005)) {
               vy = v[i][1] + dtfm * (f[i][1] + fy);
@@ -495,7 +500,7 @@ void FixForceControlRegion::post_force(int vflag)
               }
             }
 
-            fz = fadez * zvalue[*it_cell];
+            fz = fadez_ * zvalue[*it_cell];
 
             if (fabs(fz) > fabs(f[i][2]*0.005)) {
               vz = v[i][2] + dtfm * (f[i][2] + fz);
@@ -517,9 +522,9 @@ void FixForceControlRegion::post_force(int vflag)
             f[i][1] += a * fy;
             f[i][2] += a * fz;
           } else {
-            f[i][0] += fadex * xvalue[*it_cell];
-            f[i][1] += fadey * yvalue[*it_cell];
-            f[i][2] += fadez * zvalue[*it_cell];
+            f[i][0] += fadex_ * xvalue[*it_cell];
+            f[i][1] += fadey_ * yvalue[*it_cell];
+            f[i][2] += fadez_ * zvalue[*it_cell];
           }
         }
       }
@@ -575,6 +580,7 @@ int FixForceControlRegion::modify_param(int narg, char **arg)
 void FixForceControlRegion::reset_dt()
 {
   dtv_ = update->dt;
+  dtv_inverse_ = 1.0/update->dt;
   dtf_ = 0.5 * update->dt * force->ftm2v;
 }
 

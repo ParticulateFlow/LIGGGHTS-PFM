@@ -70,7 +70,8 @@ class FixForceControlRegion : public Fix {
 
   int ctrl_style_;
   // timesteps
-  double dtf_,dtv_;
+  double dtf_,dtv_,dtv_inverse_;
+  double fadex_,fadey_,fadez_;
 
   class FixAveEulerRegion *actual_;
   class FixAveEulerRegion *target_;
