@@ -235,7 +235,7 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[2]="property/atom";
         fixarg[3]="reactionHeat";
         fixarg[4]="scalar"; // 1 vector per particle to be registered
-        fixarg[5]="yes";    // restart
+        fixarg[5]="no";     // restart
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="0.";
@@ -336,32 +336,23 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
     for (int i = 0; i < num_species; i++)
     {
         for (int j=0;j<nlocal;j++)
-        {
+        {    
             if (update -> ntimestep - 1 == fix_coupling -> latestpush(species_names_[i]))
             {
                 fix_masschange_[i] = NULL;
             }
-            if (fix_masschange_[i] == NULL)
+           /* if (fix_masschange_[i] == NULL)
             {
                 reactionHeat_[j] = NULL;
-            }
+            }*/
+            reactionHeat_[i] = NULL;
         }
-
-       /* if(fix_masschange_[i]) delete fix_masschange_[i];
-        delete [] fix_masschange_; */
     }
 
 }
 
 void FixCfdCouplingChemistry::post_force(int)
-//void FixCfdCouplingChemistry::post_force()
 {
-    int *mask = atom -> mask;
-    int nlocal = atom -> nlocal;
-    /*double *tgas = fix_tgas->vector_atom;
-    double *rhogas = fix_rhogas->vector_atom;*/
-
-
     // for all species names i and reaction heat
     // if dc_->pushednow(i)
     // clear masschange(i),reactionheat

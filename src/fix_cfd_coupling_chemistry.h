@@ -48,7 +48,6 @@ class FixCfdCouplingChemistry : public Fix  {
   virtual void init();
   virtual void initial_integrate(bigint);
   virtual void post_force(int);
-  //virtual void post_force();
 
  protected:
   int num_species;                              // # of species
@@ -61,9 +60,10 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixCfdCoupling* fix_coupling;
   class FixPropertyAtom* fix_tgas;                  // data pulled from cfdemCoupling - partTemp_
   class FixPropertyAtom* fix_rhogas;                // data pulled from cfdemCoupling - partRho_
+  class FixPropertyAtom* fix_reactionheat_;         // data pushed to cfdemCoupling - reactionHeat_
   class FixPropertyAtom** fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
   class FixPropertyAtom** fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
-  class FixPropertyAtom* fix_reactionheat_;         // data pushed to cfdemCoupling - reactionHeat_
+
 
  private:
   bool use_Re_;
