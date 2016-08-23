@@ -14,7 +14,7 @@ boundary    f f f
 newton      off
 
 communicate single vel yes
-processors  * 1 1
+processors  2 1 1
 
 units       si
 
@@ -89,7 +89,7 @@ region hexregionb mesh/hex file meshes/testextrusion2x1_bottom.vtk scale 1. move
 # insert particles based on the massflow measured,
 # also specify that all calculations should consider the coarse grain factor (cg 1)
 # and an atom type different from the measured particle shall be used
-fix ins_cg1  resolved insert/pack/face seed 7236 random_distribute  exact maxattempt 1000 insert_every 500 &
+fix ins_cg1  resolved insert/pack/face seed 7238 random_distribute  exact maxattempt 1000 insert_every 500 &
     overlapcheck yes all_in yes type_offset 1 region hexregion  ntry_mc 10000 massflow_face massflowcg2 cg 1
 fix ins_cg1b resolved insert/pack/face seed 72332 random_distribute exact maxattempt 1000 insert_every 500 &
     overlapcheck yes all_in yes type_offset 1 region hexregionb ntry_mc 10000 massflow_face massflowcg2b cg 1
@@ -98,12 +98,17 @@ fix ins_cg1b resolved insert/pack/face seed 72332 random_distribute exact maxatt
 region ave_reg  mesh/hex file meshes/grid2x1.vtk scale 1. move 0. 0. 0.   rotate 0. 0. 0. cell_data yes units box
 # average region of resolved part
 region ave_reg1 mesh/hex file meshes/grid2x1.vtk scale 1. move 0.05 0. 0. rotate 0. 0. 0. cell_data yes units box
+
+variable nevery equal 15
+variable one_over_nevery equal 1.0/${nevery}
+variable one_over_neverydt equal 1.0/(${nevery}*dt)
+
 # stress computation
 fix stress_cg2 coarse   ave/euler/region nevery 15 region ave_reg
 fix stress_cg1 resolved ave/euler/region nevery 15 region ave_reg1
 
 # control stress in resolved transition region
-fix stressctrl resolved forcecontrol/region ctrlPV stress actual_val stress_cg1 target_val stress_cg2 kp 1. ki 100000. kd 0.0 cg 2 velocity_limit on
+fix stressctrl resolved forcecontrol/region ctrlPV stress actual_val stress_cg1 target_val stress_cg2 kp ${one_over_nevery} ki ${one_over_neverydt} kd 0.0 cg 2 velocity_limit on
 # deactivate controller in the central part of the resolved region
 fix_modify stressctrl deactivate 2 5
 
