@@ -27,6 +27,7 @@
 #include "stdlib.h"
 #include "fix_ave_euler_region.h"
 #include "fix_forcecontrol_region.h"
+#include "fix_scale_diameter.h"
 #include "atom.h"
 #include "update.h"
 #include "modify.h"
@@ -61,7 +62,9 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   fadex_ (1.0),
   fadey_ (1.0),
   fadez_ (1.0),
-  cg_(1),
+  cg_(1.0),
+  cg3_(1.0),
+  cg_ratio_(1.0),
   ncells_max_(0),
   old_pv_vec_(NULL),
   sum_err_(NULL),
@@ -155,6 +158,7 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
     error->fix_error(FLERR, this, "missing ave/euler/region for target_val");
 
   cg3_ = cg_*cg_*cg_;
+  cg_ratio_ = force->cg()/cg_;
   force_flag = 0;
   foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
 }
@@ -530,6 +534,28 @@ void FixForceControlRegion::post_force(int vflag)
       }
     }
   }
+
+  std::map<class FixScaleDiameter*, std::set<int> >::iterator it = modifier_scale_.begin();
+  for (; it!=modifier_scale_.end(); ++it) {
+    std::set<int>::iterator it_cell = it->second.begin();
+    double mass_ratio = 0.;
+    for (; it_cell!=it->second.end(); ++it_cell) {
+      int cell_id = actual_->cell_id(*it_cell);
+      int tcell = target_->cell(cell_id);
+      if(actual_->cell_vol_fr(*it_cell) > 0.)
+        mass_ratio += target_->cell_mass(tcell)/actual_->cell_mass(*it_cell); // fg/cg
+      else
+        mass_ratio += 1.0;
+    }
+    mass_ratio /= it->second.size();
+
+    if (mass_ratio > 1.005) {
+      it->first->set_scale(std::max(cg_ratio_, it->first->get_scale() * 0.9999));
+    } else if (mass_ratio < 0.995) {
+      it->first->set_scale(std::min(1.0,it->first->get_scale() * 1.0001));
+    }
+  }
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -538,6 +564,28 @@ int FixForceControlRegion::modify_param(int narg, char **arg)
 {
     if (narg < 2) error->fix_error(FLERR,this,"Illegal fix_modify command");
     int nusedarg = 2;
+
+    if (strcmp(arg[0],"massflow_correction_scale") == 0) {
+      if (narg < 3) error->fix_error(FLERR,this,"Illegal fix_modify command");
+      FixScaleDiameter * fix_scale_ = static_cast<FixScaleDiameter*>(modify->find_fix_id_style(arg[1], "scale/diameter"));
+      ++nusedarg;
+      if(fix_scale_) {
+        fix_scale_->set_scale_mass(false);
+        int start_id = atoi(arg[2]);
+        int end_id = start_id;
+        if (narg > 3) {
+          ++nusedarg;
+          end_id = atoi(arg[3]);
+        }
+        while (start_id <= end_id) {
+          if (actual_->has_cell_id(start_id))
+            modifier_scale_[fix_scale_].insert(actual_->cell(start_id));
+          ++start_id;
+        }
+      }
+      return nusedarg;
+    }
+
     int start_id = atoi(arg[1]);
     int end_id = start_id;
     if (narg > 2) {

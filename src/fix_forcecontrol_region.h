@@ -32,6 +32,7 @@ FixStyle(forcecontrol/region,FixForceControlRegion)
 #define LMP_FIX_FORCECONTROL_REGION_H
 
 #include "fix.h"
+#include <map>
 #include <set>
 #include <vector>
 
@@ -75,7 +76,7 @@ class FixForceControlRegion : public Fix {
 
   class FixAveEulerRegion *actual_;
   class FixAveEulerRegion *target_;
-  double cg_, cg3_;
+  double cg_, cg3_, cg_ratio_;
   int ncells_max_;
   double **old_pv_vec_;
   double **sum_err_;
@@ -84,6 +85,7 @@ class FixForceControlRegion : public Fix {
   double used_part_;
   std::set<int> active_;
   std::vector<bool> modifier_;
+  std::map<class FixScaleDiameter*, std::set<int> > modifier_scale_;
   const double acceptable_deviation_min;
   const double acceptable_deviation_max;
   bool limit_velocity_;
