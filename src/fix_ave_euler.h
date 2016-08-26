@@ -76,6 +76,9 @@ class FixAveEuler : public Fix {
   inline double cell_vol_fr(int i)
   { return vol_fr_[i]; }
 
+  inline double cell_mass(int i)
+  { return mass_[i]; }
+
   inline double cell_radius(int i)
   { return radius_[i]; }
 
