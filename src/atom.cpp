@@ -1920,7 +1920,7 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"q") == 0) return (void *) q;
   if (strcmp(name,"mu") == 0) return (void *) mu;
   if (strcmp(name,"omega") == 0) return (void *) omega;
-  if (strcmp(name,"amgmom") == 0) return (void *) angmom;
+  if (strcmp(name,"angmom") == 0) return (void *) angmom;
   if (strcmp(name,"torque") == 0) return (void *) torque;
   if (strcmp(name,"radius") == 0) return (void *) radius;
   if (strcmp(name,"rmass") == 0) return (void *) rmass;
