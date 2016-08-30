@@ -33,7 +33,10 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-Compute::Compute(LAMMPS *lmp, int narg, char **arg) : Pointers(lmp)
+Compute::Compute(LAMMPS *lmp, int narg, char **arg) : Pointers(lmp),
+  id(NULL), style(NULL),
+  vector(NULL), array(NULL), vector_atom(NULL), array_atom(NULL), vector_local(NULL), array_local(NULL),
+  extlist(NULL), tlist(NULL), vbiasall(NULL)
 {
   if (narg < 3) error->all(FLERR,"Illegal compute command");
 
