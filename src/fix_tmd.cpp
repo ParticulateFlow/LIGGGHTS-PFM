@@ -86,6 +86,8 @@ FixTMD::FixTMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   }
 
   masstotal = group->mass(igroup);
+  if (masstotal == 0.0)
+    error->all(FLERR,"Cannot use fix TMD on massless group");
 
   // rho_start = initial rho
   // xold = initial x or 0.0 if not in group

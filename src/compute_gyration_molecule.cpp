@@ -157,7 +157,9 @@ void ComputeGyrationMolecule::compute_vector()
 
   MPI_Allreduce(rg,vector,nmolecules,MPI_DOUBLE,MPI_SUM,world);
 
-  for (i = 0; i < nmolecules; i++) vector[i] = sqrt(vector[i]/masstotal[i]);
+  for (i = 0; i < nmolecules; i++)
+    if (masstotal[i] > 0.0)
+      vector[i] = sqrt(vector[i]/masstotal[i]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -209,8 +211,9 @@ void ComputeGyrationMolecule::compute_array()
                   MPI_DOUBLE,MPI_SUM,world);
 
   for (i = 0; i < nmolecules; i++)
-    for (j = 0; j < 6; j++)
-      array[i][j] /= masstotal[i];
+    if (masstotal[i] > 0.0)
+      for (j = 0; j < 6; j++)
+        array[i][j] /= masstotal[i];
 }
 
 
@@ -252,9 +255,11 @@ void ComputeGyrationMolecule::molcom()
   MPI_Allreduce(&com[0][0],&comall[0][0],3*nmolecules,
                 MPI_DOUBLE,MPI_SUM,world);
   for (i = 0; i < nmolecules; i++) {
-    comall[i][0] /= masstotal[i];
-    comall[i][1] /= masstotal[i];
-    comall[i][2] /= masstotal[i];
+    if (masstotal[i] > 0.0) {
+      comall[i][0] /= masstotal[i];
+      comall[i][1] /= masstotal[i];
+      comall[i][2] /= masstotal[i];
+    }
   }
 }
 

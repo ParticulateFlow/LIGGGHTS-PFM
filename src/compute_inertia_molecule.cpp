@@ -136,9 +136,11 @@ void ComputeInertiaMolecule::compute_array()
   MPI_Allreduce(&com[0][0],&comall[0][0],3*nmolecules,
                 MPI_DOUBLE,MPI_SUM,world);
   for (i = 0; i < nmolecules; i++) {
-    comall[i][0] /= masstotal[i];
-    comall[i][1] /= masstotal[i];
-    comall[i][2] /= masstotal[i];
+    if (masstotal[i] > 0.0) {
+      comall[i][0] /= masstotal[i];
+      comall[i][1] /= masstotal[i];
+      comall[i][2] /= masstotal[i];
+    }
   }
 
   // inertia tensor for each molecule
