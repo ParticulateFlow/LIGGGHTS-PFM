@@ -177,7 +177,7 @@ FixMove::FixMove(LAMMPS *lmp, int narg, char **arg) :
       error->all(FLERR,"Fix move cannot set wiggle z motion for 2d problem");
     if (mstyle == ROTATE && (axis[0] != 0.0 || axis[1] != 0.0))
       error->all(FLERR,
-                 "Fix move cannot rotate aroung non z-axis for 2d problem");
+                 "Fix move cannot rotate around non z-axis for 2d problem");
     if (mstyle == VARIABLE && (zvarstr || vzvarstr))
       error->all(FLERR,
                  "Fix move cannot define z or vz variable for 2d problem");
