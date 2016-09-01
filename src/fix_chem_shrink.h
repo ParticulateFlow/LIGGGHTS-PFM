@@ -41,7 +41,6 @@ class FixChemShrink : public Fix  {
 public:
   FixChemShrink(class LAMMPS *, int, char **);
   ~FixChemShrink();
-  void post_create();
   void pre_delete(bool unfixflag);
 
   void reaction();
@@ -98,14 +97,13 @@ public:
   // TimeStep
   double TimeStep;
 
-  // delete atoms
+  // delete atoms lsit & shrink list
   int *dlist;
 
   // get values for default radius minimum
   double vmax_;
   double **Yeff_;
   const double *Y, *nu;
-
 
 
 };

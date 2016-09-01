@@ -170,15 +170,6 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
     if(unfixflag && fix_rhogas)  modify -> delete_fix("partRho");
 
     if(unfixflag && fix_reactionheat_)  modify -> delete_fix("reactionHeat");
-
-    /* if(unfixflag)
-    {
-        for (int i=0; i<num_species; i++)
-        {
-          if (fix_massfrac_[i])     modify -> delete_fix(species_names_[i]);
-          if (fix_masschange_[i])   modify -> delete_fix(mod_spec_names_[i]);
-        }
-    } */
 }
 
 /* ---------------------------------------------------------------------- */
