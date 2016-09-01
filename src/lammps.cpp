@@ -646,11 +646,23 @@ void LAMMPS::init()
 void LAMMPS::destroy()
 {
   delete update;
+  update = NULL;
+
   delete neighbor;
+  neighbor = NULL;
+
   delete comm;
+  comm = NULL;
+
   delete force;
+  force = NULL;
+
   delete group;
+  group = NULL;
+
   delete output;
+  output = NULL;
+
   delete modify;          // modify must come after output, force, update
                           //   since they delete fixes
   modify = NULL;          // necessary since input->variable->varreader
@@ -658,9 +670,14 @@ void LAMMPS::destroy()
 
   delete domain;          // domain must come after modify
                           //   since fix destructors access domain
+  domain = NULL;
+
   delete atom;            // atom must come after modify, neighbor
                           //   since fixes delete callbacks in atom
+  atom = NULL;
+
   delete timer;
+  timer = NULL;
 }
 
 /* ----------------------------------------------------------------------
