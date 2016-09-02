@@ -266,41 +266,42 @@ void FixChemShrink::reaction()
 {
         updatePtrs();
         int nlocal  =   atom -> nlocal;
-        double dr;
+        //double dr;
 
-       for (int i = 0 ; i < nlocal; i++)
+        for (int i = 0 ; i < nlocal; i++)
         {
-            // Current time step concentration change of reactant A and product C
-            double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep;
-            double dC   =   -dA*(molMass_C_/molMass_A_);
-            // mass removed from particle
-            double dB   =    dA*(molMass_B_/molMass_A_);
+            if(radius_[i] > rmin)
+            {
+                // Current time step concentration change of reactant A and product C
+                double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep;
+                double dC   =   -dA*(molMass_C_/molMass_A_);
+                // mass removed from particle
+                double dB   =    dA*(molMass_B_/molMass_A_);
 
-            // total rate of change for species A
-            changeOfA_[i]       +=  dA;
+                // total rate of change for species A
+                changeOfA_[i]       +=  dA;
 
-            // total rate of change for species C
-            changeOfC_[i]       +=  dC;
+                // total rate of change for species C
+                changeOfC_[i]       +=  dC;
 
-            // Mass of single particle
-            pmass_[i]           +=  dB;
+                // Mass of single particle
+                pmass_[i]           +=  dB;
 
-            // radius removed
-            dr   =   -k*concA_[i]*rhogas_[i]*TimeStep*molMass_B_/(molMass_A_*pdensity_[i]);
+                // radius removed
+                //dr   =   -k*concA_[i]*rhogas_[i]*TimeStep*molMass_B_/(molMass_A_*pdensity_[i]);
 
-            // radius particle
-            radius_[i]          +=  dr;
+                // radius particle
+                //radius_[i]          +=  dr;
 
-            // change of radius of particle -assumption: density of particle is constant
-            // radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+                // change of radius of particle -assumption: density of particle is constant
+                radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+            }
 
-            if (comm -> me == 0 && screen)
-                fprintf(screen, "rhogas: %f \n", rhogas_[i]);
+
+
+            //if (comm -> me == 0 && screen)
+            //  //fprintf(screen, "rhogas: %f \n", rhogas_[i];
         }
-
-       // print dr
-       if (comm -> me == 0 && screen)
-           fprintf(screen, "amount of radius reduced: %lf \n",dr);
 }
 
 /* ----------------- compute particle surface area ------------------------ */
@@ -365,12 +366,7 @@ void FixChemShrink::post_force(int)
     memory->create(dlist,nlocal,"delete_atoms:dlist");
     for (i = 0; i < nlocal; i++) dlist[i] = 0;
 
-    // check radius - do reaction or delete
-    for (i = 0; i < nlocal; i++)
-    {
-        if (radius_[i] >= rmin)
-            reaction();
-    }
+    reaction();
 
     delete_atoms();
 
