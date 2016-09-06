@@ -221,7 +221,7 @@ void FixNeighlistMesh::pre_force(int)
 
     // copy current to old # of neighbors
     //NP this is important for correct contact history copy
-    memset(fix_nneighs_->vector_atom, 0, sizeof(double)*atom->nlocal);
+    memset(fix_nneighs_->vector_atom, 0, sizeof(double)*atom->nmax);
 
     x = atom->x;
     r = atom->radius;
