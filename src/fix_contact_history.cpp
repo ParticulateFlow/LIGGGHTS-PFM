@@ -74,8 +74,7 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
 
   // initialize npartner to 0 so neighbor list creation is OK the 1st time
 
-  int nlocal = atom->nlocal;
-  std::fill_n(npartner_, nlocal, 0);
+  std::fill_n(npartner_, atom->nmax, 0);
 
   //=====================
   // parse args
@@ -272,12 +271,12 @@ void FixContactHistory::pre_exchange()
 
   // nlocal may include atoms added since last neigh build
 
-  int nlocal = atom->nlocal;
+  int nmax = atom->nmax;
 
   // zero npartner for all current atoms
   // clear 2 page data structures
 
-  std::fill_n(npartner_, nlocal, 0);
+  std::fill_n(npartner_, nmax, 0);
 
   ipage_->reset();
   dpage_->reset();
@@ -336,7 +335,7 @@ void FixContactHistory::pre_exchange()
   // store atom IDs and shear history for my atoms
   // re-zero npartner to use as counter for all my atoms
 
-  std::fill_n(npartner_, nlocal, 0);
+  std::fill_n(npartner_, nmax, 0);
 
 /*NL*/ //fprintf(screen,"pre copy hist, inum %d\n",inum);
 
@@ -379,6 +378,7 @@ void FixContactHistory::pre_exchange()
   // set maxtouch = max # of partners of any owned atom
   // bump up comm->maxexchange_fix if necessary
   maxtouch_ = 0;
+  int nlocal = atom->nlocal;
   if(nlocal > 0) maxtouch_ = *std::max_element(npartner_, npartner_+nlocal);
 
   comm->maxexchange_fix = MAX(comm->maxexchange_fix,(dnum_+1)*maxtouch_+1);
