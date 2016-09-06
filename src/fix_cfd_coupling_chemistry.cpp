@@ -168,7 +168,6 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
 {
     if(unfixflag && fix_tgas)    modify -> delete_fix("partTemp");
     if(unfixflag && fix_rhogas)  modify -> delete_fix("partRho");
-
     if(unfixflag && fix_reactionheat_)  modify -> delete_fix("reactionHeat");
 }
 
@@ -177,6 +176,7 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
 int FixCfdCouplingChemistry::setmask()
 {
   int mask = 0;
+  mask |= INITIAL_INTEGRATE;
   mask |= POST_FORCE;
   return mask;
 }
@@ -322,24 +322,30 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
     // reset fix_masschange_(species name)
     // -1 is needed because time step is advanced before this function is called
     int nlocal = atom -> nlocal;
-    double *reactionHeat_ = fix_reactionheat_ -> vector_atom;
+    bigint previous_time = --update -> ntimestep;
+    // double *reactionHeat_ = fix_reactionheat_ -> vector_atom;
 
-    for (int i = 0; i < num_species; i++)
-    {
-        for (int j=0;j<nlocal;j++)
-        {    
+
+
+    /*for (int i = 0; i < num_species; i++)
+    {  
             if (update -> ntimestep - 1 == fix_coupling -> latestpush(species_names_[i]))
             {
                 fix_masschange_[i] = NULL;
             }
-           /* if (fix_masschange_[i] == NULL)
-            {
-                reactionHeat_[j] = NULL;
-            }*/
+
             reactionHeat_[i] = NULL;
+    }*/
+
+    for (int i = 0; i < nlocal; i++)
+    {
+        if (previous_time == fix_coupling -> latestpush(species_names_[i]))
+        {
+            fix_massfrac_[i]->set_all(0.0);
+            fix_reactionheat_->set_all(0.0);
+
         }
     }
-
 }
 
 void FixCfdCouplingChemistry::post_force(int)
