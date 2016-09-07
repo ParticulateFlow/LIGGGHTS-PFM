@@ -40,7 +40,7 @@ using namespace LAMMPS_NS;
 
 // also in reader_native.cpp
 
-enum{ID,TYPE,X,Y,Z,VX,VY,VZ,Q,IX,IY,IZ};
+enum{ID,TYPE,X,Y,Z,VX,VY,VZ,Q,IX,IY,IZ,RADIUS,MASS,DENSITY};
 enum{UNSET,NOSCALE_NOWRAP,NOSCALE_WRAP,SCALE_NOWRAP,SCALE_WRAP};
 
 /* ---------------------------------------------------------------------- */
@@ -568,7 +568,7 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
 
   // add id and type fields as needed
   // scan ahead to see if "add yes" keyword/value is used
-  // requires extra "type" field from from dump file
+  // requires extra "type" field from dump file
 
   int iarg;
   for (iarg = 0; iarg < narg; iarg++)
@@ -593,6 +593,21 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
       if (!atom->q_flag)
         error->all(FLERR,"Read dump of atom property that isn't allocated");
       fieldtype[nfield++] = Q;
+    }
+    else if (strcmp(arg[iarg],"radius") == 0) {
+      if (!atom->radius_flag)
+        error->all(FLERR,"Read dump of atom property that isn't allocated");
+      fieldtype[nfield++] = RADIUS;
+    }
+    else if (strcmp(arg[iarg],"mass") == 0) {
+      if (!atom->rmass_flag)
+        error->all(FLERR,"Read dump of atom property that isn't allocated");
+      fieldtype[nfield++] = MASS;
+    }
+    else if (strcmp(arg[iarg],"density") == 0) {
+      if (!atom->density_flag)
+        error->all(FLERR,"Read dump of atom property that isn't allocated");
+      fieldtype[nfield++] = DENSITY;
     }
     else if (strcmp(arg[iarg],"ix") == 0) fieldtype[nfield++] = IX;
     else if (strcmp(arg[iarg],"iy") == 0) fieldtype[nfield++] = IY;
@@ -716,6 +731,9 @@ void ReadDump::process_atoms(int n)
   double **x = atom->x;
   double **v = atom->v;
   double *q = atom->q;
+  double *radius = atom->radius;
+  double *rmass= atom->rmass;
+  double *density= atom->density;
   tagint *image = atom->image;
   int nlocal = atom->nlocal;
   int map_tag_max = atom->map_tag_max;
@@ -760,14 +778,23 @@ void ReadDump::process_atoms(int n)
         case VX:
           v[m][0] = fields[i][ifield];
           break;
-        case Q:
-          q[m] = fields[i][ifield];
-          break;
         case VY:
           v[m][1] = fields[i][ifield];
           break;
         case VZ:
           v[m][2] = fields[i][ifield];
+          break;
+        case Q:
+          q[m] = fields[i][ifield];
+          break;
+        case RADIUS:
+          radius[m] = fields[i][ifield];
+          break;
+        case MASS:
+          rmass[m] = fields[i][ifield];
+          break;
+        case DENSITY:
+          density[m] = fields[i][ifield];
           break;
         case IX:
           xbox = static_cast<int> (fields[i][ifield]);
@@ -841,6 +868,9 @@ void ReadDump::process_atoms(int n)
 
     v = atom->v;
     q = atom->q;
+    radius = atom->radius;
+    rmass = atom->rmass;
+    density = atom->density;
     image = atom->image;
 
     // set atom attributes from other dump file fields
@@ -860,6 +890,15 @@ void ReadDump::process_atoms(int n)
         break;
       case Q:
         q[m] = fields[i][ifield];
+        break;
+      case RADIUS:
+        radius[m] = fields[i][ifield];
+        break;
+      case MASS:
+        rmass[m] = fields[i][ifield];
+        break;
+      case DENSITY:
+        density[m] = fields[i][ifield];
         break;
       case IX:
         xbox = static_cast<int> (fields[i][ifield]);
