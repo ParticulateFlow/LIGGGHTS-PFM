@@ -76,6 +76,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
 
   screen = NULL;
   logfile = NULL;
+  infile = NULL;
   thermofile = NULL; //NP modified C.K.
 
   // parse input switches
