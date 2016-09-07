@@ -155,6 +155,8 @@ void *lammps_extract_global(void *ptr, const char *name)
   if (strcmp(name,"mylocz") == 0) return (void *) &lmp->comm->myloc[2];
   if (strcmp(name,"natoms") == 0) return (void *) &lmp->atom->natoms;
   if (strcmp(name,"nlocal") == 0) return (void *) &lmp->atom->nlocal;
+  if (strcmp(name,"nghost") == 0) return (void *) &lmp->atom->nghost;
+  if (strcmp(name,"ago") == 0) return (void *) &lmp->neighbor->ago; //INT,  time steps since last neighbor->decide
   return NULL;
 }
 
