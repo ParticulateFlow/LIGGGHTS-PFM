@@ -16,10 +16,10 @@
                          Chandra Veer Singh (Cornell)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_adp.h"
 #include "atom.h"
 #include "force.h"

@@ -21,7 +21,7 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "verlet.h"
 #include "neighbor.h"
 #include "domain.h"

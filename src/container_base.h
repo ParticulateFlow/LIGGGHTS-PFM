@@ -28,7 +28,7 @@
 #ifndef LMP_CONTAINER_BASE_H
 #define LMP_CONTAINER_BASE_H
 
-#include "string.h"
+#include <string.h>
 
 namespace LAMMPS_NS
 {

@@ -33,7 +33,7 @@
 #include "contact_interface.h"
 #include "compute_pair_gran_local.h"
 #include "settings.h"
-#include "string.h"
+#include <string.h>
 #include "force.h"
 #include <stdlib.h>
 #include "contact_models.h"

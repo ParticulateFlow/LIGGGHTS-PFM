@@ -24,9 +24,9 @@
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
 #include "fix_nve_limit_omp.h"
 #include "atom.h"
 #include "atom_vec.h"

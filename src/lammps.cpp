@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <string.h>
+#include <ctype.h>
 #include "lammps.h"
 #include "style_angle.h"
 #include "style_atom.h"

@@ -23,7 +23,7 @@
      konglt@sjtu.edu.cn; konglt@gmail.com
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "fix_phonon.h"
 #include "atom.h"
 #include "compute.h"

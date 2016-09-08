@@ -31,7 +31,7 @@ ROLLING_MODEL(ROLLING_EPSD,epsd,2)
 #define ROLLING_MODEL_EPSD_H_
 #include "contact_models.h"
 #include <algorithm>
-#include "math.h"
+#include <math.h>
 #include "domain.h"
 #include "math_extra_liggghts.h"
 

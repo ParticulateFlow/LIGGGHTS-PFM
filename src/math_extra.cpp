@@ -15,8 +15,8 @@
    Contributing author: Mike Brown (SNL)
 ------------------------------------------------------------------------- */
 
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 #include "math_extra.h"
 
 #define MAXJACOBI 50

@@ -11,7 +11,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
+#include <math.h>
 #include "dihedral.h"
 #include "atom.h"
 #include "comm.h"

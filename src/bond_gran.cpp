@@ -19,8 +19,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "bond_gran.h"
 #include "atom.h"
 #include "neighbor.h"

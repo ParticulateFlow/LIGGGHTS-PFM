@@ -30,7 +30,7 @@ COHESION_MODEL(COHESION_SJKR,sjkr,1)
 #ifndef COHESION_MODEL_SJKR_H_
 #define COHESION_MODEL_SJKR_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 
 namespace LIGGGHTS {
 namespace ContactModels {

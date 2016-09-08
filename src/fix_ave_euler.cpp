@@ -23,9 +23,9 @@
    Contributing author for triclinic: Andreas Aigner (JKU)
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
-#include "math.h"
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include "mpi_liggghts.h"
 #include "fix_ave_euler.h"
 #include "compute_stress_atom.h"

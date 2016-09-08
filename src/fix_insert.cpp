@@ -25,9 +25,9 @@
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "atom_vec.h"
 #include "force.h"

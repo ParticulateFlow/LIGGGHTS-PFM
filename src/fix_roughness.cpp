@@ -31,7 +31,7 @@
 #include "math_const.h"
 #include "modify.h"
 #include "pair_gran.h"
-#include "stdlib.h"
+#include <stdlib.h>
 #include "random_park.h"
 #include "comm.h"
 

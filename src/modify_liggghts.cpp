@@ -19,8 +19,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 #include "modify.h"
 #include "style_compute.h"
 #include "style_fix.h"

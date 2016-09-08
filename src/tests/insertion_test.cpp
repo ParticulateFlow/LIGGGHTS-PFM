@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "mpi.h"
+#include <mpi.h>
 #include "atom.h"
 #include "input.h"
 #include "lammps.h"

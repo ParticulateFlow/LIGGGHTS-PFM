@@ -25,9 +25,9 @@ Andreas Aigner (JKU Linz)
 Christoph Kloss (JKU Linz and DCS Computing Gmbh, Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom_vec_sph.h"
 #include "atom.h"
 #include "domain.h"

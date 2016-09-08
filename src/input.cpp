@@ -21,13 +21,13 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
-#include "unistd.h"
-#include "sys/stat.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "input.h"
 #include "style_command.h"
 #include "universe.h"

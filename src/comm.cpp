@@ -26,11 +26,11 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "math.h"
-#include "string.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <mpi.h>
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "comm.h"
 #include "universe.h"
 #include "atom.h"

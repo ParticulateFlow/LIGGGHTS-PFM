@@ -32,7 +32,7 @@
 #include "multisphere_parallel.h"
 #include "error.h"
 #include "properties.h"
-#include "mpi.h"
+#include <mpi.h>
 
 namespace LAMMPS_NS {
 

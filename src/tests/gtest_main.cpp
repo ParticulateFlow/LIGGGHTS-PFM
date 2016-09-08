@@ -1,4 +1,4 @@
-#include "mpi.h"
+#include <mpi.h>
 #include "gtest/gtest.h"
 
 int main(int argc, char** argv) {

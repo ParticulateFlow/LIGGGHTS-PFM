@@ -25,7 +25,7 @@
    Philippe Seil (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "dump_mesh_stl.h"
 #include "tri_mesh.h"
 #include "domain.h"

@@ -31,7 +31,7 @@ NORMAL_MODEL(JKR,jkr,5)
 #ifndef NORMAL_MODEL_JKR_H_
 #define NORMAL_MODEL_JKR_H_
 #include "global_properties.h"
-#include "math.h"
+#include <math.h>
 #include <limits>
 
 namespace MODEL_PARAMS

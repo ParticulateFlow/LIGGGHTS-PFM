@@ -25,10 +25,10 @@ Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
 andreas.aigner@jku.at
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_sph.h"
 #include "atom.h"
 #include "atom_vec.h"

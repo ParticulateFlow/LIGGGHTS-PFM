@@ -21,10 +21,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "set.h"
 #include "atom.h"
 #include "atom_vec.h"

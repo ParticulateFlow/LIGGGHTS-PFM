@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "sys/stat.h"
-#include "string.h"
-#include "stdlib.h"
+#include <sys/stat.h>
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "comm.h"
 #include "update.h"
@@ -29,7 +29,7 @@
 #include "error.h"
 #include "memory.h"
 #include "modify.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "fix_property_atom.h"
 #include "fix_property_global.h"

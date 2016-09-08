@@ -24,7 +24,7 @@
 #ifndef LMP_DOMAIN_H
 #define LMP_DOMAIN_H
 
-#include "math.h"
+#include <math.h>
 #include "pointers.h"
 #include "error.h" //NP modified C.K.
 #include "comm.h" //NP modified C.K.

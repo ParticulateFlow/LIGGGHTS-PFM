@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
-#include "stdio.h"
+#include <mpi.h>
+#include <string.h>
+#include <stdio.h>
 #include "fix_contact_history.h"
 #include "atom.h"
 #include "comm.h"

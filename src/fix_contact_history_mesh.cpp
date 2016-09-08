@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
-#include "stdio.h"
+#include <mpi.h>
+#include <string.h>
+#include <stdio.h>
 #include "fix_contact_history_mesh.h"
 #include "atom.h"
 #include "fix_mesh_surface.h"

@@ -33,7 +33,7 @@ FixStyle(ave/euler/stress,FixAveEuler)
 #ifndef LMP_FIX_AVE_EULER_H
 #define LMP_FIX_AVE_EULER_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "fix.h"
 #include "vector_liggghts.h"
 

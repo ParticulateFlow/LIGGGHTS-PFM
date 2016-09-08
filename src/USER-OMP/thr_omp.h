@@ -22,7 +22,7 @@
 #include "error.h"
 #include "fix_omp.h"
 #include "thr_data.h"
-#include "math.h"
+#include <math.h>
 
 namespace LAMMPS_NS {
 

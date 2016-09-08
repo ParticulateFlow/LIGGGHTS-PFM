@@ -21,8 +21,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
+#include <mpi.h>
+#include <string.h>
 #include "compute_ke_multisphere.h"
 #include "update.h"
 #include "modify.h"

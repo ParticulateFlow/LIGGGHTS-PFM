@@ -16,8 +16,8 @@
    [ based on angle_harmonic.cpp]
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "angle_quartic.h"
 #include "atom.h"
 #include "neighbor.h"

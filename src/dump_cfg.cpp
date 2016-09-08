@@ -16,9 +16,9 @@
    	Memory efficiency improved by Ray Shan (Sandia)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "dump_cfg.h"
 #include "atom.h"
 #include "domain.h"

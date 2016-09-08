@@ -30,7 +30,7 @@ SURFACE_MODEL(SURFACE_ROUGHNESS,roughness,1)
 #ifndef SURFACE_ROUGHNESS_H_
 #define SURFACE_ROUGHNESS_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "atom.h"
 #include "force.h"
 #include "update.h"

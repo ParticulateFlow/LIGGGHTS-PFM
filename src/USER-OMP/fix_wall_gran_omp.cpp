@@ -61,7 +61,7 @@
 #include "thr_omp.h"
 #include "contact_interface.h"
 #include "fix_property_global.h"
-#include "mpi.h"
+#include <mpi.h>
 #include <vector>
 #include "granular_wall.h"
 #define NDEBUG

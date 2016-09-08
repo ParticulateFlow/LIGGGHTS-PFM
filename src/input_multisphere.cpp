@@ -19,11 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "style_command.h"
 #include "universe.h"
 #include "atom.h"

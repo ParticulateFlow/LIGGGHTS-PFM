@@ -19,7 +19,7 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "dump_euler_vtk.h"
 #include "fix_ave_euler.h"
 #include "domain.h"

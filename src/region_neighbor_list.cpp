@@ -23,11 +23,11 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
+#include <mpi.h>
 #include "bounding_box.h"
 #include "region_neighbor_list.h"
 #include <limits>
-#include "assert.h"
+#include <assert.h>
 
 static const double SMALL = 1.0e-6;
 static const double BIG = 1.0e20;

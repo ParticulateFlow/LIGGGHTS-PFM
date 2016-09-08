@@ -18,13 +18,13 @@ the GNU General Public License.
 See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
+#include <stdlib.h>
 #include "atom_vec_bond_gran.h"
 #include "atom.h"
 #include "domain.h"
 #include "modify.h"
 #include "fix.h"
-#include "string.h"
+#include <string.h>
 #include "memory.h"
 #include "error.h"
 #include "comm.h"
