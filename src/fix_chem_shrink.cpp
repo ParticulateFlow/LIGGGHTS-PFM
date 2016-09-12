@@ -266,7 +266,9 @@ void FixChemShrink::reaction()
 {
         updatePtrs();
         int nlocal  =   atom -> nlocal;
-        //double dr;
+        double dr;
+        double totalChangeOfC, totalRhogas, totalpmass;
+        double aveChangeOfC, aveRhogas, avePmass;
 
         for (int i = 0 ; i < nlocal; i++)
         {
@@ -288,16 +290,34 @@ void FixChemShrink::reaction()
                 pmass_[i]           +=  dB;
 
                 // radius removed
-                //dr   =   -k*concA_[i]*rhogas_[i]*TimeStep*molMass_B_/(molMass_A_*pdensity_[i]);
+                dr   =   -k*concA_[i]*rhogas_[i]*TimeStep*molMass_B_/(molMass_A_*pdensity_[i]);
 
                 // radius particle
-                //radius_[i]          +=  dr;
+                radius_[i]          +=  dr;
 
                 // change of radius of particle -assumption: density of particle is constant
-                radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+                //radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+
+                // add up the values that are going to be printed
+                totalChangeOfC += changeOfC_[i];
+                totalpmass     += pmass_[i];
+                totalRhogas    += rhogas_[i];
+
+                // take the mean over every particle
+                aveChangeOfC   = totalChangeOfC/nlocal;
+                aveRhogas      = totalRhogas/nlocal;
+                avePmass       = totalpmass/nlocal;
             }
 
-
+            if(screen)
+            {
+                fprintf(screen,"total change of C = %f \n", totalChangeOfC);
+                fprintf(screen,"total change of rhogas = %f \n", totalRhogas);
+                fprintf(screen,"total change of pmass = %f \n", totalpmass);
+                fprintf(screen,"mean CO2 change = %f \n", aveChangeOfC);
+                fprintf(screen,"mean rhogas change = %f \n", aveRhogas);
+                fprintf(screen,"mean pmass change = %f \n", avePmass);
+            }
 
             //if (comm -> me == 0 && screen)
             //  //fprintf(screen, "rhogas: %f \n", rhogas_[i];
