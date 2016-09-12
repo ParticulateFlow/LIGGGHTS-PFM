@@ -322,7 +322,7 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
     // reset fix_masschange_(species name)
     // -1 is needed because time step is advanced before this function is called
     int nlocal = atom -> nlocal;
-    bigint prev_time = --update->ntimestep;
+    bigint prev_time = update->ntimestep - 1;
 
     for (int i = 0; i < num_species; i++)
     {
