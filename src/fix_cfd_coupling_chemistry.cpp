@@ -168,7 +168,6 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
 {
     if(unfixflag && fix_tgas)    modify -> delete_fix("partTemp");
     if(unfixflag && fix_rhogas)  modify -> delete_fix("partRho");
-
     if(unfixflag && fix_reactionheat_)  modify -> delete_fix("reactionHeat");
 }
 
@@ -323,7 +322,6 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
     // reset fix_masschange_(species name)
     // -1 is needed because time step is advanced before this function is called
     int nlocal = atom -> nlocal;
-    double *reactionHeat_ = fix_reactionheat_ -> vector_atom;
     bigint prev_time = --update->ntimestep;
 
     for (int i = 0; i < num_species; i++)
@@ -333,9 +331,7 @@ void FixCfdCouplingChemistry::initial_integrate(bigint)
            fix_massfrac_[i] -> set_all(0.0);
            fix_reactionheat_ -> set_all(0.0);
        }
-
     }
-
 }
 
 void FixCfdCouplingChemistry::post_force(int)
