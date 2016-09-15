@@ -47,10 +47,12 @@ using namespace FixConst;
 FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char **arg) : Fix(lmp,narg,arg),
     fix_coupling_(0),
     fix_vrec_(0),
+    fix_vfluc_(0),
     fix_dragforce_(0),
     fix_volumeweight_(0),
     fix_tracerconcentration_(0),
     use_force_(false),
+    use_fluc_(false),
     use_dens_(false),
     use_type_(false),
     use_tracer_(false),
@@ -104,11 +106,25 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
             iarg++;
             hasargs = true;
         }
+        else if(strcmp(arg[iarg],"transfer_fluctuations") == 0)
+        {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_fluctuations'");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                use_fluc_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                use_fluc_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_fluctuations'");
+            iarg++;
+            hasargs = true;
+        }
         else if(strcmp(arg[iarg],"transfer_tracer") == 0)
         {
             if(narg < iarg+2)
                 error->fix_error(FLERR,this,"not enough arguments for 'transfer_tracer'");
-            iarg++;   if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
+            iarg++;
             if(strcmp(arg[iarg],"yes") == 0)
                 use_tracer_ = true;
             else if(strcmp(arg[iarg],"no") == 0)
@@ -172,9 +188,27 @@ void FixCfdCouplingRecurrence::post_create()
         fixarg[10]="0.";
         fix_vrec_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
     }
+    
+    // register displacements
+    if(!fix_vfluc_ && use_fluc_)
+    {
+        const char* fixarg[11];
+        fixarg[0]="vfluc";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="vfluc";
+        fixarg[4]="vector"; // 1 vector per particle to be registered
+        fixarg[5]="yes";    // restart
+        fixarg[6]="no";     // communicate ghost
+        fixarg[7]="no";     // communicate rev
+        fixarg[8]="0.";
+        fixarg[9]="0.";
+        fixarg[10]="0.";
+        fix_vfluc_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+    }
 
     // register dragforce
-    if(!fix_dragforce_ && use_force_)   if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
+    if(!fix_dragforce_ && use_force_)
     {
         const char* fixarg[11];
         fixarg[0]="dragforce";
@@ -186,7 +220,7 @@ void FixCfdCouplingRecurrence::post_create()
         fixarg[6]="no";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="0.";
-        fixarg[9]="0.";   if(use_tracer_) fix_coupling_->add_push_property("tracerconcentration","scalar-atom");
+        fixarg[9]="0.";
         fixarg[10]="0.";
         fix_dragforce_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
     }
@@ -231,6 +265,7 @@ void FixCfdCouplingRecurrence::post_create()
 void FixCfdCouplingRecurrence::pre_delete(bool unfixflag)
 {
     if(unfixflag && fix_vrec_) modify->delete_fix("vrec");
+    if(unfixflag && fix_vfluc_) modify->delete_fix("vfluc");
     if(unfixflag && fix_dragforce_) modify->delete_fix("dragforce");
     if(unfixflag && fix_volumeweight_) modify->delete_fix("volumeweight");
     if(unfixflag && fix_tracerconcentration_) modify->delete_fix("tracerconcentration");
@@ -273,6 +308,7 @@ void FixCfdCouplingRecurrence::init()
     // values to come from OF
     fix_coupling_->add_pull_property("vrec","vector-atom");
     if(use_force_) fix_coupling_->add_pull_property("dragforce","vector-atom");
+    if(use_fluc_) fix_coupling_->add_pull_property("vfluc","vector-atom");
     if(use_tracer_) fix_coupling_->add_pull_property("tracerconcentration","scalar-atom");
 
 
@@ -287,7 +323,7 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double **vrec = fix_vrec_->array_atom;
-
+  
 
   // set particle velocity to that of recurrence field
   for (int i = 0; i < nlocal; i++)
@@ -297,6 +333,21 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
       vectorCopy3D(vrec[i],v[i]);
     }
   }
+    
+  
+  // if using fluctuations, add them
+  if(use_fluc_)
+  {
+    double **vfluc = fix_vfluc_->array_atom;
+    for (int i = 0; i < nlocal; i++)
+    {
+      if (mask[i] & groupbit)
+      {
+        vectorAdd3D(v[i],vfluc[i],v[i]);
+      }
+    }
+  }
+  
 }
 
 /* ---------------------------------------------------------------------- */
@@ -305,24 +356,40 @@ void FixCfdCouplingRecurrence::post_force(int)
 {
   if(use_force_)
   {
-      double **f = atom->f;
-      int *mask = atom->mask;
-      int nlocal = atom->nlocal;
-      double **dragforce = fix_dragforce_->array_atom;
+    double **f = atom->f;
+    int *mask = atom->mask;
+    int nlocal = atom->nlocal;
+    double **dragforce = fix_dragforce_->array_atom;
 
-      vectorZeroize3D(dragforce_total);
+    vectorZeroize3D(dragforce_total);
 
-      // add dragforce to force vector
-      //NP no allreduce here, is done in compute_vector
-      for (int i = 0; i < nlocal; i++)
+    // add dragforce to force vector
+    //NP no allreduce here, is done in compute_vector
+    for (int i = 0; i < nlocal; i++)
+    {
+      if (mask[i] & groupbit)
       {
-        if (mask[i] & groupbit)
-        {
-            //vectorAdd3D(f[i],dragforce[i],f[i]);
-            // I'm the only force!
-            vectorCopy3D(dragforce[i],f[i]);
-            vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
-        }
+        //vectorAdd3D(f[i],dragforce[i],f[i]);
+        // I'm the only force!
+        vectorCopy3D(dragforce[i],f[i]);
+        vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
       }
+    }
+  }
+  
+  if(use_fluc_)
+  {
+    double **v = atom->v;
+    int *mask = atom->mask;
+    int nlocal = atom->nlocal;
+    double **vfluc = fix_vfluc_->array_atom;
+      
+    for (int i = 0; i < nlocal; i++)
+    {
+      if (mask[i] & groupbit)
+      {
+        vectorSubtract3D(v[i],vfluc[i],v[i]);
+      }
+    }    
   }
 }
