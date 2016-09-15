@@ -377,6 +377,8 @@ void FixCfdCouplingRecurrence::post_force(int)
     }
   }
   
+  // use velocity fluctuation to generate displacement, subtract it after position update
+  // problem at walls when reflections occur: velocity is "mirrored"
   if(use_fluc_)
   {
     double **v = atom->v;
