@@ -28,6 +28,7 @@
 #include "stdlib.h"
 #include "atom.h"
 #include "update.h"
+#include "domain.h"
 #include "respa.h"
 #include "error.h"
 #include "memory.h"
@@ -324,7 +325,27 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
   int nlocal = atom->nlocal;
   double **vrec = fix_vrec_->array_atom;
   
-
+  // displace particles if necessary
+  if(use_fluc_)
+  {
+    double **vfluc = fix_vfluc_->array_atom;
+    double **x = atom->x;
+    double x_new[3];
+    double dt = update->dt;
+    for (int i = 0; i < nlocal; i++)
+    {
+      if (mask[i] & groupbit)
+      {
+	x_new[0] = x[i][0] + vfluc[i][0] * dt;
+	x_new[1] = x[i][1] + vfluc[i][1] * dt;
+	x_new[2] = x[i][2] + vfluc[i][2] * dt;
+        if(domain->is_in_domain(x_new) == 1)
+	    vectorCopy3D(x_new,x[i]);
+      }
+    }
+  }
+  
+  
   // set particle velocity to that of recurrence field
   for (int i = 0; i < nlocal; i++)
   {
@@ -333,21 +354,6 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
       vectorCopy3D(vrec[i],v[i]);
     }
   }
-    
-  
-  // if using fluctuations, add them
-  if(use_fluc_)
-  {
-    double **vfluc = fix_vfluc_->array_atom;
-    for (int i = 0; i < nlocal; i++)
-    {
-      if (mask[i] & groupbit)
-      {
-        vectorAdd3D(v[i],vfluc[i],v[i]);
-      }
-    }
-  }
-  
 }
 
 /* ---------------------------------------------------------------------- */
@@ -375,23 +381,5 @@ void FixCfdCouplingRecurrence::post_force(int)
         vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
       }
     }
-  }
-  
-  // use velocity fluctuation to generate displacement, subtract it after position update
-  // problem at walls when reflections occur: velocity is "mirrored"
-  if(use_fluc_)
-  {
-    double **v = atom->v;
-    int *mask = atom->mask;
-    int nlocal = atom->nlocal;
-    double **vfluc = fix_vfluc_->array_atom;
-      
-    for (int i = 0; i < nlocal; i++)
-    {
-      if (mask[i] & groupbit)
-      {
-        vectorSubtract3D(v[i],vfluc[i],v[i]);
-      }
-    }    
   }
 }
