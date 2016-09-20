@@ -41,6 +41,7 @@
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
 #include "fix_chem_shrink.h"
+#include "fix_cfd_coupling_chemistry.h"
 #include "pair_gran.h"
 #include "fix_property_atom.h"
 #include "fix_property_global.h"
@@ -66,8 +67,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_concC_          =   NULL;
     fix_changeOfA_      =   NULL;
     fix_changeOfC_      =   NULL;
-    fix_rhogas_         =   NULL;
-    fix_tgas_           =   NULL;
+    fix_rhogas         =   NULL;
+    fix_tgas           =   NULL;
     fix_reactionheat_   =   NULL;
 
     iarg_ = 3;
@@ -210,6 +211,12 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     next_reneighbor = update ->ntimestep + nevery;
 
     restart_global = 1;
+
+    if (screen){
+        fprintf(screen, "speciesA = %s \n",speciesA);
+        fprintf(screen, "speciesC = %s \n",speciesC);
+        fprintf(screen, "mass of A = %s \n",massA);
+        fprintf(screen, "mass of C = %s \n",massC);  }
 }
 
 
@@ -232,8 +239,8 @@ void FixChemShrink::pre_delete(bool unfixflag)
     {
         if(fix_concA_)         modify  ->  delete_fix(speciesA);
         if(fix_concC_)         modify  ->  delete_fix(speciesC);
-        if(fix_rhogas_)        modify  ->  delete_fix("partRho");
-        if(fix_tgas_)          modify  ->  delete_fix("partTemp");
+        if(fix_rhogas)         modify  ->  delete_fix("partRho");
+        if(fix_tgas)           modify  ->  delete_fix("partTemp");
         if(fix_reactionheat_)  modify  ->  delete_fix("reactionHeat");
         if(fix_changeOfA_)     modify  ->  delete_fix(massA);
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
@@ -254,10 +261,14 @@ int FixChemShrink::setmask()
 void FixChemShrink::updatePtrs()
 {
     concA_      =   fix_concA_      -> vector_atom;
+    //vector_atom = concA_;
+
     concC_      =   fix_concC_      -> vector_atom;
+    //vector_atom = concC_;
+
     changeOfA_  =   fix_changeOfA_  -> vector_atom;
     changeOfC_  =   fix_changeOfC_  -> vector_atom;
-    rhogas_     =   fix_rhogas_     -> vector_atom;
+    rhogas_     =   fix_rhogas      -> vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -267,8 +278,7 @@ void FixChemShrink::reaction()
         updatePtrs();
         int nlocal  =   atom -> nlocal;
         double dr;
-        double totalChangeOfC, totalRhogas, totalpmass;
-        double aveChangeOfC, aveRhogas, avePmass;
+        double totalCo2  = 0;
 
         for (int i = 0 ; i < nlocal; i++)
         {
@@ -297,30 +307,16 @@ void FixChemShrink::reaction()
 
                 // change of radius of particle -assumption: density of particle is constant
                 //radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+                totalCo2 += changeOfC_[i];
 
-                // add up the values that are going to be printed
-                totalChangeOfC += changeOfC_[i];
-                totalpmass     += pmass_[i];
-                totalRhogas    += rhogas_[i];
-
-                // take the mean over every particle
-                aveChangeOfC   = totalChangeOfC/nlocal;
-                aveRhogas      = totalRhogas/nlocal;
-                avePmass       = totalpmass/nlocal;
+                if(screen)
+                {
+                    fprintf(screen, "mass of Co2 = %f \n", totalCo2);
+                    fprintf(screen, "concentration O2 = %f \n",concA_[i]);
+                    fprintf(screen ,"concentration of CO2 = %f \n", concC_[i]);
+                    fprintf(screen ,"rhogas = %f \n", rhogas_[i]);
+                }
             }
-
-            if(screen)
-            {
-                fprintf(screen,"total change of C = %f \n", totalChangeOfC);
-                fprintf(screen,"total change of rhogas = %f \n", totalRhogas);
-                fprintf(screen,"total change of pmass = %f \n", totalpmass);
-                fprintf(screen,"mean CO2 change = %f \n", aveChangeOfC);
-                fprintf(screen,"mean rhogas change = %f \n", aveRhogas);
-                fprintf(screen,"mean pmass change = %f \n", avePmass);
-            }
-
-            //if (comm -> me == 0 && screen)
-            //  //fprintf(screen, "rhogas: %f \n", rhogas_[i];
         }
 }
 
@@ -345,14 +341,14 @@ void FixChemShrink::init()
       error->fix_error(FLERR,this,"requires atom tags and an atom map");
 
     // references
-    fix_concA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
-    fix_concC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
-    fix_changeOfA_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massA,"property/atom","scalar",0,0,style));
-    fix_changeOfC_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massC,"property/atom","scalar",0,0,style));
+    fix_concA_           =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
+    fix_concC_           =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
+    fix_changeOfA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massA,"property/atom","scalar",0,0,style));
+    fix_changeOfC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massC,"property/atom","scalar",0,0,style));
 
-    fix_tgas_        =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
-    fix_rhogas_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
-    fix_reactionheat_=   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
+    fix_tgas            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
+    fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
+    fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
 
     if (rdef)
     {
@@ -367,6 +363,8 @@ void FixChemShrink::init()
         force->registry.registerProperty("Yeff_", &MODEL_PARAMS::createYeff);
         force->registry.connect("Yeff_", Yeff_,this->style);
     }
+
+    updatePtrs();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -388,7 +386,7 @@ void FixChemShrink::post_force(int)
 
     reaction();
 
-    delete_atoms();
+   delete_atoms();
 
     bigint nblocal = atom->nlocal;
     MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
@@ -413,7 +411,7 @@ void FixChemShrink::post_force(int)
 
 void FixChemShrink::delete_atoms()
 {
-    int nlocal = atom->nlocal;
+   int nlocal = atom->nlocal;
     int i = 0;
 
     while (i < nlocal) {

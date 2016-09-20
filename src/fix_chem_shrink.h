@@ -43,6 +43,7 @@ public:
   ~FixChemShrink();
   void pre_delete(bool unfixflag);
 
+
   void reaction();
   double partSurfArea(double);
   void updatePtrs();
@@ -59,8 +60,8 @@ public:
 
   class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C
-  class FixPropertyAtom *fix_rhogas_;                           //  density of gas
-  class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
+  class FixPropertyAtom *fix_rhogas;                           //  density of gas
+  class FixPropertyAtom *fix_tgas;                             //  temperature of gas
   class FixPropertyAtom *fix_reactionheat_;                     //  DeltaQ
 
 
