@@ -38,7 +38,7 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-enum{NONE,CONSTANT,EQUAL,ATOM};
+enum{NONE,CONSTANT,EQUAL,ATOM,EXTERNAL};
 enum{XCYLINDER, YCYLINDER, ZCYLINDER, SPHERE};
 
 /* ---------------------------------------------------------------------- */
@@ -232,7 +232,7 @@ void FixScaleDiameter::set_scale(double scale)
 {
   scale_to_= scale;
   scale_range_ = 1. - scale_to_;
-  scale_to_style_ = CONSTANT;
+  scale_to_style_ = EXTERNAL;
 }
 
 /* ----------------------------------------------------------------------
@@ -280,10 +280,16 @@ void FixScaleDiameter::change_settings()
         break;
       }
 
-      if(rsq < radius_inner_*radius_inner_)
-        continue;
+      double scale = 1.0;
 
-      const double scale = scale_to_ + scale_range_*((sqrt(rsq)-radius_inner_)/scale_width_);
+      if (rsq < radius_inner_*radius_inner_) {
+        if (scale_to_style_ == CONSTANT)
+          continue;
+        scale = scale_to_;
+      } else {
+        scale = scale_to_ + scale_range_*((sqrt(rsq)-radius_inner_)/scale_width_);
+      }
+
       const double old_radius = radius[i];
 
       if (fix_property_->vector_atom[i] <= 0.0) {
