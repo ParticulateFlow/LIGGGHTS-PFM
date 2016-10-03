@@ -278,7 +278,7 @@ void FixChemShrink::reaction()
         updatePtrs();
         int nlocal  =   atom -> nlocal;
         double dr;
-        double totalCo2  = 0;
+        double totalCo2  = 0, aveO2, aveCO2,totalO2, totalpmass, avepmass;
 
         for (int i = 0 ; i < nlocal; i++)
         {
@@ -308,13 +308,21 @@ void FixChemShrink::reaction()
                 // change of radius of particle -assumption: density of particle is constant
                 //radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
                 totalCo2 += changeOfC_[i];
+                aveCO2    = totalCo2/nlocal;
+                totalO2  += changeOfA_[i];
+                aveO2     = totalO2/nlocal;
+                totalpmass +=pmass_[i];
+                avepmass = totalpmass/nlocal;
+
 
                 if(screen)
                 {
-                    fprintf(screen, "mass of Co2 = %f \n", totalCo2);
+                    fprintf(screen, "mass of Co2 = %f \n", aveCO2);
+                    fprintf(screen, "mass of O2 = %f \n",aveO2);
                     fprintf(screen, "concentration O2 = %f \n",concA_[i]);
                     fprintf(screen ,"concentration of CO2 = %f \n", concC_[i]);
                     fprintf(screen ,"rhogas = %f \n", rhogas_[i]);
+                    fprintf(screen, "mass of particle = %f \n",avepmass);
                 }
             }
         }
