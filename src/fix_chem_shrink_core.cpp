@@ -173,7 +173,7 @@ void FixChemShrinkCore::updatePtrs()
 void FixChemShrinkCore::init()
 {
     if (!atom -> radius_flag || !atom -> density_flag)
-        error -> all(FLERR,"Fix chem/shrink cna only be used with sphere atom style");
+        error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style");
 
     // references
     
@@ -214,91 +214,97 @@ void FixChemShrinkCore::post_force(int)
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
 
-    reaction();
+    int nlocal  =   atom->nlocal;
+    int *mask   =   atom->mask;
+    
+    double dm[nmaxlayers_];
+    double a[nmaxlayers_];
+    double diff[nmaxlayers_];
+    double masst;
+    double y0[nmaxlayers_];
+
+    for (int i = 0; i<nlocal; i++)
+    {
+        if (mask[i] & groupbit)
+	{
+//	    getA(i,a);
+//	    getDiff(i,diff);
+//	    getMassT(i,masst);
+//	    getY0(i,y0);
+	    
+	    reaction(i,a,diff,masst,y0,dm);
+	    
+	    update_atom_properties(i,dm);
+	    update_gas_properties(i,dm);
+	}
+    }
 }
 
 /* ---------------------------------------------------------------------- */
-void FixChemShrinkCore::reaction()
-    {
-        updatePtrs();
-        int nlocal  =   atom->nlocal;
-	int *mask   =   atom->mask;
-	double *dx = new double[nmaxlayers_];
-
-        for (int i = 0; i<nlocal; i++)
-        {
-	    if (mask[i] & groupbit)
-	    {
-	        int act_layers = active_layers(i);
-	        if(act_layers == 0)
-	            continue;
+void FixChemShrinkCore::reaction(i,a,diff,masst,y0,dm)
+{
+    for(int j = 0; j<nmaxlayers_; j++)
+        dm[j] = 0.0;
+    
+    int act_layers = active_layers(i);
 	    
-	        for(int j = 0; j<act_layers; j++)
-	            dx[j] = 0.0;
-	    
-	        if(act_layers == 1)
-	            reaction_1(i,dx);
-	        else if(act_layers == 2)
-	            reaction_2(i,dx);
-	        else if(act_layers == 3)
-	            reaction_3(i,dx);
-	        else
-	            error->all(FLERR,"Particle with more than 3 active layers encountered. Corresponding reaction scheme not implemented.");
-	    
-	        update_atom_properties(i,dx);
-	        update_gas_properties(dx);
-	    }
-	}
-        delete[] dx;
-     };
+    if(act_layers == 1)
+        reaction_1(i,a,diff,masst,y0,dm);
+    else if(act_layers == 2)
+        reaction_2(i,a,diff,masst,y0,dm);
+    else if(act_layers == 3)
+        reaction_3(i,a,diff,masst,y0,dm);
+    else
+        error->all(FLERR,"Particle with more than 3 active layers encountered. Corresponding reaction scheme not implemented.");
+};
 
 /* ----------------- compute particle surface area ------------------------ */
  double FixChemShrinkCore::partSurfArea(double radius)
-    {
+{
         double A_p =   4*M_PI*radius*radius;
         return (A_p);
-    };
+};
 
     
 // returns number of active layers    
 int FixChemShrinkCore::active_layers(int i)
 {
-    int nmaxlayers = fix_layerRelRad_->size_peratom_cols;
     int layers;
     
-    for(layers=0; layers<nmaxlayers; layers++)
+    for(layers=0; layers<nmaxlayers_; layers++)
         if(fix_layerRelRad_->array_atom[i][layers] < rmin_)
 	    break;
 
     return layers;
 }
 
-void FixChemShrinkCore::update_atom_properties(int i, double *dx)
+void FixChemShrinkCore::update_atom_properties(int i, double *dm)
 {
  // based on material change: update relative radii, average density and mass of atom i
 }
 
-void FixChemShrinkCore::update_gas_properties(double *dx)
+void FixChemShrinkCore::update_gas_properties(int i, double *dm)
 {
    // based on material change: update gas-phase source terms for mass and heat
 }
 
-void FixChemShrinkCore::reaction_1(int i, double *dx)
+void FixChemShrinkCore::reaction_1(int i, double *a, double *diff, double masst, double* y0, double *dm)
 {
-   //calculate material change for 1 active layer
-  
-  double a, b, f, x, x_eq;
-  // calculate resistance terms and x_eq
-  
-  x = concA_[i] * rhogas_[i] / molMass_A_;
-  
-  dx[0] = 1.0 / (a + b + f) * (x - x_eq) * update->dt;
+  // obtained from reaction_3 by taking the limits a[1] -> infinity and a[2] -> infinity
 }
 
-void FixChemShrinkCore::reaction_2(int i, double *dx)
+void FixChemShrinkCore::reaction_2(int i, double *a, double *diff, double masst, double* y0, double *dm)
 {
+  // obtained from reaction_3 by taking the limit a[2] -> infinity
 }
 
-void FixChemShrinkCore::reaction_3(int i, double *dx)
+void FixChemShrinkCore::reaction_3(int i, double *a, double *diff, double masst, double* y0, double *dm)
 {
+//   dm[0] = ... ;
+//   dm[1] = ... ;
+//   dm[2] = ... ;
+//    
+//   dm[0] *= update->dt * nevery;
+//   dm[1] *= update->dt * nevery;
+//   dm[2] *= update->dt * nevery;
 }
