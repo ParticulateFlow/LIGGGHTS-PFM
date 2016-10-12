@@ -336,11 +336,15 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
     {
       if (mask[i] & groupbit)
       {
-	x_new[0] = x[i][0] + vfluc[i][0] * dt;
-	x_new[1] = x[i][1] + vfluc[i][1] * dt;
-	x_new[2] = x[i][2] + vfluc[i][2] * dt;
-        if(domain->is_in_domain(x_new) == 1)
-	    vectorCopy3D(x_new,x[i]);
+	// this assumes that fluctuations do not put particles outside domain in two opposite directions at the same time
+	for(int j=0; j<3; j++)
+	{
+	  x_new[j] = x[i][j] + vfluc[i][j] * dt;
+	  if (x_new[j] <= domain->boxlo[j] || x_new[j] >= domain->boxhi[j])
+	    x_new[j] = x[i][j] - vfluc[i][j] * dt;
+	}
+	
+        vectorCopy3D(x_new,x[i]);
       }
     }
   }
