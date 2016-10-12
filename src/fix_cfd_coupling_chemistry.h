@@ -57,9 +57,9 @@ class FixCfdCouplingChemistry : public Fix  {
   int n_species;
 
 
-  class FixCfdCoupling* fix_coupling;
-  class FixPropertyAtom* fix_tgas;                  // data pulled from cfdemCoupling - partTemp_
-  class FixPropertyAtom* fix_rhogas;                // data pulled from cfdemCoupling - partRho_
+  class FixCfdCoupling* fix_coupling_;
+  class FixPropertyAtom* fix_tgas_;                  // data pulled from cfdemCoupling - partTemp_
+  class FixPropertyAtom* fix_rhogas_;                // data pulled from cfdemCoupling - partRho_
   class FixPropertyAtom* fix_reactionheat_;         // data pushed to cfdemCoupling - reactionHeat_
   class FixPropertyAtom** fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
   class FixPropertyAtom** fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
@@ -67,6 +67,9 @@ class FixCfdCouplingChemistry : public Fix  {
 
  private:
   bool use_Re_;
+
+  double *rhogas;
+  double *concentrations;
 
 };
 
