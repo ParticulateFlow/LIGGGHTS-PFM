@@ -49,7 +49,8 @@ using namespace FixConst;
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg),
     nmaxlayers_(3),
-    rmin_(0.01)
+    rmin_(0.01),
+    drmin_(0.001)
 {
     if (strncmp(style,"chem/shrink/core",14) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
             error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
@@ -232,6 +233,8 @@ void FixChemShrinkCore::post_force(int)
 //	    getMassT(i,masst);
 //	    getY0(i,y0);
 	    
+	    for(int j = 0; j<nmaxlayers_; j++)
+                dm[j] = 0.0;
 	    reaction(i,a,diff,masst,y0,dm);
 	    
 	    update_atom_properties(i,dm);
@@ -240,23 +243,7 @@ void FixChemShrinkCore::post_force(int)
     }
 }
 
-/* ---------------------------------------------------------------------- */
-void FixChemShrinkCore::reaction(i,a,diff,masst,y0,dm)
-{
-    for(int j = 0; j<nmaxlayers_; j++)
-        dm[j] = 0.0;
-    
-    int act_layers = active_layers(i);
-	    
-    if(act_layers == 1)
-        reaction_1(i,a,diff,masst,y0,dm);
-    else if(act_layers == 2)
-        reaction_2(i,a,diff,masst,y0,dm);
-    else if(act_layers == 3)
-        reaction_3(i,a,diff,masst,y0,dm);
-    else
-        error->all(FLERR,"Particle with more than 3 active layers encountered. Corresponding reaction scheme not implemented.");
-};
+
 
 /* ----------------- compute particle surface area ------------------------ */
  double FixChemShrinkCore::partSurfArea(double radius)
@@ -281,6 +268,12 @@ int FixChemShrinkCore::active_layers(int i)
 void FixChemShrinkCore::update_atom_properties(int i, double *dm)
 {
  // based on material change: update relative radii, average density and mass of atom i
+  
+ // WARNING 1: do not remove more material of layer J than present --> decrease dm[J] if necessary
+  
+ // WARNING 2: if Wustite layer thickness < rmin AND T < 567 C, direct conversion of Magnetite to Fe is possible
+ //            this means that Wu-Fe radius is shrinking together with the Ma-Wu radius 
+ //            in this case, the equilibrium value and reaction parameters at the Ma layer need to be adapted within 
 }
 
 void FixChemShrinkCore::update_gas_properties(int i, double *dm)
@@ -288,17 +281,19 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dm)
    // based on material change: update gas-phase source terms for mass and heat
 }
 
-void FixChemShrinkCore::reaction_1(int i, double *a, double *diff, double masst, double* y0, double *dm)
-{
+//void FixChemShrinkCore::reaction_1(int i, double *a, double *diff, double masst, double* y0, double *dm)
+//{
   // obtained from reaction_3 by taking the limits a[1] -> infinity and a[2] -> infinity
-}
+  // maybe not needed
+//}
 
-void FixChemShrinkCore::reaction_2(int i, double *a, double *diff, double masst, double* y0, double *dm)
-{
+//void FixChemShrinkCore::reaction_2(int i, double *a, double *diff, double masst, double* y0, double *dm)
+//{
   // obtained from reaction_3 by taking the limit a[2] -> infinity
-}
+  // maybe not needed
+//}
 
-void FixChemShrinkCore::reaction_3(int i, double *a, double *diff, double masst, double* y0, double *dm)
+void FixChemShrinkCore::reaction(int i, double *a, double *diff, double masst, double* y0, double *dm)
 {
 //   dm[0] = ... ;
 //   dm[1] = ... ;
@@ -307,4 +302,11 @@ void FixChemShrinkCore::reaction_3(int i, double *a, double *diff, double masst,
 //   dm[0] *= update->dt * nevery;
 //   dm[1] *= update->dt * nevery;
 //   dm[2] *= update->dt * nevery;
+}
+
+void FixChemShrinkCore::getA(int i, double *a)
+{
+  // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
+  // if T < Tcrit1, a = LARGE
+  // if T < Tcrit2 and Wu thickness < drmin, use reaction parameters for Magnetite -> Fe in a[1]
 }

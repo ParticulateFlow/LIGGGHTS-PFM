@@ -44,7 +44,6 @@ public:
   void post_create();
   void pre_delete(bool unfixflag);
 
-  void reaction(int, double *, double *, double, double *, double *);
   double partSurfArea(double);
   void updatePtrs();
 
@@ -60,8 +59,9 @@ public:
   // maximum number of layers to be used for chemical reactions, currently 3 
   const int nmaxlayers_;
   
-  // relative radius below which layers are neglected
+  // relative radius and thickness below which layers are neglected
   const double rmin_;
+  const double drmin_;
    
   // gas-phase properties
   char *speciesA, *speciesC;
@@ -100,9 +100,10 @@ public:
   const double *k0_;
 
   int active_layers(int);
-  void reaction_1(int, double *, double *, double, double *, double *);
-  void reaction_2(int, double *, double *, double, double *, double *);
-  void reaction_3(int, double *, double *, double, double *, double *);
+  void reaction(int, double *, double *, double, double *, double *);
+  //void reaction_1(int, double *, double *, double, double *, double *);
+  //void reaction_2(int, double *, double *, double, double *, double *);
+  void getA(int, double *);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
 };
