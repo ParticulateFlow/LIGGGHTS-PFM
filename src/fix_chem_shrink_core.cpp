@@ -273,7 +273,8 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dm)
   
  // WARNING 2: if Wustite layer thickness < rmin AND T < 567 C, direct conversion of Magnetite to Fe is possible
  //            this means that Wu-Fe radius is shrinking together with the Ma-Wu radius 
- //            in this case, the equilibrium value and reaction parameters at the Ma layer need to be adapted within 
+ //            in this case, the equilibrium value and reaction parameters at the Ma layer need to be adapted within
+ //            IMPLEMENTATION ONLY IF NECESSARY
 }
 
 void FixChemShrinkCore::update_gas_properties(int i, double *dm)
@@ -308,5 +309,5 @@ void FixChemShrinkCore::getA(int i, double *a)
 {
   // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
   // if T < Tcrit1, a = LARGE
-  // if T < Tcrit2 and Wu thickness < drmin, use reaction parameters for Magnetite -> Fe in a[1]
+
 }
