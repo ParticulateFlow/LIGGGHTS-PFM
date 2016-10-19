@@ -165,6 +165,7 @@ void FixChemShrinkCore::updatePtrs()
     layerMolMasses_ = fix_molMass   -> get_values();
     
     k0_             = fix_k0_       -> get_values();
+    Ea_             = fix_Ea_       -> get_values();
     // other chemical parameters
 
 }
@@ -188,6 +189,8 @@ void FixChemShrinkCore::init()
     strcat(fixname,id);      
     fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",0,0,"FixChemShrinkCore"));
     delete []fixname;
+    
+    // look up activation energies Ea
       
     // look up *fix_dens_, *fix_molMass
     // their names are of the form property + material, e.g. "molMass_Ore"
@@ -310,4 +313,28 @@ void FixChemShrinkCore::getA(int i, double *a)
   // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
   // if T < Tcrit1, a = LARGE
 
+}
+
+void FixChemShrinkCore::getY0(int i, double *y0)
+{
+  // calculate equilibrium concentration from K_eq(layer, T)
+
+}
+
+double FixChemShrinkCore::K_eq(int layer, double T)
+{
+// ATTENTION: K is often given for molar fractions x_i, not mass fractions y_i --> need to convert result
+  
+//     if(speciesA == 'CO')
+//     {
+//         K_eq depending on layer and T       
+//     }
+//     else if(speciesA == 'H2')
+//     {
+//         K_eq depending on layer and T
+//     }
+//     else
+//     {
+//         //error: undefined reaction
+//     }
 }

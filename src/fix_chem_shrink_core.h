@@ -89,21 +89,25 @@ public:
   double **relRadii_;                               // relative radii    
   double *pmass_;                                   // particle mass
   double *pdensity_;
-  const double *layerDensities_;
-  const double *layerMolMasses_;
+  double *layerDensities_;
+  double *layerMolMasses_;
 
   
   // reaction properties
   // for each reaction type (e.g. CO + ore particle), global vectors containing reaction parameters have to be defined
   class FixPropertyGlobal *fix_k0_;
+  class FixPropertyGlobal *fix_Ea_;
   
-  const double *k0_;
+  double *k0_;
+  double *Ea_;
 
   int active_layers(int);
+  double K_eq(int, double);
   void reaction(int, double *, double *, double, double *, double *);
   //void reaction_1(int, double *, double *, double, double *, double *);
   //void reaction_2(int, double *, double *, double, double *, double *);
   void getA(int, double *);
+  void getY0(int, double *);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
 };
