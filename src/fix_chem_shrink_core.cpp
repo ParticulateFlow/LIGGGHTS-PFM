@@ -318,12 +318,20 @@ void FixChemShrinkCore::getA(int i, double *a)
 void FixChemShrinkCore::getY0(int i, double *y0)
 {
   // calculate equilibrium concentration from K_eq(layer, T)
+  
+  // directly guessing x_eq like in the thesis of Nietrost seems to be spurious for multi-component mixtures (H2, H2O, CO, CO2)
+  // Negri et al. (1991), Takahashi et al. (1986) and probably many others use a different approach:
+  // as driving term, they use (n_A - n_C / K)
+  
+  // ATTENTION: molar concentrations n_i [mol / m^3] need to be converted into mass fractions y_i
+  //            y_i * rho = n_i * m_{i,mol}
 
 }
 
 double FixChemShrinkCore::K_eq(int layer, double T)
 {
-// ATTENTION: K is often given for molar fractions x_i, not mass fractions y_i --> need to convert result
+//     ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
+//                for the reactions under consideration, this should not be the case (double-check !!!)  
   
 //     if(speciesA == 'CO')
 //     {
