@@ -180,9 +180,14 @@ void FixChemShrinkCore::init()
     // references
     
     
-    // look up reaction properties
-    // they are defined by the user via FixPropertyGlobal
+    // look up reaction properties like k0, Ea
+    // they are defined by the user via FixPropertyGlobal (as vector with 3 entries)
     // the fixes' names have to be chosen such that they can be identified by the reaction fix they correspond to
+    
+    // example:
+    // fix OreReductionCO all chem/shrink/core ...
+    // fix k0_OreReductionCO all property/global ...
+    
     int n = strlen(id) + 1 + 3;
     char* fixname = new char[n];
     strcpy (fixname,"k0_");
@@ -190,10 +195,27 @@ void FixChemShrinkCore::init()
     fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",0,0,"FixChemShrinkCore"));
     delete []fixname;
     
-    // look up activation energies Ea
+    // look up activation energies Ea, just like k0
+    
+    
+    
+    // look up material properties like dens, molMass
+    // they are defined by the user via FixPropertyGlobal (as vector with 4 entries)
+    // the fixes' names have to be chosen such that they can be identified by the reaction fix they correspond to and the group it acts on
+    
+    // example:
+    // fix OreReductionCO all chem/shrink/core ...
+    // fix molMass_all all property/global ...
+    // or
+    // group Ore ...
+    // fix OreReductionCO Ore chem/shrink/core ...
+    // fix molMass_Ore all property/global ...
       
+    
     // look up *fix_dens_, *fix_molMass
-    // their names are of the form property + material, e.g. "molMass_Ore"
+
+    
+    
     
     // look up *fix_layerRelRad_;
     // name something like "layerradii"
