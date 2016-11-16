@@ -59,7 +59,7 @@ using namespace FixConst;
 FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg)
 {
-    if (strncmp(style,"chem/shrink",14) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
+    if (strncmp(style,"chem/shrink",16) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
             error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
 
     // defaults
@@ -88,6 +88,9 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
     bool hasargs = true;
     rdef = false;
+
+    if (narg < 16)
+        error -> all (FLERR,"not enough arguments");
     while (iarg_ < narg && hasargs)
     {
         hasargs = false;
@@ -97,25 +100,23 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (narg < iarg_ + 2)
                 error -> fix_error(FLERR, this, "not enough arguments for 'speciesA'");
             spcA = 1;
-            iarg_++;
-            speciesA = new char [strlen(arg[iarg_]) + 1];
-            strcpy(speciesA,arg[iarg_]);
-            iarg_ ++;
+            speciesA = new char [strlen(arg[iarg_+1])];
+            strcpy(speciesA,arg[iarg_+1]);
+            if(strlen(speciesA) < 1)
+                error -> fix_error(FLERR,this,"speciesA not defined");
+            iarg_ +=2;
             hasargs = true;
         }
         else if (strcmp(arg[iarg_],"molMassA") == 0)
         {
-            if (iarg_ + 2 > narg)
-                error -> fix_error(FLERR, this, "Wrong number of arguments");
             if (spcA != 1)
                 error -> fix_error(FLERR, this, "have to define keyword 'speciesA' before 'molMassA'");
-            if (strlen(speciesA) < 1)
-                error -> fix_error(FLERR, this, "speciesA not defined");
-            iarg_++;
-            molMass_A_ = atof(arg[iarg_]);
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "Wrong number of arguments");
+            molMass_A_ = atof(arg[iarg_+1]);
             if (molMass_A_ < 1)
                 error -> fix_error(FLERR, this, "molar mass of A is not defined");
-            iarg_ ++;
+            iarg_ +=2;
             hasargs = true;
         }
         else if (strcmp(arg[iarg_],"speciesC") == 0)
@@ -123,72 +124,65 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "not enough arguments for 'speciesC'");
             spcC = 1;
-            iarg_++;
-            speciesC = new char [strlen(arg[iarg_])+1];
-            strcpy(speciesC,arg[iarg_]);
-            iarg_ ++;
+            speciesC = new char [strlen(arg[iarg_+1])];
+            strcpy(speciesC,arg[iarg_+1]);
+            if (strlen(speciesC) < 1)
+                error -> fix_error(FLERR, this, "speciesC not defined");
+            iarg_ +=2;
             hasargs = true;
         }
        else if (strcmp(arg[iarg_],"molMassC") == 0)
         {
-            if (iarg_ + 2 > narg)
-                error -> fix_error(FLERR, this, "Wrong number of arguments");
             if (spcC != 1)
                 error -> fix_error(FLERR, this, "have to define keyword 'speciesC' before 'molMassC'");
-            if (strlen(speciesC) < 1)
-                error -> fix_error(FLERR, this, "speciesC not defined");
-            iarg_++;
-            molMass_C_ = atof(arg[iarg_]);
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR, this, "Wrong number of arguments");
+            molMass_C_ = atof(arg[iarg_+1]);
             if (molMass_C_ < 1)
-                error -> fix_error(FLERR, this, "molar mass of C is not defined");
-            iarg_ ++;
+                error -> fix_error(FLERR, this, "molMassC > 0 is required");
+            iarg_ +=2;
             hasargs = true;
         }
         else if (strcmp(arg[iarg_],"molMassB") == 0)
         {
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
-            iarg_++;
-            molMass_B_ = atof(arg[iarg_]);
+            molMass_B_ = atof(arg[iarg_+1]);
             if (molMass_B_ < 1)
-                error -> fix_error(FLERR, this, "molar mass of B is not defined");
-            iarg_ ++;
+                error -> fix_error(FLERR, this, "molMassB > 0 is required");
+            iarg_ +=2;
             hasargs = true;
         }
         else if (strcmp(arg[iarg_],"k") == 0)
         {
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
-            iarg_ ++;
-            k = atof(arg[iarg_]);
+            k = atof(arg[iarg_+1]);
             if (k == 0)
                 error -> fix_error(FLERR, this, "k is not defined");
-            iarg_ ++;
+            iarg_ +=2;
             hasargs = true;
         }
         else if (strcmp(arg[iarg_],"rmin") == 0)
         {
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
-            iarg_++;
-            rmin = atof(arg[iarg_]);
+            rmin = atof(arg[iarg_+1]);
             if (rmin == 0)
                 error -> fix_error(FLERR, this, "rmin is not defined");
-            iarg_++;
+            iarg_+=2;
             hasargs = true;
         }else if (strcmp(arg[iarg_],"rdef") == 0)
         {
             if (screen)
                 fprintf(screen, "rmin is not given, default radius value is used! \n");
             rdef = true;
-            iarg_++;
-            if (strcmp(arg[iarg_],"hertzpct") != 0)
+            if (strcmp(arg[iarg_+1],"hertzpct") != 0)
                 error -> fix_error(FLERR, this, "please enter a percentage to caclculate the hertz timestep for");
-            iarg_++;
-            hertzpct = atof(arg[iarg_]);
+            hertzpct = atof(arg[iarg_+1]);
             if (hertzpct == 0)
                 error -> fix_error(FLERR, this, "hertzpct can not be 0");
-            iarg_++;
+            iarg_+=3;
             hasargs = true;
         }
     }
@@ -212,11 +206,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
     restart_global = 1;
 
-    if (screen){
-        fprintf(screen, "speciesA = %s \n",speciesA);
-        fprintf(screen, "speciesC = %s \n",speciesC);
-        fprintf(screen, "mass of A = %s \n",massA);
-        fprintf(screen, "mass of C = %s \n",massC);  }
 }
 
 
@@ -278,7 +267,6 @@ void FixChemShrink::reaction()
         updatePtrs();
         int nlocal  =   atom -> nlocal;
         double dr;
-        double totalCo2  = 0, aveO2, aveCO2,totalO2, totalpmass, avepmass;
 
         for (int i = 0 ; i < nlocal; i++)
         {
@@ -307,23 +295,6 @@ void FixChemShrink::reaction()
 
                 // change of radius of particle -assumption: density of particle is constant
                 //radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
-                totalCo2 += changeOfC_[i];
-                aveCO2    = totalCo2/nlocal;
-                totalO2  += changeOfA_[i];
-                aveO2     = totalO2/nlocal;
-                totalpmass +=pmass_[i];
-                avepmass = totalpmass/nlocal;
-
-
-                if(screen)
-                {
-                    fprintf(screen, "mass of Co2 = %f \n", aveCO2);
-                    fprintf(screen, "mass of O2 = %f \n",aveO2);
-                    fprintf(screen, "concentration O2 = %f \n",concA_[i]);
-                    fprintf(screen ,"concentration of CO2 = %f \n", concC_[i]);
-                    fprintf(screen ,"rhogas = %f \n", rhogas_[i]);
-                    fprintf(screen, "mass of particle = %f \n",avepmass);
-                }
             }
         }
 }

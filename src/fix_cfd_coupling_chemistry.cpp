@@ -46,7 +46,6 @@ using namespace FixConst;
 
 FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg),
-    // use_Re_(false)
   fix_coupling_(0),
   fix_tgas_(0),
   fix_rhogas_(0),
@@ -111,15 +110,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
        strcpy(mod,"Modified_");
        strcat(mod,species_names_[i]);
        strcpy(mod_spec_names_[i],mod);
-
-       // Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly)
-       if (comm->me == 0 && screen)
-       {
-           fprintf(screen,"Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly) \n");
-           fprintf(screen,"num species: %i \n",num_species);
-           fprintf(screen,"modified species is: %s \n", mod_spec_names_[i]);
-           fprintf(screen,"species Names from couple chem = %s \n", species_names_[i]);
-       }
    }
 
    // flags for vector output
@@ -129,52 +119,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
    extvector = 1;
 }
 
-            /*  species_names_ = new char*[num_species];
-            mod_spec_names_ = new char*[num_species];
-            for (int i = 0; i < num_species; i++)
-            {
-                n = strlen(arg[iarg_+i]) + 1;
-                species_names_[i] = new char [n];
-                mod_spec_names_[i] = new char [n];
-                strcpy(species_names_[i], arg[iarg_+i]);
-                strcpy(mod,"Modified_");
-                strcat(mod,species_names_[i]);
-                strcpy(mod_spec_names_[i],mod);
-
-                // Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly)
-                if (comm->me == 0 && screen)
-                {
-                    fprintf(screen,"Fix_cfd_coupling_chemistry_control (are the speciesdetermined correctly) \n");
-                    fprintf(screen,"num species: %i \n",num_species);
-                    fprintf(screen,"modified species is: %s \n", mod_spec_names_[i]);
-                    fprintf(screen,"species Names from couple chem = %s \n", species_names_[i]);
-                }
-                // ----------------------------------------------------------------------
-            }
-
-            iarg_++;
-            hasargs = true;
-        }*/
-        /* else if
-         * {
-           if(strcmp(arg[iarg],"transfer_Re") == 0)
-           {
-            if(narg < iarg+2)
-                 error->fix_error(FLERR,this,"not enough arguments for 'transfer_Re'");
-             iarg++;
-             if(strcmp(arg[iarg],"yes") == 0)
-                 use_Re_ = true;
-             else if(strcmp(arg[iarg],"no") == 0)
-                 use_Re_ = false;
-             else
-                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_Re'");
-             iarg++;
-             hasargs = true;
-         }
-         else if (strcmp(this->style,"couple/cfd/chemistry") == 0)
-         {
-             error->fix_error(FLERR,this,"unknown keyword");
-         }*/
 /* ---------------------------------------------------------------------- */
 
 FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
@@ -274,8 +218,6 @@ void FixCfdCouplingChemistry::post_create()
      // register massfractions
     for (int i=0; i<num_species;i++)
     {
-        //fix_massfrac_[i] = static_cast<FixPropertyAtom*>(modify->find_fix_property(species_names_[i],"property/atom","scalar",0,0,style));
-        // if(!fix_massfrac_[i])
         {
             const char* fixarg[9];
             fixarg[0]=species_names_[i];
@@ -291,8 +233,6 @@ void FixCfdCouplingChemistry::post_create()
         }
 
         // register masschange/changeOfSpeciesMass
-        //fix_masschange_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
-        // if(!fix_masschange_[i])
         {
             const char* fixarg[9];
             fixarg[0]=mod_spec_names_[i];
@@ -334,36 +274,23 @@ void FixCfdCouplingChemistry::init()
     }
 
     // values to come from OF
-    // if(use_Re_) fix_coupling->add_pull_property("Re","scalar-atom");
     fix_coupling_->add_pull_property("partTemp","scalar-atom");
     fix_coupling_->add_pull_property("partRho","scalar-atom");
 
     for (int i=0; i<num_species; i++)
     {
         fix_coupling_->add_pull_property(species_names_[i],"scalar-atom");
-        if (screen){
-            fprintf(screen, "concentration pulled from CFD = %s \n", species_names_[i]);
-    }
 
     //  values to be transfered to OF
     fix_coupling_->add_push_property("reactionHeat","scalar-atom");
-    for (int i = 0; i<num_species; i++)
-    {
-        fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
-        if (screen)
-            fprintf(screen, "concentration pushed to CFD = %s \n", mod_spec_names_[i]);
-    }
+        for (int i = 0; i<num_species; i++)
+        {
+            fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
+        }
     }
 
     rhogas = fix_rhogas_ -> vector_atom;
     concentrations = fix_massfrac_[0]->vector_atom;
-
-    for (int i =0; i < atom->nlocal; i++)
-    {
-        if (screen){
-            fprintf(screen, "rhogas pulled from species_names = %f \n", rhogas[i]);
-            fprintf(screen, "concentration pulled from CFD for species A = %f \n", concentrations[i]);}
-    }
 }
 
 /* ---------------------------------------------------------------------- */
