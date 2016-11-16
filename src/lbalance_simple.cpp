@@ -20,16 +20,16 @@
 ------------------------------------------------------------------------- */
 
 #include "lbalance_simple.h"
-#include "math.h"
+#include <math.h>
 #include "domain.h"
-#include "mpi.h"
+#include <mpi.h>
 #include "atom.h"
 #include "comm.h"
 #include "error.h"
 #include "neighbor.h"
 #include "update.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 
 using namespace LAMMPS_NS;
 

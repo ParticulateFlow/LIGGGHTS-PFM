@@ -19,11 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "input.h"
 #include "modify.h"
 #include "update.h"
@@ -31,7 +31,7 @@
 #include "domain.h"
 #include "comm.h"
 #include "memory.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "input_mesh_tet.h"
 #include "region_mesh_tet.h"

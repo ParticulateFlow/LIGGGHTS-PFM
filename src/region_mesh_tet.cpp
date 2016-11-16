@@ -19,8 +19,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "region_mesh_tet.h"
 #include "lammps.h"
 #include "memory.h"
@@ -28,7 +28,7 @@
 #include "domain.h"
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
-#include "math.h"
+#include <math.h>
 #include "math_extra_liggghts.h"
 #include "input_mesh_tet.h"
 

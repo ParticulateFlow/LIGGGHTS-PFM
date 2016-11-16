@@ -32,7 +32,7 @@ COHESION_MODEL(COHESION_CAPILLARY,capillary,4)
 #ifndef COHESION_MODEL_CAPILLARY_H_
 #define COHESION_MODEL_CAPILLARY_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "math_extra_liggghts.h"
 #include "global_properties.h"
 

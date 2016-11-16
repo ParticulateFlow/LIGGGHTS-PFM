@@ -33,7 +33,7 @@
 #include "contact_interface.h"
 #include "compute_pair_gran_local.h"
 #include "settings.h"
-#include "string.h"
+#include <string.h>
 #include "force.h"
 #include <stdlib.h>
 #include "contact_models.h"
@@ -109,7 +109,7 @@ public:
     }
   }
 
-  virtual void compute_force(FixWallGran * wg, CollisionData & cdata, double *vwall)
+  virtual void compute_force(FixWallGran * wg, CollisionData & cdata, double *vwall, ForceData & i_forces, ForceData & j_forces)
   {
     const int ip = cdata.i;
 
@@ -136,8 +136,6 @@ public:
 
     // copy collision data to struct (compiler can figure out a better way to
     // interleave these stores with the double calculations above.
-    ForceData i_forces;
-    ForceData j_forces;
     cdata.v_i = v;
     cdata.v_j = vwall;
     cdata.omega_i = omega;

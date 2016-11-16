@@ -22,7 +22,7 @@
 #ifndef LMP_VECTOR_LIGGGHTS_H
 #define LMP_VECTOR_LIGGGHTS_H
 
-#include "math.h"
+#include <math.h>
 #include "lammps.h"
 
 namespace LAMMPS_NS {

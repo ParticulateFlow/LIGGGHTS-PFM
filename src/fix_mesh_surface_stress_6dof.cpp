@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_mesh_surface_stress_6dof.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -36,7 +36,7 @@
 #include "error.h"
 #include "group.h"
 #include "neighbor.h"
-#include "mpi.h"
+#include <mpi.h>
 #include "vector_liggghts.h"
 #include "fix_property_global.h"
 

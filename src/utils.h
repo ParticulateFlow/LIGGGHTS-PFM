@@ -26,7 +26,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "mpi.h"
+#include <mpi.h>
 #include "lmptype.h"
 #include "lammps.h"
 #include <string>

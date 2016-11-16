@@ -15,8 +15,8 @@
    Contributing author: Ilya Valuev (JIHT, Moscow, Russia)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "atom_vec_wavepacket.h"
 #include "atom.h"
 #include "comm.h"

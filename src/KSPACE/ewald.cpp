@@ -18,11 +18,11 @@
      triclinic added by Stan Moore (SNL)
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdlib.h"
-#include "stdio.h"
-#include "string.h"
-#include "math.h"
+#include <mpi.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 #include "ewald.h"
 #include "atom.h"
 #include "comm.h"

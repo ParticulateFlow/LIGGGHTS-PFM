@@ -62,12 +62,14 @@ class FixOMP : public Fix {
   bool get_neighbor() const { return _neighbor; }
   bool get_mixed()    const { return _mixed;    }
   bool get_reduced()  const { return _reduced;  }
+  bool use_reduction() const { return _use_reduction; }
 
  private:
   int  _nthr;       // number of currently active ThrData objects
   bool _neighbor;   // en/disable threads for neighbor list construction
   bool _mixed;      // whether to prefer mixed precision compute kernels
   bool _reduced;    // whether forces have been reduced for this step
+  bool _use_reduction; // whether reduction is used. if not, don't allocate extra arrays
 
   void set_neighbor_omp();
 };

@@ -28,7 +28,7 @@
 
 #include "fix_mesh_surface_stress.h"
 #include <stdio.h>
-#include "string.h"
+#include <string.h>
 #include "error.h"
 #include "force.h"
 #include "modify.h"
@@ -356,7 +356,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         //NP fprintf(screen," k_finnie %f, vmag%f, frcmag %f ,wear %1.15f\n",k_finnie[atom_type_wall-1][atom->type[ip]-1],vmag,vectorMag3D(frc),E);
         //NP error->all("wear");
 
-        wear_step(iTri) += E / triMesh()->areaElem(iTri);
+        wear_step(iTri) += E*update->dt / triMesh()->areaElem(iTri);
     }
 }
 

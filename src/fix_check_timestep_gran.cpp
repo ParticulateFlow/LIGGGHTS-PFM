@@ -19,11 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
-#include "math.h"
+#include <math.h>
 #include "error.h"
 #include "fix_check_timestep_gran.h"
 #include "pair_gran.h"

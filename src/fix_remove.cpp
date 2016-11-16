@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_remove.h"
 #include "atom.h"
 #include "error.h"
@@ -125,7 +125,7 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
 
 FixRemove::~FixRemove()
 {
-
+  delete random_;
 }
 
 /* ---------------------------------------------------------------------- */

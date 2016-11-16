@@ -21,7 +21,7 @@
 
 #include "fix_mesh_surface_stress_contact.h"
 #include <stdio.h>
-#include "string.h"
+#include <string.h>
 #include "error.h"
 #include "force.h"
 #include "modify.h"

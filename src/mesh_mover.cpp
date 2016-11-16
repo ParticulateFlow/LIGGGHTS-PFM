@@ -28,7 +28,7 @@
 ------------------------------------------------------------------------- */
 
 #include "mesh_mover.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "math_extra_liggghts.h"
 #include "input.h"
@@ -103,12 +103,12 @@ MeshMoverLinearVariable::MeshMoverLinearVariable(LAMMPS *lmp,AbstractMesh *_mesh
       strcpy(var1str_,&var1[2]);
       myvar1_ = input->variable->find(var1str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var2[2]) + 1;
       var2str_ = new char[n];
       strcpy(var2str_,&var2[2]);
       myvar2_ = input->variable->find(var2str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var3[2]) + 1;
       var3str_ = new char[n];
       strcpy(var3str_,&var3[2]);
       myvar3_ = input->variable->find(var3str_);
@@ -348,6 +348,10 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
+
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
@@ -476,6 +480,9 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
 
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec,nodes)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)

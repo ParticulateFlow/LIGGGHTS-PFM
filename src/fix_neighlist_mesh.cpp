@@ -39,6 +39,8 @@
 #include "update.h"
 #include <stdio.h>
 #include <algorithm>
+#define NDEBUG
+#include <assert.h>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -203,6 +205,7 @@ void FixNeighlistMesh::min_pre_force(int vflag)
 
 //NP this is called before FixContactHistoryMesh::pre_force()
 //NP because of the order of creation in FixWallGran::post_create()
+//NP this is important so building new neigh list before refreshing contact hist
 
 void FixNeighlistMesh::pre_force(int)
 {
@@ -216,8 +219,9 @@ void FixNeighlistMesh::pre_force(int)
     buildNeighList = false;
     numAllContacts_ = 0;
 
-    // set num_neigh = 0
-    memset(fix_nneighs_->vector_atom, 0, atom->nlocal*sizeof(double));
+    // copy current to old # of neighbors
+    //NP this is important for correct contact history copy
+    memset(fix_nneighs_->vector_atom, 0, sizeof(double)*atom->nmax);
 
     x = atom->x;
     r = atom->radius;

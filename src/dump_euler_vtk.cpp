@@ -19,7 +19,7 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "dump_euler_vtk.h"
 #include "fix_ave_euler.h"
 #include "domain.h"
@@ -45,7 +45,7 @@ DumpEulerVTK::DumpEulerVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, 
   buf_all_(0)
 {
   if (narg < 5)
-    error->all(FLERR,"Illegal dump pic/vtk command");
+    error->all(FLERR,"Illegal dump euler/vtk command");
 
   // CURRENTLY ONLY PROC 0 writes
 
@@ -64,21 +64,21 @@ void DumpEulerVTK::init_style()
 {
   fix_euler_ = static_cast<FixAveEuler*>(modify->find_fix_style("ave/euler",0));
   if(!fix_euler_)
-    error->all(FLERR,"Illegal dump pic/vtk command, need a fix ave/euler");
+    error->all(FLERR,"Illegal dump euler/vtk command, need a fix ave/euler");
 
   // multifile=1;             // 0 = one big file, 1 = one file per timestep
   // multiproc=0;             // 0 = proc 0 writes for all, 1 = one file/proc
   if (multifile != 1)
-    error->all(FLERR,"You should use a filename like 'dump*.vtk' for the 'dump pic/vtk' command to produce one file per time-step");
+    error->all(FLERR,"You should use a filename like 'dump*.vtk' for the 'dump euler/vtk' command to produce one file per time-step");
   if (multiproc != 0)
-    error->all(FLERR,"Your 'dump pic/vtk' command is writing one file per processor, where all the files contain the same data");
+    error->all(FLERR,"Your 'dump euler/vtk' command is writing one file per processor, where all the files contain the same data");
 
 //  if (domain->triclinic == 1)
 //    error->all(FLERR,"Can not dump VTK files for triclinic box");
   if (binary)
     error->all(FLERR,"Can not dump VTK files in binary mode");
 
-  // node center (3), av vel (3), volume fraction, stress, radius
+  // node center (3), av vel (3), volume fraction, radius, stress
   size_one = 9;
 
   delete [] format;
@@ -88,7 +88,7 @@ void DumpEulerVTK::init_style()
 
 int DumpEulerVTK::modify_param(int narg, char **arg)
 {
-  error->warning(FLERR,"dump_modify keyword is not supported by 'dump pic/vtk' and is thus ignored");
+  error->warning(FLERR,"dump_modify keyword is not supported by 'dump euler/vtk' and is thus ignored");
   return 0;
 }
 
@@ -106,12 +106,12 @@ void DumpEulerVTK::write_header_ascii(bigint ndump)
 }
 
 /* ---------------------------------------------------------------------- */
-//NP number of tris in the dump file
+
 int DumpEulerVTK::count()
 {
   n_calls_ = 0;
   n_all_ = 0;
-  return fix_euler_->ncells();
+  return fix_euler_->ncells_pack();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -123,7 +123,7 @@ void DumpEulerVTK::pack(int *ids)
   // have to stick with this order (all per-element props)
   // as multiple procs pack
 
-  int ncells = fix_euler_->ncells();
+  int ncells = fix_euler_->ncells_pack();
 
   for(int i = 0; i < ncells; i++)
   {

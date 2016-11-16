@@ -23,14 +23,14 @@
 #define LMP_MATH_EXTRA_LIGGGHTS_H
 
 #include "pointers.h"
-#include "math.h"
-#include "stdio.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
 #include "error.h"
 #include "vector_liggghts.h"
 #include "math_extra.h"
 #include "random_park.h"
-#include "ctype.h"
+#include <ctype.h>
 
 #define TOLERANCE_ORTHO 1e-10
 

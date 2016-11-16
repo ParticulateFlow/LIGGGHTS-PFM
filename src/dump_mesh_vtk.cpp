@@ -24,7 +24,7 @@
    Felix Kleinfeldt (OVGU Magdeburg)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "dump_mesh_vtk.h"
 #include "tri_mesh.h"
 #include "domain.h"

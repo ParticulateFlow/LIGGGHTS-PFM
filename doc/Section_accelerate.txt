@@ -21,7 +21,8 @@ kinds of machines.
 5.5 "USER-OMP package"_#acc_5
 5.6 "GPU package"_#acc_6
 5.7 "USER-CUDA package"_#acc_7
-5.8 "Comparison of GPU and USER-CUDA packages"_#acc_8 :all(b)
+5.8 "Comparison of GPU and USER-CUDA packages"_#acc_8
+5.9 "MPI/OpenMP hybrid parallelization in LIGGGHTS"_hybrid_#acc_9 :all(b)
 
 :line
 :line
@@ -716,3 +717,7 @@ lammps/examples/USER/cuda = USER-CUDA package files :ul
 
 These contain input scripts for identical systems, so they can be used
 to benchmark the performance of both packages on your system.
+
+5.9 MPI/OpenMP hybrid parallelization in LIGGGHTS :h4,link(acc_9)
+
+Please see "hybrid parallelization"_hybrid_parallelization.html for more details.

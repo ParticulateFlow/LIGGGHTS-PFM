@@ -15,8 +15,8 @@
    Contributing author: Paul Crozier (SNL)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "fix_tune_kspace.h"
 #include "update.h"
 #include "domain.h"

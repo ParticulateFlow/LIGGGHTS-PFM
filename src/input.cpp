@@ -21,13 +21,13 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
-#include "unistd.h"
-#include "sys/stat.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "input.h"
 #include "style_command.h"
 #include "universe.h"
@@ -538,7 +538,6 @@ int Input::execute_command()
   else if (!strcmp(command,"quit")) quit();
   else if (!strcmp(command,"shell")) shell();
   else if (!strcmp(command,"variable")) variable_command();
-
   else if (!strcmp(command,"angle_coeff")) angle_coeff();
   else if (!strcmp(command,"angle_style")) angle_style();
   else if (!strcmp(command,"atom_modify")) atom_modify();
@@ -592,7 +591,7 @@ int Input::execute_command()
   else if (!strcmp(command,"unfix")) unfix();
   else if (!strcmp(command,"units")) units();
   else if (!strcmp(command,"modify_timing")) modify_timing(); //NP modified by R.B.
-
+  else if (!strcmp(command,"partitioner_style")) partitioner_style(); //NP modified by R.B.
   else flag = 0;
 
   // return if command was listed above
@@ -1128,6 +1127,14 @@ void Input::atom_style()
   if (domain->box_exist)
     error->all(FLERR,"Atom_style command after simulation box is defined");
   atom->create_avec(arg[0],narg-1,&arg[1],lmp->suffix);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void Input::partitioner_style()
+{
+  if (narg < 1) error->all(FLERR,"Illegal partitioner_style command");
+  atom->create_partitioner(arg[0],narg-1,&arg[1],lmp->suffix);
 }
 
 /* ---------------------------------------------------------------------- */

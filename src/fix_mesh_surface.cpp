@@ -344,7 +344,7 @@ void FixMeshSurface::createMeshforceContact()
     fixarg[8]=(char *) "0";
     fixarg[9]=(char *) "fz";
     fixarg[10]=(char *) "0";
-    fixarg[11]=(char *) "ty";
+    fixarg[11]=(char *) "tx";
     fixarg[12]=(char *) "0";
     fixarg[13]=(char *) "ty";
     fixarg[14]=(char *) "0";

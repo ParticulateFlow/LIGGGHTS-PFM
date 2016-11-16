@@ -31,7 +31,7 @@ NORMAL_MODEL(HERTZ_STIFFNESS,hertz/stiffness,4)
 #define NORMAL_MODEL_HERTZ_STIFFNESS_H_
 #include "contact_models.h"
 #include "global_properties.h"
-#include "math.h"
+#include <math.h>
 
 namespace LIGGGHTS {
 namespace ContactModels

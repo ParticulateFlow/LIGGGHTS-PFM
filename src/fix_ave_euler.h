@@ -33,7 +33,7 @@ FixStyle(ave/euler/stress,FixAveEuler)
 #ifndef LMP_FIX_AVE_EULER_H
 #define LMP_FIX_AVE_EULER_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "fix.h"
 #include "vector_liggghts.h"
 
@@ -55,10 +55,9 @@ class FixAveEuler : public Fix {
 
   double compute_array(int i, int j);
 
-  // inline access functions for cell based values
+  int ncells_pack();
 
-  inline int ncells()
-  { return ncells_; }
+  // inline access functions for cell based values
 
   inline double cell_center(int i, int j)
   { return center_[i][j]; }
@@ -80,26 +79,32 @@ class FixAveEuler : public Fix {
 
  private:
 
+  inline int ntry_per_cell()
+  { return 50; }
+
   void setup_bins();
   void bin_atoms();
   void calculate_eu();
+  void allreduce();
   inline int coord2bin(double *x); //NP modified A.A.
 
+  bool parallel_;
+
   int exec_every_;
-  bool box_change_;
+  bool box_change_size_, box_change_domain_;
   int triclinic_; //NP modified A.A.
 
   // desired cell size over max particle diameter
-  double cell_size_ideal_rel_;
+  double cell_size_ideal_rel_[3];
 
   // desired cell size
-  double cell_size_ideal_;
+  double cell_size_ideal_[3];
   double cell_size_ideal_lamda_[3];
 
-  // number of cells
+  // number of cells, either globally or locally on each proc
   int ncells_, ncells_dim_[3];
 
-  // extent of grid in xyz
+  // extent of grid in xyz, either globally or locally on each proc
   double lo_[3],hi_[3];
   double lo_lamda_[3],hi_lamda_[3]; //NP modified A.A.
 
@@ -120,6 +125,10 @@ class FixAveEuler : public Fix {
   int *cellhead_;    // ptr to 1st atom in each cell
   int *cellptr_;       // ptr to next atom in each bin
 
+  // region
+  char *idregion_;
+  class Region *region_;
+
   /* ---------  DATA  --------- */
 
   // cell center
@@ -131,8 +140,15 @@ class FixAveEuler : public Fix {
   // cell-based volume fraction
   double *vol_fr_;
 
+  // cell-based weight for each cell
+  
+  double *weight_;
+
   // cell-based average radius
   double *radius_;
+
+  // cell-based number of particles
+  int *ncount_;
 
   // cell-based mass
   double *mass_;
@@ -145,6 +161,8 @@ class FixAveEuler : public Fix {
 
   // stress computation
   class ComputeStressAtom *compute_stress_;
+
+  class RanPark *random_;
 };
 
 }

@@ -30,7 +30,7 @@ NORMAL_MODEL(HOOKE,hooke,0)
 #ifndef NORMAL_MODEL_HOOKE_H_
 #define NORMAL_MODEL_HOOKE_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "atom.h"
 #include "force.h"
 #include "update.h"

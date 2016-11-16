@@ -30,7 +30,7 @@ NORMAL_MODEL(HERTZ,hertz,3)
 #ifndef NORMAL_MODEL_HERTZ_H_
 #define NORMAL_MODEL_HERTZ_H_
 #include "global_properties.h"
-#include "math.h"
+#include <math.h>
 
 namespace LIGGGHTS {
 

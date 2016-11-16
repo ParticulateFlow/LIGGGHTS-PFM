@@ -15,9 +15,9 @@
    Contributing authors: Frances Mackay, Santtu Ollila, Colin Denniston (UWO)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
 #include "fix_lb_pc.h"
 #include "atom.h"
 #include "force.h"
@@ -29,7 +29,7 @@
 #include "domain.h"
 #include "fix_lb_fluid.h"
 #include "modify.h"
-#include "mpi.h"
+#include <mpi.h>
 #include "group.h"
 
 using namespace LAMMPS_NS;

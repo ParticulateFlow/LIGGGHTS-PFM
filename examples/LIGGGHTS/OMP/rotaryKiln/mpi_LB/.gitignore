@@ -1,0 +1,6 @@
+log.liggghts
+post/*.vtu
+post/*.vtr
+post/*.vtp
+post/*.stl
+post/restart/mixer.*

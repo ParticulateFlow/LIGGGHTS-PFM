@@ -20,7 +20,7 @@
 
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
-#include "string.h"
+#include <string.h>
 #include "compute_erotate_sphere_atom.h"
 #include "atom.h"
 #include "update.h"

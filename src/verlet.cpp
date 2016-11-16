@@ -21,7 +21,7 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "verlet.h"
 #include "neighbor.h"
 #include "domain.h"
@@ -287,8 +287,16 @@ void Verlet::run(int n)
       timer->stamp();
       /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing exchange\n");__debug__(lmp);}
       comm->exchange();
+
       /*NL*/ //fprintf(screen,"proc %d has %d owned particles\n",comm->me,atom->nlocal);
-      if (sortflag && ntimestep >= atom->nextsort) atom->sort();
+      // periodically sort particle data
+      // if atoms have moved, we need to enforce sorting to update partitions
+      if (sortflag && (atom->dirty || ntimestep >= atom->nextsort)) {
+        // don't count sorting as part of Comm time -> this will become part of Other
+        timer->stamp(TIME_COMM);
+        atom->sort();
+        timer->stamp();
+      }
       comm->borders();
       if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
       timer->stamp(TIME_COMM);
