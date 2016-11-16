@@ -54,7 +54,10 @@ public:
 
 
  protected:
+   class PairGran *pair_gran;
    int iarg_;
+
+   char* massA, *massC;
    
   // maximum number of layers to be used for chemical reactions, currently 3 
   const int nmaxlayers_;
@@ -83,14 +86,13 @@ public:
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
   class FixPropertyAtom *fix_layerRelRad_;
-  class FixPropertyGlobal *fix_dens_, *fix_molMass;  // molar masses and densities do not differ from particle to particle within a species, hence they are global properties
+  class FixPropertyGlobal *fix_dens_, *fix_molMass_;  // molar masses and densities do not differ from particle to particle within a species, hence they are global properties
   
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii    
   double *pmass_;                                   // particle mass
   double *pdensity_;
-  double *layerDensities_;
-  double *layerMolMasses_;
+  const double *layerDensities_, *layerMolMasses_;
 
   
   // reaction properties
@@ -98,8 +100,7 @@ public:
   class FixPropertyGlobal *fix_k0_;
   class FixPropertyGlobal *fix_Ea_;
   
-  double *k0_;
-  double *Ea_;
+  const double *k0_, *Ea_; //const double because get_Values is defined as const double in fix_check_timestep_sph
 
   int active_layers(int);
   double K_eq(int, double);

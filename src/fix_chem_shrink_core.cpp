@@ -39,7 +39,15 @@
 #include "mpi_liggghts.h"
 #include "fix_chem_shrink_core.h"
 #include "fix_property_atom.h"
+#include "pair_gran.h"
+#include "compute_pair_gran_local.h"
 #include "fix_property_global.h"
+#include "properties.h"
+#include "property_registry.h"
+#include "global_properties.h"
+#include "force.h"
+#include "group.h"
+
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -47,77 +55,113 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
-    Fix(lmp,narg,arg),
-    nmaxlayers_(3),
-    rmin_(0.01),
-    drmin_(0.001)
+	Fix(lmp, narg, arg),
+	nmaxlayers_(3),
+	rmin_(0.01),
+        drmin_(0.001),
+        fix_k0_(0),
+        fix_molMass_(0),
+        fix_Ea_(0),
+        fix_dens_(0)
 {
-    if (strncmp(style,"chem/shrink/core",14) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
-            error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
+        if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
+		error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
 
-    // defaults
-    fix_concA_   =   NULL;
-    fix_concC_   =   NULL;
-    fix_changeOfA_   =   NULL;
-    fix_changeOfC_   =   NULL;
-    fix_rhogas_      =   NULL;
-    // fix_tpart_       =   NULL;
-    // fix_reactionheat_    =   0;
+	// defaults
+	fix_concA_ = NULL;
+	fix_concC_ = NULL;
+	fix_changeOfA_ = NULL;
+	fix_changeOfC_ = NULL;
+	fix_rhogas_ = NULL;
+        //  rmin_ = NULL;
+	// fix_tpart_       =   NULL;
+	// fix_reactionheat_    =   0;
 
-    iarg_ = 3;
-    if (narg < 14)
-        error -> all (FLERR,"not enough arguments");
+	iarg_ = 3;
+        if (narg < 11)
+		error->all(FLERR, "not enough arguments");
 
-    // check and define species A
-    if (strcmp(arg[iarg_++],"speciesA") != 0)
-        error -> all (FLERR, "missing keyword speciesA");
-    speciesA = new char [strlen(arg[iarg_])+1];
-    strcpy(speciesA, arg[iarg_++]);
-    if (speciesA == 0)
-        error -> all (FLERR, "speciesA not defined");
+	bool hasargs = true;
+	while (iarg_ < narg && hasargs)
+	{
+		if (strcmp(arg[iarg_], "speciesA") == 0)
+		{
+			if (narg < iarg_ + 2)
+                            error->fix_error(FLERR, this, "not enough arguments for 'speciesA'");
+			speciesA = new char[strlen(arg[iarg_ + 1])];
+			strcpy(speciesA, arg[iarg_ + 1]);
+			hasargs = true;
+			iarg_ += 2;
+		}
+		else if (strcmp(arg[iarg_], "molMassA") == 0)
+		{
+			if (iarg_ + 2 > narg)
+                            error->fix_error(FLERR, this, "Wrong number of arguments");
+			if (strlen(speciesA) < 1)
+                            error->fix_error(FLERR, this, "speciesA is not defined");
+			molMass_A_ = atof(arg[iarg_ + 1]);
+			if (molMass_A_ < 1)
+                            error->fix_error(FLERR, this, "molar mass of A is not defined");
+			hasargs = true;
+			iarg_ += 2;
+		}
+		else if (strcmp(arg[iarg_], "speciesC") == 0)
+		{
+			if (iarg_ + 2 > narg)
+                            error->fix_error(FLERR, this, "not enough arguments for 'speciesC'");
+			speciesC = new char[strlen(arg[iarg_ + 1])];
+			strcpy(speciesC, arg[iarg_ + 1]);
+			hasargs = true;
+			iarg_ += 2;
+		}
+		else if (strcmp(arg[iarg_], "molMassC") == 0)
+		{
+			if (iarg_ + 2 > narg)
+                            error->fix_error(FLERR, this, "Wrong number of arguments");
+			if (strlen(speciesC) < 1)
+                            error->fix_error(FLERR, this, "speciesC not defined");
+			molMass_C_ = atof(arg[iarg_ + 1]);
+			if (molMass_C_ < 1)
+                            error->fix_error(FLERR, this, "molar mass of C is not defined");
+			hasargs = true;
+			iarg_ += 2;
+		}
+	}
 
-    // check and define molecular mass of A
-    if (strcmp(arg[iarg_++],"molMassA") != 0)
-        error -> all (FLERR, "keyword molMassA for species A is missing");
-    molMass_A_  =   atof(arg[iarg_++]);
-    if (molMass_A_ < 1)
-        error -> all (FLERR,"molMass species A is not defined");
+	// changeOfA and changeOfC have to have the same name as in the species.C 
+	// therefore new strings of massA and massC are introduced which are defined as 
+        // changeOfA and changeOfC as their names in species.c
+	// define changed species mass A
+        int x = 16;
+	char cha[30];
+        massA = new char[x];
+	strcpy(cha, "Modified_");
+	strcat(cha, speciesA);
+	strcpy(massA, cha);
 
-    // check and define Species C
-    if (strcmp(arg[iarg_++],"speciesC") != 0)
-        error -> all (FLERR, "missing keyword speciesC");
-    speciesC = new char [strlen(arg[iarg_])+1];
-    strcpy(speciesC, arg[iarg_++]);
-    if (speciesC == 0)
-        error -> all (FLERR, "speciesC not defined");
+	// define changed species mass C
+        massC = new char[x];
+	strcpy(cha, "Modified_");
+	strcat(cha, speciesC);
+	strcpy(massC, cha);
 
-    // check and define molecular mass of C
-    if (strcmp(arg[iarg_++],"molMassC") != 0)
-        error -> all (FLERR, "keyword molMassC for species C is missing");
-    molMass_C_  =   atof(arg[iarg_++]);
-    if (molMass_C_ < 1)
-        error -> all (FLERR,"molMass species C is not defined");
+	// flags for vector output
+        vector_flag = 1;  //0/1 per-atom data is stored
+        size_vector = 2;
+        global_freq = 1;
+        extvector   = 1;
 
-    
-
-    // flags for vector output
-    peratom_flag =  1;  //0/1 per-atom data is stored
-    peratom_freq =  1;
-    scalar_flag =   1;
-    global_freq =   1;
-    extscalar   =   1;
-    
-    
-    
-
-}
+}	
 
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::~FixChemShrinkCore()
 {
-    if(fix_changeOfA_)  delete  []fix_changeOfA_;
-    if(fix_changeOfC_)  delete  []fix_changeOfC_;
+	// delete the strings that are constructed with using "new"	
+	delete massA;
+	delete massC;
+	delete speciesA;
+	delete speciesC;
 
 }
 
@@ -125,15 +169,20 @@ FixChemShrinkCore::~FixChemShrinkCore()
 
 void FixChemShrinkCore::pre_delete(bool unfixflag)
 {
-    if(unfixflag && fix_concA_) modify  ->  delete_fix(speciesA);
-    if(unfixflag && fix_concC_) modify  ->  delete_fix(speciesC);
-    if(unfixflag && fix_rhogas_)    modify  -> delete_fix("partRho");
-    // if(unfixflag && fix_tgas_)  modify  ->  delete_fix("partTemp");
+    if (unfixflag)
+    {
+        if (fix_concA_)     modify  ->  delete_fix(speciesA);
+        if (fix_concC_)     modify  ->  delete_fix(speciesC);
+        if (fix_rhogas_)    modify  ->  delete_fix("partRho");
+        // if(fix_tgas_)  modify  ->  delete_fix("partTemp");
+        // if(fix_tgas_)  modify  ->  delete_fix("reactionHeat");
 
-    if(unfixflag && fix_changeOfA_) modify  ->  delete_fix("changeOfSpeciessMass_A");
-    if(unfixflag && fix_changeOfC_) modify  ->  delete_fix("changeOfSpeciesMass_C");
+        if (fix_changeOfA_) modify  ->  delete_fix(massA);
+        if (fix_changeOfC_) modify  ->  delete_fix(massC);
 
-
+        // fixes from shrink/core property/globals will not be deleted
+        if (fix_layerRelRad_) modify->  delete_fix("nameOfRadiusLayer");
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -154,18 +203,18 @@ void FixChemShrinkCore::post_create()
 /* ---------------------------------------------------------------------- */
 void FixChemShrinkCore::updatePtrs()
 {
-    changeOfA_  =   fix_changeOfA_  -> vector_atom;
-    changeOfC_  =   fix_changeOfC_  -> vector_atom;
-    rhogas_     =   fix_rhogas_     -> vector_atom;
-    concA_      =   fix_concA_      -> vector_atom;
-    concC_      =   fix_concC_      -> vector_atom;
+    /*changeOfA_      =   fix_changeOfA_  -> vector_atom;
+    changeOfC_      =   fix_changeOfC_  -> vector_atom;
+    rhogas_         =   fix_rhogas_     -> vector_atom;
+    concA_          =   fix_concA_      -> vector_atom;
+    concC_          =   fix_concC_      -> vector_atom;
     
-    relRadii_   =   fix_layerRelRad_-> array_atom;
-    layerDensities_ = fix_dens_     -> get_values();
-    layerMolMasses_ = fix_molMass   -> get_values();
+    //relRadii_       =   fix_layerRelRad_-> array_atom;
+    layerDensities_ = fix_dens_      -> get_values();
+    layerMolMasses_ = fix_molMass_   -> get_values();*/
     
-    k0_             = fix_k0_       -> get_values();
-    Ea_             = fix_Ea_       -> get_values();
+    k0_             =  fix_k0_       -> get_values();
+    //Ea_             =  fix_Ea_       -> get_values();
     // other chemical parameters
 
 }
@@ -175,34 +224,61 @@ void FixChemShrinkCore::updatePtrs()
 void FixChemShrinkCore::init()
 {
     if (!atom -> radius_flag || !atom -> density_flag)
-        error -> all(FLERR,"Fix chem/shrink can only be used with sphere atom style");
+        error -> all(FLERR,"Fix chem/shrink/core can only be used with sphere atom style");
+    if (!atom->tag_enable || 0 == atom->map_style)
+        error->fix_error(FLERR, this, "requires atom tags and an atom map");
 
-    // references
-    
-    
+    int ntype = atom -> ntypes;
+    int c = strlen(id) + 3;
+    char* fixname = new char[c];
+
+    // look up pre-exponential factor k0
+    strcpy (fixname,"k0_");
+    strcat(fixname,id);
+    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    delete []fixname;
+
+    // look up activation energies Ea
+    fixname = new char [c];
+    strcpy(fixname, "Ea_");
+    strcat(fixname, id);
+    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, "FixChemShrinkCore"));
+    delete[]fixname;
+
+    // char *group_name = igroup;
+    /*fixname = new char [c];
+    strcpy(fixname,"density_");
+    strcat(fixname,igroup);
+    if (comm -> me == 0 && screen)
+        fprintf(screen, "density_ = %s \n", fixname);
+    fix_dens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    delete []fixname;*/
+
+
+    updatePtrs();
+    if (screen)
+    {
+        fprintf(screen, "k0_[0] = %f \n", k0_[0]);
+        fprintf(screen, "k0_[1] = %f \n", k0_[1]);
+        fprintf(screen, "k0_[2] = %f \n", k0_[2]);
+        fprintf(screen, "Ea_[0] = %f \n", Ea_[0]);
+        fprintf(screen, "Ea_[1] = %f \n", Ea_[1]);
+        fprintf(screen, "Ea_[2] = %f \n", Ea_[2]);
+    }
+
+    /*pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+    int max_type = pair_gran->get_properties()->max_type(); */
+
     // look up reaction properties like k0, Ea
     // they are defined by the user via FixPropertyGlobal (as vector with 3 entries)
     // the fixes' names have to be chosen such that they can be identified by the reaction fix they correspond to
-    
     // example:
     // fix OreReductionCO all chem/shrink/core ...
     // fix k0_OreReductionCO all property/global ...
-    
-    int n = strlen(id) + 1 + 3;
-    char* fixname = new char[n];
-    strcpy (fixname,"k0_");
-    strcat(fixname,id);      
-    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",0,0,"FixChemShrinkCore"));
-    delete []fixname;
-    
-    // look up activation energies Ea, just like k0
-    
-    
-    
+     
     // look up material properties like dens, molMass
     // they are defined by the user via FixPropertyGlobal (as vector with 4 entries)
     // the fixes' names have to be chosen such that they can be identified by the reaction fix they correspond to and the group it acts on
-    
     // example:
     // fix OreReductionCO all chem/shrink/core ...
     // fix molMass_all all property/global ...
@@ -210,32 +286,35 @@ void FixChemShrinkCore::init()
     // group Ore ...
     // fix OreReductionCO Ore chem/shrink/core ...
     // fix molMass_Ore all property/global ...
-      
-    
-    // look up *fix_dens_, *fix_molMass
 
-    
-    
-    
+    // look up *fix_dens_, *fix_molMass_
+    /*fixname = new char [c];
+    strcpy(fixname, "molMass_");
+    strcat(fixname,group);
+    if (comm -> me == 0 && screen)
+        fprintf(screen, "molMass_ = %s \n", fixname);
+    fix_molMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",0,0,"FixChemShrinkCore"));
+    delete []fixname;*/
+
     // look up *fix_layerRelRad_;
     // name something like "layerradii"
     
-    
-    fix_concA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,id));
-    fix_concC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,id));
-    fix_changeOfA_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_A","property/atom","scalar",0,0,id));
-    fix_changeOfC_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("changeOfSpeciessMass_C","property/atom","scalar",0,0,id));
-    fix_tgas_        =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,id));
-    fix_rhogas_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,id));
-    fix_reactionheat_=   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,id));
-    updatePtrs();
+    // references
+  /*  fix_concA_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesA, "property/atom", "scalar", 0, 0, id));
+    fix_concC_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesC, "property/atom", "scalar", 0, 0, id));
+    fix_changeOfA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
+    fix_changeOfC_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
+    fix_rhogas_    = static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));*/
+    //fix_tgas_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, id));
+    //fix_reactionheat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
+
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrinkCore::post_force(int)
 {
-    updatePtrs();
+    /*updatePtrs();
     radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
@@ -265,7 +344,7 @@ void FixChemShrinkCore::post_force(int)
 	    update_atom_properties(i,dm);
 	    update_gas_properties(i,dm);
 	}
-    }
+    }*/
 }
 
 
@@ -273,21 +352,23 @@ void FixChemShrinkCore::post_force(int)
 /* ----------------- compute particle surface area ------------------------ */
  double FixChemShrinkCore::partSurfArea(double radius)
 {
-        double A_p =   4*M_PI*radius*radius;
-        return (A_p);
-};
+/*        double A_p =   4*M_PI*radius*radius;
+        return (A_p); */
+     return 0;
+}
 
     
 // returns number of active layers    
 int FixChemShrinkCore::active_layers(int i)
 {
-    int layers;
+   /* int layers;
     
     for(layers=0; layers<nmaxlayers_; layers++)
         if(fix_layerRelRad_->array_atom[i][layers] < rmin_)
 	    break;
 
-    return layers;
+    return layers;*/
+    return 0;
 }
 
 void FixChemShrinkCore::update_atom_properties(int i, double *dm)
@@ -367,4 +448,5 @@ double FixChemShrinkCore::K_eq(int layer, double T)
 //     {
 //         //error: undefined reaction
 //     }
+    return 0;
 }
