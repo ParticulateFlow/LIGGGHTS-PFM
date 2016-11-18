@@ -89,7 +89,7 @@ public:
   class FixPropertyGlobal *fix_dens_, *fix_molMass_;  // molar masses and densities do not differ from particle to particle within a species, hence they are global properties
   
   double *radius_;                                  // radius of particle
-  double **relRadii_;                               // relative radii    
+  double **relRadii_;                               // relative radii
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;

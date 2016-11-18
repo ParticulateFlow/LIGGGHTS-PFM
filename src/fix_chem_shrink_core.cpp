@@ -73,7 +73,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 	fix_changeOfA_ = NULL;
 	fix_changeOfC_ = NULL;
 	fix_rhogas_ = NULL;
-        //  rmin_ = NULL;
+        // rmin_ = NULL;
 	// fix_tpart_       =   NULL;
 	// fix_reactionheat_    =   0;
 
@@ -198,6 +198,22 @@ int FixChemShrinkCore::setmask()
 
 void FixChemShrinkCore::post_create()
 {
+    if (!fix_layerRelRad_)
+    {
+        const char* fixarg[12];
+        fixarg[0]="layerRelRad";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="layerradii";
+        fixarg[4]="vector";
+        fixarg[5]="yes";
+        fixarg[6]="no";
+        fixarg[7]="no";
+        fixarg[8]="0.";
+        fixarg[9]="0.";
+        fixarg[10]="0.";
+        fix_layerRelRad_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -207,14 +223,14 @@ void FixChemShrinkCore::updatePtrs()
     changeOfC_      =   fix_changeOfC_  -> vector_atom;
     rhogas_         =   fix_rhogas_     -> vector_atom;
     concA_          =   fix_concA_      -> vector_atom;
-    concC_          =   fix_concC_      -> vector_atom;
+    concC_          =   fix_concC_      -> vector_atom; */
     
-    //relRadii_       =   fix_layerRelRad_-> array_atom;
+    relRadii_       = fix_layerRelRad_-> array_atom;
     layerDensities_ = fix_dens_      -> get_values();
-    layerMolMasses_ = fix_molMass_   -> get_values();*/
+    layerMolMasses_ = fix_molMass_   -> get_values();
     
     k0_             =  fix_k0_       -> get_values();
-    //Ea_             =  fix_Ea_       -> get_values();
+    Ea_             =  fix_Ea_       -> get_values();
     // other chemical parameters
 
 }
@@ -232,6 +248,13 @@ void FixChemShrinkCore::init()
     int c = strlen(id) + 3;
     char* fixname = new char[c];
 
+    // look up reaction properties
+    // they are defined by the user via FixPropertyGlobal (as vector with 3 entries)
+    // the fixes' names have to be chosen such that they can be identified by the reaction fix they correspond to
+    // example:
+    // fix OreReductionCO all chem/shrink/core ...
+    // fix k0_OreReductionCO all property/global ...
+
     // look up pre-exponential factor k0
     strcpy (fixname,"k0_");
     strcat(fixname,id);
@@ -245,38 +268,8 @@ void FixChemShrinkCore::init()
     fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, "FixChemShrinkCore"));
     delete[]fixname;
 
-    // char *group_name = igroup;
-    /*fixname = new char [c];
-    strcpy(fixname,"density_");
-    strcat(fixname,igroup);
-    if (comm -> me == 0 && screen)
-        fprintf(screen, "density_ = %s \n", fixname);
-    fix_dens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
-    delete []fixname;*/
 
-
-    updatePtrs();
-    if (screen)
-    {
-        fprintf(screen, "k0_[0] = %f \n", k0_[0]);
-        fprintf(screen, "k0_[1] = %f \n", k0_[1]);
-        fprintf(screen, "k0_[2] = %f \n", k0_[2]);
-        fprintf(screen, "Ea_[0] = %f \n", Ea_[0]);
-        fprintf(screen, "Ea_[1] = %f \n", Ea_[1]);
-        fprintf(screen, "Ea_[2] = %f \n", Ea_[2]);
-    }
-
-    /*pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
-    int max_type = pair_gran->get_properties()->max_type(); */
-
-    // look up reaction properties like k0, Ea
-    // they are defined by the user via FixPropertyGlobal (as vector with 3 entries)
-    // the fixes' names have to be chosen such that they can be identified by the reaction fix they correspond to
-    // example:
-    // fix OreReductionCO all chem/shrink/core ...
-    // fix k0_OreReductionCO all property/global ...
-     
-    // look up material properties like dens, molMass
+    // Lookup material properties
     // they are defined by the user via FixPropertyGlobal (as vector with 4 entries)
     // the fixes' names have to be chosen such that they can be identified by the reaction fix they correspond to and the group it acts on
     // example:
@@ -287,20 +280,64 @@ void FixChemShrinkCore::init()
     // fix OreReductionCO Ore chem/shrink/core ...
     // fix molMass_Ore all property/global ...
 
-    // look up *fix_dens_, *fix_molMass_
-    /*fixname = new char [c];
-    strcpy(fixname, "molMass_");
-    strcat(fixname,group);
-    if (comm -> me == 0 && screen)
+    // density and molar Mass
+    char *group_name_ = new char [strlen(group->names[igroup])];
+    strcpy(group_name_, group->names[igroup]);
+    fixname = new char [c];
+    strcpy(fixname,"density_");
+    strcat(fixname,group_name_);
+    if (screen)
+        fprintf(screen, "density_ = %s \n", fixname);
+    fix_dens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    delete []fixname;
+
+
+    /*  group_name_ is not defined again since the group is the same one as the density
+        if need be uncomment following;
+        delete []group_name_;
+        char *group_name_ = new char [strlen(group->names[igroup])];
+        strcpy(group_name_, group->names[igroup]); */
+    fixname = new char[c];
+    strcpy(fixname,"molMass_");
+    strcat(fixname,group_name_);
+    if (screen)
         fprintf(screen, "molMass_ = %s \n", fixname);
-    fix_molMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",0,0,"FixChemShrinkCore"));
-    delete []fixname;*/
+    fix_molMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    delete []fixname;
+    delete []group_name_;
 
     // look up *fix_layerRelRad_;
     // name something like "layerradii"
+    fix_layerRelRad_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("layerradii","property/atom","vector",ntype,0,"FixChemShrinkCore"));
+
+    updatePtrs();
+    if (screen)
+    {
+        fprintf(screen, "k0_[0] = %f \n", k0_[0]);
+        fprintf(screen, "k0_[1] = %f \n", k0_[1]);
+        fprintf(screen, "k0_[2] = %f \n", k0_[2]);
+        fprintf(screen, "Ea_[0] = %f \n", Ea_[0]);
+        fprintf(screen, "Ea_[1] = %f \n", Ea_[1]);
+        fprintf(screen, "Ea_[2] = %f \n", Ea_[2]);
+        fprintf(screen, "dens_[0] = %f \n",layerDensities_[0]);
+        fprintf(screen, "dens_[1] = %f \n",layerDensities_[1]);
+        fprintf(screen, "dens_[2] = %f \n",layerDensities_[2]);
+        fprintf(screen, "dens_[3] = %f \n",layerDensities_[3]);
+        fprintf(screen, "molMass_[0] = %f \n",layerMolMasses_[0]);
+        fprintf(screen, "molMass_[1] = %f \n",layerMolMasses_[1]);
+        fprintf(screen, "molMass_[2] = %f \n",layerMolMasses_[2]);
+        fprintf(screen, "molMass_[3] = %f \n",layerMolMasses_[3]);
+        fprintf(screen, "relRad_[0] = %f \n",relRadii_[0]);
+        fprintf(screen, "relRad_[1] = %f \n",relRadii_[1]);
+        fprintf(screen, "relRad_[2] = %f \n",relRadii_[2]);
+        fprintf(screen, "relRad_[3] = %f \n",relRadii_[3]);
+    }
+
+
+
     
     // references
-  /*  fix_concA_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesA, "property/atom", "scalar", 0, 0, id));
+    /*  fix_concA_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesA, "property/atom", "scalar", 0, 0, id));
     fix_concC_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesC, "property/atom", "scalar", 0, 0, id));
     fix_changeOfA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
     fix_changeOfC_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
