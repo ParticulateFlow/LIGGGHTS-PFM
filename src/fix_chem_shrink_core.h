@@ -45,11 +45,13 @@ public:
   void pre_delete(bool unfixflag);
 
   double partSurfArea(double);
+
   void updatePtrs();
 
   int setmask();
   virtual void init();
   virtual void post_force(int);
+  void reactionRateConstant();
 
 
 
@@ -101,6 +103,7 @@ public:
   class FixPropertyGlobal *fix_Ea_;
   
   const double *k0_, *Ea_; //const double because get_Values is defined as const double in fix_check_timestep_sph
+  double **k_; // reaction rate constant
 
   int active_layers(int);
   double K_eq(int, double);

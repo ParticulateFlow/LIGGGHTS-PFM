@@ -62,7 +62,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         fix_k0_(0),
         fix_molMass_(0),
         fix_Ea_(0),
-        fix_dens_(0)
+        fix_dens_(0),
+        fix_layerRelRad_(0)
 {
         if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
 		error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
@@ -72,7 +73,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 	fix_concC_ = NULL;
 	fix_changeOfA_ = NULL;
 	fix_changeOfC_ = NULL;
-	fix_rhogas_ = NULL;
+        fix_rhogas_ = NULL;
         // rmin_ = NULL;
 	// fix_tpart_       =   NULL;
 	// fix_reactionheat_    =   0;
@@ -175,7 +176,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_concC_)     modify  ->  delete_fix(speciesC);
         if (fix_rhogas_)    modify  ->  delete_fix("partRho");
         // if(fix_tgas_)  modify  ->  delete_fix("partTemp");
-        // if(fix_tgas_)  modify  ->  delete_fix("reactionHeat");
+        // if(fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
 
         if (fix_changeOfA_) modify  ->  delete_fix(massA);
         if (fix_changeOfC_) modify  ->  delete_fix(massC);
@@ -219,11 +220,11 @@ void FixChemShrinkCore::post_create()
 /* ---------------------------------------------------------------------- */
 void FixChemShrinkCore::updatePtrs()
 {
-    /*changeOfA_      =   fix_changeOfA_  -> vector_atom;
+    changeOfA_      =   fix_changeOfA_  -> vector_atom;
     changeOfC_      =   fix_changeOfC_  -> vector_atom;
     rhogas_         =   fix_rhogas_     -> vector_atom;
     concA_          =   fix_concA_      -> vector_atom;
-    concC_          =   fix_concC_      -> vector_atom; */
+    concC_          =   fix_concC_      -> vector_atom;
     
     relRadii_       = fix_layerRelRad_-> array_atom;
     layerDensities_ = fix_dens_      -> get_values();
@@ -309,8 +310,34 @@ void FixChemShrinkCore::init()
     // look up *fix_layerRelRad_;
     // name something like "layerradii"
     fix_layerRelRad_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("layerradii","property/atom","vector",ntype,0,"FixChemShrinkCore"));
+    
+    // references
+    fix_concA_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesA, "property/atom", "scalar", 0, 0, id));
+    fix_concC_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesC, "property/atom", "scalar", 0, 0, id));
+    fix_changeOfA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
+    fix_changeOfC_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
+    fix_rhogas_    = static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));
+    //fix_tgas_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, id));
+    //fix_reactionheat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
 
     updatePtrs();
+
+ /*   int nlocal = atom->nlocal;
+    int *mask  = atom->mask;
+    double Runiv = 0.008314458, T = 1073.15;
+    k_ = new double *[nlocal];
+    for (int i = 0; i<nlocal;i++)
+    {
+     //   if (mask[i] & groupbit)
+       // {
+            k_[i] = new double [nmaxlayers_];
+            for (int j = 0 ; j<nmaxlayers_;j++)
+            {
+                k_[i][j]= k0_[j]*exp(-Ea_[j]/(Runiv*T));
+            }
+        //}
+    } */
+
     if (screen)
     {
         fprintf(screen, "k0_[0] = %f \n", k0_[0]);
@@ -327,61 +354,53 @@ void FixChemShrinkCore::init()
         fprintf(screen, "molMass_[1] = %f \n",layerMolMasses_[1]);
         fprintf(screen, "molMass_[2] = %f \n",layerMolMasses_[2]);
         fprintf(screen, "molMass_[3] = %f \n",layerMolMasses_[3]);
-        fprintf(screen, "relRad_[0] = %f \n",relRadii_[0]);
+        // fprintf(screen, "k_0: %f \n", k_[0][0]);
+        // fprintf(screen, "k_1: %f \n", k_[0][1]);
+        // fprintf(screen, "k_2: %f \n", k_[0][2]);
+        /*fprintf(screen, "relRad_[0] = %f \n",relRadii_[0]);
         fprintf(screen, "relRad_[1] = %f \n",relRadii_[1]);
         fprintf(screen, "relRad_[2] = %f \n",relRadii_[2]);
-        fprintf(screen, "relRad_[3] = %f \n",relRadii_[3]);
+        fprintf(screen, "relRad_[3] = %f \n",relRadii_[3]); */
     }
-
-
-
-    
-    // references
-    /*  fix_concA_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesA, "property/atom", "scalar", 0, 0, id));
-    fix_concC_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesC, "property/atom", "scalar", 0, 0, id));
-    fix_changeOfA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
-    fix_changeOfC_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
-    fix_rhogas_    = static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));*/
-    //fix_tgas_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, id));
-    //fix_reactionheat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
-
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrinkCore::post_force(int)
 {
-    /*updatePtrs();
+    updatePtrs();
     radius_ = atom ->  radius;
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
 
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
-    
-    double dm[nmaxlayers_];
+
+    reactionRateConstant();
+
+    /* double dm[nmaxlayers_];
     double a[nmaxlayers_];
     double diff[nmaxlayers_];
     double masst;
-    double y0[nmaxlayers_];
+    double y0[nmaxlayers_]; */
 
-    for (int i = 0; i<nlocal; i++)
+    /* for (int i = 0; i<nlocal; i++)
     {
         if (mask[i] & groupbit)
 	{
-//	    getA(i,a);
+//            getA(i,a);
 //	    getDiff(i,diff);
 //	    getMassT(i,masst);
 //	    getY0(i,y0);
 	    
-	    for(int j = 0; j<nmaxlayers_; j++)
+            for(int j = 0; j<nmaxlayers_; j++)
                 dm[j] = 0.0;
 	    reaction(i,a,diff,masst,y0,dm);
 	    
 	    update_atom_properties(i,dm);
-	    update_gas_properties(i,dm);
+            update_gas_properties(i,dm);
 	}
-    }*/
+    } */
 }
 
 
@@ -389,24 +408,57 @@ void FixChemShrinkCore::post_force(int)
 /* ----------------- compute particle surface area ------------------------ */
  double FixChemShrinkCore::partSurfArea(double radius)
 {
-/*        double A_p =   4*M_PI*radius*radius;
-        return (A_p); */
-     return 0;
+     /* double A_p =   4*M_PI*radius*radius;
+     return (A_p); */
 }
 
-    
-// returns number of active layers    
+/* ---------------------------------------------------------------------- */
+// calculate the reaction rate constant k_i with the given values of k0_ and Ea_
+ double FixChemShrinkCore::reactionRateConstant(double *ko,double *ea)
+ {
+     int nlocal = atom->nlocal;
+     int *mask  = atom->mask;
+     double Runiv = 0.008314458, T = 1073.15;
+     k_ = new double *[nlocal];
+     for (int i = 0; i<nlocal;i++)
+     {
+         if (mask[i] & groupbit)
+         {
+             ko = new double [nmaxlayers_];
+             ea = new double [nmaxlayers_];
+             k_[i] = new double [nmaxlayers_];
+             for (int j = 0 ; j<nmaxlayers_;j++)
+             {
+                 k_[i][j]=ko_[j]*exp(-ea_[j]/(Runiv*T));
+             }
+         }
+
+         delete []ko;
+         delete []ea;
+     }
+
+     if (comm -> me == 0 && screen)
+     {
+         fprintf(screen, "k_0: %f \n", k_[0][0]);
+         fprintf(screen, "k_1: %f \n", k_[0][1]);
+         fprintf(screen, "k_2: %f \n", k_[0][2]);
+     }
+
+ }
+
+/* ---------------------------------------------------------------------- */
+// returns number of active layers
 int FixChemShrinkCore::active_layers(int i)
 {
-   /* int layers;
+    int layers;
     
     for(layers=0; layers<nmaxlayers_; layers++)
-        if(fix_layerRelRad_->array_atom[i][layers] < rmin_)
+        if(relRadii_[i][layers] < rmin_)
 	    break;
 
-    return layers;*/
-    return 0;
+    return layers;
 }
+/* ---------------------------------------------------------------------- */
 
 void FixChemShrinkCore::update_atom_properties(int i, double *dm)
 {
@@ -450,9 +502,8 @@ void FixChemShrinkCore::reaction(int i, double *a, double *diff, double masst, d
 
 void FixChemShrinkCore::getA(int i, double *a)
 {
-  // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
-  // if T < Tcrit1, a = LARGE
-
+    // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
+    // if T < Tcrit1, a = LARGE
 }
 
 void FixChemShrinkCore::getY0(int i, double *y0)
