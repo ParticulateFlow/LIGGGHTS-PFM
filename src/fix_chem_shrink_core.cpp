@@ -357,10 +357,10 @@ void FixChemShrinkCore::init()
         // fprintf(screen, "k_0: %f \n", k_[0][0]);
         // fprintf(screen, "k_1: %f \n", k_[0][1]);
         // fprintf(screen, "k_2: %f \n", k_[0][2]);
-        /*fprintf(screen, "relRad_[0] = %f \n",relRadii_[0]);
-        fprintf(screen, "relRad_[1] = %f \n",relRadii_[1]);
-        fprintf(screen, "relRad_[2] = %f \n",relRadii_[2]);
-        fprintf(screen, "relRad_[3] = %f \n",relRadii_[3]); */
+        fprintf(screen, "relRad_[0] = %f \n",relRadii_[0][0]);
+        fprintf(screen, "relRad_[1] = %f \n",relRadii_[0][1]);
+        fprintf(screen, "relRad_[2] = %f \n",relRadii_[0][2]);
+        fprintf(screen, "relRad_[3] = %f \n",relRadii_[0][3]); 
     }
 }
 
@@ -463,6 +463,9 @@ int FixChemShrinkCore::active_layers(int i)
 void FixChemShrinkCore::update_atom_properties(int i, double *dm)
 {
  // based on material change: update relative radii, average density and mass of atom i
+  
+ // first step: get new masses of each layer
+ // second step: based on predefined molar densities, compute new layer radii
   
  // WARNING 1: do not remove more material of layer J than present --> decrease dm[J] if necessary
   
