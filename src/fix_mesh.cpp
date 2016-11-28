@@ -128,22 +128,13 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
             else error->fix_error(FLERR,this,"expecing 'read' or 'write' after 'element_exclusion_list'");
             iarg_++;
 
-            // case write
-            if (!read_exclusion_list_ && 0 == comm->me)
+            if (comm->me == 0)
             {
-                element_exclusion_list_ = fopen(arg[iarg_++],"w");
+                element_exclusion_list_ = fopen(arg[iarg_], read_exclusion_list_?"r":"w");
                 if(!element_exclusion_list_)
-                    error->one(FLERR,"Fix mesh: can not open file for 'element_exclusion_list' for writing");
+                    error->one(FLERR,"Fix mesh: failed to open file for 'element_exclusion_list'");
             }
-            // case read
-            else if(read_exclusion_list_ && 0 == comm->me)
-            {
-                element_exclusion_list_ = fopen(arg[iarg_++],"r");
-                if(!element_exclusion_list_)
-                    error->one(FLERR,"Fix mesh: can not open file for 'element_exclusion_list' for reading");
-            }
-            if(0 < comm->me)
-                iarg_++;
+            iarg_++;
             hasargs = true;
         }
     }
