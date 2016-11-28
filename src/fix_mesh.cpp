@@ -257,7 +257,7 @@ void FixMesh::handle_exclusion_list()
 FixMesh::~FixMesh()
 {
     delete mesh_;
-    if (element_exclusion_list_ && 0 == comm->me)
+    if (element_exclusion_list_)
         fclose(element_exclusion_list_);
 
     if(exclusion_list_)
