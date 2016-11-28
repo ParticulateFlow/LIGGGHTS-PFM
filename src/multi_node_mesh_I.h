@@ -43,6 +43,7 @@
     random_(new RanPark(lmp,179424799)), // big prime #
     mesh_id_(0),
     precision_(EPSILON_PRECISION),
+    element_exclusion_list_(0),
     autoRemoveDuplicates_(false),
     nMove_(0),
     nScale_(0),
@@ -81,6 +82,12 @@
   void MultiNodeMesh<NUM_NODES>::setPrecision(double _precision)
   {
       precision_ = _precision;
+  }
+
+  template<int NUM_NODES>
+  void MultiNodeMesh<NUM_NODES>::setElementExclusionList(FILE *_file)
+  {
+      element_exclusion_list_ = _file;
   }
 
   template<int NUM_NODES>

@@ -42,6 +42,7 @@ template<int NUM_NODES, int NUM_NEIGH_MAX>
 SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::SurfaceMesh(LAMMPS *lmp)
 :   TrackingMesh<NUM_NODES>(lmp),
     curvature_(1.-EPSILON_CURVATURE),
+    curvature_tolerant_(false),
     minAngle_(cos(MIN_ANGLE_MESH*M_PI/180.)),
 
     // TODO should keep areaMeshSubdomain up-to-date more often for insertion faces
@@ -92,6 +93,16 @@ template<int NUM_NODES, int NUM_NEIGH_MAX>
 void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::setCurvature(double _curvature)
 {
     curvature_ = _curvature;
+}
+
+/* ----------------------------------------------------------------------
+   set mesh curvature tolerance
+------------------------------------------------------------------------- */
+
+template<int NUM_NODES, int NUM_NEIGH_MAX>
+void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::setCurvatureTolerant(bool _tol)
+{
+    curvature_tolerant_ = _tol;
 }
 
 /* ----------------------------------------------------------------------
@@ -542,10 +553,12 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
         calcObtuseAngleIndex(i,iNode,dot);
         if(-dot > curvature_)
         {
-            fprintf(this->screen,"ERROR: Mesh %s: The minumum angle of mesh element %d (line %d) is lower than the specified curvature. "
+            fprintf(this->screen,"%s: Mesh %s: The minumum angle of mesh element %d (line %d) is lower than the specified curvature. "
                                    "Increase mesh quality or decrease curvature (currently %f°)\n",
-                                    this->mesh_id_,TrackingMesh<NUM_NODES>::id(i),TrackingMesh<NUM_NODES>::lineNo(i),acos(curvature_)*180./M_PI);
-            this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. You can try setting 'curvature' to 1e-5 or lower");
+                                  curvature_tolerant_?"WARNING:":"ERROR",this->mesh_id_,TrackingMesh<NUM_NODES>::id(i),
+                                  TrackingMesh<NUM_NODES>::lineNo(i),acos(curvature_)*180./M_PI);
+            if(!curvature_tolerant_)
+                this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. You can try setting 'curvature' to 1e-5 or lower or use 'curvature_tolerant yes'");
         }
       }
     }
@@ -874,6 +887,8 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge,
             nTooManyNeighs_++;
             fprintf(this->screen,"Mesh %s: element id %d (line %d) has %d neighs, but only %d expected\n",
                     this->mesh_id_,TrackingMesh<NUM_NODES>::id(ii),TrackingMesh<NUM_NODES>::lineNo(ii),nNeighs_(ii)+1,NUM_NEIGH_MAX);
+            if(MultiNodeMesh<NUM_NODES>::elementExclusionList())
+                fprintf(MultiNodeMesh<NUM_NODES>::elementExclusionList(),"%d\n",TrackingMesh<NUM_NODES>::lineNo(ii));
             //NP no error here because could be caused by duplicate faces
             //NP so should throw error on duplicate faces first
         }
