@@ -69,8 +69,8 @@
     MathExtraLiggghts::calcBaryTriCoords(node0ToSphereCenter,edgeVec(nTri),edgeLen(nTri),bary);
 
     //NP  > -SMALL_TRIMESH is effectifely a tiny growth of each triangle
-    double invlen = 1./(2.*rBound_(nTri));
-    int barySign = (bary[0] > -precision_trimesh()*invlen) + 2*(bary[1] > -precision_trimesh()*invlen) + 4*(bary[2] > -precision_trimesh()*invlen);
+    const double trimesh_epsilon = -precision_trimesh()/(2.*rBound_(nTri));
+    int barySign = (bary[0] > trimesh_epsilon) + 2*(bary[1] > trimesh_epsilon) + 4*(bary[2] > trimesh_epsilon);
 
     //NP distance between particle and mesh element
     double d(0.);
