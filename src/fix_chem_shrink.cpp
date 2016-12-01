@@ -266,7 +266,7 @@ void FixChemShrink::reaction()
 {
         updatePtrs();
         int nlocal  =   atom -> nlocal;
-        double dr;
+        // double dr;
 
         for (int i = 0 ; i < nlocal; i++)
         {
@@ -288,13 +288,13 @@ void FixChemShrink::reaction()
                 pmass_[i]           +=  dB;
 
                 // radius removed
-                dr   =   -k*concA_[i]*rhogas_[i]*TimeStep*molMass_B_/(molMass_A_*pdensity_[i]);
+                // dr   =   -k*concA_[i]*rhogas_[i]*TimeStep*molMass_B_*3/(molMass_A_*pdensity_[i]);
 
                 // radius particle
-                radius_[i]          +=  dr;
+                // radius_[i]          +=  dr;
 
                 // change of radius of particle -assumption: density of particle is constant
-                //radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+                radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
             }
         }
 }
@@ -365,7 +365,7 @@ void FixChemShrink::post_force(int)
 
     reaction();
 
-   delete_atoms();
+    delete_atoms();
 
     bigint nblocal = atom->nlocal;
     MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
