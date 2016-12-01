@@ -51,13 +51,13 @@ public:
   int setmask();
   virtual void init();
   virtual void post_force(int);
-  void reactionRateConstant();
-
-
 
  protected:
    class PairGran *pair_gran;
    int iarg_;
+
+   // timestep
+   double TimeStep;
 
    char* massA, *massC;
    
@@ -70,6 +70,7 @@ public:
    
   // gas-phase properties
   char *speciesA, *speciesC;
+  double Runiv, T;
 
   class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C [as mass fractions]
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
@@ -84,6 +85,7 @@ public:
   double *rhogas_;
   double *concA_;
   double *concC_;
+  double *T_;
   
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
@@ -103,14 +105,13 @@ public:
   class FixPropertyGlobal *fix_Ea_;
   
   const double *k0_, *Ea_; //const double because get_Values is defined as const double in fix_check_timestep_sph
-  double **k_; // reaction rate constant
 
   int active_layers(int);
   double K_eq(int, double);
   void reaction(int, double *, double *, double, double *, double *);
   //void reaction_1(int, double *, double *, double, double *, double *);
   //void reaction_2(int, double *, double *, double, double *, double *);
-  void getA(int, double *);
+  void getA(int, double *k_);
   void getY0(int, double *);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
