@@ -111,7 +111,7 @@ public:
   void reaction(int, double *, double *, double, double *, double *);
   //void reaction_1(int, double *, double *, double, double *, double *);
   //void reaction_2(int, double *, double *, double, double *, double *);
-  void getA(int, double *k_);
+  void getA(int, double *, double *);
   void getY0(int, double *);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
