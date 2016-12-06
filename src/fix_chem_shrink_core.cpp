@@ -153,6 +153,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         size_vector = 2;
         global_freq = 1;
         extvector   = 1;
+        nevery = 1;
 
 }	
 
@@ -365,28 +366,26 @@ void FixChemShrinkCore::post_force(int)
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
 
-    double a_[nmaxlayers_];
-    double da_[nmaxlayers_];
-    double dm[nmaxlayers_+1];
-
-    /* double diff[nmaxlayers_];
-    double masst;
-    double y0[nmaxlayers_]; */
+    double a_[nmaxlayers_];             // reaction resistance value for each layer
+    double dmA_[nmaxlayers_];           // mass flow rate of reactant gas species for each layer
+    // double diff[nmaxlayers_];
+    // double masst;
+    // double y0[nmaxlayers_];
 
     for (int i = 0; i<nlocal; i++)
     {
         if (mask[i] & groupbit)
 	{
-            getA(i,a_,da_);
-//	    getDiff(i,diff);
-//	    getMassT(i,masst);
-//	    getY0(i,y0);
+            getA(i,a_);
+            //getDiff(i,diff);
+            //getMassT(i,masst);
+            //getY0(i,y0);
 	    
-           /* for(int j = 0; j<nmaxlayers_; j++)
-                dm[j] = 0.0;
-            reaction(i,a,diff,masst,y0,dm); */
-           update_atom_properties(i,dm);
-           update_gas_properties(i,dm);
+            for(int j = 0; j<nmaxlayers_; j++)
+                dmA_[j] = 0.0;
+            reaction(i,a_,dmA_); //diff,masst,y0,
+            update_atom_properties(i,dmA_);
+            update_gas_properties(i,dmA_);
 	}
     }
 }
@@ -415,9 +414,8 @@ int FixChemShrinkCore::active_layers(int i)
 /* ---------------------------------------------------------------------- */
 
 // calculated with Valipour's equation
-void FixChemShrinkCore::getA(int i, double *a_,double *da_)
+void FixChemShrinkCore::getA(int i, double *a_)
 {
-    double W;
     for (int j = 0; j < nmaxlayers_; j++)
     {
         a_[j] = 1/(k0_[j]*exp(-Ea_[j]/(Runiv*T))*((relRadii_[i][j]*relRadii_[i][j])/(radius_[i]*radius_[i])));
@@ -428,66 +426,43 @@ void FixChemShrinkCore::getA(int i, double *a_,double *da_)
             fprintf(screen,"reaction constant: %f \n",a_[j]);
         }
     }
-
-    W = a_[0]*a_[1]+a_[1]+a_[1]*a_[2];
-    da_[0]   =   ((a_[2]*a_[1]+a_[1])*concA_[i]-a_[2]*concA_[i]-a_[1]*concA_[i])*1/W;     // (partSurfArea(radius_[i])*rhogas_[i]*TimeStep);
-    da_[1]   =   ((a_[0]*a_[2]+a_[2])*concA_[i]-(a_[2]+a_[2])*concA_[i]-a_[0]*concA_[i])*1/W;
-    da_[2]   =   ((a_[0]*a_[1]+a_[1])*concA_[i]-a_[0]*concA_[i]-a_[1]*concA_[i])*1/W;
-
     // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
     // if T < Tcrit1, a = LARGE
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_atom_properties(int i, double *dm)
+void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 {
     // based on material change: update relative radii, average density and mass of atom i
 
-    double A[nmaxlayers_];
-    double dA[nmaxlayers_];
-    double layerMass_[nmaxlayers_];
-
-   getA(i,A,dA);
-   if (screen)
-    {
-        fprintf(screen,"other_function a_: %f \n",A[0]);
-        fprintf(screen,"other_function a_: %f \n",A[1]);
-        fprintf(screen,"other_function a_: %f \n",A[2]);
-
-        fprintf(screen,"dA[0]: %f \n",dA[0]);
-        fprintf(screen,"dA[1]: %f \n",dA[1]);
-        fprintf(screen,"dA[2]: %f \n",dA[2]);
-    }
-
-    // determine concentration flow rate -- use the network resistance calculations
-    // concentration flow rate between hematite - magnetite layer
-    // ref. Octave Levenspiel pg. 595, IronOre presentation Nietrost.
+    double layerMass_[nmaxlayers_];         //  mass of each layer
+    double dmB_[nmaxlayers_+1];             //  mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
 
     /*     // mass flow rates from hematite -> magnetite
-        dm[0]           =   dA[0]*(layerMolMasses_[0]/molMass_A_);  //  negative sign since this layer is shrinking
-        dm[1]           =   dA[0]*(layerMolMasses_[1]/molMass_A_);  //  positive - this layer is gaining
+        dmB_[0]           =   dmA_[0]*(layerMolMasses_[0]/molMass_A_);  //  negative sign since this layer is shrinking
+        dmB_[1]           =   dmA_[0]*(layerMolMasses_[1]/molMass_A_);  //  positive - this layer is gaining
 
     // mass flow rates from magentite -> wustite
-        dm[1]           =   dA[1]*(layerMolMasses_[1]/molMass_A_);  //  negative
-        dm[2]           =   dA[1]*(layerMolMasses_[2]/molMass_A_);  //  positive
+        dmB_[1]           =   dmA_[1]*(layerMolMasses_[1]/molMass_A_);  //  negative
+        dmB_[2]           =   dmA_[1]*(layerMolMasses_[2]/molMass_A_);  //  positive
 
     // mass flow rates from wustite -> iron
-        dm[2]           =   dA[2]*(layerMolMasses_[2]/molMass_A_);  //  negative
-        dm[3]           =   dA[2]*(layerMolMasses_[3]/molMass_A_);  //  positive */
+        dmB_[2]           =   dmA_[2]*(layerMolMasses_[2]/molMass_A_);  //  negative
+        dmB_[3]           =   dmA_[2]*(layerMolMasses_[3]/molMass_A_);  //  positive */
 
     // mass flow rates for every layer
-    dm[0]           =   -dA[0]*(layerMolMasses_[0]/molMass_A_);
-    dm[1]           =   dA[0]*(layerMolMasses_[1]/molMass_A_) - dA[1]*(layerMolMasses_[1]/molMass_A_);
-    dm[2]           =   dA[1]*(layerMolMasses_[2]/molMass_A_) - dA[2]*(layerMolMasses_[2]/molMass_A_);
-    dm[3]           =   dA[2]*(layerMolMasses_[3]/molMass_A_);
+    dmB_[0]           =   -dmA_[0]*(layerMolMasses_[0]/molMass_A_);
+    dmB_[1]           =   dmA_[0]*(layerMolMasses_[1]/molMass_A_) - dmA_[1]*(layerMolMasses_[1]/molMass_A_);
+    dmB_[2]           =   dmA_[1]*(layerMolMasses_[2]/molMass_A_) - dmA_[2]*(layerMolMasses_[2]/molMass_A_);
+    dmB_[3]           =   dmA_[2]*(layerMolMasses_[3]/molMass_A_);
 
     if (screen)
     {
-        fprintf(screen,"dm[0]: %f \n",dm[0]);
-        fprintf(screen,"dm[1]: %f \n",dm[1]);
-        fprintf(screen,"dm[2]: %f \n",dm[2]);
-        fprintf(screen,"dm[3]: %f \n",dm[3]);
+        fprintf(screen,"dmB[0]: %f \n",dmB_[0]);
+        fprintf(screen,"dmB[1]: %f \n",dmB_[1]);
+        fprintf(screen,"dmB[2]: %f \n",dmB_[2]);
+        fprintf(screen,"dmB[3]: %f \n",dmB_[3]);
     }
 
     // calculate new masses of each layer
@@ -499,11 +474,13 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dm)
         // first step: get new masses of each layer
         // mass of layers
         // gives negative layer masses!
-        // layerMass_[j] += dm[j];
+        layerMass_[j] += dmB_[j];
+        // layerMass_[j]   -=  0.005;
 
         // second step: based on predefined molar densities, compute new layer radii
         // new layer radii
-        // relRadii_[i][j] = pow((0.75*layerMass_[j]/(M_PI*layerDensities_[j])),0.33333);
+        relRadii_[i][j] = pow((0.75*layerMass_[j]/(M_PI*layerDensities_[j])),0.33333);
+        // relRadii_[i][j] -=  0.00001;
     }
 
    if (screen)
@@ -523,18 +500,13 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dm)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_gas_properties(int i, double *dm)
+void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
 {
    // based on material change: update gas-phase source terms for mass and heat
-    double A[nmaxlayers_];
-    double dA[nmaxlayers_];
-
-    getA(i,A,dA);
-
     for (int j = 0; j < nmaxlayers_;j++)
     {
-        changeOfA_[i]   -=  dA[j];
-        changeOfC_[i]   +=  dA[j]*molMass_C_/molMass_A_;
+        changeOfA_[i]   -=  dmA_[j];
+        changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
     }
 
     if (screen)
@@ -556,15 +528,32 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dm)
   // maybe not needed
 //}
 
-void FixChemShrinkCore::reaction(int i, double *a, double *diff, double masst, double* y0, double *dm)
+void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_) //double *diff, double masst, double* y0,
 {
-//   dm[0] = ... ;
-//   dm[1] = ... ;
-//   dm[2] = ... ;
-//    
-//   dm[0] *= update->dt * nevery;
-//   dm[1] *= update->dt * nevery;
-//   dm[2] *= update->dt * nevery;
+    //  test to see if values of a_ are read correctly
+    if (screen)
+    {
+        fprintf(screen,"other_function a_: %f \n",a_[0]);
+        fprintf(screen,"other_function a_: %f \n",a_[1]);
+        fprintf(screen,"other_function a_: %f \n",a_[2]);
+    }
+
+    double W;
+    W = a_[0]*a_[1]+a_[1]+a_[1]*a_[2];
+    dmA_[0]   =   ((a_[2]*a_[1]+a_[1])*concA_[i]-a_[2]*concA_[i]-a_[1]*concA_[i])*1/W;     // (partSurfArea(radius_[i])*rhogas_[i]*TimeStep);
+    dmA_[1]   =   ((a_[0]*a_[2]+a_[2])*concA_[i]-(a_[2]+a_[2])*concA_[i]-a_[0]*concA_[i])*1/W;
+    dmA_[2]   =   ((a_[0]*a_[1]+a_[1])*concA_[i]-a_[0]*concA_[i]-a_[1]*concA_[i])*1/W;
+
+    dmA_[0] *=  TimeStep * nevery;
+    dmA_[1] *=  TimeStep * nevery;
+    dmA_[2] *=  TimeStep * nevery;
+
+    if (screen)
+    {
+        fprintf(screen,"dmA_[0]: %f \n",dmA_[0]);
+        fprintf(screen,"dmA_[1]: %f \n",dmA_[1]);
+        fprintf(screen,"dmA_[2]: %f \n",dmA_[2]);
+    }
 }
 
 void FixChemShrinkCore::getY0(int i, double *y0)
