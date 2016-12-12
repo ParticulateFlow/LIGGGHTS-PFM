@@ -177,8 +177,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (screen)
                 fprintf(screen, "rmin is not given, default radius value is used! \n");
             rdef = true;
-            if (strcmp(arg[iarg_+1],"hertzpct") != 0)
-                error -> fix_error(FLERR, this, "please enter a percentage to caclculate the hertz timestep for");
             hertzpct = atof(arg[iarg_+1]);
             if (hertzpct == 0)
                 error -> fix_error(FLERR, this, "hertzpct can not be 0");
@@ -295,6 +293,15 @@ void FixChemShrink::reaction()
 
                 // change of radius of particle -assumption: density of particle is constant
                 radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+
+                // uncomment if postproc (verification)
+                /* if (screen)
+                {
+                     fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
+                     fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
+                     fprintf(screen,"Particle Mass %f \n",pmass_[i]);
+                     fprintf(screen,"Gas Density %f \n",rhogas_[i]);
+                } */
             }
         }
 }
