@@ -18,7 +18,7 @@ style () {
   githash=`git log -1 --format="%H"`
   echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai, git commit $githash\"" > version_liggghts.h
 
-  list=`grep -sl $1 $2*.h`
+  list=`grep -sl $1 $2*.h | sort`
   if (test -e style_$3.tmp) then
     rm -f style_$3.tmp
   fi
@@ -56,6 +56,9 @@ style () {
     rm -f style_$3.tmp
   fi
 }
+
+# set locale for consistent sorting
+LANG=C
 
 # create individual style files
 # called by "make machine"
