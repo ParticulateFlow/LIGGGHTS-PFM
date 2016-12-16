@@ -29,11 +29,11 @@ NORMAL_MODEL(HOOKE_STIFFNESS_COLLHEAT,hooke/stiffness/collheat,6)
 #ifndef NORMAL_MODEL_HOOKE_STIFFNESS_COLLHEAT_H_
 #define NORMAL_MODEL_HOOKE_STIFFNESS_COLLHEAT_H_
 #include "fix_property_atom.h"
-#include "math.h"
+#include <math.h>
 
 namespace MODEL_PARAMS
 {
-  
+
   VectorProperty * createThermalConductivity(PropertyRegistry & registry, const char * caller, bool sanity_checks)
   {
     LAMMPS * lmp = registry.getLAMMPS();
@@ -58,7 +58,7 @@ namespace MODEL_PARAMS
 
     return vec;
   }
-  
+
   VectorProperty * createThermalCapacity(PropertyRegistry & registry, const char * caller, bool sanity_checks)
   {
     LAMMPS * lmp = registry.getLAMMPS();
@@ -83,7 +83,7 @@ namespace MODEL_PARAMS
 
     return vec;
   }
-  
+
 }
 
 namespace LIGGGHTS {
@@ -95,11 +95,13 @@ namespace ContactModels
   public:
     static const int MASK = CM_REGISTER_SETTINGS | CM_CONNECT_TO_PROPERTIES | CM_COLLISION | CM_NO_COLLISION;
 
-    NormalModel(LAMMPS * lmp, IContactHistorySetup* hsetup) : NormalModel<HOOKE_STIFFNESS>(lmp, hsetup),
+    NormalModel(LAMMPS * lmp, IContactHistorySetup * hsetup) : NormalModel<HOOKE_STIFFNESS>(lmp, hsetup),
       history_offset(0)
     {
       history_offset = hsetup->add_history_value("contflag", "0");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "HOOKE/STIFFNESS/COLLHEAT loaded\n");
+
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HOOKE/STIFFNESS/COLLHEAT loaded\n");
+
     }
 
     void registerSettings(Settings & settings)
@@ -109,20 +111,19 @@ namespace ContactModels
 
     void connectToProperties(PropertyRegistry & registry) {
       NormalModel<HOOKE_STIFFNESS>::connectToProperties(registry);
-      
+
       registry.registerProperty("thermalConductivity", &MODEL_PARAMS::createThermalConductivity);
       registry.registerProperty("thermalCapacity", &MODEL_PARAMS::createThermalCapacity);
       registry.registerProperty("Yeff", &MODEL_PARAMS::createYeff);
-      
+
       registry.connect("thermalConductivity", thermalConductivity, "normal_model hooke stiffness collheat");
       registry.connect("thermalCapacity", thermalCapacity, "normal_model hooke stiffness collheat");
       registry.connect("Yeff", Yeff,"normal_model hooke stiffness collheat");
 
       fix_temp = static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,"normal_model hooke stiffness collheat"));
       Temp = fix_temp->vector_atom;
-
     }
-    
+
     // effective exponent for stress-strain relationship
     //NP used for area correction of heat transfer
     inline double stressStrainExponent()
@@ -132,19 +133,19 @@ namespace ContactModels
 
     inline void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
     {
-      NormalModel<HOOKE_STIFFNESS>::collision(cdata, i_forces, j_forces);      
-      
+      NormalModel<HOOKE_STIFFNESS>::collision(cdata, i_forces, j_forces);
+
       // first-contact detection could be implemented more elegantly
       // using *cdata.touch |= TOUCH_NORMAL_MODEL ...
-      
+
       double * const contflag = &cdata.contact_history[history_offset];
-      
+
       // check how contflag[0] is initialized!!!
 
       if (contflag[0]<0.5)
       {
         Temp = fix_temp->vector_atom;
-	const int i = cdata.i;
+        const int i = cdata.i;
         const int j = cdata.j;
         const int itype = cdata.itype;
         const int jtype = cdata.jtype;
@@ -152,33 +153,33 @@ namespace ContactModels
         const double radi = cdata.radi;
         const double radj = cdata.radj;
         const double reff = radi*radj/(radi+radj);
-	const double mi = cdata.mi;
-	const double mj = cdata.mj;
+        const double mi = cdata.mi;
+        const double mj = cdata.mj;
         const double meff = cdata.meff;
-	const double vrel = fabs(cdata.vn);
-	
-	const double densityi = atom->density[i];
-	const double densityj = atom->density[j];	
-	const double kappai = thermalConductivity[itype];
-	const double kappaj = thermalConductivity[jtype];
-	const double ci = thermalCapacity[itype];
-	const double cj = thermalCapacity[jtype];
-	
-	const double Ac = M_PI*0.9745*pow(meff/Yeff[itype][jtype],0.4)*pow(reff*vrel,0.8);
-	const double tc = 2.87*pow(meff/Yeff[itype][jtype],0.4)*pow(reff*vrel,-0.2);
+        const double vrel = fabs(cdata.vn);
 
-	const double numerator = 0.87 * (Temp[i] - Temp[j]) * Ac * sqrt(tc);
-	const double denominator = 1.0/sqrt(densityi*ci*kappai) + 1.0/sqrt(densityj*cj*kappaj);
-	const double qc = numerator/denominator;
-	
-	const double dTempi = - qc / (ci * mi);
-	const double dTempj = qc / (cj * mj);
+        const double densityi = atom->density[i];
+        const double densityj = atom->density[j];
+        const double kappai = thermalConductivity[itype];
+        const double kappaj = thermalConductivity[jtype];
+        const double ci = thermalCapacity[itype];
+        const double cj = thermalCapacity[jtype];
 
-	Temp[i] += dTempi;
-	Temp[j] += dTempj;	
+        const double Ac = M_PI*0.9745*pow(meff/Yeff[itype][jtype],0.4)*pow(reff*vrel,0.8);
+        const double tc = 2.87*pow(meff/Yeff[itype][jtype],0.4)*pow(reff*vrel,-0.2);
+
+        const double numerator = 0.87 * (Temp[i] - Temp[j]) * Ac * sqrt(tc);
+        const double denominator = 1.0/sqrt(densityi*ci*kappai) + 1.0/sqrt(densityj*cj*kappaj);
+        const double qc = numerator/denominator;
+
+        const double dTempi = - qc / (ci * mi);
+        const double dTempj = qc / (cj * mj);
+
+        Temp[i] += dTempi;
+        Temp[j] += dTempj;
       }
       // store for noCollision
-      contflag[0] = 1.0;    
+      contflag[0] = 1.0;
     }
 
     void noCollision(ContactData & cdata, ForceData&, ForceData&)
@@ -187,18 +188,17 @@ namespace ContactModels
       // store for collision
       contflag[0] = 0.0;
     }
+
     void beginPass(CollisionData&, ForceData&, ForceData&){}
     void endPass(CollisionData&, ForceData&, ForceData&){}
 
   protected:
-    
     int history_offset;
-    
     double ** Yeff;
     double * thermalConductivity;
     double * thermalCapacity;
     double * Temp;
-    
+
     FixPropertyAtom* fix_temp;
   };
 }
