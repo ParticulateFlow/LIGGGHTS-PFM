@@ -55,13 +55,13 @@ class FixPropertyAtomCumulativeTracer : public FixPropertyAtom {
   int iarg_;
 
   char *tracer_name_;
-  
+
   double source_strength_;
   double accumulated_source_strength_;
   double absorbed_strength_;
   double begin_time_;
   double end_time_;
-  
+
   int tot_n_marked_;
 
   int check_every_;

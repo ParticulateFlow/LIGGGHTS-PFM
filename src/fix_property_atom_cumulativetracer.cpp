@@ -103,7 +103,7 @@ FixPropertyAtomCumulativeTracer::FixPropertyAtomCumulativeTracer(LAMMPS *lmp, in
             iarg_++;
             source_strength_ = atof(arg[iarg_++]);
             hasargs = true;
-	} else if(strcmp(arg[iarg_],"begin_time") == 0) {
+        } else if(strcmp(arg[iarg_],"begin_time") == 0) {
             if(narg < iarg_+2)
                 error->fix_error(FLERR,this,"not enough arguments for 'begin_time'");
             iarg_++;
@@ -141,7 +141,7 @@ FixPropertyAtomCumulativeTracer::FixPropertyAtomCumulativeTracer(LAMMPS *lmp, in
 
     scalar_flag = 1;
     global_freq = 1;
-    
+
     // distribute strength per unit time on time steps
     source_strength_*=update->dt*nevery;
 }
@@ -196,7 +196,7 @@ void FixPropertyAtomCumulativeTracer::end_of_step()
     Region *region = domain->regions[iregion_];
 
     int nmarked_this = 0;
-    
+
     accumulated_source_strength_+=source_strength_;
 
     for(int i = 0; i < nlocal; i++)
@@ -208,21 +208,21 @@ void FixPropertyAtomCumulativeTracer::end_of_step()
     }
 
     MPI_Sum_Scalar(nmarked_this,world);
-    
+
     if(nmarked_this<1)
         return;
-    
+
     int newnmarked = 0;
     for(int i = 0; i < nlocal; i++)
     {
         if (region->match(x[i][0],x[i][1],x[i][2]))
         {
-	    if(marker[i] < 1e-7)
-	        newnmarked++;
+            if(marker[i] < 1e-7)
+                newnmarked++;
             marker[i] += accumulated_source_strength_/nmarked_this;
         }
     }
-    
+
     MPI_Sum_Scalar(newnmarked,world);
     tot_n_marked_+=newnmarked;
     absorbed_strength_ += accumulated_source_strength_;

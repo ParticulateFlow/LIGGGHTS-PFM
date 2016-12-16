@@ -78,8 +78,8 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_density'");
             iarg++;
             hasargs = true;
-        } 
-        else if(strcmp(arg[iarg],"transfer_type") == 0) 
+        }
+        else if(strcmp(arg[iarg],"transfer_type") == 0)
         {
             if(narg < iarg+2)
                 error->fix_error(FLERR,this,"not enough arguments for 'transfer_type'");
@@ -189,7 +189,7 @@ void FixCfdCouplingRecurrence::post_create()
         fixarg[10]="0.";
         fix_vrec_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
     }
-    
+
     // register displacements
     if(!fix_vfluc_ && use_fluc_)
     {
@@ -243,7 +243,7 @@ void FixCfdCouplingRecurrence::post_create()
         fixarg[8]="1.";
         fix_volumeweight_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
-    
+
      // register tracer concentration
     if(!fix_tracerconcentration_ && use_tracer_)
     {
@@ -303,7 +303,7 @@ void FixCfdCouplingRecurrence::init()
     if(use_type_) fix_coupling_->add_push_property("type","scalar-atom");
     if(use_dens_) fix_coupling_->add_push_property("density","scalar-atom");
     fix_coupling_->add_push_property("volumeweight","scalar-atom");
-    
+
     if(use_property_) fix_coupling_->add_push_property(property_name,property_type);
 
     // values to come from OF
@@ -324,7 +324,7 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double **vrec = fix_vrec_->array_atom;
-  
+
   // displace particles if necessary
   if(use_fluc_)
   {
@@ -336,20 +336,20 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
     {
       if (mask[i] & groupbit)
       {
-	// this assumes that fluctuations do not put particles outside domain in two opposite directions at the same time
-	for(int j=0; j<3; j++)
-	{
-	  x_new[j] = x[i][j] + vfluc[i][j] * dt;
-	  if (x_new[j] <= domain->boxlo[j] || x_new[j] >= domain->boxhi[j])
-	    x_new[j] = x[i][j] - vfluc[i][j] * dt;
-	}
-	
+        // this assumes that fluctuations do not put particles outside domain in two opposite directions at the same time
+        for(int j=0; j<3; j++)
+        {
+          x_new[j] = x[i][j] + vfluc[i][j] * dt;
+          if (x_new[j] <= domain->boxlo[j] || x_new[j] >= domain->boxhi[j])
+            x_new[j] = x[i][j] - vfluc[i][j] * dt;
+        }
+
         vectorCopy3D(x_new,x[i]);
       }
     }
   }
-  
-  
+
+
   // set particle velocity to that of recurrence field
   for (int i = 0; i < nlocal; i++)
   {
