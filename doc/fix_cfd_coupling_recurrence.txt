@@ -21,7 +21,7 @@ keyword = {transfer_density} or {transfer_type} or {transfer_force} or {transfer
 
 [Examples:]
 
-fix		cfd2 all couple/cfd/recurrence transfer_force yes transfer_fluctuations yes :pre
+fix cfd2 all couple/cfd/recurrence transfer_force yes transfer_fluctuations yes :pre
 
 [Description:]
 
