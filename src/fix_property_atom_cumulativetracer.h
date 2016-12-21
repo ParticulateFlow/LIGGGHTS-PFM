@@ -1,12 +1,12 @@
 /* ----------------------------------------------------------------------
-   LIGGGHTS academic
-
-   Copyright 2005- JKU Linz
-
-   LIGGGHTS academic is based on LIGGGHTS
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
-   Christoph Kloss, christoph.kloss@cfdem.com
+
+   LIGGGHTS is part of the CFDEMproject
+   www.liggghts.com | www.cfdem.com
+
+   Department for Particulate Flow Modelling
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -21,7 +21,6 @@
 /* ----------------------------------------------------------------------
    Contributing authors:
    Thomas Lichtenegger (JKU Linz)
-   thomas.lichtenegger@jku.at
 ------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
