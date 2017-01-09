@@ -21,11 +21,14 @@ mesh/surface or mesh/surface/planar = style name of this fix command  :l
 file = obligatory keyword :l
 filename = name of STL or VTK file containing the triangle mesh data :l
 zero or more premesh_keywords/premesh_value pairs may be appended :l
-premesh_keyword = {type} or {precision} or {heal} or {verbose} :l
+premesh_keyword = {type} or {precision} or {heal} or {element_exclusion_list} or {verbose} :l
   {type} value = atom type (material type) of the wall imported from the STL file
   {precision} value = length mesh nodes this far away at maximum will be recognized as identical (length units)
   {heal} value = auto_remove_duplicates or no
-  {verbose} value = yes or no
+  {element_exclusion_list} values = mode element_exlusion_file
+    mode = read or write
+    element_exlusion_file = name of file containing the elements to be excluded
+  {verbose} value = yes or no :pre
 zero or more mesh_keywords/mesh_value pairs may be appended :l
 mesh_keyword = {scale} or {move} or {rotate} or {temperature} :l
   {scale} value = factor
@@ -40,18 +43,20 @@ mesh_keyword = {scale} or {move} or {rotate} or {temperature} :l
   {temperature} value = T0
     T0 = Temperature of the wall (temperature units) :pre
 zero or more surface_keywords/surface_value pairs may be appended :l
-surface_keyword = {surface_vel} or {surface_ang_vel} or {curvature} :l
+surface_keyword = {surface_vel} or {surface_ang_vel} or {curvature} or {curvature_tolerant} :l
   {surface_vel} values = vx vy vz
     vx vy vz = conveyor belt surface velocity  (velocity units)
   {surface_ang_vel} values = origin ox oy oz axis ax ay az omega om
     origin = mandatory keyword
     ox oy oz = origin of rotation (length units)
     axis = mandatory keyword
-    ax ay az = axis vector for rotation (length units) 
+    ax ay az = axis vector for rotation (length units)
     omega = mandatory keyword
     om = rotaional velocity around specifyied axis (rad/time units)
-  {curvature value} = c
-    c = maximum angle between mesh faces belonging to the same surface (in degree) :pre
+  {curvature} value = c
+    c = maximum angle between mesh faces belonging to the same surface (in degree)
+  {curvature_tolerant} value = ct
+    ct = yes or no :pre
 
 :ule
 
@@ -97,14 +102,32 @@ If LIGGGHTS stalls because of duplicate elements, you can try setting
 {heal} to auto_remove_duplicates. LIGGGHTS will then try to heal the geometry
 by removing duplicate elements.
 
-IMPORTANT NOTE: You should check the changes to the geometry, e.g. by using a 
-"dump mesh/stl"_dump.html command.
+If the optional {element_exclusion_list} keyword is used in mode 'write', LIGGGHTS 
+will write a list of elements which 
+
+have more than the allowed 5 face neighbors per surface :l
+have an angle below 0.0181185 degrees :l
+are duplicate elements :l
+
+to a file. The 'read' mode can then use this file and will skip the elements in 
+the list. However, you can also manually write such a file to exclude certain elements.
+
+IMPORTANT NOTE: The {element_exclusion_list write} model works in serial only. However,
+this is not a real restriction, since you can generate the exclusion lists in serial,
+but then read them to import the mesh into a parallel simulation
+
+IMPORTANT NOTE: If you use the 'heal' or 'element_exclusion_list' keywords,
+you should check the changes to the geometry, e.g. by using a "dump mesh/stl"_dump.html command.
 
 The {curvature} keyword lets you specify up to which angle between two triangles the 
 triangles should be treated as belonging to the same surface (e.g. useful for bends). 
 This angle is used to decide if (a) contact history is copied from one triangle to 
 the other as the contact point proceeds and (b) if edge and corner interaction is 
 calculated.
+
+The {curvature_tolerant} keyword can simply turn off the check that
+the {curvature} must not be larger than any angle in any mesh element.
+This is typically not recommended, but can be used as a last resort measure.
 
 [Quality checks / error and warning messages:]
 
@@ -113,11 +136,11 @@ to give you as much information about the issue as possible.
 
 Warning messages:
 
-There should be no angle < 0.5° in any element :l
+There should be no angle < 0.5&deg; in any element :l
 The number of neighbor elements should be <= 5 for any element :l
 All nodes should be within the simlation box :l
 
-If any of the obove rules is not fulfilled, a warning is generated. Keyword 
+If any of the obove rules is not fulfilled, a warning is generated. Keyword
 {verbose} controls if details about the warning are written to the screen.
 
 Error messages:
@@ -132,7 +155,7 @@ LIGGGHTS halts. Error messages are always {verbose}.
 If LIGGGHTS halts due to the last error, you might think about (a) 
 changing the mesh import parameters ({scale}, {move}, {rotate}), (b) 
 changing the mesh dynamics if a "fix move/mesh"_fix_move_mesh.html is 
-applied or using "boundary m m m"_boundary.
+applied or using "boundary m m m"_boundary.html.
 
 :line
 
