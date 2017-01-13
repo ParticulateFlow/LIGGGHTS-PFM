@@ -59,7 +59,7 @@ v_t = tangential component of the relative velocity of the 2 particles :l
 w_r = relative rotational velocity of the 2 particles :l
 :ule
 
-The forces are implemented as:
+The coefficients used for the force calculation in the hertz/stiffness model are linked to the specified values as follows:
 
 :c,image(Eqs/pair_gran_html_m4dff7906.png)
 
