@@ -28,7 +28,9 @@
 #ifndef LMP_TRI_MESH_I_H
 #define LMP_TRI_MESH_I_H
 
-#define SMALL_TRIMESH 1.e-10
+#ifndef SMALL_TRIMESH
+#define SMALL_TRIMESH (1.e-10)
+#endif
 #define LARGE_TRIMESH 1000000
 
 /*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H  false //(update->ntimestep > 451) //
@@ -67,7 +69,8 @@
     MathExtraLiggghts::calcBaryTriCoords(node0ToSphereCenter,edgeVec(nTri),edgeLen(nTri),bary);
 
     //NP  > -SMALL_TRIMESH is effectifely a tiny growth of each triangle
-    int barySign = (bary[0] > -SMALL_TRIMESH) + 2*(bary[1] > -SMALL_TRIMESH) + 4*(bary[2] > -SMALL_TRIMESH);
+    const double trimesh_epsilon = -precision_trimesh()/(2.*rBound_(nTri));
+    int barySign = (bary[0] > trimesh_epsilon) + 2*(bary[1] > trimesh_epsilon) + 4*(bary[2] > trimesh_epsilon);
 
     //NP distance between particle and mesh element
     double d(0.);
@@ -370,11 +373,11 @@
     dot11 = vectorDot3D(v1, v1);
     dot12 = vectorDot3D(v1, v2);
 
-    invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+    invDenom = 1. / (dot00 * dot11 - dot01 * dot01);
     u = (dot11 * dot02 - dot01 * dot12) * invDenom;
     v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
-    if((u > -SMALL_TRIMESH) && (v > -SMALL_TRIMESH) && (u + v < 1+SMALL_TRIMESH))
+    if((u > -SMALL_TRIMESH) && (v > -SMALL_TRIMESH) && (u + v < 1.+SMALL_TRIMESH))
         return true;
     else
         return false;
