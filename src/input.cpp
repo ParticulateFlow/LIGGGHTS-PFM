@@ -467,7 +467,7 @@ void Input::substitute(char *&str, char *&str2, int &max, int &max2, int flag)
         value = variable->retrieve(var);
       }
       if (value == NULL) {
-          /*NL*/ fprintf(screen,"Illegal variable: the unknown variable name is '%s'\n",var);
+          /*NL*/ if (screen) fprintf(screen,"Illegal variable: the unknown variable name is '%s'\n",var);
           error->one(FLERR,"Substitution for illegal variable");
       }
 

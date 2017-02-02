@@ -78,7 +78,7 @@ void LbalanceSimple::loadbalance_local_boxes()
 
     if(domain->triclinic) error->all(FLERR,"Load balancing not implemented for triclinic boxes");
 
-    /*NL*/ //if(comm->me == 0) fprintf(screen,"Loadbalancing: %f particles\n",atom->natoms);
+    /*NL*/ //if(comm->me == 0 && screen) fprintf(screen,"Loadbalancing: %f particles\n",atom->natoms);
 
     procgrid = comm->procgrid;
     myloc = comm->myloc;
@@ -297,7 +297,7 @@ void LbalanceSimple::apply_border(double *bal_sublo, double *bal_subhi,int idim,
               //NP make sure border is not shifted more than allowed
               double diff = bal_subhi[idim] - subhi[idim];
 
-              //if(idim == 2) fprintf(screen,"Processor %d: boundaries initally calculated for dim %d: %f / %f\n",comm->me,idim,bal_sublo[idim],bal_subhi[idim]);
+              //if(idim == 2 && screen) fprintf(screen,"Processor %d: boundaries initally calculated for dim %d: %f / %f\n",comm->me,idim,bal_sublo[idim],bal_subhi[idim]);
 
               if     (diff < 0 && diff < -max_shift[0])
                   subhi[idim] = subhi[idim] - max_shift[0];
@@ -313,7 +313,7 @@ void LbalanceSimple::apply_border(double *bal_sublo, double *bal_subhi,int idim,
               if(subhi[idim] - sublo[idim] < minextent )
                 error->warning(FLERR,"Minimum sub-domain extent could not be obeyed because particles would have been lost (did you insert large particles?). Inaccuracies may result.");
 
-              //if(idim ==2) fprintf(screen,"Processor %d: boundaries finally calculated for dim %d: %f / %f\n",comm->me,idim,sublo[idim],subhi[idim]);
+              //if(idim ==2 && screen) fprintf(screen,"Processor %d: boundaries finally calculated for dim %d: %f / %f\n",comm->me,idim,sublo[idim],subhi[idim]);
            }
 
            //NP comunicate subhi that came out of the calculation to all procs

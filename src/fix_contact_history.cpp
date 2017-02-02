@@ -91,7 +91,7 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
     variablename_ = new char[n];
     strcpy(variablename_,arg[iarg_]);
     iarg_++;
-    /*NL*/ //fprintf(screen,"variablename %s\n",variablename_);
+    /*NL*/ //if (screen) fprintf(screen,"variablename %s\n",variablename_);
   }
   else
   {
@@ -102,7 +102,7 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
 
   // read dnum
   dnum_ = atoi(arg[iarg_++]);
-  /*NL*/ //fprintf(screen,"dnum %d\n",dnum_);
+  /*NL*/ //if (screen) fprintf(screen,"dnum %d\n",dnum_);
   if(dnum_ < 0)
     error->fix_error(FLERR,this,"dnum must be >=0");
 
@@ -124,7 +124,7 @@ FixContactHistory::FixContactHistory(LAMMPS *lmp, int narg, char **arg) :
 
   for(int i = 0 ; i < dnum_; i++)
   {
-    /*NL*/// fprintf(screen,"property %s newtonflag is %s\n",arg[iarg_], arg[iarg_+1]);
+    /*NL*/// if (screen) fprintf(screen,"property %s newtonflag is %s\n",arg[iarg_], arg[iarg_+1]);
     history_id_[i] = new char[strlen(arg[iarg_])+1];
     strcpy(history_id_[i],arg[iarg_++]);
     newtonflag_[i] = atoi(arg[iarg_++]);
@@ -246,7 +246,7 @@ void FixContactHistory::setup_pre_exchange()
 {
   if (*computeflag_)
   {
-      /*NL*/ //fprintf(screen,"running out of setup\n");
+      /*NL*/ //if (screen) fprintf(screen,"running out of setup\n");
       pre_exchange();
   }
   *computeflag_ = 0;
@@ -294,7 +294,7 @@ void FixContactHistory::pre_exchange()
   firsttouch = list->listgranhistory->firstneigh;
   firsthist = list->listgranhistory->firstdouble;
 
-  /*NL*/ //fprintf(screen,"LIST index  %d  gran DNUM %d\n",list->index,list->listgranhistory->dnum);
+  /*NL*/ //if (screen) fprintf(screen,"LIST index  %d  gran DNUM %d\n",list->index,list->listgranhistory->dnum);
 
   int nlocal_neigh = 0;
   if (inum) nlocal_neigh = ilist[inum-1] + 1;
@@ -329,7 +329,7 @@ void FixContactHistory::pre_exchange()
       error->one(FLERR,"Contact history overflow, boost neigh_modify one");
   }
 
-  /*NL*/// fprintf(screen,"allocating %d doubles for contact history (dnum %d)\n",ndo,dnum_);
+  /*NL*/// if (screen) fprintf(screen,"allocating %d doubles for contact history (dnum %d)\n",ndo,dnum_);
 
   // 2nd loop over neighbor list
   // store atom IDs and shear history for my atoms
@@ -337,7 +337,7 @@ void FixContactHistory::pre_exchange()
 
   std::fill_n(npartner_, nmax, 0);
 
-/*NL*/ //fprintf(screen,"pre copy hist, inum %d\n",inum);
+/*NL*/ //if (screen) fprintf(screen,"pre copy hist, inum %d\n",inum);
 
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
@@ -353,11 +353,11 @@ void FixContactHistory::pre_exchange()
         j &= NEIGHMASK;
         m = npartner_[i];
         partner_[i][m] = tag[j];
-        /*NL*/ //fprintf(screen,"doing\n");
+        /*NL*/ //if (screen) fprintf(screen,"doing\n");
         for (int d = 0; d < dnum_; d++) {
           contacthistory_[i][m*dnum_+d] = hist[d];
         }
-        /*NL*/ //fprintf(screen,"history i %f %f %f\n",contacthistory_[j][m*dnum_+0] ,contacthistory_[j][m*dnum_+1] ,contacthistory_[j][m*dnum_+2]);
+        /*NL*/ //if (screen) fprintf(screen,"history i %f %f %f\n",contacthistory_[j][m*dnum_+0] ,contacthistory_[j][m*dnum_+1] ,contacthistory_[j][m*dnum_+2]);
         npartner_[i]++;
         if (j < nlocal_neigh) {
           m = npartner_[j];
@@ -368,7 +368,7 @@ void FixContactHistory::pre_exchange()
             else
               contacthistory_[j][m*dnum_+d] =  hist[d];
           }
-          /*NL*/ //fprintf(screen,"history j %f %f %f\n",contacthistory_[j][m*dnum_+0] ,contacthistory_[j][m*dnum_+1] ,contacthistory_[j][m*dnum_+2]);
+          /*NL*/ //if (screen) fprintf(screen,"history j %f %f %f\n",contacthistory_[j][m*dnum_+0] ,contacthistory_[j][m*dnum_+1] ,contacthistory_[j][m*dnum_+2]);
           npartner_[j]++;
         }
       }
@@ -472,7 +472,7 @@ int FixContactHistory::pack_exchange(int i, double *buf)
   int m = 0;
   buf[m++] = ubuf(npartner_[i]).d;
   for (int n = 0; n < npartner_[i]; n++) {
-    /*NL*/ //if(strcmp(style,"contacthistory ")) fprintf(screen,"id %s: atom %d packing partner %d\n",id,atom->tag[i],partner_[i][n]);
+    /*NL*/ //if(screen && strcmp(style,"contacthistory ")) fprintf(screen,"id %s: atom %d packing partner %d\n",id,atom->tag[i],partner_[i][n]);
     buf[m++] = ubuf(partner_[i][n]).d;
     for (int d = 0; d < dnum_; d++) {
       buf[m++] = contacthistory_[i][n*dnum_+d];
@@ -547,14 +547,14 @@ void FixContactHistory::restart(char *buf)
 int FixContactHistory::pack_restart(int i, double *buf)
 {
   int m = 0;
-  /*NL*/ //fprintf(screen,"id %s i %d writing %d values to buf\n",id,i,(dnum_+1)*npartner_[i] + 2);
+  /*NL*/ //if (screen) fprintf(screen,"id %s i %d writing %d values to buf\n",id,i,(dnum_+1)*npartner_[i] + 2);
   buf[m++] = (dnum_+1)*npartner_[i] + 2;
   buf[m++] = ubuf(npartner_[i]).d;
   for (int n = 0; n < npartner_[i]; n++) {
     buf[m++] = ubuf(partner_[i][n]).d;
     for (int d = 0; d < dnum_; d++) {
       buf[m++] = contacthistory_[i][n*dnum_+d];
-      /*NL*/ //fprintf(screen,"packing %e\n",contacthistory_[i][n*dnum_+d]);
+      /*NL*/ //if (screen) fprintf(screen,"packing %e\n",contacthistory_[i][n*dnum_+d]);
     }
   }
   return m;

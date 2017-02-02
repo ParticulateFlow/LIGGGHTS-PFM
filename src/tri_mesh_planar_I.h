@@ -43,12 +43,12 @@ inline int TriMeshPlanar::generateRandomOwnedGhostWithin(double *pos,double delt
 
         iSrf = generateRandomOwnedGhost(pos);
         farEnoughAway = true;
-        /*NL*/ //fprintf(screen,"random\n");
+        /*NL*/ //if (screen) fprintf(screen,"random\n");
 
         //NP broad phase
         if(minActiveEdgeDist_(iSrf) < delta)
         {
-            /*NL*/ //fprintf(screen,"  narrow phase\n");
+            /*NL*/ //if (screen) fprintf(screen,"  narrow phase\n");
 
             //NP narrow phase
             i = 0;
@@ -62,7 +62,7 @@ inline int TriMeshPlanar::generateRandomOwnedGhostWithin(double *pos,double delt
 
                 dist = edgePointDist(iSrfCheck,iSrfCheckEdge,pos);
 
-                /*NL*/ //fprintf(screen,"   narrow phase dist %f %s\n",dist,(dist < delta)?"FAIL":"");
+                /*NL*/ //if (screen) fprintf(screen,"   narrow phase dist %f %s\n",dist,(dist < delta)?"FAIL":"");
 
                 if(dist < delta)
                     farEnoughAway = false;
@@ -97,7 +97,7 @@ inline bool TriMeshPlanar::locatePosition(double *pos,int &triID,double *bary,do
     vectorScalarMult3D(surfaceNorm(0),distance,temp);
     vectorSubtract3D(p,temp,pProjected);
 
-    /*NL*/ //printVec3D(this->screen,"pProjected",pProjected);
+    /*NL*/ //if (this->screen) printVec3D(this->screen,"pProjected",pProjected);
 
     for(int i = 0; i < nlocal; i++)
     {
@@ -106,9 +106,9 @@ inline bool TriMeshPlanar::locatePosition(double *pos,int &triID,double *bary,do
             triID = TrackingMesh<3>::id(i);
             vectorSubtract3D(pProjected,node_(i)[0],temp);
             MathExtraLiggghts::calcBaryTriCoords(temp,edgeVec(i),edgeLen(i),bary);
-            /*NL*/ //fprintf(this->screen,"is in element %d, id %d\n",i,triID);
-            /*NL*/ //printVec3D(this->screen,"node0 to pProjected",temp);
-            /*NL*/ //printVec3D(this->screen,"bary",bary);
+            /*NL*/ //if (this->screen) fprintf(this->screen,"is in element %d, id %d\n",i,triID);
+            /*NL*/ //if (this->screen) printVec3D(this->screen,"node0 to pProjected",temp);
+            /*NL*/ //if (this->screen) printVec3D(this->screen,"bary",bary);
             return true;
         }
     }

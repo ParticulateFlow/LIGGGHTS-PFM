@@ -113,7 +113,7 @@ void FixInsertRateRegion::calc_insertion_properties()
     ninsert_per = nflowrate*(static_cast<double>(insert_every)*dt);
     if(ninsert_exists) massinsert = static_cast<double>(ninsert) * fix_distribution->mass_expect();
 
-    /*NL*///fprintf(screen,"FixInsertPack: Volume of insertion region: %f ninsert_per %f\n",region_volume,ninsert_per);
+    /*NL*///if (screen) fprintf(screen,"FixInsertPack: Volume of insertion region: %f ninsert_per %f\n",region_volume,ninsert_per);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -244,7 +244,7 @@ void FixAveEuler::setup_bins()
     {
       // calc ideal cell size as multiple of max cutoff
       cell_size_ideal_[dim] = cell_size_ideal_rel_[dim] * (neighbor->cutneighmax-neighbor->skin);
-      /*NL*/ //fprintf(screen,"cell_size_ideal_ %f\n",cell_size_ideal_);
+      /*NL*/ //if (screen) fprintf(screen,"cell_size_ideal_ %f\n",cell_size_ideal_);
 
       // get bounds
       if (triclinic_ == 0) {
@@ -278,7 +278,7 @@ void FixAveEuler::setup_bins()
           ncells_dim_[dim] = static_cast<int>((hi_[dim]-lo_[dim])/cell_size_ideal_[dim] + SMALL);
           if (ncells_dim_[dim] < 1) {
             ncells_dim_[dim] = 1;
-            /*NL*/ //fprintf(screen,"DIM %d hi_[dim]-lo_[dim] %f\n",dim,hi_[dim]-lo_[dim]);
+            /*NL*/ //if (screen) fprintf(screen,"DIM %d hi_[dim]-lo_[dim] %f\n",dim,hi_[dim]-lo_[dim]);
             error->warning(FLERR,"Number of cells for fix_ave_euler was less than 1");
           }
           cell_size_[dim] = (hi_[dim]-lo_[dim])/static_cast<double>(ncells_dim_[dim]);
@@ -499,7 +499,7 @@ inline int FixAveEuler::coord2bin(double *x)
     for (i=0;i<3;i++) {
 
       // skip particles outside my subdomain
-      
+
       if(x[i] <= domain->sublo[i] || x[i] >= domain->subhi[i])
         return -1;
       float_iCell[i] = (x[i]-lo_[i])*cell_size_inv_[i];
@@ -533,7 +533,7 @@ void FixAveEuler::calculate_eu()
     // wrap compute with clear/add
     modify->clearstep_compute();
 
-    /*NL*/ //fprintf(screen,"ts %d, exec_every_ %d\n",update->ntimestep,exec_every_);
+    /*NL*/ //if (screen) fprintf(screen,"ts %d, exec_every_ %d\n",update->ntimestep,exec_every_);
 
     // invoke compute if not previously invoked
     //NP also mess around with invoked_flag b/c addstep_compute
@@ -593,7 +593,7 @@ void FixAveEuler::calculate_eu()
         MPI_Sum_Vector(mass_,ncells_,world);
         MPI_Sum_Vector(ncount_,ncells_,world);
     }
-        /*NL*/ //if(ncount) fprintf(screen,"Cell %d has %d particles. \n",icell,ncount); // modified A.A.
+        /*NL*/ //if(ncount && screen) fprintf(screen,"Cell %d has %d particles. \n",icell,ncount); // modified A.A.
 
     // perform further calculations
 
@@ -612,7 +612,7 @@ void FixAveEuler::calculate_eu()
             vol_fr_[icell] = 0.;
         else
             vol_fr_[icell] *= prefactor_vol_fr/weight_[icell];
-        
+
         // add contribution of particle - stress
         // need v before can calculate stress
         // stress is molecular diffusion + contact forces

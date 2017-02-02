@@ -130,7 +130,7 @@ int RegTetMesh::inside(double x, double y, double z)
         if(inside_mesh) break;
    }
 
-   //fprintf(screen,"checking pos %f %f %f, result %d; ntet %d\n",x,y,z,inside_mesh,nTet);
+   //if (screen) fprintf(screen,"checking pos %f %f %f, result %d; ntet %d\n",x,y,z,inside_mesh,nTet);
 
    return inside_mesh;
 }

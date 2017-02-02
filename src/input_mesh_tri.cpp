@@ -83,12 +83,12 @@ void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh, bool v
 
   if(is_stl)
   {
-      if (comm->me == 0) fprintf(screen,"\nReading STL file '%s' \n",filename);
+      if (comm->me == 0 && screen) fprintf(screen,"\nReading STL file '%s' \n",filename);
       meshtrifile_stl(mesh);
   }
   else if(is_vtk)
   {
-      if (comm->me == 0) fprintf(screen,"\nReading VTK file '%s' \n",filename);
+      if (comm->me == 0 && screen) fprintf(screen,"\nReading VTK file '%s' \n",filename);
       meshtrifile_vtk(mesh);
   }
   else error->all(FLERR,"Illegal command, need either an STL file or a VTK file as input for triangular mesh.");
@@ -165,7 +165,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
     parse_nonlammps();
     // skip empty lines
     if(narg == 0){
-         if (me == 0 && verbose_)
+         if (me == 0 && screen && verbose_)
             fprintf(screen,"Note: Skipping empty line in VTK mesh file\n");
       continue;
     }
@@ -344,8 +344,8 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
 
     // skip empty lines
     if(narg==0){
-         if (me == 0 && verbose_)
-            fprintf(screen,"Note: Skipping empty line in STL file\n");
+      if (me == 0 && screen && verbose_)
+        fprintf(screen,"Note: Skipping empty line in STL file\n");
       continue;
     }
 
@@ -355,18 +355,18 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
       if (insideSolidObject)
         error->all(FLERR,"Corrupt or unknown STL file: New solid object begins without closing prior solid object.");
       insideSolidObject=true;
-      if (me == 0 && verbose_){
-         fprintf(screen,"Solid body detected in STL file\n");
-       }
+      if (me == 0 && screen && verbose_){
+        fprintf(screen,"Solid body detected in STL file\n");
+      }
     }
     else if (strcmp(arg[0],"endsolid") == 0)
     {
-       if (!insideSolidObject)
-         error->all(FLERR,"Corrupt or unknown STL file: End of solid object found, but no begin.");
-       insideSolidObject=false;
-       if (me == 0 && verbose_) {
-         fprintf(screen,"End of solid body detected in STL file.\n");
-       }
+      if (!insideSolidObject)
+        error->all(FLERR,"Corrupt or unknown STL file: End of solid object found, but no begin.");
+      insideSolidObject=false;
+      if (me == 0 && screen && verbose_) {
+        fprintf(screen,"End of solid body detected in STL file.\n");
+      }
     }
 
     // detect begin and end of a facet within a solids object
@@ -395,9 +395,9 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
          error->all(FLERR,"Corrupt or unknown STL file: Number of vertices not equal to three (no triangle).");
 
       // add triangle to mesh
-      //printVec3D(screen,"vertex",vertices[0]);
-      //printVec3D(screen,"vertex",vertices[1]);
-      //printVec3D(screen,"vertex",vertices[2]);
+      //if (screen) printVec3D(screen,"vertex",vertices[0]);
+      //if (screen) printVec3D(screen,"vertex",vertices[1]);
+      //if (screen) printVec3D(screen,"vertex",vertices[2]);
       if(size_exclusion_list_ > 0 && nLinesTri == exclusion_list_[i_exclusion_list_])
       {
          if(i_exclusion_list_ < size_exclusion_list_-1)
@@ -406,9 +406,9 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
       else
          addTriangle(mesh,vertices[0],vertices[1],vertices[2],nLinesTri);
 
-       if (me == 0) {
-         //fprintf(screen,"  End of facet detected in in solid body.\n");
-       }
+      //if (me == 0 && screen) {
+        //fprintf(screen,"  End of facet detected in in solid body.\n");
+      //}
     }
 
     //detect begin and end of an outer loop within a facet
@@ -421,28 +421,28 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
       insideOuterLoop = true;
       iVertex = 0;
 
-      if (me == 0){
-         //fprintf(screen,"    Outer loop detected in facet.\n");
-       }
+      //if (me == 0 && screen){
+        //fprintf(screen,"    Outer loop detected in facet.\n");
+      //}
     }
     else if (strcmp(arg[0],"endloop") == 0)
     {
-       if (!insideOuterLoop)
-         error->all(FLERR,"Corrupt or unknown STL file: End of outer loop found, but no begin.");
-       insideOuterLoop=false;
-       if (me == 0) {
-         //fprintf(screen,"    End of outer loop detected in facet.\n");
-       }
+      if (!insideOuterLoop)
+        error->all(FLERR,"Corrupt or unknown STL file: End of outer loop found, but no begin.");
+      insideOuterLoop=false;
+      //if (me == 0 && screen) {
+        //fprintf(screen,"    End of outer loop detected in facet.\n");
+      //}
     }
 
     else if (strcmp(arg[0],"vertex") == 0)
     {
-       if (!insideOuterLoop)
-         error->all(FLERR,"Corrupt or unknown STL file: Vertex found outside a loop.");
+      if (!insideOuterLoop)
+        error->all(FLERR,"Corrupt or unknown STL file: Vertex found outside a loop.");
 
-       if (me == 0) {
-         //fprintf(screen,"      Vertex found.\n");
-       }
+      //if (me == 0 && screen) {
+        //fprintf(screen,"      Vertex found.\n");
+      //}
 
       // read the vertex
       for (int j=0;j<3;j++)
@@ -450,7 +450,7 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
 
       iVertex++;
       if (iVertex > 3)
-         error->all(FLERR,"Corrupt or unknown STL file: Can not have more than 3 vertices "
+        error->all(FLERR,"Corrupt or unknown STL file: Can not have more than 3 vertices "
                           "in a facet (only triangular meshes supported).");
     }
   }

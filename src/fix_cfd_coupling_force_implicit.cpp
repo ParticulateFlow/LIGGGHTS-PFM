@@ -60,7 +60,7 @@ FixCfdCouplingForceImplicit::FixCfdCouplingForceImplicit(LAMMPS *lmp, int narg, 
             iarg++;
             useCN_ = true;
             CNalpha_ = atof(arg[iarg]);
-            fprintf(screen,"cfd_coupling_foce_implicit will use Crank-Nicholson scheme with %f\n", CNalpha_);
+            if (screen) fprintf(screen,"cfd_coupling_foce_implicit will use Crank-Nicholson scheme with %f\n", CNalpha_);
             iarg++;
             hasargs = true;
         }
@@ -144,7 +144,7 @@ void FixCfdCouplingForceImplicit::init()
     // values to come from OF
     fix_coupling_->add_pull_property("Ksl","scalar-atom");
     fix_coupling_->add_pull_property("uf","vector-atom");
-    
+
     deltaT_ = 0.5 * update->dt * force->ftm2v;
 }
 
@@ -163,7 +163,7 @@ void FixCfdCouplingForceImplicit::post_force(int)
 
   vectorZeroize3D(dragforce_total);
 
- 
+
   // add dragforce to force vector
   for (int i = 0; i < nlocal; i++)
   {
@@ -194,13 +194,13 @@ void FixCfdCouplingForceImplicit::end_of_step()
 {
 
   if(!useCN_) return; //return if CN not used
-  
+
   double **v = atom->v;
   double **f = atom->f;
   double *rmass = atom->rmass;
   double *mass = atom->mass;
   int *type = atom->type;
-  
+
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double *Ksl = fix_Ksl_->vector_atom;
@@ -212,7 +212,7 @@ void FixCfdCouplingForceImplicit::end_of_step()
 
   vectorZeroize3D(dragforce_total);
 
- 
+
   // add dragforce to force vector
   for (int i = 0; i < nlocal; i++)
   {
@@ -226,28 +226,28 @@ void FixCfdCouplingForceImplicit::end_of_step()
             //calculate new velocity
             vN32[dirI] = (  v[i][dirI]
                           + KslMDeltaT
-                            *(   uf[i][dirI] 
+                            *(   uf[i][dirI]
                               - (1.0-CNalpha_)*v[i][dirI]
                              )
                          )
                          /
                          (1.0+KslMDeltaT*CNalpha_);
-                         
-            //calculate velocity difference and force             
-            deltaU    =  uf[i][dirI] 
-                           - ( 
+
+            //calculate velocity difference and force
+            deltaU    =  uf[i][dirI]
+                           - (
                                 (1.0-CNalpha_)*v[i][dirI]
                                +     CNalpha_ *vN32[dirI]
                              );
            frc[dirI] = Ksl[i] * deltaU;  //force required for the next time step
-           
+
            //update the particle velocity
            v[i][dirI] += KslMDeltaT/2.0 * deltaU;  //update velocity for a half step!
         }
-    
+
          // add force
         vectorAdd3D(f[i],frc,f[i]);
- 
+
         // add up forces for post-proc
         vectorAdd3D(dragforce_total,frc,dragforce_total);
      }

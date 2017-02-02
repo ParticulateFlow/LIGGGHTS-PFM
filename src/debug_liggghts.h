@@ -42,21 +42,21 @@ inline void __trace__()
 
 inline void __debug__(LAMMPS* lmp)
 {
-    /*NL*///fprintf(lmp->screen,"bond_hist %d bond_per_atom %d\n",lmp->atom->bond_hist,lmp->atom->bond_per_atom);
-    /*NL*///fprintf(lmp->screen,"step " BIGINT_FORMAT " nparticles %d \n",lmp->update->ntimestep,lmp->atom->nlocal);
-    /*NL*///printVec3D(lmp->screen,"pos for tag 206",lmp->atom->x[lmp->atom->map(206)]);
-    /*NL*///printVec3D(lmp->screen,"vel for tag 206",lmp->atom->v[lmp->atom->map(206)]);
-    /*NL*/if(1==lmp->comm->me)printVec3D(lmp->screen,"f for atom 253",lmp->atom->f[253]);//lmp->atom->f[lmp->atom->map(1)]);
+    /*NL*///if (lmp->screen) fprintf(lmp->screen,"bond_hist %d bond_per_atom %d\n",lmp->atom->bond_hist,lmp->atom->bond_per_atom);
+    /*NL*///if (lmp->screen) fprintf(lmp->screen,"step " BIGINT_FORMAT " nparticles %d \n",lmp->update->ntimestep,lmp->atom->nlocal);
+    /*NL*///if (lmp->screen) printVec3D(lmp->screen,"pos for tag 206",lmp->atom->x[lmp->atom->map(206)]);
+    /*NL*///if (lmp->screen) printVec3D(lmp->screen,"vel for tag 206",lmp->atom->v[lmp->atom->map(206)]);
+    /*NL*///if(1==lmp->comm->me && lmp->screen)printVec3D(lmp->screen,"f for atom 253",lmp->atom->f[253]);//lmp->atom->f[lmp->atom->map(1)]);
      /*NL*///Atom *atom = lmp->atom;
      /*NL*///int nlocal = atom->nlocal;
-     /*NL*///fprintf(lmp->screen,"nlocal %d\n",nlocal);
+     /*NL*///if (lmp->screen) fprintf(lmp->screen,"nlocal %d\n",nlocal);
      /*NL*///int nghost = atom->nghost;
      /*NL*///int nall = atom->nlocal+atom->nghost;
 
      /*NL*///for(int i = 0; i < nlocal; i++)
      /*NL*///{
-     /*NL*///  printVec3D(lmp->screen,"pos",atom->x[i]);
-     /*NL*/  //if(atom->tag[i] == 25 || atom->tag[i] == 30 )fprintf(lmp->screen,"tag %d vel %f %f %f \n",atom->tag[i],atom->v[i][0],atom->v[i][1],atom->v[i][2]);
+     /*NL*///  if(lmp->screen) printVec3D(lmp->screen,"pos",atom->x[i]);
+     /*NL*/  //if(lmp->screen) if(atom->tag[i] == 25 || atom->tag[i] == 30 )fprintf(lmp->screen,"tag %d vel %f %f %f \n",atom->tag[i],atom->v[i][0],atom->v[i][1],atom->v[i][2]);
      /*NL*/  //if(atom->map(atom->tag[i]) >= nlocal)
      /*NL*/   //lmp->error->all(FLERR,"catch");
      /*NL*///}
@@ -70,7 +70,7 @@ inline void __debug__(LAMMPS* lmp)
             FixMoveMesh *fmm = static_cast<FixMoveMesh*>(lmp->modify->fix[i]);
             MultiVectorContainer<double,3,3> *v;
             v = fmm->mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v");
-            if(v) printVec3D(lmp->screen,"VDEBUG",v->begin()[0][0]);
+            if(v && lmp->screen) printVec3D(lmp->screen,"VDEBUG",v->begin()[0][0]);
 
         }
     }

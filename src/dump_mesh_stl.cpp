@@ -107,7 +107,7 @@ DumpMeshSTL::DumpMeshSTL(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
   }
 
 
-  /*NL*/ //fprintf(screen,"nMesh_ %d\n",nMesh_);
+  /*NL*/ //if (screen) fprintf(screen,"nMesh_ %d\n",nMesh_);
 
   // in case meshes not specified explicitly, take all meshes
   if (nMesh_ == 0)
@@ -117,7 +117,7 @@ DumpMeshSTL::DumpMeshSTL(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
       meshList_ = new TriMesh*[nMesh_];
       for (int iMesh = 0; iMesh < nMesh_; iMesh++)
       {
-          /*NL*/ //fprintf(screen,"nMesh_ %d, found mesh %s\n",nMesh_,modify->find_fix_style("mesh",iMesh)->id);
+          /*NL*/ //if (screen) fprintf(screen,"nMesh_ %d, found mesh %s\n",nMesh_,modify->find_fix_style("mesh",iMesh)->id);
           meshList_[iMesh] = static_cast<FixMeshSurface*>(modify->find_fix_style("mesh/surface",iMesh))->triMesh();
           static_cast<FixMeshSurface*>(modify->find_fix_style("mesh/surface",iMesh))->dumpAdd();
       }
@@ -216,7 +216,7 @@ int DumpMeshSTL::count()
 
   n_calls_ = 0;
 
-  /*NL*///fprintf(screen,"nMesh_ %d\n",nMesh_);
+  /*NL*///if (screen) fprintf(screen,"nMesh_ %d\n",nMesh_);
 
   for(int imesh = 0; imesh < nMesh_; imesh++)
   {
@@ -309,7 +309,7 @@ void DumpMeshSTL::pack(int *ids)
 
 void DumpMeshSTL::write_data(int n, double *mybuf)
 {
-  /*NL*///fprintf(screen,"dump %s, proc %d, n %d\n",id,comm->me,n);
+  /*NL*///if (screen) fprintf(screen,"dump %s, proc %d, n %d\n",id,comm->me,n);
   if(!multiproc && comm->me != 0) return;
 
 
@@ -334,7 +334,7 @@ void DumpMeshSTL::write_data_binary(int n, double *mybuf)
 
 void DumpMeshSTL::write_data_ascii(int n, double *mybuf)
 {
-  /*NL*///fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
+  /*NL*///if (screen) fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
 
   n_calls_++;
 

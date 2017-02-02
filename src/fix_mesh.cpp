@@ -148,7 +148,7 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
     if(modify->have_restart_data(this)) create_mesh_restart();
     else create_mesh(mesh_fname);
 
-    /*NL*/ //if(comm->me == 0) fprintf(screen,"# elements before parallel %d\n",mesh_->size());
+    /*NL*/ //if(comm->me == 0 && screen) fprintf(screen,"# elements before parallel %d\n",mesh_->size());
 
     // parse further args
 
@@ -190,7 +190,7 @@ FixMesh::FixMesh(LAMMPS *lmp, int narg, char **arg)
           mesh_->prop().addGlobalProperty< ScalarContainer<double> >("heatFluxTotal","comm_none","frame_invariant","restart_yes");
           mesh_->prop().setGlobalProperty< ScalarContainer<double> >("heatFluxTotal",0.);
           /*NL*///ScalarContainer<double> &test = *mesh_->prop().getGlobalProperty< ScalarContainer<double> >("Temp");
-          /*NL*///fprintf(screen,"test %f\n",test(0));
+          /*NL*///if (screen) fprintf(screen,"test %f\n",test(0));
           /*NL*///error->all(FLERR,"end");
           hasargs = true;
       }
@@ -296,9 +296,9 @@ void FixMesh::create_mesh(char *mesh_fname)
         // read file
         // can be from STL file or VTK file
         InputMeshTri *mesh_input = new InputMeshTri(lmp,0,NULL);
-        /*NL*///fprintf(screen,"READING MESH DATA\n");
+        /*NL*///if (screen) fprintf(screen,"READING MESH DATA\n");
         mesh_input->meshtrifile(mesh_fname,static_cast<TriMesh*>(mesh_),verbose_,size_exclusion_list_,exclusion_list_);
-        /*NL*///fprintf(screen,"END READING MESH DATA\n");
+        /*NL*///if (screen) fprintf(screen,"END READING MESH DATA\n");
         delete mesh_input;
     }
     else error->one(FLERR,"Illegal implementation of create_mesh();");
@@ -380,7 +380,7 @@ void FixMesh::setup_pre_force(int vflag)
 
     pOpFlag_ = false;
 
-    /*NL*/ //fprintf(screen,"setup fix %s end\n",id);
+    /*NL*/ //if (screen) fprintf(screen,"setup fix %s end\n",id);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -402,7 +402,7 @@ void FixMesh::initialSetup()
        error->warning(FLERR,"Not all nodes of fix mesh inside simulation box, "
                             "elements will be deleted or wrapped around periodic boundary conditions");
 
-    if(comm->me == 0)
+    if(comm->me == 0 && screen)
        fprintf(screen,"Import and parallelization of mesh %s containing %d triangle(s) successful\n",
                id,mesh_->sizeGlobal());
 }
@@ -440,7 +440,7 @@ void FixMesh::pre_force(int vflag)
 
         if(mesh_->decideRebuild())
         {
-            /*NL*/ //fprintf(screen,"mesh triggered neigh build at step %d\n",update->ntimestep);
+            /*NL*/ //if (screen) fprintf(screen,"mesh triggered neigh build at step %d\n",update->ntimestep);
             next_reneighbor = update->ntimestep + 1;
         }
     }
@@ -483,11 +483,11 @@ int FixMesh::max_type()
 
 void FixMesh::moveMesh(double const dx, double const dy, double const dz)
 {
-    if (comm->me == 0)
-    {
+    //if (comm->me == 0 && screen)
+    //{
       //fprintf(screen,"moving mesh by ");
       //fprintf(screen,"%f %f %f\n", dx,dy,dz);
-    }
+    //}
 
     double arg[3] = {dx,dy,dz};
     mesh_->move(arg);
@@ -506,11 +506,11 @@ void FixMesh::rotateMesh(double const axisX, double const axisY, double const ax
     if(vectorMag3D(axis) < 1e-5)
         error->fix_error(FLERR,this,"illegal magnitude of rotation axis");
 
-    if (comm->me == 0)
-    {
+    //if (comm->me == 0 && screen)
+    //{
       //fprintf(screen,"rotate ");
       //fprintf(screen,"%f %f %f %f\n", phi, axisX, axisY, axisZ);
-    }
+    //}
 
     mesh_->rotate(phi*3.14159265/180.0,axis,p);
 }
@@ -524,10 +524,10 @@ void FixMesh::rotateMesh(double const axisX, double const axisY, double const ax
 
 void FixMesh::scaleMesh(double const factor)
 {
-    if (comm->me == 0){
+    //if (comm->me == 0 && screen) {
       //fprintf(screen,"scale ");
       //fprintf(screen,"%f \n", factor);
-    }
+    //}
     mesh_->scale(factor);
 }
 
@@ -562,7 +562,7 @@ void FixMesh::box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double 
 
     for(int i = 0; i < size; i++)
     {
-        /*NL*/ //fprintf(screen,"i %d size %d\n",i,size);
+        /*NL*/ //if(screen) fprintf(screen,"i %d size %d\n",i,size);
         for(int j = 0; j < numNodes; j++)
         {
             mesh()->node_slow(i,j,node);

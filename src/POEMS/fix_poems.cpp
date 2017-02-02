@@ -228,9 +228,10 @@ FixPOEMS::FixPOEMS(LAMMPS *lmp, int narg, char **arg) :
     {
        ncount[i]++; //exploit fact that atom=segment
     }
-//      fprintf(screen, "me: %d, nlocal: %d i: %d, j: %d, ncount: %d \n",
-//                me, nlocal, 
-//                i, j, 
+
+//      if (screen) fprintf(screen, "me: %d, nlocal: %d i: %d, j: %d, ncount: %d \n",
+//                me, nlocal,
+//                i, j,
 //                ncount[i]);
   }
 
@@ -248,8 +249,8 @@ FixPOEMS::FixPOEMS(LAMMPS *lmp, int narg, char **arg) :
   jointbuild();
   
   // delete temporary atom map
-//  fprintf(screen, "delete temporary atom map..\n");
-  if (mapflag) 
+//  if (screen) fprintf(screen, "delete temporary atom map..\n");
+  if (mapflag)
   {
 //    atom->map_delete();
 //    atom->map_style = 0;
@@ -270,7 +271,7 @@ FixPOEMS::FixPOEMS(LAMMPS *lmp, int narg, char **arg) :
       fprintf(logfile,"%d clusters, %d bodies, %d joints, %d atoms\n",
 	      ncluster,nbody,njoint,nsum);
   }
-  if(mydebug) fprintf(screen, "POEMS initialized!\n");
+  if(screen && mydebug) fprintf(screen, "POEMS initialized!\n");
 }
 
 /* ----------------------------------------------------------------------
@@ -325,7 +326,7 @@ FixPOEMS::~FixPOEMS()
 void FixPOEMS::post_create()
 {
 
-  if(mydebug) fprintf(screen, "POEMS::post_create()!\n");
+  if(screen && mydebug) fprintf(screen, "POEMS::post_create()!\n");
   // register fixes for quantities to be saved to disk
   // see fix_property_atom.cpp for meaning of fixargs 
   if(!fix_xcm)
@@ -390,9 +391,9 @@ void FixPOEMS::updatePtrs()
            fix_orientationEx->array_atom[i][0] = ex_space[ibody][0] ;
            fix_orientationEx->array_atom[i][1] = ex_space[ibody][1] ;
            fix_orientationEx->array_atom[i][2] = ex_space[ibody][2] ;
- 
 
-//                fprintf(screen, "i: %d orientationEx: %g %g %g \n", 
+
+//                if (screen) fprintf(screen, "i: %d orientationEx: %g %g %g \n",
 //                        i,
 //                        fix_orientationEx->array_atom[i][0],
 //                        fix_orientationEx->array_atom[i][1],
@@ -593,9 +594,9 @@ void FixPOEMS::init()
     double max;
     max = MAX(inertia[ibody][0],inertia[ibody][1]);
     max = MAX(max,inertia[ibody][2]);
-    
-//    fprintf(screen, "max: %.3g; ibody: %d; inertia[ibody][i] %g %g %g \n", 
-//                max,  
+
+//    if (screen) fprintf(screen, "max: %.3g; ibody: %d; inertia[ibody][i] %g %g %g \n",
+//                max,
 //                ibody,
 //                inertia[ibody][0], inertia[ibody][1], inertia[ibody][2]);
   
@@ -834,8 +835,9 @@ void FixPOEMS::setup(int vflag)
 		    dthalf,dtv,force->ftm2v,total_ke);
 
   // int currAtom=1;
-/*   fprintf(screen, "masstotal: %g, currAtom: %d xcm %g %g %g,vcm %g %g %g ,omega %g %g %g, xjoint  %g %g %g\n",
-		     masstotal[currAtom], currAtom,
+/*  if (screen) {
+   fprintf(screen, "masstotal: %g, currAtom: %d xcm %g %g %g,vcm %g %g %g ,omega %g %g %g, xjoint  %g %g %g\n",
+                     masstotal[currAtom], currAtom,
              xcm[currAtom][0], xcm[currAtom][1], xcm[currAtom][2],
              vcm[currAtom][0], vcm[currAtom][1], vcm[currAtom][2],
              omega[currAtom][0], omega[currAtom][1], omega[currAtom][2],
@@ -846,6 +848,7 @@ void FixPOEMS::setup(int vflag)
              dtv,
              force->ftm2v,
              total_ke);
+  }
 */
 
   //update fixes to report fibre data
@@ -861,12 +864,13 @@ void FixPOEMS::setup(int vflag)
 void FixPOEMS::initial_integrate(int vflag)
 {
 
-  if(mydebug) fprintf(screen, "POEMS::initial_integrate()!\n");
+  if(screen && mydebug) fprintf(screen, "POEMS::initial_integrate()!\n");
 
   // perform POEMS integration
 
    poems->LobattoOne(xcm,vcm,omega,torque,fcm,ex_space,ey_space,ez_space);
 /*
+  if (screen) {
    int currAtom=1;
    fprintf(screen, "currAtom: %d xcm %g %g %g,vcm %g %g %g ,omega %g %g %g, torque  %g %g %g, fcm  %g %g %g\n",
             currAtom,
@@ -880,7 +884,9 @@ void FixPOEMS::initial_integrate(int vflag)
             currAtom,
             ex_space[currAtom][0],ey_space[currAtom][0],ez_space[currAtom][0],
             ex_space[currAtom][1],ey_space[currAtom][1],ez_space[currAtom][1],
-            ex_space[currAtom][2],ey_space[currAtom][2],ez_space[currAtom][2]);*/
+            ex_space[currAtom][2],ey_space[currAtom][2],ez_space[currAtom][2]);
+  }
+*/
 
   // virial setup before call to set_xv
 
@@ -933,7 +939,7 @@ void FixPOEMS::post_force(int vflag)
       sum[ibody][4] += dz*f[i][0] - dx*f[i][2];
       sum[ibody][5] += dx*f[i][1] - dy*f[i][0];
 
-//      fprintf(screen, "sum[%d]: %g %g %g %g %g %g \n", 
+//      if (screen) fprintf(screen, "sum[%d]: %g %g %g %g %g %g \n",
 //                 ibody,
 //                 sum[ibody][0],sum[ibody][1],sum[ibody][2],sum[ibody][3],sum[ibody][4],sum[ibody][5]);
   }
@@ -1238,6 +1244,7 @@ void FixPOEMS::jointbuild()
     jointbody[i][1] = i+2;  
 
 /*
+    if (screen) {
     fprintf(screen, "me: %d,x[%d] %g %g %g,x[i+1] %g %g %g, myjoint[]: %g %g %g, jointbody[%d]: %d %d \n",
               me,
               i, 
@@ -1246,6 +1253,7 @@ void FixPOEMS::jointbuild()
               myjoint[i][0],myjoint[i][1],myjoint[i][2],
               i,
               jointbody[i][0],jointbody[i][1]);
+    }
 */
   }
 
@@ -1262,7 +1270,7 @@ void FixPOEMS::jointbuild()
   // free memory local to this routine
   memory->destroy(myjoint);
 
-  if(mydebug)
+  if(screen && mydebug)
   {
   for (i = 0; i < njoint; i++) 
   {

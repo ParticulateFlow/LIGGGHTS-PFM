@@ -197,7 +197,7 @@ namespace ContactModels
         c_history[2] = r_torque[2];
 
         // dashpot
-        /*NL*/ //fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
+        /*NL*/ //if (screen) fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);
         const double r_coef = coeffRollVisc[itype][jtype] * 2 * sqrt(r_inertia*kr);
 
         // add damping torque

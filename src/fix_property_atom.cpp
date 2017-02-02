@@ -52,7 +52,7 @@ FixPropertyAtom::FixPropertyAtom(LAMMPS *lmp, int narg, char **arg, bool parse) 
   propertyname(0),
   property(0)
 {
-    /*NL*/ //fprintf(screen,"HERRE parse for id %s\n",id);
+    /*NL*/ //if (screen) fprintf(screen,"HERRE parse for id %s\n",id);
     if(parse) parse_args(narg,arg);
 }
 
@@ -179,7 +179,7 @@ void FixPropertyAtom::parse_args(int narg, char **arg)
             // not implemented
             if(data_style)
                 error->all(FLERR,"internal error");
-            
+
             pre_set_arrays();
             for (int i = 0; i < nlocal; i++)
                 vector_atom[i] = property[i];
@@ -233,8 +233,8 @@ FixPropertyAtom::~FixPropertyAtom()
 Fix* FixPropertyAtom::check_fix(const char *varname,const char *svmstyle,int len1,int len2,const char *caller,bool errflag)
 {
     char errmsg[400];
-    /*NL*/ //fprintf(screen,"checking fix id %s\n",id);
-    /*NL*/ //fprintf(screen," with variablename %s\n",variablename);
+    /*NL*/ //if (screen) fprintf(screen,"checking fix id %s\n",id);
+    /*NL*/ //if (screen) fprintf(screen," with variablename %s\n",variablename);
 
     if(strcmp(varname,variablename) == 0)
     {
@@ -321,7 +321,7 @@ void FixPropertyAtom::grow_arrays(int nmax)
 {
     if (data_style) memory->grow(array_atom,nmax,nvalues,"FixPropertyAtom:array_atom");
     else memory->grow(vector_atom, nmax, "FixPropertyAtom:vector_atom");
-    /*NL*/ //fprintf(screen,"GROW nmax %d\n",nmax);
+    /*NL*/ //if (screen) fprintf(screen,"GROW nmax %d\n",nmax);
 }
 
 /* ----------------------------------------------------------------------
@@ -340,11 +340,11 @@ void FixPropertyAtom::copy_arrays(int i, int j, int delflag)
 
 void FixPropertyAtom::pre_set_arrays()
 {
-    
+
     property = 0;
     if(propertyname)
     {
-        
+
         if(!force->pair_match("gran", 0))
             error->fix_error(FLERR,this,"requires a granular pair style to be used with non-digit initialization");
         PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
@@ -356,7 +356,7 @@ void FixPropertyAtom::pre_set_arrays()
         {
             char errstr[200];
             sprintf(errstr,"Property %s not found",propertyname);
-            
+
             error->fix_error(FLERR,this,errstr);
         }
 
@@ -369,7 +369,7 @@ void FixPropertyAtom::pre_set_arrays()
 
 void FixPropertyAtom::set_arrays(int i)
 {
-    /*NL*///fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
+    /*NL*///if (screen) fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
     if (data_style)
         for(int k=0;k<nvalues;k++)
             array_atom[i][k] = defaultvalues[k];
@@ -382,7 +382,7 @@ void FixPropertyAtom::set_arrays(int i)
 
 void FixPropertyAtom::set_all(double value)
 {
-    /*NL*///fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
+    /*NL*///if (screen) fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
     int nlocal = atom->nlocal;
     if (data_style)
     {

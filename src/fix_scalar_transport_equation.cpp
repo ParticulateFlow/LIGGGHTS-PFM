@@ -51,7 +51,7 @@ using namespace FixConst;
 
 FixScalarTransportEquation::FixScalarTransportEquation(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
 {
-  
+
   if(strcmp(arg[2],"transportequation/scalar"))
     return;
 
@@ -302,7 +302,7 @@ void FixScalarTransportEquation::initial_integrate(int vflag)
            flux[i]=0.;
   }
 
-  /*NL*/ //fprintf(screen,"executing FixScalarTransportEquation::initial_integrate, flux[0] %f [1] %f\n",flux[0],flux[1]);
+  /*NL*/ //if (screen) fprintf(screen,"executing FixScalarTransportEquation::initial_integrate, flux[0] %f [1] %f\n",flux[0],flux[1]);
 
   //NP do forward comm to send quantity (calculated from last time-step) to ghost particles
   fix_quantity->do_forward_comm();
@@ -406,7 +406,7 @@ double FixScalarTransportEquation::compute_scalar()
         {
            capacity = fix_capacity->compute_vector(type[i]-1);
            quantity_sum += capacity * rmass[i] * quantity[i];
-           /*NL*///fprintf(screen,"step %d, proc %d, i %d quantity %f\n",update->ntimestep, comm->me,i,quantity[i]);
+           /*NL*///if (screen) fprintf(screen,"step %d, proc %d, i %d quantity %f\n",update->ntimestep, comm->me,i,quantity[i]);
         }
     }
     else
@@ -419,7 +419,7 @@ double FixScalarTransportEquation::compute_scalar()
 
     MPI_Sum_Scalar(quantity_sum,world);
 
-    /*NL*///fprintf(screen,"step %d, proc %d, nlocal %d quantity_sum %f\n",update->ntimestep, comm->me,nlocal,quantity_sum);
+    /*NL*///if (screen) fprintf(screen,"step %d, proc %d, nlocal %d quantity_sum %f\n",update->ntimestep, comm->me,nlocal,quantity_sum);
     /*NL*/ //if(nlocal) error->all(FLERR,"end");
     return quantity_sum;
 }

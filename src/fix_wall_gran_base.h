@@ -67,13 +67,17 @@ public:
 
 #ifdef LIGGGHTS_DEBUG
     if(comm->me == 0) {
-      fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
-      force->registry.print_all(screen);
-      fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      if(screen) {
+        fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+        force->registry.print_all(screen);
+        fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      }
 
-      fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
-      force->registry.print_all(logfile);
-      fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      if(logfile) {
+        fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+        force->registry.print_all(logfile);
+        fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      }
     }
 #endif
   }
@@ -86,13 +90,17 @@ public:
 
 #ifdef LIGGGHTS_DEBUG
     if(comm->me == 0) {
-      fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
-      settings.print_all(screen);
-      fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
+      if(screen) {
+        fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
+        settings.print_all(screen);
+        fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
+      }
 
-      fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
-      settings.print_all(logfile);
-      fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
+      if(logfile) {
+        fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
+        settings.print_all(logfile);
+        fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
+      }
     }
 #endif
 
@@ -125,7 +133,7 @@ public:
       mass = wg->masstotal(wg->body(ip));
 
     /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_compute_force 0\n");
-    /*NL*///printVec3D(screen,"shear history",c_history);
+    /*NL*///if (screen) printVec3D(screen,"shear history",c_history);
 
     const double r = cdata.r;
     const double rinv = 1.0/r;

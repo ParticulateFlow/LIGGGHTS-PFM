@@ -122,14 +122,16 @@ namespace ContactModels
       {
         displayedSettings = true;
         /*
-        if(ktToKn)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE>: will use user-modified ktToKn of 2/7.\n");
-        if(tangential_damping)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE>: will apply tangential damping.\n");
-        if(viscous)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE>: will apply damping based on Stokes number.\n");
-        if(limitForce)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE>: will limit normal force.\n");
+        if (comm->me == 0 && screen) {
+          if(ktToKn)
+              fprintf(screen," NormalModel<HOOKE>: will use user-modified ktToKn of 2/7.\n");
+          if(tangential_damping)
+              fprintf(screen," NormalModel<HOOKE>: will apply tangential damping.\n");
+          if(viscous)
+              fprintf(screen," NormalModel<HOOKE>: will apply damping based on Stokes number.\n");
+          if(limitForce)
+              fprintf(screen," NormalModel<HOOKE>: will limit normal force.\n");
+        }
         */
       }
       if (viscous)  {

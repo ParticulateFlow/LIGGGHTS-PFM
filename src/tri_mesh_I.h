@@ -58,7 +58,7 @@
 
     bary[0] = bary[1] = bary[2] = 0.;
 
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/   fprintf(screen, "resolveTriSphereContactBary for tri id %d with center %f %f %f and particle %f %f %f\n",
     /*NL*/   id(nTri),center_(nTri)[0],center_(nTri)[1],center_(nTri)[2],cSphere[0],cSphere[1],cSphere[2]);
 
@@ -75,13 +75,13 @@
     //NP distance between particle and mesh element
     double d(0.);
 
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": triangle %d: edgeActive %d %d %d cornerActive %d %d %d\n",
     /*NL*/     update->ntimestep,id(nTri),
     /*NL*/     edgeActive(nTri)[0],edgeActive(nTri)[1],edgeActive(nTri)[2],
     /*NL*/     cornerActive(nTri)[0],cornerActive(nTri)[1],cornerActive(nTri)[2]);
 
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(this->screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/ //if(5879 == id(nTri))
     /*NL*/ {
     /*NL*/      printVec3D(this->screen,"node0ToSphereCenter",node0ToSphereCenter);
@@ -119,6 +119,7 @@
       break;
     default:
       /*NL*/ if(screen) fprintf(screen,"barySign %d bary %f %f %f tag %d tri id %d\n",barySign,bary[0],bary[1],bary[2],this->atom->tag[iPart],id(nTri));
+      /*NL*/ //if(screen) {
       /*NL*/ //printVec3D(screen,"node0ToSphereCenter",node0ToSphereCenter);
       /*NL*/ //printVec3D(screen,"cSphere",cSphere);
       /*NL*/ //printVec3D(screen,"n[0]",n[0]);
@@ -126,18 +127,19 @@
       /*NL*/ //printVec3D(screen,"edgeVec(nTri)[0]",edgeVec(nTri)[0]);
       /*NL*/ //printVec3D(screen,"edgeVec(nTri)[1]",edgeVec(nTri)[1]);
       /*NL*/ //printVec3D(screen,"edgeVec(nTri)[2]",edgeVec(nTri)[2]);
+      /*NL*/ //}
       this->error->one(FLERR,"Internal error");
       d = 1.; // doesn't exist, just to satisfy the compiler
       break;
     }
 
     /*NL*/ double deltan = d - rSphere;
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/ // if(5879 == id(nTri))
     /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": deltan %f\n",
     /*NL*/                    update->ntimestep,deltan);
 
-    /*NL*/ //printVec3D(screen,"bary tri_mesh_I",bary);
+    /*NL*/ // if(screen) printVec3D(screen,"bary tri_mesh_I",bary);
 
     // return distance - radius of the particle
     return d - rSphere;
@@ -185,7 +187,7 @@
         bary[ip] = 1. - bary[iEdge];
       }
 
-      /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+      /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
       /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": resolveEdgeContact edge %d distFromNode %f edgeLen %f | bary %f %f %f \n",
       /*NL*/     update->ntimestep,iEdge,distFromNode,edgeLen(iTri)[iEdge],bary[0],bary[1],bary[2]);
 
@@ -288,7 +290,7 @@
   inline bool TriMesh::resolveTriSphereNeighbuild(int nTri, double rSphere,
       double *cSphere, double treshold)
   {
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/          fprintf(screen, "resolveTriSphereContactNeigh for tri id %d with center %f %f %f\n",
     /*NL*/                      id(nTri),center_(nTri)[0],center_(nTri)[1],center_(nTri)[2]);
 
@@ -411,11 +413,11 @@
 
     // step 1 - choose triangle
     int chosen = randomOwnedGhostElement();
-    /*NL*/ //fprintf(screen,"random %d\n",chosen);
+    /*NL*/ //if (screen) fprintf(screen,"random %d\n",chosen);
 
     if(chosen >= nTri || chosen < 0)
     {
-        /*NL*/ if(screen) fprintf(this->screen,"mesh id %s chosen %d nTri %d\n",mesh_id_,chosen,nTri);
+        /*NL*/ if(this->screen) fprintf(this->screen,"mesh id %s chosen %d nTri %d\n",mesh_id_,chosen,nTri);
         error->one(FLERR,"TriMesh::generate_random error");
         return -1;
     }

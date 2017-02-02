@@ -254,7 +254,7 @@ void PairGran::init_style()
   {
       fix_dnum[ifix] = modify->fix[ifix];
       dnum_index[ifix] = dnum_pairgran + dnum_extra;
-      /*NL*/ //fprintf(screen,"fix %s: dnum_index %d\n",fix_dnum[ifix]->id,dnum_index[ifix]);
+      /*NL*/ //if (screen) fprintf(screen,"fix %s: dnum_index %d\n",fix_dnum[ifix]->id,dnum_index[ifix]);
       dnum_extra += fix_dnum[ifix]->n_history_extra();
   }
 
@@ -484,7 +484,7 @@ void PairGran::init_style()
   MPI_Allreduce(&onerad_dynamic[1],&maxrad_dynamic[1],atom->ntypes,MPI_DOUBLE,MPI_MAX,world);
   MPI_Allreduce(&onerad_frozen[1],&maxrad_frozen[1],atom->ntypes,MPI_DOUBLE,MPI_MAX,world);
 
-  /*NL*/ //fprintf(screen,"maxrad for type 1 %f\n",maxrad_dynamic[1]);
+  /*NL*/ //if (screen) fprintf(screen,"maxrad for type 1 %f\n",maxrad_dynamic[1]);
 
   //NP derived classes do their inits here
   init_granular();
@@ -529,7 +529,7 @@ int PairGran::fix_extra_dnum_index(class Fix *fix)
 
 void PairGran::init_list(int id, NeighList *ptr)
 {
-  /*NL*/ //fprintf(screen,"init_list called\n");
+  /*NL*/ //if (screen) fprintf(screen,"init_list called\n");
   if (id == 0) list = ptr;
   else if (id == 1) listgranhistory = ptr;
 }

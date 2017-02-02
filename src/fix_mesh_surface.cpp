@@ -202,7 +202,7 @@ void FixMeshSurface::setup_pre_force(int vflag)
         meshNeighlist()->initializeNeighlist();
     }
 
-    /*NL*/ //fprintf(screen,"setup fix %s end\n",id);
+    /*NL*/ //if (screen) fprintf(screen,"setup fix %s end\n",id);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -419,7 +419,7 @@ void FixMeshSurface::setVel()
 
     // set mesh velocity
     TriMesh *trimesh = triMesh();
-    /*NL*/ //fprintf(screen,"size %d local %d ghost %d\n",size, trimesh->sizeLocal(), trimesh->sizeGhost());
+    /*NL*/ //if (screen) fprintf(screen,"size %d local %d ghost %d\n",size, trimesh->sizeLocal(), trimesh->sizeGhost());
     for (int i = 0; i < size; i++)
     {
         trimesh->surfaceNorm(i,facenormal);
@@ -432,7 +432,7 @@ void FixMeshSurface::setVel()
             {
                 vectorScalarDiv3D(v_node[i][j],vectorMag3D(v_node[i][j]));
                 vectorScalarMult3D(v_node[i][j],conv_vSurf_mag);
-                /*NL*/ //printVec3D(screen,"v_node[i][j]",v_node[i][j]);
+                /*NL*/ //if (screen) printVec3D(screen,"v_node[i][j]",v_node[i][j]);
             }
         }
     }

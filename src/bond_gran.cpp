@@ -137,7 +137,7 @@ void BondGran::compute(int eflag, int vflag)
   for (n = 0; n < nbondlist; n++) {
     i1 = bondlist[n][0];
     i2 = bondlist[n][1];
-    /*NL*/ //fprintf(screen,"ts %d: handling id %d and %d\n",update->ntimestep,tag[i1],tag[i2]);
+    /*NL*/ //if (screen) fprintf(screen,"ts %d: handling id %d and %d\n",update->ntimestep,tag[i1],tag[i2]);
     type = bondlist[n][2];
 
     A = M_PI * rb[type] * rb[type];
@@ -153,12 +153,12 @@ void BondGran::compute(int eflag, int vflag)
     r = sqrt(rsq);
     rinv = 1./r;
 
-    /*NL*/ //fprintf(screen,"bondlist[n][3] %d, exec at ts %d\n",bondlist[n][3],update->ntimestep);
+    /*NL*/ //if (screen) fprintf(screen,"bondlist[n][3] %d, exec at ts %d\n",bondlist[n][3],update->ntimestep);
     //NP continue if bond is broken
     if(bondlist[n][3])
     {
-        //NP fprintf(screen,"i1 %d i2 %d bondlist[n][3] %d\n",i1,i2,bondlist[n][3]);
-        //NP fprintf(screen,"bondlist[n][3] %d, broken ts %d\n",bondlist[n][3],update->ntimestep);
+        //NP if (screen) fprintf(screen,"i1 %d i2 %d bondlist[n][3] %d\n",i1,i2,bondlist[n][3]);
+        //NP if (screen) fprintf(screen,"bondlist[n][3] %d, broken ts %d\n",bondlist[n][3],update->ntimestep);
         //NP error->all(FLERR,"broken");
         continue;
     }
@@ -207,7 +207,7 @@ void BondGran::compute(int eflag, int vflag)
         wn2 = dely*wnnr * rsqinv;
         wn3 = delz*wnnr * rsqinv;
 
-    //fprintf(screen,"omega[i1] %f %f %f, omega[i2] %f %f %f, wn %f %f %f\n",omega[i1][0],omega[i1][1],omega[i1][2],omega[i2][0],omega[i2][1],omega[i2][2],wn1,wn2,wn3);
+    //if (screen) fprintf(screen,"omega[i1] %f %f %f, omega[i2] %f %f %f, wn %f %f %f\n",omega[i1][0],omega[i1][1],omega[i1][2],omega[i2][0],omega[i2][1],omega[i2][2],wn1,wn2,wn3);
 
         // tangential component
 
@@ -289,7 +289,7 @@ void BondGran::compute(int eflag, int vflag)
     {
         if(r > 2. * r_break[type])
         {
-            /*NL*/// fprintf(screen,"step " BIGINT_FORMAT " broke bond between atom tags %d %d r %f, 2. * r_break[type] %f \n",
+            /*NL*///if (screen) fprintf(screen,"step " BIGINT_FORMAT " broke bond between atom tags %d %d r %f, 2. * r_break[type] %f \n",
             /*NL*///         update->ntimestep,atom->tag[i1],atom->tag[i2],r,2. * r_break[type]);
             bondlist[n][3] = 1;
             //NP error->all(FLERR,"broken");
@@ -309,21 +309,21 @@ void BondGran::compute(int eflag, int vflag)
         if(breakmode == BREAKSTYLE_STRESS_TEMP)
         {
             toohot = 0.5 * (Temp[i1] + Temp[i2]) > T_break[type];
-            /*NL*/ //fprintf(screen,"Temp[i1] %f Temp[i2] %f, T_break[type] %f\n",Temp[i1],Temp[i2],T_break[type]);
+            /*NL*/ //if (screen) fprintf(screen,"Temp[i1] %f Temp[i2] %f, T_break[type] %f\n",Temp[i1],Temp[i2],T_break[type]);
         }
 
         if(nstress || tstress || toohot)
         {
             bondlist[n][3] = 1;
-            /*NL*/ //fprintf(screen,"broken bond at step %d\n",update->ntimestep);
-            /*NL*/ //if(toohot)fprintf(screen,"   it was too hot\n");
-            /*NL*/ //if(nstress)fprintf(screen,"   it was nstress\n");
-            /*NL*/ //if(tstress)fprintf(screen,"   it was tstress\n");
+            /*NL*/ //if (screen) fprintf(screen,"broken bond at step %d\n",update->ntimestep);
+            /*NL*/ //if(toohot && screen)fprintf(screen,"   it was too hot\n");
+            /*NL*/ //if(nstress && screen)fprintf(screen,"   it was nstress\n");
+            /*NL*/ //if(tstress && screen)fprintf(screen,"   it was tstress\n");
         }
     }
 
 
-        //NP fprintf(screen,"ts %d, particles %d %d - shear %f %f %f - tor %f %f %f\n",update->ntimestep,tag[i1],tag[i2],bondhistlist[n][3],bondhistlist[n][4],bondhistlist[n][5],tor1,tor2,tor3);
+        //NP if (screen) fprintf(screen,"ts %d, particles %d %d - shear %f %f %f - tor %f %f %f\n",update->ntimestep,tag[i1],tag[i2],bondhistlist[n][3],bondhistlist[n][4],bondhistlist[n][5],tor1,tor2,tor3);
 
     // energy
     //if (eflag) error->all(FLERR,"Granular bonds currently do not support energy calculation");
@@ -388,7 +388,7 @@ void BondGran::coeff(int narg, char **arg)
   if(Sn_one < 0. || St_one < 0.)
     error->all(FLERR,"Sn, St must be > 0 (if values > 0 were provided, they are probably too large)");
 
-  /*NL*///fprintf(screen,"Sn %f, St%f\n",Sn_one,St_one);
+  /*NL*///if (screen) fprintf(screen,"Sn %f, St%f\n",Sn_one,St_one);
 
   if(force->numeric(FLERR,arg[4]) == 0. )
   {
@@ -421,7 +421,7 @@ void BondGran::coeff(int narg, char **arg)
   }
 
   int ilo,ihi;
-  /*NL*/ //fprintf(screen,"atom->nbondtypes %d\n",atom->nbondtypes);
+  /*NL*/ //if (screen) fprintf(screen,"atom->nbondtypes %d\n",atom->nbondtypes);
   force->bounds(arg[0],atom->nbondtypes,ilo,ihi);
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {

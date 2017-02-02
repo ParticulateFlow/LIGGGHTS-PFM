@@ -97,20 +97,20 @@ void NeighRequest::archive()
 int NeighRequest::identical(NeighRequest *other)
 {
   int same = 1;
-/*NL*/ //fprintf(screen,"identicalsame 1 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 1 %d\n",same);
   if (requestor != other->requestor) same = 0;
-/*NL*/ //fprintf(screen,"identicalsame 1.1 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 1.1 %d\n",same);
   //NP modified C.K. to distinguish different pair gran styles
   //NP !!!requestor ptr might be the same, since just the memory adress is compared!!!
   if (pairgran_hashcode != other->pairgran_hashcode) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 1.2 %d pairgran_hashcode != other->pairgran_hashcode %s\n",same,(pairgran_hashcode != other->pairgran_hashcode)?"true":"false");
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 1.2 %d pairgran_hashcode != other->pairgran_hashcode %s\n",same,(pairgran_hashcode != other->pairgran_hashcode)?"true":"false");
   if (id != other->id) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 2 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 2 %d\n",same);
   if (pair != other->pair) same = 0;
   if (fix != other->fix) same = 0;
   if (compute != other->compute) same = 0;
   if (command != other->command) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 3 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 3 %d\n",same);
   if (half != other->half_original) same = 0;
   if (full != other->full) same = 0;
   if (gran != other->gran) same = 0;
@@ -119,7 +119,7 @@ int NeighRequest::identical(NeighRequest *other)
   if (respamiddle != other->respamiddle) same = 0;
   if (respaouter != other->respaouter) same = 0;
   if (half_from_full != other->half_from_full_original) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 4 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 4 %d\n",same);
   if (newton != other->newton) same = 0;
   if (occasional != other->occasional) same = 0;
   if (special != other->special) same = 0;
@@ -127,11 +127,11 @@ int NeighRequest::identical(NeighRequest *other)
   if (ghost != other->ghost) same = 0;
   if (cudable != other->cudable) same = 0;
   if (omp != other->omp) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 5 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 5 %d\n",same);
   if (copy != other->copy_original) same = 0;
   if (same_skip(other) == 0) same = 0;
   if (otherlist != other->otherlist_original) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 6 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 6 %d\n",same);
   return same;
 }
 

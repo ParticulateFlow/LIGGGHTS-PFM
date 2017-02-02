@@ -182,7 +182,7 @@ void FixMeshSurfaceStressContact::init_area_correction()
             Yeff_ij      = 1./((1.-pow(nu[i-1],2.))/Y[i-1]     +(1.-pow(nu[j-1],2.))/Y[j-1]);
             Yeff_orig_ij = 1./((1.-pow(nu[i-1],2.))/Y_orig[i-1]+(1.-pow(nu[j-1],2.))/Y_orig[j-1]);
             ratio = pow(Yeff_ij/Yeff_orig_ij,expo);
-            /*NL*/ //fprintf(screen,"ratio for type pair %d/%d is %f, Yeff_ij %f, Yeff_orig_ij %f, expo %f\n",i,j,ratio,Yeff_ij,Yeff_orig_ij,expo);
+            /*NL*/ //if (screen) fprintf(screen,"ratio for type pair %d/%d is %f, Yeff_ij %f, Yeff_orig_ij %f, expo %f\n",i,j,ratio,Yeff_ij,Yeff_orig_ij,expo);
             static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulusOriginal","property/global","peratomtype",max_type,0,style))->array_modify(i-1,j-1,ratio);
           }
         }
@@ -265,7 +265,7 @@ void FixMeshSurfaceStressContact::calc_contact_time_average()
     {
         contactArea(i) = T_ * contactArea(i) + dt * contactAreaStep(i);
         contactAreaAbs(i) = T_ * contactAreaAbs(i) + dt * contactAreaStepAbs(i);
-        /*NL*/// if(contactArea(i) > 0.) fprintf(screen,"contactArea(i) %f\n",contactArea(i) );
+        /*NL*/// if(screen && contactArea(i) > 0.) fprintf(screen,"contactArea(i) %f\n",contactArea(i) );
         contactArea(i)    /= (T_+dt);
         contactAreaAbs(i) /= (T_+dt);
     }

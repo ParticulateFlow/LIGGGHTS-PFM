@@ -93,7 +93,7 @@ void Neighbor::stencil_half_bin_3d_no_newton(NeighList *list,
       for (i = -sx; i <= sx; i++)
         if (bin_distance(i,j,k) < cutneighmaxsq)
           stencil[nstencil++] = k*mbiny*mbinx + j*mbinx + i;
-  /*NL*/ //fprintf(screen,"nstencil %d binsizex %f\n",nstencil,binsizex);
+  /*NL*/ //if (screen) fprintf(screen,"nstencil %d binsizex %f\n",nstencil,binsizex);
 
   list->nstencil = nstencil;
 }

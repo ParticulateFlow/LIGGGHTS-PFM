@@ -216,7 +216,7 @@ void Domain::set_initial_box()
 
 void Domain::set_global_box()
 {
-  /*NL*/ //fprintf(screen, "box set to %f %f %f / %f %f %f",boxlo[0],boxlo[1],boxlo[2],boxhi[0],boxhi[1],boxhi[2]);
+  /*NL*/ //if (screen) fprintf(screen, "box set to %f %f %f / %f %f %f",boxlo[0],boxlo[1],boxlo[2],boxhi[0],boxhi[1],boxhi[2]);
   prd[0] = xprd = boxhi[0] - boxlo[0];
   prd[1] = yprd = boxhi[1] - boxlo[1];
   prd[2] = zprd = boxhi[2] - boxlo[2];
@@ -306,7 +306,7 @@ void Domain::set_local_box()
       subhi[2] = boxlo[2] + zprd*zsplit[myloc[2]+1];
     else subhi[2] = boxhi[2];
 
-    /*NL*/ //fprintf(screen,"step %d, proc %d: sublo/hi %f %f\n",update->ntimestep,comm->me,sublo[2],subhi[2]);
+    /*NL*/ //if (screen) fprintf(screen,"step %d, proc %d: sublo/hi %f %f\n",update->ntimestep,comm->me,sublo[2],subhi[2]);
   }
 }
 

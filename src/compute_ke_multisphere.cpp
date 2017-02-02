@@ -65,6 +65,6 @@ double ComputeKEMultisphere::compute_scalar()
 {
   invoked_scalar = update->ntimestep;
   scalar = fix_ms_->extract_ke();
-  /*NL*/ fprintf(screen,"ke %f\n",scalar);
+  /*NL*/ if (screen) fprintf(screen,"ke %f\n",scalar);
   return scalar;
 }
