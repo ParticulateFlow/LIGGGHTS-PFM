@@ -77,7 +77,7 @@ void FixParticledistributionDiscreteFace::delete_pit_list_face_local()
 
 /* ----------------------------------------------------------------------*/
 
-void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local, double cg, int type_offset)
+void FixParticledistributionDiscreteFace::set_distribution_local(const std::vector<DiscreteParticleDistribution>& distributions, const std::vector<std::vector<int> > & distributions_face_local, double cg, int type_offset)
 {
   // TODO: cg = force->cg() can be used when differently resolved levels are separate simulations -> remove parameter
   //       also, type_offset will be 0 in that case
@@ -91,10 +91,9 @@ void FixParticledistributionDiscreteFace::set_distribution_local(FixMassflowMesh
   minrad = 1000.;
   maxnspheres = 1;
 
-  if(!massflowface) return;
+  if(distributions.empty()) return;
 
-  int n_face_ids = massflowface->get_face_ids_size();
-  const std::vector<DiscreteParticleDistribution> distributions = massflowface->get_distributions();
+  int n_face_ids = distributions.size();
 
   pti_list_face_local.resize(n_face_ids);
   for(int iface=0; iface<n_face_ids; ++iface)

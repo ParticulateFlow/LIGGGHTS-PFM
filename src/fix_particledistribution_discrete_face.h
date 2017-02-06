@@ -31,11 +31,10 @@ FixStyle(particledistribution/discrete/face,FixParticledistributionDiscreteFace)
 
 #include <vector>
 #include "fix_particledistribution.h"
+#include "constParticleTemplateSphere.h"
 
 
 namespace LAMMPS_NS {
-
-class FixMassflowMeshFace;
 
 class FixParticledistributionDiscreteFace : public FixParticledistribution {
  public:
@@ -62,7 +61,7 @@ class FixParticledistributionDiscreteFace : public FixParticledistribution {
 
   int insert(int n);
 
-  void set_distribution_local(FixMassflowMeshFace *massflowface, const std::vector<std::vector<int> > & distributions_face_local, double cg, int type_offset);
+  void set_distribution_local(const std::vector<DiscreteParticleDistribution>& distributions, const std::vector<std::vector<int> > & distributions_face_local, double cg, int type_offset);
 
  protected:
 

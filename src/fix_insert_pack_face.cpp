@@ -471,7 +471,7 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
 
   // send result to each proc
   FixParticledistributionDiscreteFace *fix_pddf = (FixParticledistributionDiscreteFace*)fix_distribution;
-  fix_pddf->set_distribution_local(massflowface, distributions_face_local_all[me], cg_, type_offset);
+  fix_pddf->set_distribution_local(distributions_face, distributions_face_local_all[me], cg_, type_offset);
   maxrad = std::max(maxrad, fix_pddf->max_rad());
 
   delete [] fraction_face_local_all;
