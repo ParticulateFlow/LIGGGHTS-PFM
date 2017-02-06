@@ -757,13 +757,11 @@ void FixMassflowMeshFace::post_integrate()
     }
 
     // remember current particle position for line-triangle intersection test in next timestep
+    std::copy(&x[0][0], &x[0][0]+nlocal*3, &prevx[0][0]);
+
     // if particle did not appear in mesh neighbour list this timestep, reset its state to UNDEFINED
     for(int iPart = 0; iPart < nlocal; ++iPart)
     {
-        prevx[iPart][0] = x[iPart][0];
-        prevx[iPart][1] = x[iPart][1];
-        prevx[iPart][2] = x[iPart][2];
-
         if(!defined_this[iPart])
         {
             const int ibody = fix_ms_ ? ( (fix_ms_->belongs_to(iPart) > -1) ? (ms_->map(fix_ms_->belongs_to(iPart))) : -1 ) : -1;
