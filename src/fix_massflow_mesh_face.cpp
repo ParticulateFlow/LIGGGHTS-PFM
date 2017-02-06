@@ -19,9 +19,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <algorithm>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "atom_vec.h"
 #include "comm.h"
@@ -37,7 +38,6 @@
 #include "mpi_liggghts.h"
 #include "math_extra_liggghts.h"
 #include "fix_massflow_mesh_face.h"
-#include <algorithm>
 
 using namespace LAMMPS_NS;
 using namespace MathExtraLiggghts;
@@ -361,6 +361,17 @@ void FixMassflowMeshFace::post_create()
     std::fill_n(mass_face_last_.begin(),       nfaceids, 0.);
     std::fill_n(nparticles_face_last_.begin(), nfaceids, 0 );
 
+    radius_dist_face_local_this.resize(nfaceids);
+    mass_dist_face_local_this.resize(nfaceids);
+    atomtype_dist_face_local_this.resize(nfaceids);
+    mass_face_this.resize(nfaceids, 0.0);
+    nparticles_face_this.resize(nfaceids, 0);
+    average_vx_face_out_this.resize(nfaceids, 0.);
+    average_vy_face_out_this.resize(nfaceids, 0.);
+    average_vz_face_out_this.resize(nfaceids, 0.);
+
+    nparticles_face_this_all.resize(nfaceids,0);
+
     delete [] tri_face_ids_recv;
 
     size_array_rows = nfaceids; // rows in global array
@@ -515,25 +526,31 @@ void FixMassflowMeshFace::post_integrate()
         distributions_face_.resize(nfaceids);
     }
 
-    std::vector<std::vector<double> > radius_dist_face_local_this(nfaceids);
-    std::vector<std::vector<double> > mass_dist_face_local_this(nfaceids);
-    std::vector<std::vector<int> > atomtype_dist_face_local_this(nfaceids);
-    std::vector<double> mass_face_this(nfaceids, 0.0);
-    std::vector<int> nparticles_face_this(nfaceids, 0);
-    std::vector<double> average_vx_face_out_this(nfaceids, 0.);
-    std::vector<double> average_vy_face_out_this(nfaceids, 0.);
-    std::vector<double> average_vz_face_out_this(nfaceids, 0.);
+    radius_dist_face_local_this.clear();
+    mass_dist_face_local_this.clear();
+    atomtype_dist_face_local_this.clear();
+    radius_dist_face_local_this.resize(nfaceids);
+    mass_dist_face_local_this.resize(nfaceids);
+    atomtype_dist_face_local_this.resize(nfaceids);
 
-    std::map<int, int> classified_particles_this;
-    std::map<int, int> crossing_particles_this;
-    std::set<int> ignore_this;
-    std::set<int> once_this;
-    std::vector<bool> defined_this(nlocal,false); // are in neighlist of a triangle
+    std::fill(mass_face_this.begin(), mass_face_this.end(), 0.);
+    std::fill(nparticles_face_this.begin(), nparticles_face_this.end(), 0);
+    std::fill(average_vx_face_out_this.begin(), average_vx_face_out_this.end(), 0.);
+    std::fill(average_vy_face_out_this.begin(), average_vy_face_out_this.end(), 0.);
+    std::fill(average_vz_face_out_this.begin(), average_vz_face_out_this.end(), 0.);
+
+    classified_particles_this.clear();
+    crossing_particles_this.clear();
+    ignore_this.clear();
+    once_this.clear();
+    defined_this.clear();
+    defined_this.assign(nlocal,false); // are in neighlist of a triangle
 
     // loop owned and ghost triangles
     // count only if owned particle
 
-    for(int iTri = 0; iTri < nTriAll; iTri++)
+    int faceIndex = -1;
+    for(int iTri = 0; iTri < nTriAll; ++iTri)
     {
         int face_id = tri_face_ids->get(iTri);
         mesh->surfaceNorm(iTri,nvec_);
@@ -542,7 +559,7 @@ void FixMassflowMeshFace::post_integrate()
         const std::vector<int> & neighborList = fix_neighlist_->get_contact_list(iTri);
         const int numneigh = neighborList.size();
 
-        for(int iNeigh = 0; iNeigh < numneigh; iNeigh++)
+        for(int iNeigh = 0; iNeigh < numneigh; ++iNeigh)
         {
             const int iPart = neighborList[iNeigh];
 
@@ -652,7 +669,7 @@ void FixMassflowMeshFace::post_integrate()
                     }
                     // each particle holds whole MS mass
                     mass_this += rmass[iPart]; // total mass crossing any mesh face
-                    nparticles_this++; // total number of cg particles crossing any mesh face
+                    ++nparticles_this; // total number of cg particles crossing any mesh face
 #ifdef FAVRE_AVERAGED
                     average_vx_out_this += rmass[iPart]*v[iPart][0];
                     average_vy_out_this += rmass[iPart]*v[iPart][1];
@@ -662,21 +679,22 @@ void FixMassflowMeshFace::post_integrate()
                     average_vy_out_this += v[iPart][1];
                     average_vz_out_this += v[iPart][2];
 #endif
-                    mass_face_this[faceid2index_[face_id]] += rmass[iPart]; // total mass crossing current face
+                    faceIndex = faceid2index_[face_id];
+                    mass_face_this[faceIndex] += rmass[iPart]; // total mass crossing current face
 
-                    radius_dist_face_local_this  [faceid2index_[face_id]].push_back(radius[iPart]);
-                    mass_dist_face_local_this    [faceid2index_[face_id]].push_back(rmass[iPart]);
-                    atomtype_dist_face_local_this[faceid2index_[face_id]].push_back(atom->type[iPart]);
+                    radius_dist_face_local_this  [faceIndex].push_back(radius[iPart]);
+                    mass_dist_face_local_this    [faceIndex].push_back(rmass[iPart]);
+                    atomtype_dist_face_local_this[faceIndex].push_back(atom->type[iPart]);
 
-                    nparticles_face_this[faceid2index_[face_id]]++; // number of cg particles crossing current face
+                    nparticles_face_this[faceIndex]++; // number of cg particles crossing current face
 #ifdef FAVRE_AVERAGED
-                    average_vx_face_out_this[faceid2index_[face_id]] += rmass[iPart]*v[iPart][0];
-                    average_vy_face_out_this[faceid2index_[face_id]] += rmass[iPart]*v[iPart][1];
-                    average_vz_face_out_this[faceid2index_[face_id]] += rmass[iPart]*v[iPart][2];
+                    average_vx_face_out_this[faceIndex] += rmass[iPart]*v[iPart][0];
+                    average_vy_face_out_this[faceIndex] += rmass[iPart]*v[iPart][1];
+                    average_vz_face_out_this[faceIndex] += rmass[iPart]*v[iPart][2];
 #else
-                    average_vx_face_out_this[faceid2index_[face_id]] += v[iPart][0];
-                    average_vy_face_out_this[faceid2index_[face_id]] += v[iPart][1];
-                    average_vz_face_out_this[faceid2index_[face_id]] += v[iPart][2];
+                    average_vx_face_out_this[faceIndex] += v[iPart][0];
+                    average_vy_face_out_this[faceIndex] += v[iPart][1];
+                    average_vz_face_out_this[faceIndex] += v[iPart][2];
 #endif
                     crossing_particles_this[iPart] = iTri;
 
@@ -725,6 +743,7 @@ void FixMassflowMeshFace::post_integrate()
         }
     }
 
+    // set IGNORE flag if particles should be counted only once
     if(once_)
     {
         for(std::set<int>::iterator it=once_this.begin(); it!=once_this.end(); ++it)
@@ -737,6 +756,8 @@ void FixMassflowMeshFace::post_integrate()
         }
     }
 
+    // remember current particle position for line-triangle intersection test in next timestep
+    // if particle did not appear in mesh neighbour list this timestep, reset its state to UNDEFINED
     for(int iPart = 0; iPart < nlocal; ++iPart)
     {
         prevx[iPart][0] = x[iPart][0];
@@ -800,69 +821,87 @@ void FixMassflowMeshFace::post_integrate()
     }
 
     // sum global values from all processes
-    MPI_Sum_Scalar(mass_this,world);
     MPI_Sum_Scalar(nparticles_this,world);
-    MPI_Sum_Scalar(average_vx_out_this,world);
-    MPI_Sum_Scalar(average_vy_out_this,world);
-    MPI_Sum_Scalar(average_vz_out_this,world);
-    if(fix_property_) MPI_Sum_Scalar(property_this,world);
-
 
     if(nparticles_this > 0) // some particles crossed the mesh faces
     {
-        double *radius_dist_this_recv = NULL; // gather from all procs
-        double *mass_dist_this_recv = NULL;
-        int *atomtype_dist_this_recv = NULL;
-        int nparticles_face_i_this_all = 0;
+        // if there where no particles, everything would be zero and there's no need to sum across procs
+        // sum global values from all processes
+        MPI_Sum_Scalar(mass_this,world);
+        MPI_Sum_Scalar(average_vx_out_this,world);
+        MPI_Sum_Scalar(average_vy_out_this,world);
+        MPI_Sum_Scalar(average_vz_out_this,world);
+        if(fix_property_) MPI_Sum_Scalar(property_this,world);
+        int *recvcnts = new int[comm->nprocs];
+        int *displs = new int[comm->nprocs];
+        displs[0] = 0;
+
+        MPI_Allreduce(&nparticles_face_this[0], &nparticles_face_this_all[0], nfaceids, MPI_INT, MPI_SUM, world);
 
         for(int i=0; i<nfaceids; ++i)
         {
-            MPI_Sum_Scalar(nparticles_face_this[i], nparticles_face_i_this_all, world);
-
-            if(nparticles_face_i_this_all > 0)
+            if(nparticles_face_this_all[i] > 0)
             {
-                MPI_Allgather_Vector(&radius_dist_face_local_this  [i][0], nparticles_face_this[i], radius_dist_this_recv, world);
-                MPI_Allgather_Vector(&mass_dist_face_local_this    [i][0], nparticles_face_this[i], mass_dist_this_recv, world);
-                MPI_Allgather_Vector(&atomtype_dist_face_local_this[i][0], nparticles_face_this[i], atomtype_dist_this_recv, world);
+                MPI_Allgather(&nparticles_face_this[i],1,MPI_INT,recvcnts,1,MPI_INT,world);
 
-                for(int p = 0; p < nparticles_face_i_this_all; ++p)
+                for(int iproc = 1; iproc < comm->nprocs; iproc++)
+                {
+                     displs[iproc] = displs[iproc-1] + recvcnts[iproc-1];
+                }
+                radius_dist_this_recv.resize(  nparticles_face_this_all[i]);
+                mass_dist_this_recv.resize(    nparticles_face_this_all[i]);
+                atomtype_dist_this_recv.resize(nparticles_face_this_all[i]);
+
+                MPI_Allgatherv(&radius_dist_face_local_this  [i][0],
+                               nparticles_face_this[i],MPI_DOUBLE,
+                               &radius_dist_this_recv[0],
+                               recvcnts, displs, MPI_DOUBLE, world);
+                MPI_Allgatherv(&mass_dist_face_local_this  [i][0],
+                               nparticles_face_this[i],MPI_DOUBLE,
+                               &mass_dist_this_recv[0],
+                               recvcnts, displs, MPI_DOUBLE, world);
+                MPI_Allgatherv(&atomtype_dist_face_local_this  [i][0],
+                               nparticles_face_this[i],MPI_INT,
+                               &atomtype_dist_this_recv[0],
+                               recvcnts, displs, MPI_INT, world);
+
+                for(int p = 0; p < nparticles_face_this_all[i]; ++p)
                 {
                     double rad  = radius_dist_this_recv[p]/cg_; // fg particle radius
                     double mass = mass_dist_this_recv[p]/cg3_;  // fg particle mass
                     int type    = atomtype_dist_this_recv[p];
                     distributions_face_[i][ConstantParticleTemplateSphere(rad, mass, type)] += cg3_; // number of fg particles!
                 }
-
-                delete [] radius_dist_this_recv; radius_dist_this_recv = NULL;
-                delete [] mass_dist_this_recv; mass_dist_this_recv = NULL;
-                delete [] atomtype_dist_this_recv; atomtype_dist_this_recv = NULL;
-                nparticles_face_i_this_all = 0;
             }
         }
-    }
 
-    // sum per face values from all processes
-    MPI_Sum_Vector(&mass_face_this[0],nfaceids,world);
-    MPI_Sum_Vector(&nparticles_face_this[0],nfaceids,world);
-    MPI_Sum_Vector(&average_vx_face_out_this[0],nfaceids,world);
-    MPI_Sum_Vector(&average_vy_face_out_this[0],nfaceids,world);
-    MPI_Sum_Vector(&average_vz_face_out_this[0],nfaceids,world);
+        delete [] recvcnts;
+        delete [] displs;
 
-    mass_ += mass_this;
-    nparticles_ += nparticles_this; // total number of cg particles that crossed any mesh face since last inquiry
-    average_vx_out_ += average_vx_out_this;
-    average_vy_out_ += average_vy_out_this;
-    average_vz_out_ += average_vz_out_this;
-    property_sum_ += property_this;
+        nparticles_face_this.swap(nparticles_face_this_all);
 
-    // global, same values across all processors
-    for(int i=0; i<nfaceids; ++i)
-    {
-        mass_face_[i] += mass_face_this[i];
-        nparticles_face_[i] += nparticles_face_this[i];
-        average_vx_face_out_[i] += average_vx_face_out_this[i];
-        average_vy_face_out_[i] += average_vy_face_out_this[i];
-        average_vz_face_out_[i] += average_vz_face_out_this[i];
+        // sum per face values from all processes
+        MPI_Sum_Vector(&mass_face_this[0],nfaceids,world);
+        MPI_Sum_Vector(&average_vx_face_out_this[0],nfaceids,world);
+        MPI_Sum_Vector(&average_vy_face_out_this[0],nfaceids,world);
+        MPI_Sum_Vector(&average_vz_face_out_this[0],nfaceids,world);
+
+        mass_ += mass_this;
+        nparticles_ += nparticles_this; // total number of cg particles that crossed any mesh face since last inquiry
+        average_vx_out_ += average_vx_out_this;
+        average_vy_out_ += average_vy_out_this;
+        average_vz_out_ += average_vz_out_this;
+        property_sum_ += property_this;
+
+        // global, same values across all processors
+        for(int i=0; i<nfaceids; ++i)
+        {
+            mass_face_[i] += mass_face_this[i];
+            nparticles_face_[i] += nparticles_face_this[i];
+            average_vx_face_out_[i] += average_vx_face_out_this[i];
+            average_vy_face_out_[i] += average_vy_face_out_this[i];
+            average_vz_face_out_[i] += average_vz_face_out_this[i];
+        }
     }
 }
 

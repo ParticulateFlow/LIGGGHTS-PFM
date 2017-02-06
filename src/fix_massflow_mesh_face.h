@@ -30,6 +30,7 @@ FixStyle(massflow/mesh/face,FixMassflowMeshFace)
 
 #include <vector>
 #include <map>
+#include <set>
 #include "fix.h"
 #include "constParticleTemplateSphere.h"
 
@@ -145,10 +146,34 @@ class FixMassflowMeshFace : public Fix {
   class FixMultisphere* fix_ms_;
   class MultisphereParallel *ms_;
   class ScalarContainer<int> *ms_counter_;
+
   std::map<int, int> faceid2index_;
   double cg_, cg3_;
 
   std::vector<DiscreteParticleDistribution> distributions_face_;
+
+  // containers holding per timestep values
+  // using member variables to avoid extensive memory reallocation
+  std::vector<std::vector<double> > radius_dist_face_local_this;
+  std::vector<std::vector<double> > mass_dist_face_local_this;
+  std::vector<std::vector<int> > atomtype_dist_face_local_this;
+  std::vector<double> mass_face_this;
+  std::vector<int> nparticles_face_this;
+  std::vector<double> average_vx_face_out_this;
+  std::vector<double> average_vy_face_out_this;
+  std::vector<double> average_vz_face_out_this;
+
+  std::map<int, int> classified_particles_this;
+  std::map<int, int> crossing_particles_this;
+  std::set<int> ignore_this;
+  std::set<int> once_this;
+  std::vector<bool> defined_this; // are in neighlist of a triangle
+
+  // containers to gather data from all procs
+  std::vector<double> radius_dist_this_recv;
+  std::vector<double> mass_dist_this_recv;
+  std::vector<int> atomtype_dist_this_recv;
+  std::vector<int> nparticles_face_this_all;
 
 }; //end class
 
