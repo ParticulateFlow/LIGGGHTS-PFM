@@ -53,12 +53,12 @@ FixParticledistributionDiscreteFace::FixParticledistributionDiscreteFace(LAMMPS 
 
 FixParticledistributionDiscreteFace::~FixParticledistributionDiscreteFace()
 {
-  delete_pit_list_face_local();
+  delete_pti_list_face_local();
 }
 
 /* ----------------------------------------------------------------------*/
 
-void FixParticledistributionDiscreteFace::delete_pit_list_face_local()
+void FixParticledistributionDiscreteFace::delete_pti_list_face_local()
 {
   if(!pti_list_face_local.empty())
   {
@@ -81,7 +81,7 @@ void FixParticledistributionDiscreteFace::set_distribution_local(const std::vect
 {
   // TODO: cg = force->cg() can be used when differently resolved levels are separate simulations -> remove parameter
   //       also, type_offset will be 0 in that case
-  delete_pit_list_face_local();
+  delete_pti_list_face_local();
 
   n_pti_max = 0;
   volexpect=0.;

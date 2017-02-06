@@ -65,7 +65,7 @@ class FixParticledistributionDiscreteFace : public FixParticledistribution {
 
  protected:
 
-  void delete_pit_list_face_local();
+  void delete_pti_list_face_local();
 };
 
 }
