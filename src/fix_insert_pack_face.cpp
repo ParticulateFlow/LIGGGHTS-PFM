@@ -22,9 +22,9 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_insert_pack_face.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -62,6 +62,7 @@ FixInsertPackFace::FixInsertPackFace(LAMMPS *lmp, int narg, char **arg) :
   // set defaults first, then parse args
   init_defaults();
 
+  int iargtmp = iarg; // need original value for parsing arguments in derived class
   bool hasargs = true;
   while (iarg < narg && hasargs) {
     hasargs = false;
@@ -93,9 +94,12 @@ FixInsertPackFace::FixInsertPackFace(LAMMPS *lmp, int narg, char **arg) :
     } else if (strcmp(arg[iarg],"massflow_face") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       int ifix = modify->find_fix(arg[iarg+1]);
-      if (ifix < 0 || strcmp(modify->fix[ifix]->style,"massflow/mesh/face"))
-        error->fix_error(FLERR,this,"Fix insert/pack/face requires you to define a valid ID for a fix of type massflow/mesh/face");
-      massflowface = static_cast<FixMassflowMeshFace*>(modify->fix[ifix]);
+      if (strcmp(style,"insert/pack/face") == 0) {
+        if (ifix < 0 || strcmp(modify->fix[ifix]->style,"massflow/mesh/face"))
+          error->fix_error(FLERR,this,"Fix insert/pack/face requires you to define a valid ID for a fix of type massflow/mesh/face");
+        else
+          massflowface = static_cast<FixMassflowMeshFace*>(modify->fix[ifix]);
+      }
       int n = strlen(arg[iarg+1]) + 1;
       idmassflowface = new char[n];
       strcpy(idmassflowface,arg[iarg+1]);
@@ -121,6 +125,7 @@ FixInsertPackFace::FixInsertPackFace(LAMMPS *lmp, int narg, char **arg) :
   // no fixed total number of particles inserted by this fix exists
   if (strcmp(style,"insert/pack/face") == 0)
     ninsert_exists = 0;
+  iarg = iargtmp;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -133,7 +138,7 @@ FixInsertPackFace::~FixInsertPackFace()
 
 /* ---------------------------------------------------------------------- */
 
-void FixInsertPackFace::post_create()
+void FixInsertPackFace::post_create_per_face_data()
 {
   int nfaces = massflowface->get_face_ids_size();
   if (nfaces > 0) {
@@ -141,6 +146,14 @@ void FixInsertPackFace::post_create()
     min_face_extent_local.resize(nfaces);
     volume_face_absolut.resize(nfaces);
   }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsertPackFace::post_create()
+{
+  post_create_per_face_data();
+
   rounding_all.resize(comm->nprocs, 0.0);
   rounding_all[0] = 0.5;
 
@@ -251,13 +264,24 @@ void FixInsertPackFace::calc_region_volume_local()
 
 /* ----------------------------------------------------------------------
    number of particles to insert this timestep
-   depends on number of particles in region already
 ------------------------------------------------------------------------- */
+void FixInsertPackFace::receive_ninsert_this(int& ninsert_this)
+{
+  int ifix = modify->find_fix(idmassflowface);
+  if (ifix < 0 || strcmp(modify->fix[ifix]->style,"massflow/mesh/face")) {
+    massflowface = NULL;
+    //error->fix_error(FLERR,this,"Fix insert/pack/face requires you to define a valid ID for a fix of type massflow/mesh/face");
+  } else {
+    massflowface = static_cast<FixMassflowMeshFace*>(modify->fix[ifix]);
+  }
+
+  if (massflowface) {
+    ninsert_this = static_cast<int>(massflowface->compute_vector(6));
+  }
+}
 
 int FixInsertPackFace::calc_ninsert_this()
 {
-  int ninsert_this = 0;
-
   // check if region extends outside simulation box
   // if so, throw error if boundary setting is "f f f"
 
@@ -269,17 +293,10 @@ int FixInsertPackFace::calc_ninsert_this()
                             "Please use non-fixed boundaries in this case only");
   }
 
-  int ifix = modify->find_fix(idmassflowface);
-  if (ifix < 0 || strcmp(modify->fix[ifix]->style,"massflow/mesh/face")) {
-    massflowface = NULL;
-    //error->fix_error(FLERR,this,"Fix insert/pack/face requires you to define a valid ID for a fix of type massflow/mesh/face");
-  } else {
-    massflowface = static_cast<FixMassflowMeshFace*>(modify->fix[ifix]);
-  }
+  int ninsert_this = 0;
 
-  if (massflowface) {
-      ninsert_this = static_cast<int>(massflowface->compute_vector(6));
-  }
+  receive_ninsert_this(ninsert_this);
+
   insertion_ratio = 0.;
 
   // can be < 0 due to overflow, round-off etc
@@ -307,7 +324,7 @@ double FixInsertPackFace::insertion_fraction()
   }
 
   // mc method may be too vague -> normalize fraction
-  int nfaces = massflowface->get_face_ids_size();
+  int nfaces = faceids.size();
   std::vector<double> fraction_face_all(nfaces, 1.0);
   MPI_Allreduce(&fraction_face_local[0], &fraction_face_all[0], nfaces, MPI_DOUBLE, MPI_SUM, world);
 
@@ -320,21 +337,26 @@ double FixInsertPackFace::insertion_fraction()
 
 /* ---------------------------------------------------------------------- */
 
-double FixInsertPackFace::insertion_fraction_face(int face_id)
+int FixInsertPackFace::get_face_index_check(int face_id)
 {
   // check face_id
   if (massflowface->get_face_ids().find(face_id) == massflowface->get_face_ids().end())
     error->fix_error(FLERR,this,"invalid face id");
 
+  return massflowface->get_face_ids().at(face_id);
+}
+
+double FixInsertPackFace::insertion_fraction_face(int face_id)
+{
   // generate random points in hexahedral cell (hex_randpos), then test how many of them are in the local domain
   // do not: generate random points in domain and test if they are inside the hexahedral cell
   // since point in cell test may run into numerical problems!
 
+  const int index = get_face_index_check(face_id);
   int inside = 0;
-  int iHex = ins_region_mesh_hex->get_hex("face_id", face_id);
-  const int index = massflowface->get_face_ids().at(face_id);
   min_face_extent_local[index] = 0.;
   volume_face_absolut[index] = 0.;
+  const int iHex = ins_region_mesh_hex->get_hex("face_id", face_id);
   if (iHex >= 0 && iHex < ins_region_mesh_hex->n_hex()) {
     volume_face_absolut[index] = ins_region_mesh_hex->hex_vol(iHex);
 
@@ -396,46 +418,47 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
     distributions_face_local_all[iproc].resize(nfaces);
   }
 
-  // loop over faces
-  for (int iface=0; iface<nfaces; ++iface) {
-    std::vector<double> accumulatedParticleVolume_facei(nprocs, 0.);
+  if(ninsert_this > 0) {
+    // loop over faces
+    for (int iface=0; iface<nfaces; ++iface) {
+      std::vector<double> accumulatedParticleVolume_facei(nprocs, 0.);
 
-    // loop over templates
-    DiscreteParticleDistribution::const_iterator it_dist = distributions_face[iface].begin();
-    for (int idist=0; it_dist!=distributions_face[iface].end(); ++it_dist, ++idist) {
-      std::vector<int> accumulatedTemplateParticles_facei(distributions_face[iface].size(), 0);
+      // loop over templates
+      DiscreteParticleDistribution::const_iterator it_dist = distributions_face[iface].begin();
+      for (int idist=0; it_dist!=distributions_face[iface].end(); ++it_dist, ++idist) {
+        std::vector<int> accumulatedTemplateParticles_facei(distributions_face[iface].size(), 0);
 
-      // scale number of particles by cg3_ factor (massflowface gives numbers for fully resolved level)
-      double nparticles = it_dist->second / cg3_;
-      double diameter = 2. * it_dist->first.radius_ * cg_;
-      double volume_single = (1./6.)*MY_PI*diameter*diameter*diameter;
+        // scale number of particles by cg3_ factor (massflowface gives numbers for fully resolved level)
+        double nparticles = it_dist->second / cg3_;
+        double diameter = 2. * it_dist->first.radius_ * cg_;
+        double volume_single = (1./6.)*MY_PI*diameter*diameter*diameter;
 
-      for (int iproc = 0; iproc < nprocs; ++iproc) {
-        double procvolfracface = fraction_face_local_all[iproc*nfaces+iface]; // local volume fraction
-        double procminfaceextent = min_face_extent_local_all[iproc*nfaces+iface];
-        // round to integer number of particles
-        // rounding_all tries to avoid that first proc is preferred for insertion
-        int nparts = diameter < procminfaceextent? static_cast<int>(procvolfracface*nparticles + rounding_all[iproc]) : 0;
-        while(nparts > 0 && nparts + accumulatedTemplateParticles_facei[idist] > nparticles) {
-          --nparts; // just in case some weird rounding issues occured
+        for (int iproc = 0; iproc < nprocs; ++iproc) {
+          double procvolfracface = fraction_face_local_all[iproc*nfaces+iface]; // local volume fraction
+          double procminfaceextent = min_face_extent_local_all[iproc*nfaces+iface];
+          // round to integer number of particles
+          // rounding_all tries to avoid that first proc is preferred for insertion
+          int nparts = diameter < procminfaceextent? static_cast<int>(procvolfracface*nparticles + rounding_all[iproc]) : 0;
+          while(nparts > 0 && nparts + accumulatedTemplateParticles_facei[idist] > nparticles) {
+            --nparts; // just in case some weird rounding issues occured
+          }
+          double volume = nparts*volume_single;
+          while (nparts > 0 && volume + accumulatedParticleVolume_facei[iproc] > procvolfracface*volume_face_absolut[iface]) {
+            // volume of selected particles larger than local fraction of cell!
+            // that may happen if e.g. local cell volume fraction is smaller than larger particles
+            // but large enough to hold a couple of small particles
+            volume -= volume_single;
+            --nparts;
+          }
+          accumulatedParticleVolume_facei[iproc] += volume; // volume of particles selected to insert locally this far
+          accumulatedTemplateParticles_facei[idist] += nparts;
+          distributions_face_local_all[iproc][iface].push_back(nparts);
+          if (iproc == me)
+            ninsert_this_local += nparts;
         }
-        double volume = nparts*volume_single;
-        while (nparts > 0 && volume + accumulatedParticleVolume_facei[iproc] > procvolfracface*volume_face_absolut[iface]) {
-          // volume of selected particles larger than local fraction of cell!
-          // that may happen if e.g. local cell volume fraction is smaller than larger particles
-          // but large enough to hold a couple of small particles
-          volume -= volume_single;
-          --nparts;
-        }
-        accumulatedParticleVolume_facei[iproc] += volume; // volume of particles selected to insert locally this far
-        accumulatedTemplateParticles_facei[idist] += nparts;
-        distributions_face_local_all[iproc][iface].push_back(nparts);
-        if (iproc == me)
-          ninsert_this_local += nparts;
-      }
 
-      // now fix up number distribution to add up to original sum
-      {
+        // now fix up number distribution to add up to original sum
+
         // is there a mismatch we need to correct?
         while (nparticles - static_cast<double>(accumulatedTemplateParticles_facei[idist]) > 0.5) {
           // get a list of potential proc candidates for additional insertion
@@ -465,6 +488,7 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
             ninsert_this_local++;
           accumulatedTemplateParticles_facei[idist]++;
         }
+
       }
     }
   }
@@ -480,7 +504,7 @@ int FixInsertPackFace::distribute_ninsert_this(int ninsert_this)
   rounding_all.push_front(rounding_all.back());
   rounding_all.pop_back();
 
-   return ninsert_this_local;
+  return ninsert_this_local;
 }
 
 
@@ -547,8 +571,6 @@ void FixInsertPackFace::x_v_omega(int ninsert_this_local,int &ninserted_this_loc
   ParticleToInsert *pti;
 
   int ntry = 0;
-  // int maxtry = calc_maxtry(ninsert_this_local);
-
   double v_toInsert[3];
   vectorZeroize3D(v_toInsert);
 
@@ -567,30 +589,34 @@ void FixInsertPackFace::x_v_omega(int ninsert_this_local,int &ninserted_this_loc
     int iface = 0;
     FixParticledistributionDiscreteFace *fix_pddf = (FixParticledistributionDiscreteFace*)fix_distribution;
     for (std::map<int,int>::const_iterator it=faceids.begin(); it!=faceids.end(); ++it, ++iface) {
+      int iHex = ins_region_mesh_hex->get_hex("face_id", it->first);
+      if (iHex < 0 || iHex >= ins_region_mesh_hex->n_hex())
+        error->fix_error(FLERR, this, "Failed to find hex cell by face_id!");
+
       int particle_this_face = 0;
       int particle_this_face_local = fix_pddf->pti_list_face_local[iface].size();
       int ninserted_this_face_local = 0;
-      if (massflowface) {
-        if (cg_ > 1.0) {
-          double particle_this_face_real = massflowface->compute_array_by_id(it->first, 6) + remaining_ptis[it->first];
-          double remainder = fmod(particle_this_face_real, cg3_);
-          particle_this_face = static_cast<int>(particle_this_face_real / cg3_);
-          if ((remainder/cg3_) > 0.5) {
-            remainder -= cg3_;
-            ++particle_this_face;
-          }
-          remaining_ptis[it->first] = remainder;
-        } else {
-          particle_this_face = massflowface->compute_array_by_id(it->first, 6);
+
+      if (cg_ > 1.0) {
+        double particle_this_face_real = massflowface->compute_array_by_id(it->first, 6) + remaining_ptis[it->first];
+        double remainder = fmod(particle_this_face_real, cg3_);
+        particle_this_face = static_cast<int>(particle_this_face_real / cg3_);
+        if ((remainder/cg3_) > 0.5) {
+          remainder -= cg3_;
+          ++particle_this_face;
         }
-        v_insert[0] = massflowface->compute_array_by_id(it->first, 7);
-        v_insert[1] = massflowface->compute_array_by_id(it->first, 8);
-        v_insert[2] = massflowface->compute_array_by_id(it->first, 9);
+        remaining_ptis[it->first] = remainder;
+      } else {
+        particle_this_face = massflowface->compute_array_by_id(it->first, 6);
       }
+
+      v_insert[0] = massflowface->compute_array_by_id(it->first, 7);
+      v_insert[1] = massflowface->compute_array_by_id(it->first, 8);
+      v_insert[2] = massflowface->compute_array_by_id(it->first, 9);
 
       ntry = 0;
 
-      int maxtry = maxattempt*particle_this_face_local;
+      int maxtry = calc_maxtry(particle_this_face_local);
       while (ntry < maxtry && ninserted_this_face_local < particle_this_face_local) {
         pti = fix_pddf->pti_list_face_local[iface][ninserted_this_face_local];
         double rbound = pti->r_bound_ins;
@@ -599,18 +625,13 @@ void FixInsertPackFace::x_v_omega(int ninsert_this_local,int &ninserted_this_loc
         while (nins == 0 && ntry < maxattempt) {
           do {
             // generate a point in my subdomain
-            int iHex = ins_region_mesh_hex->get_hex("face_id", it->first);
-            if (iHex >= 0 && iHex < ins_region_mesh_hex->n_hex()) {
+            do {
               do {
-                do {
-                  ins_region_mesh_hex->hex_randpos(iHex, pos);
-                } while (!domain->is_in_subdomain(pos));
-              } while (all_in_flag && ins_region_mesh_hex->match_hex_cut(iHex,pos,rbound));
-            } else {
-              error->fix_error(FLERR, this, "Failed to find hex cell by face_id!");
-            }
+                ins_region_mesh_hex->hex_randpos(iHex, pos);
+              } while (!domain->is_in_subdomain(pos));
+            } while (all_in_flag && ins_region_mesh_hex->match_hex_cut(iHex,pos,rbound));
             ++ntry;
-          } while (ntry < maxattempt /* *particle_this_face_local*/ && domain->dist_subbox_borders(pos) < rbound);
+          } while (ntry < maxattempt && domain->dist_subbox_borders(pos) < rbound);
 
           // randomize vel, omega, quat here
           vectorCopy3D(v_insert,v_toInsert);
@@ -638,7 +659,6 @@ void FixInsertPackFace::x_v_omega(int ninsert_this_local,int &ninserted_this_loc
     }
   }
 }
-
 
 
 /* ---------------------------------------------------------------------- */

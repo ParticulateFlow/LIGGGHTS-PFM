@@ -44,25 +44,24 @@ class FixInsertPackFace : public FixInsert {
   ~FixInsertPackFace();
 
   virtual void post_create();
-  void init();
+  virtual void init();
   virtual void restart(char *);
 
  protected:
 
   virtual void calc_insertion_properties();
-  void init_defaults();
+  virtual void init_defaults();
 
-  void calc_region_volume_local();
+  virtual void calc_region_volume_local();
 
   virtual int calc_ninsert_this();
   virtual int calc_maxtry(int);
-  void x_v_omega(int,int&,int&,double&);
-  double insertion_fraction();
+  virtual void x_v_omega(int,int&,int&,double&);
+  virtual double insertion_fraction();
 
-  double insertion_fraction_face(int face_id);
+  virtual double insertion_fraction_face(int face_id);
 
-  int is_nearby(int);
-  int is_nearby_body(int);
+  virtual int is_nearby(int);
   virtual BoundingBox getBoundingBox() const;
 
   // massflow to be used
@@ -88,9 +87,12 @@ class FixInsertPackFace : public FixInsert {
   std::vector<double> volume_face_absolut;
   std::deque<double> rounding_all;
 
-private:
+ private:
 
-    virtual int distribute_ninsert_this(int);
+  virtual int distribute_ninsert_this(int);
+  virtual void post_create_per_face_data();
+  virtual void receive_ninsert_this(int&);
+  virtual int get_face_index_check(int);
 };
 
 }
