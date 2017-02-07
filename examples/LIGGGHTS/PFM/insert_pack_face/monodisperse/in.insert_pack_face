@@ -1,5 +1,16 @@
 # measure mass flow through mesh surface and use it for insertion of particles with a different resolution
 
+variable my_timestep    equal 0.00001
+variable my_timesteps   equal 60000
+variable my_dumpfreq    equal 1000
+variable my_couplefreq  equal 400
+variable my_minx        equal -1
+variable my_maxx        equal  1
+variable my_miny        equal -1
+variable my_maxy        equal  1
+variable my_minz        equal -0.5
+variable my_maxz        equal  1.5
+
 atom_style  granular
 atom_modify map array
 boundary    f f f
@@ -9,7 +20,7 @@ communicate single vel yes
 
 units       si
 
-region      reg block -1 1 -1 1 -0.5 1.5 units box
+region      reg block ${my_minx} ${my_maxx} ${my_miny} ${my_maxy} ${my_minz} ${my_maxz} units box
 create_box  2 reg
 
 neighbor    0.005 bin
@@ -30,7 +41,7 @@ fix m5 all property/atom/lammps i_cg_level
 pair_style gran model hertz tangential history
 pair_coeff * *
 
-timestep   0.00001
+timestep   ${my_timestep}
 
 fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
@@ -61,7 +72,7 @@ region hexregion mesh/hex file meshes/testextrusion.vtk scale 1. move 0. 0. 0. r
 # 7) insert particles based on the massflow measured, set property i_cg_level 2,
 #    also specify that all calculations should consider the coarse grain factor (cg 2)
 #    and an atom type different from the measured particle shall be used
-fix ins_cg2 all insert/pack/face seed 7331 random_distribute exact maxattempt 100 insert_every 500 &
+fix ins_cg2 all insert/pack/face seed 7331 random_distribute exact maxattempt 250 insert_every ${my_couplefreq} &
     overlapcheck yes set_property i_cg_level 2 all_in yes type_offset 1 region hexregion ntry_mc 10000 massflow_face massflowcg4 cg 2
 
 # apply nve integration
@@ -76,10 +87,10 @@ compute_modify  thermo_temp dynamic no extra 0
 
 run 1
 
-dump dmp all custom/vtk 1000 post/insert*.vtk id type radius mass x y z vx vy vz fx fy fz i_cg_level
+dump dmp all custom/vtk ${my_dumpfreq} post/insert*.vtk id type radius mass x y z vx vy vz fx fy fz i_cg_level
 
 region removeregion block -0.5 0.5 -0.5 0.5 0.0 1.0 side out units box
-fix remove_cg2 all remove nevery 500 massrate 1000 style delete seed 5143 region removeregion atomtype 2
+fix remove_cg2 all remove nevery 400 massrate 1000 style delete seed 5143 region removeregion atomtype 2
 
-run 60000 upto
+run ${my_timesteps} upto
 
