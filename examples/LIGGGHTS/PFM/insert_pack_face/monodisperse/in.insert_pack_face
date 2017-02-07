@@ -83,7 +83,7 @@ compute         rke all erotate/sphere
 thermo_style    custom step atoms ke c_rke vol
 thermo          1000
 thermo_modify   lost ignore norm no
-compute_modify  thermo_temp dynamic no extra 0
+compute_modify  thermo_temp dynamic yes extra 0
 
 run 1
 
