@@ -38,43 +38,43 @@ namespace LAMMPS_NS {
 
 class FixMassflowMeshFace : public Fix {
 
-  friend class FixParticledistributionDiscreteFace;
   friend class FixInsertPackFace;
+
  public:
 
   FixMassflowMeshFace(class LAMMPS *lmp, int narg, char ** arg);
   ~FixMassflowMeshFace();
 
-  void post_create();
-  void pre_delete(bool unfixflag);
+  virtual void post_create();
+  virtual void pre_delete(bool unfixflag);
 
-  void init();
-  void setup(int vflag);
-  int setmask();
+  virtual void init();
+  virtual void setup(int vflag);
+  virtual int setmask();
 
-  void post_integrate();
-  void pre_exchange();
+  virtual void post_integrate();
+  virtual void pre_exchange();
 
-  void write_restart(FILE *fp);
-  void restart(char *buf);
+  virtual void write_restart(FILE *fp);
+  virtual void restart(char *buf);
 
-  double compute_scalar();
-  double compute_vector(int index);
-  double compute_array(int i, int j);
+  virtual double compute_scalar();
+  virtual double compute_vector(int index);
+  virtual double compute_array(int i, int j);
 
-  double compute_array_by_id(int face_id, int j);
+ protected:
 
-  const std::map<int, int>& get_face_ids() const
+  virtual double compute_array_by_id(int face_id, int j);
+
+  virtual const std::map<int, int>& get_face_ids() const
   {
     return faceid2index_;
   }
 
-  int get_face_ids_size() const
+  virtual int get_face_ids_size() const
   {
     return faceid2index_.size();
   }
-
- protected:
 
   // true if any given particle is
   // counted only once
@@ -88,13 +88,7 @@ class FixMassflowMeshFace : public Fix {
 
   class FixPropertyAtom* fix_orientation_;
 
-  const DiscreteParticleDistribution& get_distribution_by_id(int face_id);
-  const std::vector<DiscreteParticleDistribution>& get_distributions()
-  { return distributions_face_; }
-
- private:
-
-  bool confirm_classification(int ibody, int iPart, int tri, int current_side);
+  virtual bool confirm_classification(int ibody, int iPart, int tri, int current_side);
 
   class FixMeshSurface *fix_mesh_;
   class FixPropertyAtom *fix_counter_;
@@ -150,8 +144,6 @@ class FixMassflowMeshFace : public Fix {
   std::map<int, int> faceid2index_;
   double cg_, cg3_;
 
-  std::vector<DiscreteParticleDistribution> distributions_face_;
-
   // containers holding per timestep values
   // using member variables to avoid extensive memory reallocation
   std::vector<std::vector<double> > radius_dist_face_local_this;
@@ -174,6 +166,17 @@ class FixMassflowMeshFace : public Fix {
   std::vector<double> mass_dist_this_recv;
   std::vector<int> atomtype_dist_this_recv;
   std::vector<int> nparticles_face_this_all;
+
+ private:
+
+  std::vector<DiscreteParticleDistribution> distributions_face_;
+  virtual void reset_distributions(int);
+  virtual void increment_distribution(const ConstantParticleTemplateSphere&, int);
+  virtual void send_post_create_data() {}
+  virtual void send_coupling_data() {}
+
+  const std::vector<DiscreteParticleDistribution>& get_distributions()
+  { return distributions_face_; }
 
 }; //end class
 

@@ -34,7 +34,6 @@
 #include "fix_mesh_surface.h"
 #include "fix_neighlist_mesh.h"
 #include "fix_multisphere.h"
-#include "fix_property_atom.h"
 #include "mpi_liggghts.h"
 #include "math_extra_liggghts.h"
 #include "fix_massflow_mesh_face.h"
@@ -351,7 +350,7 @@ void FixMassflowMeshFace::post_create()
     average_vz_face_out_.resize(nfaceids);
     mass_face_last_.resize(nfaceids);
     nparticles_face_last_.resize(nfaceids);
-    distributions_face_.resize(nfaceids);
+    reset_distributions(nfaceids);
     // shouldn't be necessary (?):
     std::fill_n(mass_face_.begin(),            nfaceids, 0.);
     std::fill_n(nparticles_face_.begin(),      nfaceids, 0 );
@@ -375,6 +374,8 @@ void FixMassflowMeshFace::post_create()
     delete [] tri_face_ids_recv;
 
     size_array_rows = nfaceids; // rows in global array
+
+    send_post_create_data();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -441,10 +442,6 @@ void FixMassflowMeshFace::init()
             }
         }
     }
-
-    // TODO: enable if cg and fg are in separate simulations
-    //cg_ = force->cg();
-    //cg3_ = cg_*cg_*cg_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -472,6 +469,11 @@ int FixMassflowMeshFace::setmask()
    2 = was on nvec_ side last step
    3 = do not re-count, was counted already
 ------------------------------------------------------------------------- */
+void FixMassflowMeshFace::reset_distributions(int size)
+{
+    distributions_face_.clear();
+    distributions_face_.resize(size);
+}
 
 void FixMassflowMeshFace::post_integrate()
 {
@@ -522,8 +524,7 @@ void FixMassflowMeshFace::post_integrate()
         std::fill_n(average_vz_face_out_.begin(),  nfaceids, 0.);
         nparticles_face_last_ = nparticles_face_;
         mass_face_last_ = mass_face_;
-        distributions_face_.clear();
-        distributions_face_.resize(nfaceids);
+        reset_distributions(nfaceids);
     }
 
     radius_dist_face_local_this.clear();
@@ -834,6 +835,8 @@ void FixMassflowMeshFace::post_integrate()
         int *displs = new int[comm->nprocs];
         displs[0] = 0;
 
+        ConstantParticleTemplateSphere cpts;
+
         MPI_Allreduce(&nparticles_face_this[0], &nparticles_face_this_all[0], nfaceids, MPI_INT, MPI_SUM, world);
 
         for(int i=0; i<nfaceids; ++i)
@@ -865,10 +868,10 @@ void FixMassflowMeshFace::post_integrate()
 
                 for(int p = 0; p < nparticles_face_this_all[i]; ++p)
                 {
-                    double rad  = radius_dist_this_recv[p]/cg_; // fg particle radius
-                    double mass = mass_dist_this_recv[p]/cg3_;  // fg particle mass
-                    int type    = atomtype_dist_this_recv[p];
-                    distributions_face_[i][ConstantParticleTemplateSphere(rad, mass, type)] += cg3_; // number of fg particles!
+                    cpts.radius_ = radius_dist_this_recv[p]/cg_; // fg particle radius
+                    cpts.mass_ = mass_dist_this_recv[p]/cg3_;  // fg particle mass
+                    cpts.atomtype_ = atomtype_dist_this_recv[p];
+                    increment_distribution(cpts, i);
                 }
             }
         }
@@ -901,6 +904,14 @@ void FixMassflowMeshFace::post_integrate()
             average_vz_face_out_[i] += average_vz_face_out_this[i];
         }
     }
+
+    send_coupling_data();
+}
+
+
+void FixMassflowMeshFace::increment_distribution(const ConstantParticleTemplateSphere& cpts, int iface)
+{
+    distributions_face_[iface][cpts] += cg3_; // number of fg particles!
 }
 
 /* ----------------------------------------------------------------------
@@ -1136,15 +1147,6 @@ double FixMassflowMeshFace::compute_array_by_id(int face_id, int j)
       error->fix_error(FLERR, this, "Invalid face id!");
 
   return compute_array(faceid2index_[face_id], j);
-}
-
-
-const DiscreteParticleDistribution& FixMassflowMeshFace::get_distribution_by_id(int face_id)
-{
-  if(faceid2index_.find(face_id) == faceid2index_.end())
-    error->fix_error(FLERR, this, "Invalid face id!");
-
-  return distributions_face_[faceid2index_[face_id]];
 }
 
 
