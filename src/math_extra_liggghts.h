@@ -101,7 +101,18 @@ namespace MathExtraLiggghts {
   inline bool is_int(char *str);
 
   inline bool line_triangle_intersect(const double *origin, const double *dir, const double *v0, const double *v1, const double *v2);
-};
+
+  inline unsigned int JSHash(const std::string& str)
+  {
+    unsigned int hash = 1315423911;
+
+    for (std::size_t i = 0; i < str.length(); ++i) {
+      hash ^= ((hash << 5) + str[i] + (hash >> 2));
+    }
+
+    return hash;
+  }
+}
 
 /* ----------------------------------------------------------------------
    matrix  times col vector //NP modified C.K.
