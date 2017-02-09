@@ -80,7 +80,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         pmass_ = NULL;
         molMass_A_, molMass_C_ = 0;
         Runiv = 8.3144; //[j/Kmol]
-        T  = 1073.15;   // [K] will be deleted after functioning test case is create.
+        T_test  = 1073.15;   // [K] will be deleted after functioning test case is create.
 
 	iarg_ = 3;
         if (narg < 11)
@@ -162,6 +162,14 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         next_reneighbor = update -> ntimestep + nevery;
 
         restart_global = 1;
+
+        if (screen)
+        {
+            fprintf(screen,"modified species names are: %s \n", massA);
+            fprintf(screen,"and: %s \n", massC);
+            fprintf(screen,"reactant species: %s \n", speciesA);
+            fprintf(screen,"product species: %s \n", speciesC);
+        }
 
 }	
 
@@ -381,9 +389,10 @@ void FixChemShrinkCore::post_force(int)
     double a_[nmaxlayers_];             // reaction resistance value for each layer
     double dmA_[nmaxlayers_];           // mass flow rate of reactant gas species for each layer
     double r_[nmaxlayers_];             // radius of layers
+    double y0_[nmaxlayers_];
     // double diff[nmaxlayers_];
     // double masst;
-    // double y0[nmaxlayers_];
+
 
     for (i = 0; i<nlocal; i++)
     {
@@ -397,9 +406,9 @@ void FixChemShrinkCore::post_force(int)
 	    
             //for(int j = 0; j<nmaxlayers_; j++)
               //  dmA_[j] = 0.0;
-            reaction(i,a_,dmA_); //diff,masst,y0,
-            update_atom_properties(i,dmA_,r_);
-            update_gas_properties(i,dmA_);
+            // reaction(i,a_,dmA_); //diff,masst,y0,
+            // update_atom_properties(i,dmA_,r_);
+            // update_gas_properties(i,dmA_);
 	}
     }
 
@@ -460,13 +469,13 @@ void FixChemShrinkCore::getA(int i, double *a_, double *r_)
 {
     for (int j = 0; j < nmaxlayers_; j++)
     {
-        //a_[j] = 1/(k0_[j]*exp(-Ea_[j]/(Runiv*T))*(1-(r_[j]*r_[j]*r_[j])/(radius_[i]*radius_[i]*radius_[i])));
-        //a_[j] = 1/(k0_[j]*exp(-Ea_[j]/(Runiv*T))*(1-(r_[j])/(radius_[i])));
-        a_[j]   =   1/(k0_[j]*exp(-Ea_[j]/(Runiv*T))*partSurfArea(r_[j]));
+        a_[j]   =   (1/((k0_[j]*exp(-Ea_[j]/(Runiv*T_test)))*(1+1/K_eq(j,T_test))))
+                    *(1/pow((1-(r_[j]*r_[j]*r_[j])/(radius_[i]*radius_[i]*radius_[i])),0.66666));
 
         if (screen)
         {
             fprintf(screen,"reaction constant: %f \n",a_[j]);
+            fprintf(screen,"Equilibrium constant Keq: %f \n",K_eq(j,T_test));
         }
     }
     // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
@@ -609,10 +618,18 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_) //double *diff
     }
 }
 
-void FixChemShrinkCore::getY0(int i, double *y0)
+void FixChemShrinkCore::getY0(int i, double *y0_)
 {
   // calculate equilibrium concentration from K_eq(layer, T)
-  
+    double xp_[nmaxlayers_];            // molar fraction of product gas
+    double xr_[nmaxlayers_];            // molar fraction of reactant gas
+
+    for (int j = 0; j < nmaxlayers_; j++)
+    {
+        xp_[j]  =   Keq_(j,T_test)/(1+Keq_(j,T_test));
+        xr_[j]  =   1-xp_[j];
+    }
+
   // directly guessing x_eq like in the thesis of Nietrost seems to be spurious for multi-component mixtures (H2, H2O, CO, CO2)
   // Negri et al. (1991), Takahashi et al. (1986) and probably many others use a different approach:
   // as driving term, they use (n_A - n_C / K)
@@ -626,18 +643,28 @@ double FixChemShrinkCore::K_eq(int layer, double T)
 {
 //     ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
 //                for the reactions under consideration, this should not be the case (double-check !!!)  
-  
-//     if(speciesA == 'CO')
-//     {
-//         K_eq depending on layer and T       
-//     }
-//     else if(speciesA == 'H2')
-//     {
-//         K_eq depending on layer and T
-//     }
-//     else
-//     {
-//         //error: undefined reaction
-//     }
-    return 0;
+    double Keq_;
+    if(strcmp(speciesA,"CO")==0)
+     {
+         if (layer == 0)
+             Keq_   =   exp(3968.37/T+3.94);
+         else if (layer == 1)
+             Keq_   =   pow(10,(-1834/T+2.17));
+         else if (layer == 2)
+             Keq_   =   pow(10,(917/T-1.097));
+     }
+     else if(strcmp(speciesA,"H2")==0)
+     {
+         if (layer == 0)
+             Keq_   =   exp(-362.6/T+10.344);
+         else if (layer == 1)
+             Keq_   =   pow(10,(-3577/T+3.74));
+         else if (layer == 2)
+             Keq_   =   pow(10,(-827/T+0.468));
+     }
+     else
+     {
+         printf("Error : Undefined Reaction \n");
+     }
+    return Keq_;
 }

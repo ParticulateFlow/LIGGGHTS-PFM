@@ -70,7 +70,7 @@ public:
    
   // gas-phase properties
   char *speciesA, *speciesC;
-  double Runiv, T;
+  double Runiv, T_test;
 
   class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C [as mass fractions]
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
