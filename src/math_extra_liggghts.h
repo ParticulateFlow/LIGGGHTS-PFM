@@ -7,7 +7,8 @@
 
    Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2016 DCS Computing GmbH, Linz
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -17,6 +18,11 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing author:
+   Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifndef LMP_MATH_EXTRA_LIGGGHTS_H
@@ -102,16 +108,18 @@ namespace MathExtraLiggghts {
 
   inline bool line_triangle_intersect(const double *origin, const double *dir, const double *v0, const double *v1, const double *v2);
 
-  inline unsigned int JSHash(const std::string& str)
-  {
+  inline unsigned int JSHash(const std::string& str) {
     unsigned int hash = 1315423911;
-
     for (std::size_t i = 0; i < str.length(); ++i) {
       hash ^= ((hash << 5) + str[i] + (hash >> 2));
     }
-
     return hash;
   }
+
+  inline unsigned int JSHash(const std::string& str, unsigned int max) {
+    return JSHash(str) % max;
+  }
+
 }
 
 /* ----------------------------------------------------------------------
