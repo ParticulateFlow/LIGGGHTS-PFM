@@ -7,7 +7,8 @@
 
    Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2016 DCS Computing GmbH, Linz
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -17,6 +18,11 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing author:
+   Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifndef LMP_MPI_LIGGGHTS_H
@@ -31,6 +37,13 @@
 
 namespace LAMMPS_NS
 {
+
+inline int mpi_tag_upper_bound(MPI_Comm comm)
+{
+    int flag, *mpi_tag_ub;
+    MPI_Comm_get_attr(comm, MPI_TAG_UB, &mpi_tag_ub, &flag);
+    return *mpi_tag_ub;
+}
 
 /* ----------------------------------------------------------------------
    Helper function to be able to templetize wrappers
@@ -236,7 +249,7 @@ inline int MPI_Allgather_Vector(T *vector, int size ,T *&vector_all,MPI_Comm com
     return size_all;
 }
 
-}; // end namespace LAMMPS_NS
+} // end namespace LAMMPS_NS
 
 
 #endif
