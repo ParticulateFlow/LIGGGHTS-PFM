@@ -51,11 +51,11 @@ using namespace FixConst;
 
 FixAveEulerRegion::FixAveEulerRegion(LAMMPS *lmp, int narg, char **arg) :
   FixAveEuler(lmp, narg, arg),
-  v_min_(NULL),
-  v_max_(NULL),
   idregion_grid_(NULL),
   region_grid_(NULL),
-  region_grid_mesh_hex_(NULL)
+  region_grid_mesh_hex_(NULL),
+  v_min_(NULL),
+  v_max_(NULL)
 {
   // parse args
   if (narg < 4) error->all(FLERR,"Illegal fix ave/euler/region command");
@@ -94,11 +94,13 @@ FixAveEulerRegion::FixAveEulerRegion(LAMMPS *lmp, int narg, char **arg) :
       strcpy(idregion_,arg[iarg+1]);
       region_ = domain->regions[iregion];
       iarg += 2;
-    } else {
+    } else if (strcmp(style,"fix ave/euler/region") == 0) {
       char *errmsg = new char[strlen(arg[iarg])+50];
       sprintf(errmsg,"unknown keyword or wrong keyword order: %s", arg[iarg]);
       error->fix_error(FLERR,this,errmsg);
       delete []errmsg;
+    } else {
+      ++iarg;
     }
   }
 }
@@ -147,6 +149,8 @@ void FixAveEulerRegion::post_create()
   } else {
     error->fix_error(FLERR, this, "requires region of style mesh/hex");
   }
+
+  send_post_create_data();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -484,6 +488,7 @@ void FixAveEulerRegion::calculate_eu()
   // wrap with clear/add
   int nextstep = (update->ntimestep/nevery)*nevery + nevery;
   modify->addstep_compute(nextstep);
+  send_coupling_data();
 }
 
 /* ---------------------------------------------------------------------- */
