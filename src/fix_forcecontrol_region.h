@@ -42,16 +42,20 @@ class FixForceControlRegion : public Fix {
  public:
   FixForceControlRegion(class LAMMPS *, int, char **);
   ~FixForceControlRegion();
-  void post_create();
-  int setmask();
-  void init();
-  void setup(int);
-  void min_setup(int);
-  void post_force(int);
-  void reset_dt();
-  double compute_scalar();
-  double compute_vector(int);
-  int modify_param(int narg, char **arg);
+  virtual void post_create();
+  virtual int setmask();
+  virtual void init();
+  virtual void setup(int);
+  virtual void min_setup(int);
+  virtual void post_force(int);
+  virtual void reset_dt();
+  virtual double compute_scalar();
+  virtual double compute_vector(int);
+  virtual int modify_param(int narg, char **arg);
+
+ protected:
+  double cg_target_, cg3_target_, cg_ratio_;
+  double const_part_, sinesq_part_, used_part_;
 
  private:
   double *xvalue;
@@ -75,14 +79,10 @@ class FixForceControlRegion : public Fix {
   double fadex_,fadey_,fadez_;
 
   class FixAveEulerRegion *actual_;
-  class FixAveEulerRegion *target_;
-  double cg_, cg3_, cg_ratio_;
   int ncells_max_;
   double **old_pv_vec_;
   double **sum_err_;
-  double const_part_;
-  double sinesq_part_;
-  double used_part_;
+
   std::set<int> active_;
   std::vector<bool> modifier_;
   std::map<class FixScaleDiameter*, std::set<int> > modifier_scale_;
@@ -90,6 +90,32 @@ class FixForceControlRegion : public Fix {
   const double acceptable_deviation_max;
   bool limit_velocity_;
   double limit[3];
+
+ private:
+  class FixAveEulerRegion *target_;
+
+  virtual int target_has_cell_id(int cell_id);
+  virtual int target_cell_index(int cell_id);
+  virtual int target_cell_count(int cell_index);
+  virtual double target_cell_mass(int cell_index);
+  virtual double target_cell_vol_fr(int cell_index);
+  virtual double target_cell_stress_xx(int cell_index);
+  virtual double target_cell_stress_yy(int cell_index);
+  virtual double target_cell_stress_zz(int cell_index);
+  virtual double target_cell_v_ave_x(int cell_index);
+  virtual double target_cell_v_ave_y(int cell_index);
+  virtual double target_cell_v_ave_z(int cell_index);
+  virtual double target_cell_v_min_x(int cell_index);
+  virtual double target_cell_v_min_y(int cell_index);
+  virtual double target_cell_v_min_z(int cell_index);
+  virtual double target_cell_v_max_x(int cell_index);
+  virtual double target_cell_v_max_y(int cell_index);
+  virtual double target_cell_v_max_z(int cell_index);
+
+  virtual void post_create_stress_part();
+
+  virtual void receive_post_create_data() {}
+  virtual void receive_coupling_data() {}
 };
 
 }

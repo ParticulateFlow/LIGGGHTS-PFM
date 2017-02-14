@@ -23,8 +23,8 @@
    Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "fix_ave_euler_region.h"
 #include "fix_forcecontrol_region.h"
 #include "fix_scale_diameter.h"
@@ -49,6 +49,12 @@ enum{NONE,STRESS,VELOCITY};
 
 FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
+  cg_target_(1.0),
+  cg3_target_(1.0),
+  cg_ratio_(1.0),
+  const_part_(1.0),
+  sinesq_part_(0.0),
+  used_part_(1.0),
   xvalue(NULL),
   yvalue(NULL),
   zvalue(NULL),
@@ -62,20 +68,14 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   fadex_ (1.0),
   fadey_ (1.0),
   fadez_ (1.0),
-  cg_(1.0),
-  cg3_(1.0),
-  cg_ratio_(1.0),
   ncells_max_(0),
   old_pv_vec_(NULL),
   sum_err_(NULL),
-  const_part_(1.0),
-  sinesq_part_(0.0),
-  used_part_(1.0),
   acceptable_deviation_min(0.97),
   acceptable_deviation_max(1.03),
   limit_velocity_(false)
 {
-  if (narg < 6) error->all(FLERR,"Illegal fix addforce command");
+  if (narg < 6) error->all(FLERR,"Illegal fix forcecontrol/region command");
 
   scalar_flag = 1;
   vector_flag = 1;
@@ -117,15 +117,17 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
     } else if(strcmp(arg[iarg],"target_val") == 0) {
       if (narg < iarg+2) error->fix_error(FLERR,this,"not enough arguments for 'target_val'");
       ++iarg;
-      int ifix = modify->find_fix(arg[iarg]);
+      if (strcmp(style,"forcecontrol/region") == 0) {
+        int ifix = modify->find_fix(arg[iarg]);
 
-      if(ifix < 0)
-          error->all(FLERR,"Illegal fix forcecontrol/region command, invalid ID for fix ave/euler/region provided");
+        if(ifix < 0)
+            error->all(FLERR,"Illegal fix forcecontrol/region command, invalid ID for fix ave/euler/region provided");
 
-      if(strncmp(modify->fix[ifix]->style,"ave/euler/region",16))
-          error->all(FLERR,"Illegal fix forcecontrol/region command, fix is not of type ave/euler/region");
+        if(strncmp(modify->fix[ifix]->style,"ave/euler/region",16))
+            error->all(FLERR,"Illegal fix forcecontrol/region command, fix is not of type ave/euler/region");
 
-      target_ = static_cast<FixAveEulerRegion*>(modify->fix[ifix]);
+        target_ = static_cast<FixAveEulerRegion*>(modify->fix[ifix]);
+      }
 
       ++iarg;
     } else if(strcmp(arg[iarg],"kp") == 0) {
@@ -145,20 +147,22 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
       if (strcmp(arg[iarg+1],"on") == 0)
         limit_velocity_ = true;
       iarg += 2;
-    } else if (strcmp(arg[iarg],"cg") == 0) { // TODO: remove when cg and fg are separate simulations -> cg_ = force->cg();
+    } else if (strcmp(arg[iarg],"cg") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
-      cg_ = atof(arg[iarg+1]);
+      cg_target_ = atof(arg[iarg+1]);
       iarg += 2;
-    } else error->all(FLERR,"Illegal fix forcecontrol/region command");
+    } else if (strcmp(style,"forcecontrol/region") == 0) {
+      error->all(FLERR,"Illegal fix forcecontrol/region command");
+    } else {
+      ++iarg;
+    }
   }
 
   if(!actual_)
     error->fix_error(FLERR, this, "missing ave/euler/region for actual_val");
-  if(!target_)
+  if((strcmp(style,"forcecontrol/region") == 0) && !target_)
     error->fix_error(FLERR, this, "missing ave/euler/region for target_val");
 
-  cg3_ = cg_*cg_*cg_;
-  cg_ratio_ = force->cg()/cg_;
   force_flag = 0;
   foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
 }
@@ -178,6 +182,10 @@ FixForceControlRegion::~FixForceControlRegion()
 
 void FixForceControlRegion::post_create()
 {
+  receive_post_create_data();
+  cg3_target_ = cg_target_*cg_target_*cg_target_;
+  cg_ratio_ = force->cg()/cg_target_;
+
   // all cells active by default
   int ncells = actual_->ncells();
   for (int icell=0; icell<ncells; ++icell) {
@@ -185,14 +193,20 @@ void FixForceControlRegion::post_create()
   }
   modifier_.resize(ncells, false);
 
+  if (ctrl_style_ == STRESS) {
+    post_create_stress_part();
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixForceControlRegion::post_create_stress_part()
+{
   double maxrd,minrd;
   modify->max_min_rad(maxrd,minrd);
-  if (ctrl_style_ == STRESS)
-  {
-    const_part_ = (2.*maxrd/cg_)*1.2; // TODO: change when cg and fg are separate simulations
-    used_part_ = (2.*maxrd/cg_)*1.4;
-    sinesq_part_ = used_part_ - const_part_;
-  }
+  const_part_ = (2.*maxrd/cg_target_)*1.2;
+  used_part_ = (2.*maxrd/cg_target_)*1.4;
+  sinesq_part_ = used_part_ - const_part_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -231,6 +245,9 @@ void FixForceControlRegion::min_setup(int vflag)
 void FixForceControlRegion::post_force(int vflag)
 {
   UNUSED(vflag);
+
+  receive_coupling_data();
+
   double **x = atom->x;
   double **f = atom->f;
   double **v = atom->v;
@@ -266,16 +283,16 @@ void FixForceControlRegion::post_force(int vflag)
 
     int cell_id = actual_->cell_id(*it_cell);
 
+    int tcell = target_cell_index(cell_id);
+
     // skip cell if target_ cell has less than half of equivalent cg particle
     // mostly this happens when a stream of particles enters an empty cell
-    if (target_->compute_array_by_id(cell_id,3) <= actual_->cell_vol_fr(*it_cell)*0.5) {
+    if (target_cell_vol_fr(tcell) <= actual_->cell_vol_fr(*it_cell)*0.5) {
       continue;
     }
 
-    int tcell = target_->cell(cell_id);
-
     // clear controller history for empty cells
-    if (actual_->cell_count(*it_cell) < 1 || target_->cell_count(tcell) < 1) {
+    if (actual_->cell_count(*it_cell) < 1 || target_cell_count(tcell) < 1) {
       old_pv_vec_[*it_cell][0] = 0.;
       old_pv_vec_[*it_cell][1] = 0.;
       old_pv_vec_[*it_cell][2] = 0.;
@@ -297,9 +314,9 @@ void FixForceControlRegion::post_force(int vflag)
         pv_vec_[0] = -(pre*actual_->cell_stress(*it_cell, 0)/actual_->cell_count(*it_cell)); // fg
         pv_vec_[1] = -(pre*actual_->cell_stress(*it_cell, 1)/actual_->cell_count(*it_cell)); // fg
         pv_vec_[2] = -(pre*actual_->cell_stress(*it_cell, 2)/actual_->cell_count(*it_cell)); // fg
-        sp_vec_[0] = -(pre*target_->cell_stress(tcell, 0)/(target_->cell_count(tcell)*cg3_));// cg
-        sp_vec_[1] = -(pre*target_->cell_stress(tcell, 1)/(target_->cell_count(tcell)*cg3_));// cg
-        sp_vec_[2] = -(pre*target_->cell_stress(tcell, 2)/(target_->cell_count(tcell)*cg3_));// cg
+        sp_vec_[0] = -(pre*target_cell_stress_xx(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
+        sp_vec_[1] = -(pre*target_cell_stress_yy(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
+        sp_vec_[2] = -(pre*target_cell_stress_zz(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
 
         // get stress directions from region mesh/hex (vector properties stored in vtk file)
         double *stress_ctrl_dir = actual_->cell_vector_property(*it_cell, "stress_ctrl_dir");
@@ -317,11 +334,11 @@ void FixForceControlRegion::post_force(int vflag)
         double massflow_correction = 1.;
 
         if (modifier_[tcell] && actual_->cell_vol_fr(*it_cell) > 0.)
-          massflow_correction = target_->cell_vol_fr(tcell)/actual_->cell_vol_fr(*it_cell);
+          massflow_correction = target_cell_vol_fr(tcell)/actual_->cell_vol_fr(*it_cell);
 
-        sp_vec_[0] = massflow_correction*target_->cell_v_av(tcell, 0);
-        sp_vec_[1] = massflow_correction*target_->cell_v_av(tcell, 1);
-        sp_vec_[2] = massflow_correction*target_->cell_v_av(tcell, 2);
+        sp_vec_[0] = massflow_correction*target_cell_v_ave_x(tcell);
+        sp_vec_[1] = massflow_correction*target_cell_v_ave_y(tcell);
+        sp_vec_[2] = massflow_correction*target_cell_v_ave_z(tcell);
 
         axis_[0] = axis_[1] = axis_[2] = 1.;
 
@@ -385,12 +402,12 @@ void FixForceControlRegion::post_force(int vflag)
       double bounds[6];
       actual_->cell_bounds(*it_cell, bounds);
 
-      vel_min_[0] = target_->cell_v_min(tcell, 0);
-      vel_min_[1] = target_->cell_v_min(tcell, 1);
-      vel_min_[2] = target_->cell_v_min(tcell, 2);
-      vel_max_[0] = target_->cell_v_max(tcell, 0);
-      vel_max_[1] = target_->cell_v_max(tcell, 1);
-      vel_max_[2] = target_->cell_v_max(tcell, 2);
+      vel_min_[0] = target_cell_v_min_x(tcell);
+      vel_min_[1] = target_cell_v_min_y(tcell);
+      vel_min_[2] = target_cell_v_min_z(tcell);
+      vel_max_[0] = target_cell_v_max_x(tcell);
+      vel_max_[1] = target_cell_v_max_y(tcell);
+      vel_max_[2] = target_cell_v_max_z(tcell);
 
       // allow small deviation from min/max velocity
       vel_min_[0] *= (vel_min_[0] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
@@ -406,10 +423,15 @@ void FixForceControlRegion::post_force(int vflag)
         if (mask[i] & groupbit) {
           fadex_ = fadey_ = fadez_ = 1.0;
 
+          // fade out factors
           if (ctrl_style_ == VELOCITY) {
+
             fadex_ = fadey_ = fadez_ = rmass[i]*dtv_inverse_;
+
           } else if (ctrl_style_ == STRESS  && sinesq_part_ > 0.0) {
+
             if (axis_[0] != 0.) {
+              // leftward force and atom position to the left of const force part
               if (axis_[0] < 0. && x[i][0] < bounds[1] - const_part_) {
                 if(x[i][0] < bounds[1] - used_part_) {
                   fadex_ = 0.;
@@ -417,6 +439,7 @@ void FixForceControlRegion::post_force(int vflag)
                   fadex_ = sin(M_PI*0.5*(x[i][0] - (bounds[1]-used_part_))/sinesq_part_);
                   fadex_ *= fadex_;
                 }
+              // rightward force and atom position to the right of const force part
               } else if (axis_[0] > 0. && x[i][0] > bounds[0] + const_part_) {
                 if(x[i][0] > bounds[0] + used_part_) {
                   fadex_ = 0.;
@@ -446,16 +469,22 @@ void FixForceControlRegion::post_force(int vflag)
             }
 
             if (axis_[2] != 0.) {
+              // downward force and atom position below const force part
               if (axis_[2] < 0. && x[i][2] < bounds[5] - const_part_) {
+                // atom position below used part
                 if(x[i][2] < bounds[5] - used_part_) {
                   fadez_ = 0.;
+                // atom position in sine squared part
                 } else {
                   fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[5]-used_part_))/sinesq_part_);
                   fadez_ *= fadez_;
                 }
+              // upward force and atom position above const force part
               } else if (axis_[2] > 0. && x[i][2] > bounds[4] + const_part_) {
+                // atom position above used part
                 if(x[i][2] > bounds[4] + used_part_) {
                   fadez_ = 0.;
+                // atom position in sine squared part
                 } else {
                   fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[4]+used_part_))/sinesq_part_);
                   fadez_ *= fadez_;
@@ -541,9 +570,9 @@ void FixForceControlRegion::post_force(int vflag)
     double mass_ratio = 0.;
     for (; it_cell!=it->second.end(); ++it_cell) {
       int cell_id = actual_->cell_id(*it_cell);
-      int tcell = target_->cell(cell_id);
+      int tcell = target_cell_index(cell_id);
       if(actual_->cell_vol_fr(*it_cell) > 0.)
-        mass_ratio += target_->cell_mass(tcell)/actual_->cell_mass(*it_cell); // fg/cg
+        mass_ratio += target_cell_mass(tcell)/actual_->cell_mass(*it_cell); // fg/cg
       else
         mass_ratio += 1.0;
     }
@@ -607,14 +636,14 @@ int FixForceControlRegion::modify_param(int narg, char **arg)
       }
     } else if (strcmp(arg[0],"massflow_correction_on") == 0) {
       while (start_id <= end_id) {
-        if (target_->has_cell_id(start_id))
-          modifier_[target_->cell(start_id)] = true;
+        if (target_has_cell_id(start_id))
+          modifier_[target_cell_index(start_id)] = true;
         ++start_id;
       }
     } else if (strcmp(arg[0],"massflow_correction_off") == 0) {
       while (start_id <= end_id) {
-        if (target_->has_cell_id(start_id))
-          modifier_[target_->cell(start_id)] = false;
+        if (target_has_cell_id(start_id))
+          modifier_[target_cell_index(start_id)] = false;
         ++start_id;
       }
     }
@@ -661,3 +690,123 @@ double FixForceControlRegion::compute_vector(int n)
   }
   return foriginal_all[n+1];
 }
+
+/* ---------------------------------------------------------------------- */
+
+int FixForceControlRegion::target_has_cell_id(int cell_id)
+{
+  return target_->has_cell_id(cell_id);
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixForceControlRegion::target_cell_index(int cell_id)
+{
+  return target_->cell(cell_id);
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixForceControlRegion::target_cell_count(int cell_index)
+{
+  return target_->cell_count(cell_index);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_mass(int cell_index)
+{
+  return target_->cell_mass(cell_index);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_vol_fr(int cell_index)
+{
+  return target_->cell_vol_fr(cell_index);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_stress_xx(int cell_index)
+{
+  return target_->cell_stress(cell_index, 0);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_stress_yy(int cell_index)
+{
+  return target_->cell_stress(cell_index, 1);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_stress_zz(int cell_index)
+{
+  return target_->cell_stress(cell_index, 2);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_ave_x(int cell_index)
+{
+  return target_->cell_v_av(cell_index, 0);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_ave_y(int cell_index)
+{
+  return target_->cell_v_av(cell_index, 1);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_ave_z(int cell_index)
+{
+  return target_->cell_v_av(cell_index, 2);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_min_x(int cell_index)
+{
+  return target_->cell_v_min(cell_index, 0);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_min_y(int cell_index)
+{
+  return target_->cell_v_min(cell_index, 1);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_min_z(int cell_index)
+{
+  return target_->cell_v_min(cell_index, 2);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_max_x(int cell_index)
+{
+  return target_->cell_v_max(cell_index, 0);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_max_y(int cell_index)
+{
+  return target_->cell_v_max(cell_index, 1);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixForceControlRegion::target_cell_v_max_z(int cell_index)
+{
+  return target_->cell_v_max(cell_index, 2);
+}
+
