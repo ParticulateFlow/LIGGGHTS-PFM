@@ -191,8 +191,12 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
             cg3_ = cg_*cg_*cg_;
             iarg += 2;
             hasargs = true;
-        } else if(strcmp(style,"massflow/mesh/face") == 0)
+        } else if(strcmp(style,"massflow/mesh/face") == 0) {
             error->fix_error(FLERR,this,"unknown keyword");
+        } else {
+            ++iarg;
+            hasargs = true;
+        }
     }
 
     if(fp_ && 1 < comm->nprocs && 0 == comm->me)
