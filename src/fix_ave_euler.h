@@ -44,7 +44,7 @@ class FixAveEuler : public Fix {
  public:
 
   FixAveEuler(class LAMMPS *, int, char **);
-  ~FixAveEuler();
+  virtual ~FixAveEuler();
 
   virtual void post_create();
   virtual int setmask();
@@ -65,7 +65,7 @@ class FixAveEuler : public Fix {
   virtual double cell_volume(int)
   { return cell_volume_; }
 
-  // inline access functions for cell based values
+  // access functions for cell based values
 
   virtual double cell_center(int i, int j)
   { return center_[i][j]; }
@@ -164,7 +164,7 @@ class FixAveEuler : public Fix {
   double *vol_fr_;
 
   // cell-based weight for each cell
-  
+
   double *weight_;
 
   // cell-based average radius
