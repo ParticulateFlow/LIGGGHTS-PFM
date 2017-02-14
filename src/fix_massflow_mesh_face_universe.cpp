@@ -5,9 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Department for Particule Flow Modelling
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -17,6 +16,11 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include <algorithm>
