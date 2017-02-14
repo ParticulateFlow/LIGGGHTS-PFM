@@ -62,6 +62,9 @@ using namespace MathExtraLiggghts;
 FixInsertPackFaceUniverse::FixInsertPackFaceUniverse(LAMMPS *lmp, int narg, char **arg) :
   FixInsertPackFace(lmp, narg, arg)
 {
+  if (universe->nworlds == 1)
+    error->all(FLERR,"Must have more than one processor partition for fix insert/pack/face/universe");
+
   cg_ = force->cg();
   cg3_ = cg_*cg_*cg_;
   receive_from_world_ = -1;
@@ -70,7 +73,8 @@ FixInsertPackFaceUniverse::FixInsertPackFaceUniverse(LAMMPS *lmp, int narg, char
     if (strcmp(arg[iarg],"receive_from_partition") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       receive_from_world_ = atoi(arg[iarg+1])-1;
-      if(receive_from_world_ < 0 || receive_from_world_ >= universe->nworlds) error->fix_error(FLERR,this,"receive_from_world_ must be a valid communicator");
+      if(receive_from_world_ < 0 || receive_from_world_ >= universe->nworlds)
+        error->fix_error(FLERR,this,"receive_from_world_ must be a valid communicator");
       iarg += 2;
       break;
     }
