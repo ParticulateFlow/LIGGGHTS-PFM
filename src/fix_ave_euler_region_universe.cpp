@@ -44,7 +44,8 @@ using namespace MathExtraLiggghts;
 
 FixAveEulerRegionUniverse::FixAveEulerRegionUniverse(LAMMPS *lmp, int narg, char **arg) :
   FixAveEulerRegion(lmp, narg, arg),
-  send_to_world_(-1)
+  send_to_world_(-1),
+  synchronize_(false)
 {
   if (universe->nworlds == 1)
     error->all(FLERR,"Must have more than one processor partition for fix ave/euler/region/universe");
@@ -60,6 +61,10 @@ FixAveEulerRegionUniverse::FixAveEulerRegionUniverse(LAMMPS *lmp, int narg, char
       send_to_world_ = atoi(arg[iarg+1])-1;
       if(send_to_world_ < 0 || send_to_world_ >= universe->nworlds)
         error->fix_error(FLERR,this,"send_to_world must be a valid communicator");
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"sync") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
+      if (strcmp(arg[iarg+1],"yes") == 0) synchronize_ = true;
       iarg += 2;
     } else {
       ++iarg;
@@ -106,12 +111,22 @@ void FixAveEulerRegionUniverse::send_coupling_data()
 {
   // check for timestep is necessary because end_of_step() is also called from setup function
   if(comm->me == 0 && update->ntimestep % nevery == 0) {
-    MPI_Send(&ncount_[0],      ncells_, MPI_INT,    universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-    MPI_Send(&mass_[0],        ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-    MPI_Send(&vol_fr_[0],      ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-    MPI_Send(&stress_[0][0], 7*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-    MPI_Send(&v_av_[0][0],   3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-    MPI_Send(&v_min_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-    MPI_Send(&v_max_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+    if (synchronize_) {
+      MPI_Ssend(&ncount_[0],      ncells_, MPI_INT,    universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Ssend(&mass_[0],        ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Ssend(&vol_fr_[0],      ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Ssend(&stress_[0][0], 7*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Ssend(&v_av_[0][0],   3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Ssend(&v_min_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Ssend(&v_max_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+    } else {
+      MPI_Send(&ncount_[0],      ncells_, MPI_INT,    universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Send(&mass_[0],        ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Send(&vol_fr_[0],      ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Send(&stress_[0][0], 7*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Send(&v_av_[0][0],   3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Send(&v_min_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Send(&v_max_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+    }
   }
 }

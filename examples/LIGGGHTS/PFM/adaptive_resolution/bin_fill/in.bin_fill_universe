@@ -108,7 +108,7 @@ variable one_over_nevery equal 1.0/${nevery}
 variable one_over_neverydt equal 1.0/(${nevery}*dt)
 
 # stress computation
-partition yes 1 fix stress_cg2 all ave/euler/region/universe nevery ${nevery} region ave_reg send_to_partition ${world_send_recv}
+partition yes 1 fix stress_cg2 all ave/euler/region/universe nevery ${nevery} region ave_reg send_to_partition ${world_send_recv} sync yes
 partition yes 2 fix stress_cg1 all ave/euler/region nevery ${nevery} region ave_reg
 
 # control stress in resolved transition region

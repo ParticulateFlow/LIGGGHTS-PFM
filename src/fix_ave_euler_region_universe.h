@@ -46,6 +46,7 @@ class FixAveEulerRegionUniverse : public FixAveEulerRegion {
  private:
   unsigned int id_hash_;
   int send_to_world_;
+  bool synchronize_;
 
   virtual void send_post_create_data();
   virtual void send_coupling_data();
