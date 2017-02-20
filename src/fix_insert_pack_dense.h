@@ -33,7 +33,7 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 #ifndef LMP_FIX_INSERT_PACK_DENSE_H
 #define LMP_FIX_INSERT_PACK_DENSE_H
 
-#include "fix_insert.h"
+#include "fix.h"
 
 namespace LAMMPS_NS {
 
@@ -46,12 +46,24 @@ class FixInsertPackDense : public Fix {
   // virtual void restart(char *);
 
   virtual int setmask() { return 0; }
+
+  virtual void post_create();
  protected:
 
+  double *x_init; // starting point for insertion
+
+  double maxrad; // maximum radius to be expected
+  
   // region to be used for insertion
   class Region *ins_region;
+  char *idregion;
   double region_volume,region_volume_local;
 
+  //particle distribution
+  class FixParticledistributionDiscrete *fix_distribution;
+
+  class RanPark *random;
+  int seed;
 };
 
 }
