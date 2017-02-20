@@ -70,9 +70,6 @@ FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg
   moi_set_(false),
   use_density_(-1)
 {
-    delete pti;
-    pti = new ParticleToInsertMultisphere(lmp,nspheres);
-
     memory->create(displace_,nspheres,3,"FixTemplateMultiplespheres:moi_");
 
     volumeweight_ = new double[nspheres];
@@ -468,56 +465,7 @@ FixTemplateMultisphere::~FixTemplateMultisphere()
     memory->destroy(displace_);
     delete []volumeweight_;
 
-    delete pti;
     if(pti_list) delete_ptilist();
-}
-
-/* ----------------------------------------------------------------------*/
-
-void FixTemplateMultisphere::randomize_single()
-{
-  //NP displace_, ex,ey,ez are for reference orientation
-
-  pti->nspheres = nspheres;
-  pti->density_ins = expectancy(pdf_density);;
-  pti->volume_ins = volume_expect;
-  pti->mass_ins = mass_expect;
-  pti->r_bound_ins = r_bound;
-  pti->atom_type = atom_type;
-
-  ParticleToInsertMultisphere *pti_m = static_cast<ParticleToInsertMultisphere*>(pti);
-
-  pti_m->type_ms = type_;
-
-  for(int j = 0; j < nspheres; j++)
-  {
-      pti_m->radius_ins[j] = r_sphere[j];
-      vectorCopy3D(x_sphere[j],pti_m->x_ins[j]);
-      vectorCopy3D(displace_[j],pti_m->displace[j]);
-  }
-
-  vectorCopy3D(inertia_,pti_m->inertia);
-  vectorCopy3D(ex_space_,pti_m->ex_space);
-  vectorCopy3D(ey_space_,pti_m->ey_space);
-  vectorCopy3D(ez_space_,pti_m->ez_space);
-  vectorCopy3D(xcm_to_xb_body_,pti_m->xcm_to_xbound);
-
-  vectorZeroize3D(pti_m->xcm_ins);
-  quatUnitize4D(pti_m->quat_ins);
-  vectorZeroize3D(pti_m->v_ins);
-  vectorZeroize3D(pti_m->omega_ins);
-
-  pti->groupbit = groupbit;
-
-  /*NL*///double test[3];
-  /*NL*///if (screen) fprintf(screen,"transformed %e %e %e into %e %e %e\n",x_bound[0],x_bound[1],x_bound[2],xcm_to_xb_body[0],xcm_to_xb_body[1],xcm_to_xb_body[2]);
-  /*NL*///if (screen) fprintf(screen,"ex ey ez is  %f %f %f , %f %f %f, %f %f %f\n",ex_space_[0],ex_space_[1],ex_space_[2],ey_space_[0],ey_space_[1],ey_space_[2],ez_space_[0],ez_space_[1],ez_space_[2]);
-
-   //NP nothing to do here
-   //NP variable density and diameter not implemented
-
-   //NP rotate ex_space_, ey_space_, ez_space_ done later
-   //pti->random_rotate(random->uniform(),random->uniform(),random->uniform());
 }
 
 /* ----------------------------------------------------------------------*/

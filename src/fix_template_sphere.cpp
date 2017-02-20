@@ -68,8 +68,6 @@ FixTemplateSphere::FixTemplateSphere(LAMMPS *lmp, int narg, char **arg) :
   pdf_radius = NULL;
   pdf_density = NULL;
 
-  pti = new ParticleToInsert(lmp);
-
   n_pti_max = 0;
   pti_list = NULL;
 
@@ -258,7 +256,6 @@ FixTemplateSphere::~FixTemplateSphere()
     //NP for derived classes, need to do clean-up there
     if(strcmp(style,"particletemplate/sphere") == 0)
     {
-        delete pti;
         if(pti_list) delete_ptilist();
     }
 }
@@ -277,32 +274,6 @@ Region* FixTemplateSphere::region()
 {
     if(reg_var) return reg_var->region();
     else return reg;
-}
-
-/* ----------------------------------------------------------------------*/
-
-void FixTemplateSphere::randomize_single()
-{
-    //NP need not set nspheres since set via constructor
-    pti->atom_type = atom_type;
-
-    // randomize radius
-    double radius = rand(pdf_radius,random);
-    pti->radius_ins[0] = pti->r_bound_ins = radius;
-
-    // randomize density
-    pti->density_ins = rand(pdf_density,random);
-
-    // calculate volume and mass
-    pti->volume_ins = radius * radius * radius * 4.*M_PI/3.;
-    pti->mass_ins = pti->density_ins*pti->volume_ins;
-
-    // init insertion position
-    vectorZeroize3D(pti->x_ins[0]);
-
-    pti->groupbit = groupbit;
-
-    /*NL*/ //if (screen) fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
 }
 
 /* ----------------------------------------------------------------------*/
