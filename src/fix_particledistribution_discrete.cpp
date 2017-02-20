@@ -196,9 +196,6 @@ FixParticledistributionDiscrete::FixParticledistributionDiscrete(LAMMPS *lmp, in
   /*NL*/ //      fprintf(screen,"    %s: d=%e (bounding sphere) number%%=%f%%\n",templates[distorder[i]]->id,2.*templates[distorder[i]]->pti->r_bound,100.*distweight[distorder[i]]);
   /*NL*/ //}
 
-  //NP wire to first template
-  pti = templates[distorder[0]]->pti;
-
   pti_list = NULL;
   n_pti = n_pti_max = 0;
 
@@ -242,65 +239,6 @@ int FixParticledistributionDiscrete::setmask()
     return mask;
 }
 
-/* ----------------------------------------------------------------------
-   prepares the fix for a series of randomize_single() commands
-   typically called once per insertion step
-------------------------------------------------------------------------- */
-
-int FixParticledistributionDiscrete::random_init_single(int ntotal)
-{
-    ninsert = ntotal;
-    ninserted = 0;
-
-    for(int i = 0; i < ntemplates; i++)
-       parttogen[i] = static_cast<int>(static_cast<double>(ninsert) * distweight[i] + random->uniform());
-
-    /*NL*/ //if(comm->me == 0 && screen) { fprintf(screen,"randomizing particles to generate out of the distribution\n");
-    /*NL*/ //for(int i=0;i<ntemplates;i++)
-    /*NL*/ //    fprintf(screen,"dist %d: statistically %f particles should be generated, chose to generate %d particles\n",
-    /*NL*/ //    i,static_cast<double>(ninsert)*distweight[i],parttogen[i]); }
-
-    ninsert = 0;
-    for(int i = 0; i < ntemplates; i++)
-        ninsert += parttogen[i];
-    return ninsert;
-}
-
-/* ----------------------------------------------------------------------
-   request one template to generate one pti
-------------------------------------------------------------------------- */
-
-Region* FixParticledistributionDiscrete::randomize_single()
-{
-    if(ntemplates == 1){
-         templates[0]->randomize_single();
-         /*NL*/ //if (screen) fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
-         return templates[0]->region(); //NP already wired
-    }
-
-    //choose a template from the discrete distribution, beginning from large to small particles
-    int chosen = 0;
-    int chosendist = distorder[chosen];
-    int ntoinsert = parttogen[chosendist];
-    while(ninserted >= ntoinsert && chosen < ntemplates-1)
-    {
-        chosen++;
-        chosendist = distorder[chosen];
-        ntoinsert += parttogen[chosendist];
-    }
-
-    //NP call chosen template
-    templates[chosendist]->randomize_single();
-
-    //NP wire to chosen template
-    pti = templates[chosendist]->pti;
-
-    ninserted++;
-
-    return templates[chosendist]->region();
-
-    /*NL*/ //if (screen) fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
-}
 
 /* ----------------------------------------------------------------------
    prepares the fix for a series of randomize_list() command

@@ -65,15 +65,10 @@ class FixParticledistributionDiscrete : public Fix {
 
   int max_nspheres();
 
-  int random_init_single(int);         //NP tells the distribution how many particles are to be generated
-  class Region* randomize_single();    //NP generates one random particle
-
   void random_init_list(int);
   int randomize_list(int,int,int);     //NP generates a list of random particles
 
   void finalize_insertion();
-
-  class ParticleToInsert *pti;
 
   class ParticleToInsert **pti_list;
   int n_pti, n_pti_max;
