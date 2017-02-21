@@ -171,8 +171,8 @@ void FixScaleDiameter::post_create()
     delete [] fixid;
   }
 
-  double *radius = atom->radius;
-  int nlocal = atom->nlocal;
+  const double *radius = atom->radius;
+  const int nlocal = atom->nlocal;
 
   for (int i = 0; i < nlocal; ++i) {
     fix_property_->vector_atom[i] = radius[i];
@@ -242,8 +242,8 @@ void FixScaleDiameter::change_settings()
   double **x = atom->x;
   double *radius = atom->radius;
   double *rmass = atom->rmass;
-  int *mask = atom->mask;
-  int nlocal = atom->nlocal;
+  const int *mask = atom->mask;
+  const int nlocal = atom->nlocal;
 
   if (scale_to_style_ == EQUAL) {
     scale_to_ = input->variable->compute_equal(scale_to_var_);
@@ -282,7 +282,7 @@ void FixScaleDiameter::change_settings()
 
       if (rsq < radius_inner_*radius_inner_) {
         if (scale_to_style_ == CONSTANT)
-        continue;
+          continue;
         scale = scale_to_;
       } else {
         scale = scale_to_ + scale_range_*((sqrt(rsq)-radius_inner_)/scale_width_);
@@ -295,6 +295,7 @@ void FixScaleDiameter::change_settings()
       }
 
       radius[i] = scale * fix_property_->vector_atom[i];
+
       if (scale_mass_) {
         const double relative_scale = radius[i]/old_radius;
         rmass[i] *= relative_scale*relative_scale*relative_scale;
