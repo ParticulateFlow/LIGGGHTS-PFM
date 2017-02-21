@@ -22,9 +22,9 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_scale_diameter.h"
 #include "atom.h"
 #include "update.h"
@@ -38,7 +38,7 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-enum{NONE,CONSTANT,EQUAL,ATOM};
+enum{NONE,CONSTANT,EQUAL,ATOM,EXTERNAL};
 enum{XCYLINDER, YCYLINDER, ZCYLINDER, SPHERE};
 
 /* ---------------------------------------------------------------------- */
@@ -92,7 +92,7 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
       } else {
         scale_to_ = force->numeric(FLERR,arg[iarg]);
         if(scale_to_ <= 0.)
-          error->fix_error(FLERR,this,"scale_to_ > 0 required");
+          error->fix_error(FLERR,this,"scale > 0 required");
         scale_to_style_ = CONSTANT;
         scale_range_ = 1. - scale_to_;
       }
@@ -150,9 +150,7 @@ FixScaleDiameter::~FixScaleDiameter()
 
 void FixScaleDiameter::post_create()
 {
-
-  if (fix_property_ == NULL)
-  {
+  if (fix_property_ == NULL) {
     char *fixid = new char[14+strlen(id)];
     sprintf(fixid,"scale_d_orig_%s",id);
 
@@ -185,7 +183,7 @@ void FixScaleDiameter::post_create()
 
 void FixScaleDiameter::pre_delete(bool unfixflag)
 {
-    if (unfixflag && fix_property_) modify->delete_fix(fix_property_->id);
+  if (unfixflag && fix_property_) modify->delete_fix(fix_property_->id);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -226,6 +224,14 @@ void FixScaleDiameter::pre_force(int vflag)
   change_settings();
 }
 
+/* ---------------------------------------------------------------------- */
+
+void FixScaleDiameter::set_scale(double scale)
+{
+  scale_to_= scale;
+  scale_range_ = 1. - scale_to_;
+  scale_to_style_ = EXTERNAL;
+}
 
 /* ----------------------------------------------------------------------
    change atom parameters based on distance to region center
@@ -272,10 +278,16 @@ void FixScaleDiameter::change_settings()
         break;
       }
 
-      if(rsq < radius_inner_*radius_inner_)
-        continue;
+      double scale = 1.0;
 
-      const double scale = scale_to_ + scale_range_*((sqrt(rsq)-radius_inner_)/scale_width_);
+      if (rsq < radius_inner_*radius_inner_) {
+        if (scale_to_style_ == CONSTANT)
+        continue;
+        scale = scale_to_;
+      } else {
+        scale = scale_to_ + scale_range_*((sqrt(rsq)-radius_inner_)/scale_width_);
+      }
+
       const double old_radius = radius[i];
 
       if (fix_property_->vector_atom[i] <= 0.0) {
