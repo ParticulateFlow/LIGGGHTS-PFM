@@ -82,6 +82,16 @@ inline double pointDistance(const double *point1, const double *point2)
   );
 }
 
+inline double pointDistanceSqr(const double *point1, const double *point2)
+{
+  return
+  (
+   (point1[0]-point2[0]) * (point1[0]-point2[0]) +
+   (point1[1]-point2[1]) * (point1[1]-point2[1]) +
+   (point1[2]-point2[2]) * (point1[2]-point2[2])
+  );
+}
+ 
 inline double vectorMag4DSquared(const double *v)
 {
   return (  v[0]*v[0]+v[1]*v[1]+v[2]*v[2]+v[3]*v[3]  );

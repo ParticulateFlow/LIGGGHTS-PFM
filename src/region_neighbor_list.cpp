@@ -71,6 +71,15 @@ bool RegionNeighborList::hasOverlap(double * x, double radius) const {
   return false;
 }
 
+/**
+ * @brief Determine if the given particle overlaps with any particle in this neighbor list
+ * @param p particle to check
+ * @return true if particle has an overlap with a particle in this neighbor list, false otherwise
+ */
+bool RegionNeighborList::hasOverlap(Particle &p) const {
+  return hasOverlap(p.x,p.radius);
+}
+
 
 /**
  * @brief Insert a new particle into neighbor list
@@ -87,8 +96,7 @@ void RegionNeighborList::insert(double * x, double radius) {
 
 /**
  * @brief Insert a new particle into neighbor list
- * @param x        position in 3D
- * @param radius   particle radius
+ * @param p       particle to insert
  */
 void RegionNeighborList::insert(Particle &p) {
   int ibin = coord2bin(p.x);
@@ -298,4 +306,26 @@ int RegionNeighborList::coord2bin(double *x) const
     iz = static_cast<int> ((x[2]-bboxlo[2])*bininvz) - 1;
 
   return (iz-mbinzlo)*mbiny*mbinx + (iy-mbinylo)*mbinx + (ix-mbinxlo);
+}
+
+/**
+ * @brief allow read-only access to particles in bins surrounding a certain location
+ * @param x location
+ * @return pointer to a particle bin with all particles in bins surrounding x.
+ * Use a pointer to avoid double copying of particles.
+ */
+
+RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double *x)
+{
+  ParticleBin *retBin = new ParticleBin();
+
+  const int ibin = coord2bin(x);
+
+  for(std::vector<int>::const_iterator it = stencil.begin(); it != stencil.end(); ++it) {
+    const int offset = *it;
+    assert(ibin+offset >= 0 || (size_t)(ibin+offset) < bins.size());
+    retBin->insert(retBin->end(),bins[ibin+offset].begin(),bins[ibin+offset].end());
+  }
+
+  return retBin;
 }

@@ -39,11 +39,14 @@
 #include "update.h"
 #include "particleToInsert.h"
 #include "math_extra.h"
+#include "vector_liggghts.h"
 #include "region_neighbor_list.h"
 #include "bounding_box.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+
+#define SMALL 1e-10
 
 /* ---------------------------------------------------------------------- */
 
@@ -152,7 +155,38 @@ void FixInsertPackDense::pre_exchange()
   insertion_done = true;
 
   // TODO: check if insertion region is empty
+
+  // insert first three particles to initialize the algorithm
+  insert_first_particles();
+
+  // insert_next_particle() returns false
+  // if algorithm terminates
+  while(insert_next_particle() && neighlist.count() < 1001)
+    {
+      printf("neighlist count %d\n",neighlist.count()); 
+    }
+
+  // actual insertion
+  fix_distribution->pre_insert();
+  fix_distribution->insert(neighlist.count());
+
+  if (atom->tag_enable)
+  {
+    atom->tag_extend();
+    if (atom->map_style)
+    {
+      atom->nghost = 0;
+      atom->map_init();
+      atom->map_set();
+    }
+  }
+
+  fix_distribution->finalize_insertion();
   
+}
+
+void FixInsertPackDense::insert_first_particles()
+{
   ParticleToInsert *pti1 = fix_distribution->get_random_particle(groupbit);
   ParticleToInsert *pti2 = fix_distribution->get_random_particle(groupbit);
   ParticleToInsert *pti3 = fix_distribution->get_random_particle(groupbit);
@@ -171,28 +205,90 @@ void FixInsertPackDense::pre_exchange()
   neighlist.insert(p2);
   neighlist.insert(p3);
   
-  int nInserted = 3;
+  frontSpheres.push_back(p1);
+  frontSpheres.push_back(p2);
+  frontSpheres.push_back(p3);
+}
 
-  printf("perform actual insertion\n");
-  // actual insertion
-  fix_distribution->pre_insert();
-  printf("insert\n");
-  fix_distribution->insert(nInserted);
-  printf("finalize_insertion\n");
+bool FixInsertPackDense::insert_next_particle()
+{
+  Particle frontSphere = frontSpheres.front();
 
-  if (atom->tag_enable)
-  {
-    atom->tag_extend();
-    if (atom->map_style)
-    {
-      atom->nghost = 0;
-      atom->map_init();
-      atom->map_set();
+  bool inserted(false);
+  while(!inserted){
+    int nValid = try_front_sphere(frontSphere);
+    inserted = nValid > 0;
+    if(nValid < 2){
+      frontSpheres.pop_front();
+      if(frontSpheres.empty())
+        return false;
+    }
+    if(!inserted)
+      frontSphere = frontSpheres.front();
+  }
+  
+  return true;
+}
+
+// returns number of valid candidate positions
+// if positions > 0, also performs insertion
+int FixInsertPackDense::try_front_sphere(Particle &p)
+{
+  ParticleToInsert *pti = get_next_pti();
+  double r_insert = pti->radius_ins[0];
+
+  candidatePoints.clear();
+  
+  RegionNeighborList::ParticleBin *particles = neighlist.getParticlesCloseTo(p.x);
+  // get all possible combinations of spheres
+  for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
+    for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){
+      printf("p1 x %f %f %f | r %f\n",p.x[0],p.x[1],p.x[2],p.radius);
+      printf("p2 x %f %f %f | r %f\n",(*i).x[0],(*i).x[1],(*i).x[2],(*i).radius);
+      printf("p3 x %f %f %f | r %f\n",(*j).x[0],(*j).x[1],(*j).x[2],(*j).radius);
+      // then, for each combination, compute candidate points
+      // abuse Particle::r to hold distance to x_init in candidatePoints
+      compute_and_store_candidate_points(p,*i,*j,r_insert);
+    }
+  }
+  
+  // then, check candidate points. At the same time, store which one is closest
+  Particle *p_close = 0;
+  double d_min = 1000;
+  for(ParticleList::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
+    if(neighlist.hasOverlap((*it).x,r_insert-SMALL)){
+      printf("removing particle\n");
+      it = candidatePoints.erase(it);
+      if(it != candidatePoints.begin()) --it;
+      continue;
+    }
+    // abused radius to store distance to insertion center
+    if((*it).radius < d_min){
+      d_min = (*it).radius;
+      if(!p_close)
+        p_close = new Particle((*it).x,r_insert);
+      else
+        vectorCopy3D((*it).x,p_close->x);
     }
   }
 
-  fix_distribution->finalize_insertion();
-  printf("done\n");
+  // clean up: delete particle bin
+  delete particles;
+
+  if(!p_close){ // no valid candidate point found
+    rejectedSpheres.push_back(pti);
+    return 0;
+  }
+  else{
+    vectorCopy3D(p_close->x,pti->x_ins[0]);
+    fix_distribution->pti_list.push_back(pti);
+    frontSpheres.push_back(*p_close);
+    neighlist.insert(*p_close);
+    printf("inserting particle at %f %f %f | radius %f\n",
+           p_close->x[0],p_close->x[1],p_close->x[2],p_close->radius);
+  }
+  
+  return candidatePoints.size();
   
 }
 
@@ -235,6 +331,124 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   MathExtra::add3(x2,x_init,p2->x_ins[0]);
   MathExtra::add3(x3,x_init,p3->x_ins[0]);
 
+}
+
+void FixInsertPackDense::compute_and_store_candidate_points(Particle const &p1,
+                                                            Particle const &p2,
+                                                            Particle const &p3,
+                                                            double const r_insert)
+{
+  double const halo1 = p1.radius+r_insert;
+  double const halo2 = p2.radius+r_insert;
+  double const halo3 = p3.radius+r_insert;
+
+  // exclude impossible combinations
+  double const d_12_sqr = pointDistanceSqr(p1.x,p2.x);
+  printf("d_12_sqr %f\n",d_12_sqr);
+  if(d_12_sqr > (halo1+halo2)*(halo1+halo2) || d_12_sqr < SMALL*SMALL)
+    return;
+  double const d_13_sqr = pointDistanceSqr(p1.x,p3.x);
+  printf("d_13_sqr %f\n",d_13_sqr);
+  if(d_13_sqr > (halo1+halo3)*(halo1+halo3) || d_13_sqr < SMALL*SMALL)
+    return;
+  double const d_23_sqr = pointDistanceSqr(p2.x,p3.x);
+  printf("d_23_sqr %f\n",d_23_sqr);
+  if(d_23_sqr > (halo2+halo3)*(halo2+halo3) || d_23_sqr < SMALL*SMALL)
+    return;
+
+  // first, construct intersection circle between halos of particles 1,2
+  double const alpha = 0.5*(1. - (halo2*halo2-halo1*halo1)/d_12_sqr );
+  if(alpha < 0. || alpha > 1.) return;
+
+  printf("alpha %f\n",alpha);
+  
+  // center and radius of intersection circle
+  double c_c[3];
+  for(int i=0;i<3;i++) c_c[i] = (1.-alpha)*p1.x[i] + alpha*p2.x[i];
+  double const d_x1_cc_sqr = pointDistanceSqr(p1.x,c_c);
+  double const r_c = sqrt(halo1*halo1 - d_x1_cc_sqr);
+
+  // normal vector from p1 to p2
+  double n[3];
+  MathExtra::sub3(p1.x,p2.x,n);
+  MathExtra::normalize3(n,n);
+  
+  // normal distance of p3 to intersection plane
+  double tmp_vec[3];
+  MathExtra::sub3(p3.x,c_c,tmp_vec);
+  double const lambda = MathExtra::dot3(tmp_vec,n);
+  printf("lambda %f\n",lambda);
+  if(lambda > halo3 || -lambda > halo3) return;
+
+  
+  // intersection circle of circle plane and third sphere
+  vectorCopy3D(n,tmp_vec);
+  MathExtra::scale3(lambda,tmp_vec);
+  double c_p[3];
+  MathExtra::sub3(p3.x,tmp_vec,c_p);
+  double const r_p = sqrt(halo3*halo3-lambda*lambda);
+
+  double const dist_pc_sqr = pointDistanceSqr(c_c,c_p);
+  if(dist_pc_sqr > (r_p+r_c)*(r_p+r_c)) return;
+
+  printf("dist_pc_sqr %f",dist_pc_sqr);
+  
+  double const alpha2 = 0.5*(1. - (r_p*r_p-r_c*r_c)/dist_pc_sqr);
+  double c_m[3];
+  for(int i=0;i<3;i++) c_m[i] = (1.-alpha2)*c_c[i] + alpha2*c_p[i];
+
+  double const d_sqr_cc_cm = pointDistanceSqr(c_c,c_m);
+  if(d_sqr_cc_cm > r_c*r_c) return;
+
+  printf("d_sqr_cc_cm %f\n",d_sqr_cc_cm);
+  
+  double const h = sqrt(r_c*r_c - d_sqr_cc_cm);
+
+  
+  if(h < SMALL){ // only one candidate point
+    Particle candidate(c_m,0.);
+    candidate.radius = pointDistance(c_m,x_init);
+    candidatePoints.push_back(candidate);
+    printf("found single candidate point at %f %f %f | distance to center: %f\n",
+           candidate.x[0],candidate.x[1],candidate.x[2],candidate.radius);
+  } else { // two candidate points
+    Particle candidate1(c_m,0.),candidate2(c_m,0.);
+
+    MathExtra::sub3(c_p,c_c,tmp_vec);
+    MathExtra::normalize3(tmp_vec,tmp_vec);
+    double vec_tmp2[3];
+    MathExtra::cross3(n,tmp_vec,vec_tmp2);
+
+    MathExtra::scale3(h,vec_tmp2);
+    
+    MathExtra::add3(candidate1.x,vec_tmp2,candidate1.x);
+    MathExtra::sub3(candidate2.x,vec_tmp2,candidate2.x);
+
+    candidate1.radius = pointDistance(candidate1.x,x_init);
+    candidate2.radius = pointDistance(candidate2.x,x_init);
+
+    candidatePoints.push_back(candidate1);
+    candidatePoints.push_back(candidate2);
+    
+    printf("found candidate point at %f %f %f | distance to center: %f\n",
+           candidate1.x[0],candidate1.x[1],candidate1.x[2],candidate1.radius);
+    printf("found candidate point at %f %f %f | distance to center: %f\n",
+           candidate2.x[0],candidate2.x[1],candidate2.x[2],candidate2.radius);
+    printf("total candidate points: %d\n",candidatePoints.size());
+  }
+}
+
+ParticleToInsert* FixInsertPackDense::get_next_pti()
+{
+  if(rejectedSpheres.empty())
+    return fix_distribution->get_random_particle(groupbit);
+
+  // this might be not all too efficient: if a particle gets rejected
+  // multiple times, it also gets inserted and deleted from the list
+  // each time. Will refactor if performance critical.
+  ParticleToInsert *pti = rejectedSpheres.front();
+  rejectedSpheres.pop_front();
+  return pti;
 }
 
 /* ---------------------------------------------------------------------- */

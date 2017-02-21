@@ -35,6 +35,8 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 
 #include "fix.h"
 
+#include <list>
+
 #include "region_neighbor_list.h"
 
 using namespace LIGGGHTS;
@@ -69,16 +71,36 @@ protected:
   class FixParticledistributionDiscrete *fix_distribution;
 
 protected:
+
+  typedef std::list<Particle> ParticleList;
+  typedef std::list<class ParticleToInsert*> PTIList;
+
+  ParticleList frontSpheres;
+  PTIList rejectedSpheres;
+
+  ParticleList candidatePoints;
+  
   class RanPark *random;
   int seed;
 
   RegionNeighborList neighlist;
-  
+
+  void insert_first_particles();
+  bool insert_next_particle(); // returns false if no insertion possible
+  int try_front_sphere(Particle &p); // returns number of candidate points
+
+  void compute_and_store_candidate_points(Particle const &p1,
+                                          Particle const &p2,
+                                          Particle const &p3,
+                                          double const r_insert);
   void generate_initial_config(class ParticleToInsert *&p1,
                                class ParticleToInsert *&p2,
                                class ParticleToInsert *&p3);
 
+  class ParticleToInsert* get_next_pti();
+  
   Particle particle_from_pti(class ParticleToInsert *pti);
+
 
 };
 
