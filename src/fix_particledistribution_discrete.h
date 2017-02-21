@@ -71,7 +71,9 @@ class FixParticledistributionDiscrete : public Fix {
   void random_init_list(int);
   int randomize_list(int,int,int);     //NP generates a list of random particles
   bool has_multisphere();
-  
+
+  ParticleToInsert* get_random_particle(int insert_groupbit);
+    
   // pti_delete_flag allows to delete pti in pti_list
   // only set if pti were inserted from outside
   void finalize_insertion(bool pti_delete_flag = false);

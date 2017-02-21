@@ -544,3 +544,18 @@ bool FixParticledistributionDiscrete::has_multisphere()
   }
   return false;
 }
+
+ParticleToInsert* FixParticledistributionDiscrete::get_random_particle(int insert_groupbit)
+{
+  // first, choose distribution
+  double r = random->uniform();
+  int i_template=0;
+  while(cumweight[i_template] < r)
+    i_template++;
+
+  // avoid floating point issues
+  if(i_template == ntemplates)
+    i_template = ntemplates-1;
+
+  return templates[i_template]->get_single_random_pti(groupbit | insert_groupbit);
+}

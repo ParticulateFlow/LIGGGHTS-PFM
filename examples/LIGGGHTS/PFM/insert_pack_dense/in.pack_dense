@@ -1,6 +1,6 @@
 atom_style	granular
 atom_modify	map array
-boundary	m m m
+boundary	f f f
 newton		off
 
 communicate	single vel yes
@@ -32,14 +32,14 @@ pair_coeff	* *
 
 timestep	0.00001
 
-fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+#fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #particle distributions
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.015
-fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.025
+fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius gaussian number 0.025 0.001
 fix		pdd1 all particledistribution/discrete 1. 2 pts1 0.3 pts2 0.7
 
-fix ins all insert/pack/dense seed 123 region reg distributiontemplate pdd1
+fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd1
 
 #output settings, include total thermal energy
 compute		1 all erotate/sphere
@@ -48,10 +48,13 @@ thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
-#insert the first particles so that dump is not empty
+# let insertion happen
 run		1
-dump		dmp all custom 1 post/dump*.stream id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
 
-#insert particles
+
+dump		dmp all custom 1 post/dump*.stream &
+id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+
+# run for dump
 run		1
 

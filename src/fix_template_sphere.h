@@ -66,7 +66,9 @@ class FixTemplateSphere : public Fix {
 
   virtual void finalize_insertion() {}
 
- protected:
+  ParticleToInsert* get_single_random_pti(int distribution_groupbit);
+
+protected:
 
   int iarg;
 
@@ -84,6 +86,8 @@ class FixTemplateSphere : public Fix {
   double volume_expect;
   double mass_expect;
   double vol_limit;
+
+  void randomize_single_pti(ParticleToInsert* &pti, int distribution_groupbit);
 };
 
 }

@@ -36,6 +36,7 @@
 #include "fix_particledistribution_discrete.h"
 #include "random_park.h"
 #include "update.h"
+#include "particleToInsert.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -144,6 +145,12 @@ void FixInsertPackDense::pre_exchange()
 
   int nInserted = 0;
 
+  for(int i=0;i<10;i++){
+    ParticleToInsert* pti = fix_distribution->get_random_particle(groupbit);
+
+    printf("received random particle with radius %f and atom type %d\n",
+           pti->radius_ins[0],pti->atom_type);
+  }
   // actual insertion
   fix_distribution->pre_insert();
   fix_distribution->insert(nInserted);
