@@ -27,7 +27,8 @@
 
 #include "fix_insert_pack_dense.h"
 
-#include <cstdlib>
+#include <stdlib.h>
+#include <math.h>
 
 #include "region.h"
 #include "modify.h"
@@ -37,6 +38,9 @@
 #include "random_park.h"
 #include "update.h"
 #include "particleToInsert.h"
+#include "math_extra.h"
+#include "region_neighbor_list.h"
+#include "bounding_box.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -130,6 +134,12 @@ void FixInsertPackDense::post_create()
     // TODO: get a random point, change error to warning
     error->fix_error(FLERR,this,"starting point not in insertion region");
   }
+
+  // TODO: change this to account for parallel stuff
+  BoundingBox box(ins_region->extent_xlo,ins_region->extent_xhi,
+                  ins_region->extent_ylo,ins_region->extent_yhi,
+                  ins_region->extent_zlo,ins_region->extent_zhi);
+  neighlist.setBoundingBox(box,fix_distribution->max_rad());
 }
 
 /* ---------------------------------------------------------------------- */
@@ -141,21 +151,90 @@ void FixInsertPackDense::pre_exchange()
   if(insertion_done) return;
   insertion_done = true;
 
-  printf("hello i am pre_exchange of fix_insert_pack_dense\n");
+  // TODO: check if insertion region is empty
+  
+  ParticleToInsert *pti1 = fix_distribution->get_random_particle(groupbit);
+  ParticleToInsert *pti2 = fix_distribution->get_random_particle(groupbit);
+  ParticleToInsert *pti3 = fix_distribution->get_random_particle(groupbit);
 
-  int nInserted = 0;
+  generate_initial_config(pti1,pti2,pti3);
 
-  for(int i=0;i<10;i++){
-    ParticleToInsert* pti = fix_distribution->get_random_particle(groupbit);
+  fix_distribution->pti_list.push_back(pti1);
+  fix_distribution->pti_list.push_back(pti2);
+  fix_distribution->pti_list.push_back(pti3);
 
-    printf("received random particle with radius %f and atom type %d\n",
-           pti->radius_ins[0],pti->atom_type);
-  }
+  Particle p1 = particle_from_pti(pti1);
+  Particle p2 = particle_from_pti(pti2);
+  Particle p3 = particle_from_pti(pti3);
+
+  neighlist.insert(p1);
+  neighlist.insert(p2);
+  neighlist.insert(p3);
+  
+  int nInserted = 3;
+
+  printf("perform actual insertion\n");
   // actual insertion
   fix_distribution->pre_insert();
+  printf("insert\n");
   fix_distribution->insert(nInserted);
+  printf("finalize_insertion\n");
+
+  if (atom->tag_enable)
+  {
+    atom->tag_extend();
+    if (atom->map_style)
+    {
+      atom->nghost = 0;
+      atom->map_init();
+      atom->map_set();
+    }
+  }
+
   fix_distribution->finalize_insertion();
+  printf("done\n");
   
+}
+
+void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
+                                                 ParticleToInsert *&p2,
+                                                 ParticleToInsert *&p3)
+{
+
+  printf("generate_initial_config\n");
+  
+  double x1[3],x2[3],x3[3];
+  vectorZeroize3D(x1);
+  vectorZeroize3D(x2);
+  vectorZeroize3D(x3);
+
+  // first, construct touching spheres
+  double const r1=p1->radius_ins[0],r2=p2->radius_ins[0],r3=p3->radius_ins[0];
+  x2[0] = r1+r2;
+
+  double const a=r2+r3,b=r1+r3,c=r1+r2;
+  double const alpha = acos((a*a-b*b-c*c)/(-2.*b*c));
+
+  x3[0] = b*cos(alpha);
+  x3[1] = b*sin(alpha);
+
+  // then, compute COM & move COM to origin
+  double com[3];
+  for(int i=0;i<3;i++)
+    com[i] = (x1[i]+x2[i]+x3[i])/3.;
+
+  MathExtra::sub3(x1,com,x1);
+  MathExtra::sub3(x2,com,x2);
+  MathExtra::sub3(x3,com,x3);
+  
+  // maybe, at some point in the future, implement random orientation
+  // of initial packing
+  
+  // then, move to starting point & write to PTI
+  MathExtra::add3(x1,x_init,p1->x_ins[0]);
+  MathExtra::add3(x2,x_init,p2->x_ins[0]);
+  MathExtra::add3(x3,x_init,p3->x_ins[0]);
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -167,3 +246,8 @@ FixInsertPackDense::~FixInsertPackDense()
 
 /* ---------------------------------------------------------------------- */
 
+Particle FixInsertPackDense::particle_from_pti(ParticleToInsert* pti)
+{
+  Particle p(pti->x_ins[0],pti->radius_ins[0]);
+  return p;
+}

@@ -35,6 +35,10 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 
 #include "fix.h"
 
+#include "region_neighbor_list.h"
+
+using namespace LIGGGHTS;
+
 namespace LAMMPS_NS {
 
 class FixInsertPackDense : public Fix {
@@ -64,8 +68,18 @@ protected:
   //particle distribution
   class FixParticledistributionDiscrete *fix_distribution;
 
+protected:
   class RanPark *random;
   int seed;
+
+  RegionNeighborList neighlist;
+  
+  void generate_initial_config(class ParticleToInsert *&p1,
+                               class ParticleToInsert *&p2,
+                               class ParticleToInsert *&p3);
+
+  Particle particle_from_pti(class ParticleToInsert *pti);
+
 };
 
 }
