@@ -55,7 +55,8 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
   scale_to_style_(NONE),
   scale_to_str_(NULL),
   scale_range_(1.0),
-  scale_width_(0.0)
+  scale_width_(0.0),
+  scale_mass_(true)
 {
   if (narg < 5) error->fix_error(FLERR,this,"Not enough arguments for fix scale/diameter command");
   nevery = force->inumeric(FLERR,arg[3]);
@@ -282,8 +283,10 @@ void FixScaleDiameter::change_settings()
       }
 
       radius[i] = scale * fix_property_->vector_atom[i];
-      const double relative_scale = radius[i]/old_radius;
-      rmass[i] *= relative_scale*relative_scale*relative_scale;
+      if (scale_mass_) {
+        const double relative_scale = radius[i]/old_radius;
+        rmass[i] *= relative_scale*relative_scale*relative_scale;
+      }
     }
   }
 }
