@@ -41,6 +41,7 @@
 #include "modify.h"
 #include "comm.h"
 #include "math_extra.h"
+#include "math_const.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -512,7 +513,7 @@ void FixMesh::rotateMesh(double const axisX, double const axisY, double const ax
       //fprintf(screen,"%f %f %f %f\n", phi, axisX, axisY, axisZ);
     //}
 
-    mesh_->rotate(phi*3.14159265/180.0,axis,p);
+    mesh_->rotate(phi*MathConst::MY_PI/180.0,axis,p);
 }
 
 /* ----------------------------------------------------------------------
