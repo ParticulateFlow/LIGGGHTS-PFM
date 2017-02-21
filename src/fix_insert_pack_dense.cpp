@@ -35,6 +35,7 @@
 #include "domain.h"
 #include "fix_particledistribution_discrete.h"
 #include "random_park.h"
+#include "update.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -69,6 +70,8 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
       if(ifix < 0 || strcmp(modify->fix[ifix]->style,"particledistribution/discrete"))
         error->fix_error(FLERR,this,"Fix insert requires you to define a valid ID for a fix of type particledistribution/discrete");
       fix_distribution = static_cast<FixParticledistributionDiscrete*>(modify->fix[ifix]);
+      if(fix_distribution->has_multisphere())
+        error->fix_error(FLERR,this,"no multisphere templates allowed for this insertion fix");
       iarg += 2;
       hasargs = true;
     } else  if(strcmp(arg[iarg],"region") == 0) {
@@ -89,14 +92,31 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   if(!fix_distribution)
     error->fix_error(FLERR,this,"no particle distribution provided");
 
+  // force reneighboring in next timestep
+  force_reneighbor = 1;
+  next_reneighbor = update->ntimestep+1;
+
   maxrad = fix_distribution->max_rad();
 
 }
 
 /* ---------------------------------------------------------------------- */
 
+int FixInsertPackDense::setmask()
+{
+  int mask = 0;
+  mask |= PRE_EXCHANGE;
+  printf("setmask of fix_insert_pack_dense: mask = %d\n",mask);
+  return mask;
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixInsertPackDense::post_create()
 {
+  printf("post_create of fix_insert_pack_dense\n");
+
+  if(x_init) delete[] x_init;
   x_init = new double[3];
   
   // TODO: account for extents of local subdomain.
@@ -110,6 +130,28 @@ void FixInsertPackDense::post_create()
     error->fix_error(FLERR,this,"starting point not in insertion region");
   }
 }
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsertPackDense::pre_exchange()
+{
+  // this fix should only run exactly once
+  static bool insertion_done(false);
+  if(insertion_done) return;
+  insertion_done = true;
+
+  printf("hello i am pre_exchange of fix_insert_pack_dense\n");
+
+  int nInserted = 0;
+
+  // actual insertion
+  fix_distribution->pre_insert();
+  fix_distribution->insert(nInserted);
+  fix_distribution->finalize_insertion();
+  
+}
+
+/* ---------------------------------------------------------------------- */
 
 FixInsertPackDense::~FixInsertPackDense()
 {

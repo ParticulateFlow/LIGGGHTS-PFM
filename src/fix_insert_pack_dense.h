@@ -45,10 +45,12 @@ class FixInsertPackDense : public Fix {
 
   // virtual void restart(char *);
 
-  virtual int setmask() { return 0; }
+  virtual int setmask();
 
   virtual void post_create();
- protected:
+  
+  virtual void pre_exchange();
+protected:
 
   double *x_init; // starting point for insertion
 
