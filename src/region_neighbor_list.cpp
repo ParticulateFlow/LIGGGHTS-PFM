@@ -85,6 +85,19 @@ void RegionNeighborList::insert(double * x, double radius) {
   ++ncount;
 }
 
+/**
+ * @brief Insert a new particle into neighbor list
+ * @param x        position in 3D
+ * @param radius   particle radius
+ */
+void RegionNeighborList::insert(Particle &p) {
+  int ibin = coord2bin(p.x);
+  assert(ibin >= 0 && static_cast<size_t>(ibin) <= bins.size());
+
+  bins[ibin].push_back(p);
+  ++ncount;
+}
+
 
 /**
  * @brief Clears neighbor list and brings it into initial state

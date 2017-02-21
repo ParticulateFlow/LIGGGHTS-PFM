@@ -77,6 +77,7 @@ public:
     RegionNeighborList();
 
     bool hasOverlap(double * x, double radius) const;
+    void insert(Particle &p);
     void insert(double * x, double radius);
     size_t count() const;
     void reset();
