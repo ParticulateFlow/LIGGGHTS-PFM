@@ -226,6 +226,7 @@ void FixSpeedControl::post_force(int vflag)
   foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
   force_flag = 0;
   
+  // evil: hardcoded controller gain
   double K = 0.1;
 
   // constant force
@@ -278,11 +279,11 @@ void FixSpeedControl::post_force(int vflag)
 
 
         if (xstyle == ATOM) f[i][0] += sforce[i][0];
-        else if (xstyle) f[i][0] += xvalue;
+        else if (xstyle) f[i][0] -= K*(v[i][0] - xvalue);
         if (ystyle == ATOM) f[i][1] += sforce[i][1];
-        else if (ystyle) f[i][1] += yvalue;
+        else if (ystyle) f[i][1] -= K*(v[i][1] - yvalue);
         if (zstyle == ATOM) f[i][2] += sforce[i][2];
-        else if (zstyle) f[i][2] += zvalue;
+        else if (zstyle) f[i][2] -= K*(v[i][2] - zvalue);
       }
   }
 }
