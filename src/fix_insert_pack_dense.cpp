@@ -237,8 +237,8 @@ int FixInsertPackDense::try_front_sphere(Particle &p)
   double r_insert = pti->radius_ins[0];
 
   candidatePoints.clear();
-  
-  RegionNeighborList::ParticleBin *particles = neighlist.getParticlesCloseTo(p.x);
+  double const cutoff_dist = p.radius+2*r_insert;
+  RegionNeighborList::ParticleBin *particles = neighlist.getParticlesCloseTo(p.x,cutoff_dist);
   // get all possible combinations of spheres
   for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
     for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){

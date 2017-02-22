@@ -309,14 +309,16 @@ int RegionNeighborList::coord2bin(double *x) const
 }
 
 /**
- * @brief allow read-only access to particles in bins surrounding a certain location
+ * @brief copy particle data of all particles that would intersect with a sphere at x with radius cutoff
  * @param x location
+ * @param cutoff cutoff distance
  * @return pointer to a particle bin with all particles in bins surrounding x.
- * Use a pointer to avoid double copying of particles.
  */
 
-RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double *x)
+RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double *x, double cutoff)
 {
+  assert(cutoff < binsizex && cutoff < binsizey && cutoff < binsizez);
+  
   ParticleBin *retBin = new ParticleBin();
 
   const int ibin = coord2bin(x);
@@ -324,7 +326,16 @@ RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double 
   for(std::vector<int>::const_iterator it = stencil.begin(); it != stencil.end(); ++it) {
     const int offset = *it;
     assert(ibin+offset >= 0 || (size_t)(ibin+offset) < bins.size());
-    retBin->insert(retBin->end(),bins[ibin+offset].begin(),bins[ibin+offset].end());
+    
+    const ParticleBin & bin = bins[ibin+offset];
+
+    for(ParticleBin::const_iterator pit = bin.begin(); pit != bin.end(); ++pit) {
+      const Particle & p = *pit;
+      const double rsq = pointDistanceSqr(x,p.x);
+      const double radsum = cutoff + p.radius;
+      if (rsq <= radsum*radsum)
+        retBin->push_back(p);
+    }
   }
 
   return retBin;

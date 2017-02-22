@@ -88,7 +88,7 @@ public:
     void reset();
     bool setBoundingBox(LAMMPS_NS::BoundingBox & bb, double maxrad);
 
-    ParticleBin* getParticlesCloseTo(double *x);
+    ParticleBin* getParticlesCloseTo(double *x, double cutoff);
 };
 
 }
