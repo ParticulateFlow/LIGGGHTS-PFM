@@ -100,7 +100,8 @@ protected:
   class ParticleToInsert* get_next_pti();
   
   Particle particle_from_pti(class ParticleToInsert *pti);
-
+  bool is_completely_in_subregion(Particle &p);
+  bool candidate_point_is_valid(Particle &p);
 
 };
 

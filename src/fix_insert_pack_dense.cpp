@@ -122,8 +122,6 @@ int FixInsertPackDense::setmask()
 
 void FixInsertPackDense::post_create()
 {
-  printf("post_create of fix_insert_pack_dense\n");
-
   if(x_init) delete[] x_init;
   x_init = new double[3];
   
@@ -161,10 +159,11 @@ void FixInsertPackDense::pre_exchange()
 
   // insert_next_particle() returns false
   // if algorithm terminates
-  while(insert_next_particle() && neighlist.count() < 1001)
-    {
-      printf("neighlist count %d\n",neighlist.count()); 
-    }
+  while(insert_next_particle() && neighlist.count() < 150001) {
+#ifdef LIGGGHTS_DEBUG
+    printf("neighlist count %d\n",neighlist.count());
+#endif
+  }
 
   // actual insertion
   fix_distribution->pre_insert();
@@ -243,50 +242,48 @@ int FixInsertPackDense::try_front_sphere(Particle &p)
   // get all possible combinations of spheres
   for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
     for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){
+#ifdef LIGGGHTS_DEBUG
       printf("p1 x %f %f %f | r %f\n",p.x[0],p.x[1],p.x[2],p.radius);
       printf("p2 x %f %f %f | r %f\n",(*i).x[0],(*i).x[1],(*i).x[2],(*i).radius);
       printf("p3 x %f %f %f | r %f\n",(*j).x[0],(*j).x[1],(*j).x[2],(*j).radius);
+#endif
       // then, for each combination, compute candidate points
       // abuse Particle::r to hold distance to x_init in candidatePoints
       compute_and_store_candidate_points(p,*i,*j,r_insert);
-    }
-  }
-  
-  // then, check candidate points. At the same time, store which one is closest
-  Particle *p_close = 0;
-  double d_min = 1000;
-  for(ParticleList::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
-    if(neighlist.hasOverlap((*it).x,r_insert-SMALL)){
-      printf("removing particle\n");
-      it = candidatePoints.erase(it);
-      if(it != candidatePoints.begin()) --it;
-      continue;
-    }
-    // abused radius to store distance to insertion center
-    if((*it).radius < d_min){
-      d_min = (*it).radius;
-      if(!p_close)
-        p_close = new Particle((*it).x,r_insert);
-      else
-        vectorCopy3D((*it).x,p_close->x);
     }
   }
 
   // clean up: delete particle bin
   delete particles;
 
-  if(!p_close){ // no valid candidate point found
+  if(candidatePoints.empty()){ // no valid candidate point found
     rejectedSpheres.push_back(pti);
     return 0;
   }
-  else{
-    vectorCopy3D(p_close->x,pti->x_ins[0]);
-    fix_distribution->pti_list.push_back(pti);
-    frontSpheres.push_back(*p_close);
-    neighlist.insert(*p_close);
-    printf("inserting particle at %f %f %f | radius %f\n",
-           p_close->x[0],p_close->x[1],p_close->x[2],p_close->radius);
+
+  
+  // then, search for candidate point closest to insertion center
+  double d_min_sqr = 1000;
+  ParticleList::iterator closest_candidate;
+  for(ParticleList::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
+    // abused radius to store distance to insertion center
+    double dist_sqr = pointDistanceSqr((*it).x,x_init);
+    if(dist_sqr < d_min_sqr){
+      d_min_sqr = dist_sqr;
+      closest_candidate = it;
+    }
   }
+
+  vectorCopy3D((*closest_candidate).x,pti->x_ins[0]);
+  fix_distribution->pti_list.push_back(pti);
+  frontSpheres.push_back(*closest_candidate);
+  neighlist.insert(*closest_candidate);
+
+#ifdef LIGGGHTS_DEBUG
+  printf( "inserting particle at %f %f %f | radius %f\n",
+          (*closest_candidate).x[0],(*closest_candidate).x[1],(*closest_candidate).x[2],
+          (*closest_candidate).radius );
+#endif
   
   return candidatePoints.size();
   
@@ -296,9 +293,9 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
                                                  ParticleToInsert *&p2,
                                                  ParticleToInsert *&p3)
 {
-
+#ifdef LIGGGHTS_DEBUG
   printf("generate_initial_config\n");
-  
+#endif
   double x1[3],x2[3],x3[3];
   vectorZeroize3D(x1);
   vectorZeroize3D(x2);
@@ -344,15 +341,12 @@ void FixInsertPackDense::compute_and_store_candidate_points(Particle const &p1,
 
   // exclude impossible combinations
   double const d_12_sqr = pointDistanceSqr(p1.x,p2.x);
-  printf("d_12_sqr %f\n",d_12_sqr);
   if(d_12_sqr > (halo1+halo2)*(halo1+halo2) || d_12_sqr < SMALL*SMALL)
     return;
   double const d_13_sqr = pointDistanceSqr(p1.x,p3.x);
-  printf("d_13_sqr %f\n",d_13_sqr);
   if(d_13_sqr > (halo1+halo3)*(halo1+halo3) || d_13_sqr < SMALL*SMALL)
     return;
   double const d_23_sqr = pointDistanceSqr(p2.x,p3.x);
-  printf("d_23_sqr %f\n",d_23_sqr);
   if(d_23_sqr > (halo2+halo3)*(halo2+halo3) || d_23_sqr < SMALL*SMALL)
     return;
 
@@ -360,8 +354,6 @@ void FixInsertPackDense::compute_and_store_candidate_points(Particle const &p1,
   double const alpha = 0.5*(1. - (halo2*halo2-halo1*halo1)/d_12_sqr );
   if(alpha < 0. || alpha > 1.) return;
 
-  printf("alpha %f\n",alpha);
-  
   // center and radius of intersection circle
   double c_c[3];
   for(int i=0;i<3;i++) c_c[i] = (1.-alpha)*p1.x[i] + alpha*p2.x[i];
@@ -377,7 +369,6 @@ void FixInsertPackDense::compute_and_store_candidate_points(Particle const &p1,
   double tmp_vec[3];
   MathExtra::sub3(p3.x,c_c,tmp_vec);
   double const lambda = MathExtra::dot3(tmp_vec,n);
-  printf("lambda %f\n",lambda);
   if(lambda > halo3 || -lambda > halo3) return;
 
   
@@ -391,16 +382,12 @@ void FixInsertPackDense::compute_and_store_candidate_points(Particle const &p1,
   double const dist_pc_sqr = pointDistanceSqr(c_c,c_p);
   if(dist_pc_sqr > (r_p+r_c)*(r_p+r_c)) return;
 
-  printf("dist_pc_sqr %f",dist_pc_sqr);
-  
   double const alpha2 = 0.5*(1. - (r_p*r_p-r_c*r_c)/dist_pc_sqr);
   double c_m[3];
   for(int i=0;i<3;i++) c_m[i] = (1.-alpha2)*c_c[i] + alpha2*c_p[i];
 
   double const d_sqr_cc_cm = pointDistanceSqr(c_c,c_m);
   if(d_sqr_cc_cm > r_c*r_c) return;
-
-  printf("d_sqr_cc_cm %f\n",d_sqr_cc_cm);
   
   double const h = sqrt(r_c*r_c - d_sqr_cc_cm);
 
@@ -408,11 +395,18 @@ void FixInsertPackDense::compute_and_store_candidate_points(Particle const &p1,
   if(h < SMALL){ // only one candidate point
     Particle candidate(c_m,0.);
     candidate.radius = pointDistance(c_m,x_init);
-    candidatePoints.push_back(candidate);
-    printf("found single candidate point at %f %f %f | distance to center: %f\n",
-           candidate.x[0],candidate.x[1],candidate.x[2],candidate.radius);
+#ifdef LIGGGHTS_DEBUG
+      printf("found single candidate point at %f %f %f | radius: %f\n",
+             candidate.x[0],candidate.x[1],candidate.x[2],candidate.radius);
+#endif
+    if(candidate_point_is_valid(candidate)){
+      candidatePoints.push_back(candidate);
+#ifdef LIGGGHTS_DEBUG
+      printf("candidate point valid\n");
+#endif
+    }
   } else { // two candidate points
-    Particle candidate1(c_m,0.),candidate2(c_m,0.);
+    Particle candidate1(c_m,r_insert),candidate2(c_m,r_insert);
 
     MathExtra::sub3(c_p,c_c,tmp_vec);
     MathExtra::normalize3(tmp_vec,tmp_vec);
@@ -424,18 +418,29 @@ void FixInsertPackDense::compute_and_store_candidate_points(Particle const &p1,
     MathExtra::add3(candidate1.x,vec_tmp2,candidate1.x);
     MathExtra::sub3(candidate2.x,vec_tmp2,candidate2.x);
 
-    candidate1.radius = pointDistance(candidate1.x,x_init);
-    candidate2.radius = pointDistance(candidate2.x,x_init);
-
-    candidatePoints.push_back(candidate1);
-    candidatePoints.push_back(candidate2);
-    
-    printf("found candidate point at %f %f %f | distance to center: %f\n",
+#ifdef LIGGGHTS_DEBUG    
+    printf("found candidate point at %f %f %f | radius: %f\n",
            candidate1.x[0],candidate1.x[1],candidate1.x[2],candidate1.radius);
-    printf("found candidate point at %f %f %f | distance to center: %f\n",
+    printf("found candidate point at %f %f %f | radius: %f\n",
            candidate2.x[0],candidate2.x[1],candidate2.x[2],candidate2.radius);
-    printf("total candidate points: %d\n",candidatePoints.size());
+#endif
+
+    if(candidate_point_is_valid(candidate1)){
+      candidatePoints.push_back(candidate1);
+#ifdef LIGGGHTS_DEBUG
+      printf("candidate point 1 valid\n");
+#endif
+    }
+    if(candidate_point_is_valid(candidate2)){
+      candidatePoints.push_back(candidate2);
+#ifdef LIGGGHTS_DEBUG
+      printf("candidate point 2 valid\n");
+#endif
+    }
   }
+#ifdef LIGGGHTS_DEBUG
+  printf("total candidate points: %d\n",candidatePoints.size());
+#endif
 }
 
 ParticleToInsert* FixInsertPackDense::get_next_pti()
@@ -464,4 +469,27 @@ Particle FixInsertPackDense::particle_from_pti(ParticleToInsert* pti)
 {
   Particle p(pti->x_ins[0],pti->radius_ins[0]);
   return p;
+}
+
+bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
+{
+  int ncontact = ins_region->surface_interior(p.x,p.radius);
+#ifdef LIGGGHTS_DEBUG
+  printf("particle at %f %f %f | radius %f | contacts: %d\n",
+         p.x[0],p.x[1],p.x[2],p.radius,ncontact);
+#endif
+  return ins_region->inside(p.x[0],p.x[1],p.x[2])
+    && ins_region->surface_interior(p.x,p.radius) == 0;
+}
+
+bool FixInsertPackDense::candidate_point_is_valid(Particle &p)
+{
+
+  //  return ( !neighlist.hasOverlap(p.x,p.radius-SMALL) && is_completely_in_subregion(p) );
+#ifdef LIGGGHTS_DEBUG
+  printf("checking point %f %f %f | radius %f\n",
+         p.x[0],p.x[1],p.x[2],p.radius);
+#endif
+  return ( is_completely_in_subregion(p) && !neighlist.hasOverlap(p.x,p.radius-SMALL) );
+
 }
