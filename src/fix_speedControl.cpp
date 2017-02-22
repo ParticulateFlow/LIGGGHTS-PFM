@@ -51,6 +51,8 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
     int n = strlen(&arg[3][2]) + 1;
     xstr = new char[n];
     strcpy(xstr,&arg[3][2]);
+  } else if (strcmp(arg[3],"NULL") == 0) {
+    xstyle = NONE;
   } else {
     xvalue = force->numeric(FLERR,arg[3]);
     xstyle = CONSTANT;
@@ -59,6 +61,8 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
     int n = strlen(&arg[4][2]) + 1;
     ystr = new char[n];
     strcpy(ystr,&arg[4][2]);
+  } else if (strcmp(arg[4],"NULL") == 0) {
+    ystyle = NONE;
   } else {
     yvalue = force->numeric(FLERR,arg[4]);
     ystyle = CONSTANT;
@@ -67,6 +71,8 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
     int n = strlen(&arg[5][2]) + 1;
     zstr = new char[n];
     strcpy(zstr,&arg[5][2]);
+  } else if (strcmp(arg[5],"NULL") == 0) {
+    zstyle = NONE;
   } else {
     zvalue = force->numeric(FLERR,arg[5]);
     zstyle = CONSTANT;
@@ -221,7 +227,6 @@ void FixSpeedControl::post_force(int vflag)
   force_flag = 0;
   
   double K = 0.1;
-  double vSoll = -0.2;
 
   // constant force
   // potential energy = - x dot f in unwrapped coords
@@ -239,10 +244,10 @@ void FixSpeedControl::post_force(int vflag)
         foriginal[1] += f[i][0];
         foriginal[2] += f[i][1];
         foriginal[3] += f[i][2];
-        f[i][0] += xvalue;
-        f[i][1] += yvalue;
-//        f[i][2] += zvalue;
-        f[i][2] -= K*(v[i][2] - vSoll);
+        //
+        if (xstyle) f[i][0] -= K*(v[i][0] - xvalue);
+        if (ystyle) f[i][1] -= K*(v[i][1] - yvalue);
+        if (zstyle) f[i][2] -= K*(v[i][2] - zvalue);
       }
 
   // variable force, wrap with clear/add
