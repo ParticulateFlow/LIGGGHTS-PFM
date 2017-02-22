@@ -85,14 +85,17 @@ protected:
 
   RegionNeighborList neighlist;
 
+  BoundingBox ins_bbox;
+  
   void insert_first_particles();
   bool insert_next_particle(); // returns false if no insertion possible
-  int try_front_sphere(Particle &p); // returns number of candidate points
 
-  void compute_and_store_candidate_points(Particle const &p1,
-                                          Particle const &p2,
-                                          Particle const &p3,
-                                          double const r_insert);
+  void handle_next_front_sphere();
+  
+  void compute_and_append_candidate_points(Particle const &p1,
+                                           Particle const &p2,
+                                           Particle const &p3,
+                                           double const r_insert);
   void generate_initial_config(class ParticleToInsert *&p1,
                                class ParticleToInsert *&p2,
                                class ParticleToInsert *&p3);

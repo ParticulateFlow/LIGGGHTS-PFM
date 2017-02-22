@@ -60,9 +60,7 @@ bool RegionNeighborList::hasOverlap(double * x, double radius) const {
 
     for(ParticleBin::const_iterator pit = bin.begin(); pit != bin.end(); ++pit) {
       const Particle & p = *pit;
-      double del[3];
-      vectorSubtract3D(x, p.x, del);
-      const double rsq = vectorMag3DSquared(del);
+      const double rsq = pointDistanceSqr(x,p.x);
       const double radsum = radius + p.radius;
       if (rsq <= radsum*radsum) return true;
     }
@@ -91,18 +89,6 @@ void RegionNeighborList::insert(double * x, double radius) {
   assert(ibin >= 0 && static_cast<size_t>(ibin) <= bins.size());
 
   bins[ibin].push_back(Particle(x, radius));
-  ++ncount;
-}
-
-/**
- * @brief Insert a new particle into neighbor list
- * @param p       particle to insert
- */
-void RegionNeighborList::insert(Particle &p) {
-  int ibin = coord2bin(p.x);
-  assert(ibin >= 0 && static_cast<size_t>(ibin) <= bins.size());
-
-  bins[ibin].push_back(p);
   ++ncount;
 }
 
