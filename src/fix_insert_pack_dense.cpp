@@ -52,6 +52,10 @@ using namespace FixConst;
 
 /* ---------------------------------------------------------------------- */
 
+// this is the maximum volume fraction that the insertion algorithm
+// can achieve - usually, it is lower.
+const double FixInsertPackDense::max_volfrac = 0.58;
+
 FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   x_init(0),
@@ -60,7 +64,8 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   fix_distribution(0),
   random(0),
   seed(-1),
-  insertion_done(false)
+  insertion_done(false),
+  target_volfrac(max_volfrac)
 {
   int iarg = 3;
 
@@ -140,14 +145,6 @@ void FixInsertPackDense::post_create()
     subhi[i] = domain->subhi[i]-insreg_cutoff;
   }
 
-  #ifdef LIGGGHTS_DEBUG
-  printf("domain size: sublo %f %f %f | subhi %f %f %f\n",
-         domain->sublo[0],domain->sublo[1],domain->sublo[2],
-         domain->subhi[0],domain->subhi[1],domain->subhi[2]);
-  printf("insbox size: sublo %f %f %f | subhi %f %f %f\n",
-         sublo[0],sublo[1],sublo[2],
-         subhi[0],subhi[1],subhi[2]);
-  #endif
   ins_bbox.shrinkToSubbox(sublo,subhi);
 
   for(int i=0;i<3;i++){ x_init[i] = 0.5*(sublo[i]+subhi[i]); }
@@ -158,6 +155,17 @@ void FixInsertPackDense::post_create()
   }
   neighlist.reset();
   neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
+
+
+  // estimate # of particles to insert
+  int const ntry_mc = 100000;
+  bool const cutflag(false);
+  ins_region->volume_mc(ntry_mc,cutflag,fix_distribution->max_r_bound(),
+                          region_volume,region_volume_local);
+
+  double const v_part_ave = fix_distribution->vol_expect();
+  n_insert_estim = floor(region_volume*max_volfrac/v_part_ave);
+  n_insert_estim_local = floor(region_volume_local*max_volfrac/v_part_ave);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -168,42 +176,43 @@ void FixInsertPackDense::pre_exchange()
   if(insertion_done) return;
   insertion_done = true;
 
-#ifdef LIGGGHTS_DEBUG
-  printf("atoms on local proc: %d\n",atom->nlocal);
-#endif
+  /*
+   * would need type exclusion here
+   * to properly work with multi-level coarse graining
+   */
   for(int i=0;i<atom->nlocal;i++){
-#ifdef LIGGGHTS_DEBUG
-    printf("checking if atom at %f %f %f with r %f is inside region\n",
-           atom->x[i][0],atom->x[i][1],atom->x[i][2],atom->radius[i]);
-#endif
     if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
         || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0)
       error->fix_error(FLERR,this,"insertion region not empty");
   }
+
+  // only proc 0 writes general output
+  if(comm->me==0){
+    printf("fix insert/pack/dense will insert approximately %d particles in region %s\n",n_insert_estim,idregion);
+    printf("maximum volume fraction: %f\n",max_volfrac);
+    printf("target volume fraction:  %f\n",target_volfrac);
+  }
+
+  printf("process %d : will insert approximately %d particles\n",
+         comm->me,n_insert_estim_local);
   
   // insert first three particles to initialize the algorithm
   insert_first_particles();
-
-#ifdef LIGGGHTS_DEBUG
-  printf("proc %d: neighlist.count() %d\n",comm->me,neighlist.count());
-  printf("proc %d: pti_list.size() %d\n",comm->me,fix_distribution->pti_list.size());
-#endif
 
   // insert_next_particle() returns false
   // if algorithm terminates
   while(!frontSpheres.empty()) {
     handle_next_front_sphere();
-#ifdef LIGGGHTS_DEBUG
-    printf("neighlist count %d\n",neighlist.count());
-#endif
+    
+    int const n_write = n_insert_estim_local/10;
+    if(neighlist.count() % n_write == 0){
+      printf("process %d : inserted %d/%d particles\n",
+             comm->me,neighlist.count(),n_insert_estim_local);
+    }
   }
 
   // actual insertion
   fix_distribution->pre_insert();
-#ifdef LIGGGHTS_DEBUG
-  printf("proc %d: neighlist.count() %d\n",comm->me,neighlist.count());
-  printf("proc %d: pti_list.size() %d\n",comm->me,fix_distribution->pti_list.size());
-#endif
   fix_distribution->insert(neighlist.count());
 
   if (atom->tag_enable)
@@ -218,7 +227,15 @@ void FixInsertPackDense::pre_exchange()
   }
 
   fix_distribution->finalize_insertion();
-  
+
+  int n_inserted = neighlist.count();
+  MPI_Sum_Scalar(n_inserted,world);
+
+  double const volfrac_inserted = target_volfrac*((double)n_inserted)/((double)n_insert_estim);
+  if(comm->me==0){
+    printf("inserted %d of %d particles\n",n_inserted,n_insert_estim);
+    printf("volume fracton: %f\n",volfrac_inserted);
+  }
 }
 
 void FixInsertPackDense::insert_first_particles()
@@ -253,10 +270,6 @@ void FixInsertPackDense::handle_next_front_sphere()
   RegionNeighborList::ParticleBin *particles(0);
   Particle *newsphere = 0; // last inserted sphere
 
-#ifdef LIGGGHTS_DEBUG
-  printf("handle_next_front_sphere() with x %f %f %f | r %f\n",
-         current.x[0],current.x[1],current.x[2],current.radius);
-#endif
   int nValid = 1000;
   while(nValid > 1){
     ParticleToInsert *pti = get_next_pti();
@@ -288,9 +301,6 @@ void FixInsertPackDense::handle_next_front_sphere()
     }
     
     nValid = candidatePoints.size();
-#ifdef LIGGGHTS_DEBUG
-    printf("nValid %d\n",nValid);
-#endif
     if(nValid == 0){
       rejectedSpheres.push_back(pti);
       break;
@@ -307,22 +317,11 @@ void FixInsertPackDense::handle_next_front_sphere()
       }
     }
 
-#ifdef LIGGGHTS_DEBUG
-    printf( "inserting particle at %f %f %f | radius %f\n",
-            (*closest_candidate).x[0],(*closest_candidate).x[1],(*closest_candidate).x[2],
-            (*closest_candidate).radius );
-#endif
-  
-    
     vectorCopy3D((*closest_candidate).x,pti->x_ins[0]);
     fix_distribution->pti_list.push_back(pti);
     frontSpheres.push_back(*closest_candidate);
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
-#ifdef LIGGGHTS_DEBUG
-    printf("neighlist size: %d | pti_list size %d\n",
-           neighlist.count(),fix_distribution->pti_list.size());
-    assert(neighlist.count() == fix_distribution->pti_list.size());
-#endif
+
     if(newsphere) delete newsphere;
     newsphere = new Particle(*closest_candidate);
     particles->push_back(*closest_candidate);
@@ -337,9 +336,6 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
                                                  ParticleToInsert *&p2,
                                                  ParticleToInsert *&p3)
 {
-#ifdef LIGGGHTS_DEBUG
-  printf("generate_initial_config\n");
-#endif
   double x1[3],x2[3],x3[3];
   vectorZeroize3D(x1);
   vectorZeroize3D(x2);
@@ -439,15 +435,8 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
   if(h < SMALL){ // only one candidate point
     Particle candidate(c_m,0.);
     candidate.radius = pointDistance(c_m,x_init);
-#ifdef LIGGGHTS_DEBUG
-      printf("found single candidate point at %f %f %f | radius: %f\n",
-             candidate.x[0],candidate.x[1],candidate.x[2],candidate.radius);
-#endif
     if(candidate_point_is_valid(candidate)){
       candidatePoints.push_back(candidate);
-#ifdef LIGGGHTS_DEBUG
-      printf("candidate point valid\n");
-#endif
     }
   } else { // two candidate points
     Particle candidate1(c_m,r_insert),candidate2(c_m,r_insert);
@@ -462,29 +451,13 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
     MathExtra::add3(candidate1.x,vec_tmp2,candidate1.x);
     MathExtra::sub3(candidate2.x,vec_tmp2,candidate2.x);
 
-#ifdef LIGGGHTS_DEBUG    
-    printf("found candidate point at %f %f %f | radius: %f\n",
-           candidate1.x[0],candidate1.x[1],candidate1.x[2],candidate1.radius);
-    printf("found candidate point at %f %f %f | radius: %f\n",
-           candidate2.x[0],candidate2.x[1],candidate2.x[2],candidate2.radius);
-#endif
-
     if(candidate_point_is_valid(candidate1)){
       candidatePoints.push_back(candidate1);
-#ifdef LIGGGHTS_DEBUG
-      printf("candidate point 1 valid\n");
-#endif
     }
     if(candidate_point_is_valid(candidate2)){
       candidatePoints.push_back(candidate2);
-#ifdef LIGGGHTS_DEBUG
-      printf("candidate point 2 valid\n");
-#endif
     }
   }
-#ifdef LIGGGHTS_DEBUG
-  printf("total candidate points: %d\n",candidatePoints.size());
-#endif
 }
 
 ParticleToInsert* FixInsertPackDense::get_next_pti()
@@ -517,12 +490,6 @@ Particle FixInsertPackDense::particle_from_pti(ParticleToInsert* pti)
 
 bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
 {
-  int ncontact = ins_region->surface_interior(p.x,p.radius);
-#ifdef LIGGGHTS_DEBUG
-  printf("particle at %f %f %f | radius %f | contacts: %d\n",
-         p.x[0],p.x[1],p.x[2],p.radius,ncontact);
-#endif
-  
   return ins_region->inside(p.x[0],p.x[1],p.x[2])
     && ins_bbox.isInside(p.x)
     && ins_region->surface_interior(p.x,p.radius) == 0;
@@ -531,11 +498,6 @@ bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
 bool FixInsertPackDense::candidate_point_is_valid(Particle &p)
 {
 
-  //  return ( !neighlist.hasOverlap(p.x,p.radius-SMALL) && is_completely_in_subregion(p) );
-#ifdef LIGGGHTS_DEBUG
-  printf("checking point %f %f %f | radius %f\n",
-         p.x[0],p.x[1],p.x[2],p.radius);
-#endif
   return ( !neighlist.hasOverlap(p.x,p.radius-SMALL) && is_completely_in_subregion(p) );
 
 }

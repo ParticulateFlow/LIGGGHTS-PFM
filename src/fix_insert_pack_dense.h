@@ -65,13 +65,12 @@ protected:
   // region to be used for insertion
   class Region *ins_region;
   char *idregion;
-  double region_volume,region_volume_local;
 
   //particle distribution
   class FixParticledistributionDiscrete *fix_distribution;
 
-protected:
-
+  static const double max_volfrac;
+  double target_volfrac;
   typedef std::list<Particle> ParticleList;
   typedef std::list<class ParticleToInsert*> PTIList;
 
@@ -88,6 +87,8 @@ protected:
   BoundingBox ins_bbox;
 
   bool insertion_done;
+  double region_volume, region_volume_local;
+  int n_insert_estim, n_insert_estim_local;
   
   void insert_first_particles();
   bool insert_next_particle(); // returns false if no insertion possible
