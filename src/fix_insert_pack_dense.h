@@ -86,6 +86,8 @@ protected:
   RegionNeighborList neighlist;
 
   BoundingBox ins_bbox;
+
+  bool insertion_done;
   
   void insert_first_particles();
   bool insert_next_particle(); // returns false if no insertion possible

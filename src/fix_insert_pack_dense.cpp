@@ -59,7 +59,8 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   idregion(0),
   fix_distribution(0),
   random(0),
-  seed(-1)
+  seed(-1),
+  insertion_done(false)
 {
   int iarg = 3;
 
@@ -164,12 +165,22 @@ void FixInsertPackDense::post_create()
 void FixInsertPackDense::pre_exchange()
 {
   // this fix should only run exactly once
-  static bool insertion_done(false);
   if(insertion_done) return;
   insertion_done = true;
 
-  // TODO: check if insertion region is empty
-
+#ifdef LIGGGHTS_DEBUG
+  printf("atoms on local proc: %d\n",atom->nlocal);
+#endif
+  for(int i=0;i<atom->nlocal;i++){
+#ifdef LIGGGHTS_DEBUG
+    printf("checking if atom at %f %f %f with r %f is inside region\n",
+           atom->x[i][0],atom->x[i][1],atom->x[i][2],atom->radius[i]);
+#endif
+    if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
+        || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0)
+      error->fix_error(FLERR,this,"insertion region not empty");
+  }
+  
   // insert first three particles to initialize the algorithm
   insert_first_particles();
 
