@@ -51,7 +51,8 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   fix_rhogas_(0),
   fix_massfrac_(0),
   fix_masschange_(0),
-  fix_reactionheat_(0)
+  fix_reactionheat_(0),
+  fix_totalmole_(0)     //total mole fix
 {
     num_species = 0;
     int n = 16;
@@ -143,6 +144,8 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
     if(unfixflag && fix_tgas_)    modify -> delete_fix("partTemp");
     if(unfixflag && fix_rhogas_)  modify -> delete_fix("partRho");
     if(unfixflag && fix_reactionheat_)  modify -> delete_fix("reactionHeat");
+    // add pre_delete for total mole
+    if(unfixflag && fix_totalmole_) modify -> delete_fix("partN");
 
     for (int i = 0; i < num_species; i++)
     {
@@ -196,6 +199,23 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[8]="0.";
         fix_rhogas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
+
+    // register totalMole (partN) ==================
+    if (!fix_totalmole_)
+    {
+        const char* fixarg[9];
+        fixarg[0]="partN";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="partN";
+        fixarg[4]="scalar";              // 1 vector per particle to be registered
+        fixarg[5]="yes";                 // restart yes
+        fixarg[6]="no";                  // communicate ghost no
+        fixarg[7]="no";                  // communicate rev
+        fixarg[8]="0.";
+        fix_totalmole_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+    // ==============================================
 
     // register reactionheat
     if (!fix_reactionheat_)
@@ -266,6 +286,8 @@ void FixCfdCouplingChemistry::init()
     fix_tgas_            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
     fix_rhogas_          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_    =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
+    // add totalmole reference
+    fix_totalmole_       =  static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
 
     for (int i = 0; i < num_species; i++)
     {
@@ -276,6 +298,7 @@ void FixCfdCouplingChemistry::init()
     // values to come from OF
     fix_coupling_->add_pull_property("partTemp","scalar-atom");
     fix_coupling_->add_pull_property("partRho","scalar-atom");
+    fix_coupling_->add_pull_property("partN","scalar-atom");
 
     for (int i=0; i<num_species; i++)
     {

@@ -63,12 +63,14 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom* fix_reactionheat_;         // data pushed to cfdemCoupling - reactionHeat_
   class FixPropertyAtom** fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
   class FixPropertyAtom** fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
+  class FixPropertyAtom* fix_totalmole_;
 
 
  private:
   bool use_Re_;
 
   double *rhogas;
+  double *totalmole;
   double *concentrations;
 
 };
