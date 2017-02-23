@@ -400,9 +400,10 @@ void FixChemShrinkCore::post_force(int)
 	{
             layerRad(i,r_);
             getA(i,a_,r_);
+            getY0(i,y0_);
             //getDiff(i,diff);
             //getMassT(i,masst);
-            //getY0(i,y0);
+
 	    
             //for(int j = 0; j<nmaxlayers_; j++)
               //  dmA_[j] = 0.0;
@@ -626,7 +627,7 @@ void FixChemShrinkCore::getY0(int i, double *y0_)
 
     for (int j = 0; j < nmaxlayers_; j++)
     {
-        xp_[j]  =   Keq_(j,T_test)/(1+Keq_(j,T_test));
+        xp_[j]  =   K_eq(j,T_test)/(1+K_eq(j,T_test));
         xr_[j]  =   1-xp_[j];
     }
 
