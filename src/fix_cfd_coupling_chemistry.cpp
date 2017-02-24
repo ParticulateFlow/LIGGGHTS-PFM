@@ -78,6 +78,8 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 error -> fix_error(FLERR,this,"n_species > 0 is required");
             hasargs = true;
             iarg_ ++;
+            if(screen)
+                fprintf(screen,"num species: %d \n",num_species);
         }
         else if (strcmp(arg[iarg_],"species_names") == 0)
         {
@@ -94,7 +96,10 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 iarg_+=i;
                 species_names_[i] = new char [strlen(arg[iarg_])+1];
                 strcpy(species_names_[i], arg[iarg_]);
+                if(screen)
+                    fprintf(screen,"species names: %s \n",species_names_[i]);
             }
+
             iarg_++;
             hasargs = true;
         }
@@ -290,7 +295,7 @@ void FixCfdCouplingChemistry::init()
 
     for (int i = 0; i < num_species; i++)
     {
-        fix_massfrac_[i] = static_cast<FixPropertyAtom*>(modify->find_fix_property(species_names_[i],"property/atom","scalar",0,0,style));
+        fix_massfrac_[i]    =   static_cast<FixPropertyAtom*>(modify->find_fix_property(species_names_[i],"property/atom","scalar",0,0,style));
         fix_masschange_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
     }
 
