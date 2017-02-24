@@ -1,3 +1,5 @@
+# testing if insert/pack/dense works with different types of regions
+
 atom_style	granular
 atom_modify	map array
 boundary	f f f
@@ -8,12 +10,7 @@ processors	1 1 1
 
 units		si
 
-#region		reg block -1 1 -1 1 -1 1 units box
-#region		reg block -0.1 0.1 -0.1 0.1 -0.1 0.1 units box
-#region		reg block -0.2 0.2 -0.2 0.2 -0.2 0.2 units box
-region		reg block -${REGIONSIZE} ${REGIONSIZE} &
--${REGIONSIZE} ${REGIONSIZE} &
--${REGIONSIZE} ${REGIONSIZE}  units box
+region		reg block -1 1 -1 1 -0.05 1.05 units box
 
 create_box	1 reg
 
@@ -45,9 +42,12 @@ fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius
 fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.02
 
 fix		pdd1 all particledistribution/discrete 1. 2 pts1 0.3 pts2 0.7
-fix		pdd2 all particledistribution/discrete 1. 1 pts1 1.
+fix		pdd2 all particledistribution/discrete 1. 1 pts2 1.
 
-fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2
+# load mesh region
+region		mesh_reg mesh/tet file data/test.vtk  scale 1. move 0. 0. 0.  rotate 0. 0. 0. units box
+
+fix ins_pack_dense all insert/pack/dense seed 123 region mesh_reg distributiontemplate pdd2
 
 #output settings, include total thermal energy
 compute		1 all erotate/sphere
