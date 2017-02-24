@@ -200,7 +200,7 @@ void FixCfdCouplingChemistry::post_create()
         fix_rhogas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
-    // register totalMole (partN) ==================
+    // register totalMole (partN)
     if (!fix_totalmole_)
     {
         const char* fixarg[9];
@@ -215,7 +215,6 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[8]="0.";
         fix_totalmole_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
-    // ==============================================
 
     // register reactionheat
     if (!fix_reactionheat_)
