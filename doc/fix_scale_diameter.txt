@@ -1,0 +1,71 @@
+"LAMMPS WWW Site"_lws - "LAMMPS Documentation"_ld - "LAMMPS Commands"_lc :c
+
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix scale/diameter command :h3
+
+[Syntax:]
+
+fix ID group-ID scale/diameter N keyword value ... :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+adapt = style name of this fix command :l
+N = scale diameter every this many timesteps :l
+region = obligatory keyword :l
+region_value = ID of a spherical or cylindrical "region"_region.html where the particles will be scaled :l
+scale = obligatory keyword :l
+scale_value = scaling factor for change in diameter at region center :l
+scale_width = outer fraction of radius to be used for actual scaling [0;1] :l
+:ule
+
+[Examples:]
+
+fix scale all scale/diameter 10 region scale_region scale 0.5 0.5 :pre
+
+[Description:]
+
+Change particle diameter over time as a simulation runs.
+
+If {N} is specified as 0, the particle diameters are only changed
+once, before a simulation run begins. This is all that is needed if the
+diameter is not time-dependent. If {N} > 0, then changes
+are made every {N} steps during the simulation.
+
+The {scale} value describes the relative change in diameter when particles
+reach the center of the specified region.
+
+If the per-atom mass is defined for particles
+(e.g. "atom_style granular"_atom_style.html), then the mass of each
+particle is also changed when the diameter changes (density is assumed
+to stay constant).
+
+For example, these commands would shrink the diameter of all granular
+particles in the "center" group from 100% to 10% in a linear fashion
+while advancing towards the region center and increase the diameter again
+while diverging from the center:
+
+region scale_region sphere 0.0 0.0 0.0 0.5 units box
+fix scale center scale/diameter 10 region scale_region scale 0.1 :pre
+
+:line
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+This fix writes the original radius of the particles to "binary restart
+files"_restart.html.  None of the "fix_modify"_fix_modify.html options
+are relevant to this fix.  The per-atom radius is stored
+by an internal fix and can be accessed by various "output
+commands"_Section_howto.html#howto_15.  No parameter of this fix can
+be used with the {start/stop} keywords of the "run"_run.html command.
+This fix is not invoked during "energy minimization"_minimize.html.
+
+[Restrictions:] none
+
+
+[Default:]
+
+scale = 1.0.

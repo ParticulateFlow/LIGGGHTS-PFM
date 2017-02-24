@@ -7,13 +7,13 @@ SHELL = /bin/sh
 # specify flags and libraries needed for your compiler
 
 CC =		mpic++
-CCFLAGS =	-g \
-		-funroll-loops -fstrict-aliasing -Wall -Wextra -Wno-unused-result -pg
+CCFLAGS =	-O2 -pg \
+		-funroll-loops -fstrict-aliasing
 SHFLAGS =	
 DEPFLAGS =	-M
 
 LINK =		mpic++
-LINKFLAGS =	-pg
+LINKFLAGS =	-O2 -pg
 LIB =           -lstdc++
 SIZE =		size
 
@@ -29,7 +29,7 @@ SHLIBFLAGS =	-shared
 # LAMMPS ifdef settings, OPTIONAL
 # see possible settings in doc/Section_start.html#2_2 (step 4)
 
-LMP_INC =	-DLAMMPS_GZIP -DLIGGGHTS_DEBUG
+LMP_INC =	-DLAMMPS_GZIP
 
 # MPI library, REQUIRED
 # see discussion in doc/Section_start.html#2_2 (step 5)

@@ -1,3 +1,15 @@
-*~
-log.liggghts
+# outputs created by cases
+**/log.liggghts
+**/post/*
+
+# tmp files etc created by various text editors
+**~
 \#*\#
+
+# files/directories created during compilation
+src/style_*.h
+src/version_liggghts.h
+
+src/Obj_*
+src/lmp_*
+src/liblmp*
