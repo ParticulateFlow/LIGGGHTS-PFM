@@ -295,13 +295,13 @@ void FixChemShrink::reaction()
                 radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
 
                 // uncomment if postproc (verification)
-                /* if (screen)
+                /*if (screen)
                 {
                      fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
                      fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
                      fprintf(screen,"Particle Mass %f \n",pmass_[i]);
                      fprintf(screen,"Gas Density %f \n",rhogas_[i]);
-                } */
+                }*/
             }
         }
 }

@@ -69,8 +69,8 @@ class FixCfdCouplingChemistry : public Fix  {
  private:
   bool use_Re_;
 
-  double *rhogas;
-  double *totalmole;
+  double *rhogas_;
+  double *N_;
   double *concentrations;
 
 };

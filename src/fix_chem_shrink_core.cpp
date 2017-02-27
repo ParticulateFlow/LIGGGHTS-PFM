@@ -55,9 +55,9 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
-	Fix(lmp, narg, arg),
-	nmaxlayers_(3),
-	rmin_(0.01),
+    Fix(lmp, narg, arg),
+    nmaxlayers_(3),
+    rmin_(0.01),
     drmin_(0.001),
     fix_k0_(0), // [m/s]
     fix_molMass_(0),
@@ -65,17 +65,17 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_dens_(0),
     fix_layerRelRad_(0)
 {
-        if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
-		error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
+    if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
+        error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
 
-	// defaults
-	fix_concA_ = NULL;
-	fix_concC_ = NULL;
-	fix_changeOfA_ = NULL;
-	fix_changeOfC_ = NULL;
+    // defaults
+    fix_concA_ = NULL;
+    fix_concC_ = NULL;
+    fix_changeOfA_ = NULL;
+    fix_changeOfC_ = NULL;
     fix_rhogas_ = NULL;
     fix_tgas_       =   NULL;
-    fix_totalmole_  =   NULL;
+    // fix_totalmole_  =   NULL;
     // fix_reactionheat_    =   0;
 
     pmass_ = NULL;
@@ -83,95 +83,94 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Runiv = 8.3144; //[j/Kmol]
     T_test  = 1073.15;   // [K] will be deleted after functioning test case is create.
 
-	iarg_ = 3;
-        if (narg < 11)
-		error->all(FLERR, "not enough arguments");
+    iarg_ = 3;
+    if (narg < 11)
+        error->all(FLERR, "not enough arguments");
 
-	bool hasargs = true;
-	while (iarg_ < narg && hasargs)
-	{
-		if (strcmp(arg[iarg_], "speciesA") == 0)
-		{
-			if (narg < iarg_ + 2)
-                            error->fix_error(FLERR, this, "not enough arguments for 'speciesA'");
-			speciesA = new char[strlen(arg[iarg_ + 1])];
-			strcpy(speciesA, arg[iarg_ + 1]);
-			hasargs = true;
-			iarg_ += 2;
-		}
-		else if (strcmp(arg[iarg_], "molMassA") == 0)
-		{
-			if (iarg_ + 2 > narg)
-                            error->fix_error(FLERR, this, "Wrong number of arguments");
-			if (strlen(speciesA) < 1)
-                            error->fix_error(FLERR, this, "speciesA is not defined");
-			molMass_A_ = atof(arg[iarg_ + 1]);
-			if (molMass_A_ < 1)
-                            error->fix_error(FLERR, this, "molar mass of A is not defined");
-			hasargs = true;
-			iarg_ += 2;
-		}
-		else if (strcmp(arg[iarg_], "speciesC") == 0)
-		{
-			if (iarg_ + 2 > narg)
-                            error->fix_error(FLERR, this, "not enough arguments for 'speciesC'");
-			speciesC = new char[strlen(arg[iarg_ + 1])];
-			strcpy(speciesC, arg[iarg_ + 1]);
-			hasargs = true;
-			iarg_ += 2;
-		}
-		else if (strcmp(arg[iarg_], "molMassC") == 0)
-		{
-			if (iarg_ + 2 > narg)
-                            error->fix_error(FLERR, this, "Wrong number of arguments");
-			if (strlen(speciesC) < 1)
-                            error->fix_error(FLERR, this, "speciesC not defined");
-			molMass_C_ = atof(arg[iarg_ + 1]);
-			if (molMass_C_ < 1)
-                            error->fix_error(FLERR, this, "molar mass of C is not defined");
-			hasargs = true;
-			iarg_ += 2;
-		}
-	}
-
-	// changeOfA and changeOfC have to have the same name as in the species.C 
-	// therefore new strings of massA and massC are introduced which are defined as 
-        // changeOfA and changeOfC as their names in species.c
-	// define changed species mass A
-        int x = 16;
-	char cha[30];
-    massA = new char[x];
-	strcpy(cha, "Modified_");
-	strcat(cha, speciesA);
-	strcpy(massA, cha);
-
-	// define changed species mass C
-    massC = new char[x];
-	strcpy(cha, "Modified_");
-	strcat(cha, speciesC);
-	strcpy(massC, cha);
-
-        /* // flags for vector output
-        vector_flag = 1;  //0/1 per-atom data is stored
-        size_vector = 2;
-        global_freq = 1;
-        extvector   = 1;
-        nevery = 1; */
-
-        time_depend = 1;
-        force_reneighbor = 1;
-        next_reneighbor = update -> ntimestep + nevery;
-
-        restart_global = 1;
-
-        if (screen)
+    bool hasargs = true;
+    while (iarg_ < narg && hasargs)
+    {
+        if (strcmp(arg[iarg_], "speciesA") == 0)
         {
-            fprintf(screen,"modified species names are: %s \n", massA);
-            fprintf(screen,"and: %s \n", massC);
-            fprintf(screen,"reactant species: %s \n", speciesA);
-            fprintf(screen,"product species: %s \n", speciesC);
+            if (narg < iarg_ + 2)
+                error->fix_error(FLERR, this, "not enough arguments for 'speciesA'");
+            speciesA = new char[strlen(arg[iarg_ + 1])];
+            strcpy(speciesA, arg[iarg_ + 1]);
+            hasargs = true;
+            iarg_ += 2;
         }
+        else if (strcmp(arg[iarg_], "molMassA") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error->fix_error(FLERR, this, "Wrong number of arguments");
+            if (strlen(speciesA) < 1)
+                error->fix_error(FLERR, this, "speciesA is not defined");
+            molMass_A_ = atof(arg[iarg_ + 1]);
+            if (molMass_A_ < 1)
+                error->fix_error(FLERR, this, "molar mass of A is not defined");
+            hasargs = true;
+            iarg_ += 2;
+        }
+        else if (strcmp(arg[iarg_], "speciesC") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error->fix_error(FLERR, this, "not enough arguments for 'speciesC'");
+            speciesC = new char[strlen(arg[iarg_ + 1])];
+            strcpy(speciesC, arg[iarg_ + 1]);
+            hasargs = true;
+            iarg_ += 2;
+        }
+        else if (strcmp(arg[iarg_], "molMassC") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error->fix_error(FLERR, this, "Wrong number of arguments");
+            if (strlen(speciesC) < 1)
+                error->fix_error(FLERR, this, "speciesC not defined");
+            molMass_C_ = atof(arg[iarg_ + 1]);
+            if (molMass_C_ < 1)
+                error->fix_error(FLERR, this, "molar mass of C is not defined");
+            hasargs = true;
+            iarg_ += 2;
+        }
+    }
 
+    // changeOfA and changeOfC have to have the same name as in the species.C
+    // therefore new strings of massA and massC are introduced which are defined as
+    // changeOfA and changeOfC as their names in species.c
+    // define changed species mass A
+    int x = 16;
+    char cha[30];
+    massA = new char[x];
+    strcpy(cha, "Modified_");
+    strcat(cha, speciesA);
+    strcpy(massA, cha);
+
+    // define changed species mass C
+    massC = new char[x];
+    strcpy(cha, "Modified_");
+    strcat(cha, speciesC);
+    strcpy(massC, cha);
+
+    /* // flags for vector output
+    vector_flag = 1;  //0/1 per-atom data is stored
+    size_vector = 2;
+    global_freq = 1;
+    extvector   = 1;
+    nevery = 1; */
+
+    time_depend = 1;
+    force_reneighbor = 1;
+    next_reneighbor = update -> ntimestep + nevery;
+
+    restart_global = 1;
+
+    if (screen)
+    {
+        fprintf(screen,"modified species names are: %s \n", massA);
+        fprintf(screen,"and: %s \n", massC);
+        fprintf(screen,"reactant species: %s \n", speciesA);
+        fprintf(screen,"product species: %s \n", speciesC);
+    }
 }	
 
 /* ---------------------------------------------------------------------- */
@@ -195,7 +194,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_concC_)     modify  ->  delete_fix(speciesC);
         if (fix_rhogas_)    modify  ->  delete_fix("partRho");
         if (fix_tgas_)       modify  ->  delete_fix("partTemp");
-        if (fix_totalmole_) modify  ->  delete_fix("partN");
+        // if (fix_totalmole_) modify  ->  delete_fix("partN");
         // if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
         if (fix_changeOfA_) modify  ->  delete_fix(massA);
         if (fix_changeOfC_) modify  ->  delete_fix(massC);
@@ -245,7 +244,7 @@ void FixChemShrinkCore::updatePtrs()
     concA_          =   fix_concA_      ->  vector_atom;
     concC_          =   fix_concC_      ->  vector_atom;
     T_              =   fix_tgas_       ->  vector_atom;
-    N_              =   fix_totalmole_  ->  vector_atom;
+    // N_              =   fix_totalmole_  ->  vector_atom;
 
     // material prop
     relRadii_       = fix_layerRelRad_-> array_atom;
@@ -343,11 +342,11 @@ void FixChemShrinkCore::init()
     fix_changeOfC_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
     fix_rhogas_    = static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));
     fix_tgas_      = static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, id));
-    fix_totalmole_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
+    // fix_totalmole_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
     //fix_reactionheat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
 
     updatePtrs();
-/*    if (screen)
+    /* if (screen)
     {
         fprintf(screen, "k0_[0] = %f \n", k0_[0]);
         fprintf(screen, "k0_[1] = %f \n", k0_[1]);
@@ -363,17 +362,18 @@ void FixChemShrinkCore::init()
         fprintf(screen, "molMass_[1] = %f \n",layerMolMasses_[1]);
         fprintf(screen, "molMass_[2] = %f \n",layerMolMasses_[2]);
         fprintf(screen, "molMass_[3] = %f \n",layerMolMasses_[3]);
-    }
+    } */
 
-    for (int i = 0; i < atom->nlocal;i++)
+    /*for (int i = 0; i < atom->nlocal;i++)
     {
         if (screen)
         {
-            fprintf(screen, "relRad_[0][0] = %f \n",relRadii_[i][0]);
+             fprintf(screen, "relRad_[0][0] = %f \n",relRadii_[i][0]);
             fprintf(screen, "relRad_[0][1] = %f \n",relRadii_[i][1]);
             fprintf(screen, "relRad_[0][2] = %f \n",relRadii_[i][2]);
+            fprintf(screen, "N_[i] = %f \n",N_[i]);
         }
-    }       */
+    }*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -393,9 +393,8 @@ void FixChemShrinkCore::post_force(int)
     double a_[nmaxlayers_];             // reaction resistance value for each layer
     double dmA_[nmaxlayers_];           // mass flow rate of reactant gas species for each layer
     double r_[nmaxlayers_];             // radius of layers
-    double xi_[nmaxlayers_];
-    double xp_eq_[nmaxlayers_];            // molar fraction of product gas
-    double xr_eq_[nmaxlayers_];            // molar fraction of reactant gas
+    double x0_[nmaxlayers_];
+    double x0_eq_[nmaxlayers_];            // molar fraction of reactant gas
     // double diff[nmaxlayers_];
     // double masst;
 
@@ -406,14 +405,14 @@ void FixChemShrinkCore::post_force(int)
 	{
             layerRad(i,r_);
             getA(i,a_,r_);
-            getXi(i,xi_,xp_eq_,xr_eq_);
+            getXi(i,x0_,x0_eq_);
             //getDiff(i,diff);
             //getMassT(i,masst);
 
 	    
             //for(int j = 0; j<nmaxlayers_; j++)
             //  dmA_[j] = 0.0;
-            // reaction(i,a_,dmA_); //diff,masst,y0,
+            //reaction(i,a_,dmA_,x0_,x0_eq_); //diff,masst,y0,
             // update_atom_properties(i,dmA_,r_);
             // update_gas_properties(i,dmA_);
 	}
@@ -603,15 +602,15 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
   // maybe not needed
 //}
 
-void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_) //double *diff, double masst, double* y0,
+void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, double *x0_eq_) //double *diff, double masst, double* y0,
 {
     updatePtrs();
     //  test to see if values of a_ are read correctly
     double W;
-    W = a_[0]*a_[1]+a_[1]+a_[1]*a_[2];
-    dmA_[0]   =   ((a_[2]*a_[1]+a_[1])*concA_[i]-a_[2]*concA_[i]-a_[1]*concA_[i])*1/W;     // (partSurfArea(radius_[i])*rhogas_[i]*TimeStep);
-    dmA_[1]   =   ((a_[0]*a_[2]+a_[2])*concA_[i]-(a_[2]+a_[2])*concA_[i]-a_[0]*concA_[i])*1/W;
-    dmA_[2]   =   ((a_[0]*a_[1]+a_[1])*concA_[i]-a_[0]*concA_[i]-a_[1]*concA_[i])*1/W;
+    W = a_[0]*(a_[2]*a_[1]+a_[1])+a_[1]*a_[2];
+    dmA_[0]   =   ((a_[2]*a_[1]+a_[1])*(x0_[i]-x0_eq_[0])-a_[2]*(x0_[i]-x0_eq_[1])-a_[1]*(x0_[i]-x0_eq_[2]))*1/W;     // (partSurfArea(radius_[i])*rhogas_[i]*TimeStep);
+    dmA_[1]   =   ((a_[0]*a_[2]+a_[2])*(x0_[i]-x0_eq_[1])-(a_[2]+a_[2])*(x0_[i]-x0_eq_[0])-a_[0]*(x0_[i]-x0_eq_[1]))*1/W;
+    dmA_[2]   =   ((a_[0]*a_[1]+a_[1])*(x0_[i]-x0_eq_[2])-a_[1]*(x0_[i]-x0_eq_[0])-a_[0]*(x0_[i]-x0_eq_[1]))*1/W;
 
     dmA_[0] *=  TimeStep * nevery;
     dmA_[1] *=  TimeStep * nevery;
@@ -625,17 +624,17 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_) //double *diff
     }
 }
 
-void FixChemShrinkCore::getXi(int i, double *xi_, double *xp_eq_, double *xr_eq_)
+void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
 {
   // calculate equilibrium concentration from K_eq(layer, T)
-
+    double xp_eq_[nmaxlayers_];
     for (int j = 0; j < nmaxlayers_; j++)
     {
         xp_eq_[j]  =   K_eq(j,T_test)/(1+K_eq(j,T_test));
-        xr_eq_[j]  =   1-xp_eq_[j];
+        x0_eq_[j]  =   1-xp_eq_[j];
     }
 
-    xi_[i] = concA_[i]*rhogas_[i]/(N_[i]*molMass_A_);
+    x0_[i] = concA_[i]*rhogas_[i]; ///(N_[i]*molMass_A_);
 
   // directly guessing x_eq like in the thesis of Nietrost seems to be spurious for multi-component mixtures (H2, H2O, CO, CO2)
   // Negri et al. (1991), Takahashi et al. (1986) and probably many others use a different approach:

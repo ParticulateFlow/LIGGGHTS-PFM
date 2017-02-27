@@ -318,8 +318,17 @@ void FixCfdCouplingChemistry::init()
         }
     }
 
-    rhogas = fix_rhogas_ -> vector_atom;
+    rhogas_ = fix_rhogas_ -> vector_atom;
     concentrations = fix_massfrac_[0]->vector_atom;
+    N_ = fix_totalmole_ -> vector_atom;
+    for (int i = 0; i < atom->nlocal;i++)
+    {
+        if (screen)
+        {
+            fprintf(screen, "total mole in vol: %f \n", N_[i]);
+            fprintf(screen, "Gas Density:  %f \n", rhogas_[i]);
+        }
+    }
 }
 
 /* ---------------------------------------------------------------------- */
