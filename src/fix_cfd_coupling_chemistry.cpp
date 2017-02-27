@@ -78,6 +78,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 error -> fix_error(FLERR,this,"n_species > 0 is required");
             hasargs = true;
             iarg_ ++;
+            // print out number of species
             if(screen)
                 fprintf(screen,"num species: %d \n",num_species);
         }
@@ -93,9 +94,10 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
             iarg_++;
             for (int i = 0; i < num_species; i++)
             {
-                iarg_+=i;
                 species_names_[i] = new char [strlen(arg[iarg_])+1];
                 strcpy(species_names_[i], arg[iarg_]);
+                iarg_ += 1;
+                // print out species names
                 if(screen)
                     fprintf(screen,"species names: %s \n",species_names_[i]);
             }
