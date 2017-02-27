@@ -77,6 +77,7 @@ public:
   class FixPropertyAtom *fix_rhogas_;                           //  density of gas
   class FixPropertyAtom *fix_tgas_;                          //  temperature of gas
   class FixPropertyAtom *fix_reactionheat_;                  //  DeltaQ
+  class FixPropertyAtom *fix_totalmole_;                     // total mole in volume
   
   double molMass_A_, molMass_C_;        // molar mass of species A and C
   
@@ -86,6 +87,8 @@ public:
   double *concA_;
   double *concC_;
   double *T_;
+  // total mole
+  double *N_;
   
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
@@ -112,7 +115,7 @@ public:
   //void reaction_1(int, double *, double *, double, double *, double *);
   //void reaction_2(int, double *, double *, double, double *, double *);
   void getA(int, double *, double *);
-  void getY0(int, double *);
+  void getXi(int, double *, double *, double *);
   void layerRad(int, double *);
   void update_atom_properties(int, double *, double *);
   void update_gas_properties(int, double *);

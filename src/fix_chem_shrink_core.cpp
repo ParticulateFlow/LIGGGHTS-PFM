@@ -58,12 +58,12 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 	Fix(lmp, narg, arg),
 	nmaxlayers_(3),
 	rmin_(0.01),
-        drmin_(0.001),
-        fix_k0_(0), // [m/s]
-        fix_molMass_(0),
-        fix_Ea_(0), // [J/mol]
-        fix_dens_(0),
-        fix_layerRelRad_(0)
+    drmin_(0.001),
+    fix_k0_(0), // [m/s]
+    fix_molMass_(0),
+    fix_Ea_(0), // [J/mol]
+    fix_dens_(0),
+    fix_layerRelRad_(0)
 {
         if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
 		error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
@@ -73,14 +73,15 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 	fix_concC_ = NULL;
 	fix_changeOfA_ = NULL;
 	fix_changeOfC_ = NULL;
-        fix_rhogas_ = NULL;
-        fix_tgas_       =   NULL;
-        // fix_reactionheat_    =   0;
+    fix_rhogas_ = NULL;
+    fix_tgas_       =   NULL;
+    fix_totalmole_  =   NULL;
+    // fix_reactionheat_    =   0;
 
-        pmass_ = NULL;
-        molMass_A_, molMass_C_ = 0;
-        Runiv = 8.3144; //[j/Kmol]
-        T_test  = 1073.15;   // [K] will be deleted after functioning test case is create.
+    pmass_ = NULL;
+    molMass_A_, molMass_C_ = 0;
+    Runiv = 8.3144; //[j/Kmol]
+    T_test  = 1073.15;   // [K] will be deleted after functioning test case is create.
 
 	iarg_ = 3;
         if (narg < 11)
@@ -139,13 +140,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 	// define changed species mass A
         int x = 16;
 	char cha[30];
-        massA = new char[x];
+    massA = new char[x];
 	strcpy(cha, "Modified_");
 	strcat(cha, speciesA);
 	strcpy(massA, cha);
 
 	// define changed species mass C
-        massC = new char[x];
+    massC = new char[x];
 	strcpy(cha, "Modified_");
 	strcat(cha, speciesC);
 	strcpy(massC, cha);
@@ -194,6 +195,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_concC_)     modify  ->  delete_fix(speciesC);
         if (fix_rhogas_)    modify  ->  delete_fix("partRho");
         if (fix_tgas_)       modify  ->  delete_fix("partTemp");
+        if (fix_totalmole_) modify  ->  delete_fix("partN");
         // if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
         if (fix_changeOfA_) modify  ->  delete_fix(massA);
         if (fix_changeOfC_) modify  ->  delete_fix(massC);
@@ -237,12 +239,13 @@ void FixChemShrinkCore::post_create()
 /* ---------------------------------------------------------------------- */
 void FixChemShrinkCore::updatePtrs()
 {
-    changeOfA_      =   fix_changeOfA_  -> vector_atom;
-    changeOfC_      =   fix_changeOfC_  -> vector_atom;
-    rhogas_         =   fix_rhogas_     -> vector_atom;
-    concA_          =   fix_concA_      -> vector_atom;
-    concC_          =   fix_concC_      -> vector_atom;
-    T_              =   fix_tgas_       -> vector_atom;
+    changeOfA_      =   fix_changeOfA_  ->  vector_atom;
+    changeOfC_      =   fix_changeOfC_  ->  vector_atom;
+    rhogas_         =   fix_rhogas_     ->  vector_atom;
+    concA_          =   fix_concA_      ->  vector_atom;
+    concC_          =   fix_concC_      ->  vector_atom;
+    T_              =   fix_tgas_       ->  vector_atom;
+    N_              =   fix_totalmole_  ->  vector_atom;
 
     // material prop
     relRadii_       = fix_layerRelRad_-> array_atom;
@@ -340,6 +343,7 @@ void FixChemShrinkCore::init()
     fix_changeOfC_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
     fix_rhogas_    = static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));
     fix_tgas_      = static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, id));
+    fix_totalmole_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
     //fix_reactionheat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
 
     updatePtrs();
@@ -389,7 +393,9 @@ void FixChemShrinkCore::post_force(int)
     double a_[nmaxlayers_];             // reaction resistance value for each layer
     double dmA_[nmaxlayers_];           // mass flow rate of reactant gas species for each layer
     double r_[nmaxlayers_];             // radius of layers
-    double y0_[nmaxlayers_];
+    double xi_[nmaxlayers_];
+    double xp_eq_[nmaxlayers_];            // molar fraction of product gas
+    double xr_eq_[nmaxlayers_];            // molar fraction of reactant gas
     // double diff[nmaxlayers_];
     // double masst;
 
@@ -400,13 +406,13 @@ void FixChemShrinkCore::post_force(int)
 	{
             layerRad(i,r_);
             getA(i,a_,r_);
-            getY0(i,y0_);
+            getXi(i,xi_,xp_eq_,xr_eq_);
             //getDiff(i,diff);
             //getMassT(i,masst);
 
 	    
             //for(int j = 0; j<nmaxlayers_; j++)
-              //  dmA_[j] = 0.0;
+            //  dmA_[j] = 0.0;
             // reaction(i,a_,dmA_); //diff,masst,y0,
             // update_atom_properties(i,dmA_,r_);
             // update_gas_properties(i,dmA_);
@@ -619,17 +625,17 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_) //double *diff
     }
 }
 
-void FixChemShrinkCore::getY0(int i, double *y0_)
+void FixChemShrinkCore::getXi(int i, double *xi_, double *xp_eq_, double *xr_eq_)
 {
   // calculate equilibrium concentration from K_eq(layer, T)
-    double xp_[nmaxlayers_];            // molar fraction of product gas
-    double xr_[nmaxlayers_];            // molar fraction of reactant gas
 
     for (int j = 0; j < nmaxlayers_; j++)
     {
-        xp_[j]  =   K_eq(j,T_test)/(1+K_eq(j,T_test));
-        xr_[j]  =   1-xp_[j];
+        xp_eq_[j]  =   K_eq(j,T_test)/(1+K_eq(j,T_test));
+        xr_eq_[j]  =   1-xp_eq_[j];
     }
+
+    xi_[i] = concA_[i]*rhogas_[i]/(N_[i]*molMass_A_);
 
   // directly guessing x_eq like in the thesis of Nietrost seems to be spurious for multi-component mixtures (H2, H2O, CO, CO2)
   // Negri et al. (1991), Takahashi et al. (1986) and probably many others use a different approach:
