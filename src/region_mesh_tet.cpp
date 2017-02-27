@@ -39,6 +39,9 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
+double const RegTetMesh::phi = (1.+sqrt(5.))/2.;
+int const RegTetMesh::n_ico_point = 12;
+
 RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
   Region(lmp, narg, arg)
 {
@@ -87,6 +90,66 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
 
   cmax = 1;
   contact = new Contact[cmax];
+
+  precalc_ico_points();
+}
+
+
+void RegTetMesh::precalc_ico_points()
+{
+  // icosaedron point
+  ico_points = memory->create<double>(ico_points,n_ico_point,3,"icosaeder points");
+
+  double const coord2 = sqrt(3)/phi;
+  double const coord1 = coord2/phi;
+
+  ico_points[0][0] = 0.;
+  ico_points[0][1] = coord1;
+  ico_points[0][2] = coord2;
+  
+  ico_points[1][0] = 0.;
+  ico_points[1][1] = -coord1;
+  ico_points[1][2] = -coord2;
+  
+  ico_points[2][0] = 0.;
+  ico_points[2][1] = -coord1;
+  ico_points[2][2] = coord2;
+  
+  ico_points[3][0] = 0.;
+  ico_points[3][1] = coord1;
+  ico_points[3][2] = -coord2;
+  
+  ico_points[4][0] = coord2;
+  ico_points[4][1] = 0.;
+  ico_points[4][2] = coord1;
+  
+  ico_points[5][0] = -coord2;
+  ico_points[5][1] = 0.;
+  ico_points[5][2] = -coord1;
+  
+  ico_points[6][0] = -coord2;
+  ico_points[6][1] = 0.;
+  ico_points[6][2] = coord1;
+  
+  ico_points[7][0] = coord2;
+  ico_points[7][1] = 0.;
+  ico_points[7][2] = -coord1;
+  
+  ico_points[8][0] = coord1;
+  ico_points[8][1] = coord2;
+  ico_points[8][2] = 0.;
+  
+  ico_points[9][0] = -coord1;
+  ico_points[9][1] = -coord2;
+  ico_points[9][2] = 0.;
+  
+  ico_points[10][0] = -coord1;
+  ico_points[10][1] = coord2;
+  ico_points[10][2] = 0.;
+  
+  ico_points[11][0] = coord1;
+  ico_points[11][1] = -coord2;
+  ico_points[11][2] = 0.;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -139,16 +202,30 @@ int RegTetMesh::inside(double x, double y, double z)
 
 int RegTetMesh::surface_interior(double *x, double cutoff)
 {
-  error->one(FLERR,"This feature is not available for tet mesh regions");
-  return 0;
+  int n_contact = 0;
+  double point[3];
+  
+  for(int i=0;i<n_ico_point;i++){
+    vectorAddMultiply3D(x,ico_points[i],cutoff,point);
+    if(!inside(point[0],point[1],point[2])) n_contact++;                     
+  }
+
+  return n_contact;
 }
 
 /* ---------------------------------------------------------------------- */
 
 int RegTetMesh::surface_exterior(double *x, double cutoff)
 {
-  error->one(FLERR,"This feature is not available for tet mesh regions");
-  return 0;
+  int n_contact = 0;
+  double point[3];
+  
+  for(int i=0;i<n_ico_point;i++){
+    vectorAddMultiply3D(x,ico_points[i],cutoff,point);
+    if(inside(x[0],x[1],x[2])) n_contact++;                     
+  }
+
+  return n_contact;
 }
 
 /* ---------------------------------------------------------------------- */

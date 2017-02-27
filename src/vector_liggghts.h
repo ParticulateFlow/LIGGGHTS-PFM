@@ -302,6 +302,13 @@ inline void vectorScalarSubtract3D(double *v, double s)
   v[2]-=s;
 }
 
+  // returns v1+s*v2 to res
+inline void vectorAddMultiply3D(double *v1, double *v2, double s, double *res)
+{
+  for(int i=0;i<3;i++)
+    res[i] = v1[i]+v2[i]*s;
+}
+ 
 inline void vectorNegate3D(double *v, double *result)
 {
   result[0]=-v[0];

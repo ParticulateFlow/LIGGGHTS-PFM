@@ -78,6 +78,11 @@ class RegTetMesh : public Region {
    double *volume;
    double *acc_volume;
 
+  double **ico_points;
+  static double const phi;
+  static int const n_ico_point;
+
+  void precalc_ico_points();
    #include "region_mesh_tet_I.h"
 };
 
