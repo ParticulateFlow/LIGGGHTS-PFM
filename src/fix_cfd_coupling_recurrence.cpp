@@ -24,8 +24,8 @@
 ------------------------------------------------------------------------- */
 
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
 #include "domain.h"
