@@ -98,8 +98,6 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
 
   build_tree();
 
-  printf("region tetmesh with extents %f %f %f %f %f %f\n",
-         extent_xlo,extent_xhi,extent_ylo,extent_yhi,extent_zlo,extent_zhi);
 }
 
 
@@ -205,7 +203,7 @@ int RegTetMesh::surface_interior(double *x, double cutoff)
 {
   // check subdomain
   if(!domain->is_in_subdomain(x)) return 0;
-
+  
   int n_contact = 0;
   double point[3];
   
@@ -442,25 +440,18 @@ void RegTetMesh::build_tree()
   tree_data.push_back(TreeBin());
 
   tree_populate_node(0);
-  
-  for(int iNode=0;iNode<pow(2,MAX_TREE_DEPTH)-1;++iNode){
+
+  // this is empirical - on lowest level, assume that
+  // half of the nodes hold TREE_MIN_ELEMENTS_PER_NODE
+  // and half of the nodes are empty. Could be experimented with
+  // a little more if efficiency is an issue
+  tree_max_depth = 1;
+  while(nTet/pow(2,tree_max_depth) > TREE_MIN_ELEMENTS_PER_NODE/2)
+    ++tree_max_depth;
+
+  for(int iNode=0;iNode<pow(2,tree_max_depth)-1;++iNode){
     tree_create_children(iNode);
   }
-
-  printf("built search tree with %d levels (%d nodes)\n",tree_level(tree_size()-1),tree_size());
-  
-  for(int i=0;i<tree_size();i++){
-    double lo[3],hi[3];
-    tree_key[i].getBoxBounds(lo,hi);
-    printf("node %d: bounding box %f %f %f %f %f %f\n",
-           i,lo[0],hi[0],lo[1],hi[1],lo[2],hi[2]);
-    printf("content of node %d (level %d) : ",i,tree_level(i));
-    for(TreeBin::iterator it=tree_data[i].begin();it!=tree_data[i].end();++it){
-      printf("%d ",*it);
-    }
-    printf("\n-----------\n");
-  }
-  printf("==============================\n");
 }
 
 void RegTetMesh::tree_populate_node(int iTreeNode)
@@ -468,12 +459,6 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
   BoundingBox &bbox = tree_key[iTreeNode];
   TreeBin &data = tree_data[iTreeNode];
 
-  bool writeFlag = iTreeNode== 377 || tree_parent(iTreeNode)==377;
-    
-  if(writeFlag)
-    printf("populating child node %d of parent node %d\n",
-           iTreeNode,tree_parent(iTreeNode));
-  
   if(iTreeNode == 0){
     for(int iTet=0;iTet<nTet;iTet++){
       for(int iNode=0;iNode<4;iNode++){
@@ -487,7 +472,7 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
 
   } else{
     TreeBin &parent_data = tree_data[tree_parent(iTreeNode)];
-    if(parent_data.size() < MIN_TREE_ELEMENTS_PER_NODE)
+    if(parent_data.size() < TREE_MIN_ELEMENTS_PER_NODE)
       return; // nothing to do
     for(TreeBin::iterator it=parent_data.begin();it!=parent_data.end();++it){
       for(int iNode=0;iNode<4;iNode++){
@@ -499,15 +484,6 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
 
     }
     extend_bb(bbox,data);
-
-    if(writeFlag){
-      printf("content of node %d\n",iTreeNode);
-      for(TreeBin::iterator it=tree_data[iTreeNode].begin();it!=tree_data[iTreeNode].end();++it){
-        printf("%d ",*it);
-      }
-      printf("\n");
-    }
-      
 
   }
   
@@ -612,49 +588,12 @@ bool RegTetMesh::tree_is_inside(double *x)
 
   nodeList.sort();
 
-  // printf("\nchecking ... ");
   for(std::list<int>::reverse_iterator it=nodeList.rbegin();it!=nodeList.rend();++it){
-    // printf("%d ",*it);
     if(tree_is_inside_bin(x,tree_data[*it])){
-      // printf("\nfound in bin %d (level %d)\n",*it,tree_level(*it));
       return true;
     }
   }
-
-  // printf("not inside\n");
   return false;
-}
-
-
-bool RegTetMesh::tree_is_inside_recursive(double *x, int const iNode)
-{
-  if(tree_data[iNode].empty())
-    return false;
-  
-  if(!tree_key[iNode].isInside(x))
-    return false;
-  
-  int const index_left = tree_left(iNode);
-  int const index_right = tree_right(iNode);
-
-  if(index_left < tree_size() && index_right < tree_size()){
-    if(tree_key[index_left].isInside(x) && tree_key[index_right].isInside(x))
-      return tree_is_inside_bin(x,tree_data[iNode]);
-
-    if(tree_is_inside_recursive(x,index_left))
-      return true;
-  
-    if(tree_is_inside_recursive(x,index_right))
-      return true;
-  }
-
-  // if(tree_level(iNode) < 3)
-  //   printf("iterating on low level node: node %d (level %d)\n",iNode,tree_level(iNode));
-  // else
-  //   printf("iterating on high level node: node %d (level %d)\n",iNode,tree_level(iNode));
-  
-  TreeBin const &data = tree_data[iNode];
-  return tree_is_inside_bin(x,data);
 }
 
 bool RegTetMesh::tree_is_inside_bin(double *x, TreeBin const &data)
@@ -668,3 +607,4 @@ bool RegTetMesh::tree_is_inside_bin(double *x, TreeBin const &data)
   
   return false;
 }
+

@@ -89,14 +89,19 @@ class RegTetMesh : public Region {
 
   // search tree stuff
 
-#define MAX_TREE_DEPTH 12
-#define MIN_TREE_ELEMENTS_PER_NODE 3
+  // this is empirical... turned out that 50 elements per node
+  // are a good size because the number of false negatives
+  // (tested positions that lie in a bounding box, but not in a
+  // tet inside this bounding box) is still rather small.
+#define TREE_MIN_ELEMENTS_PER_NODE 50
 
   typedef std::set<int> TreeBin;
   
   std::vector<TreeBin> tree_data;
   std::vector<BoundingBox> tree_key;
 
+  int tree_max_depth;
+  
   void build_tree();
   void tree_populate_node(int iTreeNode);
   void extend_bb(BoundingBox &box, TreeBin const &data);
@@ -104,10 +109,10 @@ class RegTetMesh : public Region {
   BoundingBox split_bbox_largest_extent(BoundingBox &orig,bool lower);
   void tree_create_children(int current);
 
-  bool tree_is_inside_recursive(double *x, int const iNode);
   bool tree_is_inside_bin(double *x, TreeBin const &data);
 
   bool tree_is_inside(double *x);
+  int tree_is_inside(double *x, double r);
   
   int tree_left(int const i) {return 2*i+1;}
   int tree_right(int const i) {return 2*i+2;}
