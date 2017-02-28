@@ -30,6 +30,9 @@ RegionStyle(mesh/tet,RegTetMesh)
 
 #include "random_park.h"
 #include "region.h"
+#include "bounding_box.h"
+#include <vector>
+#include <set>
 
 namespace LAMMPS_NS {
 
@@ -78,12 +81,50 @@ class RegTetMesh : public Region {
    double *volume;
    double *acc_volume;
 
+  // icosaedron coordinates for surface_interior and surface_exterior
   double **ico_points;
   static double const phi;
   static int const n_ico_point;
-
   void precalc_ico_points();
-   #include "region_mesh_tet_I.h"
+
+  // search tree stuff
+
+#define MAX_TREE_DEPTH 12
+#define MIN_TREE_ELEMENTS_PER_NODE 3
+
+  typedef std::set<int> TreeBin;
+  
+  std::vector<TreeBin> tree_data;
+  std::vector<BoundingBox> tree_key;
+
+  void build_tree();
+  void tree_populate_node(int iTreeNode);
+  void extend_bb(BoundingBox &box, TreeBin const &data);
+  
+  BoundingBox split_bbox_largest_extent(BoundingBox &orig,bool lower);
+  void tree_create_children(int current);
+
+  bool tree_is_inside_recursive(double *x, int const iNode);
+  bool tree_is_inside_bin(double *x, TreeBin const &data);
+
+  bool tree_is_inside(double *x);
+  
+  int tree_left(int const i) {return 2*i+1;}
+  int tree_right(int const i) {return 2*i+2;}
+  int tree_parent(int const i) {return (i-1)/2;}
+
+  bool tree_is_leaf(int const i)
+  {
+    return tree_left(i) >= tree_size()
+      || (tree_data[tree_left(i)].empty() && tree_data[tree_right(i)].empty());
+  }
+
+  int tree_size() { return tree_key.size(); }
+  int tree_level(int i)
+  { int level = 0; while(i>0){ i = i >> 1; level++; } return level; }
+
+  
+#include "region_mesh_tet_I.h"
 };
 
 }
