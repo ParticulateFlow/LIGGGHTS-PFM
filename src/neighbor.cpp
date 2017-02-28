@@ -1723,7 +1723,7 @@ void Neighbor::setup_bins()
   // static_cast(-1.5) = -1, so subract additional -1
   // add in SMALL for round-off safety
 
-  int mbinxhi,mbinyhi,mbinzhi;
+  int mbinxhi=0,mbinyhi=0,mbinzhi=0;
   double coord;
 
   coord = bsubboxlo[0] - SMALL*bbox[0];
