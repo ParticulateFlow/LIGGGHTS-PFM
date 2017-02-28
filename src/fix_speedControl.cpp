@@ -77,6 +77,13 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
     zvalue = force->numeric(FLERR,arg[5]);
     zstyle = CONSTANT;
   }
+  
+  if (xstyle == NONE && ystyle == NONE && zstyle == NONE) {
+    error->fix_error(FLERR,this,"no set-velocity specified; all velocity components are left floating, remove this fix!");
+  }
+  
+  // default controller gain
+  K = 0.1;
 
   // optional args
 
@@ -94,11 +101,18 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
       idregion = new char[n];
       strcpy(idregion,arg[iarg+1]);
       iarg += 2;
+    }
+    else if (strcmp(arg[iarg],"gain") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix speedControl command");
+      K = force->numeric(FLERR,arg[iarg+1]);
+      if(K <= 0.0)
+        error->fix_error(FLERR,this,"gain K must be in range ]0;inf[");
+      iarg += 2;
+      
     } else error->all(FLERR,"Illegal fix speedControl command");
   }
 
   force_flag = 0;
-  foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
 
   maxatom = 0;
   sforce = NULL;
@@ -209,7 +223,6 @@ void FixSpeedControl::post_force(int vflag)
   double **v = atom->v;
   double **f = atom->f;
   int *mask = atom->mask;
-  tagint *image = atom->image;
   int nlocal = atom->nlocal;
 
   // reallocate sforce array if necessary
@@ -219,33 +232,21 @@ void FixSpeedControl::post_force(int vflag)
     memory->destroy(sforce);
     memory->create(sforce,maxatom,4,"speedControl:sforce");
   }
-
-  // foriginal[0] = "potential energy" for added force
-  // foriginal[123] = force on atoms before extra force added
-
-  foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
+  
   force_flag = 0;
   
-  // evil: hardcoded controller gain
-  double K = 0.1;
+  
 
   // constant force
   // potential energy = - x dot f in unwrapped coords
 
   if (varflag == CONSTANT) {
-    double unwrap[3];
     for (int i = 0; i < nlocal; i++)
       if (mask[i] & groupbit) {
         if (iregion >= 0 &&
             !domain->regions[iregion]->match(x[i][0],x[i][1],x[i][2]))
           continue;
 
-        domain->unmap(x[i],image[i],unwrap);
-        foriginal[0] -= xvalue*unwrap[0] + yvalue*unwrap[1] + zvalue*unwrap[2];
-        foriginal[1] += f[i][0];
-        foriginal[2] += f[i][1];
-        foriginal[3] += f[i][2];
-        //
         if (xstyle) f[i][0] -= K*(v[i][0] - xvalue);
         if (ystyle) f[i][1] -= K*(v[i][1] - yvalue);
         if (zstyle) f[i][2] -= K*(v[i][2] - zvalue);
@@ -300,36 +301,6 @@ void FixSpeedControl::post_force_respa(int vflag, int ilevel, int iloop)
 void FixSpeedControl::min_post_force(int vflag)
 {
   post_force(vflag);
-}
-
-/* ----------------------------------------------------------------------
-   potential energy of added force
-------------------------------------------------------------------------- */
-
-double FixSpeedControl::compute_scalar()
-{
-  // only sum across procs one time
-
-  if (force_flag == 0) {
-    MPI_Allreduce(foriginal,foriginal_all,4,MPI_DOUBLE,MPI_SUM,world);
-    force_flag = 1;
-  }
-  return foriginal_all[0];
-}
-
-/* ----------------------------------------------------------------------
-   return components of total force on fix group before force was changed
-------------------------------------------------------------------------- */
-
-double FixSpeedControl::compute_vector(int n)
-{
-  // only sum across procs one time
-
-  if (force_flag == 0) {
-    MPI_Allreduce(foriginal,foriginal_all,4,MPI_DOUBLE,MPI_SUM,world);
-    force_flag = 1;
-  }
-  return foriginal_all[n+1];
 }
 
 /* ----------------------------------------------------------------------
