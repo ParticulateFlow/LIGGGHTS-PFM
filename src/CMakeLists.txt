@@ -11,7 +11,7 @@ SET(LIGGGHTS_VERSION ${LIGGGHTS_MAJOR_VERSION}.${LIGGGHTS_MINOR_VERSION}.${LIGGG
 
 IF (NOT CMAKE_CXX_FLAGS)
   IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wno-unused-result -std=c++11")
+    SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-literal-suffix -std=c++11")
   ENDIF()
 ENDIF()
 
