@@ -39,7 +39,9 @@
 #include "update.h"
 #include <stdio.h>
 #include <algorithm>
+#ifndef NDEBUG
 #define NDEBUG
+#endif
 #include <assert.h>
 
 using namespace LAMMPS_NS;
