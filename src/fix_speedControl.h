@@ -45,8 +45,6 @@ class FixSpeedControl : public Fix {
   void post_force(int);
   void post_force_respa(int, int, int);
   void min_post_force(int);
-  double compute_scalar();
-  double compute_vector(int);
   double memory_usage();
 
  private:
@@ -55,12 +53,13 @@ class FixSpeedControl : public Fix {
   char *xstr,*ystr,*zstr;
   char *idregion;
   int xvar,yvar,zvar,evar,xstyle,ystyle,zstyle;
-  double foriginal[4],foriginal_all[4];
   int force_flag;
   int nlevels_respa;
 
   int maxatom;
   double **sforce;
+  
+  double K;
 };
 
 }
@@ -87,15 +86,5 @@ Self-explanatory.
 E: Variable for fix speedControl is invalid style
 
 Self-explanatory.
-
-E: Cannot use variable energy with constant force in fix speedControl
-
-This is because for constant force, LAMMPS can compute the change
-in energy directly.
-
-E: Must use variable energy with fix speedControl
-
-Must define an energy vartiable when applyting a dynamic
-force during minimization.
 
 */
