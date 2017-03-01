@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
-#include "stdio.h"
+#include <mpi.h>
+#include <string.h>
+#include <stdio.h>
 #include "fix_contact_history_mesh.h"
 #include "atom.h"
 #include "fix_mesh_surface.h"
@@ -140,7 +140,7 @@ void FixContactHistoryMesh::allocate_pages()
 {
   if ((ipage_ == NULL) || (pgsize_ != neighbor->pgsize) || (oneatom_ != neighbor->oneatom)) {
 
-	//NP evaluates to false at first time allocation
+    //NP evaluates to false at first time allocation
     bool use_first = ipage_ == ipage2_;
 
     delete [] ipage1_;
@@ -204,7 +204,7 @@ void FixContactHistoryMesh::allocate_pages()
 
 void FixContactHistoryMesh::setup_pre_neighbor()
 {
-    /*NL*///if(7==comm->me) fprintf(screen,"fix id %s, pre-neigh: atom tag %d: partner0 = %d\n",id,atom->tag[378],partner_[378][0]);
+    /*NL*///if(7==comm->me && screen) fprintf(screen,"fix id %s, pre-neigh: atom tag %d: partner0 = %d\n",id,atom->tag[378],partner_[378][0]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -259,7 +259,7 @@ void FixContactHistoryMesh::setup_pre_force(int dummy)
 void FixContactHistoryMesh::pre_neighbor()
 {
     build_neighlist_ = true;
-    /*NL*/ //fprintf(screen,"***building neigh list at step "BIGINT_FORMAT"\n",update->ntimestep);
+    /*NL*/ //if (screen) fprintf(screen,"***building neigh list at step " BIGINT_FORMAT "\n",update->ntimestep);
 }
 
 /* ----------------------------------------------------------------------
@@ -312,20 +312,20 @@ void FixContactHistoryMesh::pre_force(int dummy)
         //NP get new storage for partner at next
         //NP get new storage for contact history at next
         partner_[i] = ipage_next->get(nneighs_next);
-        if (!partner_[i]) 
+        if (!partner_[i])
             error->one(FLERR,"mesh neighbor list overflow, boost neigh_modify one and/or page");
         vectorInitializeN(partner_[i],nneighs_next,-1);
-        /*NL*/ //fprintf(screen,"nneighs_next %d\n",nneighs_next);
+        /*NL*/ //if (screen) fprintf(screen,"nneighs_next %d\n",nneighs_next);
         contacthistory_[i] = dpage_next->get(nneighs_next*dnum_);
         if(!contacthistory_[i])
             error->one(FLERR,"mesh neighbor list overflow, boost neigh_modify one");
         vectorZeroizeN(contacthistory_[i],nneighs_next*dnum_);
 
-        /*NL*/ //fprintf(screen,"nneighs_next %d npartner_[i] %d\n",nneighs_next,npartner_[i]);
+        /*NL*/ //if (screen) fprintf(screen,"nneighs_next %d npartner_[i] %d\n",nneighs_next,npartner_[i]);
 
         if(npartner_[i] > nneighs_next)
         {
-            /*NL*/ //fprintf(screen,"tag %d nneighs_next %d npartner_[i] %d\n",atom->tag[i],nneighs_next,npartner_[i]);
+            /*NL*/ //if (screen) fprintf(screen,"tag %d nneighs_next %d npartner_[i] %d\n",atom->tag[i],nneighs_next,npartner_[i]);
             error->one(FLERR,"internal error");
         }
 
@@ -341,7 +341,7 @@ void FixContactHistoryMesh::pre_force(int dummy)
 
             partner_[i][ipartner] = partner_prev[ipartner];
             vectorCopyN(&(contacthistory_prev[ipartner*dnum_]),&(contacthistory_[i][ipartner*dnum_]),dnum_);
-            /*NL*/ //fprintf(screen,"new data %e %e %e\n",contacthistory_[i][ipartner*dnum_],contacthistory_[i][ipartner*dnum_+1],contacthistory_[i][ipartner*dnum_+2]);
+            /*NL*/ //if (screen) fprintf(screen,"new data %e %e %e\n",contacthistory_[i][ipartner*dnum_],contacthistory_[i][ipartner*dnum_+1],contacthistory_[i][ipartner*dnum_+2]);
         }
    }
 
@@ -359,7 +359,7 @@ void FixContactHistoryMesh::sort_contacts()
     int nlocal = atom->nlocal;
     int nneighs, first_empty, last_filled;
 
-    /*NL*/ //fprintf(screen,"starting sort\n");
+    /*NL*/ //if (screen) fprintf(screen,"starting sort\n");
 
     for(int i = 0; i < nlocal; i++)
     {
@@ -386,7 +386,7 @@ void FixContactHistoryMesh::sort_contacts()
         while(first_empty > -1 && last_filled > -1 && first_empty < last_filled);
     }
 
-    /*NL*/ //fprintf(screen,"ending sort\n");
+    /*NL*/ //if (screen) fprintf(screen,"ending sort\n");
 }
 
 /* ----------------------------------------------------------------------
@@ -417,19 +417,26 @@ void FixContactHistoryMesh::resetDeletionPage(int tid)
     keeppage_[tid]->reset(true);
 }
 
+/* ----------------------------------------------------------------------- */
+
+void FixContactHistoryMesh::markForDeletion(int tid, int i)
+{
+  const int nneighs = fix_nneighs_->get_vector_atom_int(i);
+  keepflag_[i] = keeppage_[tid]->get(nneighs);
+  if (!keepflag_[i])
+    error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
+}
+
 /* ----------------------------------------------------------------------
      mark all contacts for deletion
 ------------------------------------------------------------------------- */
 
 void FixContactHistoryMesh::markForDeletion(int tid, int ifrom, int ito)
 {
-    for(int i = ifrom; i < ito; i++)
-    {
-      const int nneighs = fix_nneighs_->get_vector_atom_int(i);
-      keepflag_[i] = keeppage_[tid]->get(nneighs);
-      if (!keepflag_[i])
-        error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
-    }
+  for(int i = ifrom; i < ito; ++i)
+  {
+    markForDeletion(tid, i);
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -441,42 +448,46 @@ void FixContactHistoryMesh::cleanUpContacts()
 
 /* ---------------------------------------------------------------------- */
 
+void FixContactHistoryMesh::cleanUpContact(int i) {
+  const int nneighs = fix_nneighs_->get_vector_atom_int(i);
+
+  for(int j = 0; j < nneighs; ++j)
+  {
+    // delete values
+    //NP do not swap with last in array, since paged data structure
+    //NP doesn't support this
+    if(!keepflag_[i][j])
+    {
+      if(partner_[i][j] > -1)
+      {
+        --npartner_[i];
+        /*NL*/ //if(screen && DEBUG_P_TAG == atom->tag[i]) {fprintf(screen,"step " BIGINT_FORMAT " deleting contact: tri id %d, npartner %d, nneighs %d\n",update->ntimestep,partner_[i][j],npartner_[i],nneighs);
+        /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
+        /*NL*/ //         fprintf(screen,"    neigh %d: tri id %d\n",kk,partner_[i][kk]); }
+      }
+      partner_[i][j] = -1;
+      vectorZeroizeN(&(contacthistory_[i][j*dnum_]),dnum_);
+    }
+  }
+  /*NL*/ //if(screen && DEBUG_P_TAG == atom->tag[i]) {
+  /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
+  /*NL*/ //          fprintf(screen,"    neigh post-clean %d: tri id %d\n",kk,partner_[i][kk]); }
+}
+
 void FixContactHistoryMesh::cleanUpContacts(int ifrom, int ito)
 {
-    /*NL*/ //if(10024 == update->ntimestep) {
-    /*NL*/ //       int iDeb = atom->map(DEBUG_P_TAG);
-    /*NL*/ //       int nn = static_cast<int>(round(fix_nneighs_->vector_atom[iDeb]));
-    /*NL*/ //       for(int kk = 0; kk < nn; kk++)
-    /*NL*/ //          fprintf(screen,"       neigh PRE-pre-clean %d: tri id %d\n",kk,partner_[iDeb][kk]); }
+  /*NL*/ //if(screen && 10024 == update->ntimestep) {
+  /*NL*/ //       int iDeb = atom->map(DEBUG_P_TAG);
+  /*NL*/ //       int nn = static_cast<int>(round(fix_nneighs_->vector_atom[iDeb]));
+  /*NL*/ //       for(int kk = 0; kk < nn; kk++)
+  /*NL*/ //          fprintf(screen,"       neigh PRE-pre-clean %d: tri id %d\n",kk,partner_[iDeb][kk]); }
 
-    //NP delete contacts that no longer exist (i.e. delflag set)
+  //NP delete contacts that no longer exist (i.e. delflag set)
 
-    for(int i = ifrom; i < ito; i++)
-    {
-        const int nneighs = fix_nneighs_->get_vector_atom_int(i);
-
-        for(int j = 0; j < nneighs; j++)
-        {
-            // delete values
-            //NP do not swap with last in array, since paged data structure
-            //NP doesn't support this
-            if(!keepflag_[i][j])
-            {
-                if(partner_[i][j] > -1)
-                {
-                    npartner_[i]--;
-                    /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {fprintf(screen,"step "BIGINT_FORMAT" deleting contact: tri id %d, npartner %d, nneighs %d\n",update->ntimestep,partner_[i][j],npartner_[i],nneighs);
-                    /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
-                    /*NL*/ //         fprintf(screen,"    neigh %d: tri id %d\n",kk,partner_[i][kk]); }
-                }
-                partner_[i][j] = -1;
-                vectorZeroizeN(&(contacthistory_[i][j*dnum_]),dnum_);
-            }
-        }
-        /*NL*/ //if(DEBUG_P_TAG == atom->tag[i]) {
-        /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
-        /*NL*/ //          fprintf(screen,"    neigh post-clean %d: tri id %d\n",kk,partner_[i][kk]); }
-    }
+  for(int i = ifrom; i < ito; ++i)
+  {
+    cleanUpContact(i);
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -490,7 +501,7 @@ void FixContactHistoryMesh::cleanUpContactJumps()
     //NP important to loop here from 0..npartner-1 because when this fct is called
     //NP nneighs is already the new #of neighbors
 
-    /*NL*///if(7==comm->me) fprintf(screen,"fix id %s, pre-clean: atom tag %d: partner0 = %d\n",id,atom->tag[378],partner_[378][0]);
+    /*NL*///if(7==comm->me && screen) fprintf(screen,"fix id %s, pre-clean: atom tag %d: partner0 = %d\n",id,atom->tag[378],partner_[378][0]);
     for(int i = 0; i < nlocal; i++)
     {
         int ipartner = 0;
@@ -499,18 +510,18 @@ void FixContactHistoryMesh::cleanUpContactJumps()
             //NP contacts should be sorted at this point
             if(partner_[i][ipartner] < 0)
             {
-                /*NL*/fprintf(screen,"fix id %s, proc %d: atom %d / tag %d: npartner %d, ipartner %d, partner %d\n",id,comm->me,i,atom->tag[i],npartner_[i],ipartner,partner_[i][ipartner]);
+                /*NL*/if (screen) fprintf(screen,"fix id %s, proc %d: atom %d / tag %d: npartner %d, ipartner %d, partner %d\n",id,comm->me,i,atom->tag[i],npartner_[i],ipartner,partner_[i][ipartner]);
                 error->one(FLERR,"internal error");
             }
 
             iTri = mesh_->map(partner_[i][ipartner]);
-            /*NL*/ //if(7998 == atom->tag[i])  fprintf(screen,"tri id %d found in old list %s\n",partner_[i][ipartner],fix_neighlist_mesh_->contactInList(iTri,i)?"true":"false");
+            /*NL*/ //if(7998 == atom->tag[i] && screen)  fprintf(screen,"tri id %d found in old list %s\n",partner_[i][ipartner],fix_neighlist_mesh_->contactInList(iTri,i)?"true":"false");
 
             //NP delete also non-owned triangles in list
             //NP can happen when > 1 proc in periodic dimension
             if(iTri == -1 || (iTri > -1 && !fix_neighlist_mesh_->contactInList(iTri,i)))
             {
-                /*NL*/ //if(7998 == atom->tag[i]) fprintf(screen,"step "BIGINT_FORMAT" deleting contact jump: tri id %d, npartner %d\n",update->ntimestep,partner_[i][ipartner],npartner_[i]);
+                /*NL*/ //if(7998 == atom->tag[i] && screen) fprintf(screen,"step " BIGINT_FORMAT " deleting contact jump: tri id %d, npartner %d\n",update->ntimestep,partner_[i][ipartner],npartner_[i]);
 
                 //NP delete non-existing contact
                 //NP need to swap here so that there are no "holes" in the contact list
@@ -603,7 +614,7 @@ int FixContactHistoryMesh::unpack_exchange(int nlocal, double *buf)
   int m = 0;
   const int nneighs = fix_nneighs_->get_vector_atom_int(nlocal);
 
-  /*NL*/ //fprintf(screen,"unpacking (id %s), nlocal %d, nneighs %d npartner %d \n",id,nlocal,nneighs,static_cast<int> (buf[m]));
+  /*NL*/ //if (screen) fprintf(screen,"unpacking (id %s), nlocal %d, nneighs %d npartner %d \n",id,nlocal,nneighs,static_cast<int> (buf[m]));
 
   //NP allocate nneigh storage positions instead of npartner in base class
 
@@ -619,20 +630,20 @@ int FixContactHistoryMesh::unpack_exchange(int nlocal, double *buf)
   //NP unpack values for contacts
   for (int n = 0; n < npartner_[nlocal]; n++) {
     partner_[nlocal][n] = ubuf(buf[m++]).i;
-    /*NL*/ //fprintf(screen,"atom %d: unpacking partner %d\n",atom->tag[nlocal],partner_[nlocal][n]);
-    /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"id %s, atom tag %d: unpacking partner %d, nneighs %d, nlocal %d\n",id,atom->tag[nlocal],partner_[nlocal][n],nneighs,nlocal);
+    /*NL*/ //if(screen) fprintf(screen,"atom %d: unpacking partner %d\n",atom->tag[nlocal],partner_[nlocal][n]);
+    /*NL*/ //if(screen && 22654==atom->tag[nlocal]) fprintf(screen,"id %s, atom tag %d: unpacking partner %d, nneighs %d, nlocal %d\n",id,atom->tag[nlocal],partner_[nlocal][n],nneighs,nlocal);
     for (int d = 0; d < dnum_; d++) {
       contacthistory_[nlocal][n*dnum_+d] = buf[m++];
-      /*NL*/ //fprintf(screen,"atom %d: unpacking hist %e\n",atom->tag[nlocal],contacthistory_[nlocal][n*dnum_+d]);
+      /*NL*/ //if(screen) fprintf(screen,"atom %d: unpacking hist %e\n",atom->tag[nlocal],contacthistory_[nlocal][n*dnum_+d]);
     }
   }
 
-  /*NL*/ //if(7==comm->me && nlocal>= 2432) fprintf(screen,"id %s, atom %d: to partner0 %d\n",id,atom->tag[2432],partner_[nlocal][0]);
+  /*NL*/ //if(screen && 7==comm->me && nlocal>= 2432) fprintf(screen,"id %s, atom %d: to partner0 %d\n",id,atom->tag[2432],partner_[nlocal][0]);
 
   //NP set initial values for neighs
   for (int n = npartner_[nlocal]; n < nneighs; n++) {
     partner_[nlocal][n] = -1;
-    /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"id %s, atom %d: resetting to partner %d\n",id,atom->tag[nlocal],partner_[nlocal][n]);
+    /*NL*/ //if(screen && 22654==atom->tag[nlocal]) fprintf(screen,"id %s, atom %d: resetting to partner %d\n",id,atom->tag[nlocal],partner_[nlocal][n]);
     for (int d = 0; d < dnum_; d++) {
       contacthistory_[nlocal][n*dnum_+d] = 0.;
     }
@@ -672,17 +683,17 @@ void FixContactHistoryMesh::unpack_restart(int nlocal, int nth)
   if (!partner_[nlocal] || !contacthistory_[nlocal])
         error->one(FLERR,"mesh contact history overflow, boost neigh_modify one");
 
-  /*NL*/ //fprintf(screen,"npartner_[nlocal] %d\n",npartner_[nlocal]);
-  /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"fix %s proc %d, TAG 22654 npartner %d\n",id,comm->me,npartner_[nlocal]);
+  /*NL*/ //if(screen) fprintf(screen,"npartner_[nlocal] %d\n",npartner_[nlocal]);
+  /*NL*/ //if(screen && 22654==atom->tag[nlocal]) fprintf(screen,"fix %s proc %d, TAG 22654 npartner %d\n",id,comm->me,npartner_[nlocal]);
 
   //NP unpack values for contacts
   for (int n = 0; n < npartner_[nlocal]; n++) {
     partner_[nlocal][n] = ubuf(extra[nlocal][m++]).i;
     /*NL*/ //if(partner_[nlocal][n] < 0) error->one(FLERR,"internal error");
-    /*NL*/ //if(22654==atom->tag[nlocal]) fprintf(screen,"fix %s, TAG 22654 ipartner %d: %d\n",id,n,partner_[nlocal][n]);
+    /*NL*/ //if(screen && 22654==atom->tag[nlocal]) fprintf(screen,"fix %s, TAG 22654 ipartner %d: %d\n",id,n,partner_[nlocal][n]);
     for (d = 0; d < dnum_; d++) {
       contacthistory_[nlocal][n*dnum_+d] = extra[nlocal][m++];
-      /*NL*/ //fprintf(screen,"unpacking %e\n",contacthistory_[nlocal][n*dnum_+d]);
+      /*NL*/ //if(screen) fprintf(screen,"unpacking %e\n",contacthistory_[nlocal][n*dnum_+d]);
     }
   }
 }

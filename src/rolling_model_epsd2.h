@@ -31,7 +31,7 @@ ROLLING_MODEL(ROLLING_EPSD2,epsd2,3)
 #define ROLLING_MODEL_EPSD2_H_
 #include "contact_models.h"
 #include <algorithm>
-#include "math.h"
+#include <math.h>
 #include "domain.h"
 #include "math_extra_liggghts.h"
 
@@ -51,7 +51,7 @@ namespace ContactModels
       history_offset = hsetup->add_history_value("r_torquex_old", "1");
       hsetup->add_history_value("r_torquey_old", "1");
       hsetup->add_history_value("r_torquez_old", "1");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "EPSD2 loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "EPSD2 loaded\n");
     }
 
     void registerSettings(Settings&) {}

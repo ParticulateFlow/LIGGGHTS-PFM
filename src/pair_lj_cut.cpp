@@ -15,10 +15,10 @@
    Contributing author: Paul Crozier (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_lj_cut.h"
 #include "atom.h"
 #include "comm.h"
@@ -300,8 +300,8 @@ void PairLJCut::compute_middle()
 void PairLJCut::compute_outer(int eflag, int vflag)
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
-  double xtmp,ytmp,ztmp,delx,dely,delz,evdwl,fpair;
-  double rsq,r2inv,r6inv,forcelj,factor_lj,rsw;
+  double xtmp,ytmp,ztmp,delx,dely,delz,evdwl,fpair=0.0;
+  double rsq,r2inv=0.0,r6inv=0.0,forcelj,factor_lj,rsw;
   int *ilist,*jlist,*numneigh,**firstneigh;
 
   evdwl = 0.0;

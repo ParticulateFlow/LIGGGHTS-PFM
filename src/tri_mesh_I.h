@@ -28,7 +28,9 @@
 #ifndef LMP_TRI_MESH_I_H
 #define LMP_TRI_MESH_I_H
 
-#define SMALL_TRIMESH 1.e-10
+#ifndef SMALL_TRIMESH
+#define SMALL_TRIMESH (1.e-10)
+#endif
 #define LARGE_TRIMESH 1000000
 
 /*NL*/ #define DEBUGMODE_LMP_TRI_MESH_I_H  false //(update->ntimestep > 451) //
@@ -56,7 +58,7 @@
 
     bary[0] = bary[1] = bary[2] = 0.;
 
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/   fprintf(screen, "resolveTriSphereContactBary for tri id %d with center %f %f %f and particle %f %f %f\n",
     /*NL*/   id(nTri),center_(nTri)[0],center_(nTri)[1],center_(nTri)[2],cSphere[0],cSphere[1],cSphere[2]);
 
@@ -67,18 +69,19 @@
     MathExtraLiggghts::calcBaryTriCoords(node0ToSphereCenter,edgeVec(nTri),edgeLen(nTri),bary);
 
     //NP  > -SMALL_TRIMESH is effectifely a tiny growth of each triangle
-    int barySign = (bary[0] > -SMALL_TRIMESH) + 2*(bary[1] > -SMALL_TRIMESH) + 4*(bary[2] > -SMALL_TRIMESH);
+    const double trimesh_epsilon = -precision_trimesh()/(2.*rBound_(nTri));
+    int barySign = (bary[0] > trimesh_epsilon) + 2*(bary[1] > trimesh_epsilon) + 4*(bary[2] > trimesh_epsilon);
 
     //NP distance between particle and mesh element
     double d(0.);
 
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
-    /*NL*/     fprintf(screen,"step "BIGINT_FORMAT": triangle %d: edgeActive %d %d %d cornerActive %d %d %d\n",
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": triangle %d: edgeActive %d %d %d cornerActive %d %d %d\n",
     /*NL*/     update->ntimestep,id(nTri),
     /*NL*/     edgeActive(nTri)[0],edgeActive(nTri)[1],edgeActive(nTri)[2],
     /*NL*/     cornerActive(nTri)[0],cornerActive(nTri)[1],cornerActive(nTri)[2]);
 
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(this->screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/ //if(5879 == id(nTri))
     /*NL*/ {
     /*NL*/      printVec3D(this->screen,"node0ToSphereCenter",node0ToSphereCenter);
@@ -116,6 +119,7 @@
       break;
     default:
       /*NL*/ if(screen) fprintf(screen,"barySign %d bary %f %f %f tag %d tri id %d\n",barySign,bary[0],bary[1],bary[2],this->atom->tag[iPart],id(nTri));
+      /*NL*/ //if(screen) {
       /*NL*/ //printVec3D(screen,"node0ToSphereCenter",node0ToSphereCenter);
       /*NL*/ //printVec3D(screen,"cSphere",cSphere);
       /*NL*/ //printVec3D(screen,"n[0]",n[0]);
@@ -123,18 +127,19 @@
       /*NL*/ //printVec3D(screen,"edgeVec(nTri)[0]",edgeVec(nTri)[0]);
       /*NL*/ //printVec3D(screen,"edgeVec(nTri)[1]",edgeVec(nTri)[1]);
       /*NL*/ //printVec3D(screen,"edgeVec(nTri)[2]",edgeVec(nTri)[2]);
+      /*NL*/ //}
       this->error->one(FLERR,"Internal error");
       d = 1.; // doesn't exist, just to satisfy the compiler
       break;
     }
 
     /*NL*/ double deltan = d - rSphere;
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/ // if(5879 == id(nTri))
-    /*NL*/     fprintf(screen,"step "BIGINT_FORMAT": deltan %f\n",
+    /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": deltan %f\n",
     /*NL*/                    update->ntimestep,deltan);
 
-    /*NL*/ //printVec3D(screen,"bary tri_mesh_I",bary);
+    /*NL*/ // if(screen) printVec3D(screen,"bary tri_mesh_I",bary);
 
     // return distance - radius of the particle
     return d - rSphere;
@@ -182,8 +187,8 @@
         bary[ip] = 1. - bary[iEdge];
       }
 
-      /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
-      /*NL*/     fprintf(screen,"step "BIGINT_FORMAT": resolveEdgeContact edge %d distFromNode %f edgeLen %f | bary %f %f %f \n",
+      /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(iTri))
+      /*NL*/     fprintf(screen,"step " BIGINT_FORMAT ": resolveEdgeContact edge %d distFromNode %f edgeLen %f | bary %f %f %f \n",
       /*NL*/     update->ntimestep,iEdge,distFromNode,edgeLen(iTri)[iEdge],bary[0],bary[1],bary[2]);
 
       return d;
@@ -285,7 +290,7 @@
   inline bool TriMesh::resolveTriSphereNeighbuild(int nTri, double rSphere,
       double *cSphere, double treshold)
   {
-    /*NL*/ if(DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_TRI_MESH_I_H && DEBUGMODE_LMP_TRI_MESH_I_H_MESH_ID == id(nTri))
     /*NL*/          fprintf(screen, "resolveTriSphereContactNeigh for tri id %d with center %f %f %f\n",
     /*NL*/                      id(nTri),center_(nTri)[0],center_(nTri)[1],center_(nTri)[2]);
 
@@ -370,11 +375,11 @@
     dot11 = vectorDot3D(v1, v1);
     dot12 = vectorDot3D(v1, v2);
 
-    invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+    invDenom = 1. / (dot00 * dot11 - dot01 * dot01);
     u = (dot11 * dot02 - dot01 * dot12) * invDenom;
     v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
-    if((u > -SMALL_TRIMESH) && (v > -SMALL_TRIMESH) && (u + v < 1+SMALL_TRIMESH))
+    if((u > -SMALL_TRIMESH) && (v > -SMALL_TRIMESH) && (u + v < 1.+SMALL_TRIMESH))
         return true;
     else
         return false;
@@ -408,11 +413,11 @@
 
     // step 1 - choose triangle
     int chosen = randomOwnedGhostElement();
-    /*NL*/ //fprintf(screen,"random %d\n",chosen);
+    /*NL*/ //if (screen) fprintf(screen,"random %d\n",chosen);
 
     if(chosen >= nTri || chosen < 0)
     {
-        /*NL*/ if(screen) fprintf(this->screen,"mesh id %s chosen %d nTri %d\n",mesh_id_,chosen,nTri);
+        /*NL*/ if(this->screen) fprintf(this->screen,"mesh id %s chosen %d nTri %d\n",mesh_id_,chosen,nTri);
         error->one(FLERR,"TriMesh::generate_random error");
         return -1;
     }

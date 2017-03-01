@@ -30,8 +30,6 @@ class FixWallHarmonic : public FixWall {
   void precompute(int) {}
   void wall_particle(int, int, double);
 
- private:
-  double offset[6];
 };
 
 }

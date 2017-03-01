@@ -20,7 +20,7 @@ DihedralStyle(nharmonic,DihedralNHarmonic)
 #ifndef DIHEDRAL_NHARMONIC_H
 #define DIHEDRAL_NHARMONIC_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "dihedral.h"
 
 namespace LAMMPS_NS {

@@ -22,7 +22,7 @@
 #ifndef LMP_INPUT_MESH_TRI_H
 #define LMP_INPUT_MESH_TRI_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "input.h"
 
 namespace LAMMPS_NS {
@@ -34,11 +34,14 @@ class InputMeshTri : protected Input
     InputMeshTri(class LAMMPS *, int, char **);
     ~InputMeshTri();
 
-    void meshtrifile(const char *,class TriMesh *,bool verbose);
+    void meshtrifile(const char *,class TriMesh *,bool verbose,const int size_exclusion_list,int *exclusion_list);
 
   private:
 
     bool verbose_;
+    int i_exclusion_list_;
+    int size_exclusion_list_;
+    int *exclusion_list_;
 
     void meshtrifile_vtk(class TriMesh *);
     void meshtrifile_stl(class TriMesh *);

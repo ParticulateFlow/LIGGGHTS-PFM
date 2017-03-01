@@ -117,7 +117,7 @@ namespace LAMMPS_NS
     neighlist.clearContainer();
     for(int iPart=0;iPart<nPart;iPart++)
     {
-      /*NL*/// fprintf(screen,"buildNeighList for particle %d\n",iPart);
+      /*NL*/// if (screen) fprintf(screen,"buildNeighList for particle %d\n",iPart);
       //NP hack for SPH
       if(resolveNeighlist(x[iPart],r?r[iPart]:0.,treshold))
         neighlist.add(iPart);

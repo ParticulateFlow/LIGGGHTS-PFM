@@ -16,10 +16,10 @@
    References: Fennell and Gezelter, JCP 124, 234104 (2006)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_coul_dsf.h"
 #include "atom.h"
 #include "comm.h"
@@ -61,8 +61,8 @@ void PairCoulDSF::compute(int eflag, int vflag)
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
   double qtmp,xtmp,ytmp,ztmp,delx,dely,delz,ecoul,fpair;
-  double r,rsq,r2inv,forcecoul,factor_coul;
-  double prefactor,erfcc,erfcd,e_self,t;
+  double r=0.0,rsq,r2inv,forcecoul=0.0,factor_coul;
+  double prefactor=0.0,erfcc=0.0,erfcd,e_self,t;
   int *ilist,*jlist,*numneigh,**firstneigh;
   
   ecoul = 0.0;

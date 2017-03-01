@@ -19,11 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "input.h"
 #include "modify.h"
 #include "update.h"
@@ -31,7 +31,7 @@
 #include "domain.h"
 #include "comm.h"
 #include "memory.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "input_mesh_tet.h"
 #include "region_mesh_tet.h"
@@ -93,11 +93,11 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
   int flag_outside = 0;
 
-  double **points;
+  double **points = NULL;
   int ipoint = 0, npoints = 0;
   double vert_before_rot[3], vert_after_rot[3];
 
-  int **cells;
+  int **cells = NULL;
   int icell = 0, ncells = 0;
 
   int ntets = 0;
@@ -157,10 +157,12 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
     // skip empty lines
     if(narg == 0){
-         if (me == 0 && verbose_)
+         if (me == 0 && screen && verbose_)
             fprintf(screen,"Note: Skipping empty line in VTK mesh file\n");
       continue;
     }
+
+    // Note that the first line of an ASCII VTK files start with '#' and will be skipped
 
     //increase line counter
     iLine++;
@@ -190,7 +192,7 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
     if(iLine <= 4+npoints)
     {
-        if(narg != 3) error->all(FLERR,"Expecting 3 values for each point in 'POINTS' section of ASCII VTK mesh file, cannot continue");
+        if(narg != 3) error->all(FLERR,"Expecting 3 values per line for each point in 'POINTS' section of ASCII VTK mesh file, cannot continue");
 
         //read the vertex, translate and scale it
         for (int j=0;j<3;j++) vert_before_rot[j]=(atof(arg[j])+(mesh->off_fact[j]))*(mesh->scale_fact);

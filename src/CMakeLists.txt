@@ -1,14 +1,17 @@
 PROJECT(LIGGGHTS C CXX)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+OPTION(USE_OPENMP "OpenMP parallelization" OFF)
+OPTION(TESTING "TESTING" OFF)
 
 SET(LIGGGHTS_MAJOR_VERSION 3)
-SET(LIGGGHTS_MINOR_VERSION 0)
-SET(LIGGGHTS_PATCH_VERSION 5)
+SET(LIGGGHTS_MINOR_VERSION 1)
+SET(LIGGGHTS_PATCH_VERSION 0)
 SET(LIGGGHTS_VERSION ${LIGGGHTS_MAJOR_VERSION}.${LIGGGHTS_MINOR_VERSION}.${LIGGGHTS_PATCH_VERSION})
 
 IF (NOT CMAKE_CXX_FLAGS)
   IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wno-uninitialized -std=c++11 -Wno-literal-suffix")
+    SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-literal-suffix -std=c++11")
   ENDIF()
 ENDIF()
 
@@ -85,11 +88,39 @@ IF(MPI_FOUND)
 ELSE(MPI_FOUND)
   MESSAGE(STATUS "MPI NOT found! Using MPI Stubs instead.")
   ADD_SUBDIRECTORY(STUBS)
-  TARGET_LINK_LIBRARIES(liggghts STUBS)
+  TARGET_LINK_LIBRARIES(liggghts mpi_stubs)
 ENDIF(MPI_FOUND)
+
+#=======================================
+
+IF(USE_OPENMP)
+  FIND_PACKAGE(OpenMP REQUIRED)
+
+  IF(OPENMP_FOUND)
+    ADD_DEFINITIONS(-DLMP_USER_OMP)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
+    FIND_PACKAGE(Zoltan REQUIRED)
+
+    IF(ZOLTAN_FOUND)
+      INCLUDE_DIRECTORIES(${ZOLTAN_INCLUDE_DIR})
+      ADD_DEFINITIONS(-DLMP_USER_ZOLTAN)
+      TARGET_LINK_LIBRARIES(liggghts zoltan)
+    ELSE()
+      MESSAGE(SEND_ERROR "Zoltan library not found!")
+    ENDIF()
+  ENDIF()
+ENDIF()
 
 #=======================================
 
 install(TARGETS liggghts liggghts_bin
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib)
+
+IF(TESTING)
+  enable_testing()
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  add_subdirectory(tests)
+ENDIF(TESTING)

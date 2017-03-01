@@ -19,10 +19,10 @@
 #include "pair_cmm_common.h"
 #include "memory.h"
 
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
-#include "math.h"
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <math.h>
 #include "math_const.h"
 
 using namespace LAMMPS_NS;

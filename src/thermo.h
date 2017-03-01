@@ -142,6 +142,7 @@ class Thermo : protected Pointers {
   void compute_cu(); //NP modified C.K.
 
   void compute_atoms();
+  void compute_ghosts(); //NP modified R.B.
   void compute_temp();
   void compute_press();
   void compute_pe();

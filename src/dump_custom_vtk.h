@@ -109,6 +109,10 @@ class DumpCustomVTK : public Dump {
   int *variable;             // list of indices for the Variables
   double **vbuf;             // local storage for variable evaluation
 
+  int ncustom;               // # of custom atom properties
+  char **id_custom;          // their names
+  int *flag_custom;          // their data type
+
   int ntypes;                // # of atom types
   char **typenames;          // array of element names for each type
 
@@ -126,6 +130,7 @@ class DumpCustomVTK : public Dump {
   int add_compute(char *);
   int add_fix(char *);
   int add_variable(char *);
+  int add_custom(char *, int);
   virtual int modify_param(int, char **);
 
   typedef void (DumpCustomVTK::*FnPtrHeader)(bigint);
@@ -172,6 +177,7 @@ class DumpCustomVTK : public Dump {
   void pack_compute(int);
   void pack_fix(int);
   void pack_variable(int);
+  void pack_custom(int);
 
   void pack_id(int);
   void pack_molecule(int);
@@ -233,6 +239,8 @@ class DumpCustomVTK : public Dump {
   void pack_eradius(int);
   void pack_ervel(int);
   void pack_erforce(int);
+
+  void pack_thread(int); //NP modified R.B.
 };
 
 }

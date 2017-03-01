@@ -67,7 +67,7 @@ void FixMultisphere::forward_comm()
 
 int FixMultisphere::pack_comm(int n, int *list, double *buf, int pbc_flag, int *pbc)
 {
-    /*NL*/ //fprintf(screen,"fw_comm_flag_ %d\n",fw_comm_flag_);
+    /*NL*/ //if (screen) fprintf(screen,"fw_comm_flag_ %d\n",fw_comm_flag_);
 
     if     (fw_comm_flag_ == MS_COMM_FW_BODY)
         return pack_comm_body(n,list,buf,pbc_flag,pbc);
@@ -152,7 +152,7 @@ int FixMultisphere::pack_comm_f_torque(int n, int *list, double *buf, int pbc_fl
         tag = body_[j];
         if(tag < 0) flag = 0;
         else flag = multisphere_.map(tag) < 0;
-        /*NL*/// if(flag) fprintf(screen,"pack_comm atom %d with flag %d\n",atom->tag[j],flag);
+        /*NL*/// if(flag && screen) fprintf(screen,"pack_comm atom %d with flag %d\n",atom->tag[j],flag);
         buf[m++] = static_cast<double>(flag);
         vectorToBuf3D(f[j],buf,m);
         vectorToBuf3D(torque[j],buf,m);
@@ -188,7 +188,7 @@ void FixMultisphere::unpack_comm_body(int n, int first, double *buf)
     for (i = first; i < last; i++)
     {
         body_[i] = static_cast<int>(buf[m++]);
-        /*NL*/ //fprintf(screen,"step %d: atom tag %d has body %d\n",update->ntimestep,atom->tag[i],body_[i]);
+        /*NL*/ //if (screen) fprintf(screen,"step %d: atom tag %d has body %d\n",update->ntimestep,atom->tag[i],body_[i]);
     }
 }
 
@@ -205,7 +205,7 @@ void FixMultisphere::unpack_comm_image_displace(int n, int first, double *buf)
     {
         aimage[i] = static_cast<int>(buf[m++]);
         bufToVector3D(displace_[i],buf,m);
-        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" proc %d COMM: atom tag %d has image %d\n",update->ntimestep,comm->me,atom->tag[i],aimage[i]);
+        /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " proc %d COMM: atom tag %d has image %d\n",update->ntimestep,comm->me,atom->tag[i],aimage[i]);
     }
 }
 
@@ -268,7 +268,7 @@ void FixMultisphere::reverse_comm()
 
 int FixMultisphere::pack_reverse_comm(int n, int first, double *buf)
 {
-    /*NL*/ //fprintf(screen,"rev_comm_flag_ %d\n",rev_comm_flag_);
+    /*NL*/ //if (screen) fprintf(screen,"rev_comm_flag_ %d\n",rev_comm_flag_);
     if     (rev_comm_flag_ == MS_COMM_REV_X_V_OMEGA)
         return pack_reverse_comm_x_v_omega(n,first,buf);
     else if(rev_comm_flag_ == MS_COMM_REV_V_OMEGA)

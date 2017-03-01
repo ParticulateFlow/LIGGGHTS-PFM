@@ -31,7 +31,7 @@ TANGENTIAL_MODEL(TANGENTIAL_NO_HISTORY,no_history,0)
 #define TANGENTIAL_MODEL_NO_HISTORY_H_
 #include "contact_models.h"
 #include <algorithm>
-#include "math.h"
+#include <math.h>
 #include "global_properties.h"
 
 namespace LIGGGHTS {
@@ -49,7 +49,7 @@ namespace ContactModels
 
     TangentialModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), coeffFrict(NULL)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "TANGENTIAL/NO_HISTORY loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "TANGENTIAL/NO_HISTORY loaded\n");
     }
 
     inline void registerSettings(Settings&){}

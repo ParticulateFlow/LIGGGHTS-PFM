@@ -30,7 +30,7 @@ COHESION_MODEL(COHESION_SJKR,sjkr,1)
 #ifndef COHESION_MODEL_SJKR_H_
 #define COHESION_MODEL_SJKR_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 
 namespace LIGGGHTS {
 namespace ContactModels {
@@ -44,7 +44,7 @@ namespace ContactModels {
 
     CohesionModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), cohEnergyDens(NULL)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "COHESION/SJKR loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "COHESION/SJKR loaded\n");
     }
 
     void registerSettings(Settings&) {}

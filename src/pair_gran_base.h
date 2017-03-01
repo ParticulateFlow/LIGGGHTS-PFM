@@ -83,13 +83,17 @@ public:
 
 #ifdef LIGGGHTS_DEBUG
     if(comm->me == 0) {
-      fprintf(screen, "==== PAIR SETTINGS ====\n");
-      settings.print_all(screen);
-      fprintf(screen, "==== PAIR SETTINGS ====\n");
+      if(screen) {
+        fprintf(screen, "==== PAIR SETTINGS ====\n");
+        settings.print_all(screen);
+        fprintf(screen, "==== PAIR SETTINGS ====\n");
+      }
 
-      fprintf(logfile, "==== PAIR SETTINGS ====\n");
-      settings.print_all(logfile);
-      fprintf(logfile, "==== PAIR SETTINGS ====\n");
+      if(logfile) {
+        fprintf(logfile, "==== PAIR SETTINGS ====\n");
+        settings.print_all(logfile);
+        fprintf(logfile, "==== PAIR SETTINGS ====\n");
+      }
     }
 #endif
 
@@ -103,13 +107,17 @@ public:
 
 #ifdef LIGGGHTS_DEBUG
     if(comm->me == 0) {
-      fprintf(screen, "==== PAIR GLOBAL PROPERTIES ====\n");
-      force->registry.print_all(screen);
-      fprintf(screen, "==== PAIR GLOBAL PROPERTIES ====\n");
+      if(screen) {
+        fprintf(screen, "==== PAIR GLOBAL PROPERTIES ====\n");
+        force->registry.print_all(screen);
+        fprintf(screen, "==== PAIR GLOBAL PROPERTIES ====\n");
+      }
 
-      fprintf(logfile, "==== PAIR GLOBAL PROPERTIES ====\n");
-      force->registry.print_all(logfile);
-      fprintf(logfile, "==== PAIR GLOBAL PROPERTIES ====\n");
+      if(logfile) {
+        fprintf(logfile, "==== PAIR GLOBAL PROPERTIES ====\n");
+        force->registry.print_all(logfile);
+        fprintf(logfile, "==== PAIR GLOBAL PROPERTIES ====\n");
+      }
     }
 #endif
   }
@@ -280,9 +288,9 @@ public:
 
           cmodel.collision(cdata, i_forces, j_forces);
 
-          /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" xi %f %f %f xj %f %f %f\n",update->ntimestep,x[i][0],x[i][1],x[i][2],x[j][0],x[j][1],x[j][2]);
-          /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" iforces %f %f %f\n",update->ntimestep,i_forces.delta_F[0],i_forces.delta_F[1],i_forces.delta_F[2]);
-          /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT" mol %d %d i %d j %d, nlocal %d\n",update->ntimestep,atom->molecule[i],atom->molecule[j],i,j,atom->nlocal);
+          /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " xi %f %f %f xj %f %f %f\n",update->ntimestep,x[i][0],x[i][1],x[i][2],x[j][0],x[j][1],x[j][2]);
+          /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " iforces %f %f %f\n",update->ntimestep,i_forces.delta_F[0],i_forces.delta_F[1],i_forces.delta_F[2]);
+          /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " mol %d %d i %d j %d, nlocal %d\n",update->ntimestep,atom->molecule[i],atom->molecule[j],i,j,atom->nlocal);
           /*NL*/ //error->one(FLERR,"end");
 
           // if there is a collision, there will always be a force
@@ -331,6 +339,10 @@ public:
     }
 
     cmodel.endPass(cdata, i_forces, j_forces);
+
+    if (pg->vflag_fdotr) {
+      pg->virial_fdotr_compute();
+    }
 
     if(store_contact_forces)
         pg->fix_contact_forces()->do_forward_comm();

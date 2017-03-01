@@ -25,15 +25,20 @@
 
 using namespace LAMMPS_NS;
 
-/* ---------------------------------------------------------------------- */
 
-ThrData::ThrData(int tid)
+ThrData::ThrData(int tid, bool use_reduction)
   : _f(0),_torque(0),_erforce(0),_de(0),_drho(0),_mu(0),_lambda(0),_rhoB(0),
-    _D_values(0),_rho(0),_fp(0),_rho1d(0),_drho1d(0),_tid(tid)
+    _D_values(0),_rho(0),_fp(0),_rho1d(0),_drho1d(0),_tid(tid), _use_reduction(use_reduction)
 {
   // nothing else to do here.
+  omp_init_lock(&update_lock);
+  omp_init_lock(&ev_lock);
 }
 
+ThrData::~ThrData() {
+  omp_destroy_lock(&update_lock);
+  omp_destroy_lock(&ev_lock);
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -59,31 +64,31 @@ void ThrData::init_force(int nall, double **f, double **torque,
   eatom_pair=eatom_bond=eatom_angle=eatom_dihed=eatom_imprp=eatom_kspce=NULL;
   vatom_pair=vatom_bond=vatom_angle=vatom_dihed=vatom_imprp=vatom_kspce=NULL;
 
-  _f = f + _tid*nall;
-  if (nall > 0)
+  _f = f + (_use_reduction ? _tid*nall : 0);
+  if (nall > 0 && (_use_reduction || _tid == 0))
     memset(&(_f[0][0]),0,nall*3*sizeof(double));
 
   if (torque) {
-    _torque = torque + _tid*nall;
-    if (nall > 0)
+    _torque = torque + (_use_reduction ? _tid*nall : 0);
+    if (nall > 0 && (_use_reduction || _tid == 0))
       memset(&(_torque[0][0]),0,nall*3*sizeof(double));
   } else _torque = NULL;
 
   if (erforce) {
-    _erforce = erforce + _tid*nall;
-    if (nall > 0)
+    _erforce = erforce + (_use_reduction ? _tid*nall : 0);
+    if (nall > 0 && (_use_reduction || _tid == 0))
       memset(&(_erforce[0]),0,nall*sizeof(double));
   } else _erforce = NULL;
 
   if (de) {
-    _de = de + _tid*nall;
-    if (nall > 0)
+    _de = de + (_use_reduction ? _tid*nall : 0);
+    if (nall > 0 && (_use_reduction || _tid == 0))
       memset(&(_de[0]),0,nall*sizeof(double));
   } else _de = NULL;
 
   if (drho) {
-    _drho = drho + _tid*nall;
-    if (nall > 0)
+    _drho = drho + (_use_reduction ? _tid*nall : 0);
+    if (nall > 0 && (_use_reduction || _tid == 0))
       memset(&(_drho[0]),0,nall*sizeof(double));
   } else _drho = NULL;
 }
@@ -94,8 +99,8 @@ void ThrData::init_force(int nall, double **f, double **torque,
 
 void ThrData::init_eam(int nall, double *rho)
 {
-  _rho = rho + _tid*nall;
-  if (nall > 0)
+  _rho = rho + (_use_reduction ? _tid*nall : 0);
+  if (nall > 0 && _use_reduction)
     memset(_rho, 0, nall*sizeof(double));
 }
 
@@ -105,9 +110,9 @@ void ThrData::init_adp(int nall, double *rho, double **mu, double **lambda)
 {
   init_eam(nall, rho);
 
-  _mu = mu + _tid*nall;
-  _lambda = lambda + _tid*nall;
-  if (nall > 0) {
+  _mu = mu + (_use_reduction ? _tid*nall : 0);
+  _lambda = lambda + (_use_reduction ? _tid*nall : 0);
+  if (nall > 0 && (_use_reduction || _tid == 0)) {
     memset(&(_mu[0][0]), 0, nall*3*sizeof(double));
     memset(&(_lambda[0][0]), 0, nall*6*sizeof(double));
   }
@@ -119,9 +124,9 @@ void ThrData::init_cdeam(int nall, double *rho, double *rhoB, double *D_values)
 {
   init_eam(nall, rho);
 
-  _rhoB = rhoB + _tid*nall;
-  _D_values = D_values + _tid*nall;
-  if (nall > 0) {
+  _rhoB = rhoB + (_use_reduction ? _tid*nall : 0);
+  _D_values = D_values + (_use_reduction ? _tid*nall : 0);
+  if (nall > 0 && (_use_reduction || _tid == 0)) {
     memset(_rhoB, 0, nall*sizeof(double));
     memset(_D_values, 0, nall*sizeof(double));
   }
@@ -133,8 +138,8 @@ void ThrData::init_eim(int nall, double *rho, double *fp)
 {
   init_eam(nall, rho);
 
-  _fp = fp + _tid*nall;
-  if (nall > 0)
+  _fp = fp + (_use_reduction ? _tid*nall : 0);
+  if (nall > 0 && (_use_reduction || _tid == 0))
     memset(_fp,0,nall*sizeof(double));
 }
 
@@ -239,6 +244,68 @@ void ThrData::virial_fdotr_compute(double **x, int nlocal, int nghost, int nfirs
   }
 }
 
+/* ----------------------------------------------------------------------
+
+------------------------------------------------------------------------- */
+
+void ThrData::virial_fdotr_compute_omp(double * const * const x, double * const * const f, int nthreads, int nlocal, int nghost, int nfirst)
+{
+
+  // sum over force on all particles including ghosts
+
+  if (nfirst < 0) {
+    const int nall = nlocal + nghost;
+    const int idelta = 1 + nall/nthreads;
+    const int ifrom = _tid*idelta;
+    const int ito   = ((ifrom + idelta) > nall) ? nall : ifrom + idelta;
+
+    // only work on thread range
+
+    for (int i = ifrom; i < ito; ++i) {
+      virial_pair[0] += f[i][0]*x[i][0];
+      virial_pair[1] += f[i][1]*x[i][1];
+      virial_pair[2] += f[i][2]*x[i][2];
+      virial_pair[3] += f[i][1]*x[i][0];
+      virial_pair[4] += f[i][2]*x[i][0];
+      virial_pair[5] += f[i][2]*x[i][1];
+    }
+
+  // neighbor includegroup flag is set
+  // sum over force on initial nfirst particles and ghosts
+
+  } else {
+    const int nall = nlocal + nghost;
+    const int idelta = 1 + nall/nthreads;
+    const int ifrom = _tid*idelta;
+    const int ito   = ((ifrom + idelta) > nall) ? nall : ifrom + idelta;
+
+    // FIXME keep it simple for now, some threads will not do any work in this case.
+
+    for (int i = ifrom; i < nfirst; ++i) {
+      virial_pair[0] += f[i][0]*x[i][0];
+      virial_pair[1] += f[i][1]*x[i][1];
+      virial_pair[2] += f[i][2]*x[i][2];
+      virial_pair[3] += f[i][1]*x[i][0];
+      virial_pair[4] += f[i][2]*x[i][0];
+      virial_pair[5] += f[i][2]*x[i][1];
+    }
+
+    for (int i = nlocal; i < ito; ++i) {
+      virial_pair[0] += f[i][0]*x[i][0];
+      virial_pair[1] += f[i][1]*x[i][1];
+      virial_pair[2] += f[i][2]*x[i][2];
+      virial_pair[3] += f[i][1]*x[i][0];
+      virial_pair[4] += f[i][2]*x[i][0];
+      virial_pair[5] += f[i][2]*x[i][1];
+    }
+  }
+}
+
+void ThrData::reset_patchup() {
+  patchupForceUpdates.clear();
+  patchupVatomUpdates.clear();
+}
+
 /* ---------------------------------------------------------------------- */
 
 double ThrData::memory_usage()
@@ -262,7 +329,7 @@ double ThrData::memory_usage()
 void LAMMPS_NS::data_reduce_thr(double *dall, int nall, int nthreads, int ndim, int tid)
 {
 #if defined(_OPENMP)
-  // NOOP in single-threaded execution.
+  // NOOP in non-threaded execution.
   if (nthreads == 1) return;
 #pragma omp barrier
   {
@@ -271,72 +338,15 @@ void LAMMPS_NS::data_reduce_thr(double *dall, int nall, int nthreads, int ndim, 
     const int ifrom = tid*idelta;
     const int ito   = ((ifrom + idelta) > nvals) ? nvals : (ifrom + idelta);
 
-#if defined(USER_OMP_NO_UNROLL)
-    if (ifrom < nvals) {
-      int m = 0;
-
-      for (m = ifrom; m < ito; ++m) {
-        for (int n = 1; n < nthreads; ++n) {
-          dall[m] += dall[n*nvals + m];
-          dall[n*nvals + m] = 0.0;
-        }
-      }
-    }
-#else
     // this if protects against having more threads than atoms
     if (ifrom < nvals) {
-      int m = 0;
-
-      // for architectures that have L1 D-cache line sizes of 64 bytes
-      // (8 doubles) wide, explictly unroll this loop to  compute 8
-      // contiguous values in the array at a time
-      // -- modify this code based on the size of the cache line
-      double t0, t1, t2, t3, t4, t5, t6, t7;
-      for (m = ifrom; m < (ito-7); m+=8) {
-        t0 = dall[m  ];
-        t1 = dall[m+1];
-        t2 = dall[m+2];
-        t3 = dall[m+3];
-        t4 = dall[m+4];
-        t5 = dall[m+5];
-        t6 = dall[m+6];
-        t7 = dall[m+7];
-        for (int n = 1; n < nthreads; ++n) {
-          t0 += dall[n*nvals + m  ];
-          t1 += dall[n*nvals + m+1];
-          t2 += dall[n*nvals + m+2];
-          t3 += dall[n*nvals + m+3];
-          t4 += dall[n*nvals + m+4];
-          t5 += dall[n*nvals + m+5];
-          t6 += dall[n*nvals + m+6];
-          t7 += dall[n*nvals + m+7];
-          dall[n*nvals + m  ] = 0.0;
-          dall[n*nvals + m+1] = 0.0;
-          dall[n*nvals + m+2] = 0.0;
-          dall[n*nvals + m+3] = 0.0;
-          dall[n*nvals + m+4] = 0.0;
-          dall[n*nvals + m+5] = 0.0;
-          dall[n*nvals + m+6] = 0.0;
-          dall[n*nvals + m+7] = 0.0;
-        }
-        dall[m  ] = t0;
-        dall[m+1] = t1;
-        dall[m+2] = t2;
-        dall[m+3] = t3;
-        dall[m+4] = t4;
-        dall[m+5] = t5;
-        dall[m+6] = t6;
-        dall[m+7] = t7;
-      }
-      // do the last < 8 values
-      for (; m < ito; m++) {
+      for (int m = ifrom; m < ito; ++m) {
         for (int n = 1; n < nthreads; ++n) {
           dall[m] += dall[n*nvals + m];
           dall[n*nvals + m] = 0.0;
         }
       }
     }
-#endif
   }
 #else
   // NOOP in non-threaded execution.

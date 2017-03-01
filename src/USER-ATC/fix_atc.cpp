@@ -35,8 +35,8 @@
 #include "ATC_CouplingMomentumEnergy.h"
 #include "LammpsInterface.h"
 // other
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 #include <sstream>
 
 using namespace LAMMPS_NS; 

@@ -31,7 +31,7 @@ NORMAL_MODEL(JKR,jkr,5)
 #ifndef NORMAL_MODEL_JKR_H_
 #define NORMAL_MODEL_JKR_H_
 #include "global_properties.h"
-#include "math.h"
+#include <math.h>
 #include <limits>
 
 namespace MODEL_PARAMS
@@ -79,7 +79,7 @@ namespace ContactModels
       cohEnergyDens(NULL),
       coefContactRadius(NULL)
     {
-      /*NL*/  if(comm->me == 0) printf("JKR loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "JKR loaded\n");
     }
 
     void registerSettings(Settings & settings)
@@ -193,7 +193,7 @@ namespace ContactModels
       const double minDeltaN = -1.5*cbrt(reff*cohEnergyDens[itype][jtype]*cohEnergyDens[itype][jtype]*M_PI*M_PI/(2*Yeff[itype][jtype]*Yeff[itype][jtype]));
       const double r = sqrt(cdata.rsq);
       const double deltan = radsum - r;
-      /*NL*/ //fprintf(screen,"Non-contact: minDeltaN = %f, deltan = %f\n",minDeltaN,deltan);
+      /*NL*/ //if (screen) fprintf(screen,"Non-contact: minDeltaN = %f, deltan = %f\n",minDeltaN,deltan);
 
       if (minDeltaN < deltan) { // non-contact force
         const double cRad = calcContactRadius(itype,jtype,reff,deltan);
@@ -225,7 +225,7 @@ namespace ContactModels
           j_forces.delta_F[2] = -i_forces.delta_F[2];
         }
 
-        /*NL*/ //fprintf(screen,"Non-contact force: cRad = %f, Fn = %f\n",cRad,Fn);
+        /*NL*/ //if (screen) fprintf(screen,"Non-contact force: cRad = %f, Fn = %f\n",cRad,Fn);
 
       } // no interaction
 
@@ -243,11 +243,11 @@ namespace ContactModels
         const double cRadOld2 = cRadOld*cRadOld;
         const double coef = coefContactRadius[itype][jtype]*reff*sqrt(cRadOld);
         cRad = (cRadOld*cRadOld2 + cRadOld*coef + deltan*cRadOld*reff)/(2*cRadOld2 - coef); //NP modified sign of deltan
-        /*NL*/ //fprintf(screen,"Loop: deltan = %f, coefContactRadius = %f, cRad = %f, cRadOld = %f\n",deltan,coefContactRadius[itype][jtype],cRad,cRadOld);
+        /*NL*/ //if (screen) fprintf(screen,"Loop: deltan = %f, coefContactRadius = %f, cRad = %f, cRadOld = %f\n",deltan,coefContactRadius[itype][jtype],cRad,cRadOld);
         if (fabs(cRad-cRadOld) < std::numeric_limits<double>::epsilon()) break;
       }
       /*NL*/ //if (isnan(cRad)) lmp->error->all(FLERR,"cRad is NAN. Cohesive surface energy to high?");
-      /*NL*/ //fprintf(screen,"Final: coefContactRadius = %f, cRad = %f\n",coefContactRadius[itype][jtype],cRad);
+      /*NL*/ //if (screen) fprintf(screen,"Final: coefContactRadius = %f, cRad = %f\n",coefContactRadius[itype][jtype],cRad);
 
       return cRad;
     }

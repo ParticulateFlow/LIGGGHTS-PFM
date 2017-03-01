@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
+#include <math.h>
+#include <string.h>
 #include "compute_property_atom.h"
 #include "math_extra.h"
 #include "atom.h"
@@ -336,19 +336,20 @@ ComputePropertyAtom::ComputePropertyAtom(LAMMPS *lmp, int narg, char **arg) :
       if (!avec_tri) error->all(FLERR,"Compute property/atom for "
                                  "atom property that isn't allocated");
       pack_choice[i] = &ComputePropertyAtom::pack_corner3z;
-
+    } else if (strcmp(arg[iarg],"thread") == 0) {
+      pack_choice[i] = &ComputePropertyAtom::pack_thread;
     } else if (strstr(arg[iarg],"i_") == arg[iarg]) {
       int flag;
       index[i] = atom->find_custom(&arg[iarg][2],flag);
       if (index[i] < 0 || flag != 0)
-        error->all(FLERR,"Compute property/atom floating point "
+        error->all(FLERR,"Compute property/atom integer "
                    "vector does not exist");
       pack_choice[i] = &ComputePropertyAtom::pack_iname;
     } else if (strstr(arg[iarg],"d_") == arg[iarg]) {
       int flag;
       index[i] = atom->find_custom(&arg[iarg][2],flag);
       if (index[i] < 0 || flag != 1)
-        error->all(FLERR,"Compute property/atom integer "
+        error->all(FLERR,"Compute property/atom floating point "
                    "vector does not exist");
       pack_choice[i] = &ComputePropertyAtom::pack_dname;
 
@@ -388,7 +389,7 @@ void ComputePropertyAtom::compute_peratom()
 
   // grow vector or array if necessary
 
-  if (atom->nlocal > nmax) {
+  if (atom->nmax > nmax) {
     nmax = atom->nmax;
     if (nvalues == 1) {
       memory->destroy(vector);
@@ -1686,7 +1687,6 @@ void ComputePropertyAtom::pack_corner3z(int n)
 }
 
 /* ---------------------------------------------------------------------- */
-
 void ComputePropertyAtom::pack_iname(int n)
 {
   int *ivector = atom->ivector[index[n]];
@@ -1710,6 +1710,21 @@ void ComputePropertyAtom::pack_dname(int n)
 
   for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) buf[n] = dvector[i];
+    else buf[n] = 0.0;
+    n += nvalues;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputePropertyAtom::pack_thread(int n)
+{
+  int *thread = atom->thread;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) buf[n] = thread[i];
     else buf[n] = 0.0;
     n += nvalues;
   }

@@ -12,8 +12,8 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "rerun.h"
 #include "read_dump.h"
 #include "domain.h"
@@ -66,7 +66,7 @@ void Rerun::command(int narg, char **arg)
   int nskip = 1;
   int startflag = 0;
   int stopflag = 0;
-  bigint start,stop;
+  bigint start=0,stop=0;
 
   while (iarg < narg) {
     if (strcmp(arg[iarg],"first") == 0) {

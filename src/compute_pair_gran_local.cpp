@@ -19,8 +19,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
+#include <math.h>
+#include <string.h>
 #include "compute_pair_gran_local.h"
 #include "atom.h"
 #include "update.h"
@@ -76,7 +76,7 @@ ComputePairGranLocal::ComputePairGranLocal(LAMMPS *lmp, int narg, char **arg) :
     else if (strcmp(arg[iarg],"history") == 0) hflag = 1;
     else if (strcmp(arg[iarg],"contactArea") == 0) aflag = 1;
     else if (strcmp(arg[iarg],"heatFlux") == 0) hfflag = 1;
-    else error->all(FLERR,"Invalid keyword in compute pair/gran/local or wall/gran/local command");
+    else error->compute_error(FLERR,this,"Invalid keyword");
   }
 
   // default: pair data
@@ -89,7 +89,7 @@ ComputePairGranLocal::ComputePairGranLocal(LAMMPS *lmp, int narg, char **arg) :
   pairgran = NULL;
 
   if(update->ntimestep > 0 && !modify->fix_restart_in_progress())
-    error->all(FLERR,"Need to define compute pair/gran/local or wall/gran/local before first run");
+    error->compute_error(FLERR,this,"Need to define this compute before first run");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -125,7 +125,7 @@ void ComputePairGranLocal::post_create()
 void ComputePairGranLocal::init()
 {
     init_cpgl(false); /*NL*/ //HERE
-    /*NL*/ //fprintf(screen,"ComputePairGranLocal::init()\n");
+    /*NL*/ //if (screen) fprintf(screen,"ComputePairGranLocal::init()\n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -230,7 +230,7 @@ void ComputePairGranLocal::init_cpgl(bool requestflag)
   nvalues = posflag*6 + velflag*6 + idflag*3 + fflag*3 + tflag*3 + hflag*dnum + aflag + hfflag;
   size_local_cols = nvalues;
 
-  /*NL*/ //fprintf(screen,"nvalues = %d\n",nvalues);
+  /*NL*/ //if (screen) fprintf(screen,"nvalues = %d\n",nvalues);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -244,7 +244,7 @@ void ComputePairGranLocal::init_list(int id, NeighList *ptr)
 
 void ComputePairGranLocal::reference_deleted()
 {
-    /*NL*/ //fprintf(screen,"BLAHHH\n");
+    /*NL*/ //if (screen) fprintf(screen,"BLAHHH\n");
     reference_exists = 0;
 }
 
@@ -261,12 +261,12 @@ void ComputePairGranLocal::compute_local()
   if(wall == 0) ncount = count_pairs();        // # pairs is ensured to be the same for pair and heat
   else          ncount = count_wallcontacts(); // # wall contacts ensured to be same for wall/gran and heat
 
-  /*NL*/ //fprintf(screen,"ncount %d\n",ncount);
+  /*NL*/ //if (screen) fprintf(screen,"ncount %d\n",ncount);
 
   if (ncount > nmax) reallocate(ncount);
   size_local_rows = ncount;
 
-  /*NL*///fprintf(screen,"ncount %d\n",ncount);
+  /*NL*///if (screen) fprintf(screen,"ncount %d\n",ncount);
   /*NL*///if(ncount)error->all(FLERR,"ncount");
 
   // get pair data
@@ -441,7 +441,7 @@ void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,do
         r = sqrt(rsq);
         contactArea = - M_PI/4 * ( (r-radi-radj)*(r+radi-radj)*(r-radi+radj)*(r+radi+radj) )/rsq;
         array[ipair][n++] = contactArea;
-        /*NL*///fprintf(screen,"adding %f rsq %f\n",contactArea,rsq);
+        /*NL*///if (screen) fprintf(screen,"adding %f rsq %f\n",contactArea,rsq);
     }
 
     ipair++;
@@ -461,7 +461,7 @@ void ComputePairGranLocal::add_heat(int i,int j,double hf)
     {
         // heat flux is always last value
         array[ipair][nvalues-1] = hf;
-        /*NL*///fprintf(screen,"adding heat flux %f nvalues %d\n", hf,nvalues);
+        /*NL*///if (screen) fprintf(screen,"adding heat flux %f nvalues %d\n", hf,nvalues);
     }
     else error->one(FLERR,"Illegal situation in ComputePairGranLocal::add_heat");
 
@@ -510,7 +510,7 @@ void ComputePairGranLocal::add_wall_1(int iFMG,int idTri,int iP,double *contact_
         array[ipair][n++] = static_cast<double>(iFMG);
         array[ipair][n++] = static_cast<double>(idTri);
         n += 1;
-        /*NL*/ //fprintf(screen,"having iFmG %d and idtri %d\n",iFMG,idTri);
+        /*NL*/ //if (screen) fprintf(screen,"having iFmG %d and idtri %d\n",iFMG,idTri);
     }
 
 }
@@ -545,7 +545,7 @@ void ComputePairGranLocal::add_wall_2(int i,double fx,double fy,double fz,double
     {
         n += 2;
         array[ipair][n++] = static_cast<double>(atom->tag[i]);
-        /*NL*/ //fprintf(screen,"having tag %d\n",atom->tag[i]);
+        /*NL*/ //if (screen) fprintf(screen,"having tag %d\n",atom->tag[i]);
     }
     if(fflag)
     {
@@ -568,7 +568,7 @@ void ComputePairGranLocal::add_wall_2(int i,double fx,double fy,double fz,double
     {
         contactArea = (atom->radius[i]*atom->radius[i]-rsq)*M_PI;
         array[ipair][n++] = contactArea;
-        /*NL*///fprintf(screen,"adding %f rsq %f\n",contactArea,rsq);
+        /*NL*///if (screen) fprintf(screen,"adding %f rsq %f\n",contactArea,rsq);
     }
 
     // wall_1 and wall_2 are always called

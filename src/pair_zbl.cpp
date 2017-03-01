@@ -15,10 +15,10 @@
    Contributing authors: Stephen Foiles, Aidan Thompson (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_zbl.h"
 #include "atom.h"
 #include "comm.h"
@@ -72,7 +72,7 @@ void PairZBL::compute(int eflag, int vflag)
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz,evdwl,fpair;
-  double rsq,r,t,fswitch,eswitch;
+  double rsq,r,t=0.0,fswitch,eswitch;
   int *ilist,*jlist,*numneigh,**firstneigh;
 
   evdwl = 0.0;
@@ -112,15 +112,15 @@ void PairZBL::compute(int eflag, int vflag)
       jtype = type[j];
 
       if (rsq < cut_globalsq) {
-	r = sqrt(rsq);
+        r = sqrt(rsq);
         fpair = dzbldr(r, itype, jtype);
 
-	if (rsq > cut_innersq) {
-	  t = r - cut_inner;
-	  fswitch = t*t * 
-	    (sw1[itype][jtype] + sw2[itype][jtype]*t);
-	  fpair += fswitch;
-	}
+      if (rsq > cut_innersq) {
+        t = r - cut_inner;
+        fswitch = t*t *
+          (sw1[itype][jtype] + sw2[itype][jtype]*t);
+        fpair += fswitch;
+      }
 
         fpair *= -1.0/r;
         f[i][0] += delx*fpair;
@@ -134,12 +134,12 @@ void PairZBL::compute(int eflag, int vflag)
 
         if (eflag) {
           evdwl = e_zbl(r, itype, jtype);
-	  evdwl += sw5[itype][jtype];
-	  if (rsq > cut_innersq) {
-	    eswitch = t*t*t * 
-	      (sw3[itype][jtype] + sw4[itype][jtype]*t);
-	    evdwl += eswitch;
-	  }
+          evdwl += sw5[itype][jtype];
+          if (rsq > cut_innersq) {
+            eswitch = t*t*t *
+              (sw3[itype][jtype] + sw4[itype][jtype]*t);
+            evdwl += eswitch;
+          }
         }
 
         if (evflag) ev_tally(i,j,nlocal,newton_pair,
@@ -262,23 +262,23 @@ double PairZBL::init_one(int i, int j)
   d4a[j][i] = d4a[i][j];
   zze[j][i] = zze[i][j];
 
-  // e =  t^3 (sw3 + sw4*t) + sw5 
+  // e =  t^3 (sw3 + sw4*t) + sw5
   //   = A/3*t^3 + B/4*t^4 + C
-  // sw3 = A/3 
-  // sw4 = B/4 
+  // sw3 = A/3
+  // sw4 = B/4
   // sw5 = C
 
-  // dedr = t^2 (sw1 + sw2*t) 
+  // dedr = t^2 (sw1 + sw2*t)
   //      = A*t^2 + B*t^3
-  // sw1 = A 
-  // sw2 = B 
+  // sw1 = A
+  // sw2 = B
 
   // de2dr2 = 2*A*t + 3*B*t^2
 
   // Require that at t = tc:
   // e = -Fc
   // dedr = -Fc'
-  // d2edr2 = -Fc'' 
+  // d2edr2 = -Fc''
 
   // Hence:
   // A = (-3Fc' + tc*Fc'')/tc^2
@@ -292,8 +292,8 @@ double PairZBL::init_one(int i, int j)
 
   double swa = (-3.0*fcp + tc*fcpp)/(tc*tc);
   double swb = ( 2.0*fcp - tc*fcpp)/(tc*tc*tc);
-  double swc = -fc + (tc/2.0)*fcp - (tc*tc/12.0)*fcpp; 
-  
+  double swc = -fc + (tc/2.0)*fcp - (tc*tc/12.0)*fcpp;
+
   sw1[i][j] = swa;
   sw2[i][j] = swb;
   sw3[i][j] = swa/3.0;
@@ -315,13 +315,13 @@ double PairZBL::single(int i, int j, int itype, int jtype, double rsq,
                          double dummy1, double dummy2,
                          double &fforce)
 {
-  double phi,r,t,eswitch,fswitch;
+  double phi,r,t=0.0,eswitch,fswitch;
 
   r = sqrt(rsq);
   fforce = dzbldr(r, itype, jtype);
   if (rsq > cut_innersq) {
     t = r - cut_inner;
-    fswitch = t*t * 
+    fswitch = t*t *
       (sw1[itype][jtype] + sw2[itype][jtype]*t);
     fforce += fswitch;
   }
@@ -330,7 +330,7 @@ double PairZBL::single(int i, int j, int itype, int jtype, double rsq,
   phi = e_zbl(r, itype, jtype);
   phi += sw5[itype][jtype];
   if (rsq > cut_innersq) {
-    eswitch = t*t*t * 
+    eswitch = t*t*t *
       (sw3[itype][jtype] + sw4[itype][jtype]*t);
     phi += eswitch;
   }
@@ -343,7 +343,7 @@ double PairZBL::single(int i, int j, int itype, int jtype, double rsq,
 ------------------------------------------------------------------------- */
 
 double PairZBL::e_zbl(double r, int i, int j) {
-  
+
   double d1aij = d1a[i][j];
   double d2aij = d2a[i][j];
   double d3aij = d3a[i][j];
@@ -359,7 +359,7 @@ double PairZBL::e_zbl(double r, int i, int j) {
   double result = zzeij*sum*rinv;
 
   return result;
-};
+}
 
 
 /* ----------------------------------------------------------------------
@@ -389,11 +389,11 @@ double PairZBL::dzbldr(double r, int i, int j) {
   sum_p -= c2*d2aij*e2;
   sum_p -= c3*d3aij*e3;
   sum_p -= c4*d4aij*e4;
-  
+
   double result = zzeij*(sum_p - sum*rinv)*rinv;
-  
+
   return result;
-};
+}
 
 /* ----------------------------------------------------------------------
    compute ZBL second derivative
@@ -427,10 +427,10 @@ double PairZBL::d2zbldr2(double r, int i, int j) {
   sum_pp += c2*e2*d2aij*d2aij;
   sum_pp += c3*e3*d3aij*d3aij;
   sum_pp += c4*e4*d4aij*d4aij;
-  
-  double result = zzeij*(sum_pp + 2.0*sum_p*rinv + 
-			 2.0*sum*rinv*rinv)*rinv;
-  
+
+  double result = zzeij*(sum_pp + 2.0*sum_p*rinv +
+                         2.0*sum*rinv*rinv)*rinv;
+
   return result;
-};
+}
 

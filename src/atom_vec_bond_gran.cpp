@@ -18,13 +18,13 @@ the GNU General Public License.
 See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
+#include <stdlib.h>
 #include "atom_vec_bond_gran.h"
 #include "atom.h"
 #include "domain.h"
 #include "modify.h"
 #include "fix.h"
-#include "string.h"
+#include <string.h>
 #include "memory.h"
 #include "error.h"
 #include "comm.h"
@@ -127,7 +127,7 @@ void AtomVecBondGran::grow(int n)
   bond_atom = memory->grow(atom->bond_atom,nmax,atom->bond_per_atom,
          "atom:bond_atom");
 
-  /*NL*/ //fprintf(screen,"grow nmax %d, atom->bond_per_atom %d, atom->n_bondhist %d\n",nmax,atom->bond_per_atom,atom->n_bondhist);
+  /*NL*/ //if(screen) fprintf(screen,"grow nmax %d, atom->bond_per_atom %d, atom->n_bondhist %d\n",nmax,atom->bond_per_atom,atom->n_bondhist);
 
   if(0 == atom->bond_per_atom)
     error->all(FLERR,"Bonded particles need bond_per_atom > 0");

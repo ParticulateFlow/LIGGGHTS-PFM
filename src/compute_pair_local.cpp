@@ -11,9 +11,9 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include "compute_pair_local.h"
 #include "atom.h"
 #include "update.h"
@@ -139,7 +139,7 @@ int ComputePairLocal::compute_pairs(int flag)
 {
   int i,j,m,n,ii,jj,inum,jnum,itype,jtype;
   double xtmp,ytmp,ztmp,delx,dely,delz;
-  double rsq,eng,fpair,factor_coul,factor_lj;
+  double rsq,eng=0.0,fpair,factor_coul,factor_lj;
   int *ilist,*jlist,*numneigh,**firstneigh;
   double *ptr;
 

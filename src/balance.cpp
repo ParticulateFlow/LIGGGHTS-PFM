@@ -22,10 +22,10 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "balance.h"
 #include "atom.h"
 #include "comm.h"
@@ -498,7 +498,7 @@ void Balance::dynamic_setup(char *str, int nitermax_in, double thresh_in)
 int Balance::dynamic()
 {
   int i,j,k,m,np,max;
-  double *split, *split_old = NULL; //NP modified C.K.
+  double *split = NULL, *split_old = NULL; //NP modified C.K.
 
   // no balancing if no atoms
 
@@ -644,8 +644,8 @@ int Balance::dynamic()
                 split[i] = split_old[i+1]-skin;
 
             //split[i] = split_old[i];
-            /*NL*/ //fprintf(screen,"proc %d - cut %f\n",me,cut);
-            /*NL*/ //fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
+            /*NL*/ //if (screen) fprintf(screen,"proc %d - cut %f\n",me,cut);
+            /*NL*/ //if (screen) fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
         }
     }
     //NP modified C.K. end
@@ -785,7 +785,7 @@ void Balance::old_adjust(int iter, int n, bigint *count, double *split)
 {
   // need to allocate this if start using it again
 
-  double *cuts;
+  double *cuts = NULL;
 
   // damping factor
 
@@ -1030,7 +1030,7 @@ void Balance::dumpout(bigint tstep, FILE *bfp)
 void Balance::debug_output(int idim, int m, int np, double *split)
 {
   int i;
-  const char *dim;
+  const char *dim = NULL;
 
   double *boxlo = domain->boxlo;
   double *prd = domain->prd;
@@ -1085,7 +1085,7 @@ void Balance::debug_output(int idim, int m, int np, double *split)
 
 bool Balance::disallow_irregular()
 {
-    /*NL*/// fprintf(screen,"proc %d at step %d: result %d\n",me,update->ntimestep,modify->n_fixes_style("mesh"));
+    /*NL*///if (screen) fprintf(screen,"proc %d at step %d: result %d\n",me,update->ntimestep,modify->n_fixes_style("mesh"));
     //NP disallow if mesh is involved
     if(modify->n_fixes_style("mesh") > 0)
         return true;

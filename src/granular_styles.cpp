@@ -23,14 +23,14 @@
    Contributing authors:
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
-#include "mpi.h"
-#include "ctype.h"
-#include "float.h"
-#include "limits.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <ctype.h>
+#include <float.h>
+#include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair.h"
 #include "atom.h"
 #include "neighbor.h"
@@ -71,12 +71,12 @@ public:
 
     // select granular variants based on contact models
     pair_factory.addVariantSelector("gran", ContactModels::Factory::select);
-    wall_factory.addVariantSelector("gran", ContactModels::Factory::select);
+    wall_factory.addVariantSelector("wall/gran", ContactModels::Factory::select);
 
     // register granular pair styles
     #define GRAN_MODEL(MODEL,TANGENTIAL,COHESION,ROLLING,SURFACE) \
     registerPair<MODEL, TANGENTIAL, COHESION, ROLLING, SURFACE>("gran", pair_factory); \
-    registerWall<MODEL, TANGENTIAL, COHESION, ROLLING, SURFACE>("gran", wall_factory);
+    registerWall<MODEL, TANGENTIAL, COHESION, ROLLING, SURFACE>("wall/gran", wall_factory);
     #include "style_contact_model.h"
     #undef GRAN_MODEL
   }

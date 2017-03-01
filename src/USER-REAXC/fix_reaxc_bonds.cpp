@@ -16,8 +16,8 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "fix_ave_atom.h"
 #include "fix_reaxc_bonds.h"
 #include "atom.h"

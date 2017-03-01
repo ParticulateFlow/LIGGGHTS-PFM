@@ -51,7 +51,7 @@
               nsend_this = pushElemToBuffer(i,&(buf_send_[nsend+1]),OPERATION_COMM_EXCHANGE,dummy,dummy,dummy);
               buf_send_[nsend] = static_cast<double>(nsend_this+1);
               nsend += (nsend_this+1);
-              /*NL*/// fprintf(this->screen,"step %d: proc %d pushes element id %d with center %f %f %f\n",
+              /*NL*/// if (this->screen) fprintf(this->screen,"step %d: proc %d pushes element id %d with center %f %f %f\n",
               /*NL*///         this->update->ntimestep,this->comm->me,this->id_slow(i),this->center_(i)[0],this->center_(i)[1],this->center_(i)[2]);
               if (nsend > maxsend_)
                   grow_send(nsend,1);
@@ -87,7 +87,7 @@
           // center is next in buffer, test it
           vectorCopy3D(&(buf[m+1]),center_elem);
 
-          /*NL*/// fprintf(this->screen,"proc %d: nrecv_this %d center %f %f %f xlo %f xhi %f\n",
+          /*NL*/// if (this->screen) fprintf(this->screen,"proc %d: nrecv_this %d center %f %f %f xlo %f xhi %f\n",
           /*NL*///         this->comm->me,nrecv_this,center_elem[0],center_elem[1],center_elem[2],this->domain->sublo[0],this->domain->subhi[0]);
 
           //NP do not ask if the center is completely in, just ask for center_elem[dim]
@@ -96,11 +96,11 @@
           {
             popElemFromBuffer(&(buf[m+1]),OPERATION_COMM_EXCHANGE,dummy,dummy,dummy);
             nLocal_++;
-            /*NL*/// fprintf(this->screen,"proc %d pops element id %d with center %f %f %f\n",
+            /*NL*/// if (this->screen) fprintf(this->screen,"proc %d pops element id %d with center %f %f %f\n",
             /*NL*///                      this->comm->me,this->id_slow(nLocal_-1),center_elem[0],center_elem[1],center_elem[2]);
           }
           /*NL*/// else
-          /*NL*///   fprintf(this->screen,"proc %d DID NOT pop one with center %f %f %f\n",
+          /*NL*///   if (this->screen) fprintf(this->screen,"proc %d DID NOT pop one with center %f %f %f\n",
           /*NL*///                      this->comm->me,center_elem[0],center_elem[1],center_elem[2]);
 
           /*NL*/// this->error->one(FLERR,"end");
@@ -132,7 +132,7 @@
       double *bufMesh = NULL, *sendbufElems = NULL, *recvbufElems = NULL;
       bool dummy = false;
 
-      /*NL*/ //fprintf(this->screen,"buffersize mesh %d buffersize elems local %d\n",sizeMesh,sizeElements);
+      /*NL*/ //if (this->screen) fprintf(this->screen,"buffersize mesh %d buffersize elems local %d\n",sizeMesh,sizeElements);
 
       // pack global data into buffer
       // do this only on proc 0
@@ -157,7 +157,7 @@
       //NP send from all to proc 0
       sizeElements_all = MPI_Gather0_Vector(sendbufElems,sizeElements,recvbufElems,this->world);
 
-      /*NL*/ //fprintf(this->screen,"buffersize mesh %d buffersize elems local %d, buffersize elems global %d\n",sizeMesh,sizeElements, sizeElements_all);
+      /*NL*/ //if (this->screen) fprintf(this->screen,"buffersize mesh %d buffersize elems local %d, buffersize elems global %d\n",sizeMesh,sizeElements, sizeElements_all);
 
       // actually write data to restart file
       // do this only on proc 0
@@ -169,7 +169,7 @@
         double sE = static_cast<double>(sizeRestartElement());
         double sM = static_cast<double>(sizeRestartMesh());
 
-        /*NL*///fprintf(this->screen,"nglobal %f, sE %f, sM %f\n",nG,sE,sM);
+        /*NL*///if (this->screen) fprintf(this->screen,"nglobal %f, sE %f, sM %f\n",nG,sE,sM);
 
         // size with 3 extra values
         int size = (sizeMesh+sizeElements_all+3) * sizeof(double);
@@ -216,7 +216,7 @@
       sE = static_cast<int> (list[m++]);
       sM = static_cast<int> (list[m++]);
 
-      /*NL*///fprintf(this->screen,"nglobal %d, sE %d, sM %d, sizeRestartElement() %d, sizeRestartMesh() %d\n",nglobal,sE,sM,sizeRestartElement(),sizeRestartMesh());
+      /*NL*///if (this->screen) fprintf(this->screen,"nglobal %d, sE %d, sM %d, sizeRestartElement() %d, sizeRestartMesh() %d\n",nglobal,sE,sM,sizeRestartElement(),sizeRestartMesh());
 
       if(sE != sizeRestartElement() || sM != sizeRestartMesh())
           this->error->all(FLERR,"Incompatible mesh restart file - mesh has different properties in restarted simulation");
@@ -224,7 +224,7 @@
       for(int i = 0; i < nglobal; i++)
       {
           nrecv_this = static_cast<int>(list[m]);
-          /*NL*///fprintf(this->screen,"nrecv_this %d\n",nrecv_this);
+          /*NL*///if (this->screen) fprintf(this->screen,"nrecv_this %d\n",nrecv_this);
           popElemFromBuffer(&(list[m+1]),OPERATION_RESTART,dummy,dummy,dummy);
           m += nrecv_this;
       }
@@ -292,9 +292,11 @@
   template<int NUM_NODES>
   int MultiNodeMeshParallel<NUM_NODES>::pushElemListToBuffer(int n, int *list, double *buf, int operation, bool , bool, bool)
   {
+      /*NL*/// if (this->screen) {
       /*NL*/// fprintf(this->screen,"pushListToBuffer n %d\n",n);
       /*NL*/// for(int ii = 0; ii < n; ii++)
       /*NL*///     fprintf(this->screen,"  list[%d] %d\n",ii,list[ii]);
+      /*NL*/// }
 
       int nsend = 0;
 
@@ -311,7 +313,7 @@
 
       if(OPERATION_COMM_FORWARD == operation)
       {
-          /*NL*///fprintf(this->screen,"comm forward, translate is %s\n",translate?"yes":"no");
+          /*NL*///if (this->screen) fprintf(this->screen,"comm forward, translate is %s\n",translate?"yes":"no");
           //NP node_orig cannot change during a run
           //NP currently proc updates owned and ghost elements for moving mesh
           //NP if(translate || rotate || scale)

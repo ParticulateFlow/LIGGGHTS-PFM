@@ -21,14 +21,14 @@
 
 #include "fix_mesh_surface_stress_contact.h"
 #include <stdio.h>
-#include "string.h"
+#include <string.h>
 #include "error.h"
 #include "force.h"
 #include "modify.h"
 #include "comm.h"
 #include "math_extra.h"
 #include "pair_gran.h"
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "fix_property_atom.h"
 #include "fix_property_global.h"
 #include "fix_gravity.h"
@@ -154,14 +154,14 @@ void FixMeshSurfaceStressContact::init()
 void FixMeshSurfaceStressContact::init_area_correction()
 {
     const double *Y, *nu, *Y_orig;
-    double expo, Yeff_ij, Yeff_orig_ij, ratio;
+    double expo = 1., Yeff_ij, Yeff_orig_ij, ratio;
 
     if(area_correction_)
     {
         PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
         if(!pair_gran)
             error->fix_error(FLERR,this,"'area_correction' requires using a granular pair style");
-        int max_type = pair_gran->mpg->max_type();
+        int max_type = pair_gran->get_properties()->max_type();
 
         if(force->pair_match("gran/hooke",0)) expo = 1.;
         else if(force->pair_match("gran/hertz",0)) expo = 2./3.;
@@ -182,7 +182,7 @@ void FixMeshSurfaceStressContact::init_area_correction()
             Yeff_ij      = 1./((1.-pow(nu[i-1],2.))/Y[i-1]     +(1.-pow(nu[j-1],2.))/Y[j-1]);
             Yeff_orig_ij = 1./((1.-pow(nu[i-1],2.))/Y_orig[i-1]+(1.-pow(nu[j-1],2.))/Y_orig[j-1]);
             ratio = pow(Yeff_ij/Yeff_orig_ij,expo);
-            /*NL*/ //fprintf(screen,"ratio for type pair %d/%d is %f, Yeff_ij %f, Yeff_orig_ij %f, expo %f\n",i,j,ratio,Yeff_ij,Yeff_orig_ij,expo);
+            /*NL*/ //if (screen) fprintf(screen,"ratio for type pair %d/%d is %f, Yeff_ij %f, Yeff_orig_ij %f, expo %f\n",i,j,ratio,Yeff_ij,Yeff_orig_ij,expo);
             static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulusOriginal","property/global","peratomtype",max_type,0,style))->array_modify(i-1,j-1,ratio);
           }
         }
@@ -265,7 +265,7 @@ void FixMeshSurfaceStressContact::calc_contact_time_average()
     {
         contactArea(i) = T_ * contactArea(i) + dt * contactAreaStep(i);
         contactAreaAbs(i) = T_ * contactAreaAbs(i) + dt * contactAreaStepAbs(i);
-        /*NL*/// if(contactArea(i) > 0.) fprintf(screen,"contactArea(i) %f\n",contactArea(i) );
+        /*NL*/// if(screen && contactArea(i) > 0.) fprintf(screen,"contactArea(i) %f\n",contactArea(i) );
         contactArea(i)    /= (T_+dt);
         contactAreaAbs(i) /= (T_+dt);
     }

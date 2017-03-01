@@ -15,10 +15,10 @@
    Contributing author: Yongfeng Zhang (INL), yongfeng.zhang@inl.gov
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_coul_wolf.h"
 #include "atom.h"
 #include "comm.h"
@@ -295,9 +295,9 @@ double PairCoulWolf::single(int i, int j, int itype, int jtype, double rsq,
                             double factor_coul, double factor_lj,
                             double &fforce)
 {
-  double r,prefactor; //NP modified R.B.
+  double r=0.0,prefactor=0.0; //NP modified R.B.
   double forcecoul,phicoul; //NP modified R.B.
-  double e_shift,f_shift,dvdrr,erfcc,erfcd;
+  double e_shift,f_shift,dvdrr,erfcc=0.0,erfcd;
 
   e_shift = erfc(alf*cut_coul) / cut_coul;
   f_shift = -(e_shift+ 2.0*alf/MY_PIS * exp(-alf*alf*cut_coul*cut_coul)) /

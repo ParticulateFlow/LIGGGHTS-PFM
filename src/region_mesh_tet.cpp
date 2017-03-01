@@ -19,8 +19,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "region_mesh_tet.h"
 #include "lammps.h"
 #include "memory.h"
@@ -28,7 +28,7 @@
 #include "domain.h"
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
-#include "math.h"
+#include <math.h>
 #include "math_extra_liggghts.h"
 #include "input_mesh_tet.h"
 
@@ -130,7 +130,7 @@ int RegTetMesh::inside(double x, double y, double z)
         if(inside_mesh) break;
    }
 
-   //fprintf(screen,"checking pos %f %f %f, result %d; ntet %d\n",x,y,z,inside_mesh,nTet);
+   //if (screen) fprintf(screen,"checking pos %f %f %f, result %d; ntet %d\n",x,y,z,inside_mesh,nTet);
 
    return inside_mesh;
 }

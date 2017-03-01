@@ -515,7 +515,7 @@ package"_Section_accelerate.html.
 
 :line
 
-compute syles :h4
+compute styles :h4
 
 See the "compute"_compute.html command for one-line descriptions of
 each style or click on the style itself for a full description:
@@ -558,6 +558,7 @@ each style or click on the style itself for a full description:
 "msd"_compute_msd.html,
 "msd/molecule"_compute_msd_molecule.html,
 "msd/nongauss"_compute_msd_nongauss.html,
+"neighbor/atom"_compute_neighbor_atom.html,
 "nparticles/tracer/region"_compute_nparticles_tracer_region.html,
 "pair"_compute_pair.html,
 "pair/gran/local"_compute_pair_gran_local.html,
@@ -640,7 +641,7 @@ package"_Section_accelerate.html.
 
 :line
 
-dump syles :h4
+dump styles :h4
 
 Click on the style itself for a full description:
 
@@ -653,7 +654,9 @@ These are accelerated styles, which can be used if LAMMPS is built with the "app
 
  :tb(c=4,ea=c)
 
-fix syles :h4
+:line
+
+fix styles :h4
 
 See the "fix"_fix.html command for one-line descriptions
 of each style or click on the style itself for a full description:
@@ -675,6 +678,7 @@ of each style or click on the style itself for a full description:
 "bond/create"_fix_bond_create.html,
 "bond/swap"_fix_bond_swap.html,
 "box/relax"_fix_box_relax.html,
+"cfd/coupling/recurrence"_fix_cfd_coupling_recurrence.html,
 "check/timestep/gran"_fix_check_timestep_gran.html,
 "colvars"_fix_colvars.html,
 "deform"_fix_deform.html,
@@ -756,6 +760,8 @@ of each style or click on the style itself for a full description:
 "press/berendsen"_fix_press_berendsen.html,
 "print"_fix_print.html,
 "property/atom"_fix_property.html,
+"property/atom/cumulativetracer"_fix_property_atom_cumulativetracer.html,
+"property/atom/timetracer"_fix_property_atom_timetracer.html,
 "property/atom/tracer"_fix_property_atom_tracer.html,
 "property/atom/tracer/stream"_fix_property_atom_tracer_stream.html,
 "property/global"_fix_property.html,
@@ -765,6 +771,7 @@ of each style or click on the style itself for a full description:
 "reax/c/bonds"_fix_reax_bonds.html,
 "reax/c/species"_fix_reaxc_species.html,
 "recenter"_fix_recenter.html,
+"remove"_fix_remove.html,
 "restrain"_fix_restrain.html,
 "rigid"_fix_rigid.html,
 "rigid/nph"_fix_rigid.html,
@@ -772,6 +779,7 @@ of each style or click on the style itself for a full description:
 "rigid/nve"_fix_rigid.html,
 "rigid/nvt"_fix_rigid.html,
 "rigid/small"_fix_rigid.html,
+"scale/diameter"_fix_scale_diameter.html,
 "setforce"_fix_setforce.html,
 "shake"_fix_shake.html,
 "smd"_fix_smd.html,

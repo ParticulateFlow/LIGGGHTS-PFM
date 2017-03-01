@@ -15,10 +15,10 @@
    Contributing author: Mark Stevens (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_lj_gromacs_coul_gromacs.h"
 #include "atom.h"
 #include "comm.h"
@@ -63,10 +63,10 @@ PairLJGromacsCoulGromacs::~PairLJGromacsCoulGromacs()
 
 void PairLJGromacsCoulGromacs::compute(int eflag, int vflag)
 {
-  int i,j,ii,jj,inum,jnum,itype,jtype;
+  int i,j,ii,jj,inum,jnum,itype,jtype=0;
   double qtmp,xtmp,ytmp,ztmp,delx,dely,delz,evdwl,ecoul,fpair;
-  double rsq,r2inv,r6inv,forcecoul,forcelj,factor_coul,factor_lj;
-  double r,tlj,tc,fswitch,fswitchcoul,eswitch,ecoulswitch;
+  double rsq,r2inv,r6inv=0.0,forcecoul,forcelj,factor_coul,factor_lj;
+  double r,tlj=0.0,tc=0.0,fswitch,fswitchcoul,eswitch,ecoulswitch;
   int *ilist,*jlist,*numneigh,**firstneigh;
 
   evdwl = ecoul = 0.0;
@@ -455,8 +455,8 @@ double PairLJGromacsCoulGromacs::single(int i, int j, int itype, int jtype,
                                 double factor_coul, double factor_lj,
                                 double &fforce)
 {
-  double r2inv,r6inv,forcecoul,forcelj,phicoul,philj;
-  double r,tlj,tc,fswitch,phiswitch,fswitchcoul,phiswitchcoul;
+  double r2inv,r6inv=0.0,forcecoul,forcelj,phicoul,philj;
+  double r,tlj=0.0,tc=0.0,fswitch,phiswitch,fswitchcoul,phiswitchcoul;
 
   r2inv = 1.0/rsq;
   if (rsq < cut_coulsq) {

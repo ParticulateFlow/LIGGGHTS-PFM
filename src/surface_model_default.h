@@ -30,7 +30,7 @@ SURFACE_MODEL(SURFACE_DEFAULT,default,0)
 #ifndef SURFACE_MODEL_DEFAULT_H_
 #define SURFACE_MODEL_DEFAULT_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "atom.h"
 #include "force.h"
 #include "update.h"
@@ -46,7 +46,7 @@ namespace ContactModels
 
     SurfaceModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "SURFACE/DEFAULT loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "SURFACE/DEFAULT loaded\n");
     }
 
     inline void registerSettings(Settings&) {}

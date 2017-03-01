@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -19,6 +19,12 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
 #ifdef FIX_CLASS
 
 FixStyle(insert/stream,FixInsertStream)
@@ -28,6 +34,7 @@ FixStyle(insert/stream,FixInsertStream)
 #ifndef LMP_FIX_INSERT_STREAM_H
 #define LMP_FIX_INSERT_STREAM_H
 
+#include "bounding_box.h"
 #include "fix_insert.h"
 
 namespace LAMMPS_NS {
@@ -65,6 +72,8 @@ class FixInsertStream : public FixInsert {
   void pre_insert();
 
   int is_nearby(int);
+  virtual BoundingBox getBoundingBox() const;
+
   inline void generate_random(double *pos, double rad);
   inline void generate_random_global(double *pos);
 

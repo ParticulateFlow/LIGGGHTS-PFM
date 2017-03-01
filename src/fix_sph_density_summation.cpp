@@ -25,10 +25,10 @@ Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
 andreas.aigner@jku.at
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "mpi.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <mpi.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_sph_density_summation.h"
 #include "update.h"
 #include "respa.h"
@@ -145,7 +145,7 @@ template <int MASSFLAG>
 void FixSPHDensitySum::post_integrate_eval()
 {
   int i,j,ii,jj,inum,jnum,itype,jtype;
-  double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,s,W;
+  double xtmp,ytmp,ztmp,delx,dely,delz,rsq,r,s=0.,W;
   double sli,sliInv,slj,slCom,slComInv,cut,imass,jmass;
   int *ilist,*jlist,*numneigh,**firstneigh;
 
@@ -180,7 +180,7 @@ void FixSPHDensitySum::post_integrate_eval()
     W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,sli,sliInv);
     if (W < 0.)
     {
-      fprintf(screen,"s = %f, W = %f\n",s,W);
+      if (screen) fprintf(screen,"s = %f, W = %f\n",s,W);
       error->one(FLERR,"Illegal kernel used, W < 0");
     }
 
@@ -191,7 +191,7 @@ void FixSPHDensitySum::post_integrate_eval()
   // need updated ghost positions and self contributions
   timer->stamp();
   comm->forward_comm();
-  
+
   timer->stamp(TIME_COMM);
 
   // loop over neighbors of my atoms
@@ -254,7 +254,7 @@ void FixSPHDensitySum::post_integrate_eval()
       W = SPH_KERNEL_NS::sph_kernel(kernel_id,s,slCom,slComInv);
       if (W < 0.)
       {
-        fprintf(screen,"s = %f, W = %f\n",s,W);
+        if (screen) fprintf(screen,"s = %f, W = %f\n",s,W);
         error->one(FLERR,"Illegal kernel used, W < 0");
       }
 

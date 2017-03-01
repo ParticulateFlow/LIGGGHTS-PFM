@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
+#include <math.h>
+#include <string.h>
 #include "compute_improper_local.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -110,7 +110,7 @@ int ComputeImproperLocal::compute_impropers(int flag)
   double vb1x,vb1y,vb1z,vb2x,vb2y,vb2z,vb3x,vb3y,vb3z;
   double ss1,ss2,ss3,r1,r2,r3,c0,c1,c2,s1,s2;
   double s12,c;
-  double *cbuf;
+  double *cbuf = NULL;
 
   double **x = atom->x;
   int *num_improper = atom->num_improper;

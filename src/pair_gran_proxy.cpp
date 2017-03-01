@@ -26,6 +26,10 @@
 
 #include "comm.h"
 #include "error.h"
+#include "force.h"
+#include "pair_hybrid.h"
+#include "suffix.h"
+#include <string.h>
 
 #include "pair_gran_proxy.h"
 #include "granular_pair_style.h"
@@ -45,8 +49,32 @@ PairGranProxy::~PairGranProxy()
 void PairGranProxy::settings(int nargs, char ** args)
 {
   delete impl;
-  int64_t variant = Factory::instance().selectVariant("gran", nargs, args);
-  impl = Factory::instance().create("gran", variant, lmp, this);
+
+  const char * style = force->pair_style;
+
+  /*NL*/ // figure out our style, unlike Fix this is not stored
+  if(force->pair_match("hybrid", 0)) {
+    PairHybrid * hybrid = static_cast<PairHybrid*>(force->pair);
+    for(int i = 0; i < hybrid->nstyles; i++) {
+      if(hybrid->styles[i] == this) {
+        const char * pair_style = hybrid->keywords[i];
+        int64_t variant = Factory::instance().selectVariant(pair_style, nargs, args);
+        impl = Factory::instance().create(pair_style, variant, lmp, this);
+        style = pair_style;
+        break;
+      }
+    }
+  } else {
+    int64_t variant = Factory::instance().selectVariant(style, nargs, args);
+    impl = Factory::instance().create(style, variant, lmp, this);
+  }
+
+  int length = strlen(style);
+
+  if(length > 4 && (strcmp(&style[length-4], "/omp") == 0)) {
+    suffix_flag |= Suffix::OMP;
+    respa_enable = 0;
+  }
 
   if(impl) {
     impl->settings(nargs, args);

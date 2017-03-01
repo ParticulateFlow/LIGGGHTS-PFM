@@ -30,7 +30,7 @@ SURFACE_MODEL(SURFACE_ROUGHNESS,roughness,1)
 #ifndef SURFACE_ROUGHNESS_H_
 #define SURFACE_ROUGHNESS_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "atom.h"
 #include "force.h"
 #include "update.h"
@@ -55,7 +55,7 @@ namespace ContactModels
       hsetup->add_history_value("contactN1X", "0");
       hsetup->add_history_value("contactN1Y", "0");
       hsetup->add_history_value("contactN1Z", "0");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "SURFACE/ROUGHNESS loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "SURFACE/ROUGHNESS loaded\n");
     }
 
     inline void registerSettings(Settings&) {}
@@ -180,7 +180,7 @@ namespace ContactModels
           // FIXME: Note to original implementor. Fix your code! Floating-point comparison?!?
           if(nLength!=1.0)
           {
-            fprintf(screen, "deltaGamma, psi: %e %e, contactP: %e %e %e n1: %e %e %e \n",
+            if (screen) fprintf(screen, "deltaGamma, psi: %e %e, contactP: %e %e %e n1: %e %e %e \n",
                           deltaGamma, psi,
                           contactP[0], contactP[1], contactP[2],
                           contactN1[0],  contactN1[1], contactN1[2]);

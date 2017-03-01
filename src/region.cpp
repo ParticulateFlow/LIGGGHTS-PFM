@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "region.h"
 #include "update.h"
 #include "domain.h"
@@ -120,7 +120,22 @@ void Region::init()
 
 int Region::dynamic_check()
 {
-  return dynamic;
+  if (dynamic || varshape) return 1;
+  return 0;
+}
+
+/* ----------------------------------------------------------------------
+   called before looping over atoms with match() or surface()
+   this insures any variables used by region are invoked once per timestep
+   also insures variables are invoked by all procs even those w/out atoms
+     necessary if equal-style variable invokes global operation
+     with MPI_Allreduce, e.g. xcm() or count()
+------------------------------------------------------------------------- */
+
+void Region::prematch()
+{
+  if (varshape) shape_update();
+  if (dynamic) pretransform();
 }
 
 /* ----------------------------------------------------------------------
@@ -161,7 +176,7 @@ int Region::surface(double x, double y, double z, double cutoff)
 {
   int ncontact;
   double xs,ys,zs;
-  double xnear[3],xorig[3];
+  double xnear[3],xorig[3]={};
 
   if (varshape && update->ntimestep != lastshape) {
     shape_update();
@@ -211,6 +226,21 @@ void Region::add_contact(int n, double *x, double xp, double yp, double zp)
   contact[n].delx = delx;
   contact[n].dely = dely;
   contact[n].delz = delz;
+}
+
+/* ----------------------------------------------------------------------
+   pre-compute dx,dy,dz and theta for a moving/rotating region
+   called once for the region before per-atom loop, via prematch()
+------------------------------------------------------------------------- */
+
+void Region::pretransform()
+{
+  if (moveflag) {
+    if (xstr) dx = input->variable->compute_equal(xvar);
+    if (ystr) dy = input->variable->compute_equal(yvar);
+    if (zstr) dz = input->variable->compute_equal(zvar);
+  }
+  if (rotateflag) theta = input->variable->compute_equal(tvar);
 }
 
 /* ----------------------------------------------------------------------
@@ -271,17 +301,16 @@ void Region::inverse_transform(double &x, double &y, double &z)
    rotate x,y,z by angle via right-hand rule around point and runit normal
    sign of angle determines whether rotating forward/backward in time
    return updated x,y,z
-   P = point = vector = point of rotation
-   R = vector = axis of rotation
-   w = omega of rotation (from period)
-   X0 = x,y,z = initial coord of atom
+   R = vector axis of rotation
+   P = point = point to rotate around
    R0 = runit = unit vector for R
-   C = (X0 dot R0) R0 = projection of atom coord onto R
+   X0 = x,y,z = initial coord of atom
    D = X0 - P = vector from P to X0
-   A = D - C = vector from R line to X0
-   B = R0 cross A = vector perp to A in plane of rotation
+   C = (D dot R0) R0 = projection of D onto R, i.e. Dparallel
+   A = D - C = vector from R line to X0, i.e. Dperp
+   B = R0 cross A = vector perp to A in plane of rotation, same len as A
    A,B define plane of circular rotation around R line
-   x,y,z = P + C + A cos(w*dt) + B sin(w*dt)
+   new x,y,z = P + C + A cos(angle) + B sin(angle)
 ------------------------------------------------------------------------- */
 
 void Region::rotate(double &x, double &y, double &z, double angle)
@@ -290,13 +319,13 @@ void Region::rotate(double &x, double &y, double &z, double angle)
 
   double sine = sin(angle);
   double cosine = cos(angle);
-  double x0dotr = x*runit[0] + y*runit[1] + z*runit[2];
-  c[0] = x0dotr * runit[0];
-  c[1] = x0dotr * runit[1];
-  c[2] = x0dotr * runit[2];
   d[0] = x - point[0];
   d[1] = y - point[1];
   d[2] = z - point[2];
+  double x0dotr = d[0]*runit[0] + d[1]*runit[1] + d[2]*runit[2];
+  c[0] = x0dotr * runit[0];
+  c[1] = x0dotr * runit[1];
+  c[2] = x0dotr * runit[2];
   a[0] = d[0] - c[0];
   a[1] = d[1] - c[1];
   a[2] = d[2] - c[2];
@@ -437,7 +466,7 @@ void Region::options(int narg, char **arg)
 //NP modified C.K.
 void Region::reset_random(int new_seed)
 {
-    if(comm->me == 0) fprintf(screen,"INFO: Resetting random generator for region %s\n",id);
+    if(comm->me == 0 && screen) fprintf(screen,"INFO: Resetting random generator for region %s\n",id);
     random->reset(new_seed + comm->me);
 }
 
@@ -462,7 +491,7 @@ inline void Region::rand_bounds(bool subdomain_flag, double *lo, double *hi)
         vectorConstruct3D(lo,  extent_xlo,extent_ylo,extent_zlo );
         vectorConstruct3D(hi,  extent_xhi,extent_yhi,extent_zhi );
     }
-    /*NL*/// fprintf(screen,"lo %f %f %f hi %f %f %f\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);
+    /*NL*/// if (screen) fprintf(screen,"lo %f %f %f hi %f %f %f\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -481,7 +510,7 @@ void Region::generate_random(double *pos,bool subdomain_flag)
         pos[2] = lo[2] + random->uniform()*diff[2];
     }
     while(!match(pos[0],pos[1],pos[2]));
-    /*NL*///fprintf(screen,"SUCCESS\n");
+    /*NL*///if (screen) fprintf(screen,"SUCCESS\n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -506,8 +535,8 @@ void Region::generate_random_shrinkby_cut(double *pos,double cut,bool subdomain_
         pos[0] = lo[0] + random->uniform()*diff[0];
         pos[1] = lo[1] + random->uniform()*diff[1];
         pos[2] = lo[2] + random->uniform()*diff[2];
-        /*NL*/// fprintf(screen,"cut %f\n",cut);
-        /*NL*/// printVec3D(screen,"diff",diff);
+        /*NL*/// if (screen) fprintf(screen,"cut %f\n",cut);
+        /*NL*/// if (screen) printVec3D(screen,"diff",diff);
     }
     // pos has to be within region, but not within cut of region surface
     while(!match(pos[0],pos[1],pos[2]) || match_cut(pos,cut));
@@ -649,9 +678,9 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
                          "   (c) region is 2d, but should be 3d\n");
 
     vol_local *= (vol_global/vol_local_all);
-    /*NL*/ //fprintf(screen,"local vol %f global vol %f n_test %d n_in_local %d n_in_global_all %d\n",
+    /*NL*/ //if (screen) fprintf(screen,"local vol %f global vol %f n_test %d n_in_local %d n_in_global_all %d\n",
     /*NL*/ //                vol_local,vol_global,n_test,n_in_local,n_in_global_all);
-    /*NL*/ //fprintf(screen,"bbox extend x %f %f y %f %f z % f %f\n",extent_xlo,extent_xhi,extent_ylo,extent_yhi,extent_zlo,extent_zhi);
+    /*NL*/ //if (screen) fprintf(screen,"bbox extend x %f %f y %f %f z % f %f\n",extent_xlo,extent_xhi,extent_ylo,extent_yhi,extent_zlo,extent_zhi);
 }
 
 /* ---------------------------------------------------------------------- */

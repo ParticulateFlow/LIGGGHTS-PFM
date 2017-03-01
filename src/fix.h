@@ -136,6 +136,7 @@ class Fix : protected Pointers {
 
   virtual void grow_arrays(int) {}
   virtual void copy_arrays(int, int, int) {}
+  virtual void pre_set_arrays() {}
   virtual void set_arrays(int) {}
   virtual void update_arrays(int, int) {}
   virtual int pack_border(int, int *, double *) {return 0;}
@@ -294,6 +295,7 @@ namespace FixConst {
   static const int POST_RUN =                1<<19;
   static const int ITERATE_IMPLICITLY =      1<<20; //NP modified C.K.
   static const int FIX_CONST_LAST =          1<<21; //NP modified C.K.
+  static const int PARALLEL_OPENMP =         1<<31; //NP modified R.B.
 }
 
 }

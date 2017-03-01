@@ -196,6 +196,16 @@ public:
 	virtual ~YesNoSetting(){}
 };
 
+class NamedIntegerSetting : public EnumSetting<int> {
+public:
+  NamedIntegerSetting(string name, bool default_value) : EnumSetting<int>(name)
+  {
+    // must be configured by model itself
+  }
+
+  virtual ~NamedIntegerSetting(){}
+};
+
 class Settings : protected Pointers
 {
   typedef map<string, Setting*> SettingMap;
@@ -232,6 +242,12 @@ public:
   void registerDoubleSetting(string name, double & variable, double default_value = 0.0)
   {
     registerSetting<DoubleSetting>(name, variable, default_value);
+  }
+
+  NamedIntegerSetting* registerNamedIntegerSetting(string name, int & variable, int default_value = 0)
+  {
+    registerSetting<NamedIntegerSetting>(name, variable, default_value);
+    return dynamic_cast<NamedIntegerSetting*>(settings[name]);
   }
 
   bool parseArguments(int nargs, char ** args) {

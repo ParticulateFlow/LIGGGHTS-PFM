@@ -15,8 +15,8 @@
    Contributing author: Naveen Michaud-Agrawal (Johns Hopkins U)
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "fix_recenter.h"
 #include "atom.h"
 #include "group.h"
@@ -139,7 +139,7 @@ void FixRecenter::initial_integrate(int vflag)
   // bounding box around domain works for both orthogonal and triclinic
 
   double xtarget,ytarget,ztarget;
-  double *bboxlo,*bboxhi;
+  double *bboxlo=NULL,*bboxhi=NULL;
 
   if (scaleflag == FRACTION) {
     if (domain->triclinic == 0) {

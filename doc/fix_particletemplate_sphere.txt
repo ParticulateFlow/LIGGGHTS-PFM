@@ -16,14 +16,13 @@ fix ID group-ID particletemplate/sphere seed keyword values ...  :pre
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 particletemplate/sphere = style name of this fix command  :l
 seed = random number generator seed (integer value) :l
-n_spheres = number of spheres in the template :l
 zero or more keyword/value pairs can be appended :l
 keyword = {atom_type} or {density} or {volume_limit} or {radius} :l
 {atom_type} value = atom type assigned to this particle template
 {density} values = random_style param1 (param2)
   random_style = 'constant' or 'uniform' or 'gaussian'
   param1 = density for 'constant', low value of density for 'uniform', expectancy value for 'gaussian'
-    param2 = omitted for 'constant', high value of density for 'uniform', sigma value for 'gaussian'
+  param2 = omitted for 'constant', high value of density for 'uniform', sigma value for 'gaussian'
 {volume_limit} value = lowest particle volume allowed in simulation
 {radius} values = random_style param1 (param2)
   random_style = 'constant' or 'uniform number' or 'uniform mass' or 'gaussian number'
@@ -45,7 +44,7 @@ Define a particle that is used as input for a "fix_particledistribution_discrete
 
 It is thus possible to define a uniform or gaussian distribution on top of the discrete distribution defined by "fix_particledistribution_discrete"_fix_particledistribution_discrete.html.
 
-IMPORTANT NOTE: As opposed to the number-based distributions used by "fix_pour"_fix_pour.html and "fix_pour_legacy"_fix_pour_legacy.html, this fix uses the more common distribution based on mass-% for the radius distribution (as does "fix_particledistribution_discrete"_fix_particledistribution_discrete.html).
+IMPORTANT NOTE: As opposed to the number-based distributions used by "fix_pour_legacy"_fix_pour.html, this fix uses the more common distribution based on mass-% for the radius distribution (as does "fix_particledistribution_discrete"_fix_particledistribution_discrete.html).
 
 LIGGGHTS will throw an error if the particle volume is too small compared to machine precision. 
 If you are sure you know what you are doing you can override the default limit of 1e-12.

@@ -15,9 +15,9 @@
    Contributing author: Paul Crozier (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_heat.h"
 #include "atom.h"
 #include "domain.h"
@@ -133,6 +133,8 @@ void FixHeat::init()
   if (group->count(igroup) == 0)
     error->all(FLERR,"Fix heat group has no atoms");
   masstotal = group->mass(igroup);
+  if (masstotal <= 0.0)
+    error->all(FLERR,"Fix heat group has invalid mass");
 }
 
 /* ---------------------------------------------------------------------- */

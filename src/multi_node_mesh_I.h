@@ -43,6 +43,7 @@
     random_(new RanPark(lmp,179424799)), // big prime #
     mesh_id_(0),
     precision_(EPSILON_PRECISION),
+    element_exclusion_list_(0),
     autoRemoveDuplicates_(false),
     nMove_(0),
     nScale_(0),
@@ -84,6 +85,12 @@
   }
 
   template<int NUM_NODES>
+  void MultiNodeMesh<NUM_NODES>::setElementExclusionList(FILE *_file)
+  {
+      element_exclusion_list_ = _file;
+  }
+
+  template<int NUM_NODES>
   void MultiNodeMesh<NUM_NODES>::autoRemoveDuplicates()
   {
       autoRemoveDuplicates_ = true;
@@ -97,7 +104,7 @@
   template<int NUM_NODES>
   bool MultiNodeMesh<NUM_NODES>::addElement(double **nodeToAdd)
   {
-    /*NL*/ //fprintf(this->screen,"MultiNodeMesh<NUM_NODES>::addElement\n");
+    /*NL*/ //if (this->screen) fprintf(this->screen,"MultiNodeMesh<NUM_NODES>::addElement\n");
 
     double avg[3];
 
@@ -132,10 +139,10 @@
     {
         for(int i = 0; i < n; i++)
         {
-            /*NL*/ //if(i == 19462 && n == 19500) fprintf(this->screen,"i am here\n");
+            /*NL*/ //if(i == 19462 && n == 19500 && this->screen) fprintf(this->screen,"i am here\n");
             if(this->nSharedNodes(i,n) == NUM_NODES)
             {
-                /*NL*/ //if(i == 19462 && n == 19500) fprintf(this->screen,"i removed it\n");
+                /*NL*/ //if(i == 19462 && n == 19500 && this->screen) fprintf(this->screen,"i removed it\n");
                 node_.del(n);
                 center_.del(n);
                 return false;
@@ -248,12 +255,12 @@
     vectorSubtract3D(center_(iElem),center_(jElem),dist);
     radsum = rBound_(iElem) + rBound_(jElem);
 
-    /*NL*/ //fprintf(this->screen,"shareNode indices %d %d\n",iElem,jElem);
+    /*NL*/ //if (this->screen) fprintf(this->screen,"shareNode indices %d %d\n",iElem,jElem);
 
     if(vectorMag3DSquared(dist) > radsum*radsum)
     {
         iNode1 = jNode1 = iNode2 = jNode2 = -1;
-        /*NL*/ //fprintf(this->screen,"  shareNode broad phase false\n");
+        /*NL*/ //if (this->screen) fprintf(this->screen,"  shareNode broad phase false\n");
         return false;
     }
 
@@ -270,7 +277,7 @@
           {
               iNode2 = i;
               jNode2 = j;
-              /*NL*/ //fprintf(this->screen,"  shareNode narrow phase true\n");
+              /*NL*/ //if (this->screen) fprintf(this->screen,"  shareNode narrow phase true\n");
               return true;
           }
           nShared++;
@@ -279,7 +286,7 @@
     }
 
     iNode1 = jNode1 = iNode2 = jNode2 = -1;
-    /*NL*/ //fprintf(this->screen,"  shareNode narrow phase false\n");
+    /*NL*/ //if (this->screen) fprintf(this->screen,"  shareNode narrow phase false\n");
     return false;
   }
 
@@ -305,7 +312,7 @@
         if(MultiNodeMesh<NUM_NODES>::nodesAreEqual(iElem,i,jElem,j))
           nShared++;
 
-    /*NL*/ //fprintf(this->screen,"shareNode narrow phase false\n");
+    /*NL*/ //if (this->screen) fprintf(this->screen,"shareNode narrow phase false\n");
     return nShared;
   }
 
@@ -321,7 +328,7 @@
       if(nMove_ > 0)
         isFirst = false;
 
-      /*NL*/ //fprintf(this->screen,"mesh id %s called registerMove(),nMove_ %d\n",mesh_id_,nMove_);
+      /*NL*/ //if (this->screen) fprintf(this->screen,"mesh id %s called registerMove(),nMove_ %d\n",mesh_id_,nMove_);
 
       nMove_ ++;
       if(_scale) nScale_++;
@@ -335,7 +342,7 @@
       if(isFirst)
       {
           int nall = sizeLocal()+sizeGhost();
-          /*NL*/ //fprintf(this->screen,"mesh id %s allocating for %d elements\n",mesh_id_,nall);
+          /*NL*/ //if (this->screen) fprintf(this->screen,"mesh id %s allocating for %d elements\n",mesh_id_,nall);
 
           double **tmp;
           this->memory->template create<double>(tmp,NUM_NODES,3,"MultiNodeMesh:tmp");
@@ -391,8 +398,8 @@
     if(!node_orig_)
         error->one(FLERR,"Internal error in MultiNodeMesh<NUM_NODES>::storeNodePosOrig");
 
-    /*NL*///fprintf(this->screen,"step "BIGINT_FORMAT",proc %d storeNodePos %d %d, nLocal %d nGhost %d\n",this->update->ntimestep,this->comm->me,ilo,ihi,sizeLocal(),sizeGhost());
-    /*NL*///fprintf(this->screen,"  node_.size() %d node_orig_.size() %d  \n",this->node_.size(),this->node_orig_->size());
+    /*NL*///if (this->screen) fprintf(this->screen,"step " BIGINT_FORMAT ",proc %d storeNodePos %d %d, nLocal %d nGhost %d\n",this->update->ntimestep,this->comm->me,ilo,ihi,sizeLocal(),sizeGhost());
+    /*NL*///if (this->screen) fprintf(this->screen,"  node_.size() %d node_orig_.size() %d  \n",this->node_.size(),this->node_orig_->size());
 
     //NP ensure node_orig is long enough
     //NP can happen upon restart
@@ -405,7 +412,7 @@
         for(int j = 0; j < NUM_NODES; j++)
         {
             vectorCopy3D(node_(i)[j],node_orig(i)[j]);
-            /*NL*/ //printVec3D(this->screen,"node orig",node_orig(i)[j]);
+            /*NL*/ //if (this->screen) printVec3D(this->screen,"node orig",node_orig(i)[j]);
         }
   }
 
@@ -427,10 +434,7 @@
     {
         int nall = sizeLocal() + sizeGhost();
         stepLastReset_ = ntimestep;
-        for(int i = 0; i < nall; i++)
-            for(int j = 0; j < NUM_NODES; j++)
-                vectorCopy3D(node_orig(i)[j],node_(i)[j]);
-
+        node_.copy_n(*node_orig_, nall);
         return true;
     }
     return false;
@@ -466,7 +470,7 @@
         vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -487,7 +491,7 @@
         vectorAdd3D(center_(i),vecIncremental,center_(i));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
   /* ----------------------------------------------------------------------
    move mesh incrementally by amount vecIncremental
@@ -545,29 +549,98 @@
 
     //NP add rotation due to totalQ to each of the nodes, which have been reset to
     //NP original position before
-    resetToOrig();
+    //resetToOrig();
+    int ntimestep = update->ntimestep;
 
-    //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
-
-    bool trans = vectorMag3DSquared(origin) > 0.;
-
-    // perform total rotation for data in this class
-    for(int i = 0; i < n; i++)
+    //NP reset mesh nodes only if not yet done before in this time-step
+    bool reset = false;
+    if(stepLastReset_ < ntimestep)
     {
-      vectorZeroize3D(center_(i));
-
-      for(int j = 0; j < NUM_NODES; j++)
-      {
-        if(trans) vectorSubtract3D(node_(i)[j],origin,node_(i)[j]);
-        MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
-        if(trans) vectorAdd3D(node_(i)[j],origin,node_(i)[j]);
-        vectorAdd3D(node_(i)[j],center_(i),center_(i));
-      }
-      vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+      stepLastReset_ = ntimestep;
+      reset = true;
     }
 
-    updateGlobalBoundingBox();
+    //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
+    const int n = sizeLocal() + sizeGhost();
+
+    const bool trans = vectorMag3DSquared(origin) > 0.;
+
+    if (trans) {
+      if (reset) {
+        // perform total rotation for data in this class
+        #if defined(_OPENMP)
+        #pragma omp parallel for firstprivate(totalQ)
+        #endif
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            vectorSubtract3D(node_orig(i)[j],origin,node_(i)[j]);
+            MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],origin,node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      } else {
+        // perform total rotation for data in this class
+        #if defined(_OPENMP)
+        #pragma omp parallel for firstprivate(totalQ)
+        #endif
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            vectorSubtract3D(node_(i)[j],origin,node_(i)[j]);
+            MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],origin,node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      }
+    }
+    else {
+      if (reset) {
+        // perform total rotation for data in this class
+        #if defined(_OPENMP)
+        #pragma omp parallel for firstprivate(totalQ)
+        #endif
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            MathExtraLiggghts::vec_quat_rotate(node_orig(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      } else {
+        // perform total rotation for data in this class
+        #if defined(_OPENMP)
+        #pragma omp parallel for firstprivate(totalQ)
+        #endif
+        for(int i = 0; i < n; i++)
+        {
+          vectorZeroize3D(center_(i));
+
+          for(int j = 0; j < NUM_NODES; j++)
+          {
+            MathExtraLiggghts::vec_quat_rotate(node_(i)[j], totalQ, node_(i)[j]);
+            vectorAdd3D(node_(i)[j],center_(i),center_(i));
+          }
+          vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
+        }
+      }
+    }
+
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -585,7 +658,7 @@
     vectorCopy3D(axis,axisNorm);
     vectorScalarDiv3D(axisNorm,vectorMag3D(axisNorm));
 
-    /*NL*/ //printVec3D(this->screen,"axisNorm",axisNorm);
+    /*NL*/ //if (this->screen) printVec3D(this->screen,"axisNorm",axisNorm);
 
     // quat for rotation since last time-step
     dQ[0] = cos(dAngle*0.5);
@@ -603,12 +676,15 @@
   void MultiNodeMesh<NUM_NODES>::rotate(double *dQ, double *origin)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
-    bool trans = vectorMag3DSquared(origin) > 0.;
+    const bool trans = vectorMag3DSquared(origin) > 0.;
 
     // perform total rotation for data in this class
     //NP move into origin, rotate and move back
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(dQ, origin)
+    #endif
     for(int i = 0; i < n; i++)
     {
       vectorZeroize3D(center_(i));
@@ -622,7 +698,7 @@
       vectorScalarDiv3D(center_(i),static_cast<double>(NUM_NODES));
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -658,7 +734,7 @@
       rBound_(i) = rb;
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
@@ -686,11 +762,11 @@
       rBound_(i) = rb;
     }
 
-    updateGlobalBoundingBox();
+    bbox_.setDirty(true);
   }
 
   /* ----------------------------------------------------------------------
-   bounding box funtions
+   bounding box functions
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
@@ -703,8 +779,12 @@
   }
 
   template<int NUM_NODES>
-  BoundingBox MultiNodeMesh<NUM_NODES>::getGlobalBoundingBox() const
+  BoundingBox MultiNodeMesh<NUM_NODES>::getGlobalBoundingBox()
   {
+    if(bbox_.isDirty()) {
+      updateGlobalBoundingBox();
+      bbox_.setDirty(false);
+    }
     return bbox_;
   }
 
@@ -755,7 +835,7 @@
     if(nlocal != nodesLastRe_.size())
         this->error->one(FLERR,"Internal error in MultiNodeMesh::decide_rebuild()");
 
-    /*NL*/// fprintf(screen,"proc %d: sizes %d %d, nlocal %d, neighbor->triggersq %f\n",
+    /*NL*/// if (screen) fprintf(screen,"proc %d: sizes %d %d, nlocal %d, neighbor->triggersq %f\n",
     /*NL*///        comm->me, mesh_->node_.size(),oldNodes.size(),nlocal,neighbor->triggersq);
 
     for(int iTri = 0; iTri < nlocal; iTri++)

@@ -17,8 +17,8 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "dihedral_quadratic.h"
 #include "atom.h"
 #include "comm.h"

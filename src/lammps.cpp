@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <string.h>
+#include <ctype.h>
 #include "lammps.h"
 #include "style_angle.h"
 #include "style_atom.h"
@@ -76,6 +76,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
 
   screen = NULL;
   logfile = NULL;
+  infile = NULL;
   thermofile = NULL; //NP modified C.K.
 
   // parse input switches
@@ -646,21 +647,38 @@ void LAMMPS::init()
 void LAMMPS::destroy()
 {
   delete update;
+  update = NULL;
+
   delete neighbor;
+  neighbor = NULL;
+
   delete comm;
+  comm = NULL;
+
   delete force;
+  force = NULL;
+
   delete group;
+  group = NULL;
+
   delete output;
+  output = NULL;
+
   delete modify;          // modify must come after output, force, update
                           //   since they delete fixes
-  delete domain;          // domain must come after modify
-                          //   since fix destructors access domain
-  delete atom;            // atom must come after modify, neighbor
-                          //   since fixes delete callbacks in atom
-  delete timer;
-
   modify = NULL;          // necessary since input->variable->varreader
                           // will be destructed later
+
+  delete domain;          // domain must come after modify
+                          //   since fix destructors access domain
+  domain = NULL;
+
+  delete atom;            // atom must come after modify, neighbor
+                          //   since fixes delete callbacks in atom
+  atom = NULL;
+
+  delete timer;
+  timer = NULL;
 }
 
 /* ----------------------------------------------------------------------

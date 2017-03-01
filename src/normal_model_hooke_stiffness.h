@@ -50,7 +50,7 @@ namespace ContactModels
       limitForce(false),
       displayedSettings(false)
     {
-      /*NL*/ if(comm->me == 0) fprintf(screen, "HOOKE/STIFFNESS loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HOOKE/STIFFNESS loaded\n");
     }
 
     void registerSettings(Settings & settings)
@@ -108,7 +108,7 @@ namespace ContactModels
 
         /*
         if(limitForce)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE_STIFFNESS>: will limit normal force.\n");
+            if(comm->me == 0 && screen) fprintf(screen," NormalModel<HOOKE_STIFFNESS>: will limit normal force.\n");
         */
       }
       if(absolute_damping)

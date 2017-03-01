@@ -15,7 +15,7 @@
    Contributing author:  Axel Kohlmeyer (Temple U)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "write_dump.h"
 #include "style_dump.h"
 #include "dump.h"
@@ -43,7 +43,7 @@ void WriteDump::command(int narg, char **arg)
   // create the Dump instance
   // create dump command line with extra required args
 
-  Dump *dump;
+  Dump *dump = NULL;
 
   char **dumpargs = new char*[modindex+2];
   dumpargs[0] = (char *) "WRITE_DUMP"; // dump id

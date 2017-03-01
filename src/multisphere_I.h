@@ -51,7 +51,7 @@ inline void Multisphere::copy_body(int from_local, int to_local)
 
 inline void Multisphere::remove_body(int ilocal)
 {
-    /*NL*/// fprintf(screen,"deleting body tag %d ilocal %d\n",tag,ilocal);
+    /*NL*/// if (screen) fprintf(screen,"deleting body tag %d ilocal %d\n",tag,ilocal);
     mapArray_[id_(ilocal)] = -1;
     if(nbody_ > 1) mapArray_[id_(nbody_-1)] = ilocal;
 
@@ -74,7 +74,7 @@ inline void Multisphere::calc_nbody_all()
 
 inline void Multisphere::reset_forces(bool extflag)
 {
-    /*NL*/ //fprintf(screen,"resetting force nbody_ %d\n",nbody_);
+    /*NL*/ //if (screen) fprintf(screen,"resetting force nbody_ %d\n",nbody_);
 
     fcm_.setAll(nbody_,0.);
     torquecm_.setAll(nbody_,0.);
@@ -115,7 +115,7 @@ inline int Multisphere::calc_n_steps(int, int body, double *p_ref, double *norma
     start_step_(ibody) = n_steps + timestep;
     v_integrate_.set(ibody,v_normal);
 
-    /*NL*///fprintf(screen,"set step for body %d to %d\n",ibody,start_step_(ibody));
+    /*NL*///if (screen) fprintf(screen,"set step for body %d to %d\n",ibody,start_step_(ibody));
     /*NL*///error->all(FLERR,"set step");
 
     return n_steps;
@@ -141,7 +141,7 @@ inline void Multisphere::release(int iatom,int body,double *v_toInsert,double *o
 
     if(start_step_(ibody) >= 0 && step >= start_step_(ibody))
     {
-        /*NL*/// fprintf(screen,"releasing body %d at step "BIGINT_FORMAT"\n",body,update->ntimestep);
+        /*NL*/// if (screen) fprintf(screen,"releasing body %d at step " BIGINT_FORMAT "\n",body,update->ntimestep);
 
         // set v and omega
         vcm_.set(ibody,v_toInsert);

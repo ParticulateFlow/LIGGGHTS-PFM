@@ -66,7 +66,7 @@ void TriMeshPlanar::buildEdgeLists()
     double dist;
     const double INIT_LARGE = 1e8;
     int nall = this->sizeLocal()+this->sizeGhost();
-    int nEdges, iLrg, dummy;
+    int nEdges, iLrg=0, dummy=0;
 
     // distances to the 6 edges that are stored
     double distEdges[2*NUM_NODES];

@@ -25,7 +25,7 @@
 #define LMP_LBALANCE_H
 
 #include "neighbor.h"
-#include "string.h"
+#include <string.h>
 
 #define BIG   1.0e20
 #define SMALL 1.0e-4

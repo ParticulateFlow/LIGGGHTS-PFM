@@ -11,9 +11,9 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
-#include "math.h"
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
 #include "fix_move.h"
 #include "atom.h"
 #include "group.h"
@@ -54,7 +54,7 @@ FixMove::FixMove(LAMMPS *lmp, int narg, char **arg) :
 
   // parse args
 
-  int iarg;
+  int iarg = 0;
   xvarstr = yvarstr = zvarstr = NULL;
   vxvarstr = vyvarstr = vzvarstr = NULL;
 
@@ -177,7 +177,7 @@ FixMove::FixMove(LAMMPS *lmp, int narg, char **arg) :
       error->all(FLERR,"Fix move cannot set wiggle z motion for 2d problem");
     if (mstyle == ROTATE && (axis[0] != 0.0 || axis[1] != 0.0))
       error->all(FLERR,
-                 "Fix move cannot rotate aroung non z-axis for 2d problem");
+                 "Fix move cannot rotate around non z-axis for 2d problem");
     if (mstyle == VARIABLE && (zvarstr || vzvarstr))
       error->all(FLERR,
                  "Fix move cannot define z or vz variable for 2d problem");
@@ -378,7 +378,7 @@ void FixMove::initial_integrate(int vflag)
 {
   double dtfm;
   double xold[3],a[3],b[3],c[3],d[3],disp[3];
-  double ddotr,dx,dy,dz;
+  double ddotr,dx=0.0,dy=0.0,dz=0.0;
 
   double delta = (update->ntimestep - time_origin) * dt;
 

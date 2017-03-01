@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -23,6 +23,7 @@
    Contributing authors:
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Philippe Seil (JKU Linz)
+   Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifndef LMP_BOUNDING_BOX
@@ -83,42 +84,53 @@ class BoundingBox
       zLo = -limit[4];
       zHi =  limit[5];
     }
+
+    void extrude(double length, const double * vec);
+
     void getBoxBounds(double *lo,double *hi)
     {
-        lo[0] = xLo;
-        lo[1] = yLo;
-        lo[2] = zLo;
-        hi[0] = xHi;
-        hi[1] = yHi;
-        hi[2] = zHi;
+      lo[0] = xLo;
+      lo[1] = yLo;
+      lo[2] = zLo;
+      hi[0] = xHi;
+      hi[1] = yHi;
+      hi[2] = zHi;
     }
+
+    void getExtent(double extent[3]) const {
+      extent[0] = xHi - xLo;
+      extent[1] = yHi - yLo;
+      extent[2] = zHi - zLo;
+    }
+
+    void extendByDelta(double delta);
 
     void getBoxBoundsExtendedByDelta(double *lo,double *hi,double delta)
     {
-        lo[0] = xLo-delta;
-        lo[1] = yLo-delta;
-        lo[2] = zLo-delta;
-        hi[0] = xHi+delta;
-        hi[1] = yHi+delta;
-        hi[2] = zHi+delta;
+      lo[0] = xLo-delta;
+      lo[1] = yLo-delta;
+      lo[2] = zLo-delta;
+      hi[0] = xHi+delta;
+      hi[1] = yHi+delta;
+      hi[2] = zHi+delta;
     }
 
     void shrinkToSubbox(double *sublo,double *subhi)
     {
-        if(xLo < sublo[0])
-            xLo = sublo[0];
-        if(xHi > subhi[0])
-            xHi = subhi[0];
+      if(xLo < sublo[0])
+          xLo = sublo[0];
+      if(xHi > subhi[0])
+          xHi = subhi[0];
 
-        if(yLo < sublo[1])
-            yLo = sublo[1];
-        if(yHi > subhi[1])
-            yHi = subhi[1];
+      if(yLo < sublo[1])
+          yLo = sublo[1];
+      if(yHi > subhi[1])
+          yHi = subhi[1];
 
-        if(zLo < sublo[2])
-            zLo = sublo[2];
-        if(zHi > subhi[2])
-            zHi = subhi[2];
+      if(zLo < sublo[2])
+          zLo = sublo[2];
+      if(zHi > subhi[2])
+          zHi = subhi[2];
     }
 
     bool isInitialized()
@@ -128,18 +140,23 @@ class BoundingBox
     {
        // check bbox
        // test for >= and < as in Domain class
-        if (p[0] >= xLo && p[0] < xHi &&
-            p[1] >= yLo && p[1] < yHi &&
-            p[2] >= zLo && p[2] < zHi)
-            return true;
-        return false;
+       return (p[0] >= xLo && p[0] < xHi &&
+           p[1] >= yLo && p[1] < yHi &&
+           p[2] >= zLo && p[2] < zHi);
+    }
+
+    bool isDirty() const {
+        return dirty;
+    }
+
+    void setDirty(bool value) {
+        dirty = value;
     }
 
   private:
-
     double xLo, xHi, yLo, yHi, zLo, zHi;
-
     bool initGiven;
+    bool dirty;
 };
 
 } /* LAMMPS_NS */

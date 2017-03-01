@@ -33,7 +33,7 @@
 #include "contact_interface.h"
 #include "compute_pair_gran_local.h"
 #include "settings.h"
-#include "string.h"
+#include <string.h>
 #include "force.h"
 #include <stdlib.h>
 #include "contact_models.h"
@@ -67,13 +67,17 @@ public:
 
 #ifdef LIGGGHTS_DEBUG
     if(comm->me == 0) {
-      fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
-      force->registry.print_all(screen);
-      fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      if(screen) {
+        fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+        force->registry.print_all(screen);
+        fprintf(screen, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      }
 
-      fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
-      force->registry.print_all(logfile);
-      fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      if(logfile) {
+        fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+        force->registry.print_all(logfile);
+        fprintf(logfile, "==== WALL %s GLOBAL PROPERTIES ====\n", parent->id);
+      }
     }
 #endif
   }
@@ -86,13 +90,17 @@ public:
 
 #ifdef LIGGGHTS_DEBUG
     if(comm->me == 0) {
-      fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
-      settings.print_all(screen);
-      fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
+      if(screen) {
+        fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
+        settings.print_all(screen);
+        fprintf(screen, "==== WALL %s SETTINGS ====\n", parent->id);
+      }
 
-      fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
-      settings.print_all(logfile);
-      fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
+      if(logfile) {
+        fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
+        settings.print_all(logfile);
+        fprintf(logfile, "==== WALL %s SETTINGS ====\n", parent->id);
+      }
     }
 #endif
 
@@ -109,7 +117,7 @@ public:
     }
   }
 
-  virtual void compute_force(FixWallGran * wg, CollisionData & cdata, double *vwall)
+  virtual void compute_force(FixWallGran * wg, CollisionData & cdata, double *vwall, ForceData & i_forces, ForceData & j_forces)
   {
     const int ip = cdata.i;
 
@@ -125,7 +133,7 @@ public:
       mass = wg->masstotal(wg->body(ip));
 
     /*NL*/ if(DEBUGMODE_WALL_HOOKE) fprintf(lmp->DEBUG_OUTP_WALL_HOOKE, "WALL_GRAN_compute_force 0\n");
-    /*NL*///printVec3D(screen,"shear history",c_history);
+    /*NL*///if (screen) printVec3D(screen,"shear history",c_history);
 
     const double r = cdata.r;
     const double rinv = 1.0/r;
@@ -136,8 +144,6 @@ public:
 
     // copy collision data to struct (compiler can figure out a better way to
     // interleave these stores with the double calculations above.
-    ForceData i_forces;
-    ForceData j_forces;
     cdata.v_i = v;
     cdata.v_j = vwall;
     cdata.omega_i = omega;

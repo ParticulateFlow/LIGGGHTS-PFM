@@ -57,7 +57,8 @@ NeighRequest::NeighRequest(LAMMPS *lmp) : Pointers(lmp)
   cudable = 0;
   omp = 0;
 
-  // default is no copy or skip
+  // copy/skip/derive info, default is no copy or skip
+  // none or only one option is set
 
   copy = 0;
   skip = 0;
@@ -96,20 +97,20 @@ void NeighRequest::archive()
 int NeighRequest::identical(NeighRequest *other)
 {
   int same = 1;
-/*NL*/ //fprintf(screen,"identicalsame 1 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 1 %d\n",same);
   if (requestor != other->requestor) same = 0;
-/*NL*/ //fprintf(screen,"identicalsame 1.1 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 1.1 %d\n",same);
   //NP modified C.K. to distinguish different pair gran styles
   //NP !!!requestor ptr might be the same, since just the memory adress is compared!!!
   if (pairgran_hashcode != other->pairgran_hashcode) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 1.2 %d pairgran_hashcode != other->pairgran_hashcode %s\n",same,(pairgran_hashcode != other->pairgran_hashcode)?"true":"false");
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 1.2 %d pairgran_hashcode != other->pairgran_hashcode %s\n",same,(pairgran_hashcode != other->pairgran_hashcode)?"true":"false");
   if (id != other->id) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 2 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 2 %d\n",same);
   if (pair != other->pair) same = 0;
   if (fix != other->fix) same = 0;
   if (compute != other->compute) same = 0;
   if (command != other->command) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 3 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 3 %d\n",same);
   if (half != other->half_original) same = 0;
   if (full != other->full) same = 0;
   if (gran != other->gran) same = 0;
@@ -118,7 +119,7 @@ int NeighRequest::identical(NeighRequest *other)
   if (respamiddle != other->respamiddle) same = 0;
   if (respaouter != other->respaouter) same = 0;
   if (half_from_full != other->half_from_full_original) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 4 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 4 %d\n",same);
   if (newton != other->newton) same = 0;
   if (occasional != other->occasional) same = 0;
   if (special != other->special) same = 0;
@@ -126,11 +127,11 @@ int NeighRequest::identical(NeighRequest *other)
   if (ghost != other->ghost) same = 0;
   if (cudable != other->cudable) same = 0;
   if (omp != other->omp) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 5 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 5 %d\n",same);
   if (copy != other->copy_original) same = 0;
   if (same_skip(other) == 0) same = 0;
   if (otherlist != other->otherlist_original) same = 0;
-  /*NL*/ //fprintf(screen,"identicalsame 6 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"identicalsame 6 %d\n",same);
   return same;
 }
 
@@ -143,6 +144,10 @@ int NeighRequest::same_kind(NeighRequest *other)
 {
   int same = 1;
 
+  // class caller will be same (pair), b/c called by pair hybrid styles
+
+  // kind must be the the same
+
   if (half != other->half) same = 0;
   if (full != other->full) same = 0;
   if (gran != other->gran) same = 0;
@@ -151,10 +156,16 @@ int NeighRequest::same_kind(NeighRequest *other)
   if (respamiddle != other->respamiddle) same = 0;
   if (respaouter != other->respaouter) same = 0;
   if (half_from_full != other->half_from_full) same = 0;
+
+  // settings that must be the same
+  // other settings do not need to be the same
+
   if (newton != other->newton) same = 0;
   if (ghost != other->ghost) same = 0;
   if (cudable != other->cudable) same = 0;
   if (omp != other->omp) same = 0;
+
+  // copy/skip/derive info does not need to be the same
 
   return same;
 }

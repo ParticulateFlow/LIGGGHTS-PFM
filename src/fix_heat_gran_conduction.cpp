@@ -28,7 +28,7 @@
 #include "force.h"
 #include "math_extra.h"
 #include "math_extra_liggghts.h"
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "modify.h"
 #include "neigh_list.h"
 #include "pair_gran.h"
@@ -76,7 +76,7 @@ FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) :
             error->fix_error(FLERR,this,"'contact_area constant' value must be > 0");
         iarg_++;
       }
-      else error->fix_error(FLERR,this,"expecting 'yes' otr 'no' after 'area_correction'");
+      else error->fix_error(FLERR,this,"expecting 'overlap', 'projection' or 'constant' after 'contact_area'");
       iarg_ += 2;
       hasargs = true;
     } else if(strcmp(arg[iarg_],"area_correction") == 0) {
@@ -85,7 +85,7 @@ FixHeatGranCond::FixHeatGranCond(class LAMMPS *lmp, int narg, char **arg) :
         area_correction_flag_ = 1;
       else if(strcmp(arg[iarg_+1],"no") == 0)
         area_correction_flag_ = 0;
-      else error->fix_error(FLERR,this,"expecting 'overlap', 'projection' or 'constant' after 'contact_area'");
+      else error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'area_correction'");
       iarg_ += 2;
       hasargs = true;
     } else if(strcmp(style,"heat/gran/conduction") == 0)
@@ -142,7 +142,7 @@ void FixHeatGranCond::init()
 
   const double *Y, *nu, *Y_orig;
   double expo, Yeff_ij, Yeff_orig_ij, ratio;
-  int max_type = pair_gran->mpg->max_type();
+  int max_type = pair_gran->get_properties()->max_type();
 
   if (conductivity_) delete []conductivity_;
   conductivity_ = new double[max_type];
@@ -182,7 +182,7 @@ void FixHeatGranCond::init()
         Yeff_ij      = 1./((1.-pow(nu[i-1],2.))/Y[i-1]     +(1.-pow(nu[j-1],2.))/Y[j-1]);
         Yeff_orig_ij = 1./((1.-pow(nu[i-1],2.))/Y_orig[i-1]+(1.-pow(nu[j-1],2.))/Y_orig[j-1]);
         ratio = pow(Yeff_ij/Yeff_orig_ij,expo);
-        /*NL*/ //fprintf(screen,"ratio for type pair %d/%d is %f, Yeff_ij %f, Yeff_orig_ij %f, expo %f\n",i,j,ratio,Yeff_ij,Yeff_orig_ij,expo);
+        /*NL*/ //if (screen) fprintf(screen,"ratio for type pair %d/%d is %f, Yeff_ij %f, Yeff_orig_ij %f, expo %f\n",i,j,ratio,Yeff_ij,Yeff_orig_ij,expo);
         static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulusOriginal","property/global","peratomtype",max_type,0,style))->array_modify(i-1,j-1,ratio);
       }
     }
@@ -385,7 +385,7 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
 
 void FixHeatGranCond::register_compute_pair_local(ComputePairGranLocal *ptr)
 {
-   /*NL*///fprintf(screen,"FixHeatGran::register_compute_pair_local, ptr->id %s\n",ptr->id);
+   /*NL*///if (screen) fprintf(screen,"FixHeatGran::register_compute_pair_local, ptr->id %s\n",ptr->id);
 
    if(cpl != NULL)
       error->all(FLERR,"Fix heat/gran/conduction allows only one compute of type pair/local");
@@ -394,7 +394,7 @@ void FixHeatGranCond::register_compute_pair_local(ComputePairGranLocal *ptr)
 
 void FixHeatGranCond::unregister_compute_pair_local(ComputePairGranLocal *ptr)
 {
-   /*NL*///fprintf(screen,"FixHeatGran::unregister_compute_pair_local\n");
+   /*NL*///if (screen) fprintf(screen,"FixHeatGran::unregister_compute_pair_local\n");
    if(cpl != ptr)
        error->all(FLERR,"Illegal situation in FixHeatGranCond::unregister_compute_pair_local");
    cpl = NULL;

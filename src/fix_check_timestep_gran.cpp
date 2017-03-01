@@ -19,15 +19,15 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
-#include "math.h"
+#include <math.h>
 #include "error.h"
 #include "fix_check_timestep_gran.h"
 #include "pair_gran.h"
-#include "mech_param_gran.h"
+#include "properties.h"
 #include "fix_property_global.h"
 #include "force.h"
 #include "comm.h"
@@ -101,8 +101,8 @@ void FixCheckTimestepGran::init()
     error->all(FLERR,"Fix check/timestep/gran can only be used together with: gran"); //NP mod JOKER
 
   //NP get material properties
-  mpg = pg->mpg;
-  int max_type = mpg->max_type();
+  properties = pg->get_properties();
+  int max_type = properties->max_type();
 
   //NP see if wall/gran with meshes is registered (there can be only one)
   fwg = NULL;
@@ -135,7 +135,7 @@ void FixCheckTimestepGran::end_of_step()
     fraction_hertz = dt/hertz_time;
     fraction_skin = (vmax * dt) / neighbor->skin;
 
-    /*NL*/ //if(comm->me==0)
+    /*NL*/ //if(comm->me == 0 && screen)
     /*NL*/ //{
     /*NL*/ //   fprintf(screen,"time-step is %f %% of rayleigh time (%f)\n",fraction_rayleigh*100.,rayleigh_time);
     /*NL*/ //   fprintf(screen,"time-step is %f %% of hertz time\n",fraction_hertz*100.);
@@ -179,7 +179,7 @@ void FixCheckTimestepGran::calc_rayleigh_hertz_estims()
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
-  int max_type = mpg->max_type();
+  int max_type = properties->max_type();
 
   //check rayleigh time and vmax of particles
   rayleigh_time = BIG;

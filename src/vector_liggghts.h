@@ -22,7 +22,7 @@
 #ifndef LMP_VECTOR_LIGGGHTS_H
 #define LMP_VECTOR_LIGGGHTS_H
 
-#include "math.h"
+#include <math.h>
 #include "lammps.h"
 
 namespace LAMMPS_NS {
@@ -130,6 +130,13 @@ inline void vectorCopy3D(const int *from, int *to)
   to[2]=from[2];
 }
 
+inline void vectorCopy3D(const bool *from, bool *to)
+{
+  to[0]=from[0];
+  to[1]=from[1];
+  to[2]=from[2];
+}
+
 inline void vectorAbs3D(double *v)
 {
     if(v[0] < 0) v[0] = -v[0];
@@ -166,7 +173,29 @@ inline double vectorMin3D(double *v)
     return v[2];
 }
 
+inline int vectorMin3D(int *v)
+{
+    if(v[0] < v[1] && v[0] < v[2])
+    return v[0];
+
+    if(v[1] < v[2])
+    return v[1];
+
+    return v[2];
+}
+
 inline double vectorMax3D(double *v)
+{
+    if(v[0] > v[1] && v[0] > v[2])
+    return v[0];
+
+    if(v[1] > v[2])
+    return v[1];
+
+    return v[2];
+}
+
+inline int vectorMax3D(int *v)
 {
     if(v[0] > v[1] && v[0] > v[2])
     return v[0];
@@ -450,6 +479,18 @@ inline void bufToVector4D(double *vec,double *buf,int &m)
   vec[1] = buf[m++];
   vec[2] = buf[m++];
   vec[3] = buf[m++];
+}
+
+inline void vectorToBufN(double *vec,double *buf,int &m, int nvalues)
+{
+  for(int i = 0; i < nvalues; i++)
+    buf[m++] = vec[i];
+}
+
+inline void bufToVectorN(double *vec,double *buf,int &m, int nvalues)
+{
+  for(int i = 0; i < nvalues; i++)
+    vec[i] = buf[m++];
 }
 
 inline void printVec2D(FILE *out, const char *name, double *vec)

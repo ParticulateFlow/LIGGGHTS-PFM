@@ -17,9 +17,9 @@
      Reese Jones (Sandia)
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
-#include "unistd.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "fix_ave_correlate.h"
 #include "update.h"
 #include "modify.h"
@@ -387,7 +387,7 @@ void FixAveCorrelate::setup(int vflag)
 void FixAveCorrelate::end_of_step()
 {
   int i,j,m;
-  double scalar;
+  double scalar = 0.0;
 
   // skip if not step which requires doing something
 

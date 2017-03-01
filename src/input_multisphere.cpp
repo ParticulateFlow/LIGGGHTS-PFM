@@ -19,11 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "style_command.h"
 #include "universe.h"
 #include "atom.h"
@@ -66,7 +66,7 @@ InputMultisphere::~InputMultisphere()
    process clump file
 ------------------------------------------------------------------------- */
 
-int InputMultisphere::clmpfile(double **xclmp,double *rclmp,int nclmps)
+int InputMultisphere::clmpfile(double **xclmp,double *rclmp,int *atomtypeclmp,int nclmps)
 {
   int n,m;
   int iClmp = 0;
@@ -118,19 +118,26 @@ int InputMultisphere::clmpfile(double **xclmp,double *rclmp,int nclmps)
     //skip empty lines
     if(narg == 0)
     {
-        if (me == 0) fprintf(screen,"Note: Skipping empty line or comment line in clump file\n");
+        if (me == 0 && screen) fprintf(screen,"Note: Skipping empty line or comment line in clump file\n");
         continue;
     }
 
-    /*NL*/ //for (int jj=0; jj<5; jj++) fprintf(screen,"arg %d: %s  \n",jj,arg[jj]);
+    /*NL*/ //if (screen) for (int jj=0; jj<5; jj++) fprintf(screen,"arg %d: %s  \n",jj,arg[jj]);
 
     if(iClmp >= nclmps)
         error->all(FLERR,"Number of clumps in file larger than number specified");
 
-    if(narg < 4)
-        error->all(FLERR,"Not enough arguments in one line of clump file, need to specify [xcoo ycoo zcoo radius] in each line");
+    if((0 == atomtypeclmp) && (narg < 4))
+        error->all(FLERR,"Not enough arguments in one line of clump file, need to specify "
+                         "[xcoo ycoo zcoo radius] in each line");
+
+    if(atomtypeclmp && (narg < 5))
+        error->all(FLERR,"Not enough arguments in one line of clump file, need to specify "
+                         "[xcoo ycoo zcoo radius type] in each line");
 
     rclmp[iClmp] = atof(arg[3]);
+    if(atomtypeclmp)
+        atomtypeclmp[iClmp] = atoi(arg[4]);
 
     for(int j = 0; j < 3; j++)
        xclmp[iClmp][j] = atof(arg[j]);
@@ -145,7 +152,7 @@ int InputMultisphere::clmpfile(double **xclmp,double *rclmp,int nclmps)
    process all input from file
 ------------------------------------------------------------------------- */
 
-void InputMultisphere::clmpfile(const char *filename, double **xclmp,double *rclmp,int nclmps)
+void InputMultisphere::clmpfile(const char *filename, double **xclmp,double *rclmp,int *atomtypeclmp,int nclmps)
 {
   if (me == 0)
   {
@@ -159,7 +166,7 @@ void InputMultisphere::clmpfile(const char *filename, double **xclmp,double *rcl
   }
   else nonlammps_file = NULL;
 
-  if(clmpfile(xclmp,rclmp,nclmps) != nclmps)
+  if(clmpfile(xclmp,rclmp,atomtypeclmp,nclmps) != nclmps)
     error->all(FLERR,"Number of clumps in file does not match number of clumps that were specified");
 
   if(nonlammps_file) fclose(nonlammps_file);

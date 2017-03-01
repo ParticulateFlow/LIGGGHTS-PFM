@@ -22,8 +22,8 @@
 #ifndef LMP_MPI_LIGGGHTS_H
 #define LMP_MPI_LIGGGHTS_H
 
-#include "mpi.h"
-#include "stdio.h"
+#include <mpi.h>
+#include <stdio.h>
 
 /* ---------------------------------------------------------------------- */
 // a poor man's inline MPI wrappers for LIGGGHTS
@@ -39,7 +39,7 @@ namespace LAMMPS_NS
 template<typename T>
 inline MPI_Datatype mpi_type()
 {
-  printf("**************ILLEGAL CALL TO mpi_type()*************");
+  printf("\n\n\n**************LIGGGHTS MPI: ILLEGAL CALL TO mpi_type()*************\n\n\n");
   return 0;
 }
 

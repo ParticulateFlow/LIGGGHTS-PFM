@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "compute_reduce_region.h"
 #include "atom.h"
 #include "update.h"
@@ -71,7 +71,7 @@ double ComputeReduceRegion::compute_one(int m, int flag)
   int n = value2index[m];
   int j = argindex[m];
 
-  double one;
+  double one=0.0;
   if (mode == SUM) one = 0.0;
   else if (mode == MINN) one = BIG;
   else if (mode == MAXX) one = -BIG;

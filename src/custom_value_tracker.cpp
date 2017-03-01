@@ -97,7 +97,7 @@ using namespace LAMMPS_NS;
   {
       //NP this handles owned and ghost elements
       globalProperties_.storeOrig(globalProperties_orig_);
-      /*NL*/ //fprintf(screen,"storeOrig() called \n");
+      /*NL*/ //if (screen) fprintf(screen,"storeOrig() called \n");
       /*NL*///  error->all(FLERR,"Internal error");
   }
 
@@ -109,7 +109,7 @@ using namespace LAMMPS_NS;
   {
       //NP this handles owned and ghost elements
       globalProperties_.reset(globalProperties_orig_);
-      /*NL*/ //fprintf(screen,"resetToOrig() called \n");
+      /*NL*/ //if (screen) fprintf(screen,"resetToOrig() called \n");
       /*NL*/ //error->all(FLERR,"Internal resetToOrig called");
   }
 
@@ -119,8 +119,8 @@ using namespace LAMMPS_NS;
 
   void CustomValueTracker::rotate(double *totalQ,double *dQ)
   {
-      /*NL*/ //printVec4D(screen,"totalQ",totalQ);
-      /*NL*/ //printVec4D(screen,"dQ",dQ);
+      /*NL*/ //if (screen) printVec4D(screen,"totalQ",totalQ);
+      /*NL*/ //if (screen) printVec4D(screen,"dQ",dQ);
 
       //NP this handles owned and ghost elements
       elementProperties_.rotate(dQ);
