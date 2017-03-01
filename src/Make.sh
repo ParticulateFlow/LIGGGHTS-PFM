@@ -15,8 +15,12 @@ style () {
   wai=`whoami`
   vers=`cat version_liggghts.txt`
   bra=`cat version_liggghts_branch.txt`
-  githash=`git log -1 --format="%H"`
-  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai, git commit $githash\"" > version_liggghts.h
+  if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    githash=`git log -1 --format="%H"`
+  else
+    githash="unknown"
+  fi
+  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai, git commit $githash,\"" > version_liggghts.h
 
   list=`grep -sl $1 $2*.h | sort`
   if (test -e style_$3.tmp) then
