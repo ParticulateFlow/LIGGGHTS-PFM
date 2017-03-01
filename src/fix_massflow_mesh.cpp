@@ -150,17 +150,18 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
 
             char* filecurrent = new char[strlen(arg[iarg+1]) + 8];
             if (1 < comm->nprocs) //open a separate file for each processor
-                 sprintf(filecurrent,"%s%s%d",arg[iarg+1],".",comm->me);
+                sprintf(filecurrent,"%s.%d",arg[iarg+1],comm->me);
             else  //open one file for proc 0
-                 sprintf(filecurrent,"%s",arg[iarg+1]);
+                sprintf(filecurrent,"%s",arg[iarg+1]);
 
             if (strcmp(arg[iarg],"file") == 0)
                 fp_ = fopen(filecurrent,"w");
             else
                 fp_ = fopen(filecurrent,"a");
+            delete [] filecurrent;
             if (fp_ == NULL) {
-               char str[128];
-               sprintf(str,"Cannot open file %s",arg[iarg+1]);
+                char str[128];
+                sprintf(str,"Cannot open file %s",arg[iarg+1]);
                 error->fix_error(FLERR,this,str);
             }
             iarg += 2;
