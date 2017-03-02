@@ -32,6 +32,7 @@ FixStyle(couple/cfd/chemistry,FixCfdCouplingChemistry)
 #ifndef LMP_FIX_CFD_COUPLING_CHEMISTRY_H
 #define LMP_FIX_CFD_COUPLING_CHEMISTRY_H
 
+#include "fix.h"
 #include "fix_cfd_coupling.h"
 
 namespace LAMMPS_NS {
@@ -46,8 +47,9 @@ class FixCfdCouplingChemistry : public Fix  {
 
   int setmask();
   virtual void init();
-  virtual void initial_integrate(bigint);
+  virtual void initial_integrate(int);
   virtual void post_force(int);
+  virtual void updatePtrs();
 
  protected:
   int num_species;                              // # of species
@@ -63,15 +65,16 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom* fix_reactionheat_;         // data pushed to cfdemCoupling - reactionHeat_
   class FixPropertyAtom** fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
   class FixPropertyAtom** fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
-  class FixPropertyAtom* fix_totalmole_;
+  class FixPropertyAtom* fix_totalmole_;            // data pulled from cfdemCoupling - partN_;
 
 
  private:
   bool use_Re_;
 
-  double *rhogas_;
-  double *N_;
-  double *concentrations;
+  double *rhogas;
+  double *N;
+  double **concentrations;
+  double **changeOfSpeciesMass;
 
 };
 

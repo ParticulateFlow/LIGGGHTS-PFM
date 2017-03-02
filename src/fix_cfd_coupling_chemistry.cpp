@@ -38,6 +38,10 @@
 #include "mpi_liggghts.h"
 #include "fix_cfd_coupling_chemistry.h"
 #include "fix_property_atom.h"
+#include "fix_property_global.h"
+#include "group.h"
+#include "pair.h"
+#include "properties.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -52,7 +56,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   fix_massfrac_(0),
   fix_masschange_(0),
   fix_reactionheat_(0),
-  fix_totalmole_(0)     //total mole fix
+  fix_totalmole_(0)
 {
     num_species = 0;
     int n = 16;
@@ -78,9 +82,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 error -> fix_error(FLERR,this,"n_species > 0 is required");
             hasargs = true;
             iarg_ ++;
-            // print out number of species
-            if(screen)
-                fprintf(screen,"num species: %d \n",num_species);
         }
         else if (strcmp(arg[iarg_],"species_names") == 0)
         {
@@ -97,11 +98,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 species_names_[i] = new char [strlen(arg[iarg_])+1];
                 strcpy(species_names_[i], arg[iarg_]);
                 iarg_ += 1;
-                // print out species names
-                if(screen)
-                    fprintf(screen,"species names: %s \n",species_names_[i]);
             }
-
             iarg_++;
             hasargs = true;
         }
@@ -148,11 +145,10 @@ FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
 
 void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
 {
-    if(unfixflag && fix_tgas_)    modify -> delete_fix("partTemp");
-    if(unfixflag && fix_rhogas_)  modify -> delete_fix("partRho");
+    if(unfixflag && fix_tgas_)          modify -> delete_fix("partTemp");
+    if(unfixflag && fix_rhogas_)        modify -> delete_fix("partRho");
     if(unfixflag && fix_reactionheat_)  modify -> delete_fix("reactionHeat");
-    // add pre_delete for total mole
-    if(unfixflag && fix_totalmole_) modify -> delete_fix("partN");
+    if(unfixflag && fix_totalmole_)     modify -> delete_fix("partN");
 
     for (int i = 0; i < num_species; i++)
     {
@@ -207,22 +203,6 @@ void FixCfdCouplingChemistry::post_create()
         fix_rhogas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
-    // register totalMole (partN)
-    if (!fix_totalmole_)
-    {
-        const char* fixarg[9];
-        fixarg[0]="partN";
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="partN";
-        fixarg[4]="scalar";              // 1 vector per particle to be registered
-        fixarg[5]="yes";                 // restart yes
-        fixarg[6]="no";                  // communicate ghost no
-        fixarg[7]="no";                  // communicate rev
-        fixarg[8]="0.";
-        fix_totalmole_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
-    }
-
     // register reactionheat
     if (!fix_reactionheat_)
     {
@@ -237,6 +217,22 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[7]="no";         // communicate rev
         fixarg[8]="0.";
         fix_reactionheat_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+    }
+
+    // register N (partN)
+    if (!fix_totalmole_)
+    {
+        const char* fixarg[9];
+        fixarg[0]="partN";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="partN";
+        fixarg[4]="scalar";     // 1 vector per particle to be registered
+        fixarg[5]="yes";        // restart
+        fixarg[6]="no";         // communicate ghost
+        fixarg[7]="no";         // communicate rev
+        fixarg[8]="0.";
+        fix_totalmole_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     fix_massfrac_   = new FixPropertyAtom*[num_species];
@@ -292,12 +288,11 @@ void FixCfdCouplingChemistry::init()
     fix_tgas_            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
     fix_rhogas_          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_    =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
-    // add totalmole reference
-    fix_totalmole_       =  static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
+    fix_totalmole_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
 
     for (int i = 0; i < num_species; i++)
     {
-        fix_massfrac_[i]    =   static_cast<FixPropertyAtom*>(modify->find_fix_property(species_names_[i],"property/atom","scalar",0,0,style));
+        fix_massfrac_[i] = static_cast<FixPropertyAtom*>(modify->find_fix_property(species_names_[i],"property/atom","scalar",0,0,style));
         fix_masschange_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
     }
 
@@ -309,46 +304,57 @@ void FixCfdCouplingChemistry::init()
     for (int i=0; i<num_species; i++)
     {
         fix_coupling_->add_pull_property(species_names_[i],"scalar-atom");
+    }
 
     //  values to be transfered to OF
     fix_coupling_->add_push_property("reactionHeat","scalar-atom");
-        for (int i = 0; i<num_species; i++)
-        {
-            fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
-        }
+
+    for (int i = 0; i<num_species; i++)
+    {
+        fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
     }
 
-    rhogas_ = fix_rhogas_ -> vector_atom;
-    concentrations = fix_massfrac_[0]->vector_atom;
-    N_ = fix_totalmole_ -> vector_atom;
-    for (int i = 0; i < atom->nlocal;i++)
-    {
-        if (screen)
-        {
-            fprintf(screen, "total mole in vol: %f \n", N_[i]);
-            fprintf(screen, "Gas Density:  %f \n", rhogas_[i]);
-        }
-    }
+
+   bigint prev_time = update->ntimestep - update->dt;
+    if (comm->me == 0 && screen)
+        fprintf(screen,"previous time step: %li \n", prev_time);
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixCfdCouplingChemistry::initial_integrate(bigint)
+void FixCfdCouplingChemistry::updatePtrs()
 {
+    rhogas    =   fix_rhogas_     ->  vector_atom;
+    N         =   fix_totalmole_  ->  vector_atom;
+}
+
+
+/* ---------------------------------------------------------------------- */
+
+void FixCfdCouplingChemistry::initial_integrate(int vflag)
+{
+    updatePtrs();
+    if (comm -> me == 0 && screen)
+        fprintf(screen,"activate initial integrate \n");
     // for all species, reaction heat
     // if current timestep - 1 == latestpush(species name)
     // reset fix_masschange_(species name)
     // -1 is needed because time step is advanced before this function is called
-   /* bigint prev_time = update->ntimestep - 1;
+    bigint prev_time = update->ntimestep - 1;
+    int *mask   = atom -> mask;
+    int  nlocal = atom -> nlocal;
 
-    for (int i = 0; i < num_species; i++)
+    for (int k = 0; k < num_species; k++)
     {
-       if (prev_time == fix_coupling_ -> latestpush(species_names_[i]))
-       {
-           fix_massfrac_[i] -> set_all(0.0);
-           fix_reactionheat_ -> set_all(0.0);
-       }
-    }*/
+        if (prev_time == fix_coupling_ -> latestpush(mod_spec_names_[k]))
+        {
+            for (int i = 0; i < nlocal; i++)
+            {
+                if (mask[i] & groupbit)
+                     fix_masschange_[k] -> vector_atom[i] = 0.;
+            }
+        }
+    }
 }
 
 void FixCfdCouplingChemistry::post_force(int)
