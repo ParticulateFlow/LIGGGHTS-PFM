@@ -64,15 +64,16 @@ class FixCfdCoupling : public Fix {
 
   int coupleThis() {return couple_this_;}
 
+
+
+  // data transfer is handled by this class
+  class CfdDatacoupling *dc_;
   class CfdDatacoupling* get_dc(){return dc_;}
   //NP inline class FixMultisphere* fix_ms() {return dc_->frm_;}
 
  protected:
 
   int iarg_;
-
-  // data transfer is handled by this class
-  class CfdDatacoupling *dc_;
 
  private:
 
