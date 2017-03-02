@@ -285,6 +285,11 @@ void RegTetMesh::add_tet(double **n)
     total_volume += volume[nTet];
     acc_volume[nTet] = volume[nTet];
     if(nTet > 0) acc_volume[nTet] += acc_volume[nTet-1];
+
+    tet_bbox.push_back(BoundingBox());
+    for(int i=0;i<4;i++)
+      tet_bbox[nTet].extendToContain(n[i]);      
+    
     nTet++;
 }
 
@@ -338,19 +343,22 @@ inline double RegTetMesh::volume_of_tet(int iTet)
 
 inline int RegTetMesh::is_inside_tet(int iTet,double *pos)
 {
-    double vol1,vol2,vol3,vol4;
 
-    vol1 = volume_of_tet(node[iTet][0], node[iTet][1], node[iTet][2], pos          );
-    if(vol1<0) return 0;
+  if(!tet_bbox[iTet].isInside(pos)) return 0;
+  
+  double vol1,vol2,vol3,vol4;
 
-    vol2 = volume_of_tet(node[iTet][0], node[iTet][1], pos,           node[iTet][3]);
-    if(vol2<0) return 0;
+  vol1 = volume_of_tet(node[iTet][0], node[iTet][1], node[iTet][2], pos          );
+  if(vol1<0) return 0;
 
-    vol3 = volume_of_tet(node[iTet][0], pos,           node[iTet][2], node[iTet][3]);
-    if(vol3<0) return 0;
+  vol2 = volume_of_tet(node[iTet][0], node[iTet][1], pos,           node[iTet][3]);
+  if(vol2<0) return 0;
 
-    vol4 = volume_of_tet(pos          , node[iTet][1], node[iTet][2], node[iTet][3]);
-    return static_cast<int>(vol4>0);
+  vol3 = volume_of_tet(node[iTet][0], pos,           node[iTet][2], node[iTet][3]);
+  if(vol3<0) return 0;
+
+  vol4 = volume_of_tet(pos          , node[iTet][1], node[iTet][2], node[iTet][3]);
+  return static_cast<int>(vol4>0);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -555,10 +563,11 @@ void RegTetMesh::extend_bb(BoundingBox &box, TreeBin const &data)
   box.getBoxBounds(lo,hi);
 
   for(TreeBin::const_iterator it = data.begin(); it != data.end(); ++it){
-    int index = *it;
-    for(int iNode=0;iNode<4;iNode++){
-      box.extendToContain(node[index][iNode]);
-    }
+    box.extendToContain(tet_bbox[*it]);
+    // int index = *it;
+    // for(int iNode=0;iNode<4;iNode++){
+    //   box.extendToContain(node[index][iNode]);
+    // }
   }
 
   box.getBoxBounds(lo,hi);

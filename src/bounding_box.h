@@ -65,6 +65,24 @@ class BoundingBox
         }
     }
 
+    void extendToContain(BoundingBox const &other)
+    {
+      if(initGiven){
+        if(other.xLo < xLo) xLo = other.xLo;
+        if(other.xHi > xHi) xHi = other.xHi;
+
+        if(other.yLo < yLo) yLo = other.yLo;
+        if(other.yHi > yHi) yHi = other.yHi;
+
+        if(other.zLo < zLo) zLo = other.zLo;
+        if(other.zHi > zHi) zHi = other.zHi;
+      } else{
+        xLo = other.xLo; xHi = other.xHi;
+        yLo = other.xLo; yHi = other.xHi;
+        zLo = other.xLo; zHi = other.xHi;
+      }
+    }
+    
     void extendToParallel(MPI_Comm comm)
     {
       double limit[6];

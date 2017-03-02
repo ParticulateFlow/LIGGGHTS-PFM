@@ -80,7 +80,8 @@ class RegTetMesh : public Region {
    double total_volume;
    double *volume;
    double *acc_volume;
-
+   std::vector<BoundingBox> tet_bbox;
+   
   // icosaedron coordinates for surface_interior and surface_exterior
   double **ico_points;
   static double const phi;
