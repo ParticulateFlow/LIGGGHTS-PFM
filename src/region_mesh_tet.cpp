@@ -207,6 +207,9 @@ int RegTetMesh::surface_interior(double *x, double cutoff)
   int n_contact = 0;
   double point[3];
   
+  // instead of solving the full surface/particle problem, check if
+  // the 12 points of a surrounding icosaedron are inside the
+  // domain. 
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
     if(!inside(point[0],point[1],point[2])) n_contact++;                     
@@ -564,10 +567,6 @@ void RegTetMesh::extend_bb(BoundingBox &box, TreeBin const &data)
 
   for(TreeBin::const_iterator it = data.begin(); it != data.end(); ++it){
     box.extendToContain(tet_bbox[*it]);
-    // int index = *it;
-    // for(int iNode=0;iNode<4;iNode++){
-    //   box.extendToContain(node[index][iNode]);
-    // }
   }
 
   box.getBoxBounds(lo,hi);
