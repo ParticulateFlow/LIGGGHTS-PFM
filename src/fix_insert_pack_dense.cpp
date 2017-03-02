@@ -101,9 +101,23 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
       ins_region = domain->regions[iregion];
       iarg += 2;
       hasargs = true;
+    } else if(strcmp(arg[iarg],"volumefraction_region") == 0){
+      if(iarg+2>narg) error->fix_error(FLERR,this,"");
+      target_volfrac = atof(arg[iarg+1]);
     }
   }
 
+  if(target_volfrac > max_volfrac){
+    char errmsg[500];
+    sprintf(errmsg,"target_volfrac higher than %f - might not be achieved. Reseting to maximum value.",max_volfrac);
+    error->warning(FLERR,errmsg);
+    target_volfrac = max_volfrac;
+  }
+
+  radius_factor = pow(max_volfrac/target_volfrac,MathConst::THIRD);
+  if(comm->me==0)
+    printf("radius scaling factor: %f\n",radius_factor);
+  
   if(!ins_region)
     error->fix_error(FLERR,this,"no insertion region provided");
   if(!fix_distribution)
@@ -113,7 +127,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   force_reneighbor = 1;
   next_reneighbor = update->ntimestep+1;
 
-  maxrad = fix_distribution->max_rad();
+  maxrad = fix_distribution->max_rad()*radius_factor;
 
   // set bounding box
   ins_bbox = BoundingBox(ins_region->extent_xlo,ins_region->extent_xhi,
@@ -218,7 +232,8 @@ void FixInsertPackDense::pre_exchange()
   n_inserted = n_inserted_local;
   MPI_Sum_Scalar(n_inserted,world);
 
-  double const volfrac_inserted = target_volfrac*((double)n_inserted)/((double)n_insert_estim);
+  double const volfrac_inserted
+    = target_volfrac*static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim);
   if(comm->me==0){
     double percent = static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim)*100;
     printf("inserted %d of %d particles (%4.2f%%)\n",n_inserted,n_insert_estim,percent);
@@ -241,7 +256,7 @@ void FixInsertPackDense::prepare_insertion(){
       if(atom->radius[i] > rad_max_present) rad_max_present = atom->radius[i];
     }
   }
-
+  rad_max_present *= radius_factor;
   if(rad_max_present > fix_distribution->max_rad()){
     neighlist.reset();
     neighlist.setBoundingBox(ins_bbox,rad_max_present);
@@ -265,8 +280,8 @@ void FixInsertPackDense::prepare_insertion(){
                           region_volume,region_volume_local);
 
   double const v_part_ave = fix_distribution->vol_expect();
-  n_insert_estim = floor((region_volume-volume_present)*max_volfrac/v_part_ave);
-  n_insert_estim_local = floor((region_volume_local-volume_present_local)*max_volfrac/v_part_ave);
+  n_insert_estim = floor((region_volume-volume_present)*target_volfrac/v_part_ave);
+  n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/v_part_ave);
 
 }
 
@@ -286,6 +301,10 @@ void FixInsertPackDense::insert_first_particles()
   Particle p2 = particle_from_pti(pti2);
   Particle p3 = particle_from_pti(pti3);
 
+  p1.radius *= radius_factor;
+  p2.radius *= radius_factor;
+  p3.radius *= radius_factor;
+  
   neighlist.insert(p1.x,p1.radius);
   neighlist.insert(p2.x,p2.radius);
   neighlist.insert(p3.x,p3.radius);
@@ -313,7 +332,7 @@ void FixInsertPackDense::handle_next_front_sphere()
       particles = neighlist.getParticlesCloseTo(current.x,cutoff_dist);
       for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
         for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){
-          compute_and_append_candidate_points(current,*i,*j,r_insert);
+          compute_and_append_candidate_points(current,*i,*j,r_insert*radius_factor);
         }
       }
     } else{
@@ -328,7 +347,7 @@ void FixInsertPackDense::handle_next_front_sphere()
         }
       }
       for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
-        compute_and_append_candidate_points(current,*newsphere,*i,r_insert);
+        compute_and_append_candidate_points(current,*newsphere,*i,r_insert*radius_factor);
       }
     }
     
@@ -375,7 +394,10 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   vectorZeroize3D(x3);
 
   // first, construct touching spheres
-  double const r1=p1->radius_ins[0],r2=p2->radius_ins[0],r3=p3->radius_ins[0];
+  double const r1=p1->radius_ins[0]*radius_factor,
+    r2=p2->radius_ins[0]*radius_factor,
+    r3=p3->radius_ins[0]*radius_factor;
+  
   x2[0] = r1+r2;
 
   double const a=r2+r3,b=r1+r3,c=r1+r2;

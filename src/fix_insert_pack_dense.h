@@ -89,7 +89,8 @@ protected:
   bool insertion_done;
   double region_volume, region_volume_local;
   int n_insert_estim, n_insert_estim_local;
-
+  double radius_factor;
+  
   void prepare_insertion();
   
   void insert_first_particles();
