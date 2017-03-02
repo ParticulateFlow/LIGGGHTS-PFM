@@ -283,6 +283,24 @@ void FixInsertPackDense::prepare_insertion(){
   n_insert_estim = floor((region_volume-volume_present)*target_volfrac/v_part_ave);
   n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/v_part_ave);
 
+  // check if starting point does not conflict with any pre-existing particles
+  double const maxrad_init = 3.*maxrad;
+  if(neighlist.hasOverlap(x_init,maxrad_init)){
+    int const nAttemptMax = 100;
+    int nAttempt = 0;
+    for(nAttempt=0;nAttempt<nAttemptMax;nAttempt++){
+      ins_region->generate_random_shrinkby_cut(x_init,maxrad_init,true);
+      if(!neighlist.hasOverlap(x_init,maxrad_init))
+        break;
+    }
+    if(nAttempt == nAttemptMax){
+      char errmsg[500];
+      sprintf(errmsg,"could not find suitable point to start insertion on processor %d",comm->me);
+      error->one(FLERR,errmsg);
+    }
+  }
+  
+  
 }
 
 void FixInsertPackDense::insert_first_particles()
