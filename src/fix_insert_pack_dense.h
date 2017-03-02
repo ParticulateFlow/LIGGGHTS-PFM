@@ -109,6 +109,7 @@ protected:
   bool is_completely_in_subregion(Particle &p);
   bool candidate_point_is_valid(Particle &p);
 
+  int n_inserted, n_inserted_local;
 };
 
 }

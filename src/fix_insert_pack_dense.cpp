@@ -62,10 +62,10 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   ins_region(0),
   idregion(0),
   fix_distribution(0),
+  target_volfrac(max_volfrac),
   random(0),
   seed(-1),
-  insertion_done(false),
-  target_volfrac(max_volfrac)
+  insertion_done(false)
 {
   int iarg = 3;
 
@@ -205,15 +205,18 @@ void FixInsertPackDense::pre_exchange()
     handle_next_front_sphere();
     
     int const n_write = n_insert_estim_local/10;
-    if(neighlist.count() % n_write == 0){
-      printf("process %d : inserted %d/%d particles\n",
-             comm->me,neighlist.count(),n_insert_estim_local);
+    int static n_next_write = n_write;
+    if(n_inserted_local > n_next_write){
+      double percent = static_cast<double>(n_inserted_local)/static_cast<double>(n_insert_estim_local)*100;
+      printf("process %d : %2.0f%% done, inserted %d/%d particles\n",
+             comm->me,percent,n_inserted_local,n_insert_estim_local);
+      n_next_write += n_write;
     }
   }
 
   // actual insertion
   fix_distribution->pre_insert();
-  fix_distribution->insert(neighlist.count());
+  fix_distribution->insert(n_inserted_local);
 
   if (atom->tag_enable)
   {
@@ -228,12 +231,13 @@ void FixInsertPackDense::pre_exchange()
 
   fix_distribution->finalize_insertion();
 
-  int n_inserted = neighlist.count();
+  n_inserted = n_inserted_local;
   MPI_Sum_Scalar(n_inserted,world);
 
   double const volfrac_inserted = target_volfrac*((double)n_inserted)/((double)n_insert_estim);
   if(comm->me==0){
-    printf("inserted %d of %d particles\n",n_inserted,n_insert_estim);
+    double percent = static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim)*100;
+    printf("inserted %d of %d particles (%4.2f%%)\n",n_inserted,n_insert_estim,percent);
     printf("volume fracton: %f\n",volfrac_inserted);
   }
 }
@@ -321,6 +325,7 @@ void FixInsertPackDense::handle_next_front_sphere()
     fix_distribution->pti_list.push_back(pti);
     frontSpheres.push_back(*closest_candidate);
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
+    n_inserted_local++;
 
     if(newsphere) delete newsphere;
     newsphere = new Particle(*closest_candidate);
