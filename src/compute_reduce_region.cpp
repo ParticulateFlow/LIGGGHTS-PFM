@@ -71,7 +71,7 @@ double ComputeReduceRegion::compute_one(int m, int flag)
   int n = value2index[m];
   int j = argindex[m];
 
-  double one;
+  double one=0.0;
   if (mode == SUM) one = 0.0;
   else if (mode == MINN) one = BIG;
   else if (mode == MAXX) one = -BIG;

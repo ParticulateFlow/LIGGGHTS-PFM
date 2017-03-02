@@ -25,7 +25,11 @@
 
 <LI>cell_size_relative = obligatory keyword 
 
-<LI>c = cell size in multiples of max cutoff 
+<LI>cx = cell size in x-direction in multiples of max cutoff 
+
+<LI>cy = cell size in y-direction in multiples of max cutoff 
+
+<LI>cz = cell size in z-direction in multiples of max cutoff 
 
 <LI>parallel = obligatory keyword 
 
@@ -42,7 +46,7 @@
 </UL>
 <P><B>Examples:</B>
 </P>
-<PRE>fix 1 all ave/euler nevery 100 cell_size_relative 4.5 
+<PRE>fix 1 all ave/euler nevery 100 cell_size_relative 4.5 3 3 parallel yes 
 </PRE>
 <P><B>Description:</B>
 </P>

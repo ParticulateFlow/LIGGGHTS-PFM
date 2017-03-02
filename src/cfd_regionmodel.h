@@ -41,8 +41,8 @@ class CfdRegionmodel : protected Pointers {
   int get_iarg() {return iarg;}
   bool liggghts_is_active;
 
-  virtual void init() {};
-  virtual void rm_update() {};
+  virtual void init() {}
+  virtual void rm_update() {}
 
  protected:
   int iarg;
