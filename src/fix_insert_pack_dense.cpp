@@ -44,6 +44,7 @@
 #include "region_neighbor_list.h"
 #include "bounding_box.h"
 #include "neighbor.h"
+#include "math_const.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -54,7 +55,7 @@ using namespace FixConst;
 
 // this is the maximum volume fraction that the insertion algorithm
 // can achieve - usually, it is lower.
-const double FixInsertPackDense::max_volfrac = 0.58;
+const double FixInsertPackDense::max_volfrac = 0.57;
 
 FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
@@ -156,16 +157,6 @@ void FixInsertPackDense::post_create()
   neighlist.reset();
   neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
 
-
-  // estimate # of particles to insert
-  int const ntry_mc = 100000;
-  bool const cutflag(false);
-  ins_region->volume_mc(ntry_mc,cutflag,fix_distribution->max_r_bound(),
-                          region_volume,region_volume_local);
-
-  double const v_part_ave = fix_distribution->vol_expect();
-  n_insert_estim = floor(region_volume*max_volfrac/v_part_ave);
-  n_insert_estim_local = floor(region_volume_local*max_volfrac/v_part_ave);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -176,24 +167,17 @@ void FixInsertPackDense::pre_exchange()
   if(insertion_done) return;
   insertion_done = true;
 
-  /*
-   * would need type exclusion here
-   * to properly work with multi-level coarse graining
-   */
-  for(int i=0;i<atom->nlocal;i++){
-    if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
-        || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0)
-      error->fix_error(FLERR,this,"insertion region not empty");
-  }
+  prepare_insertion();
 
   // only proc 0 writes general output
   if(comm->me==0){
-    printf("fix insert/pack/dense will insert approximately %d particles in region %s\n",n_insert_estim,idregion);
+    printf("fix insert/pack/dense will attempt to insert approximately %d particles in region %s\n",
+           n_insert_estim,idregion);
     printf("maximum volume fraction: %f\n",max_volfrac);
     printf("target volume fraction:  %f\n",target_volfrac);
   }
 
-  printf("process %d : will insert approximately %d particles\n",
+  printf("process %d : attempting to insert approximately %d particles\n",
          comm->me,n_insert_estim_local);
   
   // insert first three particles to initialize the algorithm
@@ -240,6 +224,50 @@ void FixInsertPackDense::pre_exchange()
     printf("inserted %d of %d particles (%4.2f%%)\n",n_inserted,n_insert_estim,percent);
     printf("volume fracton: %f\n",volfrac_inserted);
   }
+}
+
+void FixInsertPackDense::prepare_insertion(){
+  /*
+   * would need type exclusion here
+   * to properly work with multi-level coarse graining
+   */
+  // need to iterate twice: first time to find largest radius, second
+  // time to compute volume and actually insert already present
+  // particles into region neighbor list with now appropriate bin size
+  double rad_max_present = 0.;
+  for(int i=0;i<atom->nlocal;i++){
+    if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
+        || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0){
+      if(atom->radius[i] > rad_max_present) rad_max_present = atom->radius[i];
+    }
+  }
+
+  if(rad_max_present > fix_distribution->max_rad()){
+    neighlist.reset();
+    neighlist.setBoundingBox(ins_bbox,rad_max_present);
+  }
+  
+  double volume_present_local = 0.;
+  for(int i=0;i<atom->nlocal;i++){
+    if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
+        || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0){
+      neighlist.insert(atom->x[i],atom->radius[i]);
+      volume_present_local += MathConst::MY_PI*pow(atom->radius[i],3)*4./3.;
+    }
+  }
+  double volume_present = 0.;
+  MPI_Sum_Scalar(volume_present,world);
+  
+  // estimate # of particles to insert
+  int const ntry_mc = 100000;
+  bool const cutflag(false);
+  ins_region->volume_mc(ntry_mc,cutflag,fix_distribution->max_r_bound(),
+                          region_volume,region_volume_local);
+
+  double const v_part_ave = fix_distribution->vol_expect();
+  n_insert_estim = floor((region_volume-volume_present)*max_volfrac/v_part_ave);
+  n_insert_estim_local = floor((region_volume_local-volume_present_local)*max_volfrac/v_part_ave);
+
 }
 
 void FixInsertPackDense::insert_first_particles()
