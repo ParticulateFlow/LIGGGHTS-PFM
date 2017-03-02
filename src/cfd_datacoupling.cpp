@@ -140,7 +140,7 @@ void CfdDatacoupling::pull(const char *name, const char *type, void *&, const ch
             found = 1;
             pullinvoked_[i] = 1;
             // TL:
-            latestpull_[i] = update->ntimestep;
+            latestpull_[i] = update->ntimestep; // current step (dynamics or min iterations)
         }
         // name matches, but type not
         else if(strcmp(name,pullnames_[i]) == 0)
@@ -150,6 +150,15 @@ void CfdDatacoupling::pull(const char *name, const char *type, void *&, const ch
                         name,type,pulltypes_[i]);
             error->all(FLERR,"This error is fatal");
         }
+
+        // ===================================== //
+        // For debug purposes
+        if (comm->me == 0 && screen)
+        {
+            fprintf(screen,"latestpull %li \n", latestpull_[i]);
+            fprintf(screen,"pullnames %s \n", pullnames_[i]);
+        }
+        // ===================================== //
 
     }
     if(!found)
@@ -188,6 +197,15 @@ void CfdDatacoupling::push(const char *name, const char *type, void *&, const ch
                         name,type,pushtypes_[i]);
             error->all(FLERR,"This error is fatal");
         }
+
+        // ===================================== //
+        // For debug purposes
+        if (comm->me == 0 && screen)
+        {
+            fprintf(screen,"latestpush %li \n", latestpush_[i]);
+            fprintf(screen,"pushnames %s \n", pushnames_[i]);
+        }
+        // ===================================== //
 
     }
     if(!found && error_push())
