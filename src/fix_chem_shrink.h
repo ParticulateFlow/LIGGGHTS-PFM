@@ -63,6 +63,7 @@ public:
   class FixPropertyAtom *fix_rhogas;                           //  density of gas
   class FixPropertyAtom *fix_tgas;                             //  temperature of gas
   class FixPropertyAtom *fix_reactionheat_;                     //  DeltaQ
+  class FixPropertyAtom *fix_totalMole_;
 
 
   int iarg_;
@@ -90,6 +91,7 @@ public:
   double *concA_;
   double *concC_;
   double *tgas_;
+  double *N_;
 
   // while loop integers
   int spcA;

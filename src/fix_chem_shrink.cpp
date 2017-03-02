@@ -70,6 +70,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_rhogas         =   NULL;
     fix_tgas           =   NULL;
     fix_reactionheat_   =   NULL;
+    fix_totalMole_      =   NULL;
 
     iarg_ = 3;
     k = 0;
@@ -231,6 +232,7 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_reactionheat_)  modify  ->  delete_fix("reactionHeat");
         if(fix_changeOfA_)     modify  ->  delete_fix(massA);
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
+        if(fix_totalMole_)     modify   ->  delete_fix("partN");
     }
 }
 
@@ -256,6 +258,7 @@ void FixChemShrink::updatePtrs()
     changeOfA_  =   fix_changeOfA_  -> vector_atom;
     changeOfC_  =   fix_changeOfC_  -> vector_atom;
     rhogas_     =   fix_rhogas      -> vector_atom;
+    N_          =   fix_totalMole_  ->  vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -301,6 +304,7 @@ void FixChemShrink::reaction()
                      fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
                      fprintf(screen,"Particle Mass %f \n",pmass_[i]);
                      fprintf(screen,"Gas Density %f \n",rhogas_[i]);
+                     fprintf(screen,"total number of moles in chem/shrink: %f \n",N_[i]);
                 }*/
             }
         }
@@ -335,6 +339,7 @@ void FixChemShrink::init()
     fix_tgas            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
     fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
+    fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
 
     if (rdef)
     {
