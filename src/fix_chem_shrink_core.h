@@ -1,19 +1,14 @@
 /* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
-
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
-
    Copyright 2015-     JKU Linz
-
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
-
    This software is distributed under the GNU General Public License.
-
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
@@ -60,14 +55,14 @@ public:
    double TimeStep;
 
    char* massA, *massC;
-   
-  // maximum number of layers to be used for chemical reactions, currently 3 
+
+  // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;
-  
+
   // relative radius and thickness below which layers are neglected
   const double rmin_;
   const double drmin_;
-   
+
   // gas-phase properties
   char *speciesA, *speciesC;
   double Runiv, T_test;
@@ -78,9 +73,9 @@ public:
   class FixPropertyAtom *fix_tgas_;                          //  temperature of gas
   class FixPropertyAtom *fix_reactionheat_;                  //  DeltaQ
   //class FixPropertyAtom *fix_totalmole_;                     // total mole in volume
-  
+
   double molMass_A_, molMass_C_;        // molar mass of species A and C
-  
+
   double *changeOfA_;
   double *changeOfC_;
   double *rhogas_;
@@ -89,24 +84,24 @@ public:
   double *T_;
   // total mole
   //double *N_;
-  
+
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
   class FixPropertyAtom *fix_layerRelRad_;
   class FixPropertyGlobal *fix_dens_, *fix_molMass_;  // molar masses and densities do not differ from particle to particle within a species, hence they are global properties
-  
+
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
 
-  
+
   // reaction properties
   // for each reaction type (e.g. CO + ore particle), global vectors containing reaction parameters have to be defined
   class FixPropertyGlobal *fix_k0_;
   class FixPropertyGlobal *fix_Ea_;
-  
+
   const double *k0_, *Ea_; //const double because get_Values is defined as const double in fix_check_timestep_sph
 
   int active_layers(int);
@@ -125,4 +120,3 @@ public:
 
 #endif
 #endif
-

@@ -1,19 +1,14 @@
 /* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
-
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
-
    Copyright 2015-     JKU Linz
-
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
-
    This software is distributed under the GNU General Public License.
-
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
@@ -171,7 +166,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         fprintf(screen,"reactant species: %s \n", speciesA);
         fprintf(screen,"product species: %s \n", speciesC);
     }
-}	
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -250,7 +245,7 @@ void FixChemShrinkCore::updatePtrs()
     relRadii_       = fix_layerRelRad_-> array_atom;
     layerDensities_ = fix_dens_      -> get_values();
     layerMolMasses_ = fix_molMass_   -> get_values();
-    
+
     // chemical prop
     k0_             =  fix_k0_       -> get_values();
     Ea_             =  fix_Ea_       -> get_values();
@@ -334,7 +329,7 @@ void FixChemShrinkCore::init()
 
     // look up *fix_layerRelRad_;
     fix_layerRelRad_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii","property/atom","vector",ntype,0,"FixChemShrinkCore"));
-    
+
     // references
     fix_concA_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesA, "property/atom", "scalar", 0, 0, id));
     fix_concC_     = static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesC, "property/atom", "scalar", 0, 0, id));
@@ -402,20 +397,20 @@ void FixChemShrinkCore::post_force(int)
     for (i = 0; i<nlocal; i++)
     {
         if (mask[i] & groupbit)
-	{
+        {
             layerRad(i,r_);
             getA(i,a_,r_);
             getXi(i,x0_,x0_eq_);
             //getDiff(i,diff);
             //getMassT(i,masst);
 
-	    
+
             //for(int j = 0; j<nmaxlayers_; j++)
             //  dmA_[j] = 0.0;
             //reaction(i,a_,dmA_,x0_,x0_eq_); //diff,masst,y0,
             // update_atom_properties(i,dmA_,r_);
             // update_gas_properties(i,dmA_);
-	}
+        }
     }
 
     bigint nblocal = atom->nlocal;
@@ -461,7 +456,6 @@ void FixChemShrinkCore::layerRad(int i, double *r_)
 int FixChemShrinkCore::active_layers(int i)
 {
 /*    int layers;
-
     for(layers=0; layers<nmaxlayers_; layers++)
         if(relRadii_[i][layers] < rmin_)
             break;
@@ -567,7 +561,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_, double *r_)
     }
 
  // WARNING 2: if Wustite layer thickness < rmin AND T < 567 C, direct conversion of Magnetite to Fe is possible
- //            this means that Wu-Fe radius is shrinking together with the Ma-Wu radius 
+ //            this means that Wu-Fe radius is shrinking together with the Ma-Wu radius
  //            in this case, the equilibrium value and reaction parameters at the Ma layer need to be adapted within
  //            IMPLEMENTATION ONLY IF NECESSARY
 }
@@ -639,7 +633,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
   // directly guessing x_eq like in the thesis of Nietrost seems to be spurious for multi-component mixtures (H2, H2O, CO, CO2)
   // Negri et al. (1991), Takahashi et al. (1986) and probably many others use a different approach:
   // as driving term, they use (n_A - n_C / K)
-  
+
   // ATTENTION: molar concentrations n_i [mol / m^3] need to be converted into mass fractions y_i
   //            y_i * rho = n_i * m_{i,mol}
 
@@ -648,7 +642,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
 double FixChemShrinkCore::K_eq(int layer, double T)
 {
 //     ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
-//                for the reactions under consideration, this should not be the case (double-check !!!)  
+//                for the reactions under consideration, this should not be the case (double-check !!!)
     double Keq_;
     if(strcmp(speciesA,"CO")==0)
      {
@@ -668,7 +662,7 @@ double FixChemShrinkCore::K_eq(int layer, double T)
          else if (layer == 2)
              Keq_   =   pow(10,(-827/T+0.468));
      }
-     else
+    else
      {
          printf("Error : Undefined Reaction \n");
      }
