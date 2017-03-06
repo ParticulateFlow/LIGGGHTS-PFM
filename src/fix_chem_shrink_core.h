@@ -41,11 +41,12 @@ public:
 
   double partSurfArea(double);
 
-  void updatePtrs();
+
 
   int setmask();
   virtual void init();
   virtual void post_force(int);
+  virtual void updatePtrs();
 
  protected:
    class PairGran *pair_gran;
@@ -65,14 +66,14 @@ public:
 
   // gas-phase properties
   char *speciesA, *speciesC;
-  double Runiv, T_test;
+  double Runiv;
 
   class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C [as mass fractions]
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
   class FixPropertyAtom *fix_rhogas_;                           //  density of gas
-  class FixPropertyAtom *fix_tgas_;                          //  temperature of gas
-  class FixPropertyAtom *fix_reactionheat_;                  //  DeltaQ
-  //class FixPropertyAtom *fix_totalmole_;                     // total mole in volume
+  class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
+  class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
+  class FixPropertyAtom *fix_totalmole_;                        // total mole in volume
 
   double molMass_A_, molMass_C_;        // molar mass of species A and C
 
@@ -82,8 +83,9 @@ public:
   double *concA_;
   double *concC_;
   double *T_;
-  // total mole
-  //double *N_;
+  double *reactionHeat_;
+  //total mole
+  double *N_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
