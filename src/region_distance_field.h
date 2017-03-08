@@ -33,7 +33,6 @@
 
 namespace LIGGGHTS {
 
-  enum PointStatus {INSIDE,BOUNDARY,OUTSIDE};
   
   class RegionDistanceField {
   public:
@@ -42,6 +41,8 @@ namespace LIGGGHTS {
     bool isInside(double *x);
     bool isInBoundary(double *x);
   private:
+    enum PointStatus {INSIDE,BOUNDARY,OUTSIDE};
+
     int index3ToIndex1(int const ix, int const iy, int const iz);
     int posToIndex(double *x);
     void indexToPos(int index, double *x);
