@@ -38,6 +38,7 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 #include <list>
 
 #include "region_neighbor_list.h"
+#include "region_distance_field.h"
 
 using namespace LIGGGHTS;
 
@@ -83,7 +84,8 @@ protected:
   int seed;
 
   RegionNeighborList neighlist;
-
+  RegionDistanceField distfield;
+  
   BoundingBox ins_bbox;
 
   bool insertion_done;

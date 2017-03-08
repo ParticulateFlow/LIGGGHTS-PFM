@@ -66,7 +66,9 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   target_volfrac(max_volfrac),
   random(0),
   seed(-1),
-  insertion_done(false)
+  insertion_done(false),
+  n_inserted(0),
+  n_inserted_local(0)
 {
   int iarg = 3;
 
@@ -200,6 +202,10 @@ void FixInsertPackDense::pre_exchange()
   // insert_next_particle() returns false
   // if algorithm terminates
   while(!frontSpheres.empty()) {
+    if(!(fix_distribution->pti_list.size() == n_inserted_local)){
+      printf("pti_list.size() %d | n_inserted_local %d\n",fix_distribution->pti_list.size(),n_inserted_local);
+    }
+    assert(fix_distribution->pti_list.size() == n_inserted_local);
     handle_next_front_sphere();
     
     int const n_write = n_insert_estim_local/10;
@@ -300,7 +306,8 @@ void FixInsertPackDense::prepare_insertion(){
     }
   }
   
-  
+  // calculate distance field
+  distfield.build(ins_region,ins_bbox,fix_distribution->max_rad()*radius_factor);
 }
 
 void FixInsertPackDense::insert_first_particles()
@@ -330,6 +337,8 @@ void FixInsertPackDense::insert_first_particles()
   frontSpheres.push_back(p1);
   frontSpheres.push_back(p2);
   frontSpheres.push_back(p3);
+
+  n_inserted_local += 3;
 }
 
 
@@ -563,6 +572,9 @@ Particle FixInsertPackDense::particle_from_pti(ParticleToInsert* pti)
 
 bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
 {
+  if(distfield.isInside(p.x) && !distfield.isInBoundary(p.x))
+    return true;
+
   return ins_region->inside(p.x[0],p.x[1],p.x[2])
     && ins_bbox.isInside(p.x)
     && ins_region->surface_interior(p.x,p.radius) == 0;
