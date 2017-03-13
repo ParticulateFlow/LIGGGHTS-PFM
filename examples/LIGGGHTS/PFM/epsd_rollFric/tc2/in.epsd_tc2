@@ -111,10 +111,9 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run		1
-#dump		dmp all custom 100 ./post/dump_*.liggghts id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius omegaz radius  #orig version
 
 # uncomment if needed
-#dump		dmp all custom ${dumpfreq} ./post/dump_*.liggghts id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+#dump		dmp all custom ${dumpfreq} ./post/dump_*.liggghts id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 #run		1000
 

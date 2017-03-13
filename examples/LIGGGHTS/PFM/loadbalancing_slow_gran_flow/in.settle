@@ -58,7 +58,7 @@ thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
-#dump		dmp  all custom 2500 post/dump*.settle id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+#dump		dmp  all custom 2500 post/dump*.settle id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 #dump		dmp2 all parallel/decomposition/VTK 2500 post/decomp*.vtk
 
 #run

@@ -64,7 +64,7 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run		1
-dump		dmp all custom 200 post/dump*.chute id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_contacttime_cad
+dump		dmp all custom 200 post/dump*.chute id type x y z vx vy vz fx fy fz omegax omegay omegaz radius f_contacttime_cad
 dump 		dumpstress all mesh/gran/VTK 200 post/dump*.vtk stress wear cad contact_area contact_area_step
 
 #insert particles

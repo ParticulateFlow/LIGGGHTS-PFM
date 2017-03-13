@@ -111,7 +111,7 @@ fix_modify cad1 integrate stop
 
 #insert the first particles so that dump is not empty
 run		  1
-dump    dmp all custom ${dumpfreq} post/dump*.servoWall id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump    dmp all custom ${dumpfreq} post/dump*.servoWall id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 dump    dumpstl1 all mesh/stl ${dumpfreq} post/dump_*.cad1.stl cad1
 

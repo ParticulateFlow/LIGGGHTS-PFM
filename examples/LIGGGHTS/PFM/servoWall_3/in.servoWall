@@ -145,8 +145,8 @@ compute_modify  thermo_temp dynamic yes
 fix_modify cad3 integrate stop
 
 #insert the first particles so that dump is not empty
-run		  1
-dump    dmp all custom ${dumpfreq} post/dump*.servoWall id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius # MARK:DUMP
+run		1
+dump    dmp all custom ${dumpfreq} post/dump*.servoWall id type x y z vx vy vz fx fy fz omegax omegay omegaz radius # MARK:DUMP
 dump    dumpstl all mesh/stl ${dumpfreq} post/dumpStl.cad3_*.stl cad3 # MARK:DUMP
 
 #insert particles

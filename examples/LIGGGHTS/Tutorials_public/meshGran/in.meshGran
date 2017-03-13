@@ -61,7 +61,7 @@ thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 #dump commands
-dump		dmp all custom 300 post/dump*.meshGran id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump		dmp all custom 300 post/dump*.meshGran id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 dump 		dmpstl all mesh/stl 300 post/dump*.stl
 
 #insert particles

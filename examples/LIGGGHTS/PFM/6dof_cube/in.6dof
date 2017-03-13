@@ -64,7 +64,7 @@ thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 dump 		dumpstl all stl 100 post/dump*.stl
-dump		dmp all custom 100 post/dump*.6dof id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump		dmp all custom 100 post/dump*.6dof id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 variable forceXCube  equal f_cube[1]
 variable forceYCube  equal f_cube[2]

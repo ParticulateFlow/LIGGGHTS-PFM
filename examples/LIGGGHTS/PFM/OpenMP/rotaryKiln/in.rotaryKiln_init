@@ -71,7 +71,7 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run	1
-dump	dmp all custom/vtk 100 post/dump*.vtp id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius thread
+dump	dmp all custom/vtk 100 post/dump*.vtp id type x y z vx vy vz fx fy fz omegax omegay omegaz radius thread
 dump_modify dmp binary yes
 dump 	dumpstlmov all mesh/stl 100 post/drum*.stl cadDrum
 

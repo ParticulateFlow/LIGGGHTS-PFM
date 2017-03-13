@@ -56,7 +56,7 @@ compute_modify	thermo_temp dynamic yes
 
 
 #make a dump of particles and the stl file 
-dump	dmp all custom 200 post/dump*.movingMesh id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump	dmp all custom 200 post/dump*.movingMesh id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 dump 	dumpstl all mesh/stl 200 post/dump*.stl
 
 #run with particle insertion

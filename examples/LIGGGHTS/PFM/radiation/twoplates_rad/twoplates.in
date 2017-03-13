@@ -82,7 +82,7 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run			1
-dump		dmp all custom 800 post/dump*twoplates*.dump id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump		dmp all custom 800 post/dump*twoplates*.dump id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 group       upper_group region upper_region
 group       lower_group region lower_region
 unfix		ins_upper
