@@ -54,8 +54,8 @@ fix		ins nve_group insert/stream seed 5330 distributiontemplate pdd1 &
 			insertion_face inface extrude_length 0.02	
 
 fix		ts all check/timestep/gran 1000 0.1 0.1
-compute		1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 f_ts[1] f_ts[2] vol
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke f_ts[1] f_ts[2] vol
 thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes

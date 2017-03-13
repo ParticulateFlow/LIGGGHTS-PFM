@@ -48,8 +48,8 @@ group		nve_group region reg
 fix			ins nve_group pour/legacy 1500 1 1 vol 0.7 1000 diam 0.08 0.08 dens 2500 2500 vel 0. 0. 0. 0. -0.8 region bc
 
 #thermo settings
-compute		1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 vol
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
 thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes

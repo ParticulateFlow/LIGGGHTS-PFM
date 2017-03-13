@@ -134,8 +134,8 @@ fix     lb all balance 0 y 10 1.05
 fix   ts all check/timestep/gran ${dumpfreq} 0.2 0.2
 
 #output settings, include total thermal energy
-compute		    1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 vol cpu
+compute		    rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol cpu
 thermo		    ${dumpfreq}
 thermo_modify	lost ignore norm no
 compute_modify  thermo_temp dynamic yes

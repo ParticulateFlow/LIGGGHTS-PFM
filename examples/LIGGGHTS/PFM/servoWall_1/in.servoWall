@@ -99,8 +99,8 @@ fix     ins all insert/pack seed 5332 distributiontemplate pdd maxattempt 100 in
 fix		integr all nve/sphere
 
 #output settings, include total thermal energy
-compute		    1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 vol
+compute		    rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
 thermo		    ${dumpfreq}
 thermo_modify	lost ignore norm no
 compute_modify  thermo_temp dynamic yes
