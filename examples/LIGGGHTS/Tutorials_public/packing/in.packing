@@ -50,16 +50,13 @@ variable	growts equal 50000
 variable	growevery equal 40
 variable	relaxts equal 20000
 
-#region and insertion
-group		nve_group region reg
-
 #particle insertion
-fix		ins nve_group insert/pack seed 5330 distributiontemplate pdd1 &
+fix		ins all insert/pack seed 5330 distributiontemplate pdd1 &
 			maxattempt 200 insert_every once overlapcheck yes all_in yes vel constant 0. 0. 0. &
 			region reg volumefraction_region ${alphastart}
 
-#apply nve integration to all particles that are inserted as single particles
-fix		integr nve_group nve/sphere
+#apply nve integration to all particles
+fix		integr all nve/sphere
 
 #output settings, include total thermal energy
 compute		rke all erotate/sphere

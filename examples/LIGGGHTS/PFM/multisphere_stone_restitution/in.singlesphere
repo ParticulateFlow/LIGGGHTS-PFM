@@ -39,14 +39,13 @@ fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius
 fix		pdd1 all particledistribution/discrete 1.  1 pts1 1.0
 
 #region and insertion
-group		rigid_group region reg
 region		bc cylinder z 0.0 0.0 0.25 0.1 0.4 units box
 
-fix		ins rigid_group insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. -1. &
+fix		ins all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. -1. &
 		insert_every once overlapcheck yes region bc ntry_mc 10000 volumefraction_region 0.0004
 
 #integrator for multisphere rigid bodies
-fix		integr rigid_group nve/sphere
+fix		integr all nve/sphere
 
 #output settings, include total thermal energy
 compute		rke all erotate/sphere

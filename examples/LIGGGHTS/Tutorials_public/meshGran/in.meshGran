@@ -36,9 +36,6 @@ fix		cad all mesh/surface file meshes/mesh.stl type 1 scale 0.001 move 0. 0. 0. 
 #use the imported mesh as granular wall
 fix granwalls all wall/gran model hooke tangential history mesh n_meshes 1 meshes cad
 
-#insertion region (for deprecated pour/legacy)
-#region		bc block 0.21 0.25 -0.045 -0.005 -0.015 -0.00 units box
-
 #definition of insertion face
 fix		inface all mesh/surface file meshes/insertion_face.stl type 1
 
@@ -46,10 +43,8 @@ fix		inface all mesh/surface file meshes/insertion_face.stl type 1
 fix		pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius constant 0.005
 fix		pdd1 all particledistribution/discrete 1.  1 pts1 1.0
 
-group		nve_group region reg
-
 #particle insertion
-fix		ins nve_group insert/stream seed 5330 distributiontemplate pdd1 &
+fix		ins all insert/stream seed 5330 distributiontemplate pdd1 &
 			maxattempt 100 nparticles 10000 particlerate 1000 overlapcheck yes all_in no vel constant 0. 0. -1.0 &
 			insertion_face inface extrude_length 0.02	
 

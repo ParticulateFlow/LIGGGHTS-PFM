@@ -39,19 +39,18 @@ fix cylwalls all wall/gran model hertz tangential history primitive type 1  zcyl
 
 #region for insertion
 region		bc cylinder z 0.01 0.01 0.025 0.05 0.0603 units box
-group		nve_group region reg
 
 #distributions for insertion
 fix			pts1 all particletemplate/sphere 5330 atom_type 1 density constant 2500 radius constant 0.0015
 fix			pdd1 all particledistribution/discrete 5331  1 pts1 1.0
 
 #particle insertion
-fix		ins nve_group insert/pack seed 5332 distributiontemplate pdd1 &
+fix		ins all insert/pack seed 5332 distributiontemplate pdd1 &
 			maxattempt 100 insert_every 3000 overlapcheck yes all_in yes vel constant 0.0 0.0 -0.2 &
 			region bc particles_in_region 250 ntry_mc 10000
 
 #apply nve integration to all particles that are inserted as single particles
-fix		integr nve_group nve/sphere
+fix		integr all nve/sphere
 
 #output settings, include total thermal energy
 compute			rke all erotate/sphere
