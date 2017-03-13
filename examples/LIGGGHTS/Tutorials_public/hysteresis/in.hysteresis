@@ -16,7 +16,7 @@ neighbor		0.002 bin
 neigh_modify	delay 0
 
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype 5.e6
 fix 		m2 all property/global poissonsRatio peratomtype 0.45
@@ -29,7 +29,7 @@ fix     m7 all property/global coefficientAdhesionStiffness peratomtypepair 1 0.
 fix     m8 all property/global coefficientPlasticityDepth peratomtypepair 1 0.05
 
 
-#New pair style
+#pair style
 pair_style gran model hooke/hysteresis tangential history #Hooke with hysteresis and adhesion
 pair_coeff	* *
 

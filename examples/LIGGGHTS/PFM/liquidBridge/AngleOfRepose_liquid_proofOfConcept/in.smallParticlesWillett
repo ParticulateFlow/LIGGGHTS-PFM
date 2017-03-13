@@ -42,7 +42,7 @@ neighbor		${rad} bin
 neigh_modify    delay 0
 
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype ${ym} ${ym}
 fix 		m2 all property/global poissonsRatio peratomtype ${pr} ${pr}
@@ -54,7 +54,7 @@ fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 ${rf} 
 fix 		m6 all property/global liquidVolume scalar ${VLiqu}
 fix		    m7 all property/global surfaceTension scalar ${sigma}
 
-#New pair style
+#pair style
 pair_style 	gran model hertz tangential history cohesion capillary rolling_friction cdt capillaryModel Willett #Hertzian with cohesion
 pair_coeff	* *
 

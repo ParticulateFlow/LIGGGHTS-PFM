@@ -15,7 +15,7 @@ create_box	1 reg
 neighbor	0.02 bin
 neigh_modify	delay 0
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype 5.e6
 fix 		m2 all property/global poissonsRatio peratomtype 0.45
@@ -23,8 +23,8 @@ fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.7
 fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.05
 fix 		m5 all property/global characteristicVelocity scalar 2.
 
-#New pair style
-pair_style 	gran/hooke/history  #Hooke without cohesion 
+#pair style
+pair_style 	gran model hooke tangential history  #Hooke without cohesion 
 pair_coeff	* *
 
 timestep	0.00005

@@ -21,14 +21,14 @@ timestep	0.000005
 fix		gravi all gravity/omp 9.81 vector 0.0 0.0 -1.0
 
 # cohesion - no cohesion
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 fix 		m1 all property/global youngsModulus peratomtype 193.e6 193.e6
 fix 		m2 all property/global poissonsRatio peratomtype 0.3 0.3
 fix 		m3 all property/global coefficientRestitution peratomtypepair 2 0.8 0.8 0.8 0.8
 fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.5 0.7 0.7 0.5
 fix 		m5 all property/global characteristicVelocity scalar 2.
 
-#New pair style
+#pair style
 pair_style gran/omp model hertz
 pair_coeff	* *
 
