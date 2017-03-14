@@ -220,9 +220,9 @@ void FixRemove::pre_exchange()
 
     // print to logfile
 
-    if(0 == comm->me)
+    if(comm->me == 0)
     {
-        if(verbose_)
+        if(verbose_ && screen)
             fprintf( screen,"Timestep %d, removing material, mass to remove this step %f\n",
                         time_now,mass_to_remove_);
         if(logfile)
@@ -272,7 +272,7 @@ void FixRemove::pre_exchange()
 
     if(comm->me == 0)
     {
-        if(verbose_)
+        if(verbose_ && screen)
             fprintf(screen,"    Ammount actually removed %f (#particles totally removed %d)\n",
                     mass_removed_this,nremoved_this);
         if(logfile)
