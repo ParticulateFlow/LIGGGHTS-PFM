@@ -92,7 +92,7 @@ void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh, bool v
   {
       if (!read_cell_data_ && !restart_)
       {
-          if (comm->me == 0) fprintf(screen,"\nReading STL file '%s' \n",filename);
+          if (comm->me == 0 && screen) fprintf(screen,"\nReading STL file '%s' \n",filename);
           meshtrifile_stl(mesh);
       }
   }
