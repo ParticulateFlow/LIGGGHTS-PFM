@@ -516,7 +516,7 @@ double FixInsert::max_r_bound()
 
 /* ---------------------------------------------------------------------- */
 
-double FixInsert::extend_cut_ghost()
+double FixInsert::extend_cut_ghost() const
 {
     //NP this is to extend ghost region
     return 2.*fix_distribution->max_r_bound();
