@@ -56,11 +56,11 @@ class FixParticledistributionDiscrete : public Fix {
   double min_rad(int);
   double max_rad(int);
 
-  double min_rad()
+  double min_rad() const
   { return minrad; }
-  double max_rad()
+  double max_rad() const
   { return maxrad; }
-  double max_r_bound()
+  double max_r_bound() const
   { return maxrbound; }
 
   int max_nspheres();

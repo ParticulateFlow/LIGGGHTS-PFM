@@ -48,7 +48,7 @@ class FixInsert : public Fix {
   virtual void init();
   virtual void setup_pre_exchange() {}
   void setup(int vflag);
-  double extend_cut_ghost();
+  double extend_cut_ghost() const;
   void pre_exchange();
   virtual void end_of_step() {}
 
@@ -171,7 +171,7 @@ class FixInsert : public Fix {
   virtual void sanity_check();
   virtual void calc_insertion_properties() = 0;
 
-  virtual void pre_insert() {};
+  virtual void pre_insert() {}
   virtual int calc_ninsert_this();
   virtual int load_xnear(int);
   virtual int count_nnear();
@@ -181,7 +181,7 @@ class FixInsert : public Fix {
   virtual void x_v_omega(int,int&,int&,double&) = 0;
   virtual double insertion_fraction() = 0;
 
-  virtual void finalize_insertion(int){};
+  virtual void finalize_insertion(int){}
 
  protected:
   void generate_random_velocity(double * velocity);
