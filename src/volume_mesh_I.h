@@ -220,14 +220,14 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcLocalVolPropertie
 
       // add to local volume
       volMesh_(1) += vol(i);
-      /*NL*///fprintf(this->screen,"triangle %d: area %f, areaacc %f, mesharea %f\n",i,area_(i),areaAcc_(i),areaMesh_);
+      /*NL*///if (this->screen) fprintf(this->screen,"triangle %d: area %f, areaacc %f, mesharea %f\n",i,area_(i),areaAcc_(i),areaMesh_);
     }
 
     // mesh vol must be summed up
     MPI_Sum_Scalar(volMesh_(1),volMesh_(0),this->world);
 
 
-    /*NL*/// fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
+    /*NL*/// if (this->screen) fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
     /*NL*///         this->comm->me,areaMeshGlobal(),areaMeshOwned(),areaMeshGhost());
     /*NL*/// this->error->all(FLERR,"check this");
 }
@@ -261,11 +261,11 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcGhostVolPropertie
       volMesh_(2) += vol(i);
     }
 
-    /*NL*/// fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
+    /*NL*/// if (this->screen) fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
     /*NL*///         this->comm->me,areaMeshGlobal(),areaMeshOwned(),areaMeshGhost());
     /*NL*/// this->error->all(FLERR,"check this");
 
-    /*NL*///fprintf(this->screen,"proc %d: areaMeshOwned+Ghost %f areaAcc(lastGhost) %f SHOULD BE EQUAL\n",
+    /*NL*///if (this->screen) fprintf(this->screen,"proc %d: areaMeshOwned+Ghost %f areaAcc(lastGhost) %f SHOULD BE EQUAL\n",
     /*NL*///        this->comm->me,areaMeshOwned()+areaMeshGhost(),areaAcc(nall-1));
     /*NL*///this->error->all(FLERR,"CHECK this");
 
@@ -306,7 +306,7 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::recalcGhostVolPropertie
         volMesh_(3) *= volMeshGlobal()/volCheck;
     }
 
-    /*NL*///fprintf(this->screen,"proc %d: sizeGlobal() %d, sizeLocal() %d, sizeGhost() %d,  areaMeshGlobal %f areaMeshOwned %f  areaMeshGhost %f areaMeshLocal %f n_iter %d tolerance %f\n",
+    /*NL*///if (this->screen) fprintf(this->screen,"proc %d: sizeGlobal() %d, sizeLocal() %d, sizeGhost() %d,  areaMeshGlobal %f areaMeshOwned %f  areaMeshGhost %f areaMeshLocal %f n_iter %d tolerance %f\n",
     /*NL*///        this->comm->me,this->sizeGlobal(),this->sizeLocal(),this->sizeGhost(),areaMeshGlobal(),areaMeshOwned(),areaMeshGhost(),areaMeshLocal(),
     /*NL*///        n_iter,((areaCheck-areaMeshGlobal()))/areaMeshGlobal());
     /*NL*///this->error->all(FLERR,"CHECK this");

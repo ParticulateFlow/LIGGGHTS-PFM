@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
+#include <math.h>
+#include <string.h>
 #include "compute_property_atom.h"
 #include "math_extra.h"
 #include "atom.h"
@@ -342,14 +342,14 @@ ComputePropertyAtom::ComputePropertyAtom(LAMMPS *lmp, int narg, char **arg) :
       int flag;
       index[i] = atom->find_custom(&arg[iarg][2],flag);
       if (index[i] < 0 || flag != 0)
-        error->all(FLERR,"Compute property/atom floating point "
+        error->all(FLERR,"Compute property/atom integer "
                    "vector does not exist");
       pack_choice[i] = &ComputePropertyAtom::pack_iname;
     } else if (strstr(arg[iarg],"d_") == arg[iarg]) {
       int flag;
       index[i] = atom->find_custom(&arg[iarg][2],flag);
       if (index[i] < 0 || flag != 1)
-        error->all(FLERR,"Compute property/atom integer "
+        error->all(FLERR,"Compute property/atom floating point "
                    "vector does not exist");
       pack_choice[i] = &ComputePropertyAtom::pack_dname;
 
@@ -389,7 +389,7 @@ void ComputePropertyAtom::compute_peratom()
 
   // grow vector or array if necessary
 
-  if (atom->nlocal > nmax) {
+  if (atom->nmax > nmax) {
     nmax = atom->nmax;
     if (nvalues == 1) {
       memory->destroy(vector);

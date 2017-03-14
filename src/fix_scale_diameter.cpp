@@ -22,9 +22,9 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_scale_diameter.h"
 #include "atom.h"
 #include "update.h"
@@ -92,7 +92,7 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
       } else {
         scale_to_ = force->numeric(FLERR,arg[iarg]);
         if(scale_to_ <= 0.)
-          error->fix_error(FLERR,this,"scale_to_ > 0 required");
+          error->fix_error(FLERR,this,"scale > 0 required");
         scale_to_style_ = CONSTANT;
         scale_range_ = 1. - scale_to_;
       }
@@ -150,9 +150,7 @@ FixScaleDiameter::~FixScaleDiameter()
 
 void FixScaleDiameter::post_create()
 {
-
-  if (fix_property_ == NULL)
-  {
+  if (fix_property_ == NULL) {
     char *fixid = new char[14+strlen(id)];
     sprintf(fixid,"scale_d_orig_%s",id);
 
@@ -173,8 +171,8 @@ void FixScaleDiameter::post_create()
     delete [] fixid;
   }
 
-  double *radius = atom->radius;
-  int nlocal = atom->nlocal;
+  const double *radius = atom->radius;
+  const int nlocal = atom->nlocal;
 
   for (int i = 0; i < nlocal; ++i) {
     fix_property_->vector_atom[i] = radius[i];
@@ -185,7 +183,7 @@ void FixScaleDiameter::post_create()
 
 void FixScaleDiameter::pre_delete(bool unfixflag)
 {
-    if (unfixflag && fix_property_) modify->delete_fix(fix_property_->id);
+  if (unfixflag && fix_property_) modify->delete_fix(fix_property_->id);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -244,8 +242,8 @@ void FixScaleDiameter::change_settings()
   double **x = atom->x;
   double *radius = atom->radius;
   double *rmass = atom->rmass;
-  int *mask = atom->mask;
-  int nlocal = atom->nlocal;
+  const int *mask = atom->mask;
+  const int nlocal = atom->nlocal;
 
   if (scale_to_style_ == EQUAL) {
     scale_to_ = input->variable->compute_equal(scale_to_var_);
@@ -297,9 +295,11 @@ void FixScaleDiameter::change_settings()
       }
 
       radius[i] = scale * fix_property_->vector_atom[i];
-      const double relative_scale = radius[i]/old_radius;
-      if (scale_mass_)
+
+      if (scale_mass_) {
+        const double relative_scale = radius[i]/old_radius;
         rmass[i] *= relative_scale*relative_scale*relative_scale;
+      }
     }
   }
 }

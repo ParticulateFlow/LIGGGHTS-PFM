@@ -16,10 +16,10 @@
    (now at Lawrence Berkeley National Laboratory, hmaktulga@lbl.gov)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_qeq_reax.h"
 #include "pair_reax_c.h"
 #include "atom.h"

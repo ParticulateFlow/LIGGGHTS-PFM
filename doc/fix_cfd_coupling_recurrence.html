@@ -1,0 +1,44 @@
+<HTML>
+<CENTER><A HREF = "http://www.cfdem.com">LIGGGHTS WWW Site</A> - <A HREF = "http://lammps.sandia.gov">LAMMPS WWW Site</A> - <A HREF = "Manual.html">LIGGGHTS Documentation</A> - <A HREF = "Section_commands.html#comm">LIGGGHTS Commands</A> 
+</CENTER>
+
+
+
+
+
+
+
+
+<HR>
+
+<H3>fix cfd/coupling/recurrence command 
+</H3>
+<P><B>Syntax:</B>
+</P>
+<PRE>fix ID group-ID couple/cfd/recurrence keyword values 
+</PRE>
+<UL><LI>ID, group-ID are documented in <A HREF = "fix.html">fix</A> command 
+
+<LI>couple/cfd/recurrence = style name of this fix command 
+
+<LI>zero or more keyword/value pairs may be appended 
+
+<LI>keyword = <I>transfer_density</I> or <I>transfer_type</I> or <I>transfer_force</I> or <I>transfer_fluctuations</I> or <I>transfer_tracer</I> 
+
+<PRE>  <I>transfer_*</I> values = <I>yes</I> or <I>no</I> 
+</PRE>
+
+</UL>
+<P><B>Examples:</B>
+</P>
+<PRE>fix cfd2 all couple/cfd/recurrence transfer_force yes transfer_fluctuations yes 
+</PRE>
+<P><B>Description:</B>
+</P>
+<P>This fix exchanges the recurrence CFD relevant data between LIGGGHTS and CFDEMcoupling.
+Particle positions, velocities, radii and volumeweights are transferred from LIGGGHTS to CFDEMcoupling, the recurrence-prescribed velocities from CFDEMcoupling to LIGGGHTS.
+If needed, particle types and densities can also be communicated from LIGGGHTS to CFDEMcoupling (disabled per default) and forces (e.g. drag), velocity fluctuations and tracer concentrations from CFDEMcoupling to LIGGGHTS (disabled per default).
+</P>
+<P>This fix needs a fix couple/cfd before it is defined.
+</P>
+</HTML>

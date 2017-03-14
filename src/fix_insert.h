@@ -51,7 +51,7 @@ class FixInsert : public Fix {
   virtual void init();
   virtual void setup_pre_exchange() {}
   void setup(int vflag);
-  double extend_cut_ghost();
+  double extend_cut_ghost() const;
   void pre_exchange();
   virtual void end_of_step() {}
 

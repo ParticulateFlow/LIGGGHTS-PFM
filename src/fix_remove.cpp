@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_remove.h"
 #include "atom.h"
 #include "error.h"
@@ -410,7 +410,7 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
         body_tags_delete_ = body_tags_eligible_;
         mass_removed_this_me += ratio_ms_to_remove_me*mass_eligible_me;
         nremoved_this_me += body_tags_delete_.size();
-        /*NL*/ //fprintf(screen,"ratio_ms_to_remove_me %f mass_eligible_me %f\n",ratio_ms_to_remove_me,mass_eligible_me);
+        /*NL*/ //if (screen) fprintf(screen,"ratio_ms_to_remove_me %f mass_eligible_me %f\n",ratio_ms_to_remove_me,mass_eligible_me);
     }
     body_tags_eligible_.clear();
 
@@ -565,8 +565,8 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
 
 inline void FixRemove::delete_particle(int i)
 {
-    /*NL*///fprintf(screen,"proc %d deleting particle with mass %f\n",comm->me,atom->rmass[i]);
-    //NP fprintf(screen,"deleting particle %d, nlocal %d, \n",i,atom->nlocal);
+    /*NL*///if (screen) fprintf(screen,"proc %d deleting particle with mass %f\n",comm->me,atom->rmass[i]);
+    //NP if (screen) fprintf(screen,"deleting particle %d, nlocal %d, \n",i,atom->nlocal);
     atom->avec->copy(atom->nlocal-1,i,1);
     atom->nlocal--;
 }
@@ -576,11 +576,11 @@ inline void FixRemove::delete_particle(int i)
 
 void FixRemove::delete_bodies()
 {
-    /*NL*/ //fprintf(screen,"called, size %d\n",body_tags_delete_.size());
+    /*NL*/ //if (screen) fprintf(screen,"called, size %d\n",body_tags_delete_.size());
     for(size_t ilist = 0; ilist <  body_tags_delete_.size(); ilist++)
     {
         int ibody = ms_->map(body_tags_delete_[ilist]);
-        /*NL*/ //fprintf(screen,"  rem body tag %d ibody %d tag2 %d\n",body_tags_delete_[ilist],ibody,ms_->tag(ibody));
+        /*NL*/ //if (screen) fprintf(screen,"  rem body tag %d ibody %d tag2 %d\n",body_tags_delete_[ilist],ibody,ms_->tag(ibody));
         ms_->remove_body(ibody);
     }
     body_tags_delete_.clear();

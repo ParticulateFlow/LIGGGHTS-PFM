@@ -26,7 +26,7 @@
 ------------------------------------------------------------------------- */
 
 #include "particleToInsert.h"
-#include "math.h"
+#include <math.h>
 #include "error.h"
 #include "update.h"
 #include "domain.h"
@@ -81,11 +81,11 @@ int ParticleToInsert::insert()
 
     for(int i = 0; i < nspheres; i++)
     {
-        /*NL*/ //fprintf(screen,"proc %d tyring to insert particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+        /*NL*/ //if (screen) fprintf(screen,"proc %d tyring to insert particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
         //NP do not need subdomain check any longer since have processor-local lists anyway
         //if (domain->is_in_extended_subdomain(x_ins[i]))
         //{
-                /*NL*/ //fprintf(screen,"   proc %d inserting particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+                /*NL*/ //if (screen) fprintf(screen,"   proc %d inserting particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
                 inserted++;
                 if(atom_type_vector_flag)
                     atom->avec->create_atom(atom_type_vector[i],x_ins[i]);
@@ -113,7 +113,7 @@ int ParticleToInsert::insert()
                     atom->dvector[property_index][m] = fix_property_value;
         //}
     }
-    
+
     return inserted;
 }
 
@@ -137,8 +137,8 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
     {
         vectorSubtract3D(x_ins[0],xnear[i],del);
         rsq = vectorMag3DSquared(del);
-        /*NL*///printVec3D(screen,"x_ins[0]",x_ins[0]);
-        /*NL*///fprintf(screen,"radius_ins[0] %f xnear[i][3] %f \n",radius_ins[0],xnear[i][3]);
+        /*NL*///if (screen) printVec3D(screen,"x_ins[0]",x_ins[0]);
+        /*NL*///if (screen) fprintf(screen,"radius_ins[0] %f xnear[i][3] %f \n",radius_ins[0],xnear[i][3]);
         radsum = radius_ins[0] + xnear[i][3];
 
         // no success in overlap

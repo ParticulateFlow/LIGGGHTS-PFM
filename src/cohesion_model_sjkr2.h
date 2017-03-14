@@ -32,7 +32,7 @@ COHESION_MODEL(COHESION_SJKR2,sjkr2,2)
 
 #include "pointers.h"
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 
 namespace LIGGGHTS {
 namespace ContactModels {

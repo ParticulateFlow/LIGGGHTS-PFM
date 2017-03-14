@@ -19,10 +19,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_template_sphere.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -302,7 +302,7 @@ void FixTemplateSphere::randomize_single()
 
     pti->groupbit = groupbit;
 
-    /*NL*/ //fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
+    /*NL*/ //if (screen) fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
 }
 
 /* ----------------------------------------------------------------------*/
@@ -358,7 +358,7 @@ void FixTemplateSphere::randomize_ptilist(int n_random,int distribution_groupbit
 
         pti_list[i]->groupbit = groupbit | distribution_groupbit; //NP also contains insert_groupbit
     }
-    /*NL*/ //fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
+    /*NL*/ //if (screen) fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
 }
 
 /* ----------------------------------------------------------------------*/
@@ -373,7 +373,7 @@ double FixTemplateSphere::min_rad()
 
 double FixTemplateSphere::max_rad()
 {
-    /*NL*/ //fprintf(screen, "MAXRAD %f\n",pdf_max(pdf_radius));
+    /*NL*/ //if (screen) fprintf(screen, "MAXRAD %f\n",pdf_max(pdf_radius));
     //NP not called via fix.h, but via fix_particle_distribution_discrete.cpp
     return pdf_max(pdf_radius);
 }
@@ -391,7 +391,7 @@ double FixTemplateSphere::volexpect()
 {
     if(volume_expect < vol_limit)
     {
-        /*NL*/ fprintf(screen,"volume_expect %f\n",volume_expect);
+        /*NL*/ if (screen) fprintf(screen,"volume_expect %f\n",volume_expect);
         error->fix_error(FLERR,this,"Volume expectancy too small. Change 'volume_limit' "
         "if you are sure you know what you're doing");
     }

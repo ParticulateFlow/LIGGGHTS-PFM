@@ -15,9 +15,9 @@
    Contributing author: Sai Jayaraman (University of Notre Dame)
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
+#include <mpi.h>
 #include "atom.h"
-#include "string.h"
+#include <string.h>
 #include "compute_ti.h"
 #include "update.h"
 #include "modify.h"

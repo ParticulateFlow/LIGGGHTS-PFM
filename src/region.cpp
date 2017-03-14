@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "region.h"
 #include "update.h"
 #include "domain.h"
@@ -466,7 +466,7 @@ void Region::options(int narg, char **arg)
 //NP modified C.K.
 void Region::reset_random(int new_seed)
 {
-    if(comm->me == 0) fprintf(screen,"INFO: Resetting random generator for region %s\n",id);
+    if(comm->me == 0 && screen) fprintf(screen,"INFO: Resetting random generator for region %s\n",id);
     random->reset(new_seed + comm->me);
 }
 
@@ -491,7 +491,7 @@ inline void Region::rand_bounds(bool subdomain_flag, double *lo, double *hi)
         vectorConstruct3D(lo,  extent_xlo,extent_ylo,extent_zlo );
         vectorConstruct3D(hi,  extent_xhi,extent_yhi,extent_zhi );
     }
-    /*NL*/// fprintf(screen,"lo %f %f %f hi %f %f %f\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);
+    /*NL*/// if (screen) fprintf(screen,"lo %f %f %f hi %f %f %f\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -510,7 +510,7 @@ void Region::generate_random(double *pos,bool subdomain_flag)
         pos[2] = lo[2] + random->uniform()*diff[2];
     }
     while(!match(pos[0],pos[1],pos[2]));
-    /*NL*///fprintf(screen,"SUCCESS\n");
+    /*NL*///if (screen) fprintf(screen,"SUCCESS\n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -535,8 +535,8 @@ void Region::generate_random_shrinkby_cut(double *pos,double cut,bool subdomain_
         pos[0] = lo[0] + random->uniform()*diff[0];
         pos[1] = lo[1] + random->uniform()*diff[1];
         pos[2] = lo[2] + random->uniform()*diff[2];
-        /*NL*/// fprintf(screen,"cut %f\n",cut);
-        /*NL*/// printVec3D(screen,"diff",diff);
+        /*NL*/// if (screen) fprintf(screen,"cut %f\n",cut);
+        /*NL*/// if (screen) printVec3D(screen,"diff",diff);
     }
     // pos has to be within region, but not within cut of region surface
     while(!match(pos[0],pos[1],pos[2]) || match_cut(pos,cut));
@@ -678,9 +678,9 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
                          "   (c) region is 2d, but should be 3d\n");
 
     vol_local *= (vol_global/vol_local_all);
-    /*NL*/ //fprintf(screen,"local vol %f global vol %f n_test %d n_in_local %d n_in_global_all %d\n",
+    /*NL*/ //if (screen) fprintf(screen,"local vol %f global vol %f n_test %d n_in_local %d n_in_global_all %d\n",
     /*NL*/ //                vol_local,vol_global,n_test,n_in_local,n_in_global_all);
-    /*NL*/ //fprintf(screen,"bbox extend x %f %f y %f %f z % f %f\n",extent_xlo,extent_xhi,extent_ylo,extent_yhi,extent_zlo,extent_zhi);
+    /*NL*/ //if (screen) fprintf(screen,"bbox extend x %f %f y %f %f z % f %f\n",extent_xlo,extent_xhi,extent_ylo,extent_yhi,extent_zlo,extent_zhi);
 }
 
 /* ---------------------------------------------------------------------- */

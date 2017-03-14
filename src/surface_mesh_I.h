@@ -42,6 +42,7 @@ template<int NUM_NODES, int NUM_NEIGH_MAX>
 SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::SurfaceMesh(LAMMPS *lmp)
 :   TrackingMesh<NUM_NODES>(lmp),
     curvature_(1.-EPSILON_CURVATURE),
+    curvature_tolerant_(false),
     minAngle_(cos(MIN_ANGLE_MESH*M_PI/180.)),
 
     // TODO should keep areaMeshSubdomain up-to-date more often for insertion faces
@@ -92,6 +93,16 @@ template<int NUM_NODES, int NUM_NEIGH_MAX>
 void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::setCurvature(double _curvature)
 {
     curvature_ = _curvature;
+}
+
+/* ----------------------------------------------------------------------
+   set mesh curvature tolerance
+------------------------------------------------------------------------- */
+
+template<int NUM_NODES, int NUM_NEIGH_MAX>
+void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::setCurvatureTolerant(bool _tol)
+{
+    curvature_tolerant_ = _tol;
 }
 
 /* ----------------------------------------------------------------------
@@ -177,13 +188,13 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::recalcLocalSurfProperties()
 
       // add to local area
       areaMesh_(1) += area(i);
-      /*NL*///fprintf(this->screen,"triangle %d: area %f, areaacc %f, mesharea %f\n",i,area_(i),areaAcc_(i),areaMesh_);
+      /*NL*///if (this->screen) fprintf(this->screen,"triangle %d: area %f, areaacc %f, mesharea %f\n",i,area_(i),areaAcc_(i),areaMesh_);
     }
 
     // mesh area must be summed up
     MPI_Sum_Scalar(areaMesh_(1),areaMesh_(0),this->world);
 
-    /*NL*/// fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
+    /*NL*/// if (this->screen) fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
     /*NL*///         this->comm->me,areaMeshGlobal(),areaMeshOwned(),areaMeshGhost());
     /*NL*/// this->error->all(FLERR,"check this");
 }
@@ -222,18 +233,18 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::recalcGhostSurfProperties()
       areaMesh_(2) += area(i);
     }
 
-    /*NL*/// fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
+    /*NL*/// if (this->screen) fprintf(this->screen,"proc %d, areaMeshGlobal() %f,areaMeshOwned() %f,areaMeshGhost() %f\n",
     /*NL*///         this->comm->me,areaMeshGlobal(),areaMeshOwned(),areaMeshGhost());
     /*NL*/// this->error->all(FLERR,"check this");
 
-    /*NL*///fprintf(this->screen,"proc %d: areaMeshOwned+Ghost %f areaAcc(lastGhost) %f SHOULD BE EQUAL\n",
+    /*NL*///if (this->screen) fprintf(this->screen,"proc %d: areaMeshOwned+Ghost %f areaAcc(lastGhost) %f SHOULD BE EQUAL\n",
     /*NL*///        this->comm->me,areaMeshOwned()+areaMeshGhost(),areaAcc(nall-1));
     /*NL*/// this->error->all(FLERR,"CHECK this");
 
-    /*NL*///fprintf(this->screen,"proc %d: isInsertionMesh_ %s\n",this->comm->me,isInsertionMesh_?"true":"false");
+    /*NL*///if (this->screen) fprintf(this->screen,"proc %d: isInsertionMesh_ %s\n",this->comm->me,isInsertionMesh_?"true":"false");
     /*NL*/// this->error->all(FLERR,"CHECK this");
 
-    /*NL*/ //if(this->map(21) >= 0) fprintf(this->screen,"proc %d has ID 21 and edgeActive(21)[1] is %s\n",this->comm->me,edgeActive(this->map(21))[1]?"y":"n");
+    /*NL*/ //if(this->map(21) >= 0 && this->screen) fprintf(this->screen,"proc %d has ID 21 and edgeActive(21)[1] is %s\n",this->comm->me,edgeActive(this->map(21))[1]?"y":"n");
 }
 
 /* ----------------------------------------------------------------------
@@ -251,8 +262,8 @@ inline int SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::randomOwnedGhostElement()
     double area = areaMeshOwned()+areaMeshGhost();
 
     double r = this->random_->uniform() * area;
-    /*NL*/ //fprintf(this->screen,"area %f\n",areaMeshGlobal());
-    /*NL*/ //fprintf(this->screen,"areaMeshOwned()+areaMeshGhost() %f\n",areaMeshOwned()+areaMeshGhost());
+    /*NL*/ //if (this->screen) fprintf(this->screen,"area %f\n",areaMeshGlobal());
+    /*NL*/ //if (this->screen) fprintf(this->screen,"areaMeshOwned()+areaMeshGhost() %f\n",areaMeshOwned()+areaMeshGhost());
 
     int first = 0;
     int last = this->sizeLocal()+this->sizeGhost()-1;
@@ -263,7 +274,7 @@ inline int SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::randomOwnedGhostElement()
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 inline int SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::searchElementByAreaAcc(double area,int lo, int hi)
 {
-    /*NL*/ //fprintf(this->screen,"areaAcc(lo) %f areaAcc(hi) %f\n",areaAcc(lo),areaAcc(hi));
+    /*NL*/ //if (this->screen) fprintf(this->screen,"areaAcc(lo) %f areaAcc(hi) %f\n",areaAcc(lo),areaAcc(hi));
 
     if( (lo < 1 || area > areaAcc(lo-1)) && (area <= areaAcc(lo)) )
         return lo;
@@ -306,6 +317,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::calcSurfPropertiesOfNewElement()
     edgeVec_.set(n,nodeTmp);
 
     /*NP
+    if (this->screen) {
     printVec3D(this->screen,"edge len", vecTmpNumNodes);
     printVec3D(this->screen,"edge vec0", nodeTmp[0]);
     printVec3D(this->screen,"edge vec1", nodeTmp[1]);
@@ -319,7 +331,8 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::calcSurfPropertiesOfNewElement()
     printVec3D(this->screen,"edge len", edgeLen(n+1));
     printVec3D(this->screen,"edge vec0", edgeVec(n+1)[0]);
     printVec3D(this->screen,"edge vec1", edgeVec(n+1)[1]);
-    printVec3D(this->screen,"edge vec2", edgeVec(n+1)[2]);*/
+    printVec3D(this->screen,"edge vec2", edgeVec(n+1)[2]);
+    }*/
 
     // calc surface normal
     calcSurfaceNorm(n,vecTmp3);
@@ -347,7 +360,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::calcSurfPropertiesOfNewElement()
 
     if(hasSmallAngle)
     {
-        if(TrackingMesh<NUM_NODES>::verbose() && 0 == this->comm->me)
+        if(TrackingMesh<NUM_NODES>::verbose() && this->comm->me == 0 && this->screen)
             fprintf(this->screen,"Mesh %s: elements %d (line %d) has high aspect ratio (angle < %f °) \n",
                     this->mesh_id_,n,TrackingMesh<NUM_NODES>::lineNo(n),this->angleLimit());
         nBelowAngle_++;
@@ -367,7 +380,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::calcSurfPropertiesOfNewElement()
     //NP but is calculated anyway via refresh() and refreshGhosts()
     //NP in MultiNodeMeshParallel::setup() and initialSetup()
 
-    /*NL*///fprintf(this->screen,"triangle %d: id %d,area %f, areaacc %f, mesharea %f\n",n,this->id_(n),area_(n),areaAcc_(n),areaMesh_(0));
+    /*NL*///if (this->screen) fprintf(this->screen,"triangle %d: id %d,area %f, areaacc %f, mesharea %f\n",n,this->id_(n),area_(n),areaAcc_(n),areaMesh_(0));
 
     destroy<double>(nodeTmp);
     destroy<double>(vecTmpNumNodes);
@@ -414,10 +427,10 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::calcObtuseAngleIndex(int nElem, int i
 {
     //NP this is not AB dot AC but AB dot CA --> swap sign
     dot = vectorDot3D(edgeVec_(nElem)[iNode],edgeVec_(nElem)[(iNode-1+NUM_NODES)%NUM_NODES]);
-    /*NL*/ //fprintf(this->screen,"angle %f, minAngle_ %f\n",i,angle,minAngle_);
+    /*NL*/ //if (this->screen) fprintf(this->screen,"angle %f, minAngle_ %f\n",i,angle,minAngle_);
     if(dot > 0.)
     {
-        /*NL*/ //if(n==12880) fprintf(this->screen,"TRI 12880 is obtuse at node %d, angle %f, minAngle_ %f\n",i,angle,minAngle_);
+        /*NL*/ //if(n==12880 && this->screen) fprintf(this->screen,"TRI 12880 is obtuse at node %d, angle %f, minAngle_ %f\n",i,angle,minAngle_);
         obtuseAngleIndex_.set(nElem,iNode);
     }
     else
@@ -431,7 +444,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::calcObtuseAngleIndex(int nElem, int i
 template<int NUM_NODES, int NUM_NEIGH_MAX>
 void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::buildNeighbours()
 {
-    /*NL*/ //fprintf(this->screen,"building neigh topology\n");
+    /*NL*/ //if (this->screen) fprintf(this->screen,"building neigh topology\n");
 
     // iterate over all surfaces, over ghosts as well
     //NP this is important for parallel correction!!
@@ -490,7 +503,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::buildNeighbours()
     delete []idListHasNode;
     this->memory->destroy(edgeList);
     this->memory->destroy(edgeEndPoint);
-    /*NL*/ //fprintf(this->screen,"neigh end");
+    /*NL*/ //if (this->screen) fprintf(this->screen,"neigh end");
 
     // correct edge and corner activation/deactivation in parallel
     //NP this is to avoid false positives for cases where edges and corners are
@@ -521,7 +534,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
         {
             if(this->nSharedNodes(i,j) == NUM_NODES)
             {
-                fprintf(this->screen,"ERROR: Mesh %s: elements %d and %d (lines %d and %d) are duplicate\n",
+                if(this->screen) fprintf(this->screen,"ERROR: Mesh %s: elements %d and %d (lines %d and %d) are duplicate\n",
                         this->mesh_id_,TrackingMesh<NUM_NODES>::id(i),TrackingMesh<NUM_NODES>::id(j),
                         TrackingMesh<NUM_NODES>::lineNo(i),TrackingMesh<NUM_NODES>::lineNo(j));
                 if(!this->removeDuplicates())
@@ -542,17 +555,19 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
         calcObtuseAngleIndex(i,iNode,dot);
         if(-dot > curvature_)
         {
-            fprintf(this->screen,"ERROR: Mesh %s: The minumum angle of mesh element %d (line %d) is lower than the specified curvature. "
+            if(this->screen) fprintf(this->screen,"%s: Mesh %s: The minumum angle of mesh element %d (line %d) is lower than the specified curvature. "
                                    "Increase mesh quality or decrease curvature (currently %f°)\n",
-                                    this->mesh_id_,TrackingMesh<NUM_NODES>::id(i),TrackingMesh<NUM_NODES>::lineNo(i),acos(curvature_)*180./M_PI);
-            this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. You can try setting 'curvature' to 1e-5 or lower");
+                                  curvature_tolerant_?"WARNING:":"ERROR",this->mesh_id_,TrackingMesh<NUM_NODES>::id(i),
+                                  TrackingMesh<NUM_NODES>::lineNo(i),acos(curvature_)*180./M_PI);
+            if(!curvature_tolerant_)
+                this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. You can try setting 'curvature' to 1e-5 or lower or use 'curvature_tolerant yes'");
         }
       }
     }
 
     if(this->nBelowAngle() > 0 && 0 == me)
     {
-        fprintf(this->screen,"Mesh %s: %d elements have high aspect ratio (angle < %f °)\n",
+        if(this->screen) fprintf(this->screen,"Mesh %s: %d elements have high aspect ratio (angle < %f °)\n",
                 this->mesh_id_,this->nBelowAngle(),this->angleLimit());
         this->error->warning(FLERR,"Fix mesh: Mesh contains highly skewed element, moving mesh (if used) will not parallelize well");
     }
@@ -561,7 +576,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
     {
         //NP warning message already printed to screen in handleEdge
         //NP no error there because could be caused by duplicate faces
-        fprintf(this->screen,"Mesh %s: %d mesh elements have more than %d neighbors \n",
+        if(this->screen) fprintf(this->screen,"Mesh %s: %d mesh elements have more than %d neighbors \n",
                 this->mesh_id_,this->nTooManyNeighs(),NUM_NEIGH_MAX);
         this->error->one(FLERR,"Fix mesh: Bad mesh, cannot continue. Possibly corrupt elements with too many neighbors.\n"
                                 "If you know what you're doing, you can try to change the definition of SurfaceMeshBase in tri_mesh.h and recompile");
@@ -569,7 +584,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::qualityCheck()
 
     if(nOverlapping() > 0)
     {
-        fprintf(this->screen,"WARNING: Mesh %s: proc %d has %d element pairs that are coplanar, "
+        if(this->screen) fprintf(this->screen,"WARNING: Mesh %s: proc %d has %d element pairs that are coplanar, "
                 "share an edge and overlap (but are not duplicate)\n",
                 this->mesh_id_,me,nOverlapping());
     }
@@ -588,7 +603,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::parallelCorrection()
     int sizeGlob = this->sizeGlobal();
     int len = NUM_NODES*sizeGlob;
 
-    /*NL*/ //fprintf(this->screen,"tag max %d, sizeGlob %d\n",this->tag_max(),sizeGlob);
+    /*NL*/ //if (this->screen) fprintf(this->screen,"tag max %d, sizeGlob %d\n",this->tag_max(),sizeGlob);
 
     int *edgea = new int[len];
     int *cornera = new int[len];
@@ -655,10 +670,12 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanar(int tag_a, int tag_b)
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
     /*NL*/ //if(127 == tag_a || 127 == tag_b){
-    /*NL*/ // fprintf(this->screen,"a %d b %d  dot %f curvature_ %f\n",tag_a,tag_b, dot,curvature_);
-    /*NL*/ // printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
-    /*NL*/ // printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
-    /*NL*/ // if(fabs(dot) > curvature_) fprintf(this->screen,"tag_a %d tag_b %d  are coplanar \n",tag_a,tag_b);
+    /*NL*/ // if(this->screen){
+    /*NL*/ //  fprintf(this->screen,"a %d b %d  dot %f curvature_ %f\n",tag_a,tag_b, dot,curvature_);
+    /*NL*/ //  printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
+    /*NL*/ //  printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
+    /*NL*/ //  if(fabs(dot) > curvature_) fprintf(this->screen,"tag_a %d tag_b %d  are coplanar \n",tag_a,tag_b);
+    /*NL*/ // }
     /*NL*/ //}
 
     // need fabs in case surface normal is other direction
@@ -689,11 +706,13 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNeighs(int tag_a, int tag_
     if(!areNeighs) return false;
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
+    /*NL*/ //if(this->screen){
     /*NL*/ //fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
     /*NL*/ //printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
     /*NL*/ //printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
     /*NL*/ //if(fabs(dot) > curvature_) fprintf(this->screen,"a %d b %d  are coplanar \n",a,b);
     /*NL*/ //else  fprintf(this->screen,"a %d b %d  are NOT coplanar \n",a,b);
+    /*NL*/ //}
 
     // need fabs in case surface normal is other direction
     if(fabs(dot) > curvature_) return true;
@@ -725,10 +744,12 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::areCoplanarNodeNeighs(int tag_a, int 
     if(!areNeighs && MultiNodeMesh<NUM_NODES>::nSharedNodes(a,b) == 0) return false;
 
     double dot = vectorDot3D(surfaceNorm(a),surfaceNorm(b));
-    /*NL*/ //fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
-    /*NL*/// printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
-    /*NL*/// printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
-    /*NL*/ //if(fabs(dot) > curvature_) fprintf(this->screen,"a %d b %d  are coplanar \n",a,b);
+    /*NL*/ //if(this->screen){
+    /*NL*/ // fprintf(this->screen,"a %d b %d  dot %f\n",a,b, dot);
+    /*NL*/ // printVec3D(this->screen,"surfaceNorm(a)",surfaceNorm(a));
+    /*NL*/ // printVec3D(this->screen,"surfaceNorm(b)",surfaceNorm(b));
+    /*NL*/ // if(fabs(dot) > curvature_) fprintf(this->screen,"a %d b %d  are coplanar \n",a,b);
+    /*NL*/ //}
 
     // need fabs in case surface normal is other direction
     if(fabs(dot) > curvature_) return true;
@@ -755,11 +776,11 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::coplanarNeighsOverlap(int iSrf,int iE
     dot1 = vectorDot3D(vecI,edgeN);
     dot2 = vectorDot3D(vecJ,edgeN);
 
-    /*NL*///fprintf(this->screen,"surfaces %d %d dot1*dot2 %f\n",iSrf,jSrf,dot1*dot2);
+    /*NL*///if (this->screen) fprintf(this->screen,"surfaces %d %d dot1*dot2 %f\n",iSrf,jSrf,dot1*dot2);
 
     if(dot1*dot2 > 0.)
     {
-        if(TrackingMesh<NUM_NODES>::verbose())
+        if(TrackingMesh<NUM_NODES>::verbose() && this->screen)
         {
             //NP have info about lineNo only for local elements
             //NP in parallel, pair is handled by two procs so all info is written out
@@ -776,7 +797,7 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::coplanarNeighsOverlap(int iSrf,int iE
         }
 
         nOverlapping_++;
-        /*NL*///fprintf(this->screen,"i %d j %d share node: %s\n",iSrf,jSrf,MultiNodeMesh<NUM_NODES>::shareNode(iSrf,jSrf,a,b)?"yes":"no");
+        /*NL*///if (this->screen) fprintf(this->screen,"i %d j %d share node: %s\n",iSrf,jSrf,MultiNodeMesh<NUM_NODES>::shareNode(iSrf,jSrf,a,b)?"yes":"no");
         //this->error->warning(FLERR,"Fix mesh: Check overlapping mesh elements");
         return true;
     }
@@ -822,7 +843,7 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::shareEdge(int iSrf, int jSrf, int &iE
       // following implementation of shareNode(), the only remaining option to
       // share an edge is that the next node of iSrf is equal to the next or previous
       // node if jSrf
-      /*NL*/ //fprintf(this->screen,"surfaces %d %d do share nodes %d %d\n",iSrf,jSrf,i,j);
+      /*NL*/ //if (this->screen) fprintf(this->screen,"surfaces %d %d do share nodes %d %d\n",iSrf,jSrf,i,j);
 
       //NP if nodes are 0 and 2, then edge index is 2
       if(2 == iNode1+iNode2)
@@ -839,7 +860,7 @@ bool SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::shareEdge(int iSrf, int jSrf, int &iE
 
       return true;
     }
-    /*NL*/ //fprintf(this->screen,"surfaces %d %d do not share edge\n",iSrf,jSrf);
+    /*NL*/ //if (this->screen) fprintf(this->screen,"surfaces %d %d do not share edge\n",iSrf,jSrf);
     iEdge = -1; jEdge = -1;
     return false;
 }
@@ -855,12 +876,14 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge,
 
     if(neighflag)
     {
+        /*NL*/ //if (this->screen) {
         /*NL*/ //if(1971 == TrackingMesh<NUM_NODES>::id(iSrf))
         /*NL*/ //     fprintf(this->screen,"Mesh %s: element id %d (line %d) has element id %d as neigh\n",
         /*NL*/ //             this->mesh_id_,TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::lineNo(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
         /*NL*/ //if(1971 == TrackingMesh<NUM_NODES>::id(jSrf))
         /*NL*/ //     fprintf(this->screen,"Mesh %s: element id %d (line %d) has element id %d as neigh\n",
         /*NL*/ //             this->mesh_id_,TrackingMesh<NUM_NODES>::id(jSrf),TrackingMesh<NUM_NODES>::lineNo(jSrf),TrackingMesh<NUM_NODES>::id(iSrf));
+        /*NL*/ //}
 
 
         if(nNeighs_(iSrf) == NUM_NEIGH_MAX || nNeighs_(jSrf) == NUM_NEIGH_MAX)
@@ -872,8 +895,10 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge,
                 ii = jSrf;
 
             nTooManyNeighs_++;
-            fprintf(this->screen,"Mesh %s: element id %d (line %d) has %d neighs, but only %d expected\n",
+            if (this->screen) fprintf(this->screen,"Mesh %s: element id %d (line %d) has %d neighs, but only %d expected\n",
                     this->mesh_id_,TrackingMesh<NUM_NODES>::id(ii),TrackingMesh<NUM_NODES>::lineNo(ii),nNeighs_(ii)+1,NUM_NEIGH_MAX);
+            if(MultiNodeMesh<NUM_NODES>::elementExclusionList())
+                fprintf(MultiNodeMesh<NUM_NODES>::elementExclusionList(),"%d\n",TrackingMesh<NUM_NODES>::lineNo(ii));
             //NP no error here because could be caused by duplicate faces
             //NP so should throw error on duplicate faces first
         }
@@ -895,13 +920,13 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge,
     {
         if(TrackingMesh<NUM_NODES>::id(iSrf) < TrackingMesh<NUM_NODES>::id(jSrf))
         {
-            /*NL*/ //if(127 == TrackingMesh<NUM_NODES>::id(iSrf) || 127 == TrackingMesh<NUM_NODES>::id(jSrf))fprintf(this->screen,"non-coplanar %d and %d\n",TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
+            /*NL*/ //if (this->screen && (127 == TrackingMesh<NUM_NODES>::id(iSrf) || 127 == TrackingMesh<NUM_NODES>::id(jSrf)))fprintf(this->screen,"non-coplanar %d and %d\n",TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
             edgeActive(iSrf)[iEdge] = false;
             edgeActive(jSrf)[jEdge] = true;
         }
         else
         {
-            /*NL*/ //if(127 == TrackingMesh<NUM_NODES>::id(iSrf) || 127 == TrackingMesh<NUM_NODES>::id(jSrf))fprintf(this->screen,"non-coplanar %d and %d\n",TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
+            /*NL*/ //if (this->screen && (127 == TrackingMesh<NUM_NODES>::id(iSrf) || 127 == TrackingMesh<NUM_NODES>::id(jSrf)))fprintf(this->screen,"non-coplanar %d and %d\n",TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
             edgeActive(iSrf)[iEdge] = true;
             edgeActive(jSrf)[jEdge] = false;
         }
@@ -909,7 +934,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleSharedEdge(int iSrf, int iEdge,
     else // coplanar
     {
         if(!coplanar) this->error->one(FLERR,"internal error");
-        /*NL*/ //if(127 == TrackingMesh<NUM_NODES>::id(iSrf) || 127 == TrackingMesh<NUM_NODES>::id(jSrf))fprintf(this->screen,"Coplanar %d and %d\n",TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
+        /*NL*/ //if (this->screen && (127 == TrackingMesh<NUM_NODES>::id(iSrf) || 127 == TrackingMesh<NUM_NODES>::id(jSrf)))fprintf(this->screen,"Coplanar %d and %d\n",TrackingMesh<NUM_NODES>::id(iSrf),TrackingMesh<NUM_NODES>::id(jSrf));
         edgeActive(iSrf)[iEdge] = false;
         edgeActive(jSrf)[jEdge] = false;
     }
@@ -944,14 +969,14 @@ int SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::handleCorner(int iSrf, int iNode,
     {
         for(int j = i+1; j < nEdgeList; j++)
         {
-            /*NL*///printVec3D(this->screen,"vec1",edgeList[i]);
-            /*NL*///printVec3D(this->screen,"vec2",edgeList[j]);
+            /*NL*///if (this->screen) printVec3D(this->screen,"vec1",edgeList[i]);
+            /*NL*///if (this->screen) printVec3D(this->screen,"vec2",edgeList[j]);
             if(edgeVecsColinear(edgeList[i],edgeList[j]) && !this->nodesAreEqual(edgeEndPoint[i],edgeEndPoint[j]))
                 hasTwoColinearEdges = true;
         }
     }
 
-    /*NL*/ //fprintf(this->screen,"result mesh id %d, node %d, nNodeNeighs %d anyActiveEdge %s hasTwoColinearEdges %s is highest id sharing this node %s final %s \n",
+    /*NL*/ //if (this->screen) fprintf(this->screen,"result mesh id %d, node %d, nNodeNeighs %d anyActiveEdge %s hasTwoColinearEdges %s is highest id sharing this node %s final %s \n",
     /*NL*/ //      TrackingMesh<NUM_NODES>::id(iSrf),iNode,nIdListHasNode,anyActiveEdge?"y":"n",hasTwoColinearEdges?"y":"n",
     /*NL*/ //       TrackingMesh<NUM_NODES>::id(iSrf) == maxId?"yes":"no",
     /*NL*/ //       ((hasTwoColinearEdges || !anyActiveEdge)||(TrackingMesh<NUM_NODES>::id(iSrf) != maxId))?"deact":"act");
@@ -984,8 +1009,10 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::checkNodeRecursive(int iSrf,double *n
 {
     int idNeigh, iNeigh, nEdgeList = 2*nIdListHasNode, nEdgeEndPoint = 2*nIdListHasNode;
 
+    /*NL*/ //if (this->screen) {
     /*NL*/ //fprintf(this->screen,"called with id %d, looking for %f %f %f, nIdListVisited %d\n",TrackingMesh<NUM_NODES>::id(iSrf),nodeToCheck[0],nodeToCheck[1],nodeToCheck[2],nIdListVisited);
     /*NL*/ //for(int i = 0; i < nIdListVisited; i++) fprintf(this->screen,"was already at %d\n",idListVisited[i]);
+    /*NL*/ //}
 
     // check if I have been here already
     for(int i = 0; i < nIdListVisited; i++)
@@ -998,7 +1025,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::checkNodeRecursive(int iSrf,double *n
     int iNode = this->containsNode(iSrf, nodeToCheck);
     if(iNode >= 0)
     {
-        /*NL*/ //fprintf(this->screen," found node at id %d\n",TrackingMesh<NUM_NODES>::id(iSrf));
+        /*NL*/ //if (this->screen) fprintf(this->screen," found node at id %d\n",TrackingMesh<NUM_NODES>::id(iSrf));
 
         idListHasNode[nIdListHasNode++] = TrackingMesh<NUM_NODES>::id(iSrf);
         // node iNode is associated with edge iNode and iNode-1
@@ -1021,8 +1048,8 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::checkNodeRecursive(int iSrf,double *n
                                     idListHasNode,edgeList,edgeEndPoint,anyActiveEdge);
         }
     }
-    /*NL*/ //else fprintf(this->screen," did not find node at id %d\n",TrackingMesh<NUM_NODES>::id(iSrf));
-    /*NL*/ //fprintf(this->screen,"RET 1\n");
+    /*NL*/ //else if (this->screen) fprintf(this->screen," did not find node at id %d\n",TrackingMesh<NUM_NODES>::id(iSrf));
+    /*NL*/ //if (this->screen) fprintf(this->screen,"RET 1\n");
 }
 
 
@@ -1081,17 +1108,21 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::rotate(double *totalQ, double *dQ,dou
     /*NP
     for(int i=0;i<this->center_.size();i++)
     {
+      if(this->screen) {
       printVec3D(this->screen,"edgeLen from autorotate",edgeLen(i));
       printVec3D(this->screen,"edgeVec from autorotate",edgeVec(i)[0]);
       printVec3D(this->screen,"edgeVec from autorotate",edgeVec(i)[1]);
       printVec3D(this->screen,"edgeVec from autorotate",edgeVec(i)[2]);
+      }
       calcEdgeVecLen(i, edgeLen(i), edgeVec(i));
       calcSurfaceNorm(i, surfaceNorm(i));
       calcEdgeNormals(i, edgeNorm(i));
+      if(this->screen) {
       printVec3D(this->screen,"edgeLen from recalc",edgeLen(i));
       printVec3D(this->screen,"edgeVec from recalc",edgeVec(i)[0]);
       printVec3D(this->screen,"edgeVec from recalc",edgeVec(i)[1]);
       printVec3D(this->screen,"edgeVec from recalc",edgeVec(i)[2]);
+      }
     }
     */
 }
@@ -1107,17 +1138,21 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::rotate(double *dQ,double *origin)
     dont have to do this here
     for(int i=0;i<this->center_.size();i++)
     {
+      if(this->screen) {
       printVec3D(this->screen,"edgeLen from autorotate",edgeLen(i));
       printVec3D(this->screen,"edgeVec from autorotate",edgeVec(i)[0]);
       printVec3D(this->screen,"edgeVec from autorotate",edgeVec(i)[1]);
       printVec3D(this->screen,"edgeVec from autorotate",edgeVec(i)[2]);
+      }
       calcEdgeVecLen(i, edgeLen(i), edgeVec(i));
       calcSurfaceNorm(i, surfaceNorm(i));
       calcEdgeNormals(i, edgeNorm(i));
+      if(this->screen) {
       printVec3D(this->screen,"edgeLen from recalc",edgeLen(i));
       printVec3D(this->screen,"edgeVec from recalc",edgeVec(i)[0]);
       printVec3D(this->screen,"edgeVec from recalc",edgeVec(i)[1]);
       printVec3D(this->screen,"edgeVec from recalc",edgeVec(i)[2]);
+      }
     }
     this->error->all(FLERR,"end");
     */

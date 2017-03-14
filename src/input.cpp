@@ -21,13 +21,13 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
-#include "unistd.h"
-#include "sys/stat.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "input.h"
 #include "style_command.h"
 #include "universe.h"
@@ -467,7 +467,7 @@ void Input::substitute(char *&str, char *&str2, int &max, int &max2, int flag)
         value = variable->retrieve(var);
       }
       if (value == NULL) {
-          /*NL*/ fprintf(screen,"Illegal variable: the unknown variable name is '%s'\n",var);
+          /*NL*/ if (screen) fprintf(screen,"Illegal variable: the unknown variable name is '%s'\n",var);
           error->one(FLERR,"Substitution for illegal variable");
       }
 

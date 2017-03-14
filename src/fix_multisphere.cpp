@@ -19,10 +19,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_multisphere.h"
 #include "domain_wedge.h"
 #include "math_extra.h"
@@ -343,23 +343,23 @@ void FixMultisphere::setup(int vflag)
   //NP execute communication routine
   calc_force();
 
-  /*NL*/ if(LMP_DEBUGMODE_RIGID_MS) fprintf(screen,"FixMultisphere::setup finished on proc %d\n",comm->me);
+  /*NL*/ if(LMP_DEBUGMODE_RIGID_MS && screen) fprintf(screen,"FixMultisphere::setup finished on proc %d\n",comm->me);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMultisphere::setup_pre_neighbor()
 {
-    /*NL*/ //fprintf(screen,"SUPN A step %d proc %d: nbody %d\n",update->ntimestep,comm->me,n_body());
+    /*NL*/ //if (screen) fprintf(screen,"SUPN A step %d proc %d: nbody %d\n",update->ntimestep,comm->me,n_body());
     pre_neighbor();
-    /*NL*/ //fprintf(screen,"SUPN B step %d proc %d: nbody %d\n",update->ntimestep,comm->me,n_body());
+    /*NL*/ //if (screen) fprintf(screen,"SUPN B step %d proc %d: nbody %d\n",update->ntimestep,comm->me,n_body());
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMultisphere::set_arrays(int i)
 {
-    /*NL*/ //fprintf(screen,"set arrays called\n");
+    /*NL*/ //if (screen) fprintf(screen,"set arrays called\n");
     body_[i] = -1;
 }
 
@@ -402,8 +402,8 @@ void FixMultisphere::initial_integrate(int vflag)
   if(strstr(style,"nointegration"))
     return;
 
-  /*NL*/ //fprintf(screen,"nbody_all %d\n",n_body_all());
-  /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d at step %d\n",comm->me,7833,update->ntimestep);
+  /*NL*/ //if(screen) fprintf(screen,"nbody_all %d\n",n_body_all());
+  /*NL*/ //if(screen && map(7833) >= 0) fprintf(screen,"proc %d has body %d at step %d\n",comm->me,7833,update->ntimestep);
 
   for (int ibody = 0; ibody < nbody; ibody++) {
 
@@ -415,10 +415,10 @@ void FixMultisphere::initial_integrate(int vflag)
         xcm[ibody][0] += dtv * vcm[ibody][0];
         xcm[ibody][1] += dtv * vcm[ibody][1];
         xcm[ibody][2] += dtv * vcm[ibody][2];
-        /*NL*/ //printVec3D(screen,"vcm[ibody] FixMultisphere::initial_integrate",vcm[ibody]);
-        /*NL*/ //printVec3D(screen,"xcm[ibody] FixMultisphere::initial_integrate",xcm[ibody]);
+        /*NL*/ //if (screen) printVec3D(screen,"vcm[ibody] FixMultisphere::initial_integrate",vcm[ibody]);
+        /*NL*/ //if (screen) printVec3D(screen,"xcm[ibody] FixMultisphere::initial_integrate",xcm[ibody]);
         /*NL*/ //error->one(FLERR,"end");
-        /*NL*/ //fprintf(screen,"this should not be\n");
+        /*NL*/ //if (screen) fprintf(screen,"this should not be\n");
         continue;
     }
 
@@ -438,10 +438,12 @@ void FixMultisphere::initial_integrate(int vflag)
     xcm[ibody][1] += dtv * vcm[ibody][1];
     xcm[ibody][2] += dtv * vcm[ibody][2];
 
+    /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"masstotal[ibody] %f\n",masstotal[ibody]);
     /*NL*/ //printVec3D(screen,"xcm[ibody]",xcm[ibody]);
     /*NL*/ //printVec3D(screen,"vcm[ibody]",vcm[ibody]);
     /*NL*/ //printVec3D(screen,"fcm[ibody]",fcm[ibody]);
+    /*NL*/ //}
 
     // update angular momentum by 1/2 step
 
@@ -463,7 +465,7 @@ void FixMultisphere::initial_integrate(int vflag)
 
     /*NL*/ //bool eval =  true; //13500 < update->ntimestep && 14000 > update->ntimestep;
 
-    /*NL*/ //if(tag(ibody) == 88 && eval) {
+    /*NL*/ //if(screen && tag(ibody) == 88 && eval) {
     /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
     /*NL*/ //                                      update->ntimestep,comm->me,
     /*NL*/ //                                     xcm[ibody][0],xcm[ibody][1],xcm[ibody][2],
@@ -536,7 +538,7 @@ void FixMultisphere::final_integrate()
 
     /*NL*/ //bool eval =  13500 < update->ntimestep && 14000 > update->ntimestep;
 
-    /*NL*/ //if(tag(ibody) == 60 && eval) {
+    /*NL*/ //if(screen && tag(ibody) == 60 && eval) {
     /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " final integrate proc %d, xcm %f %f %f vcm %f %f %f omegacm %f %f %f\n",
     /*NL*/ //                                      update->ntimestep,comm->me,
     /*NL*/ //                                     xcm[ibody][0],xcm[ibody][1],xcm[ibody][2],
@@ -632,7 +634,7 @@ void FixMultisphere::calc_force()
     if(!domain->is_owned_or_first_ghost(i))
         continue;
 
-    /*NL*///fprintf(screen,"A step " BIGINT_FORMAT ",body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
+    /*NL*///if (screen) fprintf(screen,"A step " BIGINT_FORMAT ",body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
 
     vectorCopy3D(f_atom[i],f_one);
     vectorCopy3D(torque_atom[i],torque_one);
@@ -659,7 +661,7 @@ void FixMultisphere::calc_force()
 
     /*NL*/ //bool eval = 3100 < update->ntimestep && 3175 > update->ntimestep;
 
-    /*NL*/ //if((tag(ibody) == 88) && eval) {
+    /*NL*/ //if(screen && (tag(ibody) == 88) && eval) {
     /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " proc %d atom tag %d, ghost %s,pos %f %f %f f %f %f %f torque_one %f %f %f, dx %f dy %f dz %f\n",
     /*NL*/ //                                      update->ntimestep,comm->me,atag[i],i>=nlocal?"yes":"no",
     /*NL*/ //                                      x[i][0],x[i][1],x[i][2],
@@ -667,12 +669,12 @@ void FixMultisphere::calc_force()
     /*NL*/ //                                      torque_one[0],torque_one[1],torque_one[2],dx,dy,dz);
     /*NL*/ //}
 
-    /*NL*///fprintf(screen,"B step %d,body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
+    /*NL*///if (screen) fprintf(screen,"B step %d,body tag %d, atom tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),atom->tag[i],fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
   }
 
   /*NL*/ //bool eval = 18000 < update->ntimestep && 20000 > update->ntimestep;
   /*NL*/ //ibody = map(238);
-  /*NL*/ //if(ibody >= 0 && eval) {
+  /*NL*/ //if(screen && ibody >= 0 && eval) {
   /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " fcm on body after summation (proc %d) %f %f %f torquecm %f %f %f\n",
   /*NL*/ //                                      update->ntimestep,comm->me,
   /*NL*/ //                                      fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],
@@ -690,14 +692,14 @@ void FixMultisphere::calc_force()
             fcm[ibody][0] += masstotal[ibody]*grav[0];
             fcm[ibody][1] += masstotal[ibody]*grav[1];
             fcm[ibody][2] += masstotal[ibody]*grav[2];
-            /*NL*///fprintf(screen,"C step %d,body tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
+            /*NL*///if (screen) fprintf(screen,"C step %d,body tag %d: force %f %f %f\n",update->ntimestep,tag(ibody),fcm[ibody][0],fcm[ibody][1],fcm[ibody][2]);
       }
   }
 
   for (ibody = 0; ibody < nbody; ibody++)
   {
       vectorAdd3D(fcm[ibody],dragforce_cm[ibody],fcm[ibody]);
-      /*NL*///fprintf(screen,"body tag %d: forcecm %f %f %f, torquecm %f %f %f\n",tag(ibody),fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],torquecm[ibody][0],torquecm[ibody][1],torquecm[ibody][2]);
+      /*NL*///if (screen) fprintf(screen,"body tag %d: forcecm %f %f %f, torquecm %f %f %f\n",tag(ibody),fcm[ibody][0],fcm[ibody][1],fcm[ibody][2],torquecm[ibody][0],torquecm[ibody][1],torquecm[ibody][2]);
   }
 }
 
@@ -755,7 +757,7 @@ void FixMultisphere::set_xv(int ghostflag)
 
   for (int i = 0; i < nloop; i++) {
 
-    /*NL*/ //if(atom->tag[i] == 23497) fprintf(screen,"atom tag 23497 has body %d\n",body_[i]);
+    /*NL*/ //if(screen && atom->tag[i] == 23497) fprintf(screen,"atom tag 23497 has body %d\n",body_[i]);
 
     if (body_[i] < 0) continue;
     ibody = map(body_[i]);
@@ -766,7 +768,7 @@ void FixMultisphere::set_xv(int ghostflag)
     ybox = (image[i] >> IMGBITS & IMGMASK) - IMGMAX;
     zbox = (image[i] >> IMG2BITS) - IMGMAX;
 
-    /*NL*/// fprintf(screen,"boxes %d %d %d image %d\n",xbox,ybox,zbox,image[i]);
+    /*NL*/// if (screen) fprintf(screen,"boxes %d %d %d image %d\n",xbox,ybox,zbox,image[i]);
 
     // save old positions and velocities for virial
 
@@ -802,14 +804,14 @@ void FixMultisphere::set_xv(int ghostflag)
 
     /*NL*/ //bool eval = true; //50000 < update->ntimestep && 55000 > update->ntimestep;
 
-    /*NL*/ //if(tag(ibody) == 1 && eval) {
+    /*NL*/ //if(screen && tag(ibody) == 1 && eval) {
     /*NL*/ //     fprintf(screen,"step " BIGINT_FORMAT " proc %d atom tag %d ghost %s, boxes %d %d %d \n",
     /*NL*/ //                                      update->ntimestep,comm->me,atag[i],i>=nlocal?"yes":"no",
     /*NL*/ //                                      xbox,ybox,zbox);
     /*NL*/ //}
 
 
-    /*NL*///if(!domain->is_in_domain(x[i]))
+    /*NL*///if(screen && !domain->is_in_domain(x[i]))
     /*NL*///{
     /*NL*///    fprintf(screen,"particle %d, tag %d\n",i,atom->tag[i]);
     /*NL*///    printVec3D(screen,"omega_one[i]",omega_one[i]);
@@ -978,16 +980,16 @@ void FixMultisphere::pre_exchange()
     int i = 0;
 
     /*NL*/ //double sum = vectorSumN(existflag,atom->nlocal);
-    /*NL*/ //fprintf(screen,"sum pre_exchange %f nlocal %d\n",sum,atom->nlocal);
+    /*NL*/ //if (screen) fprintf(screen,"sum pre_exchange %f nlocal %d\n",sum,atom->nlocal);
 
     while(i < atom->nlocal)
     {
         //NP important to use round() here
         //NP never check if(double_variable) !!!!
-        /*NL*/ //fprintf(screen,"delfag particle %d: %f\n",atom->tag[i],delflag[i]);
+        /*NL*/ //if (screen) fprintf(screen,"delfag particle %d: %f\n",atom->tag[i],delflag[i]);
         if(round(delflag[i]) == 1.)
         {
-            /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
+            /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " proc %d deleting particle tag %d\n",update->ntimestep,comm->me,atom->tag[i]);
             avec->copy(atom->nlocal-1,i,1);
             atom->nlocal--;
         }
@@ -1023,8 +1025,8 @@ void FixMultisphere::pre_neighbor()
     double *corner_ghost = fix_corner_ghost_->vector_atom;
     vectorZeroizeN(corner_ghost,nall);
 
-    /*NL*/// fprintf(screen,"step %d on proc %d: x-sublo %f x-subhi %f\n",update->ntimestep,comm->me,domain->sublo[0],domain->subhi[0]);
-    /*NL*/ //fprintf(screen,"step %d proc %d: nbody %d, nall %d\n",update->ntimestep,comm->me,n_body(),atom->nlocal+atom->nghost);
+    /*NL*/ //if (screen) fprintf(screen,"step %d on proc %d: x-sublo %f x-subhi %f\n",update->ntimestep,comm->me,domain->sublo[0],domain->subhi[0]);
+    /*NL*/ //if (screen) fprintf(screen,"step %d proc %d: nbody %d, nall %d\n",update->ntimestep,comm->me,n_body(),atom->nlocal+atom->nghost);
 
     //NP communicate displace, image, body to ghosts
     //NP since needed in set_xv(), set_v()
@@ -1065,7 +1067,7 @@ void FixMultisphere::pre_neighbor()
 
     //NP need to re-set map as well
     //NP as exchange has happened so bodies deleted and added
-    /*NL*/ //fprintf(screen,"generating map after exchange");
+    /*NL*/ //if (screen) fprintf(screen,"generating map after exchange");
     multisphere_.generate_map();
 
     //NP check for lost atoms (e.g. lost during atom communication via verlet,
@@ -1085,14 +1087,14 @@ void FixMultisphere::pre_neighbor()
         next_reneighbor = update->ntimestep + 100;
 
     /*NL*/ //double sum = vectorSumN(existflag,atom->nlocal);
-    /*NL*/ //fprintf(screen,"sum pre %f nlocal %d\n",sum,atom->nlocal);
+    /*NL*/ //if (screen) fprintf(screen,"sum pre %f nlocal %d\n",sum,atom->nlocal);
 
     //NP need to send deletion flag from ghosts to owners
     fix_delflag_->do_reverse_comm();
     fix_existflag_->do_reverse_comm();
 
     /*NL*/ //sum = vectorSumN(existflag,atom->nlocal);
-    /*NL*/ //fprintf(screen,"sum post %f nlocal %d\n",sum,atom->nlocal);
+    /*NL*/ //if (screen) fprintf(screen,"sum post %f nlocal %d\n",sum,atom->nlocal);
 
     //NP fw comm image and displace
     //NP note that image has changed due to remap_bodies() call
@@ -1147,7 +1149,7 @@ double FixMultisphere::memory_usage()
 
 void FixMultisphere::grow_arrays(int nmax)
 {
-    /*NL*/ //fprintf(screen,"called with nmax %d\n",nmax);
+    /*NL*/ //if (screen) fprintf(screen,"called with nmax %d\n",nmax);
     body_ = memory->grow(body_,nmax,"rigid:body_");
     memory->grow(displace_,nmax,3,"rigid:displace");
     atom->molecule = body_;

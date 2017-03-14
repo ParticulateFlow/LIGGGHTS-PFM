@@ -31,7 +31,7 @@ TANGENTIAL_MODEL(TANGENTIAL_NO_HISTORY,no_history,0)
 #define TANGENTIAL_MODEL_NO_HISTORY_H_
 #include "contact_models.h"
 #include <algorithm>
-#include "math.h"
+#include <math.h>
 #include "global_properties.h"
 
 namespace LIGGGHTS {

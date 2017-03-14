@@ -28,7 +28,7 @@ BondStyle(gran,BondGran)
 #ifndef LMP_BOND_GRAN_H
 #define LMP_BOND_GRAN_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "bond.h"
 
 namespace LAMMPS_NS {

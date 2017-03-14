@@ -25,9 +25,9 @@
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "atom_vec.h"
 #include "force.h"
@@ -577,7 +577,7 @@ double FixInsert::max_r_bound()
 
 /* ---------------------------------------------------------------------- */
 
-double FixInsert::extend_cut_ghost()
+double FixInsert::extend_cut_ghost() const
 {
     if(!fix_multisphere)
         return 0.;
@@ -595,7 +595,7 @@ int FixInsert::calc_ninsert_this()
   int ninsert_this = static_cast<int>(ninsert_per + random->uniform());
   if (ninsert_exists && ninserted + ninsert_this > ninsert) ninsert_this = ninsert - ninserted;
 
-  /*NL*/ // fprintf(screen,"ninsert_per %f, ninsert_this %d\n",ninsert_per,ninsert_this);
+  /*NL*/ // if (screen) fprintf(screen,"ninsert_per %f, ninsert_this %d\n",ninsert_per,ninsert_this);
 
   return ninsert_this;
 }
@@ -621,7 +621,7 @@ void FixInsert::pre_exchange()
 
   // number of particles to insert this timestep
   ninsert_this = calc_ninsert_this();
-  /*NL*///fprintf(screen,"ninsert_this %d\n",ninsert_this);
+  /*NL*///if (screen) fprintf(screen,"ninsert_this %d\n",ninsert_this);
 
   // limit to max number of particles that shall be inserted
   // to avoid that max # may be slightly exceeded by random processes
@@ -636,7 +636,7 @@ void FixInsert::pre_exchange()
 
   // distribute ninsert_this across processors
   ninsert_this_local = distribute_ninsert_this(ninsert_this);
-  /*NL*///fprintf(screen,"ninsert_this %d ninsert_this_local %d\n",ninsert_this,ninsert_this_local);
+  /*NL*///if (screen) fprintf(screen,"ninsert_this %d ninsert_this_local %d\n",ninsert_this,ninsert_this_local);
 
   /*NL*/ if(LMP_DEBUGMODE_FIXINSERT) {MPI_Barrier(world); fprintf(LMP_DEBUG_OUT_FIXINSERT,"FixInsert::pre_exchange 2\n");}
 
@@ -661,7 +661,7 @@ void FixInsert::pre_exchange()
   //NP need to make the list global as
 
   ninsert_this_local = fix_distribution->randomize_list(ninsert_this_local,groupbit,exact_number);
-  /*NL*///fprintf(screen,"fix %s inits distribution %s with ninsert_this_local %d\n",id,fix_distribution->id,ninsert_this_local);
+  /*NL*///if (screen) fprintf(screen,"fix %s inits distribution %s with ninsert_this_local %d\n",id,fix_distribution->id,ninsert_this_local);
 
   MPI_Sum_Scalar(ninsert_this_local,ninsert_this,world);
 
@@ -679,7 +679,7 @@ void FixInsert::pre_exchange()
   }
   else if(ninsert_this < 0)
   {
-      /*NL*/ //fprintf(screen,"ninsert_this %d\n",ninsert_this);
+      /*NL*/ //if (screen) fprintf(screen,"ninsert_this %d\n",ninsert_this);
       error->fix_error(FLERR,this,"Particle insertion: Internal error");
   }
 
@@ -804,7 +804,7 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
     nprocs = comm->nprocs;
 
     fraction_local = insertion_fraction();
-    /*NL*/ //fprintf(screen,"called distribute_ninsert_this, exact_number %d, fraction_local %f\n",exact_number,fraction_local);
+    /*NL*/ //if (screen) fprintf(screen,"called distribute_ninsert_this, exact_number %d, fraction_local %f\n",exact_number,fraction_local);
 
     if(!exact_number)
         return static_cast<int>(fraction_local*static_cast<double>(ninsert_this) + random->uniform());
@@ -850,12 +850,12 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
             ninsert_this_local_all[iproc] = static_cast<int>(fraction_local_all[iproc]*static_cast<double>(ninsert_this));
             remainder[iproc] = fraction_local_all[iproc]*static_cast<double>(ninsert_this) - ninsert_this_local_all[iproc];
             rsum += remainder[iproc];
-            /*NL*/ //fprintf(screen,"proc %d (fraction_local %f): ninsert_this_local %d, remainder %f \n",
+            /*NL*/ //if (screen) fprintf(screen,"proc %d (fraction_local %f): ninsert_this_local %d, remainder %f \n",
             /*NL*/ //                iproc,fraction_local_all[iproc],ninsert_this_local_all[iproc],remainder[iproc]);
         }
 
         ngap = round(rsum);
-        /*NL*/// fprintf(screen,"ngap %d rsum %f\n",ngap,rsum);
+        /*NL*/// if (screen) fprintf(screen,"ngap %d rsum %f\n",ngap,rsum);
         for(int i = 0; i < ngap; i++)
         {
             r = random->uniform() * static_cast<double>(ngap);
@@ -875,7 +875,7 @@ int FixInsert::distribute_ninsert_this(int ninsert_this)
     MPI_Bcast(ninsert_this_local_all,nprocs, MPI_INT,0,world);
     ninsert_this_local = ninsert_this_local_all[me];
 
-    /*NL*/ //fprintf(screen,"proc %d: fraction_local %f ninsert_this_local %d ninsert_this %d\n",me,fraction_local,ninsert_this_local,ninsert_this);
+    /*NL*/ //if (screen) fprintf(screen,"proc %d: fraction_local %f ninsert_this_local %d ninsert_this %d\n",me,fraction_local,ninsert_this_local,ninsert_this);
 
     delete []fraction_local_all;
     delete []remainder;
@@ -969,7 +969,7 @@ void FixInsert::write_restart(FILE *fp)
   list[n++] = static_cast<double>(next_reneighbor);
   list[n++] = massinserted;
 
-  /*NL*/ //fprintf(screen,"next_reneighbor %d ninserted %d\n",next_reneighbor,ninserted);
+  /*NL*/ //if (screen) fprintf(screen,"next_reneighbor %d ninserted %d\n",next_reneighbor,ninserted);
 
   if (comm->me == 0) {
     int size = n * sizeof(double);
@@ -1000,7 +1000,7 @@ void FixInsert::restart(char *buf)
   // if insert was already finished in run to be restarted
   if(next_reneighbor_re != 0) next_reneighbor = next_reneighbor_re;
 
-  /*NL*/// fprintf(screen,"next_reneighbor " BIGINT_FORMAT ", next_reneighbor_re " BIGINT_FORMAT "  "
+  /*NL*/// if (screen) fprintf(screen,"next_reneighbor " BIGINT_FORMAT ", next_reneighbor_re " BIGINT_FORMAT "  "
   /*NL*///       "ninserted %d ninsert %d\n",next_reneighbor,next_reneighbor_re,ninserted,ninsert);
 }
 

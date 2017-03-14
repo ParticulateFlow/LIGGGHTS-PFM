@@ -19,7 +19,7 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "dump_euler_vtk.h"
 #include "fix_ave_euler.h"
 #include "domain.h"
@@ -189,7 +189,7 @@ void DumpEulerVTK::write_data_ascii(int n, double *mybuf)
 
   // n is the number of elements
 
-  /*NL*///fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
+  /*NL*///if (screen) fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
   /*NL*///error->one(FLERR,"end");
 
   // write point data

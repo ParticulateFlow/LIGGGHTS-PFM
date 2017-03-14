@@ -108,7 +108,7 @@ namespace ContactModels
 
         /*
         if(limitForce)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE_STIFFNESS>: will limit normal force.\n");
+            if(comm->me == 0 && screen) fprintf(screen," NormalModel<HOOKE_STIFFNESS>: will limit normal force.\n");
         */
       }
       if(absolute_damping)

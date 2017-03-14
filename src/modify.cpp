@@ -26,8 +26,8 @@
    Richard Berger (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 #include "modify.h"
 #include "style_compute.h"
 #include "style_fix.h"
@@ -366,7 +366,8 @@ void Modify::setup_pre_force(int vflag)
 
 void Modify::initial_integrate(int vflag)
 {
-  /*NL*/// if(20962 == update->ntimestep) {fprintf(screen,"proc %d executing initial_integrate for %s\n",
+  /*NL*/// if(20962 == update->ntimestep) {
+  /*NL*/// if (screen) fprintf(screen,"proc %d executing initial_integrate for %s\n",
   /*NL*///                                      comm->me,fix[list_initial_integrate[i]]->style);
   /*NL*/// __debug__(lmp);}
   call_method_on_fixes(&Fix::initial_integrate, vflag, list_initial_integrate, n_initial_integrate);
@@ -387,7 +388,7 @@ void Modify::post_integrate()
 
 void Modify::pre_exchange()
 {
-  /*NL*/ //if(667 == update->ntimestep) fprintf(screen,"proc %d executing pre_exch for %s\n",
+  /*NL*/ //if(667 == update->ntimestep && screen) fprintf(screen,"proc %d executing pre_exch for %s\n",
   /*NL*/ //                                     comm->me,fix[list_pre_exchange[i]]->style);
   call_method_on_fixes(&Fix::pre_exchange, list_pre_exchange, n_pre_exchange);
 }
@@ -398,7 +399,7 @@ void Modify::pre_exchange()
 
 void Modify::pre_neighbor()
 {
-  /*NL*/ //(update->ntimestep == 1254) fprintf(screen,"proc %d executing pre_neigh for %s\n",
+  /*NL*/ //(update->ntimestep == 1254 && screen) fprintf(screen,"proc %d executing pre_neigh for %s\n",
   /*NL*/ //                                    comm->me,fix[list_pre_neighbor[i]]->style);
   call_method_on_fixes(&Fix::pre_neighbor, list_pre_neighbor, n_pre_neighbor);
 }
@@ -409,7 +410,7 @@ void Modify::pre_neighbor()
 
 void Modify::pre_force(int vflag)
 {
-  /*NL*/// if(update->ntimestep > 54500) fprintf(screen,"proc %d executing pre_force for %s\n",
+  /*NL*/// if(update->ntimestep > 54500 && screen) fprintf(screen,"proc %d executing pre_force for %s\n",
   /*NL*///                                     comm->me,fix[list_pre_force[i]]->style);
   call_method_on_fixes(&Fix::pre_force, vflag, list_pre_force, n_pre_force);
 }
@@ -420,7 +421,8 @@ void Modify::pre_force(int vflag)
 
 void Modify::post_force(int vflag)
 {
-  /*NL*/// if(20950 < update->ntimestep) {fprintf(screen,"proc %d executing post_force for %s\n",
+  /*NL*/// if(20950 < update->ntimestep) {
+  /*NL*/// if (screen) fprintf(screen,"proc %d executing post_force for %s\n",
   /*NL*///                                      comm->me,fix[list_post_force[i]]->style);
   /*NL*/// __debug__(lmp);}
   call_method_on_fixes_omp(&Fix::post_force, vflag, list_post_force, n_post_force, list_post_force_omp, n_post_force_omp);
@@ -832,7 +834,7 @@ void Modify::add_fix(int narg, char **arg, char *suffix)
 
   for (int i = 0; i < nfix_restart_global; i++)
   {
-    /*NL*/ //fprintf(screen,"----this is fix id %s style %s, checking vs fix id %s style %s\n",fix[ifix]->id,fix[ifix]->style,id_restart_global[i],style_restart_global[i]);
+    /*NL*/ //if (screen) fprintf(screen,"----this is fix id %s style %s, checking vs fix id %s style %s\n",fix[ifix]->id,fix[ifix]->style,id_restart_global[i],style_restart_global[i]);
     if (strcmp(id_restart_global[i],fix[ifix]->id) == 0 &&
         strcmp(style_restart_global[i],fix[ifix]->style) == 0) {
           fix[ifix]->restart(state_restart_global[i]);

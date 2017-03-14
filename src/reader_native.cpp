@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "reader_native.h"
 #include "atom.h"
 #include "memory.h"
@@ -24,7 +24,7 @@ using namespace LAMMPS_NS;
 
 // also in read_dump.cpp
 
-enum{ID,TYPE,X,Y,Z,VX,VY,VZ,Q,IX,IY,IZ};
+enum{ID,TYPE,X,Y,Z,VX,VY,VZ,Q,IX,IY,IZ,RADIUS,MASS,DENSITY};
 enum{UNSET,NOSCALE_NOWRAP,NOSCALE_WRAP,SCALE_NOWRAP,SCALE_WRAP};
 
 /* ---------------------------------------------------------------------- */
@@ -141,10 +141,16 @@ bigint ReaderNative::read_header(double box[3][3], int &triclinic,
   nwords = atom->count_words(labelline);
   char **labels = new char*[nwords];
   labels[0] = strtok(labelline," \t\n\r\f");
-  if (labels[0] == NULL) return 1;
+  if (labels[0] == NULL) {
+    delete[] labels;
+    return 1;
+  }
   for (int m = 1; m < nwords; m++) {
     labels[m] = strtok(NULL," \t\n\r\f");
-    if (labels[m] == NULL) return 1;
+    if (labels[m] == NULL) {
+      delete[] labels;
+      return 1;
+    }
   }
 
   // match each field with a column of per-atom data
@@ -250,6 +256,14 @@ bigint ReaderNative::read_header(double box[3][3], int &triclinic,
 
     else if (fieldtype[i] == Q)
       fieldindex[i] = find_label("q",nwords,labels);
+    else if (fieldtype[i] == RADIUS)
+      fieldindex[i] = find_label("radius",nwords,labels);
+
+    else if (fieldtype[i] == MASS)
+      fieldindex[i] = find_label("mass",nwords,labels);
+
+    else if (fieldtype[i] == DENSITY)
+      fieldindex[i] = find_label("density",nwords,labels);
 
     else if (fieldtype[i] == IX)
       fieldindex[i] = find_label("ix",nwords,labels);

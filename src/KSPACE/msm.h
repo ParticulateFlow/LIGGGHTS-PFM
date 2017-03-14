@@ -21,7 +21,7 @@ KSpaceStyle(msm,MSM)
 #define LMP_MSM_H
 
 #include "lmptype.h"
-#include "mpi.h"
+#include <mpi.h>
 
 #include "kspace.h"
 

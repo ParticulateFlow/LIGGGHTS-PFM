@@ -21,12 +21,12 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "limits.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 #include "atom.h"
 #include "style_atom.h"
 #include "style_partitioner.h"
@@ -685,7 +685,7 @@ void Atom::data_atoms(int n, char *buf)
   int nwords = count_words(buf);
   *next = '\n';
 
-  /*NL*/ //fprintf(screen,"nwords %d avec->size_data_atom %d \n",nwords,avec->size_data_atom);
+  /*NL*/ //if (screen) fprintf(screen,"nwords %d avec->size_data_atom %d \n",nwords,avec->size_data_atom);
   if (nwords != avec->size_data_atom && nwords != avec->size_data_atom + 3)
     error->all(FLERR,"Incorrect atom format in data file");
 
@@ -772,7 +772,7 @@ void Atom::data_atoms(int n, char *buf)
       coord = lamda;
     } else coord = xdata;
 
-    /*NL*/ //printVec3D(screen,"coords",coord);
+    /*NL*/ //if (screen) printVec3D(screen,"coords",coord);
     if (coord[0] >= sublo[0] && coord[0] < subhi[0] &&
         coord[1] >= sublo[1] && coord[1] < subhi[1] &&
         coord[2] >= sublo[2] && coord[2] < subhi[2])
@@ -1516,7 +1516,7 @@ void Atom::partitioner_sort() {
   Partitioner::Result result = partitioner->generate_partitions(permute, thread_offsets);
   double deltaTime = MPI_Wtime() - startTime;
 #ifdef LIGGGHTS_DEBUG
-  if(comm->me == 0) fprintf(screen, "Partitioning time: %g seconds\n", deltaTime);
+  if(comm->me == 0 && screen) fprintf(screen, "Partitioning time: %g seconds\n", deltaTime);
 #endif
   startTime += deltaTime;
 
@@ -1585,7 +1585,7 @@ void Atom::partitioner_sort() {
 
   deltaTime = MPI_Wtime() - startTime;
 #ifdef LIGGGHTS_DEBUG
-  if(comm->me == 0) fprintf(screen, "Permute time: %g seconds\n", deltaTime);
+  if(comm->me == 0 && screen) fprintf(screen, "Permute time: %g seconds\n", deltaTime);
 #endif
 
   // upload data back to GPU if necessary
@@ -1748,6 +1748,8 @@ void Atom::add_callback(int flag)
 
 void Atom::delete_callback(const char *id, int flag)
 {
+  if (id == NULL) return;
+
   int ifix;
   for (ifix = 0; ifix < modify->nfix; ifix++)
     if (strcmp(id,modify->fix[ifix]->id) == 0) break;
@@ -1803,6 +1805,8 @@ void Atom::update_callback(int ifix)
 //NP modified C.K.
 int Atom::find_custom(const char *name, int &flag)
 {
+  if (name == NULL) return -1;
+
   for (int i = 0; i < nivector; i++)
     if (iname[i] && strcmp(iname[i],name) == 0) {
       flag = 0;
@@ -1916,7 +1920,7 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"q") == 0) return (void *) q;
   if (strcmp(name,"mu") == 0) return (void *) mu;
   if (strcmp(name,"omega") == 0) return (void *) omega;
-  if (strcmp(name,"amgmom") == 0) return (void *) angmom;
+  if (strcmp(name,"angmom") == 0) return (void *) angmom;
   if (strcmp(name,"torque") == 0) return (void *) torque;
   if (strcmp(name,"radius") == 0) return (void *) radius;
   if (strcmp(name,"rmass") == 0) return (void *) rmass;

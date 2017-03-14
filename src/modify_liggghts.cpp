@@ -19,8 +19,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 #include "modify.h"
 #include "style_compute.h"
 #include "style_fix.h"
@@ -63,7 +63,7 @@ FixPropertyAtom* Modify::add_fix_property_atom(int narg,char **arg,const char *c
 
 FixScalarTransportEquation* Modify::find_fix_scalar_transport_equation_strict(const char *equation_id)
 {
-    
+
     for(int ifix = 0; ifix < nfix; ifix++)
       if(strcmp(fix[ifix]->style,"transportequation/scalar") == 0)
       {
@@ -75,7 +75,7 @@ FixScalarTransportEquation* Modify::find_fix_scalar_transport_equation_strict(co
 
 FixScalarTransportEquation* Modify::find_fix_scalar_transport_equation(const char *equation_id)
 {
-    
+
     for(int ifix = 0; ifix < nfix; ifix++)
       if(dynamic_cast<FixScalarTransportEquation*>(fix[ifix]))
       {
@@ -395,7 +395,7 @@ void Modify::max_min_rad(double &maxrad,double &minrad)
 
     for (int i = 0; i < nfix; i++) {
       for (int j = 1; j <= ntypes; j++) {
-        /*NL*/ //fprintf(screen,"fix %s ntypes %d mr %f\n",modify->fix[i]->style,ntypes,modify->fix[i]->max_rad(j));
+        /*NL*/ //if (screen) fprintf(screen,"fix %s ntypes %d mr %f\n",modify->fix[i]->style,ntypes,modify->fix[i]->max_rad(j));
         maxrad = MathExtraLiggghts::max(maxrad,fix[i]->max_rad(j));
         if(modify->fix[i]->min_rad(j) > 0.)
             minrad = MathExtraLiggghts::min(minrad,fix[i]->min_rad(j));

@@ -559,6 +559,7 @@ each style or click on the style itself for a full description:
 "msd"_compute_msd.html,
 "msd/molecule"_compute_msd_molecule.html,
 "msd/nongauss"_compute_msd_nongauss.html,
+"neighbor/atom"_compute_neighbor_atom.html,
 "nparticles/tracer/region"_compute_nparticles_tracer_region.html,
 "pair"_compute_pair.html,
 "pair/gran/local"_compute_pair_gran_local.html,
@@ -654,6 +655,8 @@ These are accelerated styles, which can be used if LAMMPS is built with the "app
 
  :tb(c=4,ea=c)
 
+:line
+
 fix styles :h4
 
 See the "fix"_fix.html command for one-line descriptions
@@ -677,6 +680,7 @@ of each style or click on the style itself for a full description:
 "bond/create"_fix_bond_create.html,
 "bond/swap"_fix_bond_swap.html,
 "box/relax"_fix_box_relax.html,
+"cfd/coupling/recurrence"_fix_cfd_coupling_recurrence.html,
 "check/timestep/gran"_fix_check_timestep_gran.html,
 "colvars"_fix_colvars.html,
 "deform"_fix_deform.html,
@@ -761,6 +765,8 @@ of each style or click on the style itself for a full description:
 "press/berendsen"_fix_press_berendsen.html,
 "print"_fix_print.html,
 "property/atom"_fix_property.html,
+"property/atom/cumulativetracer"_fix_property_atom_cumulativetracer.html,
+"property/atom/timetracer"_fix_property_atom_timetracer.html,
 "property/atom/tracer"_fix_property_atom_tracer.html,
 "property/atom/tracer/stream"_fix_property_atom_tracer_stream.html,
 "property/global"_fix_property.html,

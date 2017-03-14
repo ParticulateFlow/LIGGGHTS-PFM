@@ -28,8 +28,8 @@
 #ifndef LMP_MPI_LIGGGHTS_H
 #define LMP_MPI_LIGGGHTS_H
 
-#include "mpi.h"
-#include "stdio.h"
+#include <mpi.h>
+#include <stdio.h>
 
 /* ---------------------------------------------------------------------- */
 // a poor man's inline MPI wrappers for LIGGGHTS

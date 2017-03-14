@@ -19,11 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "style_command.h"
 #include "universe.h"
 #include "atom.h"
@@ -118,11 +118,11 @@ int InputMultisphere::clmpfile(double **xclmp,double *rclmp,int *atomtypeclmp,in
     //skip empty lines
     if(narg == 0)
     {
-        if (me == 0) fprintf(screen,"Note: Skipping empty line or comment line in clump file\n");
+        if (me == 0 && screen) fprintf(screen,"Note: Skipping empty line or comment line in clump file\n");
         continue;
     }
 
-    /*NL*/ //for (int jj=0; jj<5; jj++) fprintf(screen,"arg %d: %s  \n",jj,arg[jj]);
+    /*NL*/ //if (screen) for (int jj=0; jj<5; jj++) fprintf(screen,"arg %d: %s  \n",jj,arg[jj]);
 
     if(iClmp >= nclmps)
         error->all(FLERR,"Number of clumps in file larger than number specified");

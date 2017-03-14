@@ -21,8 +21,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "ctype.h"
+#include <string.h>
+#include <ctype.h>
 #include "fix.h"
 #include "atom.h"
 #include "group.h"

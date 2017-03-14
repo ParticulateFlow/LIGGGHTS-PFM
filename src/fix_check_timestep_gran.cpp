@@ -19,11 +19,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
-#include "math.h"
+#include <math.h>
 #include "error.h"
 #include "fix_check_timestep_gran.h"
 #include "pair_gran.h"
@@ -135,7 +135,7 @@ void FixCheckTimestepGran::end_of_step()
     fraction_hertz = dt/hertz_time;
     fraction_skin = (vmax * dt) / neighbor->skin;
 
-    /*NL*/ //if(comm->me==0)
+    /*NL*/ //if(comm->me == 0 && screen)
     /*NL*/ //{
     /*NL*/ //   fprintf(screen,"time-step is %f %% of rayleigh time (%f)\n",fraction_rayleigh*100.,rayleigh_time);
     /*NL*/ //   fprintf(screen,"time-step is %f %% of hertz time\n",fraction_hertz*100.);

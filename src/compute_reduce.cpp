@@ -18,8 +18,8 @@ andreas.eitzlmayr@tugraz.at
 Christoph Kloss (DCS)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "compute_reduce.h"
 #include "atom.h"
 #include "update.h"

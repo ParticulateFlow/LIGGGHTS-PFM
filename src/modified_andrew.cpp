@@ -81,9 +81,11 @@ double ModifiedAndrew::area()
     double A;
     vector<Point> hull_c = convex_hull(contacts_);
 
+    /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"hull_c size %d\n",hull_c.size());
     /*NL*/ //for(int i = 0; i < hull_c.size(); i++)
     /*NL*/ //  fprintf(screen,"element %d: %f %f %f\n",i,hull_c[i].x,hull_c[i].y,hull_c[i].r);
+    /*NL*/ //}
 
     // multi-proc case
     if(1 < comm->nprocs) //(1)//
@@ -137,8 +139,8 @@ double ModifiedAndrew::area()
         ndata = construct_data(hull_c,data);
         ndata0 = MPI_Gather0_Vector(data,ndata,data0,world);
 
-        /*NL*///printVecN(screen,"data",data,ndata);
-        /*NL*///printVecN(screen,"data0",data0,ndata0);
+        /*NL*///if (screen) printVecN(screen,"data",data,ndata);
+        /*NL*///if (screen) printVecN(screen,"data0",data0,ndata0);
 
         // proc0 calculates convex hull
         if(0 == comm->me) {
@@ -155,9 +157,11 @@ double ModifiedAndrew::area()
             /*NL*/ //  // END DEBUG
 
 
+            /*NL*/ //if (screen) {
             /*NL*/ //fprintf(screen,"hull_c_allreduced size %d\n",hull_c_allreduced.size());
             /*NL*/ //for(int i = 0; i < hull_c_allreduced.size(); i++)
             /*NL*/ //  fprintf(screen,"element %d: %f %f %f\n",i,hull_c_allreduced[i].x,hull_c_allreduced[i].y,hull_c_allreduced[i].r);
+            /*NL*/ //}
 
             if (hull_c_global.size() < 3)
                 A = 0.;
@@ -250,7 +254,7 @@ vector<Point> ModifiedAndrew::construct_hull_c_all(double *data0, int ndata0)
         result.push_back(c);
     }
 
-    /*NL*/ //fprintf(screen,"ndata0 %d result.size() %d\n",ndata0,result.size());
+    /*NL*/ //if (screen) fprintf(screen,"ndata0 %d result.size() %d\n",ndata0,result.size());
 
     return result;
 }

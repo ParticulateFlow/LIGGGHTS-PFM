@@ -95,6 +95,8 @@ namespace LAMMPS_NS
 
       private:
 
+        void handle_exclusion_list();
+
         void initialSetup();
 
         // mesh object
@@ -116,6 +118,12 @@ namespace LAMMPS_NS
         double precision_;
 
         char mesh_fname_[256];
+
+        // mesh correction
+        FILE *element_exclusion_list_;
+        bool read_exclusion_list_;
+        int *exclusion_list_;
+        int size_exclusion_list_;
   };
 
 } /* namespace LAMMPS_NS */

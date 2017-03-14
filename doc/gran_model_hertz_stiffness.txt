@@ -59,6 +59,10 @@ v_t = tangential component of the relative velocity of the 2 particles :l
 w_r = relative rotational velocity of the 2 particles :l
 :ule
 
+The coefficients used for the force calculation in the hertz/stiffness model are linked to the specified values as follows:
+
+:c,image(Eqs/pair_gran_html_m4dff7906.png)
+
 To define those k_n_specified, k_t_specified, gamma_n_specified, and gamma_t_specified coefficients
 (material properties), it is mandatory to use multiple "fix property/global"_fix_property.html commands:
 
