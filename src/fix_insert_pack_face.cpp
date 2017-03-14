@@ -536,9 +536,12 @@ BoundingBox FixInsertPackFace::getBoundingBox() const
                  ins_region->extent_ylo, ins_region->extent_yhi,
                  ins_region->extent_zlo, ins_region->extent_zhi);
 
-  const double cut = 2*maxrad;
-  bb.extendByDelta(cut);
   bb.shrinkToSubbox(domain->sublo, domain->subhi);
+
+  // extend to include ghost particles
+  const double cut = 2.*maxrad;
+  const double extend = cut + extend_cut_ghost();
+  bb.extendByDelta(extend);
 
   return bb;
 }
