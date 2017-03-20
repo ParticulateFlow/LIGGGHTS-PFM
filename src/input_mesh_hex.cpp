@@ -295,7 +295,7 @@ void InputMeshHex::meshhexfile_vtk(class RegHexMesh *mesh)
             if(narg > 3 && atoi(arg[3]) > 1)
                 error->all(FLERR,"Support for 'SCALARS' with more than 1 component in ASCII VTK mesh file not implemented, cannot continue");
             strcpy(propertyname, arg[1]);
-            if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0)
+            if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0 || strcmp(arg[2],"vtkIdType") == 0)
             {
                 mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes",1,nhexs);
                 dataType = INT;
@@ -348,7 +348,7 @@ void InputMeshHex::meshhexfile_vtk(class RegHexMesh *mesh)
             if(parse_scalars || parse_field || parse_vectors)
                 error->all(FLERR,"Unexpected 'VECTORS' section in ASCII VTK mesh file, cannot continue");
             strcpy(propertyname, arg[1]);
-            if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0)
+            if(strcmp(arg[2],"int") == 0 || strcmp(arg[2],"long") == 0 || strcmp(arg[2],"vtkIdType") == 0)
             {
                 mesh->prop().addElementProperty< VectorContainer<int,3> >(propertyname,communication,"frame_invariant","restart_yes",1,nhexs);
 
@@ -445,7 +445,7 @@ void InputMeshHex::meshhexfile_vtk(class RegHexMesh *mesh)
                     error->all(FLERR,"Support for field arrays with more than 1 component in ASCII VTK mesh file not implemented, cannot continue");
                 if(ncells != atoi(arg[2]))
                     error->all(FLERR,"Inconsistency in 'FIELD' section in ASCII VTK mesh file, cannot continue");
-                if(strcmp(arg[3],"int") == 0 || strcmp(arg[3],"long") == 0)
+                if(strcmp(arg[3],"int") == 0 || strcmp(arg[3],"long") == 0 || strcmp(arg[3],"vtkIdType") == 0)
                 {
                     mesh->prop().addElementProperty< ScalarContainer<int> >(propertyname,communication,"frame_invariant","restart_yes",1,nhexs);
                     dataType = INT;
