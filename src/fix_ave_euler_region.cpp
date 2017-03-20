@@ -145,7 +145,7 @@ void FixAveEulerRegion::post_create()
         cellid2index_[cell_id] = iHex;
         cellid_.push_back(cell_id);
       }
-    }
+    } else error->fix_error(FLERR, this, "requires cell data 'cell_id'");
   } else {
     error->fix_error(FLERR, this, "requires region of style mesh/hex");
   }
