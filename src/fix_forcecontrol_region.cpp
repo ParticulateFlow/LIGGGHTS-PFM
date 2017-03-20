@@ -77,6 +77,7 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
 {
   if (narg < 6) error->all(FLERR,"Illegal fix forcecontrol/region command");
 
+  virial_flag = 1;
   scalar_flag = 1;
   vector_flag = 1;
   size_vector = 3;
@@ -244,9 +245,9 @@ void FixForceControlRegion::min_setup(int vflag)
 
 void FixForceControlRegion::post_force(int vflag)
 {
-  UNUSED(vflag);
-
   receive_coupling_data();
+  if (vflag) v_setup(vflag);
+  else evflag = 0;
 
   double **x = atom->x;
   double **f = atom->f;
@@ -554,10 +555,25 @@ void FixForceControlRegion::post_force(int vflag)
             f[i][0] += a * fx;
             f[i][1] += a * fy;
             f[i][2] += a * fz;
+
+            if (vflag) {
+                const double delta = 2.0*actual_->cell_radius(*it_cell);
+                const double pre = 0.5*a;
+                vatom[i][0] -= pre*fabs(fx)*delta;
+                vatom[i][1] -= pre*fabs(fy)*delta;
+                vatom[i][2] -= pre*fabs(fz)*delta;
+            }
           } else {
             f[i][0] += fadex_ * xvalue[*it_cell];
             f[i][1] += fadey_ * yvalue[*it_cell];
             f[i][2] += fadez_ * zvalue[*it_cell];
+
+            if (vflag) {
+                const double delta = 2.0*actual_->cell_radius(*it_cell);
+                vatom[i][0] -= 0.5*fabs(fadex_ * xvalue[*it_cell])*delta;
+                vatom[i][1] -= 0.5*fabs(fadey_ * yvalue[*it_cell])*delta;
+                vatom[i][2] -= 0.5*fabs(fadez_ * zvalue[*it_cell])*delta;
+            }
           }
         }
       }
