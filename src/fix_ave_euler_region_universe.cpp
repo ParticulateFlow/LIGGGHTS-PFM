@@ -59,7 +59,7 @@ FixAveEulerRegionUniverse::FixAveEulerRegionUniverse(LAMMPS *lmp, int narg, char
     if (strcmp(arg[iarg],"send_to_partition") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       send_to_world_ = atoi(arg[iarg+1])-1;
-      if(send_to_world_ < 0 || send_to_world_ >= universe->nworlds)
+      if(send_to_world_ >= universe->nworlds)
         error->fix_error(FLERR,this,"send_to_world must be a valid communicator");
       iarg += 2;
     } else if (strcmp(arg[iarg],"sync") == 0) {
@@ -110,7 +110,7 @@ void FixAveEulerRegionUniverse::send_post_create_data()
 void FixAveEulerRegionUniverse::send_coupling_data()
 {
   // check for timestep is necessary because end_of_step() is also called from setup function
-  if(comm->me == 0 && update->ntimestep % nevery == 0) {
+  if(comm->me == 0 && send_to_world_ >= 0 && update->ntimestep % nevery == 0) {
     if (synchronize_) {
       MPI_Ssend(&ncount_[0],      ncells_, MPI_INT,    universe->root_proc[send_to_world_], id_hash_, universe->uworld);
       MPI_Ssend(&mass_[0],        ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
