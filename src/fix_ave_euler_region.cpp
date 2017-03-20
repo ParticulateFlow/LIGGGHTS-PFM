@@ -120,15 +120,16 @@ void FixAveEulerRegion::post_create()
 {
   //  stress computation, just for pairwise contribution
   if (!compute_stress_) {
-    const char* arg[4];
+    const char* arg[5];
     arg[0]="stress_faveu";
     arg[1]="all";
     arg[2]="stress/atom";
     arg[3]="pair";
+    arg[4]="fix";
 
     // create compute if it doesn't exist otherwise reuse
     if(modify->find_compute(arg[0]) < 0)
-      modify->add_compute(4,(char**)arg);
+      modify->add_compute(5,(char**)arg);
 
     compute_stress_ = static_cast<ComputeStressAtom*>(modify->compute[modify->find_compute(arg[0])]);
   }
