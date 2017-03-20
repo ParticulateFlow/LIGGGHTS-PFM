@@ -67,6 +67,7 @@ FixForceControlRegionUniverse::FixForceControlRegionUniverse(LAMMPS *lmp, int na
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       couple_every_ = atoi(arg[iarg+1]);
       if(couple_every_ < 0) error->fix_error(FLERR,this,"couple_every must be >= 0");
+      nevery = couple_every_;
       iarg += 2;
     } else {
       ++iarg;

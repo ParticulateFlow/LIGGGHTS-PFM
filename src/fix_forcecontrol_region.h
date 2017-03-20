@@ -52,6 +52,7 @@ class FixForceControlRegion : public Fix {
   virtual double compute_scalar();
   virtual double compute_vector(int);
   virtual int modify_param(int narg, char **arg);
+  virtual void end_of_step();
 
  protected:
   double cg_target_, cg3_target_, cg_ratio_;

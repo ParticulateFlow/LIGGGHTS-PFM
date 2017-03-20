@@ -76,6 +76,11 @@ FixAveEulerRegionUniverse::FixAveEulerRegionUniverse(LAMMPS *lmp, int narg, char
 
 FixAveEulerRegionUniverse::~FixAveEulerRegionUniverse()
 {
+  int size;
+  void *ptr;
+  MPI_Buffer_detach(&ptr, &size);
+  if(size > 0)
+    free(ptr);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -102,6 +107,18 @@ void FixAveEulerRegionUniverse::send_post_create_data()
     mapkeys2vector(cellid2index_, keys);
     MPI_Send(&ncellids, 1, MPI_INT, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
     MPI_Send(&keys[0], ncellids, MPI_INT, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+
+    if (!synchronize_) {
+      int s1, s2, size;
+      void *ptr;
+      MPI_Buffer_detach(&ptr, &size);
+      if(size > 0) free(ptr);
+      MPI_Pack_size(ncells_, MPI_INT, universe->uworld, &s1);
+      MPI_Pack_size((1+1+7+3+3+3)*ncells_, MPI_DOUBLE, universe->uworld, &s2);
+      size += 1*(s1 + s2 + 2 * MPI_BSEND_OVERHEAD);
+      ptr = malloc(size);
+      MPI_Buffer_attach(ptr, size);
+    }
   }
 }
 
@@ -120,13 +137,23 @@ void FixAveEulerRegionUniverse::send_coupling_data()
       MPI_Ssend(&v_min_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
       MPI_Ssend(&v_max_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
     } else {
-      MPI_Send(&ncount_[0],      ncells_, MPI_INT,    universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-      MPI_Send(&mass_[0],        ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-      MPI_Send(&vol_fr_[0],      ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-      MPI_Send(&stress_[0][0], 7*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-      MPI_Send(&v_av_[0][0],   3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-      MPI_Send(&v_min_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
-      MPI_Send(&v_max_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      /*
+       * For a certain (most probably implementation dependent) buffer size MPI_Send becomes a blocking function.
+       * In case of two-way coupling, this may lead to deadlocks in the send-receive cycle. Hence we are using
+       * MPI_Bsend, here, which is a buffering non-blocking method.
+       */
+      int size;
+      void *ptr;
+      MPI_Buffer_detach(&ptr, &size); // force old messages to be delivered
+      MPI_Buffer_attach(ptr, size);
+
+      MPI_Bsend(&ncount_[0],      ncells_, MPI_INT,    universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Bsend(&mass_[0],        ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Bsend(&vol_fr_[0],      ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Bsend(&stress_[0][0], 7*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Bsend(&v_av_[0][0],   3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Bsend(&v_min_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+      MPI_Bsend(&v_max_[0][0],  3*ncells_, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
     }
   }
 }

@@ -216,6 +216,7 @@ int FixForceControlRegion::setmask()
 {
   int mask = 0;
   mask |= POST_FORCE;
+  mask |= END_OF_STEP;
   return mask;
 }
 
@@ -231,21 +232,20 @@ void FixForceControlRegion::init()
 
 void FixForceControlRegion::setup(int vflag)
 {
-  post_force(vflag);
+  end_of_step();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixForceControlRegion::min_setup(int vflag)
 {
-  post_force(vflag);
+  end_of_step();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixForceControlRegion::post_force(int vflag)
 {
-  receive_coupling_data();
   if (vflag) v_setup(vflag);
   else evflag = 0;
 
@@ -601,6 +601,13 @@ void FixForceControlRegion::post_force(int vflag)
     }
   }
 
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixForceControlRegion::end_of_step()
+{
+  receive_coupling_data();
 }
 
 /* ---------------------------------------------------------------------- */
