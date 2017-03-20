@@ -42,10 +42,13 @@
 #include "global_properties.h"
 #include "force.h"
 #include "group.h"
+#include "vector_liggghts.h"
 
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+
+#define SMALL 0.0001
 
 /* ---------------------------------------------------------------------- */
 
@@ -76,7 +79,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     pmass_ = NULL;
     molMass_A_ = 0;
     molMass_C_ = 0;
-    Runiv = 8.3144; //[j/Kmol]
+    Runiv = 0.0083144; //[j/Kmol]
+    radChange = false;
 
     iarg_ = 3;
     if (narg < 11)
@@ -147,9 +151,15 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     vector_flag = 1;  //0/1 per-atom data is stored
     size_vector = 2;
     global_freq = 1;
-    extvector   = 1;
-    nevery = 1; */
+    extvector   = 1; */
 
+    radLayer_ = new double*[atom->nlocal];
+    for (int i = 0; i < atom->nlocal; i++)
+    {
+        radLayer_[i]    =   new double [nmaxlayers_+1]; // nmaxlayers_ + 1
+    }
+
+    nevery = 1;
     time_depend = 1;
     force_reneighbor = 1;
     next_reneighbor = update -> ntimestep + nevery;
@@ -175,6 +185,10 @@ FixChemShrinkCore::~FixChemShrinkCore()
 
     delete speciesA;
     delete speciesC;
+
+    for (int i=0; i < atom -> nlocal; i++)
+        delete[] radLayer_[i];
+    delete [] radLayer_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -342,6 +356,14 @@ void FixChemShrinkCore::init()
     fix_reactionHeat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
 
     updatePtrs();
+
+    dens_ = new double [nmaxlayers_+1];
+    // change from const double to double to modify and write layerDensities later on
+    for (int i = 0; i <= nmaxlayers_; i++)
+    {
+        dens_[i] = layerDensities_[i];
+    }
+
     if (comm -> me == 0 && screen)
     {
         fprintf(screen, "k0_[0] = %f \n", k0_[0]);
@@ -350,10 +372,14 @@ void FixChemShrinkCore::init()
         fprintf(screen, "Ea_[0] = %f \n", Ea_[0]);
         fprintf(screen, "Ea_[1] = %f \n", Ea_[1]);
         fprintf(screen, "Ea_[2] = %f \n", Ea_[2]);
-        fprintf(screen, "dens_[0] = %f \n",layerDensities_[0]);
-        fprintf(screen, "dens_[1] = %f \n",layerDensities_[1]);
-        fprintf(screen, "dens_[2] = %f \n",layerDensities_[2]);
-        fprintf(screen, "dens_[3] = %f \n",layerDensities_[3]);
+        fprintf(screen, "layerdens_[0] = %f \n",layerDensities_[0]);
+        fprintf(screen, "layerdens_[1] = %f \n",layerDensities_[1]);
+        fprintf(screen, "layerdens_[2] = %f \n",layerDensities_[2]);
+        fprintf(screen, "layerdens_[3] = %f \n",layerDensities_[3]);
+        fprintf(screen, "dens_[0] = %f \n",dens_[0]);
+        fprintf(screen, "dens_[1] = %f \n",dens_[1]);
+        fprintf(screen, "dens_[2] = %f \n",dens_[2]);
+        fprintf(screen, "dens_[3] = %f \n",dens_[3]);
         fprintf(screen, "molMass_[0] = %f \n",layerMolMasses_[0]);
         fprintf(screen, "molMass_[1] = %f \n",layerMolMasses_[1]);
         fprintf(screen, "molMass_[2] = %f \n",layerMolMasses_[2]);
@@ -367,7 +393,7 @@ void FixChemShrinkCore::init()
             fprintf(screen, "relRad_[0][0] = %f \n",relRadii_[i][0]);
             fprintf(screen, "relRad_[0][1] = %f \n",relRadii_[i][1]);
             fprintf(screen, "relRad_[0][2] = %f \n",relRadii_[i][2]);
-            fprintf(screen, "T_ in chem core%f \n", T_[i]);
+            fprintf(screen, "T_ in chem core: %f \n", T_[i]);
         }
     }
 }
@@ -381,37 +407,47 @@ void FixChemShrinkCore::post_force(int)
     pmass_      = atom ->  rmass;
     pdensity_   = atom -> density;
     TimeStep    = update -> dt;
-    int i;
+    current_timestep = update->ntimestep;
 
+    int i;
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
+    
+    if (screen)
+    {
+        fprintf(screen, "check current Timestep = %li \n", current_timestep);
+    }
 
     double a_[nmaxlayers_];                 // reaction resistance value for each layer
-    double dmA_[nmaxlayers_];               // mass flow rate of reactant gas species for each layer
-    double r_[nmaxlayers_];                 // radius of layers
+    // double b_[nmaxlayers_];              // diffusion resistance value
+    // double r_[nmaxlayers_+1];               // radius of layers
     double x0_[nmaxlayers_];
     double x0_eq_[nmaxlayers_];             // molar fraction of reactant gas
+    double dmA_[nmaxlayers_];               // mass flow rate of reactant gas species for each layer
     // double diff[nmaxlayers_];
     // double masst;
-
 
     for (i = 0; i < nlocal; i++)
     {
         if (mask[i] & groupbit)
         {
-            if (active_layers(i) == 3)
+            if(T_[i] > 0.0)
             {
-                layerRad(i,r_);
-                getA(i,a_,r_);
                 getXi(i,x0_,x0_eq_);
-                //getDiff(i,diff);
-                //getMassT(i,masst);
-
-                for(int j = 0; j<nmaxlayers_; j++)
-                  dmA_[j] = 0.0;
-                reaction(i,a_,dmA_,x0_,x0_eq_); //diff,masst,y0,
-                update_atom_properties(i,dmA_,r_);
-                update_gas_properties(i,dmA_);
+                if (x0_[i] > 0.0)
+                {
+                    if (!radChange)
+                        layerRad(i);
+                    getA(i,a_);
+                    // getB(i,b_,r_);
+                    // getDiff(i,diff);
+                    // getMassT(i,masst);
+                    for(int j = 0; j<nmaxlayers_; j++)
+                        dmA_[j] = 0.0;
+                    reaction(i,a_,dmA_,x0_,x0_eq_); //diff,masst,y0,
+                    update_atom_properties(i,dmA_);
+                    update_gas_properties(i,dmA_);
+                }
             }
         }
     }
@@ -443,49 +479,68 @@ double FixChemShrinkCore::partSurfArea(double radius)
      return (A_p);
 }
 
-/* ------------------- compute layer radius with relRadii --------------- */
-
-void FixChemShrinkCore::layerRad(int i, double *r_)
-{
-    if (screen)
-        fprintf(screen,"CALCULATE LAYER RADIUS \n");
-    for (int j = 0; j < nmaxlayers_; j++)
-    {
-        r_[j]=relRadii_[i][j]*radius_[i];
-    }
-}
-
 /* ---------------------------------------------------------------------- */
 
 // returns number of active layers
 int FixChemShrinkCore::active_layers(int i)
 {
-   int layers;
+    /* int layers;
     for(layers=0; layers<nmaxlayers_; layers++)
         if(relRadii_[i][layers] < rmin_)
             break;
-    return layers;
+    return layers; */
+    return 0;
+}
+
+/* ------------------- compute layer radius with relRadii --------------- */
+
+void FixChemShrinkCore::layerRad(int i)
+{
+    if (screen)
+        fprintf(screen,"CALCULATE LAYER RADIUS \n");
+
+    for (int j = 0; j <= nmaxlayers_; j++)
+    {
+        if ( j == nmaxlayers_)
+            radLayer_[i][j] =   radius_[i];
+        else
+            radLayer_[i][j] =   relRadii_[i][j]*radius_[i];
+    }
+
+    // print radiuses of layers
+    if (screen)
+    {
+        fprintf(screen,"radius of hematite: %f \n", radLayer_[i][0]);
+        fprintf(screen,"radius of magnetite: %f \n", radLayer_[i][1]);
+        fprintf(screen,"radius of wustite: %f \n", radLayer_[i][2]);
+        // fprintf(screen,"particle radius: %f \n", radius_[i]);
+         fprintf(screen,"particle radius: %f \n", radLayer_[i][3]);
+    }
 }
 
 /* ---------------------------------------------------------------------- */
 
-// calculate through literature
-void FixChemShrinkCore::getA(int i, double *a_, double *r_)
+// calculate chemical reaction resistance term through literature
+void FixChemShrinkCore::getA(int i, double *a_)
 {
     if (screen)
     fprintf(screen,"DO GETA FUNCTION!! \n");
+
     for (int j = 0; j < nmaxlayers_; j++)
     {
-        if (T_[i] > 0.0)
-        {
+        if (radLayer_[i][j] > rmin_)
             a_[j]   =   (1/((k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*(1+1/K_eq(j,T_[i]))))
-                    *(1/pow((1-(r_[j]*r_[j]*r_[j])/(radius_[i]*radius_[i]*radius_[i])),0.66666));
-        }
+                *(1/pow((1-(radLayer_[i][j]*radLayer_[i][j]*radLayer_[i][j])/(radius_[i]*radius_[i]*radius_[i])),0.66666));
+    }
 
-        if (screen)
-        {
-            fprintf(screen,"reaction constant: %f \n",a_[j]);
-        }
+    if (screen)
+    {
+        fprintf(screen,"reaction constant [0]: %f \n",a_[0]);
+        fprintf(screen,"reaction constant [1]: %f \n",a_[1]);
+        fprintf(screen,"reaction constant [2]: %f \n",a_[2]);
+        fprintf(screen,"equilibirum constant for hematite %f \n", K_eq(0,T_[i]));
+        fprintf(screen,"equilibirum constant for magnetite %f \n", K_eq(1,T_[i]));
+        fprintf(screen,"equilibirum constant for wustite %f \n", K_eq(2,T_[i]));
     }
     // min amount of layer thickness must be added
     // if layer J thickness < drmin or layer J radius < rmin, a[J] = LARGE
@@ -493,20 +548,145 @@ void FixChemShrinkCore::getA(int i, double *a_, double *r_)
 }
 
 /* ---------------------------------------------------------------------- */
+/*
+void FixChemShrinkCore::getB(int i, double *b_, double *r_)
+{
+    if (screen)
+    fprintf(screen,"DO GETB FUNCTION!! \n");
+    double f_[nmaxlayers_];
 
-void FixChemShrinkCore::update_atom_properties(int i, double *dmA_, double *r_)
+    for (int j = 0; j < nmaxlayers_; j++)
+    {
+        f_[j]   =   (1-radLayer_[i][j]*radLayer_[i][j]*radLayer_[i][j]/radius_[i]*radius_[i]*radius_[i]);
+    }
+
+    b_[0]   =   (pow((1-f_[1]),0.333333)-pow((1-f_[0]),0.333333))*radius_[i]/(pow((1-f_[0]),0.333333)*pow((1-f_[1]),0.333333));
+    b_[1]   =   (pow((1-f_[2]),0.333333)-pow((1-f_[1]),0.333333))*radius_[i]/(pow((1-f_[1]),0.333333)*pow((1-f_[2]),0.333333));
+    b_[2]   =   (1-pow((1-f_[2]),0.333333))*radius_[i]/pow((1-f_[2]),0.333333);
+
+    fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
+    fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
+    fprintf(screen,"diffusion constant [2]: %f \n",b_[2]);
+} */
+
+/* ---------------------------------------------------------------------- */
+
+void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
+{
+    if (screen)
+        fprintf(screen,"DO GET XI FUNCTION!!! \n");
+
+    // calculate equilibrium concentration from K_eq(layer, T)
+    double xp_eq_[nmaxlayers_];
+    double xp_[atom->nlocal];
+
+    for (int j = 0; j < nmaxlayers_; j++)
+    {
+        xp_eq_[j]  =   K_eq(j,T_[i])/(1+K_eq(j,T_[i]));
+        x0_eq_[j]  =   1-xp_eq_[j];
+
+        // for debug
+        // ==========================================
+        if (screen)
+        {
+            fprintf(screen,"x0_eq : %f \n", x0_eq_[j]);
+        }
+        // ==========================================
+    }
+
+    // calculate bulk mole fraction
+    // value calculated from N volScalarField
+    if (N_[i] == 0.0)
+    {
+        x0_[i] = 0.0;
+        xp_[i] = 0.0;
+    }
+    else
+    {
+        x0_[i]  =   concA_[i]*rhogas_[i]/(N_[i]*molMass_A_);
+        xp_[i]  =   1 - x0_[i];
+    }
+
+    if (screen)
+    {
+        fprintf(screen,"check rhogas %f \n", rhogas_[i]);
+        fprintf(screen,"check N %f \n", N_[i]);
+        fprintf(screen,"molMass_A_ %f \n", molMass_A_);
+        fprintf(screen,"check mass frac %f \n", concA_[i]);
+    }
+
+    // for debug
+    // ==========================================
+    if (screen)
+    {
+        fprintf(screen,"x0_: %f \n", x0_[i]);
+        fprintf(screen,"xp_: %f \n", xp_[i]);
+    }
+    // ==========================================
+
+    // directly guessing x_eq like in the thesis of Nietrost seems to be spurious for multi-component mixtures (H2, H2O, CO, CO2)
+    // Negri et al. (1991), Takahashi et al. (1986) and probably many others use a different approach:
+    // as driving term, they use (n_A - n_C / K)
+
+    // ATTENTION: molar concentrations n_i [mol / m^3] need to be converted into mass fractions y_i
+    //            y_i * rho = n_i * m_{i,mol}
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, double *x0_eq_) //double *diff, double masst, double* y0,
+{
+    updatePtrs();
+    double W;
+    double dY[nmaxlayers_];
+    W = a_[0]*(a_[2]*a_[1]+a_[1])+a_[1]*a_[2];
+
+    dY[0]   =   ((a_[2]*a_[1]+a_[1])*(x0_[i]-x0_eq_[0])-a_[2]*(x0_[i]-x0_eq_[1])-a_[1]*(x0_[i]-x0_eq_[2]))*1/W;
+    dY[1]   =   ((a_[0]*a_[2]+a_[2])*(x0_[i]-x0_eq_[1])-(a_[2]+a_[2])*(x0_[i]-x0_eq_[0])-a_[0]*(x0_[i]-x0_eq_[2]))*1/W;
+   // dY[2]   =   -((a_[0]*a_[1]+a_[1])*(x0_[i]-x0_eq_[2])-a_[1]*(x0_[i]-x0_eq_[0])-a_[0]*(x0_[i]-x0_eq_[1]))*1/W;
+     dY[2]   =   ((a_[0]*a_[1]+a_[1])*(x0_[i]-x0_eq_[2])-a_[1]*(x0_[i]-x0_eq_[0])-a_[0]*(x0_[i]-x0_eq_[1]))*1/W;
+
+
+    // mass flow rate for reactant gas species
+    // if dmA sign change for example dmA_[2] becomes + ve after one point,
+    // this will lead to errors,
+    dmA_[0]   =   -dY[0]*rhogas_[i]*partSurfArea(radius_[i])*0.01; //*TimeStep;
+    dmA_[1]   =   -dY[1]*rhogas_[i]*partSurfArea(radius_[i])*0.01; //*TimeStep;
+    dmA_[2]   =   -dY[2]*rhogas_[i]*partSurfArea(radius_[i])*0.01; //*TimeStep;
+
+    if (screen)
+    {
+        fprintf(screen,"W = %f \n", W);
+        fprintf(screen,"dY_[0]: %lf \n",dY[0]);
+        fprintf(screen,"dY_[1]: %lf \n",dY[1]);
+        fprintf(screen,"dY_[2]: %lf \n",dY[2]);
+
+        fprintf(screen,"dmA_[0]: %lf \n",dmA_[0]);
+        fprintf(screen,"dmA_[1]: %lf \n",dmA_[1]);
+        fprintf(screen,"dmA_[2]: %lf \n",dmA_[2]);
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 {
     // based on material change: update relative radii, average density and mass of atom i
-
     double layerMass_[nmaxlayers_+1];         //  mass of each layer
     double dmB_[nmaxlayers_+1];               //  mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
+    double sum_mass = 0;
+    double sum_dens = 0;
+    double sum_mass_new = 0;                // just for control case --- delete afterwards
+    double sum_dens_new = 0;                // same --- delete afterwards
+    // double diff_radius;
+
 
     // Calculate mass flow rates (dmB[j])
     // Keep in mind the stoichiometric coefficients of reaction prod - reactants
-    dmB_[0] =   dmA_[0]*(layerMolMasses_[0]/molMass_A_)*3;
-    dmB_[1] =   dmA_[1]*(layerMolMasses_[1]/molMass_A_) - dmA_[0]*(layerMolMasses_[1]/molMass_A_)*(2);
-    dmB_[2] =   dmA_[2]*(layerMolMasses_[2]/molMass_A_) - dmA_[1]*(layerMolMasses_[2]/molMass_A_)*(3);
-    dmB_[3] =   -dmA_[2]*(layerMolMasses_[3]/molMass_A_);
+    dmB_[0] =   -dmA_[0]*3*(layerMolMasses_[0]/molMass_A_);  /***/
+    dmB_[1] =   -dmA_[0]*(layerMolMasses_[1]/molMass_A_)*(2) + dmA_[1]*(layerMolMasses_[1]/molMass_A_);
+    dmB_[2] =   -dmA_[1]*(layerMolMasses_[2]/molMass_A_)*(3) + dmA_[2]*(layerMolMasses_[2]/molMass_A_);
+    dmB_[3] =   -dmA_[2]*(layerMolMasses_[3]/molMass_A_); // dmA is negative, to increase iron layer negated
 
     // print out mass transfer rates for particle layers
     if (screen)
@@ -517,16 +697,27 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_, double *r_)
         fprintf(screen,"dmB[3]: %f \n",dmB_[3]);
     }
 
-    // Initial masses of every layer (layerMass_[j])
-    // There are layers , so : layerMass - previous.layerMass
-    // the mass of hematite core
-    layerMass_[0]   =   1.33333*M_PI*r_[0]*r_[0]*r_[0]*layerDensities_[0];
-    // mass of magnetite layer
-    layerMass_[1]   =   1.33333*M_PI*r_[1]*r_[1]*r_[1]*layerDensities_[1] - 1.33333*M_PI*r_[0]*r_[0]*r_[0]*layerDensities_[0];
-    // mass of wustite layer
-    layerMass_[2]   =   1.33333*M_PI*r_[2]*r_[2]*r_[2]*layerDensities_[2] - 1.33333*M_PI*r_[1]*r_[1]*r_[1]*layerDensities_[1];
-    // mass of iron layer
-    layerMass_[3]   =   1.33333*M_PI*radius_[i]*radius_[i]*radius_[i]*layerDensities_[3] - 1.33333*M_PI*r_[2]*r_[2]*r_[2]*layerDensities_[2];
+    // calculate inital layer masses
+    // this should be skipped after first run (if(!radChange))
+    for (int j=0; j <= nmaxlayers_; j++)
+    {
+        if (radLayer_[i][j] > rmin_)
+        {
+            if (j == 0)
+            {
+                layerMass_[j]   =   1.33333*M_PI*radLayer_[i][j]*radLayer_[i][j]*radLayer_[i][j]*dens_[j];
+            } else
+            {
+                layerMass_[j]   =   1.33333*M_PI*((radLayer_[i][j]*radLayer_[i][j]*radLayer_[i][j])-(radLayer_[i][j-1]*radLayer_[i][j-1]*radLayer_[i][j-1]))*dens_[j];
+            }
+
+            // calculatue before reduction pmass and pdensity
+            sum_dens        +=  dens_[j];
+            sum_mass        +=  layerMass_[j];
+            pdensity_[i]    =   sum_dens;
+            pmass_[i]       =   sum_mass;
+        }
+    }
 
     // print the initial mass out
     if (screen)
@@ -535,26 +726,31 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_, double *r_)
         fprintf(screen,"pre-layerMass[1]: %f \n",layerMass_[1]);
         fprintf(screen,"pre-layerMass[2]: %f \n",layerMass_[2]);
         fprintf(screen,"pre-layerMass[3]: %f \n",layerMass_[3]);
-        fprintf(screen,"pre-redox radius core %f \n", r_[0]);
-        fprintf(screen,"pre-redox radius magnetite: %f \n", r_[1]);
-        fprintf(screen,"pre-redox radius wustite: %f \n", r_[2]);
+        fprintf(screen,"dens0_ = %f \n",dens_[0]);
+        fprintf(screen,"dens1_ = %f \n",dens_[1]);
+        fprintf(screen,"dens2_ = %f \n",dens_[2]);
+        fprintf(screen,"dens3_ = %f \n",dens_[3]);
+        fprintf(screen,"pre-particle density: %f \n", pdensity_[i]);
+        fprintf(screen,"pre-particle mass: %f \n", pmass_[i]);
     }
 
-    // WARNING 1: do not remove more material of layer J than present --> decrease dm[J] if necessary
-    // calculate new masses of each layer
+
     for (int j = 0; j <= nmaxlayers_; j++)
     {
-        // first step: get new masses of each layer
-        layerMass_[j] += dmB_[j];
-    }
+        if (radLayer_[i][j] > rmin_ && layerMass_[j] > 0.0)
+        {
+            // WARNING 1: do not remove more material of layer J than present --> decrease dm[J] if necessary
+            // calculate new masses of each layer
+            if (dmB_[j] > layerMass_[j] || -dmB_[j] > layerMass_[j])
+                dmB_[j] = SMALL;
+            else if (layerMass_[j] > 0.0)  // add constraint so that diff layers > drmin
+                layerMass_[j] -= dmB_[j];  //***///
 
-/*    // second step:  based on predefined molar densities, compute new layer radii
-    // radius of  hematite core
-    r_[0]   =   pow((0.75*layerMass_[0]/(M_PI*layerDensities_[0])),0.333333);
-    // magnetite layer radius
-    r_[1]   =   pow((0.75*(layerMass_[1]+1.3333*M_PI*layerDensities_[0]*r_[0]*r_[0]*r_[0])/(layerDensities_[1]*M_PI)),0.333333);
-    // wustite layer radius
-    r_[2]   =   pow((0.75*(layerMass_[2]+1.3333*M_PI*layerDensities_[1]*r_[1]*r_[1]*r_[1])/(layerDensities_[2]*M_PI)),0.333333); */
+            // calculatue after reduction pmass and pdensity
+            sum_mass_new    +=  layerMass_[j];
+            pmass_[i]   =   sum_mass_new;
+        }
+    }
 
     if (screen)
     {
@@ -562,40 +758,80 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_, double *r_)
         fprintf(screen,"post-layerMass[1]: %f \n",layerMass_[1]);
         fprintf(screen,"post-layerMass[2]: %f \n",layerMass_[2]);
         fprintf(screen,"post-layerMass[3]: %f \n",layerMass_[3]);
-        fprintf(screen,"new radius core %f \n", r_[0]);
-        fprintf(screen,"new radius magnetite: %f \n", r_[1]);
-        fprintf(screen,"new radius wustite: %f \n", r_[2]);
+        fprintf(screen,"post-new mass: %f \n",pmass_[i]);
     }
 
-    // test loop later
-    /*for (int j = 0; j <= nmaxlayers_; j++)
+    // second step: based on predefined molar densities, compute new layer relRadii -- which is used to get new radii
+    for (int j = 0; j <= nmaxlayers_; j++)
     {
-        if (j == 0)
+        if (radLayer_[i][j] > rmin_ && layerMass_[j] > 0.0)
         {
-            dmB_[j]         =   dmA_[j]*(layerMolMasses_[j]/molMass_A_);
-            layerMass_[j]   =   1.3333*M_PI*r_[j]*r_[j]*r_[j]*layerDensities_[j];
-        }
-        else if (j == (nmaxlayers_))
-        {
-            dmB_[j]         =   dmA_[j-1]*(layerMolMasses_[j]/molMass_A_);
-            layerMass_[j]   =   1.3333*M_PI*(radius_[i]*radius_[i]*radius_[i])*layerDensities_[j]-1.3333*M_PI*(r_[j-1]*r_[j-1]*r_[j-1])*layerDensities_[j-1];
-        }
-        else
-        {
-            dmB_[j]         =   dmA_[j-1]*(layerMolMasses_[j]/molMass_A_) - dmA_[j]*(layerMolMasses_[j]/molMass_A_);
-            layerMass_[j]   =   1.3333*M_PI*(r_[j]*r_[j]*r_[j])*layerDensities_[j]-1.3333*M_PI*(r_[j-1]*r_[j-1]*r_[j-1])*layerDensities_[j-1];
-        }
-    } */
+            if (j == 0)
+            {
+                radLayer_[i][j]   =   pow((0.75*layerMass_[j]/(dens_[j]*M_PI)),0.333333);
+            } else
+            {
+                radLayer_[i][j]   =   pow((0.75*layerMass_[j]/(M_PI*dens_[j])+radLayer_[i][j-1]*radLayer_[i][j-1]*radLayer_[i][j-1]),0.333333);
+            }
 
-    /*
-    // WARNING 1: do not remove more material of layer J than present --> decrease dm[J] if necessary
-    // calculate new masses of each layer
+            if (j == nmaxlayers_)
+                radius_[i] = radLayer_[i][j];
+        }
+    }
+
+    if (screen)
+    {
+        fprintf(screen,"post redox radius of hematite: %f \n",radLayer_[i][0]);
+        fprintf(screen,"post redox radius of magnetite: %f \n",radLayer_[i][1]);
+        fprintf(screen,"post redox radius of wustite: %f \n",radLayer_[i][2]);
+        fprintf(screen,"post redox radius of particle: %f \n",radLayer_[i][3]);
+    }
+
+    for (int j= 0; j < nmaxlayers_; j++)
+    {
+        if (radLayer_[i][j] > rmin_)
+        {
+            relRadii_[i][j] = radLayer_[i][j]/radius_[i];
+        }
+
+        if (layerMass_[j] > 0.0)
+            dens_[j]=0.75*layerMass_[j]/(M_PI*radLayer_[i][j]*radLayer_[i][j]*radLayer_[i][j]);
+
+        // calculate particle total density and mass
+        // depending on the new values
+        sum_dens_new    +=  dens_[j];
+        // update total partilce density
+        pdensity_[i]    =   sum_dens_new;
+    }
+
+    if (screen)
+    {
+        fprintf(screen,"post-relrad[0]: %f \n",relRadii_[i][0]);
+        fprintf(screen,"post-relrad[1]: %f \n",relRadii_[i][1]);
+        fprintf(screen,"post-relrad[2]: %f \n",relRadii_[i][2]);
+        fprintf(screen,"post-relrad[3]: %f \n",relRadii_[i][3]);
+        fprintf(screen,"post-particle density: %f \n", pdensity_[i]);
+    }
+    radChange = true;
+}
+
+                // update particle mass and densities
+                /* if (layerMass_[j] > 0.0)
+                    dens_[j]    =   0.75*layerMass_[j]/(M_PI*radLayer_[i][j]*radLayer_[i][j]*radLayer_[i][j]);
+
+                // calculate particle total density and mass
+                // depending on the new values
+                sum_dens    +=  dens_[j];
+                sum_mass    +=  layerMass_[j];
+                // update total partilce density
+                // pdensity_[i]    =   sum_dens;
+                // update total particle mass
+                pmass_[i]   =   sum_mass; */
 
  // WARNING 2: if Wustite layer thickness < rmin AND T < 567 C, direct conversion of Magnetite to Fe is possible
  //            this means that Wu-Fe radius is shrinking together with the Ma-Wu radius
  //            in this case, the equilibrium value and reaction parameters at the Ma layer need to be adapted within
  //            IMPLEMENTATION ONLY IF NECESSARY */
-}
 
 /* ---------------------------------------------------------------------- */
 
@@ -627,76 +863,7 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
   // maybe not needed
 //}
 
-void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, double *x0_eq_) //double *diff, double masst, double* y0,
-{
-    updatePtrs();
-    //  test to see if values of a_ are read correctly
-    double W;
-    W = a_[0]*(a_[2]*a_[1]+a_[1])+a_[1]*a_[2];
-    if (T_[i] > 0.0 && N_[i] > 0.0)
-    {
-        dmA_[0]   =   -((a_[2]*a_[1]+a_[1])*(x0_[i]-x0_eq_[0])-a_[2]*(x0_[i]-x0_eq_[1])-a_[1]*(x0_[i]-x0_eq_[2]))*molMass_A_*partSurfArea(radius_[i])*1/W;     // gives out positive value therefore multiplied with -
-        dmA_[1]   =   ((a_[0]*a_[2]+a_[2])*(x0_[i]-x0_eq_[1])-(a_[2]+a_[2])*(x0_[i]-x0_eq_[0])-a_[0]*(x0_[i]-x0_eq_[1]))*molMass_A_*partSurfArea(radius_[i])*1/W;
-        dmA_[2]   =   ((a_[0]*a_[1]+a_[1])*(x0_[i]-x0_eq_[2])-a_[1]*(x0_[i]-x0_eq_[0])-a_[0]*(x0_[i]-x0_eq_[1]))*molMass_A_*partSurfArea(radius_[i])*1/W;
-    }
 
-    dmA_[0] *=  TimeStep * nevery;
-    dmA_[1] *=  TimeStep * nevery;
-    dmA_[2] *=  TimeStep * nevery;
-
-    if (screen)
-    {
-        fprintf(screen,"dmA_[0]: %f \n",dmA_[0]);
-        fprintf(screen,"dmA_[1]: %f \n",dmA_[1]);
-        fprintf(screen,"dmA_[2]: %f \n",dmA_[2]);
-    }
-}
-
-void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
-{
-    if (screen)
-        fprintf(screen,"DO GET XI FUNCTION!!! \n");
-    // calculate equilibrium concentration from K_eq(layer, T)
-    double xp_eq_[nmaxlayers_];
-
-    for (int j = 0; j < nmaxlayers_; j++)
-    {
-        if (T_[i] > 0.0)
-        {
-            xp_eq_[j]  =   K_eq(j,T_[i])/(1+K_eq(j,T_[i]));
-            x0_eq_[j]  =   1-xp_eq_[j];
-        }
-
-        // for debug
-        // ==========================================
-        if (screen)
-        {
-            fprintf(screen,"x0_eq: %f \n", x0_eq_[j]);
-        }
-        // ==========================================
-    }
-
-    // calculate bulk mole fraction
-    if (N_[i] > 0.0)
-    {
-        x0_[i] = concA_[i]*rhogas_[i]/(N_[i]*molMass_A_);
-    }
-
-    // for debug
-    // ==========================================
-    if (screen)
-    {
-        fprintf(screen,"x0_: %f \n", x0_[i]);
-    }
-    // ==========================================
-
-    // directly guessing x_eq like in the thesis of Nietrost seems to be spurious for multi-component mixtures (H2, H2O, CO, CO2)
-    // Negri et al. (1991), Takahashi et al. (1986) and probably many others use a different approach:
-    // as driving term, they use (n_A - n_C / K)
-
-    // ATTENTION: molar concentrations n_i [mol / m^3] need to be converted into mass fractions y_i
-    //            y_i * rho = n_i * m_{i,mol}
-}
 
 double FixChemShrinkCore::K_eq(int layer, double T)
 {

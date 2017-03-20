@@ -54,6 +54,7 @@ public:
 
    // timestep
    double TimeStep;
+   bigint current_timestep;
 
    char* massA, *massC;
 
@@ -63,6 +64,9 @@ public:
   // relative radius and thickness below which layers are neglected
   const double rmin_;
   const double drmin_;
+
+  // check if radius has changed or not
+  bool radChange;
 
   // gas-phase properties
   char *speciesA, *speciesC;
@@ -87,6 +91,7 @@ public:
   //total mole
   double *N_;
 
+
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
   class FixPropertyAtom *fix_layerRelRad_;
@@ -94,9 +99,11 @@ public:
 
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii
+  double **radLayer_;
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
+  double *dens_;
 
 
   // reaction properties
@@ -111,10 +118,11 @@ public:
   void reaction(int, double *, double *, double *, double *);   //, double, double *, double *
   //void reaction_1(int, double *, double *, double, double *, double *);
   //void reaction_2(int, double *, double *, double, double *, double *);
-  void getA(int, double *, double *);
+  void getA(int, double *);
+  // void getB(int, double *, double *);
   void getXi(int, double *, double *);
-  void layerRad(int, double *);
-  void update_atom_properties(int, double *, double *);
+  void layerRad(int);
+  void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
 };
 
