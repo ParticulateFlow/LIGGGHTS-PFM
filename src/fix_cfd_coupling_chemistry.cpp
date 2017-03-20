@@ -229,8 +229,8 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[3]="partN";
         fixarg[4]="scalar";     // 1 vector per particle to be registered
         fixarg[5]="yes";        // restart
-        fixarg[6]="no";         // communicate ghost
-        fixarg[7]="no";         // communicate rev
+        fixarg[6]="yes";         // communicate ghost
+        fixarg[7]="yes";         // communicate rev
         fixarg[8]="0.";
         fix_totalmole_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
@@ -315,9 +315,9 @@ void FixCfdCouplingChemistry::init()
     }
 
 
-   bigint prev_time = update->ntimestep - update->dt;
-    if (comm->me == 0 && screen)
-        fprintf(screen,"previous time step: %li \n", prev_time);
+   // bigint prev_time = update->ntimestep - update->dt;
+    /* if (comm->me == 0 && screen)
+        fprintf(screen,"previous time step: %li \n", prev_time); */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -334,8 +334,8 @@ void FixCfdCouplingChemistry::updatePtrs()
 void FixCfdCouplingChemistry::initial_integrate(int vflag)
 {
     updatePtrs();
-    if (comm -> me == 0 && screen)
-        fprintf(screen,"activate initial integrate \n");
+    /* if (comm -> me == 0 && screen)
+        fprintf(screen,"activate initial integrate \n"); */
     // for all species, reaction heat
     // if current timestep - 1 == latestpush(species name)
     // reset fix_masschange_(species name)
