@@ -273,6 +273,13 @@ void FixChemShrink::reaction()
         {
             if(radius_[i] > rmin)
             {
+                if (screen)
+                {
+                    fprintf(screen,"check mass frac %f \n",concA_[i]);
+                    fprintf(screen,"check TimeStep %f \n",TimeStep);
+                    fprintf(screen,"check current timestep %d \n", current_timestep);
+                }
+
                 // Current time step concentration change of reactant A and product C
                 double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep;
                 double dC   =   -dA*(molMass_C_/molMass_A_);
@@ -298,14 +305,14 @@ void FixChemShrink::reaction()
                 radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
 
                 // uncomment if postproc (verification)
-                /*if (screen)
+                if (screen)
                 {
-                     fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
-                     fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
-                     fprintf(screen,"Particle Mass %f \n",pmass_[i]);
-                     fprintf(screen,"Gas Density %f \n",rhogas_[i]);
-                     fprintf(screen,"total number of moles in chem/shrink: %f \n",N_[i]);
-                }*/
+                    fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
+                    fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
+                    fprintf(screen,"Particle Mass %f \n",pmass_[i]);
+                    fprintf(screen,"Gas Density %f \n",rhogas_[i]);
+                    fprintf(screen,"total number of moles in chem/shrink: %f \n",N_[i]);
+                }
             }
         }
 }
@@ -366,6 +373,8 @@ void FixChemShrink::post_force(int)
     pmass_  = atom ->  rmass;
     pdensity_ = atom -> density;
     TimeStep = update -> dt;
+    current_timestep = update->ntimestep;
+
     int nlocal = atom -> nlocal;
     int i;
 

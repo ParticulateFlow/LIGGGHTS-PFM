@@ -99,6 +99,7 @@ public:
 
   // TimeStep
   double TimeStep;
+  int current_timestep;
 
   // delete atoms lsit & shrink list
   int *dlist;
