@@ -50,9 +50,10 @@ namespace LAMMPS_NS
         T* getElementProperty(const char *_id);
 
         inline ContainerBase* getElementPropertyBase(const char *_id);
-        inline ContainerBase* getElementPropertyBase(int i);
 
-        inline int getElementPropertyIndex(const char *_id);
+        inline bool hasElementProperty(const char *_id);
+
+        inline void setElementPropertyToDefault(int n);
 
         template<typename T, typename U>
         void setElementProperty(const char *_id, U def);

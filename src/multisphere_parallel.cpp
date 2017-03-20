@@ -248,7 +248,6 @@ void MultisphereParallel::writeRestart(FILE *fp)
     sizeGlobal = MPI_Gather0_Vector(sendbuf,sizeLocal,recvbuf,world);
 
 
-    /*NL*/ //if (screen) fprintf(screen,"id index %d, xcm index %d\n",customValues_.getElementPropertyIndex("id"),customValues_.getElementPropertyIndex("xcm"));
     /*NL*/ //if (screen) printVecN(screen,"recvbuf",recvbuf,1248);
 
     // write data to file
