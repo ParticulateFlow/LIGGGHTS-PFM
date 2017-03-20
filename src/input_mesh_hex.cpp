@@ -270,6 +270,12 @@ void InputMeshHex::meshhexfile_vtk(class RegHexMesh *mesh)
         continue;
     }
 
+    if(strcmp(arg[0],"POINT_DATA") == 0)
+    {
+        error->warning(FLERR,"Support for 'POINT_DATA' in ASCII VTK mesh file not implemented, skipping data");
+        break;
+    }
+
     // parsing cell data
     if(read_cell_data_)
     {
