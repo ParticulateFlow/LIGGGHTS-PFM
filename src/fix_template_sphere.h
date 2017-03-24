@@ -57,10 +57,6 @@ class FixTemplateSphere : public Fix {
   virtual int mintype();
   class Region *region();
 
-  // single particle generation, used by fix pour/dev
-  virtual void randomize_single();    //NP generates one random particle
-  class ParticleToInsert *pti;
-
   // many particle generation, used by fix insert commands
   virtual void init_ptilist(int);
   virtual void delete_ptilist();
@@ -70,7 +66,9 @@ class FixTemplateSphere : public Fix {
 
   virtual void finalize_insertion() {}
 
- protected:
+  ParticleToInsert* get_single_random_pti(int distribution_groupbit);
+
+protected:
 
   int iarg;
 
@@ -88,6 +86,8 @@ class FixTemplateSphere : public Fix {
   double volume_expect;
   double mass_expect;
   double vol_limit;
+
+  void randomize_single_pti(ParticleToInsert* &pti, int distribution_groupbit);
 };
 
 }
