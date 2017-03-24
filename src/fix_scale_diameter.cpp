@@ -137,6 +137,7 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
   radius_inner_ = radius_ - scale_width_;
 
   fix_property_ = NULL;
+  scalar_flag = 1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -302,4 +303,11 @@ void FixScaleDiameter::change_settings()
       }
     }
   }
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixScaleDiameter::compute_scalar()
+{
+  return scale_to_;
 }
