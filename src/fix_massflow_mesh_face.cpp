@@ -486,6 +486,7 @@ void FixMassflowMeshFace::post_integrate()
     double **v = atom->v;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
+    int *mask = atom->mask;
     double dot,delta[3]={};
     double mass_this = 0.;
     int nparticles_this = 0.;
@@ -570,6 +571,10 @@ void FixMassflowMeshFace::post_integrate()
 
             // skip ghost particles
             if(iPart >= nlocal) continue;
+
+            // skip particles not in fix group
+            if (!(mask[iPart] & groupbit))
+                continue;
 
             defined_this[iPart] = true;
 
