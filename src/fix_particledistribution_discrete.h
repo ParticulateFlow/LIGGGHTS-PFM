@@ -32,6 +32,9 @@ FixStyle(particledistribution/discrete,FixParticledistributionDiscrete)
 
 #include "fix.h"
 
+#include<vector>
+#include "particleToInsert.h"
+
 enum{RAN_STYLE_CONSTANT_FPD,RAN_STYLE_UNIFORM_FPD,RAN_STYLE_GAUSSIAN_FPD};
 
 
@@ -65,18 +68,18 @@ class FixParticledistributionDiscrete : public Fix {
 
   int max_nspheres();
 
-  int random_init_single(int);         //NP tells the distribution how many particles are to be generated
-  class Region* randomize_single();    //NP generates one random particle
-
   void random_init_list(int);
   int randomize_list(int,int,int);     //NP generates a list of random particles
+  bool has_multisphere();
 
-  void finalize_insertion();
+  ParticleToInsert* get_random_particle(int insert_groupbit);
+    
+  // pti_delete_flag allows to delete pti in pti_list
+  // only set if pti were inserted from outside
+  void finalize_insertion(bool pti_delete_flag = false);
+  typedef std::vector<ParticleToInsert*> pti_list_type;
+  pti_list_type pti_list;
 
-  class ParticleToInsert *pti;
-
-  class ParticleToInsert **pti_list;
-  int n_pti, n_pti_max;
   void pre_insert();
   int insert(int n);
 
