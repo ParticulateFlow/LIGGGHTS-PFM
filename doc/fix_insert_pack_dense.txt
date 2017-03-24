@@ -11,7 +11,7 @@ fix insert/pack/dense command :h3
 
 [Syntax:]
 
-fix ID group-ID insert/pack seed seed_value distributiontemplate dist-ID region region-id keywords
+fix ID group-ID insert/pack seed seed_value distributiontemplate dist-ID region region-id keywords :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 insert/pack/dense = style names of this fix command :l
@@ -23,13 +23,12 @@ region = obligatory keyword :l
 region-id = id of the {region} to be used for insertion
 one or more keyword/value pairs can be appended :l
 keywords = {volumefraction_region} :l
-  {volumefraction_region} = the intended volume fraction in the region :l
-
+  {volumefraction_region} = the intended volume fraction in the region :pre
 :ule
 
 [Examples:]
 
-fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 volumefraction_region 0.53
+fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 volumefraction_region 0.53 :pre
 
 [Description:]
 

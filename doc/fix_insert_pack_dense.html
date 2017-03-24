@@ -15,8 +15,8 @@
 </H3>
 <P><B>Syntax:</B>
 </P>
-<P>fix ID group-ID insert/pack seed seed_value distributiontemplate dist-ID region region-id keywords
-</P>
+<PRE>fix ID group-ID insert/pack seed seed_value distributiontemplate dist-ID region region-id keywords 
+</PRE>
 <UL><LI>ID, group-ID are documented in <A HREF = "fix.html">fix</A> command 
 
 <LI>insert/pack/dense = style names of this fix command 
@@ -36,14 +36,14 @@ one or more keyword/value pairs can be appended
 
 <LI>keywords = <I>volumefraction_region</I> 
 
-<LI>  <I>volumefraction_region</I> = the intended volume fraction in the region 
-
+<PRE>  <I>volumefraction_region</I> = the intended volume fraction in the region 
+</PRE>
 
 </UL>
 <P><B>Examples:</B>
 </P>
-<P>fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 volumefraction_region 0.53
-</P>
+<PRE>fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 volumefraction_region 0.53 
+</PRE>
 <P><B>Description:</B>
 </P>
 <P>This fix creates a dense packing of particles in a region defined by
