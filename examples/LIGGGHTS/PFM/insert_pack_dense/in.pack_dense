@@ -1,3 +1,6 @@
+# fills a region with extent [-${REGIONSIZE}:${REGIONSIZE}]^3
+# with particles. Can be used as benchmark.
+
 atom_style	granular
 atom_modify	map array
 boundary	f f f
@@ -47,7 +50,8 @@ fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius
 fix		pdd1 all particledistribution/discrete 1. 2 pts1 0.3 pts2 0.7
 fix		pdd2 all particledistribution/discrete 1. 1 pts1 1.
 
-fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2
+fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 &
+volumefraction_region ${VOLUMEFRACTION}
 
 #output settings, include total thermal energy
 compute		1 all erotate/sphere
