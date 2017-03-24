@@ -35,6 +35,7 @@
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
 #include "math.h"
+#include "math_extra.h"
 #include "math_extra_liggghts.h"
 #include "input_mesh_hex.h"
 #define DELTA_HEX 1000
@@ -258,6 +259,7 @@ RegHexMesh::RegHexMesh(LAMMPS *lmp, int narg, char **arg) :
   center = NULL;
   volume = NULL;
   acc_volume = NULL;
+  orthogonal = NULL;
   nHex = 0;
   nHexMax = 0;
   total_volume = 0.;
@@ -296,6 +298,7 @@ RegHexMesh::~RegHexMesh()
   memory->destroy(center);
   memory->sfree(volume);
   memory->sfree(acc_volume);
+  memory->sfree(orthogonal);
   delete tree_;
 }
 
@@ -528,7 +531,141 @@ void RegHexMesh::add_hex(double **n)
   total_volume += volume[nHex];
   acc_volume[nHex] = volume[nHex];
   if(nHex > 0) acc_volume[nHex] += acc_volume[nHex-1];
+  orthogonal[nHex] = is_cell_orthogonal(nHex);
   ++nHex;
+}
+
+/* ---------------------------------------------------------------------- */
+
+bool RegHexMesh::is_cell_orthogonal(int iHex)
+{
+  /*
+    7        6
+    *--------*
+   /|       /|
+ 4*-+------*5|
+  | |      | |
+  |3*------+-*2
+  |/       |/
+  *--------*
+  0        1
+   */
+  double edge[12][3];
+  edge[0][0] = node[iHex][1][0] - node[iHex][0][0];
+  edge[0][1] = node[iHex][1][1] - node[iHex][0][1];
+  edge[0][2] = node[iHex][1][2] - node[iHex][0][2];
+
+  edge[1][0] = node[iHex][2][0] - node[iHex][1][0];
+  edge[1][1] = node[iHex][2][1] - node[iHex][1][1];
+  edge[1][2] = node[iHex][2][2] - node[iHex][1][2];
+
+  edge[2][0] = node[iHex][2][0] - node[iHex][3][0];
+  edge[2][1] = node[iHex][2][1] - node[iHex][3][1];
+  edge[2][2] = node[iHex][2][2] - node[iHex][3][2];
+
+  edge[3][0] = node[iHex][3][0] - node[iHex][0][0];
+  edge[3][1] = node[iHex][3][1] - node[iHex][0][1];
+  edge[3][2] = node[iHex][3][2] - node[iHex][0][2];
+
+
+  edge[4][0] = node[iHex][5][0] - node[iHex][4][0];
+  edge[4][1] = node[iHex][5][1] - node[iHex][4][1];
+  edge[4][2] = node[iHex][5][2] - node[iHex][4][2];
+
+  edge[5][0] = node[iHex][6][0] - node[iHex][5][0];
+  edge[5][1] = node[iHex][6][1] - node[iHex][5][1];
+  edge[5][2] = node[iHex][6][2] - node[iHex][5][2];
+
+  edge[6][0] = node[iHex][6][0] - node[iHex][7][0];
+  edge[6][1] = node[iHex][6][1] - node[iHex][7][1];
+  edge[6][2] = node[iHex][6][2] - node[iHex][7][2];
+
+  edge[7][0] = node[iHex][7][0] - node[iHex][4][0];
+  edge[7][1] = node[iHex][7][1] - node[iHex][4][1];
+  edge[7][2] = node[iHex][7][2] - node[iHex][4][2];
+
+
+  edge[8][0] = node[iHex][4][0] - node[iHex][0][0];
+  edge[8][1] = node[iHex][4][1] - node[iHex][0][1];
+  edge[8][2] = node[iHex][4][2] - node[iHex][0][2];
+
+  edge[9][0] = node[iHex][5][0] - node[iHex][1][0];
+  edge[9][1] = node[iHex][5][1] - node[iHex][1][1];
+  edge[9][2] = node[iHex][5][2] - node[iHex][1][2];
+
+  edge[10][0] = node[iHex][7][0] - node[iHex][3][0];
+  edge[10][1] = node[iHex][7][1] - node[iHex][3][1];
+  edge[10][2] = node[iHex][7][2] - node[iHex][3][2];
+
+  edge[11][0] = node[iHex][6][0] - node[iHex][2][0];
+  edge[11][1] = node[iHex][6][1] - node[iHex][2][1];
+  edge[11][2] = node[iHex][6][2] - node[iHex][2][2];
+
+#define SMALL_COS 0.001
+
+  // corner 0
+  MathExtra::norm3(edge[0]);
+  MathExtra::norm3(edge[3]);
+  if (fabs(MathExtra::dot3(edge[0],edge[3])) > SMALL_COS)
+    return false;
+  MathExtra::norm3(edge[8]);
+  if (fabs(MathExtra::dot3(edge[0],edge[8])) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[3],edge[8])) > SMALL_COS)
+    return false;
+
+  // corner 2
+  MathExtra::norm3(edge[1]);
+  MathExtra::norm3(edge[2]);
+  if (fabs(MathExtra::dot3(edge[1],edge[2] )) > SMALL_COS)
+    return false;
+  MathExtra::norm3(edge[11]);
+  if (fabs(MathExtra::dot3(edge[1],edge[11])) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[2],edge[11])) > SMALL_COS)
+    return false;
+
+  // corner 3
+  if (fabs(MathExtra::dot3(edge[2],edge[3] )) > SMALL_COS)
+    return false;
+  MathExtra::norm3(edge[10]);
+  if (fabs(MathExtra::dot3(edge[2],edge[10])) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[3],edge[10])) > SMALL_COS)
+    return false;
+
+
+  // corner 4
+  MathExtra::norm3(edge[4]);
+  MathExtra::norm3(edge[7]);
+  if (fabs(MathExtra::dot3(edge[4],edge[7])) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[4],edge[8])) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[7],edge[8])) > SMALL_COS)
+    return false;
+
+  // corner 5
+  MathExtra::norm3(edge[5]);
+  if (fabs(MathExtra::dot3(edge[4],edge[5])) > SMALL_COS)
+    return false;
+  MathExtra::norm3(edge[9]);
+  if (fabs(MathExtra::dot3(edge[4],edge[9])) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[5],edge[9])) > SMALL_COS)
+    return false;
+
+  // corner 6
+  MathExtra::norm3(edge[6]);
+  if (fabs(MathExtra::dot3(edge[5],edge[6]) ) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[5],edge[11])) > SMALL_COS)
+    return false;
+  if (fabs(MathExtra::dot3(edge[6],edge[11])) > SMALL_COS)
+    return false;
+
+  // corner 1 and 7 must be orthogonal
+  return true;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -540,6 +677,7 @@ void RegHexMesh::grow_arrays()
   center = (double**)(memory->grow(center,nHexMax, 3, "vtk_hex_center"));
   volume = (double*)(memory->srealloc(volume,nHexMax*sizeof(double),"vtk_hex_volume"));
   acc_volume = (double*)(memory->srealloc(acc_volume,nHexMax*sizeof(double),"vtk_hex_acc_volume"));
+  orthogonal = (bool*)(memory->srealloc(orthogonal,nHexMax*sizeof(bool),"vtk_hex_ortho"));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -633,6 +771,15 @@ inline double RegHexMesh::volume_of_hex(int iHex)
 
 int RegHexMesh::is_inside_hex(int iHex,double *pos)
 {
+  double bounds[6];
+  hex_bounds(iHex, bounds);
+  if(pos[0] < bounds[0] || pos[0] > bounds[1]) return 0; // outside bb of hex
+  if(pos[1] < bounds[2] || pos[1] > bounds[3]) return 0; // outside bb of hex
+  if(pos[2] < bounds[4] || pos[2] > bounds[5]) return 0; // outside bb of hex
+
+  if(orthogonal[iHex])
+    return 1;
+
   for(int i=0; i<8; ++i) {
     hexahedron->GetPoints()->SetPoint(i, node[iHex][i][0], node[iHex][i][1], node[iHex][i][2]);
   }

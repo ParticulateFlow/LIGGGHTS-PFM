@@ -79,6 +79,7 @@ class RegHexMesh : public Region {
 
    void mesh_randpos(double *pos);
    int  mesh_randcell();
+   bool is_cell_orthogonal(int iHex);
 
    char *filename;
    double scale_fact;
@@ -91,6 +92,7 @@ class RegHexMesh : public Region {
    double total_volume;
    double *volume;
    double *acc_volume;
+   bool *orthogonal;
 
    // class holding fields
    CustomValueTracker &customValues_;
