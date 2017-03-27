@@ -62,8 +62,7 @@ public:
   const int nmaxlayers_;
 
   // relative radius and thickness below which layers are neglected
-  const double rmin_;
-  const double drmin_;
+  const double rmin_, drmin_;
 
   // check if radius has changed or not
   bool radChange;
@@ -78,19 +77,15 @@ public:
   class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
   class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
   class FixPropertyAtom *fix_totalmole_;                        // total mole in volume
+  class FixPropertyAtom *fix_pressure_;
 
   double molMass_A_, molMass_C_;        // molar mass of species A and C
 
-  double *changeOfA_;
-  double *changeOfC_;
-  double *rhogas_;
-  double *concA_;
-  double *concC_;
-  double *T_;
-  double *reactionHeat_;
+  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *pgas_;
   //total mole
   double *N_;
-
+  // reaction quotient Q
+  double *Q_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
@@ -118,8 +113,9 @@ public:
   void reaction(int, double *, double *, double *, double *);   //, double, double *, double *
   //void reaction_1(int, double *, double *, double, double *, double *);
   //void reaction_2(int, double *, double *, double, double *, double *);
-  void getA(int, double *);
-  // void getB(int, double *, double *);
+  void getA(int, double *, double *);
+  void diffcoeff(int, double *);
+  void getB(int, double *, double *);
   void getXi(int, double *, double *);
   void layerRad(int);
   void update_atom_properties(int, double *);
