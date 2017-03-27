@@ -284,9 +284,9 @@ void FixInsertPackDense::prepare_insertion()
   ins_region->volume_mc(ntry_mc,cutflag,fix_distribution->max_r_bound(),
                           region_volume,region_volume_local);
 
-  double const v_part_ave = fix_distribution->vol_expect();
-  n_insert_estim = floor((region_volume-volume_present)*target_volfrac/v_part_ave);
-  n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/v_part_ave);
+  double const vol_part_ave = fix_distribution->vol_expect();
+  n_insert_estim = floor((region_volume-volume_present)*target_volfrac/vol_part_ave);
+  n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/vol_part_ave);
 
   // calculate distance field
   distfield.build(ins_region,ins_bbox,fix_distribution->max_rad()*radius_factor);
