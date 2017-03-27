@@ -63,10 +63,10 @@ void FixParticledistributionDiscreteFace::delete_pti_list_face_local()
 {
   if(!pti_list_face_local.empty())
   {
-    std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+    std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
     for(; it_face != pti_list_face_local.end(); it_face++)
     {
-      std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+      pti_list_type::iterator it_pti = it_face->begin();
       for(; it_pti != it_face->end(); it_pti++)
       {
         delete *it_pti;
@@ -178,10 +178,10 @@ void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp,
   // set fix property as desired by fix insert
   if(fp)
   {
-    std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+    std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
     for(; it_face!=pti_list_face_local.end(); it_face++)
     {
-      std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+      pti_list_type::iterator it_pti = it_face->begin();
       for(; it_pti!=it_face->end(); it_pti++)
       {
         (*it_pti)->fix_property = fp;
@@ -191,10 +191,10 @@ void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp,
   }
   else if(idx >= 0)
   {
-    std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+    std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
     for(; it_face!=pti_list_face_local.end(); it_face++)
     {
-      std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+      pti_list_type::iterator it_pti = it_face->begin();
       for(; it_pti!=it_face->end(); it_pti++)
       {
         (*it_pti)->property_index = idx;
@@ -204,10 +204,10 @@ void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp,
   }
   else if(iidx >= 0)
   {
-    std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+    std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
     for(; it_face!=pti_list_face_local.end(); it_face++)
     {
-      std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+      pti_list_type::iterator it_pti = it_face->begin();
       for(; it_pti!=it_face->end(); it_pti++)
       {
         (*it_pti)->property_iindex = iidx;
@@ -226,10 +226,10 @@ int FixParticledistributionDiscreteFace::insert(int n)
 {
   int ninserted_spheres_local = 0;
 
-  std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+  std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
   for(; it_face!=pti_list_face_local.end(); it_face++)
   {
-    std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+    pti_list_type::iterator it_pti = it_face->begin();
     for(; it_pti!=it_face->end(); it_pti++)
     {
        ninserted_spheres_local += (*it_pti)->insert();
@@ -246,10 +246,10 @@ double FixParticledistributionDiscreteFace::min_rad(int type)
   // get minrad
   double minrad_type = 1000.;
 
-  std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+  std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
   for(; it_face!=pti_list_face_local.end(); it_face++)
   {
-    std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+    pti_list_type::iterator it_pti = it_face->begin();
     for(; it_pti!=it_face->end(); it_pti++)
     {
       if((*it_pti)->atom_type != type)
@@ -269,10 +269,10 @@ double FixParticledistributionDiscreteFace::max_rad(int type)
   // get maxrad
   double maxrad_type = 0.;
 
-  std::vector<std::vector<ParticleToInsert*> >::iterator it_face = pti_list_face_local.begin();
+  std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
   for(; it_face!=pti_list_face_local.end(); it_face++)
   {
-    std::vector<ParticleToInsert*>::iterator it_pti = it_face->begin();
+    pti_list_type::iterator it_pti = it_face->begin();
     for(; it_pti!=it_face->end(); it_pti++)
     {
       if((*it_pti)->atom_type != type)
