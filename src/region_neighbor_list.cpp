@@ -63,7 +63,7 @@ bool RegionNeighborList::hasOverlap(double * x, double radius, int type) const {
     for(ParticleBin::const_iterator pit = bin.begin(); pit != bin.end(); ++pit) {
       const Particle & p = *pit;
       if(type >= 0 && type_exclusion(type, p.type)) continue;
-      const double rsq = pointDistanceSqr(x,p.x);
+      const double rsq = pointDistanceSquared(x,p.x);
       const double radsum = radius + p.radius;
       if (rsq <= radsum*radsum) return true;
     }
@@ -332,7 +332,7 @@ RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double 
 
     for(ParticleBin::const_iterator pit = bin.begin(); pit != bin.end(); ++pit) {
       const Particle & p = *pit;
-      const double rsq = pointDistanceSqr(x,p.x);
+      const double rsq = pointDistanceSquared(x,p.x);
       const double radsum = cutoff + p.radius;
       if (rsq <= radsum*radsum)
         retBin->push_back(p);

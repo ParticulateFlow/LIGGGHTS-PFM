@@ -166,9 +166,9 @@ void FixInsertPackDense::post_create()
 
   ins_bbox.getCenter(x_init);
 
-  if(!ins_region->match(x_init[0],x_init[1],x_init[2]) || ins_region->match_cut(x_init, 3*maxrad)) {
+  if(!ins_region->match(x_init[0],x_init[1],x_init[2]) || ins_region->match_cut(x_init, 3.*maxrad)) {
     bool const subdomain_flag(true);
-    ins_region->generate_random_shrinkby_cut(x_init,3*maxrad,subdomain_flag);
+    ins_region->generate_random_shrinkby_cut(x_init,3.*maxrad,subdomain_flag);
   }
   neighlist.reset();
   neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
@@ -211,7 +211,7 @@ void FixInsertPackDense::pre_exchange()
     int const n_write = n_insert_estim_local/10;
     int static n_next_write = n_write;
     if(n_inserted_local > n_next_write){
-      double percent = static_cast<double>(n_inserted_local)/static_cast<double>(n_insert_estim_local)*100;
+      double percent = static_cast<double>(n_inserted_local)/static_cast<double>(n_insert_estim_local)*100.;
       printf("process %d : %2.0f%% done, inserted %d/%d particles\n",
              comm->me,percent,n_inserted_local,n_insert_estim_local);
       n_next_write += n_write;
@@ -372,7 +372,7 @@ void FixInsertPackDense::handle_next_front_sphere()
     } else{
       // need to check if candidate points intersect with new sphere
       for(ParticleList::iterator it=candidatePoints.begin();it!=candidatePoints.end();){
-        double const d_sqr = pointDistanceSqr(newsphere->x,(*it).x);
+        double const d_sqr = pointDistanceSquared(newsphere->x,(*it).x);
         double const r_cut = newsphere->radius + (*it).radius;
         if(d_sqr < r_cut*r_cut){
           it = candidatePoints.erase(it);
@@ -395,7 +395,7 @@ void FixInsertPackDense::handle_next_front_sphere()
     double d_min_sqr = 1000;
     ParticleList::iterator closest_candidate;
     for(ParticleList::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
-      double dist_sqr = pointDistanceSqr((*it).x,x_init);
+      double dist_sqr = pointDistanceSquared((*it).x,x_init);
       if(dist_sqr < d_min_sqr){
         d_min_sqr = dist_sqr;
         closest_candidate = it;
@@ -474,13 +474,13 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
   double const halo3 = p3.radius+r_insert;
 
   // exclude impossible combinations
-  double const d_12_sqr = pointDistanceSqr(p1.x,p2.x);
+  double const d_12_sqr = pointDistanceSquared(p1.x,p2.x);
   if(d_12_sqr > (halo1+halo2)*(halo1+halo2) || d_12_sqr < SMALL*SMALL)
     return;
-  double const d_13_sqr = pointDistanceSqr(p1.x,p3.x);
+  double const d_13_sqr = pointDistanceSquared(p1.x,p3.x);
   if(d_13_sqr > (halo1+halo3)*(halo1+halo3) || d_13_sqr < SMALL*SMALL)
     return;
-  double const d_23_sqr = pointDistanceSqr(p2.x,p3.x);
+  double const d_23_sqr = pointDistanceSquared(p2.x,p3.x);
   if(d_23_sqr > (halo2+halo3)*(halo2+halo3) || d_23_sqr < SMALL*SMALL)
     return;
 
@@ -491,7 +491,7 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
   // center and radius of intersection circle
   double c_c[3];
   for(int i=0;i<3;i++) c_c[i] = (1.-alpha)*p1.x[i] + alpha*p2.x[i];
-  double const d_x1_cc_sqr = pointDistanceSqr(p1.x,c_c);
+  double const d_x1_cc_sqr = pointDistanceSquared(p1.x,c_c);
   double const r_c = sqrt(halo1*halo1 - d_x1_cc_sqr);
 
   // normal vector from p1 to p2
@@ -513,14 +513,14 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
   MathExtra::sub3(p3.x,tmp_vec,c_p);
   double const r_p = sqrt(halo3*halo3-lambda*lambda);
 
-  double const dist_pc_sqr = pointDistanceSqr(c_c,c_p);
+  double const dist_pc_sqr = pointDistanceSquared(c_c,c_p);
   if(dist_pc_sqr > (r_p+r_c)*(r_p+r_c)) return;
 
   double const alpha2 = 0.5*(1. - (r_p*r_p-r_c*r_c)/dist_pc_sqr);
   double c_m[3];
   for(int i=0;i<3;i++) c_m[i] = (1.-alpha2)*c_c[i] + alpha2*c_p[i];
 
-  double const d_sqr_cc_cm = pointDistanceSqr(c_c,c_m);
+  double const d_sqr_cc_cm = pointDistanceSquared(c_c,c_m);
   if(d_sqr_cc_cm > r_c*r_c) return;
 
   double const h = sqrt(r_c*r_c - d_sqr_cc_cm);
