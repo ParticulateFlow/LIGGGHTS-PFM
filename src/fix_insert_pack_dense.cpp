@@ -352,7 +352,7 @@ void FixInsertPackDense::handle_next_front_sphere()
 {
   Particle current = frontSpheres.front();
   RegionNeighborList::ParticleBin *particles(0);
-  Particle *newsphere = 0; // last inserted sphere
+  Particle *newsphere = NULL; // last inserted sphere
 
   int nValid = 1000;
   while(nValid > 1){
@@ -408,7 +408,7 @@ void FixInsertPackDense::handle_next_front_sphere()
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius,(*closest_candidate).type);
     n_inserted_local++;
 
-    if(newsphere) delete newsphere;
+    delete newsphere;
     newsphere = new Particle(*closest_candidate);
     particles->push_back(*closest_candidate);
 
