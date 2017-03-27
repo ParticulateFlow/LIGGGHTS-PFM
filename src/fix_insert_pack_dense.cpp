@@ -574,7 +574,7 @@ ParticleToInsert* FixInsertPackDense::get_next_pti()
 
 FixInsertPackDense::~FixInsertPackDense()
 {
-  if(x_init) delete[] x_init;
+  delete[] x_init;
 }
 
 /* ---------------------------------------------------------------------- */
