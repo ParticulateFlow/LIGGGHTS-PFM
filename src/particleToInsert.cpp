@@ -165,7 +165,7 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
 
     vectorCopy3D(x,x_ins[0]);
 
-    if(neighList.hasOverlap(x_ins[0], radius_ins[0], atom_type_vector_flag ? atom_type_vector[0] : atom_type)) {
+    if(neighList.hasOverlap(x_ins[0], radius_ins[0], get_atom_type())) {
         return 0;
     }
 
@@ -174,7 +174,7 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
     vectorCopy3D(v,v_ins);
     vectorCopy3D(omega,omega_ins);
 
-    neighList.insert(x_ins[0], radius_ins[0], atom_type_vector_flag ? atom_type_vector[0] : atom_type);
+    neighList.insert(x_ins[0], radius_ins[0], get_atom_type());
 
     return 1;
 }

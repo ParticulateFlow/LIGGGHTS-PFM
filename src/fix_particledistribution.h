@@ -28,6 +28,7 @@
 #ifndef LMP_FIX_PARTICLEDISTRIBUTION_H
 #define LMP_FIX_PARTICLEDISTRIBUTION_H
 
+#include <vector>
 #include "fix.h"
 
 enum{RAN_STYLE_CONSTANT_FPD,RAN_STYLE_UNIFORM_FPD,RAN_STYLE_GAUSSIAN_FPD};
@@ -73,14 +74,14 @@ class FixParticledistribution : public Fix {
   virtual void random_init_list(int) = 0;
   virtual int randomize_list(int,int,int) = 0;   // generate a list of random particles
 
-  class ParticleToInsert *pti;
-
-  class ParticleToInsert **pti_list;
-  int n_pti, n_pti_max;
+  typedef std::vector<ParticleToInsert*> pti_list_type;
+  pti_list_type pti_list;
 
   virtual void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0., int idx=-1, int ival=0, int iidx=-1);
   virtual int insert(int n);
-  virtual void finalize_insertion();
+  // pti_delete_flag allows to delete pti in pti_list
+  // only set if pti were inserted from outside
+  virtual void finalize_insertion(bool pti_delete_flag = false);
 
  protected:
 

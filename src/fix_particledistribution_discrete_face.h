@@ -66,6 +66,7 @@ class FixParticledistributionDiscreteFace : public FixParticledistribution {
  protected:
 
   void delete_pti_list_face_local();
+  int n_pti_max;
 };
 
 }

@@ -20,6 +20,7 @@
 ------------------------------------------------------------------------- */
 
 #include <stdlib.h>
+#include <assert.h>
 #include "fix_template_sphere.h"
 #include "fix_particledistribution_discrete.h"
 #include "modify.h"
@@ -183,12 +184,6 @@ FixParticledistributionDiscrete::FixParticledistributionDiscrete(LAMMPS *lmp, in
   /*NL*/ //      fprintf(screen,"    %s: d=%e (bounding sphere) number%%=%f%%\n",templates[distorder[i]]->id,2.*templates[distorder[i]]->pti->r_bound,100.*distweight[distorder[i]]);
   /*NL*/ //}
 
-  //NP wire to first template
-  pti = templates[distorder[0]]->pti;
-
-  pti_list = NULL;
-  n_pti = n_pti_max = 0;
-
   //calc max radius and bounding sphere radius
 
   maxrad = maxrbound = 0.;
@@ -259,14 +254,7 @@ void FixParticledistributionDiscrete::random_init_list(int ntotal)
     }
 
     // re-allocate if need more total ptis in distribution than allocated so far
-    if(n_pti_max_requested > n_pti_max)
-    {
-        n_pti_max = n_pti_max_requested;
-        if(pti_list) delete []pti_list;
-        pti_list = new ParticleToInsert*[n_pti_max];
-    }
-
-    /*NL*///if (screen) fprintf(screen,"random_init_list for %s: ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
+    pti_list.reserve(n_pti_max_requested);
 }
 
 /* ----------------------------------------------------------------------
@@ -281,12 +269,6 @@ void FixParticledistributionDiscrete::random_init_list(int ntotal)
 
 int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupbit,int exact_number)
 {
-    if(ntotal > n_pti_max)
-    {
-        /*NL*/if(screen) fprintf(screen," fix %s, ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
-        error->one(FLERR,"Faulty implementation: FixParticledistributionDiscrete::randomize_list() called for more particles than defined in random_init_list()");
-    }
-
     ninsert = ntotal;
     ninserted = 0;
 
@@ -358,18 +340,17 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
 
     // wire lists, make sure in correct order (large to small particles)
 
-    n_pti = 0;
     for(int i = 0; i < ntemplates; i++)
     {
         int chosendist = distorder[i];
         for (int j = 0; j < parttogen[chosendist]; j++)
         {
-            pti_list[n_pti + j] = templates[chosendist]->pti_list[j];
+            pti_list.push_back(templates[chosendist]->pti_list[j]);
         }
-        n_pti += parttogen[chosendist];
     }
 
-    if(n_pti != ninsert) error->all(FLERR,"Internal error in FixParticledistributionDiscrete::randomize_list");
+    if(pti_list.size() != static_cast<pti_list_type::size_type>(ninsert))
+        error->all(FLERR,"Internal error in FixParticledistributionDiscrete::randomize_list");
 
     ninserted = ninsert;
     return ninsert;
@@ -413,12 +394,13 @@ void FixParticledistributionDiscrete::pre_insert(int n, FixPropertyAtom *fp, dou
 
 /* ----------------------------------------------------------------------
    set particle properties - only pti needs to know which properties to set
-   loop to n, not n_pti, since not all particles may have been inserted
+   loop to n, not pti_list.size(), since not all particles may have been inserted
 ------------------------------------------------------------------------- */
 
 int FixParticledistributionDiscrete::insert(int n)
 {
     int ninserted_spheres_local = 0;
+    assert(static_cast<pti_list_type::size_type>(n) <= pti_list.size());
     for(int i = 0; i < n; i++)
     {
         /*NL*/ //if (screen) fprintf(screen,"inserting pti #%d\n",i);
@@ -431,10 +413,19 @@ int FixParticledistributionDiscrete::insert(int n)
    wrap up insertion
 ------------------------------------------------------------------------- */
 
-void FixParticledistributionDiscrete::finalize_insertion()
+void FixParticledistributionDiscrete::finalize_insertion(bool pti_delete_flag)
 {
-    for(int i = 0; i < ntemplates; i++)
-        templates[i]->finalize_insertion();
+  for(int i = 0; i < ntemplates; i++)
+    templates[i]->finalize_insertion();
+
+  if(pti_delete_flag){
+    for(pti_list_type::iterator it = pti_list.begin();it != pti_list.end();it++){
+      if(*it != 0)
+        delete *it;
+    }
+  }
+
+  pti_list.clear();
 }
 
 /* ----------------------------------------------------------------------*/
@@ -471,4 +462,35 @@ double FixParticledistributionDiscrete::max_rad(int type)
     }
 
     return maxrad_type;
+}
+
+/* ----------------------------------------------------------------------
+   return true if any of the templates is of type multisphere
+------------------------------------------------------------------------- */
+
+bool FixParticledistributionDiscrete::has_multisphere()
+{
+  for(int i=0;i<ntemplates;i++){
+    // strstr returns pointer to beginning of substring if substring is found
+    if(strstr(templates[i]->style,"multisphere") != 0)
+      return true;
+  }
+  return false;
+}
+
+/* ----------------------------------------------------------------------*/
+
+ParticleToInsert* FixParticledistributionDiscrete::get_random_particle(int insert_groupbit)
+{
+  // first, choose distribution
+  double r = random->uniform();
+  int i_template=0;
+  while(cumweight[i_template] < r)
+    i_template++;
+
+  // avoid floating point issues
+  if(i_template == ntemplates)
+    i_template = ntemplates-1;
+
+  return templates[i_template]->get_single_random_pti(groupbit | insert_groupbit);
 }

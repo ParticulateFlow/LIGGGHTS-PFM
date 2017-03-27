@@ -47,6 +47,7 @@ FixParticledistributionDiscreteFace::FixParticledistributionDiscreteFace(LAMMPS 
   maxtype = atom->ntypes;
 
   maxrad = maxrbound = 0.0;
+  n_pti_max = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -110,7 +111,7 @@ void FixParticledistributionDiscreteFace::set_distribution_local(const std::vect
       int ntemplates_to_insert = distributions_face_local[iface][idist];
       for(int itemplate=0; itemplate<ntemplates_to_insert; ++itemplate)
       {
-        pti = new ParticleToInsert(lmp);
+        ParticleToInsert *pti = new ParticleToInsert(lmp);
         pti->atom_type = type;
         pti->radius_ins[0] =  pti->r_bound_ins = radius;
         pti->density_ins = it_dist->first.density_;
@@ -129,8 +130,6 @@ void FixParticledistributionDiscreteFace::set_distribution_local(const std::vect
       }
     }
   }
-
-  pti = NULL;
 
   if(masstotal > 0.)
   {

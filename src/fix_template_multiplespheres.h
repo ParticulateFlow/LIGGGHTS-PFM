@@ -48,9 +48,6 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   int mintype();
   int number_spheres();
 
-  // single insertion
-  virtual void randomize_single();
-
   // multi insertion
   virtual void init_ptilist(int);
   void randomize_ptilist(int ,int );

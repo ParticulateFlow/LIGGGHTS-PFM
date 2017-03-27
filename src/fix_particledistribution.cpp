@@ -30,10 +30,6 @@ using namespace LAMMPS_NS;
 
 FixParticledistribution::FixParticledistribution(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
-  pti(NULL),
-  pti_list(NULL),
-  n_pti(0),
-  n_pti_max(0),
   ninserted(0),
   ninsert(0),
   random(NULL),
@@ -54,7 +50,6 @@ FixParticledistribution::FixParticledistribution(LAMMPS *lmp, int narg, char **a
 
 FixParticledistribution::~FixParticledistribution()
 {
-  delete []pti_list;
   delete random;
 }
 
@@ -98,7 +93,7 @@ int FixParticledistribution::insert(int /*n*/)
    wrap up insertion
 ------------------------------------------------------------------------- */
 
-void FixParticledistribution::finalize_insertion()
+void FixParticledistribution::finalize_insertion(bool pti_delete_flag)
 {
 }
 

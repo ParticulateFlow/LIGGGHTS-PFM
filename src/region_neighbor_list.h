@@ -57,8 +57,10 @@ struct Particle {
  */
 class RegionNeighborList : protected LAMMPS_NS::Pointers
 {
+public:
   typedef std::vector<Particle> ParticleBin;
 
+private:
   std::vector<ParticleBin> bins;  // list of particle bins
   std::vector<int> stencil;       // stencil used to check bins for collisions
   size_t ncount;                  // total number of particles in neighbor list
@@ -80,11 +82,14 @@ class RegionNeighborList : protected LAMMPS_NS::Pointers
 public:
     RegionNeighborList(LAMMPS_NS::LAMMPS *lmp);
 
-    bool hasOverlap(double * x, double radius, int type) const;
+    bool hasOverlap(Particle &p) const;
+    bool hasOverlap(double * x, double radius, int type=-1) const;
     void insert(double * x, double radius, int type);
     size_t count() const;
     void reset();
     bool setBoundingBox(LAMMPS_NS::BoundingBox & bb, double maxrad);
+
+    ParticleBin* getParticlesCloseTo(double *x, double cutoff);
 };
 
 }

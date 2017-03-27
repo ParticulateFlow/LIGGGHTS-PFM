@@ -31,7 +31,6 @@ FixStyle(particledistribution/discrete,FixParticledistributionDiscrete)
 
 #include "fix_particledistribution.h"
 
-
 namespace LAMMPS_NS {
 
 class FixParticledistributionDiscrete : public FixParticledistribution {
@@ -52,10 +51,15 @@ class FixParticledistributionDiscrete : public FixParticledistribution {
 
   void random_init_list(int);
   int randomize_list(int,int,int);     // generate a list of random particles
+  bool has_multisphere();
+
+  ParticleToInsert* get_random_particle(int insert_groupbit);
 
   void pre_insert(int n=0, FixPropertyAtom *fp=NULL, double val=0., int idx=-1, int ival=0, int iidx=-1);
   int insert(int n);
-  void finalize_insertion();
+  // pti_delete_flag allows to delete pti in pti_list
+  // only set if pti were inserted from outside
+  void finalize_insertion(bool pti_delete_flag = false);
 
   inline int n_particletemplates()
   { return ntemplates; }

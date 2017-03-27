@@ -64,7 +64,7 @@ namespace LAMMPS_NS {
         int *atom_type_vector;
 
         // center of bounding sphere
-        
+
         double x_bound_ins[3];
 
         // velocity and omega at insertion
@@ -87,6 +87,7 @@ namespace LAMMPS_NS {
         virtual int set_x_v_omega(double *,double *,double *,double *);
 
         virtual void scale_pti(double r_scale);
+        virtual int get_atom_type() { return atom_type_vector_flag ? atom_type_vector[0] : atom_type; }
     };
 
 }

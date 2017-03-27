@@ -703,6 +703,7 @@ of each style or click on the style itself for a full description:
 "imd"_fix_imd.html,
 "indent"_fix_indent.html,
 "insert/pack"_fix_insert_pack.html,
+"insert/pack/dense"_fix_insert_pack_dense.html,
 "insert/pack/face"_fix_insert_pack_face.html,
 "insert/rate/region"_fix_insert_rate_region.html,
 "insert/stream"_fix_insert_stream.html,
