@@ -60,6 +60,10 @@ public:
 
   // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;
+  // number of active layers starts with 3, and reduces if a layer is depleted
+  int layers_;
+  // difference between nmaxlayers_ and layers_
+  int diflayer_;
 
   // relative radius and thickness below which layers are neglected
   const double rmin_, drmin_;
@@ -110,9 +114,9 @@ public:
 
   int active_layers(int);
   double K_eq(int, double);
-  void reaction(int, double *, double *, double *, double *);   //, double, double *, double *
-  //void reaction_1(int, double *, double *, double, double *, double *);
-  //void reaction_2(int, double *, double *, double, double *, double *);
+  void reaction3(int, double *, double *, double *, double *);   //, double, double *, double *
+  // void reaction2(int, double *, double *, double *, double *);   //, double, double *, double *
+  // void reaction1(int, double *, double *, double *, double *);   //, double, double *, double *
   void getA(int, double *, double *);
   void diffcoeff(int, double *);
   void getB(int, double *, double *);
