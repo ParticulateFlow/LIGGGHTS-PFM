@@ -17,14 +17,14 @@ neighbor	0.002 bin
 neigh_modify	delay 0
 
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype 5.e6
 fix 		m2 all property/global poissonsRatio peratomtype 0.45
 fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.3
 fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.5
 
-#New pair style
+#pair style
 pair_style gran model hertz tangential history #Hertzian without cohesion
 pair_coeff	* *
 
@@ -50,27 +50,24 @@ variable	growts equal 50000
 variable	growevery equal 40
 variable	relaxts equal 20000
 
-#region and insertion
-group		nve_group region reg
-
 #particle insertion
-fix		ins nve_group insert/pack seed 5330 distributiontemplate pdd1 &
+fix		ins all insert/pack seed 5330 distributiontemplate pdd1 &
 			maxattempt 200 insert_every once overlapcheck yes all_in yes vel constant 0. 0. 0. &
 			region reg volumefraction_region ${alphastart}
 
-#apply nve integration to all particles that are inserted as single particles
-fix		integr nve_group nve/sphere
+#apply nve integration to all particles
+fix		integr all nve/sphere
 
 #output settings, include total thermal energy
-compute		1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 vol
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
 thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 #insert the first particles
 run		1
-dump		dmp all custom 350 post/dump*.packing id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius 
+dump		dmp all custom 350 post/dump*.packing id type x y z vx vy vz fx fy fz omegax omegay omegaz radius 
 unfix		ins
 
 #calculate grow rate

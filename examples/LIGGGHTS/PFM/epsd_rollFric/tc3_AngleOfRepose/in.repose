@@ -70,7 +70,7 @@ create_box	1 reg
 neighbor	${skin} bin
 neigh_modify	delay 0
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 fix     m1 all property/global youngsModulus peratomtype ${ym}
 fix     m2 all property/global poissonsRatio peratomtype ${pr}
 fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${rest}
@@ -120,7 +120,7 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run 1
-dump		dmp all custom ${dumpfreq} post/dump_*.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.liggghts id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump		dmp all custom ${dumpfreq} post/dump_*.rad${rad}_ym${ym}_pr${pr}_fric${fric}_rfric${rf}_rvisc${rvisc}_rest${rest}_dens${dens}_rfstyle${rfSLog}.liggghts id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 # getting the simulation started - first values for ke are copmuted
 run		1000
