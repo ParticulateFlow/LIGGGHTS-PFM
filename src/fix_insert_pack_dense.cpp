@@ -372,9 +372,9 @@ void FixInsertPackDense::handle_next_front_sphere()
     } else{
       // need to check if candidate points intersect with new sphere
       for(ParticleList::iterator it=candidatePoints.begin();it!=candidatePoints.end();){
-        double const d_sqr = pointDistanceSquared(newsphere->x,(*it).x);
+        double const dist_sq = pointDistanceSquared(newsphere->x,(*it).x);
         double const r_cut = newsphere->radius + (*it).radius;
-        if(d_sqr < r_cut*r_cut){
+        if(dist_sq < r_cut*r_cut){
           it = candidatePoints.erase(it);
         } else{
           ++it;
@@ -392,12 +392,12 @@ void FixInsertPackDense::handle_next_front_sphere()
     }
 
     // then, search for candidate point closest to insertion center
-    double d_min_sqr = 1000;
+    double dist_min_sq = 1000.;
     ParticleList::iterator closest_candidate;
     for(ParticleList::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
-      double dist_sqr = pointDistanceSquared((*it).x,x_init);
-      if(dist_sqr < d_min_sqr){
-        d_min_sqr = dist_sqr;
+      double dist_sq = pointDistanceSquared((*it).x,x_init);
+      if(dist_sq < dist_min_sq){
+        dist_min_sq = dist_sq;
         closest_candidate = it;
       }
     }
@@ -474,25 +474,26 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
   double const halo3 = p3.radius+r_insert;
 
   // exclude impossible combinations
-  double const d_12_sqr = pointDistanceSquared(p1.x,p2.x);
-  if(d_12_sqr > (halo1+halo2)*(halo1+halo2) || d_12_sqr < SMALL*SMALL)
+  double const dist_12_sq = pointDistanceSquared(p1.x,p2.x);
+  if(dist_12_sq > (halo1+halo2)*(halo1+halo2) || dist_12_sq < SMALL*SMALL)
     return;
-  double const d_13_sqr = pointDistanceSquared(p1.x,p3.x);
-  if(d_13_sqr > (halo1+halo3)*(halo1+halo3) || d_13_sqr < SMALL*SMALL)
+  double const dist_13_sq = pointDistanceSquared(p1.x,p3.x);
+  if(dist_13_sq > (halo1+halo3)*(halo1+halo3) || dist_13_sq < SMALL*SMALL)
     return;
-  double const d_23_sqr = pointDistanceSquared(p2.x,p3.x);
-  if(d_23_sqr > (halo2+halo3)*(halo2+halo3) || d_23_sqr < SMALL*SMALL)
+  double const dist_23_sq = pointDistanceSquared(p2.x,p3.x);
+  if(dist_23_sq > (halo2+halo3)*(halo2+halo3) || dist_23_sq < SMALL*SMALL)
     return;
 
   // first, construct intersection circle between halos of particles 1,2
-  double const alpha = 0.5*(1. - (halo2*halo2-halo1*halo1)/d_12_sqr );
+  double const alpha = 0.5*(1. - (halo2*halo2-halo1*halo1)/dist_12_sq );
   if(alpha < 0. || alpha > 1.) return;
 
   // center and radius of intersection circle
   double c_c[3];
   for(int i=0;i<3;i++) c_c[i] = (1.-alpha)*p1.x[i] + alpha*p2.x[i];
-  double const d_x1_cc_sqr = pointDistanceSquared(p1.x,c_c);
-  double const r_c = sqrt(halo1*halo1 - d_x1_cc_sqr);
+  double const dist_x1_cc_sq = pointDistanceSquared(p1.x,c_c);
+  double const r_c_sq = halo1*halo1 - dist_x1_cc_sq;
+  double const r_c = sqrt(r_c_sq);
 
   // normal vector from p1 to p2
   double n[3];
@@ -511,19 +512,20 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
   MathExtra::scale3(lambda,tmp_vec);
   double c_p[3];
   MathExtra::sub3(p3.x,tmp_vec,c_p);
-  double const r_p = sqrt(halo3*halo3-lambda*lambda);
+  double const r_p_sq = halo3*halo3-lambda*lambda;
+  double const r_p = sqrt(r_p_sq);
 
-  double const dist_pc_sqr = pointDistanceSquared(c_c,c_p);
-  if(dist_pc_sqr > (r_p+r_c)*(r_p+r_c)) return;
+  double const dist_pc_sq = pointDistanceSquared(c_c,c_p);
+  if(dist_pc_sq > (r_p+r_c)*(r_p+r_c)) return;
 
-  double const alpha2 = 0.5*(1. - (r_p*r_p-r_c*r_c)/dist_pc_sqr);
+  double const alpha2 = 0.5*(1. - (r_p_sq-r_c_sq)/dist_pc_sq);
   double c_m[3];
   for(int i=0;i<3;i++) c_m[i] = (1.-alpha2)*c_c[i] + alpha2*c_p[i];
 
-  double const d_sqr_cc_cm = pointDistanceSquared(c_c,c_m);
-  if(d_sqr_cc_cm > r_c*r_c) return;
+  double const dist_cc_cm_sq = pointDistanceSquared(c_c,c_m);
+  if(dist_cc_cm_sq > r_c_sq) return;
 
-  double const h = sqrt(r_c*r_c - d_sqr_cc_cm);
+  double const h = sqrt(r_c_sq - dist_cc_cm_sq);
 
 
   if(h < SMALL){ // only one candidate point
@@ -601,7 +603,5 @@ bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
 
 bool FixInsertPackDense::candidate_point_is_valid(Particle &p)
 {
-
   return ( !neighlist.hasOverlap(p.x,p.radius-SMALL,p.type) && is_completely_in_subregion(p) );
-
 }
