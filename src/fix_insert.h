@@ -59,11 +59,11 @@ class FixInsert : public Fix {
 
   double compute_vector(int index);
 
-  virtual double min_rad(int);  //NP modified C.K.
-  virtual double max_rad(int);  //NP modified C.K.
-  virtual double max_r_bound();  //NP modified C.K.
-  int min_type();
-  int max_type();
+  virtual double min_rad(int) const;  //NP modified C.K.
+  virtual double max_rad(int) const;  //NP modified C.K.
+  virtual double max_r_bound() const;  //NP modified C.K.
+  int min_type() const;
+  int max_type() const;
 
   int ins_every()
   { return insert_every; }

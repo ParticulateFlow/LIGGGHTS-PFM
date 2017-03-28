@@ -38,9 +38,9 @@ namespace LAMMPS_NS {
   public:
     FixHeatGranRad(class LAMMPS *, int, char **);
     ~FixHeatGranRad();
-    void pre_delete(bool){};
+    void pre_delete(bool){}
 
-    double extend_cut_ghost();
+    double extend_cut_ghost() const;
     int setmask();
     void init();
     void post_force(int);
