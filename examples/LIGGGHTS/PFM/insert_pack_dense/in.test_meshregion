@@ -43,7 +43,7 @@ fix        pts1 all particletemplate/sphere 1 atom_type 1 density constant 2500 
 fix        pdd1 all particledistribution/discrete 1 1 pts1 1.
 
 # load mesh region
-region        mesh_reg mesh/tet file data/test.vtk  scale 1. move 0. 0. 0.  rotate 0. 0. 0. units box
+region        mesh_reg mesh/tet file meshes/test.vtk  scale 1. move 0. 0. 0.  rotate 0. 0. 0. units box
 
 fix ins_pack_dense all insert/pack/dense seed 123 region mesh_reg distributiontemplate pdd1
 
