@@ -490,14 +490,14 @@ int FixWallGran::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-int FixWallGran::min_type()
+int FixWallGran::min_type() const
 {
     return atom_type_wall_;
 }
 
 /* ---------------------------------------------------------------------- */
 
-int FixWallGran::max_type()
+int FixWallGran::max_type() const
 {
     return atom_type_wall_;
 }

@@ -378,14 +378,14 @@ void FixTemplateMultiplespheres::calc_center_of_mass()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::max_r_bound()
+double FixTemplateMultiplespheres::max_r_bound() const
 {
     return r_bound;
 }
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::min_rad()
+double FixTemplateMultiplespheres::min_rad() const
 {
     double rmin = 0.;
 
@@ -397,7 +397,7 @@ double FixTemplateMultiplespheres::min_rad()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::max_rad()
+double FixTemplateMultiplespheres::max_rad() const
 {
     double rmax = 0.;
 

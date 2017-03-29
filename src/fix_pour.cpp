@@ -597,7 +597,7 @@ void FixPour::reset_dt()
 
 /* ---------------------------------------------------------------------- */
 //NP modified C.K.
-double FixPour::min_rad(int type)
+double FixPour::min_rad(int type) const
 {
     if(type != ntype) return 1000.;
     return radius_lo;
@@ -605,7 +605,7 @@ double FixPour::min_rad(int type)
 
 /* ---------------------------------------------------------------------- */
 //NP modified C.K.
-double FixPour::max_rad(int type)
+double FixPour::max_rad(int type) const
 {
     if(type != ntype) return 0.;
     return radius_hi;

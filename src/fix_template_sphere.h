@@ -49,9 +49,9 @@ class FixTemplateSphere : public Fix {
   // access to protected properties
   virtual double volexpect();           //NP expectancy value for particle volume
   virtual double massexpect();          //NP expectancy value for particle mass
-  virtual double min_rad();
-  virtual double max_rad();
-  virtual double max_r_bound();
+  virtual double min_rad() const;
+  virtual double max_rad() const;
+  virtual double max_r_bound() const;
   virtual int number_spheres();
   virtual int maxtype();
   virtual int mintype();
