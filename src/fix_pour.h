@@ -51,10 +51,10 @@ class FixPour : public Fix {
   void init();
   void pre_exchange();
   void reset_dt();
-  virtual double min_rad(int); //NP modified C.K.
-  virtual double max_rad(int); //NP modified C.K.
-  int min_type() {return ntype;} //NP modified C.K.
-  int max_type() {return ntype;} //NP modified C.K.
+  virtual double min_rad(int) const; //NP modified C.K.
+  virtual double max_rad(int) const; //NP modified C.K.
+  int min_type() const {return ntype;} //NP modified C.K.
+  int max_type() const {return ntype;} //NP modified C.K.
 
  private:
   int ninsert,ntype,seed;

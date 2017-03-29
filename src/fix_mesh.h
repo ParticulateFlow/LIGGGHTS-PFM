@@ -64,8 +64,8 @@ namespace LAMMPS_NS
 
         void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi);
 
-        int min_type();
-        int max_type();
+        int min_type() const;
+        int max_type() const;
 
         class AbstractMesh* mesh()
         { return mesh_; }

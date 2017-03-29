@@ -430,7 +430,7 @@ void FixParticledistributionDiscrete::finalize_insertion(bool pti_delete_flag)
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscrete::min_rad(int type)
+double FixParticledistributionDiscrete::min_rad(int type) const
 {
     //get minrad
     double minrad_type = 1000.;
@@ -448,7 +448,7 @@ double FixParticledistributionDiscrete::min_rad(int type)
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscrete::max_rad(int type)
+double FixParticledistributionDiscrete::max_rad(int type) const
 {
     //get maxrad
     double maxrad_type = 0.;

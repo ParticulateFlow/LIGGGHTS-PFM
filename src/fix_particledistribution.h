@@ -48,27 +48,27 @@ class FixParticledistribution : public Fix {
 
   virtual int setmask();
 
-  virtual double vol_expect()
+  double vol_expect() const
   { return volexpect; }
-  virtual double mass_expect()
+  double mass_expect() const
   { return massexpect; }
 
-  virtual int max_type()
+  int max_type() const
   { return maxtype; }
-  virtual int min_type()
+  int min_type() const
   { return mintype; }
 
-  virtual double min_rad(int) { return 0.0; }
-  virtual double max_rad(int) { return 0.0; }
+  virtual double min_rad(int) const { return 0.0; }
+  virtual double max_rad(int) const { return 0.0; }
 
-  virtual double min_rad()
+  double min_rad() const
   { return minrad; }
-  virtual double max_rad()
+  double max_rad() const
   { return maxrad; }
-  virtual double max_r_bound()
+  double max_r_bound() const
   { return maxrbound; }
 
-  virtual int max_nspheres()
+  int max_nspheres() const
   { return maxnspheres; }
 
   virtual void random_init_list(int) = 0;

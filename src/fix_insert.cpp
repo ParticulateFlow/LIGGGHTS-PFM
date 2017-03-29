@@ -542,35 +542,35 @@ void FixInsert::init()
 
 /* ---------------------------------------------------------------------- */
 
-int FixInsert::min_type()
+int FixInsert::min_type() const
 {
     return type_min;
 }
 
 /* ---------------------------------------------------------------------- */
 
-int FixInsert::max_type()
+int FixInsert::max_type() const
 {
     return type_max;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double FixInsert::max_rad(int type)
+double FixInsert::max_rad(int type) const
 {
     return fix_distribution->max_rad(type);
 }
 
 /* ---------------------------------------------------------------------- */
 
-double FixInsert::min_rad(int type)
+double FixInsert::min_rad(int type) const
 {
     return fix_distribution->min_rad(type);
 }
 
 /* ---------------------------------------------------------------------- */
 
-double FixInsert::max_r_bound()
+double FixInsert::max_r_bound() const
 {
     return fix_distribution->max_r_bound();
 }

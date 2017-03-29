@@ -24,7 +24,7 @@
 
 /* ---------------------------------------------------------------------- */
 
-inline double Multisphere::max_r_bound()
+inline double Multisphere::max_r_bound() const
 {
     double max_r_bound = 0.;
 

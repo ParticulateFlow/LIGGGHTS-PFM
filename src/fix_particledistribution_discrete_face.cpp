@@ -241,15 +241,15 @@ int FixParticledistributionDiscreteFace::insert(int n)
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscreteFace::min_rad(int type)
+double FixParticledistributionDiscreteFace::min_rad(int type) const
 {
   // get minrad
   double minrad_type = 1000.;
 
-  std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
+  std::vector<pti_list_type>::const_iterator it_face = pti_list_face_local.begin();
   for(; it_face!=pti_list_face_local.end(); it_face++)
   {
-    pti_list_type::iterator it_pti = it_face->begin();
+    pti_list_type::const_iterator it_pti = it_face->begin();
     for(; it_pti!=it_face->end(); it_pti++)
     {
       if((*it_pti)->atom_type != type)
@@ -264,15 +264,15 @@ double FixParticledistributionDiscreteFace::min_rad(int type)
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscreteFace::max_rad(int type)
+double FixParticledistributionDiscreteFace::max_rad(int type) const
 {
   // get maxrad
   double maxrad_type = 0.;
 
-  std::vector<pti_list_type>::iterator it_face = pti_list_face_local.begin();
+  std::vector<pti_list_type>::const_iterator it_face = pti_list_face_local.begin();
   for(; it_face!=pti_list_face_local.end(); it_face++)
   {
-    pti_list_type::iterator it_pti = it_face->begin();
+    pti_list_type::const_iterator it_pti = it_face->begin();
     for(; it_pti!=it_face->end(); it_pti++)
     {
       if((*it_pti)->atom_type != type)

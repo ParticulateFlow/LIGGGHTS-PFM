@@ -61,7 +61,7 @@ namespace LAMMPS_NS {
       int calc_n_steps(int iatom,int body,double *p_ref,double *normalvec,double *v_normal);
       void release(int iatom,int body,double *v_toInsert,double *omega_toInsert);
 
-      double max_r_bound();
+      double max_r_bound() const;
 
       void reset_forces(bool extflag);
 
@@ -115,7 +115,7 @@ namespace LAMMPS_NS {
         vectorAdd3D(xcm_(i),x_bnd,x_bnd);
       }
 
-      inline double r_bound(int i)
+      inline double r_bound(int i) const
       { return r_bound_(i); }
 
       inline double mass(int i)

@@ -164,7 +164,7 @@ int FixHeatGranRad::setmask(){
 
 /* ---------------------------------------------------------------------- */
 
-double FixHeatGranRad::extend_cut_ghost(){
+double FixHeatGranRad::extend_cut_ghost() const {
   return cutGhost;
 }
 

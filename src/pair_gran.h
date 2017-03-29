@@ -161,7 +161,7 @@ public:
 
   std::vector<HistoryArg> history_arg;
 
-  void history_args(char ** args) {
+  void history_args(char ** args) const {
     for(size_t i = 0; i < history_arg.size(); i++) {
       args[2*i] = (char*)history_arg[i].name.c_str();
       args[2*i+1] = (char*)history_arg[i].newtonflag.c_str();

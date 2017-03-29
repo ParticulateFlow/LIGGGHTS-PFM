@@ -39,15 +39,10 @@ class FixParticledistributionDiscrete : public FixParticledistribution {
   FixParticledistributionDiscrete(class LAMMPS *, int, char **);
   ~FixParticledistributionDiscrete();
 
-  double min_rad(int);
-  double max_rad(int);
-
-  double min_rad() const
-  { return minrad; }
-  double max_rad() const
-  { return maxrad; }
-  double max_r_bound() const
-  { return maxrbound; }
+  double min_rad(int) const;
+  double max_rad(int) const;
+  using FixParticledistribution::min_rad;
+  using FixParticledistribution::max_rad;
 
   void random_init_list(int);
   int randomize_list(int,int,int);     // generate a list of random particles
@@ -61,9 +56,9 @@ class FixParticledistributionDiscrete : public FixParticledistribution {
   // only set if pti were inserted from outside
   void finalize_insertion(bool pti_delete_flag = false);
 
-  inline int n_particletemplates()
+  int n_particletemplates() const
   { return ntemplates; }
-  inline class FixTemplateSphere** particletemplates()
+  class FixTemplateSphere** particletemplates()
   { return templates; }
 
 protected:

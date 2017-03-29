@@ -335,7 +335,7 @@ void FixTemplateSphere::randomize_single_pti(ParticleToInsert* &pti,int distribu
  }
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateSphere::min_rad()
+double FixTemplateSphere::min_rad() const
 {
     //NP not called via fix.h, but via fix_particle_distribution_discrete.cpp
     return pdf_min(pdf_radius);
@@ -343,7 +343,7 @@ double FixTemplateSphere::min_rad()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateSphere::max_rad()
+double FixTemplateSphere::max_rad() const
 {
     /*NL*/ //if (screen) fprintf(screen, "MAXRAD %f\n",pdf_max(pdf_radius));
     //NP not called via fix.h, but via fix_particle_distribution_discrete.cpp
@@ -352,7 +352,7 @@ double FixTemplateSphere::max_rad()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateSphere::max_r_bound()
+double FixTemplateSphere::max_r_bound() const
 {
     return pdf_max(pdf_radius);
 }

@@ -42,15 +42,10 @@ class FixParticledistributionDiscreteFace : public FixParticledistribution {
   FixParticledistributionDiscreteFace(class LAMMPS *, int, char **);
   ~FixParticledistributionDiscreteFace();
 
-  double min_rad(int);
-  double max_rad(int);
-
-  double min_rad()
-  { return minrad; }
-  double max_rad()
-  { return maxrad; }
-  double max_r_bound()
-  { return maxrbound; }
+  double min_rad(int) const;
+  double max_rad(int) const;
+  using FixParticledistribution::min_rad;
+  using FixParticledistribution::max_rad;
 
   void random_init_list(int);
   int randomize_list(int,int,int);     // generate a list of random particles
