@@ -45,6 +45,7 @@ using namespace FixConst;
 
 enum {UNDEFINED=0, INSIDE, OUTSIDE, IGNORE};
 
+#define INERTIA 0.4
 #define FAVRE_AVERAGED
 /* ---------------------------------------------------------------------- */
 
@@ -348,30 +349,44 @@ void FixMassflowMeshFace::post_create()
 
     int nfaceids = faceid2index_.size();
     mass_face_.resize(nfaceids);
+    inertia_face_.resize(nfaceids);
     nparticles_face_.resize(nfaceids);
     average_vx_face_out_.resize(nfaceids);
     average_vy_face_out_.resize(nfaceids);
     average_vz_face_out_.resize(nfaceids);
+    average_omegax_face_out_.resize(nfaceids);
+    average_omegay_face_out_.resize(nfaceids);
+    average_omegaz_face_out_.resize(nfaceids);
     mass_face_last_.resize(nfaceids);
+    inertia_face_last_.resize(nfaceids);
     nparticles_face_last_.resize(nfaceids);
     reset_distributions(nfaceids);
     // shouldn't be necessary (?):
     std::fill_n(mass_face_.begin(),            nfaceids, 0.);
+    std::fill_n(inertia_face_.begin(),         nfaceids, 0.);
     std::fill_n(nparticles_face_.begin(),      nfaceids, 0 );
     std::fill_n(average_vx_face_out_.begin(),  nfaceids, 0.);
     std::fill_n(average_vy_face_out_.begin(),  nfaceids, 0.);
     std::fill_n(average_vz_face_out_.begin(),  nfaceids, 0.);
+    std::fill_n(average_omegax_face_out_.begin(),  nfaceids, 0.);
+    std::fill_n(average_omegay_face_out_.begin(),  nfaceids, 0.);
+    std::fill_n(average_omegaz_face_out_.begin(),  nfaceids, 0.);
     std::fill_n(mass_face_last_.begin(),       nfaceids, 0.);
+    std::fill_n(inertia_face_last_.begin(),    nfaceids, 0.);
     std::fill_n(nparticles_face_last_.begin(), nfaceids, 0 );
 
     radius_dist_face_local_this.resize(nfaceids);
     mass_dist_face_local_this.resize(nfaceids);
     atomtype_dist_face_local_this.resize(nfaceids);
     mass_face_this.resize(nfaceids, 0.0);
+    inertia_face_this.resize(nfaceids, 0.0);
     nparticles_face_this.resize(nfaceids, 0);
     average_vx_face_out_this.resize(nfaceids, 0.);
     average_vy_face_out_this.resize(nfaceids, 0.);
     average_vz_face_out_this.resize(nfaceids, 0.);
+    average_omegax_face_out_this.resize(nfaceids, 0.);
+    average_omegay_face_out_this.resize(nfaceids, 0.);
+    average_omegaz_face_out_this.resize(nfaceids, 0.);
 
     nparticles_face_this_all.resize(nfaceids,0);
 
@@ -484,6 +499,7 @@ void FixMassflowMeshFace::post_integrate()
     int nlocal = atom->nlocal;
     double **x = atom->x;
     double **v = atom->v;
+    double **omega = atom->omega;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
     int *mask = atom->mask;
@@ -527,8 +543,12 @@ void FixMassflowMeshFace::post_integrate()
         std::fill_n(average_vx_face_out_.begin(),  nfaceids, 0.);
         std::fill_n(average_vy_face_out_.begin(),  nfaceids, 0.);
         std::fill_n(average_vz_face_out_.begin(),  nfaceids, 0.);
+        std::fill_n(average_omegax_face_out_.begin(),  nfaceids, 0.);
+        std::fill_n(average_omegay_face_out_.begin(),  nfaceids, 0.);
+        std::fill_n(average_omegaz_face_out_.begin(),  nfaceids, 0.);
         nparticles_face_last_ = nparticles_face_;
         mass_face_last_ = mass_face_;
+        inertia_face_last_ = inertia_face_;
         reset_distributions(nfaceids);
     }
 
@@ -540,10 +560,14 @@ void FixMassflowMeshFace::post_integrate()
     atomtype_dist_face_local_this.resize(nfaceids);
 
     std::fill(mass_face_this.begin(), mass_face_this.end(), 0.);
+    std::fill(inertia_face_this.begin(), inertia_face_this.end(), 0.);
     std::fill(nparticles_face_this.begin(), nparticles_face_this.end(), 0);
     std::fill(average_vx_face_out_this.begin(), average_vx_face_out_this.end(), 0.);
     std::fill(average_vy_face_out_this.begin(), average_vy_face_out_this.end(), 0.);
     std::fill(average_vz_face_out_this.begin(), average_vz_face_out_this.end(), 0.);
+    std::fill(average_omegax_face_out_this.begin(), average_omegax_face_out_this.end(), 0.);
+    std::fill(average_omegay_face_out_this.begin(), average_omegay_face_out_this.end(), 0.);
+    std::fill(average_omegaz_face_out_this.begin(), average_omegaz_face_out_this.end(), 0.);
 
     classified_particles_this.clear();
     crossing_particles_this.clear();
@@ -688,9 +712,14 @@ void FixMassflowMeshFace::post_integrate()
                     average_vx_out_this += v[iPart][0];
                     average_vy_out_this += v[iPart][1];
                     average_vz_out_this += v[iPart][2];
+                    average_omegax_out_this += omega[iPart][0];
+                    average_omegay_out_this += omega[iPart][1];
+                    average_omegaz_out_this += omega[iPart][2];
 #endif
                     faceIndex = faceid2index_[face_id];
                     mass_face_this[faceIndex] += rmass[iPart]; // total mass crossing current face
+                    double inertia = INERTIA*rmass[iPart]*radius[iPart]*radius[iPart];
+                    inertia_face_this[faceIndex] += inertia;
 
                     radius_dist_face_local_this  [faceIndex].push_back(radius[iPart]);
                     mass_dist_face_local_this    [faceIndex].push_back(rmass[iPart]);
@@ -701,10 +730,16 @@ void FixMassflowMeshFace::post_integrate()
                     average_vx_face_out_this[faceIndex] += rmass[iPart]*v[iPart][0];
                     average_vy_face_out_this[faceIndex] += rmass[iPart]*v[iPart][1];
                     average_vz_face_out_this[faceIndex] += rmass[iPart]*v[iPart][2];
+                    average_omegax_face_out_this[faceid2index_[face_id]] += inertia*omega[iPart][0];
+                    average_omegay_face_out_this[faceid2index_[face_id]] += inertia*omega[iPart][1];
+                    average_omegaz_face_out_this[faceid2index_[face_id]] += inertia*omega[iPart][2];
 #else
                     average_vx_face_out_this[faceIndex] += v[iPart][0];
                     average_vy_face_out_this[faceIndex] += v[iPart][1];
                     average_vz_face_out_this[faceIndex] += v[iPart][2];
+                    average_omegax_face_out_this[faceid2index_[face_id]] += omega[iPart][0];
+                    average_omegay_face_out_this[faceid2index_[face_id]] += omega[iPart][1];
+                    average_omegaz_face_out_this[faceid2index_[face_id]] += omega[iPart][2];
 #endif
                     crossing_particles_this[iPart] = iTri;
 
@@ -892,9 +927,13 @@ void FixMassflowMeshFace::post_integrate()
 
         // sum per face values from all processes
         MPI_Sum_Vector(&mass_face_this[0],nfaceids,world);
+        MPI_Sum_Vector(&inertia_face_this[0],nfaceids,world);
         MPI_Sum_Vector(&average_vx_face_out_this[0],nfaceids,world);
         MPI_Sum_Vector(&average_vy_face_out_this[0],nfaceids,world);
         MPI_Sum_Vector(&average_vz_face_out_this[0],nfaceids,world);
+        MPI_Sum_Vector(&average_omegax_face_out_this[0],nfaceids,world);
+        MPI_Sum_Vector(&average_omegay_face_out_this[0],nfaceids,world);
+        MPI_Sum_Vector(&average_omegaz_face_out_this[0],nfaceids,world);
 
         mass_ += mass_this;
         nparticles_ += nparticles_this; // total number of cg particles that crossed any mesh face since last inquiry
@@ -907,10 +946,14 @@ void FixMassflowMeshFace::post_integrate()
         for(int i=0; i<nfaceids; ++i)
         {
             mass_face_[i] += mass_face_this[i];
+            inertia_face_[i] += inertia_face_this[i];
             nparticles_face_[i] += nparticles_face_this[i];
             average_vx_face_out_[i] += average_vx_face_out_this[i];
             average_vy_face_out_[i] += average_vy_face_out_this[i];
             average_vz_face_out_[i] += average_vz_face_out_this[i];
+            average_omegax_face_out_[i] += average_omegax_face_out_this[i];
+            average_omegay_face_out_[i] += average_omegay_face_out_this[i];
+            average_omegaz_face_out_[i] += average_omegaz_face_out_this[i];
         }
     }
 
@@ -1142,6 +1185,33 @@ double FixMassflowMeshFace::compute_array(int i, int j)
 #else
       if (nparticles_face_[i] > nparticles_face_last_[i])
           return average_vz_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+#endif
+      return 0.;
+  case 10:
+#ifdef FAVRE_AVERAGED
+      if (inertia_face_[i] > inertia_face_last_[i])
+          return average_omegax_face_out_[i]/(inertia_face_[i]-inertia_face_last_[i]);
+#else
+      if (nparticles_face_[i] > nparticles_face_last_[i])
+          return average_omegax_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+#endif
+      return 0.;
+  case 11:
+#ifdef FAVRE_AVERAGED
+      if (inertia_face_[i] > inertia_face_last_[i])
+          return average_omegay_face_out_[i]/(inertia_face_[i]-inertia_face_last_[i]);
+#else
+      if (nparticles_face_[i] > nparticles_face_last_[i])
+          return average_omegay_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+#endif
+      return 0.;
+  case 12:
+#ifdef FAVRE_AVERAGED
+      if (inertia_face_[i] > inertia_face_last_[i])
+          return average_omegaz_face_out_[i]/(inertia_face_[i]-inertia_face_last_[i]);
+#else
+      if (nparticles_face_[i] > nparticles_face_last_[i])
+          return average_omegaz_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
 #endif
       return 0.;
   default:

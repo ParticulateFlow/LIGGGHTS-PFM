@@ -109,10 +109,14 @@ class FixMassflowMeshFace : public Fix {
   double average_vy_out_;
   double average_vz_out_;
   std::vector<double> mass_face_;
+  std::vector<double> inertia_face_;
   std::vector<int> nparticles_face_;
   std::vector<double> average_vx_face_out_;
   std::vector<double> average_vy_face_out_;
   std::vector<double> average_vz_face_out_;
+  std::vector<double> average_omegax_face_out_;
+  std::vector<double> average_omegay_face_out_;
+  std::vector<double> average_omegaz_face_out_;
 
   // additional property to check
   char *property_check_name_;
@@ -133,6 +137,7 @@ class FixMassflowMeshFace : public Fix {
   double mass_last_;
   int nparticles_last_;
   std::vector<double> mass_face_last_;
+  std::vector<double> inertia_face_last_;
   std::vector<int> nparticles_face_last_;
   double t_count_, delta_t_;
   bool reset_t_count_;
@@ -150,10 +155,14 @@ class FixMassflowMeshFace : public Fix {
   std::vector<std::vector<double> > mass_dist_face_local_this;
   std::vector<std::vector<int> > atomtype_dist_face_local_this;
   std::vector<double> mass_face_this;
+  std::vector<double> inertia_face_this;
   std::vector<int> nparticles_face_this;
   std::vector<double> average_vx_face_out_this;
   std::vector<double> average_vy_face_out_this;
   std::vector<double> average_vz_face_out_this;
+  std::vector<double> average_omegax_face_out_this;
+  std::vector<double> average_omegay_face_out_this;
+  std::vector<double> average_omegaz_face_out_this;
 
   std::map<int, int> classified_particles_this;
   std::map<int, int> crossing_particles_this;

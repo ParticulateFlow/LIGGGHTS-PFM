@@ -616,6 +616,9 @@ void FixInsertPackFace::x_v_omega(int ninsert_this_local,int &ninserted_this_loc
       v_insert[0] = massflowface->compute_array_by_id(it->first, 7);
       v_insert[1] = massflowface->compute_array_by_id(it->first, 8);
       v_insert[2] = massflowface->compute_array_by_id(it->first, 9);
+      omega_insert[0] = massflowface->compute_array_by_id(it->first, 10);
+      omega_insert[1] = massflowface->compute_array_by_id(it->first, 11);
+      omega_insert[2] = massflowface->compute_array_by_id(it->first, 12);
 
       ntry = 0;
 

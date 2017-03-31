@@ -56,6 +56,9 @@ class FixInsertPackFaceUniverse : public FixInsertPackFace {
   std::vector<double> average_vx_face_out_;
   std::vector<double> average_vy_face_out_;
   std::vector<double> average_vz_face_out_;
+  std::vector<double> average_omegax_face_out_;
+  std::vector<double> average_omegay_face_out_;
+  std::vector<double> average_omegaz_face_out_;
 
 private:
 
