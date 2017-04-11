@@ -100,8 +100,6 @@ public:
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
-  double *dens_;
-
 
   // reaction properties
   // for each reaction type (e.g. CO + ore particle), global vectors containing reaction parameters have to be defined
