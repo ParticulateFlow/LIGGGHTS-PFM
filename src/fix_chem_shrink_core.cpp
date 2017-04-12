@@ -48,7 +48,7 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-#define SMALL 0.0001
+#define SMALL 1e-10
 
 /* ---------------------------------------------------------------------- */
 
@@ -824,9 +824,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 
             // calculatue before reduction pmass and pdensity
             sum_mass        +=  layerMass_[j];
-            pmass_[i]       =   sum_mass;
-            pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
         }
+        
+         pmass_[i]       =   sum_mass;
+         pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
     //}
 
     // print the initial mass out
@@ -840,24 +841,42 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen,"pre-particle mass: %f \n", pmass_[i]);
     }
 
+    
+    // based on chem. reactions, get new layer masses
     for (int j = 0; j <= layers_; j++)
     {
-        if (layerMass_[j] > 0.0)
-        {
-            // WARNING 1: do not remove more material of layer J than present --> decrease dm[J] if necessary
-            // calculate new masses of each layer
-            if (dmB_[j] > layerMass_[j])
-                dmB_[j] = SMALL;
-
-            if (layerMass_[j] > 0.0)  // add constraint so that diff layers > drmin
-                layerMass_[j] -= dmB_[j];
-
-            // calculatue after reduction pmass and pdensity
-            sum_mass_new    +=  layerMass_[j];
-            pmass_[i]   =   sum_mass_new;
-        }
+        // TL: layerMass_[j] should never be negative anyways; just make sure not more is removed than present
+        layerMass_[j] -= dmB_[j];  
+        if (layerMass_[j] < SMALL)
+                 layerMass_[j] = SMALL;
+	
+	sum_mass_new    +=  layerMass_[j]; 
     }
+    
+    // from the new layer masses, get new total mass, layer radii and total density
+    pmass_[i]   =   sum_mass_new;
+    
+    // TL: new radii need to be calculated from the innermost to the outermost layer
+    
+    radLayer_[i][layers_]   =   pow((0.75*layerMass_[layers_]/(layerDensities_[layers_]*M_PI)),0.333333);
+    for (int j = layers_-1; j >= 0 ; j--)
+    {
+        radLayer_[i][j]   =   pow((0.75*layerMass_[j]/(M_PI*layerDensities_[j])+radLayer_[i][j+1]*radLayer_[i][j+1]*radLayer_[i][j+1]),0.333333);
+    }
+    radius_[i] = radLayer_[i][0];
+    
+    //detemine the new relative layer radii
+    for (int j = 0; j <= layers_; j++)
+    {
+        relRadii_[i][j] = radLayer_[i][j]/radius_[i];
+    }
+    
+    // calculate particle total density
+    // depending on the new values
+    // update total partilce density
+    pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
 
+    
     if (screen)
     {
         fprintf(screen,"post-layerMass[0]: %f \n",layerMass_[0]);
@@ -865,51 +884,13 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen,"post-layerMass[2]: %f \n",layerMass_[2]);
         fprintf(screen,"post-layerMass[3]: %f \n",layerMass_[3]);
         fprintf(screen,"post-new mass: %f \n",pmass_[i]);
-    }
-
-    // second step: based on predefined densities, compute new layer relRadii -- which is used to get new radii
-    for (int j = 0; j <= layers_ ; j++)
-    {
-        if (layerMass_[j] > 0.0)
-        {
-            if (j == layers_)
-            {
-                radLayer_[i][j]   =   pow((0.75*layerMass_[j]/(layerDensities_[j]*M_PI)),0.333333);
-            } else
-            {
-                radLayer_[i][j]   =   pow((0.75*layerMass_[j]/(M_PI*layerDensities_[j])+radLayer_[i][j+1]*radLayer_[i][j+1]*radLayer_[i][j+1]),0.333333);
-            }
-
-            if (j == 0)
-                radius_[i] = radLayer_[i][j];
-        }
-    }
-
-    if (screen)
-    {
+   
         fprintf(screen,"post redox radius of particle (rl): %f \n",radLayer_[i][0]);
         fprintf(screen,"post redox radius of wustite: %f \n",radLayer_[i][1]);
         fprintf(screen,"post redox radius of magnetite: %f \n",radLayer_[i][2]);
         fprintf(screen,"post redox radius of hematite: %f \n",radLayer_[i][3]);
         fprintf(screen,"post redox radius of particle (R): %f \n",radius_[i]);
-    }
-
-    for (int j = 0; j <= layers_; j++)
-    {
-        // calculate particle total density
-        // depending on the new values
-        // update total partilce density
-        pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
-    }
-
-    //detemine the new particle radius
-    for (int j = 0; j <= layers_; j++)
-    {
-        relRadii_[i][j] = radLayer_[i][j]/radius_[i];
-    }
-
-    if (screen)
-    {
+   
         fprintf(screen,"post-relrad[0]: %f \n",relRadii_[i][0]);
         fprintf(screen,"post-relrad[1]: %f \n",relRadii_[i][1]);
         fprintf(screen,"post-relrad[2]: %f \n",relRadii_[i][2]);
