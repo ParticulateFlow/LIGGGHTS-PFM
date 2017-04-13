@@ -55,7 +55,7 @@ using namespace FixConst;
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     nmaxlayers_(3),
-    rmin_(0.01),
+    rmin_(0.001),
     drmin_(0.001),
     fix_k0_(0), // [m/s]
     fix_molMass_(0),
