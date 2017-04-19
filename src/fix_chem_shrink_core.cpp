@@ -504,19 +504,6 @@ void FixChemShrinkCore::layerRad(int i)
 // returns number of active layers
 int FixChemShrinkCore::active_layers(int i)
 {
-    /*layers_ = 1;
-    while (layers_ <= nmaxlayers_)
-    {
-        if (radLayer_[i][layers_] < rmin_)
-            break;
-        if (screen)
-            fprintf(screen,"active layers2: %i \n", layers_);
-        layers_++;
-    }
-    if (screen)
-        fprintf(screen,"active layers: %i \n", layers_);
-    return layers_;*/
-
     for(int j  = 1; j <= nmaxlayers_; j++)
     {
         layers_ = j;
@@ -751,16 +738,16 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, d
         dmA_[j] =   vA_[j]*dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep*10000;
     }
 
-    if (screen)
+    if (comm -> me == 2 && screen)
     {
         fprintf(screen,"W = %f \n", W);
         fprintf(screen,"dY_[0]: %lf \n",dY[0]);
         fprintf(screen,"dY_[1]: %lf \n",dY[1]);
         fprintf(screen,"dY_[2]: %lf \n",dY[2]);
 
-        fprintf(screen,"dmA_[0]: %lf \n",dmA_[0]);
-        fprintf(screen,"dmA_[1]: %lf \n",dmA_[1]);
-        fprintf(screen,"dmA_[2]: %lf \n",dmA_[2]);
+        fprintf(screen,"p2dmA_[0]: %lf \n",dmA_[0]);
+        fprintf(screen,"p2dmA_[1]: %lf \n",dmA_[1]);
+        fprintf(screen,"p2dmA_[2]: %lf \n",dmA_[2]);
     }
 }
 
@@ -780,23 +767,20 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // double diff_radius;
     // Calculate mass flow rates (dmB[j])
     // Keep in mind the stoichiometric coefficients of reaction prod - reactants
-    for (int j = 0; j <= layers_ ; j++)
+    // (stochiometric ratio is always positive since reactant and product stoichiometry does not have different signs)
+    dmB_[layers_] = dmA_[layers_-1]*vBr_[layers_-1]*(layerMolMasses_[layers_]/molMass_A_);
+    for (int j = layers_ -1; j>= 1; j--)
     {
-        if ( j == 0)
-            dmB_[j] =   dmA_[j]*vBp_[j]*(layerMolMasses_[j]/molMass_A_);
-        else if (j == layers_)
-            dmB_[j] =   dmA_[j-1]*vBr_[j-1]*(layerMolMasses_[j]/molMass_A_);
-        else
-            dmB_[j] =   dmA_[j]*vBp_[j]*(layerMolMasses_[j]/molMass_A_) - dmA_[j-1]*vBr_[j-1]*(layerMolMasses_[j]/molMass_A_);
+        dmB_[j] = dmA_[j]*vBp_[j]*(layerMolMasses_[j]/molMass_A_) - dmA_[j-1]*vBr_[j-1]*(layerMolMasses_[j]/molMass_A_);
+    }
+    dmB_[0] = dmA_[0]*vBp_[0]*(layerMolMasses_[0]/molMass_A_);
 
-        if (layers_ == 2)
-            dmB_[layers_+1] = 0.0;
-        else if (layers_ == 1)
-        {
-            dmB_[layers_+2] = 0.0;
-            dmB_[layers_+1] = 0.0;
-        }
-
+    if (layers_ == 2)
+        dmB_[layers_+1] = 0.0;
+    else if (layers_ == 1)
+    {
+        dmB_[layers_+2] = 0.0;
+        dmB_[layers_+1] = 0.0;
     }
 
     // print out mass transfer rates for particle layers
@@ -825,7 +809,6 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
             // calculatue before reduction pmass and pdensity
             sum_mass        +=  layerMass_[j];
         }
-        
          pmass_[i]       =   sum_mass;
          pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
     //}
