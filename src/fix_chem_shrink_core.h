@@ -97,6 +97,7 @@ public:
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii
   double **radLayer_;
+  double **massLayer_;
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
@@ -109,6 +110,7 @@ public:
   const double *k0_, *Ea_; //const double because get_Values is defined as const double in fix_check_timestep_sph
 
   int active_layers(int);
+  void calcMassLayer(int);
   double K_eq(int, double);
   void reaction(int, double *, double *, double *, double *);   //, double, double *, double *
   void getA(int, double *, double *);

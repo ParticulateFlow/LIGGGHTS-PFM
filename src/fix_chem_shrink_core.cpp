@@ -237,6 +237,13 @@ int FixChemShrinkCore::setmask()
 
 void FixChemShrinkCore::post_create()
 {
+  // TL:
+  // look for fix_layerMass; if not there, created it and initialize its values according to the initial layer radii
+  // make sure that massLayer_ is connected to that fix so that local changes affect it and other instances (second reaction, e.g. with H2)
+  // use the proper values
+  
+  
+  
     /* if (!fix_layerRelRad_)
     {
         const char* fixarg[13];
