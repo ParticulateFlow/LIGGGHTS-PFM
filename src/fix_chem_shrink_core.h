@@ -36,26 +36,35 @@ class FixChemShrinkCore : public Fix  {
 public:
   FixChemShrinkCore(class LAMMPS *, int, char **);
   ~FixChemShrinkCore();
-  void post_create();
+
   void pre_delete(bool unfixflag);
-
-  double partSurfArea(double);
-
-
-
   int setmask();
+  void post_create();
+  virtual void updatePtrs();
   virtual void init();
   virtual void post_force(int);
-  virtual void updatePtrs();
+
+  double partSurfArea(double);
+  int active_layers(int);
+  void calcMassLayer(int);
+  double K_eq(int, double);
+  void reaction(int, double *, double *, double *, double *);   //, double, double *, double *
+  void getA(int, double *, double *);
+  void diffcoeff(int, double *);
+  void getB(int, double *, double *);
+  void getXi(int, double *, double *);
+  void layerRad(int);
+  void update_atom_properties(int, double *);
+  void update_gas_properties(int, double *);
+
+  virtual void updatePtrsCreate();
 
  protected:
-   class PairGran *pair_gran;
    int iarg_;
 
    // timestep
    double TimeStep;
-   bigint current_timestep;
-
+   // modified strings of species concentrations
    char* massA, *massC;
 
   // maximum number of layers to be used for chemical reactions, currently 3
@@ -63,11 +72,8 @@ public:
   // number of active layers starts with 3, and reduces if a layer is depleted
   int layers_;
 
-  // relative radius and thickness below which layers are neglected
-  const double rmin_, drmin_;
-
-  // check if radius has changed or not
-  bool radChange;
+  // relative radius below which layers are neglected
+  const double rmin_;
 
   // gas-phase properties
   char *speciesA, *speciesC;
@@ -81,18 +87,22 @@ public:
   class FixPropertyAtom *fix_totalmole_;                        // total mole in volume
   class FixPropertyAtom *fix_pressure_;
 
-  double molMass_A_, molMass_C_;        // molar mass of species A and C
+  // molar masses of gas species
+  double molMass_A_, molMass_C_;
 
-  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *pgas_;
-  //total mole
-  double *N_;
-  // reaction quotient Q
-  double *Q_;
+  // handle names
+  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *pgas_, *N_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
   class FixPropertyAtom *fix_layerRelRad_;
-  class FixPropertyGlobal *fix_dens_, *fix_molMass_;  // molar masses and densities do not differ from particle to particle within a species, hence they are global properties
+  class FixPropertyAtom *fix_layerMass_;
+  // molar masses and densities do not differ from particle to particle within a species, hence they are global properties
+  class FixPropertyGlobal *fix_dens_, *fix_molMass_;
+  // reaction properties
+  // for each reaction type (e.g. CO + ore particle), global vectors containing reaction parameters have to be defined
+  class FixPropertyGlobal *fix_k0_;
+  class FixPropertyGlobal *fix_Ea_;
 
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii
@@ -101,27 +111,8 @@ public:
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
-
-  // reaction properties
-  // for each reaction type (e.g. CO + ore particle), global vectors containing reaction parameters have to be defined
-  class FixPropertyGlobal *fix_k0_;
-  class FixPropertyGlobal *fix_Ea_;
-
-  const double *k0_, *Ea_; //const double because get_Values is defined as const double in fix_check_timestep_sph
-
-  int active_layers(int);
-  void calcMassLayer(int);
-  double K_eq(int, double);
-  void reaction(int, double *, double *, double *, double *);   //, double, double *, double *
-  void getA(int, double *, double *);
-  void diffcoeff(int, double *);
-  void getB(int, double *, double *);
-  void getXi(int, double *, double *);
-  void layerRad(int);
-  void update_atom_properties(int, double *);
-  void update_gas_properties(int, double *);
+  const double *k0_, *Ea_;
 };
-
 }
 
 #endif

@@ -43,7 +43,6 @@ public:
   ~FixChemShrink();
   void pre_delete(bool unfixflag);
 
-
   void reaction();
   double partSurfArea(double);
   void updatePtrs();
