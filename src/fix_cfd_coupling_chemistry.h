@@ -56,8 +56,8 @@ class FixCfdCouplingChemistry : public Fix  {
   char **species_names_;                        // list of species names
   int iarg_;                                    // int narg_
   char **mod_spec_names_;
+  char **diffusant_names_;
   int n_species;
-
 
   class FixCfdCoupling* fix_coupling_;
   class FixPropertyAtom* fix_tgas_;                  // data pulled from cfdemCoupling - partTemp_
@@ -66,8 +66,8 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom** fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
   class FixPropertyAtom** fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
   class FixPropertyAtom* fix_totalmole_;            // data pulled from cfdemCoupling - partN_;
-  class FixPropertyAtom*    fix_pressure_;
-
+  class FixPropertyAtom*    fix_pressure_;          // data pulled from cfdemCoupling - partP_;
+  class FixPropertyAtom** fix_diffusionCoeff_;
 
  private:
   bool use_Re_;
@@ -76,6 +76,7 @@ class FixCfdCouplingChemistry : public Fix  {
   double *N;
   double **concentrations;
   double **changeOfSpeciesMass;
+  double *diffCoeff_;
 
 };
 

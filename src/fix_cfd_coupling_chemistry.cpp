@@ -57,7 +57,8 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   fix_masschange_(0),
   fix_reactionheat_(0),
   fix_totalmole_(0),
-  fix_pressure_(0)
+  fix_pressure_(0),
+  fix_diffusionCoeff_(0)
 {
     num_species = 0;
     int n = 16;
@@ -110,12 +111,18 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
    }
 
    mod_spec_names_ = new char*[num_species];
+   diffusant_names_ = new char *[num_species];
    for (int i = 0; i < num_species; i++)
    {
        mod_spec_names_[i] = new char [n];
+       diffusant_names_[i] = new char [n];
        strcpy(mod,"Modified_");
        strcat(mod,species_names_[i]);
        strcpy(mod_spec_names_[i],mod);
+
+       strcpy(mod,species_names_[i]);
+       strcat(mod,"_diffCoeff");
+       strcpy(diffusant_names_[i],mod);
    }
 
    // flags for vector output
@@ -133,13 +140,16 @@ FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
     {
         if (species_names_[i]) delete [] species_names_[i];
         if (mod_spec_names_[i]) delete [] mod_spec_names_[i];
+        if (diffusant_names_[i]) delete [] diffusant_names_[i];
     }
 
     delete [] species_names_;
     delete [] mod_spec_names_;
+    delete [] diffusant_names_;
 
     if(fix_massfrac_)       delete []fix_massfrac_;
     if(fix_masschange_)     delete []fix_masschange_;
+    if(fix_diffusionCoeff_) delete []fix_diffusionCoeff_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -156,6 +166,7 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
     {
         if (unfixflag && fix_massfrac_[i]) modify -> delete_fix(species_names_[i]);
         if (unfixflag && fix_masschange_[i]) modify -> delete_fix(mod_spec_names_[i]);
+        if (unfixflag && fix_diffusionCoeff_[i])    modify -> delete_fix(diffusant_names_[i]);
     }
 }
 
@@ -255,6 +266,7 @@ void FixCfdCouplingChemistry::post_create()
 
     fix_massfrac_   = new FixPropertyAtom*[num_species];
     fix_masschange_ = new FixPropertyAtom*[num_species];
+    fix_diffusionCoeff_ = new FixPropertyAtom*[num_species];
      // register massfractions
     for (int i=0; i<num_species;i++)
     {
@@ -286,6 +298,21 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[8]="0.";
             fix_masschange_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
         }
+
+        // register diffusion coefficient variables
+        {
+            const char* fixarg[9];
+            fixarg[0]=diffusant_names_[i];
+            fixarg[1]="all";
+            fixarg[2]="property/atom";
+            fixarg[3]=diffusant_names_[i];
+            fixarg[4]="scalar";        // 1 vector per particle to be registered
+            fixarg[5]="no";           // restart
+            fixarg[6]="no";            // communicate ghost
+            fixarg[7]="no";            // communicate rev
+            fixarg[8]="0.";
+            fix_diffusionCoeff_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        }
     }
 }
 
@@ -313,6 +340,7 @@ void FixCfdCouplingChemistry::init()
     {
         fix_massfrac_[i] = static_cast<FixPropertyAtom*>(modify->find_fix_property(species_names_[i],"property/atom","scalar",0,0,style));
         fix_masschange_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
+        fix_diffusionCoeff_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[i],"property/atom","scalar",0,0,style));
     }
 
     // values to come from OF
@@ -324,6 +352,7 @@ void FixCfdCouplingChemistry::init()
     for (int i=0; i<num_species; i++)
     {
         fix_coupling_->add_pull_property(species_names_[i],"scalar-atom");
+        fix_coupling_->add_pull_property(diffusant_names_[i],"scalar-atom");
     }
 
     //  values to be transfered to OF
@@ -333,11 +362,6 @@ void FixCfdCouplingChemistry::init()
     {
         fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
     }
-
-
-   // bigint prev_time = update->ntimestep - update->dt;
-    /* if (comm->me == 0 && screen)
-        fprintf(screen,"previous time step: %li \n", prev_time); */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -347,7 +371,6 @@ void FixCfdCouplingChemistry::updatePtrs()
     rhogas    =   fix_rhogas_     ->  vector_atom;
     N         =   fix_totalmole_  ->  vector_atom;
 }
-
 
 /* ---------------------------------------------------------------------- */
 
