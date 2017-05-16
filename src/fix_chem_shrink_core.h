@@ -48,10 +48,10 @@ public:
   int active_layers(int);
   void calcMassLayer(int);
   double K_eq(int, double);
-  void reaction(int, double *, double *, double *, double *);   //, double, double *, double *
+  void reaction(int, double *, double *, double *, double *, double *);   //, double *, double *
   void getA(int, double *, double *);
   void diffcoeff(int, double *);
-  void getB(int, double *, double *);
+  void getB(int, double *);
   void getXi(int, double *, double *);
   void layerRad(int);
   void update_atom_properties(int, double *);
@@ -66,6 +66,8 @@ public:
    double TimeStep;
    // modified strings of species concentrations
    char* massA, *massC;
+   // name of diffusant species
+   char *diffA;
 
   // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;
@@ -86,12 +88,13 @@ public:
   class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
   class FixPropertyAtom *fix_totalmole_;                        // total mole in volume
   class FixPropertyAtom *fix_pressure_;
+  class FixPropertyAtom *fix_diffcoeff_;
 
   // molar masses of gas species
   double molMass_A_, molMass_C_;
 
   // handle names
-  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *pgas_, *N_;
+  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *pgas_, *N_, *dCoeff_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
@@ -117,3 +120,4 @@ public:
 
 #endif
 #endif
+
