@@ -723,16 +723,16 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
-    b_[0]   =   (1-relRadii_[i][1]*radius_[i])
-                /(relRadii_[i][1]*dCoeff_[i]);
+    b_[0]   =   ((1-relRadii_[i][1])*radius_[i])
+                /((relRadii_[i][1])*dCoeff_[i]);
 
     // from magnetite to wustite
-    b_[1]   =   (relRadii_[i][1]-relRadii_[i][2]*radius_[i])
-                /(relRadii_[i][1]*relRadii_[i][2]*dCoeff_[i]);
+    b_[1]   =   ((relRadii_[i][1]-relRadii_[i][2])*radius_[i])
+                /((relRadii_[i][1]*relRadii_[i][2])*dCoeff_[i]);
 
     // from hematite to magnetite
-    b_[2]   =   (relRadii_[i][2]-relRadii_[i][3]*radius_[i])
-                /(relRadii_[i][2]*relRadii_[i][3]*dCoeff_[i]);
+    b_[2]   =   ((relRadii_[i][2]-relRadii_[i][3])*radius_[i])
+                /((relRadii_[i][2]*relRadii_[i][3])*dCoeff_[i]);
 
     fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
     fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
@@ -818,7 +818,6 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, d
         // wustite to iron
         dY[0]   =   (x0_[i] - x0_eq_[0])*1/W;
      }
-
 
     for (int j = 0 ; j < nmaxlayers_; j++)
     {
