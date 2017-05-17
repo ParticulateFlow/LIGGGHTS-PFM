@@ -464,7 +464,7 @@ void FixMesh::final_integrate()
 
 /* ---------------------------------------------------------------------- */
 
-int FixMesh::min_type()
+int FixMesh::min_type() const
 {
     if(atom_type_mesh_ == -1) return 1;
     return atom_type_mesh_;
@@ -472,7 +472,7 @@ int FixMesh::min_type()
 
 /* ---------------------------------------------------------------------- */
 
-int FixMesh::max_type()
+int FixMesh::max_type() const
 {
     if(atom_type_mesh_ == -1) return 1;
     return atom_type_mesh_;

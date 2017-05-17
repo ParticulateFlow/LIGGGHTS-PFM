@@ -58,8 +58,8 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   virtual void post_force_pgl();
   virtual void post_force_respa(int, int, int);
 
-  virtual int min_type();
-  virtual int max_type();
+  virtual int min_type() const;
+  virtual int max_type() const;
 
   /* PUBLIC ACCESS FUNCTIONS */
 

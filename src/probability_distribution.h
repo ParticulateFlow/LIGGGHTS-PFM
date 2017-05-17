@@ -57,7 +57,7 @@ namespace LMP_PROBABILITY_NS {
 
       LAMMPS_NS::Error *error;
 
-      inline int rand_style()
+      inline int rand_style() const
       { return rand_style_; }
 
       inline void set_min_max(double min,double max)
@@ -150,7 +150,7 @@ namespace LMP_PROBABILITY_NS {
   {
      if(pdf->mass_shift_)
         pdf->error->all(FLERR,"mass distribution not implemented for uniform");
-      
+
      return 0.25*(pdf->max_*pdf->max_*pdf->max_+
                   pdf->max_*pdf->max_*pdf->min_+
                   pdf->max_*pdf->min_*pdf->min_+
@@ -292,6 +292,6 @@ namespace LMP_PROBABILITY_NS {
       return 0.;
   }
 
-};
+}
 
 #endif

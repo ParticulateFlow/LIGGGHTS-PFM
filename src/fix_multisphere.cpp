@@ -219,14 +219,14 @@ int FixMultisphere::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-double FixMultisphere::max_r_bound()
+double FixMultisphere::max_r_bound() const
 {
     return multisphere_.max_r_bound();
 }
 
 /* ---------------------------------------------------------------------- */
 
-double FixMultisphere::extend_cut_ghost()
+double FixMultisphere::extend_cut_ghost() const
 {
     //NP this is to extend ghost region
     //NP one rbound is enough since just need to ensure proc has

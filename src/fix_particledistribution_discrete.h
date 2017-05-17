@@ -53,11 +53,11 @@ class FixParticledistributionDiscrete : public Fix {
   double vol_expect();
   double mass_expect();
 
-  int max_type();
-  int min_type();
+  int max_type() const;
+  int min_type() const;
 
-  double min_rad(int);
-  double max_rad(int);
+  double min_rad(int) const;
+  double max_rad(int) const;
 
   double min_rad() const
   { return minrad; }
@@ -66,14 +66,14 @@ class FixParticledistributionDiscrete : public Fix {
   double max_r_bound() const
   { return maxrbound; }
 
-  int max_nspheres();
+  int max_nspheres() const;
 
   void random_init_list(int);
   int randomize_list(int,int,int);     //NP generates a list of random particles
   bool has_multisphere();
 
   ParticleToInsert* get_random_particle(int insert_groupbit);
-    
+
   // pti_delete_flag allows to delete pti in pti_list
   // only set if pti were inserted from outside
   void finalize_insertion(bool pti_delete_flag = false);

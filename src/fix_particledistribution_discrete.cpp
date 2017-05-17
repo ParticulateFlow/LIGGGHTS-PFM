@@ -447,7 +447,7 @@ double FixParticledistributionDiscrete::mass_expect()
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscrete::min_rad(int type)
+double FixParticledistributionDiscrete::min_rad(int type) const
 {
     //get minrad
     double minrad_type = 1000.;
@@ -465,7 +465,7 @@ double FixParticledistributionDiscrete::min_rad(int type)
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscrete::max_rad(int type)
+double FixParticledistributionDiscrete::max_rad(int type) const
 {
     //get maxrad
     double maxrad_type = 0.;
@@ -483,21 +483,21 @@ double FixParticledistributionDiscrete::max_rad(int type)
 
 /* ----------------------------------------------------------------------*/
 
-int FixParticledistributionDiscrete::max_type()
+int FixParticledistributionDiscrete::max_type() const
 {
     return maxtype;
 }
 
 /* ----------------------------------------------------------------------*/
 
-int FixParticledistributionDiscrete::min_type()
+int FixParticledistributionDiscrete::min_type() const
 {
     return mintype;
 }
 
 /* ----------------------------------------------------------------------*/
 
-int FixParticledistributionDiscrete::max_nspheres()
+int FixParticledistributionDiscrete::max_nspheres() const
 {
     return maxnspheres;
 }

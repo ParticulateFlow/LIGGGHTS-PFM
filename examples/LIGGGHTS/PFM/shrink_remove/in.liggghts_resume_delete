@@ -16,7 +16,7 @@ neighbor	0.01 bin
 neigh_modify	delay 0
 
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype 5.e6 5.e6
 fix 		m2 all property/global poissonsRatio peratomtype 0.45 0.45
@@ -48,7 +48,7 @@ fix		shrink all remove nevery 500 massrate 20 style shrink &
 		delete_below 0.012 seed 10007143 region delreg atomtype 1
 
 
-#apply nve integration to all particles that are inserted as single particles
+#apply nve integration to all particles
 fix		integr all nve/sphere
 
 #screen output
