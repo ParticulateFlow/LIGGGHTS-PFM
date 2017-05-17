@@ -53,6 +53,8 @@ ComputeRDF::ComputeRDF(LAMMPS *lmp, int narg, char **arg) :
   size_array_rows = nbin;
   size_array_cols = 1 + 2*npairs;
 
+  use_neigh_cutoff2 = true;
+
   int ntypes = atom->ntypes;
   memory->create(rdfpair,npairs,ntypes+1,ntypes+1,"rdf:rdfpair");
   memory->create(nrdfpair,ntypes+1,ntypes+1,"rdf:nrdfpair");
@@ -61,15 +63,26 @@ ComputeRDF::ComputeRDF(LAMMPS *lmp, int narg, char **arg) :
   jlo = new int[npairs];
   jhi = new int[npairs];
 
-  if (narg == 4) {
+  // run through arguments to evaluate keywords
+  // all keywords have to come at the end!
+  // this is tedious, but necessary to not change default (LAMMPS) behaviour
+  int iarg_key_begin = -1;
+  for(int iarg=4;iarg<narg;++iarg){
+    if(strcmp(arg[iarg],"use_neigh_cutoff") == 0){
+      use_neigh_cutoff2 = atoi(arg[iarg+1]);
+      if(iarg_key_begin < 0) iarg_key_begin = iarg;
+      ++iarg; 
+    } // elseif additional keyword arguments here, don't forget last "if" line
+  }
+
+  if ((iarg_key_begin < 0 && narg == 4) || iarg_key_begin == 4) {
     ilo[0] = 1; ihi[0] = ntypes;
     jlo[0] = 1; jhi[0] = ntypes;
     npairs = 1;
-
   } else {
     npairs = 0;
     int iarg = 4;
-    while (iarg < narg) {
+    while ( iarg < (iarg_key_begin > 0 ? iarg_key_begin : narg) ) {
       force->bounds(arg[iarg],atom->ntypes,ilo[npairs],ihi[npairs]);
       force->bounds(arg[iarg+1],atom->ntypes,jlo[npairs],jhi[npairs]);
       if (ilo[npairs] > ihi[npairs] || jlo[npairs] > jhi[npairs])
@@ -79,6 +92,7 @@ ComputeRDF::ComputeRDF(LAMMPS *lmp, int narg, char **arg) :
     }
   }
 
+  
   int i,j;
   for (i = 1; i <= ntypes; i++)
     for (j = 1; j <= ntypes; j++)
@@ -121,7 +135,10 @@ void ComputeRDF::init()
 {
   int i,m;
 
-  if (force->pair) delr = force->pair->cutforce / nbin;
+  if (force->pair){
+    if(use_neigh_cutoff2) delr = neighbor->cutneighmax / nbin;
+    else delr = force->pair->cutforce / nbin;
+  }
   else error->all(FLERR,"Compute rdf requires a pair style be defined");
   delrinv = 1.0/delr;
 
