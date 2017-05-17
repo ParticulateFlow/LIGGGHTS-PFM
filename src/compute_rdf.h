@@ -46,6 +46,8 @@ class ComputeRDF : public Compute {
   int *typecount;
   int *icount,*jcount;
 
+  bool use_neigh_cutoff2;
+  
   class NeighList *list;         // half neighbor list
 };
 
