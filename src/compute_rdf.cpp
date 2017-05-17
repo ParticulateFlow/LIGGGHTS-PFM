@@ -68,7 +68,6 @@ ComputeRDF::ComputeRDF(LAMMPS *lmp, int narg, char **arg) :
   // this is tedious, but necessary to not change default (LAMMPS) behaviour
   int iarg_key_begin = -1;
   for(int iarg=4;iarg<narg;++iarg){
-    printf("argnument no %d: %s\n",iarg,arg[iarg]);
     if(strcmp(arg[iarg],"use_neigh_cutoff") == 0){
       use_neigh_cutoff2 = atoi(arg[iarg+1]);
       if(iarg_key_begin < 0) iarg_key_begin = iarg;
@@ -76,17 +75,14 @@ ComputeRDF::ComputeRDF(LAMMPS *lmp, int narg, char **arg) :
     } // elseif additional keyword arguments here, don't forget last "if" line
   }
 
-  printf("iarg_key_begin %d\n",iarg_key_begin);
-  printf("narg %d\n",narg);
   if ((iarg_key_begin < 0 && narg == 4) || iarg_key_begin == 4) {
-
     ilo[0] = 1; ihi[0] = ntypes;
     jlo[0] = 1; jhi[0] = ntypes;
     npairs = 1;
   } else {
     npairs = 0;
     int iarg = 4;
-    while (iarg < iarg_key_begin) {
+    while ( iarg < (iarg_key_begin > 0 ? iarg_key_begin : narg) ) {
       force->bounds(arg[iarg],atom->ntypes,ilo[npairs],ihi[npairs]);
       force->bounds(arg[iarg+1],atom->ntypes,jlo[npairs],jhi[npairs]);
       if (ilo[npairs] > ihi[npairs] || jlo[npairs] > jhi[npairs])
