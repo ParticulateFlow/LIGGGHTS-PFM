@@ -83,6 +83,11 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     molMass_A_ = molMass_C_ = 0;
     Runiv       =   8.3144;  // [J/molK]
 
+    // initialize particle properties
+    porosity_   =   0.15; // 15percent from Nietrost phd
+    tortuosity_ =   3;     // Nietrost phd
+    pore_diameter_  =   3.91e-9; // m
+
     iarg_ = 3;
     if (narg < 11)
         error->all(FLERR, "not enough arguments");
@@ -504,18 +509,18 @@ void FixChemShrinkCore::post_force(int)
 
     for (i = 0; i < nlocal; i++)
     {
-        if (dCoeff_[i] > 1)
-            dCoeff_[i] = 1;
-
-        // debug check
-        fprintf(screen, "T_ in chem core: %f \n", T_[i]);
-        fprintf(screen ,"pgas_ in chem core = %f \n",pgas_[i]);
-        fprintf(screen,"diffusion coefficient from CFD: %f \n",dCoeff_[i]);
-
         if (mask[i] & groupbit)
         {
+            if (dCoeff_[i] > 1)
+                dCoeff_[i] = 1;
+
+            // debug check
+            fprintf(screen, "T_ in chem core: %f \n", T_[i]);
+            fprintf(screen ,"pgas_ in chem core = %f \n",pgas_[i]);
+            fprintf(screen,"diffusion coefficient from CFD: %f \n",dCoeff_[i]);
+
             if(T_[i] > 0.0)
-            {
+            {         
                 active_layers(i);
                 if (layers_ > 0)
                 {
@@ -530,7 +535,7 @@ void FixChemShrinkCore::post_force(int)
                         getA(i,a_, x0_eq_);
                         getB(i,b_);
                         // getMassT(i,masst);
-                        reaction(i,a_,dmA_,x0_,x0_eq_, b_); //diff,masst,y0,
+                        reaction(i,a_,dmA_,x0_,x0_eq_, b_); //masst,
                         update_atom_properties(i,dmA_);
                         update_gas_properties(i,dmA_);
                     }
@@ -721,18 +726,29 @@ void FixChemShrinkCore::getB(int i, double *b_)
     if (screen)
     fprintf(screen,"DO GET B FUNCTION!! \n");
 
+    double deBinary = dCoeff_[i]*porosity_/tortuosity_;
+
+    // Knudsen diff equation is either
+    // Dik = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
+    // or simplified as
+    // Dik = 4850*dp*sqrt(T_[i]/molMass_A_) dp is cm in this eq
+    double deKnudsen    =   48.50*pore_diameter_*sqrt(T_[i]/molMass_A_)*porosity_/tortuosity_;
+
+    // total effective diffusivity
+    diffEff_[i]     =   deBinary*deKnudsen/(deBinary+deKnudsen);
+
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
     b_[0]   =   ((1-relRadii_[i][1])*radius_[i])
-                /((relRadii_[i][1])*dCoeff_[i]);
+                /((relRadii_[i][1])*diffEff_[i]);
 
     // from magnetite to wustite
     b_[1]   =   ((relRadii_[i][1]-relRadii_[i][2])*radius_[i])
-                /((relRadii_[i][1]*relRadii_[i][2])*dCoeff_[i]);
+                /((relRadii_[i][1]*relRadii_[i][2])*diffEff_[i]);
 
     // from hematite to magnetite
     b_[2]   =   ((relRadii_[i][2]-relRadii_[i][3])*radius_[i])
-                /((relRadii_[i][2]*relRadii_[i][3])*dCoeff_[i]);
+                /((relRadii_[i][2]*relRadii_[i][3])*diffEff_[i]);
 
     fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
     fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
@@ -968,8 +984,8 @@ double FixChemShrinkCore::K_eq(int layer, double T)
 {
     if (screen)
         fprintf(screen,"CALCULATE K_EQUILIBIRUM \n");
-//     ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
-//                for the reactions under consideration, this should not be the case (double-check !!!)
+    // ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
+    // for the reactions under consideration, this should not be the case (double-check !!!)
     // 0 = wustite, 1 = mangetite, 2 = hematite;
     double Keq_;
     if(strcmp(speciesA,"CO")==0)
@@ -996,4 +1012,3 @@ double FixChemShrinkCore::K_eq(int layer, double T)
      }
     return Keq_;
 }
-

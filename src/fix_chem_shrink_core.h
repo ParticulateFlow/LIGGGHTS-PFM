@@ -69,6 +69,10 @@ public:
    // name of diffusant species
    char *diffA;
 
+   // material properties porosity, tortuosity, and pore diameter
+   double porosity_, tortuosity_, pore_diameter_;
+   double *diffEff_;
+
   // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;
   // number of active layers starts with 3, and reduces if a layer is depleted
