@@ -62,7 +62,10 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_Ea_(0), // [J/mol]
     fix_dens_(0),
     fix_layerRelRad_(0),
-    fix_layerMass_(0)
+    fix_layerMass_(0),
+    fix_porosity_(0),
+    fix_tortuosity_(0),
+    fix_pore_diameter_(0)
 {
     if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
         error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
@@ -84,9 +87,9 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Runiv       =   8.3144;  // [J/molK]
 
     // initialize particle properties
-    porosity_   =   0.15; // 15percent from Nietrost phd
-    tortuosity_ =   3;     // Nietrost phd
-    pore_diameter_  =   3.91e-9; // m
+    // porosity_   =   0.15; // 15percent from Nietrost phd
+    // tortuosity_ =   3;     // Nietrost phd
+    // pore_diameter_  =   3.91e-6; // m
 
     iarg_ = 3;
     if (narg < 11)
@@ -367,6 +370,10 @@ void FixChemShrinkCore::updatePtrs()
     k0_             =  fix_k0_       -> get_values();
     // activation energy
     Ea_             =  fix_Ea_       -> get_values();
+    // particle porosity properties
+    porosity_       =   fix_porosity_       -> get_values();
+    tortuosity_     =   fix_tortuosity_     -> get_values();
+    pore_diameter_  =   fix_pore_diameter_  -> get_values();
 
     pmass_          =   atom ->  rmass;
     pdensity_       =   atom -> density;
@@ -409,6 +416,11 @@ void FixChemShrinkCore::init()
     strcat(fixname, id);
     fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, "FixChemShrinkCore"));
     delete[]fixname;
+
+    // lookup porosity,tortuosity and pore diameter values
+    fix_porosity_   =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("porosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
+    fix_tortuosity_   =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
+    fix_pore_diameter_   =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
 
     // Lookup material properties
     // they are defined by the user via FixPropertyGlobal (as vector with 4 entries)
@@ -726,13 +738,13 @@ void FixChemShrinkCore::getB(int i, double *b_)
     if (screen)
     fprintf(screen,"DO GET B FUNCTION!! \n");
 
-    double deBinary = dCoeff_[i]*porosity_/tortuosity_;
+    double deBinary = dCoeff_[i]*porosity_[i]/tortuosity_[i];
 
     // Knudsen diff equation is either
     // Dik = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
     // or simplified as
     // Dik = 4850*dp*sqrt(T_[i]/molMass_A_) dp is cm in this eq
-    double deKnudsen    =   48.50*pore_diameter_*sqrt(T_[i]/molMass_A_)*porosity_/tortuosity_;
+    double deKnudsen    =   48.50*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i];
 
     // total effective diffusivity
     diffEff_[i]     =   deBinary*deKnudsen/(deBinary+deKnudsen);
@@ -765,15 +777,15 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, d
 
     if (layers_ == nmaxlayers_)
     {
-        // if only with reaction resistance term
-        /*// rate of chemical reaction for only chemical reaction resistance.
+       /* // if only with reaction resistance term
+        // rate of chemical reaction for only chemical reaction resistance.
         W = a_[2]*a_[1]*a_[0];
         // hematite to magnetite
         dY[2]   =   ((a_[0]*a_[1])*(x0_[i]-x0_eq_[2]))*1/W;
         // magnetite to wustite
         dY[1]   =   ((a_[2]*a_[0])*(x0_[i]-x0_eq_[1]))*1/W;
         // wustite to iron
-        dY[0]   =   ((a_[2]*a_[1])*(x0_[i]-x0_eq_[0]))*1/W;*/
+        dY[0]   =   ((a_[2]*a_[1])*(x0_[i]-x0_eq_[0]))*1/W; */
 
         // including reaction resistance and diffusion coeff terms
         W = (a_[2]+b_[2])*(a_[0]*(a_[1]+b_[1]+b_[0])+(a_[1]+b_[1])*b_[0])
@@ -793,7 +805,7 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, d
     }
      else if (layers_ == 2)
      {
-         /* // rate of chemical reaction for 2 active layers
+       /*  // rate of chemical reaction for 2 active layers
          W = (a_[1]*a_[0]);
  
          // hematite to magnetite
@@ -801,7 +813,7 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, d
          // magnetite to wustite
          dY[1]   =   (a_[0]*(x0_[i]-x0_eq_[1]))*1/W;
          // wustite to iron
-         dY[0]   =   (a_[1]*(x0_[i] - x0_eq_[0]))*1/W;*/
+         dY[0]   =   (a_[1]*(x0_[i] - x0_eq_[0]))*1/W; */
         // including reaction resistance and diffusion coeff terms
         W = (a_[1]+b_[1])*(a_[0]+b_[0])+a_[0]*b_[0];
 
@@ -814,7 +826,7 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, d
      }
      else if (layers_ == 1)
      {
-         /*// rate of chemical reaction for 1 active layer
+       /*  // rate of chemical reaction for 1 active layer
          W = a_[0];
  
          // hematite to magnetite
@@ -822,7 +834,7 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_, d
          // magnetite to wustite
          dY[1]   =   0.0;
          // wustite to iron
-         dY[0]   =   (x0_[i] - x0_eq_[0])*1/W;*/
+         dY[0]   =   (x0_[i] - x0_eq_[0])*1/W; */
 
         // rate of chemical reaction for 1 active layer
         W = a_[0]+b_[0];

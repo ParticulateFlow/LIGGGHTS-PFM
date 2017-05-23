@@ -70,7 +70,7 @@ public:
    char *diffA;
 
    // material properties porosity, tortuosity, and pore diameter
-   double porosity_, tortuosity_, pore_diameter_;
+   const double *porosity_, *tortuosity_, *pore_diameter_;
    double *diffEff_;
 
   // maximum number of layers to be used for chemical reactions, currently 3
@@ -93,6 +93,11 @@ public:
   class FixPropertyAtom *fix_totalmole_;                        // total mole in volume
   class FixPropertyAtom *fix_pressure_;
   class FixPropertyAtom *fix_diffcoeff_;
+
+  // define porosity values for all particles (glibal
+  class FixPropertyGlobal *fix_porosity_;
+  class FixPropertyGlobal *fix_tortuosity_;
+  class FixPropertyGlobal *fix_pore_diameter_;
 
   // molar masses of gas species
   double molMass_A_, molMass_C_;
