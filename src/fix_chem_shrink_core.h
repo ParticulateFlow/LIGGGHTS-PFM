@@ -48,7 +48,10 @@ public:
   int active_layers(int);
   void calcMassLayer(int);
   double K_eq(int, double);
+  // diff & reaction
   void reaction(int, double *, double *, double *, double *, double *);   //, double *, double *
+  // only reaction
+  void reaction2(int, double *, double *, double *, double *);   //, double *, double *
   void getA(int, double *, double *);
   void diffcoeff(int, double *);
   void getB(int, double *);
