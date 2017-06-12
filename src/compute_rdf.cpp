@@ -18,6 +18,7 @@
 #include <mpi.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include "compute_rdf.h"
 #include "atom.h"
 #include "update.h"
