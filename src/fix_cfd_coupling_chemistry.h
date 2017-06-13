@@ -68,6 +68,7 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom* fix_totalmole_;            // data pulled from cfdemCoupling - partN_;
   class FixPropertyAtom*    fix_pressure_;          // data pulled from cfdemCoupling - partP_;
   class FixPropertyAtom** fix_diffusionCoeff_;
+  class FixPropertyAtom *fix_nufField_, *fix_partReynolds_;
 
  private:
   bool use_Re_;
