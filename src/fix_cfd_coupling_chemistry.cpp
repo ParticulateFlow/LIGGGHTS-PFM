@@ -162,9 +162,9 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
     if(unfixflag && fix_rhogas_)        modify -> delete_fix("partRho");
     if(unfixflag && fix_reactionheat_)  modify -> delete_fix("reactionHeat");
     if(unfixflag && fix_totalmole_)     modify -> delete_fix("partN");
-    if(unfixflag && fix_pressure_)     modify -> delete_fix("partP");
-    if(unfixflag && fix_nufField_)     modify -> delete_fix("partNu");
-    if(unfixflag && fix_partReynolds_)     modify -> delete_fix("partRe");
+    if(unfixflag && fix_pressure_)      modify -> delete_fix("partP");
+    if(unfixflag && fix_nufField_)      modify -> delete_fix("partNu");
+    if(unfixflag && fix_partReynolds_)  modify -> delete_fix("partRe");
 
     for (int i = 0; i < num_species; i++)
     {
@@ -261,7 +261,7 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[2]="property/atom";
         fixarg[3]="partP";
         fixarg[4]="scalar";     // 1 vector per particle to be registered
-        fixarg[5]="yes";        // restart
+        fixarg[5]="yes";        // restartscalar
         fixarg[6]="no";         // communicate ghost
         fixarg[7]="no";         // communicate rev
         fixarg[8]="0.";

@@ -59,16 +59,17 @@ class FixCfdCouplingChemistry : public Fix  {
   char **diffusant_names_;
   int n_species;
 
-  class FixCfdCoupling* fix_coupling_;
-  class FixPropertyAtom* fix_tgas_;                  // data pulled from cfdemCoupling - partTemp_
-  class FixPropertyAtom* fix_rhogas_;                // data pulled from cfdemCoupling - partRho_
-  class FixPropertyAtom* fix_reactionheat_;         // data pushed to cfdemCoupling - reactionHeat_
-  class FixPropertyAtom** fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
-  class FixPropertyAtom** fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
-  class FixPropertyAtom* fix_totalmole_;            // data pulled from cfdemCoupling - partN_;
+  class FixCfdCoupling*     fix_coupling_;
+  class FixPropertyAtom*    fix_tgas_;                  // data pulled from cfdemCoupling - partTemp_
+  class FixPropertyAtom*    fix_rhogas_;                // data pulled from cfdemCoupling - partRho_
+  class FixPropertyAtom*    fix_reactionheat_;         // data pushed to cfdemCoupling - reactionHeat_
+  class FixPropertyAtom**   fix_massfrac_;            // data pulled from cfdemCoupling - concentrations_
+  class FixPropertyAtom**   fix_masschange_;          // data pushed to cfdemCoupling - changeOfSpeciesMass_
+  class FixPropertyAtom*    fix_totalmole_;            // data pulled from cfdemCoupling - partN_;
   class FixPropertyAtom*    fix_pressure_;          // data pulled from cfdemCoupling - partP_;
-  class FixPropertyAtom** fix_diffusionCoeff_;
-  class FixPropertyAtom *fix_nufField_, *fix_partReynolds_;
+  class FixPropertyAtom**   fix_diffusionCoeff_;
+  class FixPropertyAtom*    fix_nufField_;
+  class FixPropertyAtom*    fix_partReynolds_;
 
  private:
   bool use_Re_;
