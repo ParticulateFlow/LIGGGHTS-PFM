@@ -52,9 +52,10 @@ public:
   void reaction(int, double *, double *, double *, double *, double *);   //, double *, double *
   // only reaction
   void reaction2(int, double *, double *, double *, double *);   //, double *, double *
-  void getA(int, double *, double *);
+  void getA(int, double *);
   void diffcoeff(int, double *);
   void getB(int, double *);
+  //void getMassT(int, double *);
   void getXi(int, double *, double *);
   void layerRad(int);
   void update_atom_properties(int, double *);
@@ -94,8 +95,9 @@ public:
   class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
   class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
   class FixPropertyAtom *fix_totalmole_;                        // total mole in volume
-  class FixPropertyAtom *fix_pressure_;
   class FixPropertyAtom *fix_diffcoeff_;
+  class FixPropertyAtom *fix_nuField_;
+  class FixPropertyAtom *fix_partRe_;
 
   // define porosity values for all particles (glibal
   class FixPropertyGlobal *fix_porosity_;
@@ -106,7 +108,7 @@ public:
   double molMass_A_, molMass_C_;
 
   // handle names
-  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *pgas_, *N_, *dCoeff_;
+  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *N_, *dCoeff_, *nuf_, *Rep_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
