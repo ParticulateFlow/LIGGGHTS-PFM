@@ -55,7 +55,7 @@ public:
   void getA(int, double *);
   void diffcoeff(int, double *);
   void getB(int, double *);
-  //void getMassT(int, double *);
+  void getMassT(int, double *);
   void getXi(int, double *, double *);
   void layerRad(int);
   void update_atom_properties(int, double *);

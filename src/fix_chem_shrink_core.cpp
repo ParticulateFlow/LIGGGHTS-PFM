@@ -537,21 +537,21 @@ void FixChemShrinkCore::post_force(int)
                 if (layers_ > 0)
                 {
                    getXi(i,x0_,x0_eq_);
-                    /*if (x0_[i] > 0.0)
+                    if (x0_[i] > 0.0)
                     {
-                        for (int j = 0; j < nmaxlayers_; j++)
+                         for (int j = 0; j < nmaxlayers_; j++)
                         {
                             a_[j] = 0.0;
                             dmA_[j] = 0.0;
                         }
                         getA(i,a_);
                         getB(i,b_);
-                        // getMassT(i,masst_);
+                        getMassT(i,masst_);
                         // reaction(i,a_,dmA_,x0_,x0_eq_, b_); //masst,
                         // reaction2(i,a_,dmA_,x0_,x0_eq_);
                         // update_atom_properties(i,dmA_);
                         // update_gas_properties(i,dmA_);
-                    }*/
+                    }
                 }
             }
         }
@@ -600,6 +600,7 @@ void FixChemShrinkCore::layerRad(int i)
 /* ---------------------------------------------------------------------- */
 
 // returns number of active layers
+// calculate the new masses of layers, (important if layer number has changed)
 int FixChemShrinkCore::active_layers(int i)
 {
     for(int j  = 1; j <= layers_; j++)
@@ -620,6 +621,7 @@ int FixChemShrinkCore::active_layers(int i)
 
 /* ---------------------------------------------------------------------- */
 
+// Determine the mass for every layer -- the latest layer represents the core of the particle.
 void FixChemShrinkCore::calcMassLayer(int i)
 {
     double rad = radius_[i];
@@ -634,6 +636,9 @@ void FixChemShrinkCore::calcMassLayer(int i)
 
 /* ---------------------------------------------------------------------- */
 
+// Calculate the equilibrium molar fractions
+// And the bulk molar fraction
+// TODO: Calculate bulk molar fraction in species - CFDEM (Need it for various CFDEM models)
 void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
 {
     if (screen)
@@ -685,25 +690,36 @@ void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-// calculate chemical reaction resistance term through literature
+// calculate A - the chemical reaction resistance term - starting from wustite(0).
+// Equation available in literature. (Valipour, Natsui, Nietrost...)
 void FixChemShrinkCore::getA(int i, double *a_)
 {
-    /*if (screen)
-    fprintf(screen,"DO GET A FUNCTION!! \n");*/
+    if (screen)
+    fprintf(screen,"DO GET A FUNCTION!! \n");
 
     for (int j = 0; j < layers_ ; j++)
     {
         a_[j]   =   (1/(k0_[j]*exp(-Ea_[j]/(Runiv*T_[i]))))*(1/(1+1/K_eq(j,T_[i])))*(1/(relRadii_[i][j+1]*relRadii_[i][j+1]));
     }
+
+    if (screen)
+    {
+        fprintf(screen, "reaction resistance term 1 : %f \n",a_[0]);
+        fprintf(screen, "reaction resistance term 2 : %f \n",a_[1]);
+        fprintf(screen, "reaction resistance term 3 : %f \n",a_[2]);
+    }
 }
 
 /* ---------------------------------------------------------------------- */
 
+// Calculate B - the diffusion resistance term - 0 = wustite
+// Use binary diffusion for mixture, and knudsen diffusion to determine
+// effective diffusion coefficient.
 void FixChemShrinkCore::getB(int i, double *b_)
 {
-    /*if (screen)
-    fprintf(screen,"DO GET B FUNCTION!! \n"); */
-/*
+    if (screen)
+    fprintf(screen,"DO GET B FUNCTION!! \n");
+
     double deBinary_[atom->nlocal];
     double deKnudsen_[atom->nlocal];
 
@@ -714,24 +730,24 @@ void FixChemShrinkCore::getB(int i, double *b_)
     deBinary_[i] = dCoeff_[i]*porosity_[i]/tortuosity_[i];
 
     if (screen)
-        fprintf(screen,"eff. binary diff: %6.15f \n",deBinary_[i]); */
+        fprintf(screen,"eff. binary diff: %6.15f \n",deBinary_[i]);
 
     // Knudsen diff equation is either
     // Dik = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
     // or simplified as
     // Dik = 4850*dp*sqrt(T_[i]/molMass_A_) dp supposed to be in cm
     // we use si units so convert from meter to cm!
- /*   deKnudsen_[i]    =   4850*(pore_diameter_[i]*0.01)*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i];
+   deKnudsen_[i]    =   4850*(pore_diameter_[i]*0.01)*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i];
 
     if (screen)
-        fprintf(screen,"eff. knudsen diff: %f \n",deKnudsen_[i]); */
+        fprintf(screen,"eff. knudsen diff: %f \n",deKnudsen_[i]);
 
-/*    // total effective diffusivity (diffEff = 1/EffectiveDiffusivity)
-    diffEff_[i]     =   1/deBinary_[i] + 1/deKnudsen_[i];
-    // diffEff_[i]     =   deKnudsen_[i]*deBinary_[i]/(deKnudsen_[i]+deBinary_[i]);
+    // total effective diffusivity
+    diffEff_[i]     =   1.0/(1.0/deBinary_[i] + 1.0/deKnudsen_[i]);
+    diffEff_[i]     = std::max(SMALL, diffEff_[i]);
 
     if (screen)
-        fprintf(screen,"eff. diff: %6.15f \n",diffEff_[i]); */
+        fprintf(screen,"eff. diff: %6.15f \n",diffEff_[i]);
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
@@ -739,7 +755,8 @@ void FixChemShrinkCore::getB(int i, double *b_)
     b_[0]   =   0.001;
     for (int j = 1; j < layers_; j++)
     {
-        //b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
+        // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
+        //b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]/diffEff_[i]);
         b_[j]   =   0.001;
     }
 
@@ -753,7 +770,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
 /* ---------------------------------------------------------------------- */
 
-/*void FixChemShrinkCore::getMassT(int i, double *masst_)
+void FixChemShrinkCore::getMassT(int i, double *masst_)
 {
     // initialize sherwood & schmidt numbers for every particle
     double Sc_[atom->nlocal];
@@ -764,13 +781,13 @@ void FixChemShrinkCore::getB(int i, double *b_)
     masst_[i] = Sh_[i]*diffEff_[i]/radius_[i];
     masst_[i] = 1/masst_[i];
 
-    if (comm -> me == 0 && screen)
+    if (screen)
     {
         fprintf(screen, "Schmidt number: %f \n",Sc_[i]);
         fprintf(screen, "Sherwood number: %f \n",Sh_[i]);
         fprintf(screen, "masst: %f \n",masst_[i]);
     }
-}*/
+}
 
 /* ---------------------------------------------------------------------- */
 
