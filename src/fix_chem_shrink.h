@@ -63,6 +63,12 @@ public:
   class FixPropertyAtom *fix_tgas;                             //  temperature of gas
   class FixPropertyAtom *fix_reactionheat_;                     //  DeltaQ
   class FixPropertyAtom *fix_totalMole_;
+  // checking communication for nuField and Rep
+  class FixPropertyAtom *fix_nuField_;
+  class FixPropertyAtom *fix_partRe_;
+
+  double *nuf_;
+  double *Rep_;
 
 
   int iarg_;

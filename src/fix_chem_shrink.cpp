@@ -71,6 +71,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_tgas           =   NULL;
     fix_reactionheat_   =   NULL;
     fix_totalMole_      =   NULL;
+    fix_nuField_        =   NULL;
+    fix_partRe_         =   NULL;
 
     iarg_ = 3;
     k = 0;
@@ -233,6 +235,8 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_changeOfA_)     modify  ->  delete_fix(massA);
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
         if(fix_totalMole_)     modify   ->  delete_fix("partN");
+        if(fix_nuField_)       modify   ->  delete_fix("partNu");
+        if(fix_partRe_)         modify  ->  delete_fix("partRe");
     }
 }
 
@@ -259,6 +263,8 @@ void FixChemShrink::updatePtrs()
     changeOfC_  =   fix_changeOfC_  -> vector_atom;
     rhogas_     =   fix_rhogas      -> vector_atom;
     N_          =   fix_totalMole_  ->  vector_atom;
+    nuf_        =   fix_nuField_    ->  vector_atom;
+    Rep_        =   fix_partRe_     ->  vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -312,6 +318,9 @@ void FixChemShrink::reaction()
                     fprintf(screen,"Particle Mass %f \n",pmass_[i]);
                     fprintf(screen,"Gas Density %f \n",rhogas_[i]);
                     fprintf(screen,"total number of moles in chem/shrink: %f \n",N_[i]);
+                    // testin communication nufield and Rep
+                    fprintf(screen,"nufield from DEM: %f \n", nuf_[i]);
+                    fprintf(screen, "particle Reynolds from DEM: %f \n", Rep_[i]);
                 }
             }
         }
@@ -347,6 +356,8 @@ void FixChemShrink::init()
     fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
+    fix_nuField_        =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style));
+    fix_partRe_         =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style));
 
     if (rdef)
     {
