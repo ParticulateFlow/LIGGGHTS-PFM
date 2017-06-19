@@ -27,6 +27,8 @@
 #ifndef LMP_PRIMITIVE_WALL_DEFINITIONS
 #define LMP_PRIMITIVE_WALL_DEFINITIONS
 
+#include "vector_liggghts.h"
+
 /*
  * Necessary steps to add new primitive walls:
  * (1) add an enum for your primitive to WallType, but insert it before NUM_WTYPE
@@ -50,6 +52,7 @@ namespace LAMMPS_NS
         XCYLINDER,
         YCYLINDER,
         ZCYLINDER,
+        GENERAL_PLANE,
         NUM_WTYPE
     };
 
@@ -60,7 +63,8 @@ namespace LAMMPS_NS
         "zplane",
         "xcylinder",
         "ycylinder",
-        "zcylinder"
+        "zcylinder",
+        "general_plane"
     };
 
     static int numArgs[] =
@@ -70,7 +74,8 @@ namespace LAMMPS_NS
         1,
         3,
         3,
-        3
+        3,
+        6
     };
 
     /*
@@ -179,6 +184,61 @@ namespace LAMMPS_NS
 /* ---------------------------------------------------------------------- */
 
     /*
+     * a plane is defined by a point and a vector perpendicular to the 
+     * plane. Parameters:
+     * param[0,1,2] point on plane
+     * param[3,4,5] vector perpendicular to the plane
+     */
+    
+    struct GeneralPlane {
+    public:
+      // setParams needs to be called before any
+      // computation takes place!!!
+      static void setParams(double *param, double *p, double *n)
+      {
+        p[0] = param[0]; p[1] = param[1]; p[2] = param[2];
+        n[0] = param[3]; n[1] = param[4]; n[2] = param[5];
+
+        double l = vectorMag3D(n);
+        vectorScalarDiv3D(n,l);
+      }
+      // relies on p, n to be properly set
+      // returns signed distance
+      static double distToPlane(double *pos, double *p,  double *n)
+      {
+        double vec[3];
+        vectorSubtract3D(pos,p,vec);
+        return vec[0]*n[0] + vec[1]*n[1] + vec[2]*n[2];
+      }
+
+      static double resolveContact(double *pos, double r, double *delta, double *param)
+      {
+        double p[3],n[3];
+        setParams(param,p,n);
+
+        double dist = distToPlane(pos,p,n);
+        vectorCopy3D(n,delta);
+        vectorScalarMult3D(delta,-dist);
+        double absdist = (dist > 0.0) ? dist : -dist;
+        return absdist - r;
+      }
+      static bool resolveNeighlist(double *pos, double r, double treshold, double *param)
+      {
+        double p[3],n[3];
+        setParams(param,p,n);
+        
+        double dMax = r + treshold;
+        double dist = distToPlane(pos,p,n);
+        double absdist = (dist > 0.0) ? dist : -dist;
+        return (absdist <= dMax);
+      }
+      
+      
+    };
+    
+/* ---------------------------------------------------------------------- */
+
+    /*
      * functions to choose the correct template
      */
 
@@ -200,7 +260,9 @@ namespace LAMMPS_NS
         return Cylinder<1>::resolveContact(x,r,delta,param);
       case ZCYLINDER:
         return Cylinder<2>::resolveContact(x,r,delta,param);
-
+      case GENERAL_PLANE:
+        return GeneralPlane::resolveContact(x,r,delta,param);
+        
       default: // default: no contact
         return 1.;
       }
@@ -222,6 +284,8 @@ namespace LAMMPS_NS
         return Cylinder<1>::resolveNeighlist(x,r,treshold,param);
       case ZCYLINDER:
         return Cylinder<2>::resolveNeighlist(x,r,treshold,param);
+      case GENERAL_PLANE:
+        return GeneralPlane::resolveNeighlist(x,r,treshold,param);
 
       default: // default value: every particle will be added to neighbor list
         return true;

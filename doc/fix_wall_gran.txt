@@ -37,7 +37,10 @@ wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zp
     pos = position plane (distance units)
   {xcylinder} or {ycylinder} or {zcylinder} args = radius c1 c2
     radius = cylinder radius (distance units)
-    c1,c2 = coordinates of center axis in other 2 dims (distance units) :pre
+    c1,c2 = coordinates of center axis in other 2 dims (distance units)
+  {general_plane} args = px py pz nx ny nz
+    px,py,pz = coordinates of a point on the plane
+    nx,ny,nz = compnents of a vector orthogonal to the plane :pre
 
 zero or more general_keyword/value pairs may be appended :l
 general_keyword =  {shear} or {store_force} or {store_force_contact} :l
@@ -96,10 +99,14 @@ For style {mesh}, the atom_type (material type) is inherited from the atom style
 in the "fix mesh/surface"_fix_mesh_surface.html command. 
 
 For {wallstyle primitive}, the atom_type (material type) has to be provided via
-keyword {type}. Primitve walls can be {xplane} or {yplane} or {zplane} or {cylindrical}. 
-The 3 planar options specify a single wall in a dimension.
+keyword {type}. Primitve walls can be {xplane} or {yplane} or {zplane} or {cylindrical} 
+or {general_plane}. 
+The three axis-aligned planar options specify a single wall in a dimension.
 Wall positions are given by values for lo and hi. For an {xcylinder}, {ycylinder} or
 {zcylinder}, the radius and the cylinder axis in the other two dims is specified.
+The {general_plane} is an arbitrarily oriented plane, where a point on the plane 
+and a vector orthogonal to the plane need
+to be specified. The vector does not need to be a unit vector.
 
 :line
 
