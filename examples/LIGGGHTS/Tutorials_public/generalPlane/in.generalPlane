@@ -1,4 +1,4 @@
-#Contact model example
+#General plane example
 
 atom_style	granular
 atom_modify	map array
