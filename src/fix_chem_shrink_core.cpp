@@ -49,7 +49,6 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 
 #define SMALL 1e-15
-#define LARGE 1e+10
 
 /* ---------------------------------------------------------------------- */
 
@@ -57,16 +56,16 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     nmaxlayers_(3),
     layers_(nmaxlayers_),
-    rmin_(0.001),
-    fix_k0_(0), // [m/s]
-    fix_molMass_(0),
-    fix_Ea_(0), // [J/mol]
-    fix_dens_(0),
+    rmin_(0.001),       //  [m]
+    fix_k0_(0),         //  [m/s]
+    fix_molMass_(0),    //  either [g/mol] or [kg/mole]
+    fix_Ea_(0),         //  [J/mol] - [kg*m^2/s^2*mol]
+    fix_dens_(0),       //  [kg/m^3]
     fix_layerRelRad_(0),
-    fix_layerMass_(0),
-    fix_porosity_(0),
+    fix_layerMass_(0),  //  [kg]
+    fix_porosity_(0),   //  [%]
     fix_tortuosity_(0),
-    fix_pore_diameter_(0)
+    fix_pore_diameter_(0)   //[m]
 {
     if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
         error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
@@ -84,9 +83,10 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_nuField_        =   NULL;
     fix_partRe_         =   NULL;
 
-    molMass_A_ = molMass_C_ = 0;
-    pmass_  =   NULL;
-    Runiv       =   8.3144;  // [J/molK]
+    molMass_A_  =   molMass_C_ = 0;
+    pmass_      =   NULL;
+    Runiv       =   8.3144; // [J/molK]  //8314.4; [J/kmoleK] => [kgm^2/s^2Kkmole] //
+    fc_         =   NULL;
 
     iarg_ = 3;
     if (narg < 11)
@@ -176,6 +176,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     size_vector =   4;
     extvector   =   0;
     local_flag  =   1;
+
+    ts_create_  =   update->ntimestep;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -196,6 +198,8 @@ FixChemShrinkCore::~FixChemShrinkCore()
     }
     delete [] radLayer_;
     delete [] massLayer_;
+
+    //delete fc_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -382,6 +386,9 @@ void FixChemShrinkCore::init()
     if (!atom->tag_enable || 0 == atom->map_style)
       error->fix_error(FLERR,this,"requires atom tags and an atom map");
 
+    // find coupling fix
+    //fc_ = static_cast<FixCfdCoupling*>(modify->find_fix_style_strict("couple/cfd",0));
+
     int ntype = atom -> ntypes;
     int c = strlen(id) + 1;
     char* fixname = new char[c];
@@ -504,9 +511,18 @@ void FixChemShrinkCore::init()
 void FixChemShrinkCore::post_force(int)
 {
     updatePtrs();
+    bool comm_established = false;
+    // fc_ -> end_of_step();
     int i;
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
+    // int couple  =   fc_->couple_nevery_;
+    // int ts1      =  update->ntimestep;
+
+    //if(ts1 % couple || ts_create_ == ts1) return;
+    // if(screen)
+       // fprintf(screen,"ts1 establsihed: %d \n",ts1);
+
 
     double a_[nmaxlayers_];              // reaction resistance value for each layer
     double x0_[nlocal];
@@ -520,12 +536,10 @@ void FixChemShrinkCore::post_force(int)
         if (mask[i] & groupbit)
         {
             dCoeff_[i] = std::max(SMALL, dCoeff_[i]);
-            /* if (dCoeff_[i] < SMALL)
-                dCoeff_[i] = SMALL; */
             // debug check
             if (screen)
             {
-                fprintf(screen, "diffusion coefficient from CFD: %6.35f \n",dCoeff_[i]);
+                fprintf(screen, "diffusion coefficient from CFD: %6.15f \n",dCoeff_[i]);
                 fprintf(screen, "nufield from DEM: %f \n", nuf_[i]);
                 fprintf(screen, "particle Reynolds from DEM: %f \n", Rep_[i]);
                 fprintf(screen, "temperature from DEM: %f \n", T_[i]);
@@ -692,6 +706,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_, double *x0_eq_)
 
 // calculate A - the chemical reaction resistance term - starting from wustite(0).
 // Equation available in literature. (Valipour, Natsui, Nietrost...)
+// A_[j] [s/m]
 void FixChemShrinkCore::getA(int i, double *a_)
 {
     if (screen)
@@ -723,36 +738,33 @@ void FixChemShrinkCore::getB(int i, double *b_)
     double deBinary_[atom->nlocal];
     double deKnudsen_[atom->nlocal];
 
-    if (dCoeff_[i] < SMALL)
-        dCoeff_[i]  =   SMALL;
-
     // molecular binary diffusion
-    deBinary_[i] = dCoeff_[i]*porosity_[i]/tortuosity_[i];
+/*    deBinary_[i] = dCoeff_[i]*porosity_[i]/tortuosity_[i];
 
     if (screen)
-        fprintf(screen,"eff. binary diff: %6.15f \n",deBinary_[i]);
+        fprintf(screen,"eff. binary diff: %6.15f \n",deBinary_[i]); */
 
     // Knudsen diff equation is either
     // Dik = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
     // or simplified as
     // Dik = 4850*dp*sqrt(T_[i]/molMass_A_) dp supposed to be in cm
     // we use si units so convert from meter to cm!
-   deKnudsen_[i]    =   4850*(pore_diameter_[i]*0.01)*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i];
+/*   deKnudsen_[i]    =   48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
 
     if (screen)
-        fprintf(screen,"eff. knudsen diff: %f \n",deKnudsen_[i]);
+        fprintf(screen,"eff. knudsen diff: %f \n",deKnudsen_[i]);   */
 
     // total effective diffusivity
-    diffEff_[i]     =   1.0/(1.0/deBinary_[i] + 1.0/deKnudsen_[i]);
-    diffEff_[i]     = std::max(SMALL, diffEff_[i]);
+/*    diffEff_[i]     =   1.0/(1.0/deBinary_[i] + 1.0/deKnudsen_[i]);
+    diffEff_[i]     =   std::max(SMALL, diffEff_[i]);
 
     if (screen)
-        fprintf(screen,"eff. diff: %6.15f \n",diffEff_[i]);
+        fprintf(screen,"eff. diff: %6.15f \n",diffEff_[i]); */
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
-    //b_[0]   =   (1-relRadii_[i][1])/(relRadii_[i][1])*(radius_[i]*diffEff_[i]);
-    b_[0]   =   0.001;
+    //b_[0]   =   (1-relRadii_[i][1])/(relRadii_[i][1])*(radius_[i]/diffEff_[i]);
+ /*   b_[0]   =   0.001;
     for (int j = 1; j < layers_; j++)
     {
         // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
@@ -765,7 +777,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
         fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
         fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
         fprintf(screen,"diffusion constant [2]: %f \n",b_[2]);
-    }
+    } */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -773,7 +785,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
 void FixChemShrinkCore::getMassT(int i, double *masst_)
 {
     // initialize sherwood & schmidt numbers for every particle
-    double Sc_[atom->nlocal];
+  /*  double Sc_[atom->nlocal];
     double Sh_[atom->nlocal];
 
     Sc_[i]  =   nuf_[i]/diffEff_[i];
@@ -786,7 +798,7 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
         fprintf(screen, "Schmidt number: %f \n",Sc_[i]);
         fprintf(screen, "Sherwood number: %f \n",Sh_[i]);
         fprintf(screen, "masst: %f \n",masst_[i]);
-    }
+    } */
 }
 
 /* ---------------------------------------------------------------------- */

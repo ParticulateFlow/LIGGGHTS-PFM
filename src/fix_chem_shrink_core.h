@@ -28,6 +28,7 @@ FixStyle(chem/shrink/core,FixChemShrinkCore)
 #define LMP_FIX_CHEM_SHRINKCORE_H
 
 #include "fix.h"
+#include "fix_cfd_coupling.h"
 
 namespace LAMMPS_NS {
 
@@ -65,6 +66,7 @@ public:
 
  protected:
    int iarg_;
+   int ts_create_;
 
    // timestep
    double TimeStep;
@@ -129,6 +131,8 @@ public:
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
   const double *k0_, *Ea_;
+
+  class FixCfdCoupling* fc_;
 };
 }
 
