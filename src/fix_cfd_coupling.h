@@ -64,7 +64,12 @@ class FixCfdCoupling : public Fix {
 
   int coupleThis() {return couple_this_;}
 
+  //EKI
+  int ts;
 
+  // couple every couple_nevery_ timesteps
+  // not used in case of MPI coupling
+  int couple_nevery_,ts_create_;
 
   // data transfer is handled by this class
   class CfdDatacoupling *dc_;
@@ -78,10 +83,6 @@ class FixCfdCoupling : public Fix {
  private:
 
   int couple_this_;
-
-  // couple every couple_nevery_ timesteps
-  // not used in case of MPI coupling
-  int couple_nevery_,ts_create_;
 
   // regionmodels
   class CfdRegionmodel *rm_;

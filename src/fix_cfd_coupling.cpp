@@ -172,7 +172,7 @@ void FixCfdCoupling::end_of_step()
     // only do this if coupling desired
     if(couple_nevery_ == 0) return;
 
-    int ts = update->ntimestep;
+    ts = update->ntimestep;
 
     // set flag if couple the next time-step
     // will not be active this ts, since in eos
