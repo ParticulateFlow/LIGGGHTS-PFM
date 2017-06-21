@@ -151,15 +151,6 @@ void CfdDatacoupling::pull(const char *name, const char *type, void *&, const ch
             error->all(FLERR,"This error is fatal");
         }
 
-        // ===================================== //
-        // For debug purposes
-        /* if (comm->me == 0 && screen)
-        {
-            fprintf(screen,"latestpull %li \n", latestpull_[i]);
-            fprintf(screen,"pullnames %s \n", pullnames_[i]);
-        } */
-        // ===================================== //
-
     }
     if(!found)
     {
@@ -197,16 +188,6 @@ void CfdDatacoupling::push(const char *name, const char *type, void *&, const ch
                         name,type,pushtypes_[i]);
             error->all(FLERR,"This error is fatal");
         }
-
-        // ===================================== //
-        // For debug purposes
-        /* if (comm->me == 0 && screen)
-        {
-            fprintf(screen,"latestpush %li \n", latestpush_[i]);
-            fprintf(screen,"pushnames %s \n", pushnames_[i]);
-        } */
-        // ===================================== //
-
     }
     if(!found && error_push())
     {
