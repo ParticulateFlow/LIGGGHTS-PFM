@@ -66,7 +66,8 @@ public:
 
  protected:
    int iarg_;
-   int ts_create_;
+   int ts_create_, couple, ts;
+   bool comm_established;
 
    // timestep
    double TimeStep;
