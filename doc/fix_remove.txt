@@ -25,12 +25,13 @@ delete_below_value = radius below which particles are removed if style_value is 
 seed = obligatory keyword :l
 seed_value = random # seed (positive integer) :l
 zero or more keyword/value pairs may be appended :l
-keywords = {region} or {atomtype} or {verbose} :l
+keywords = {region} or {atomtype} or {verbose} or {compress} :l
   {region} value = region-ID
     region-ID = ID of the region where the particles will be removed
   {atomtype} value = type
     type = type of atoms to remove
-  {verbose} = yes or no :pre
+  {verbose} value = {yes} or {no}
+  {compress} value = {yes} or {no} :pre
 
 :ule
 
@@ -51,10 +52,17 @@ if their radius is smaller than the value set via {delete_below}.
 The region from which particles are removed can be specified using the {region}
 keyword.
 
-The {atomtype} options allows to restrict deletion to a single type of atoms.
+The {atomtype} option allows to restrict deletion to a single type of atoms.
 
 The {verbose} keyword controlls whether statistics about particle
 removal is output to the screen each time particles are removed.
+
+If the {compress} keyword is set to {yes}, then after atoms are
+removed, the atom IDs are re-assigned so that they run from 1 to the
+number of atoms in the system. This is not done for molecular systems
+(see the "atom_style"_atom_style.html command), regardless of the
+{compress} setting, since it would foul up the bond connectivity that
+has already been assigned.
 
 :line
 
@@ -78,4 +86,4 @@ Style {shrink} is not supported for multisphere particles
 
 [Default:]
 
-verbose = no
+The option defaults are verbose = no and compress = yes
