@@ -57,6 +57,7 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   mass_to_remove_(0.),
   time_origin_(update->ntimestep),
   verbose_(false),
+  compress_flag_(1),
   fix_ms_(0),
   ms_(0)
 {
@@ -114,6 +115,16 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
         verbose_ = true;
       else if(strcmp(arg[iarg+1],"no"))
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'verbose'");
+      iarg += 2;
+    } else if(strcmp(arg[iarg],"compress") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"Illegal compress option");
+      if(strcmp(arg[iarg+1],"yes") == 0)
+        compress_flag_ = 1;
+      else if(strcmp(arg[iarg+1],"no") == 0)
+        compress_flag_ = 0;
+      else
+        error->fix_error(FLERR,this,"Illegal compress option, expecing 'yes' or 'no'");
       iarg += 2;
     } else error->fix_error(FLERR,this,"unknown keyword");
   }
@@ -223,7 +234,7 @@ void FixRemove::pre_exchange()
     if(comm->me == 0)
     {
         if(verbose_ && screen)
-            fprintf( screen,"Timestep %d, removing material, mass to remove this step %f\n",
+            fprintf(screen,"Timestep %d, removing material, mass to remove this step %f\n",
                         time_now,mass_to_remove_);
         if(logfile)
             fprintf(logfile,"Timestep %d, removing material, mass to remove this step %f\n",
@@ -282,7 +293,11 @@ void FixRemove::pre_exchange()
 
     //NP tags and maps
     int i;
-    if (atom->molecular == 0) {
+
+    // if non-molecular system and compress flag set,
+    // reset atom tags to be contiguous
+
+    if (atom->molecular == 0 && compress_flag_) {
       int *tag = atom->tag;
       for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
       atom->tag_extend();

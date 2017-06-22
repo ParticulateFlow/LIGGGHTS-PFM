@@ -48,7 +48,10 @@
     pos = position plane (distance units)
   <I>xcylinder</I> or <I>ycylinder</I> or <I>zcylinder</I> args = radius c1 c2
     radius = cylinder radius (distance units)
-    c1,c2 = coordinates of center axis in other 2 dims (distance units) 
+    c1,c2 = coordinates of center axis in other 2 dims (distance units)
+  <I>general_plane</I> args = px py pz nx ny nz
+    px,py,pz = coordinates of a point on the plane
+    nx,ny,nz = compnents of a vector orthogonal to the plane 
 </PRE>
 <LI>zero or more general_keyword/value pairs may be appended 
 
@@ -63,7 +66,7 @@
   <I>store_force</I> value = 'yes' or 'no'
     yes, no = determines if the wall force exerted on the particles is stored in a <A HREF = "fix_property.html">fix property/atom</A> with id force_(ID), where (ID) is the id of the fix wall/gran command.
   <I>store_force_contact</I> value = 'yes' or 'no'
-    yes, no = determines if the force for each particle-wall contact is stored in a <A HREF = "fix_property.html">fix property/atom</A> with id contactforces_(ID), where (ID) is the id of the fix wall/gran command.      
+    yes, no = determines if the force for each particle-wall contact is stored in a <A HREF = "fix_property.html">fix property/atom</A> with id contactforces_(ID), where (ID) is the id of the fix wall/gran command.  
 </PRE>
 <LI>following the general_keyword/value pairs, zero or more model_keyword/model_value pairs may be appended in arbitrary order 
 
@@ -110,10 +113,14 @@ For style <I>mesh</I>, the atom_type (material type) is inherited from the atom 
 in the <A HREF = "fix_mesh_surface.html">fix mesh/surface</A> command. 
 </P>
 <P>For <I>wallstyle primitive</I>, the atom_type (material type) has to be provided via
-keyword <I>type</I>. Primitve walls can be <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or <I>cylindrical</I>. 
-The 3 planar options specify a single wall in a dimension.
+keyword <I>type</I>. Primitve walls can be <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or <I>cylindrical</I> 
+or <I>general_plane</I>. 
+The three axis-aligned planar options specify a single wall in a dimension.
 Wall positions are given by values for lo and hi. For an <I>xcylinder</I>, <I>ycylinder</I> or
 <I>zcylinder</I>, the radius and the cylinder axis in the other two dims is specified.
+The <I>general_plane</I> is an arbitrarily oriented plane, where a point on the plane 
+and a vector orthogonal to the plane need
+to be specified. The vector does not need to be a unit vector.
 </P>
 <HR>
 
