@@ -113,7 +113,7 @@ partition yes 2 fix stress_cg1 all ave/euler/region nevery ${nevery} region ave_
 
 # control stress in resolved transition region
 partition yes 2 fix stressctrl all forcecontrol/region/universe ctrlPV stress actual_val stress_cg1 target_val stress_cg2 &
-                kp ${one_over_nevery} ki ${one_over_neverydt} kd 0.0 velocity_limit on eceive_from_partition ${world_send_recv} couple_every ${nevery}
+                kp ${one_over_nevery} ki ${one_over_neverydt} kd 0.0 velocity_limit on receive_from_partition ${world_send_recv} couple_every ${nevery}
 # deactivate controller in the central part of the resolved region
 partition yes 2 fix_modify stressctrl deactivate 2 5
 
