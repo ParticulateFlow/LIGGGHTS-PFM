@@ -25,11 +25,12 @@ delete_below_value = radius below which particles are removed if style_value is 
 seed = obligatory keyword :l
 seed_value = random # seed (positive integer) :l
 zero or more keyword/value pairs may be appended :l
-keywords = {region} or {atomtype} :l
+keywords = {region} or {atomtype} or {verbose} :l
   {region} value = region-ID
     region-ID = ID of the region where the particles will be removed
   {atomtype} value = type
-    type = type of atoms to remove :pre
+    type = type of atoms to remove
+  {verbose} = yes or no :pre
 
 :ule
 
@@ -51,6 +52,9 @@ The region from which particles are removed can be specified using the {region}
 keyword.
 
 The {atomtype} options allows to restrict deletion to a single type of atoms.
+
+The {verbose} keyword controlls whether statistics about particle
+removal is output to the screen each time particles are removed.
 
 :line
 
@@ -74,4 +78,4 @@ Style {shrink} is not supported for multisphere particles
 
 [Default:]
 
-none
+verbose = no
