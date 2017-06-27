@@ -185,6 +185,12 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
                 error -> fix_error(FLERR, this, "hertzpct can not be 0");
             iarg_+=3;
             hasargs = true;
+        }else if (strcmp(arg[iarg_],"nevery") == 0)
+        {
+            nevery = atoi(arg[iarg_+1]);
+            if (nevery <= 0) error->fix_error(FLERR,this,"");
+            iarg_+=2;
+            hasargs = true;
         }
     }
 
@@ -202,7 +208,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
     time_depend = 1;
     force_reneighbor =1;
-    nevery = 1;
     next_reneighbor = update ->ntimestep + nevery;
 
     restart_global = 1;
@@ -287,7 +292,7 @@ void FixChemShrink::reaction()
                 }
 
                 // Current time step concentration change of reactant A and product C
-                double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep;
+                double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
                 double dC   =   -dA*(molMass_C_/molMass_A_);
                 // mass removed from particle
                 double dB   =    dA*(molMass_B_/molMass_A_);
@@ -320,7 +325,7 @@ void FixChemShrink::reaction()
                     fprintf(screen,"total number of moles in chem/shrink: %f \n",N_[i]);
                     // testin communication nufield and Rep
                     fprintf(screen,"nufield from DEM: %f \n", nuf_[i]);
-                    fprintf(screen, "particle Reynolds from DEM: %f \n", Rep_[i]);
+                    fprintf(screen,"particle Reynolds from DEM: %f \n", Rep_[i]);
                 }
             }
         }
@@ -388,6 +393,12 @@ void FixChemShrink::post_force(int)
 
     int nlocal = atom -> nlocal;
     int i;
+    
+    // skip if integration not wanted at this timestep
+    if (current_timestep % nevery) 
+    {
+        return;
+    }
 
     if (rdef)   default_radius();
 
