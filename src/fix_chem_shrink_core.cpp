@@ -199,8 +199,6 @@ FixChemShrinkCore::~FixChemShrinkCore()
     }
     delete [] radLayer_;
     delete [] massLayer_;
-
-    //delete fc_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -223,7 +221,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 
         // fixes from shrink/core property/globals will not be deleted
         if (fix_layerRelRad_) modify->  delete_fix("relRadii");
-        // if (fix_layerMass_) modify -> delete_fix("massLayer");
+        if (fix_layerMass_)   modify -> delete_fix("massLayer");
     }
 }
 
@@ -242,11 +240,6 @@ void FixChemShrinkCore::post_create()
 {
     if (comm -> me == 0 && screen)
         fprintf(screen,"do post_create \n");
-
-    // TL:
-    // look for fix_layerMass; if not there, created it and initialize its values according to the initial layer radii
-    // make sure that massLayer_ is connected to that fix so that local changes affect it and other instances (second reaction, e.g. with H2)
-    // use the proper values
 
     if (!fix_layerRelRad_)
     {
@@ -294,37 +287,53 @@ void FixChemShrinkCore::post_create()
 
     for (int i = 0 ; i < atom->nlocal; i++)
     {
-        // layerRad(i);
         calcMassLayer(i);
-
-        /* // check for *fix_layerMass_
-        if (!fix_layerMass_)
+        if (screen)
         {
-            const char* fixarg[12];
-            fixarg[0]="massLayer";
-            // fixarg[1]=group->names[igroup];
-            fixarg[1]="all";
-            fixarg[2]="property/atom";
-            fixarg[3]="massLayer";
-            fixarg[4]="vector";
-            fixarg[5]="yes";
-            fixarg[6]="no";
-            fixarg[7]="no";
-            char arg8[30];
-            sprintf(arg8,"%f",massLayer_[i][0]);
-            fixarg[8]=arg8;
-            char arg9[30];
-            sprintf(arg9,"%f",massLayer_[i][1]);
-            fixarg[9]=arg9;
-            char arg10[30];
-            sprintf(arg10,"%f",massLayer_[i][2]);
-            fixarg[10]=arg10;
-            char arg11[30];
-            sprintf(arg11,"%f",massLayer_[i][3]);
-            fixarg[11]=arg11;
-            modify->add_fix(12,const_cast<char**>(fixarg),style);
-            fix_layerMass_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",atom->ntypes,0,style));
-        }*/
+            fprintf(screen, "layerMass of fe: %f \n",massLayer_[i][0]);
+            fprintf(screen, "layerMass of w: %f \n",massLayer_[i][1]);
+            fprintf(screen, "layerMass of m: %f \n",massLayer_[i][2]);
+            fprintf(screen, "layerMass of h: %f \n",massLayer_[i][3]);
+        }
+    }
+
+    // TL:
+    // look for fix_layerMass; if not there, created it and initialize its values according to the initial layer radii
+    // make sure that massLayer_ is connected to that fix so that local changes affect it and other instances (second reaction, e.g. with H2)
+    // use the proper values
+
+    // check for *fix_layerMass_
+    if (!fix_layerMass_)
+    {
+        const char* fixarg[12];
+        fixarg[0]="massLayer";
+        // fixarg[1]=group->names[igroup];
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="massLayer";
+        fixarg[4]="vector";
+        fixarg[5]="yes";
+        fixarg[6]="no";
+        fixarg[7]="no";
+        /* fixarg[8]="25.845";
+        fixarg[9]="2.1879";
+        fixarg[10]="2.122";
+        fixarg[11]="0.592629";*/
+        char arg8[30];
+        sprintf(arg8,"%f",massLayer_[0][0]);
+        fixarg[8]=arg8;
+        char arg9[30];
+        sprintf(arg9,"%f",massLayer_[0][1]);
+        fixarg[9]=arg9;
+        char arg10[30];
+        sprintf(arg10,"%f",massLayer_[0][2]);
+        fixarg[10]=arg10;
+        char arg11[30];
+        sprintf(arg11,"%f",massLayer_[0][3]);
+        fixarg[11]=arg11;
+        //modify->add_fix(12,const_cast<char**>(fixarg),style);
+        modify->add_fix(12,const_cast<char**>(fixarg));
+        fix_layerMass_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",atom->ntypes,0,style));
     }
 }
 
@@ -355,9 +364,9 @@ void FixChemShrinkCore::updatePtrs()
     dCoeff_         =   fix_diffcoeff_  ->  vector_atom;
 
     updatePtrsCreate();
-
     // mass handle
-    // massLayer_      = fix_layerMass_    ->  array_atom;
+    massLayer_      = fix_layerMass_    ->  array_atom;
+
     // molar mass handle
     layerMolMasses_ = fix_molMass_   -> get_values();
     // chemical prop
@@ -700,8 +709,6 @@ void FixChemShrinkCore::getA(int i, double *a_)
     for (int j = 0; j < layers_ ; j++)
     {
         a_[j]   =   (1/(k0_[j]*exp(-Ea_[j]/(Runiv*T_[i]))))*(1/(1+1/K_eq(j,T_[i])))*(1/(relRadii_[i][j+1]*relRadii_[i][j+1]));
-        // add decimal point limit
-        // a_[j]   =   (int)(a_[j]/1e-6)*1e-6;
     }
 
     if (screen)
@@ -1051,7 +1058,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // update total partilce density
     pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
 
-/*    if (screen)
+    if (screen)
     {
         fprintf(screen,"post-layerMass[0]: %f \n",massLayer_[i][0]);
         fprintf(screen,"post-layerMass[1]: %f \n",massLayer_[i][1]);
@@ -1070,7 +1077,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen,"post-relrad[2]: %f \n",relRadii_[i][2]);
         fprintf(screen,"post-relrad[3]: %f \n",relRadii_[i][3]);
         fprintf(screen,"post-particle density: %f \n", pdensity_[i]);
-    } */
+    }
 }
 
  // WARNING 2: if Wustite layer thickness < rmin AND T < 567 C, direct conversion of Magnetite to Fe is possible

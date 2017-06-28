@@ -129,7 +129,7 @@ public:
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii
   double **radLayer_;
-  double **massLayer_;
+  double **massLayer_, **initMass_;
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
