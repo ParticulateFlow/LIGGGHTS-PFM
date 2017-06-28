@@ -79,6 +79,9 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     molMass_A_ = 0;
     molMass_C_ = 0;
     molMass_B_ = 0;
+    nu_A_ = 1;
+    nu_B_ = 1;
+    nu_C_ = 1;
     pmass_ = NULL;
     rmin = 0.;
     rdefault = 0.;
@@ -122,6 +125,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             iarg_ +=2;
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"nuA") == 0)
+        {
+            nu_A_ = atoi(arg[iarg_+1]);
+            if (nu_A_ < 1)
+                error -> fix_error(FLERR, this, "nuA is not defined");
+            iarg_ +=2;
+            hasargs = true;
+        }
         else if (strcmp(arg[iarg_],"speciesC") == 0)
         {
             if (iarg_ + 2 > narg)
@@ -146,6 +157,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             iarg_ +=2;
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"nuC") == 0)
+        {
+            nu_C_ = atoi(arg[iarg_+1]);
+            if (nu_C_ < 1)
+                error -> fix_error(FLERR, this, "nuC is not defined");
+            iarg_ +=2;
+            hasargs = true;
+        }
         else if (strcmp(arg[iarg_],"molMassB") == 0)
         {
             if (iarg_ + 2 > narg)
@@ -153,6 +172,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             molMass_B_ = atof(arg[iarg_+1]);
             if (molMass_B_ < 1)
                 error -> fix_error(FLERR, this, "molMassB > 0 is required");
+            iarg_ +=2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"nuB") == 0)
+        {
+            nu_B_ = atoi(arg[iarg_+1]);
+            if (nu_B_ < 1)
+                error -> fix_error(FLERR, this, "nuB is not defined");
             iarg_ +=2;
             hasargs = true;
         }
@@ -241,7 +268,7 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
         if(fix_totalMole_)     modify   ->  delete_fix("partN");
         if(fix_nuField_)       modify   ->  delete_fix("partNu");
-        if(fix_partRe_)         modify  ->  delete_fix("partRe");
+        if(fix_partRe_)        modify  ->  delete_fix("partRe");
     }
 }
 
@@ -292,10 +319,18 @@ void FixChemShrink::reaction()
                 }
 
                 // Current time step concentration change of reactant A and product C
-                double dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
-                double dC   =   -dA*(molMass_C_/molMass_A_);
+                double dA   =   0.0;
+		if(nu_A_ < 2)
+		{
+                    dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
+		}
+		else
+		{
+		    dA   =   -k*pow((rhogas_[i]*concA_[i]/molMass_A_),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+		}
+                double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
                 // mass removed from particle
-                double dB   =    dA*(molMass_B_/molMass_A_);
+                double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
 
                 // total rate of change for species A
                 changeOfA_[i]       +=  dA;
