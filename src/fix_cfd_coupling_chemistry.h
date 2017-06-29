@@ -56,7 +56,7 @@ class FixCfdCouplingChemistry : public Fix  {
   char **species_names_;                        // list of species names
   int iarg_;                                    // int narg_
   char **mod_spec_names_;
-  char **diffusant_names_;
+  char **diffusant_names_, **molarfraction_names;
   int n_species;
 
   class FixCfdCoupling*     fix_coupling_;
@@ -69,6 +69,7 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom**   fix_diffusionCoeff_;
   class FixPropertyAtom*    fix_nufField_;
   class FixPropertyAtom*    fix_partReynolds_;
+  class FixPropertyAtom**    fix_molarfraction_;
 
  private:
   bool use_Re_;
