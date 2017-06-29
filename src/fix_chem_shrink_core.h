@@ -50,16 +50,16 @@ public:
   void calcMassLayer(int);
   double K_eq(int, double);
   // diff & reaction & massT
-  void reaction(int, double *, double *, double *, double *, double *, double *);   //, double *, double *
+  void reaction(int, double *, double *, double *, double *, double *);   //, double *, double *
   // diff & reaction
-  void reaction2(int, double *, double *, double *, double *, double *);   //, double *, double *
+  void reaction2(int, double *, double *, double *, double *);   //, double *, double *
   // only reaction
-  void reaction3(int, double *, double *, double *, double *);   //, double *, double *
+  void reaction3(int, double *, double *, double *);   //, double *, double *
   void getA(int, double *);
   void diffcoeff(int, double *);
   void getB(int, double *);
   void getMassT(int, double *);
-  void getXi(int, double *, double *);
+  void getXi(int, double *);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
 
@@ -73,7 +73,7 @@ public:
    // modified strings of species concentrations
    char* massA, *massC;
    // name of diffusant species
-   char *diffA;
+   char *diffA, *moleFrac;
 
    // material properties porosity, tortuosity, and pore diameter
    const double *porosity_, *tortuosity_, *pore_diameter_;
@@ -89,7 +89,6 @@ public:
 
   // gas-phase properties
   char *speciesA, *speciesC;
-  double Runiv;
 
   class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C [as mass fractions]
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
@@ -100,6 +99,7 @@ public:
   class FixPropertyAtom *fix_diffcoeff_;
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
+  class FixPropertyAtom *fix_molefraction_;
 
   // define porosity values for all particles (glibal
   class FixPropertyGlobal *fix_porosity_;
@@ -110,7 +110,7 @@ public:
   double molMass_A_, molMass_C_;
 
   // handle names
-  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *N_, *dCoeff_, *nuf_, *Rep_;
+  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *N_, *dCoeff_, *nuf_, *Rep_, *X0_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
