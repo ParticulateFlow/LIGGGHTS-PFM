@@ -161,11 +161,9 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     strcpy(diffA, cha);
 
     radLayer_ = new double*[atom->nlocal];
-    massLayer_ = new double*[atom->nlocal];
     for (int i = 0; i < atom->nlocal; i++)
     {
         radLayer_[i]    =   new double [nmaxlayers_+1];
-        massLayer_[i]    =   new double [nmaxlayers_+1];
     }
 
     nevery = 1;
@@ -195,10 +193,8 @@ FixChemShrinkCore::~FixChemShrinkCore()
     for (int i=0; i < atom -> nlocal; i++)
     {
         delete[] radLayer_[i];
-        delete[] massLayer_[i];
     }
     delete [] radLayer_;
-    delete [] massLayer_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -283,20 +279,6 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    updatePtrsCreate();
-
-    for (int i = 0 ; i < atom->nlocal; i++)
-    {
-        calcMassLayer(i);
-        if (screen)
-        {
-            fprintf(screen, "layerMass of fe: %f \n",massLayer_[i][0]);
-            fprintf(screen, "layerMass of w: %f \n",massLayer_[i][1]);
-            fprintf(screen, "layerMass of m: %f \n",massLayer_[i][2]);
-            fprintf(screen, "layerMass of h: %f \n",massLayer_[i][3]);
-        }
-    }
-
     // TL:
     // look for fix_layerMass; if not there, created it and initialize its values according to the initial layer radii
     // make sure that massLayer_ is connected to that fix so that local changes affect it and other instances (second reaction, e.g. with H2)
@@ -315,34 +297,13 @@ void FixChemShrinkCore::post_create()
         fixarg[5]="yes";
         fixarg[6]="no";
         fixarg[7]="no";
-        /* fixarg[8]="25.845";
-        fixarg[9]="2.1879";
-        fixarg[10]="2.122";
-        fixarg[11]="0.592629";*/
-        char arg8[30];
-        sprintf(arg8,"%f",massLayer_[0][0]);
-        fixarg[8]=arg8;
-        char arg9[30];
-        sprintf(arg9,"%f",massLayer_[0][1]);
-        fixarg[9]=arg9;
-        char arg10[30];
-        sprintf(arg10,"%f",massLayer_[0][2]);
-        fixarg[10]=arg10;
-        char arg11[30];
-        sprintf(arg11,"%f",massLayer_[0][3]);
-        fixarg[11]=arg11;
-        //modify->add_fix(12,const_cast<char**>(fixarg),style);
+        fixarg[8]="0.0";
+        fixarg[9]="0.0";
+        fixarg[10]="0.0";
+        fixarg[11]="0.0";
         modify->add_fix(12,const_cast<char**>(fixarg));
         fix_layerMass_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",atom->ntypes,0,style));
     }
-}
-
-/* ---------------------------------------------------------------------- */
-void FixChemShrinkCore::updatePtrsCreate()
-{
-    relRadii_       =   fix_layerRelRad_    -> array_atom;
-    layerDensities_ =   fix_dens_           -> get_values();
-    radius_         =   atom                -> radius;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -363,7 +324,9 @@ void FixChemShrinkCore::updatePtrs()
     // diffusion coefficient
     dCoeff_         =   fix_diffcoeff_  ->  vector_atom;
 
-    updatePtrsCreate();
+    relRadii_       =   fix_layerRelRad_    -> array_atom;
+    layerDensities_ =   fix_dens_           -> get_values();
+
     // mass handle
     massLayer_      = fix_layerMass_    ->  array_atom;
 
@@ -379,9 +342,10 @@ void FixChemShrinkCore::updatePtrs()
     tortuosity_     =   fix_tortuosity_     -> get_values();
     pore_diameter_  =   fix_pore_diameter_  -> get_values();
 
-    pmass_          =   atom ->  rmass;
-    pdensity_       =   atom -> density;
-    TimeStep        =   update -> dt;
+    pmass_          =   atom    -> rmass;
+    pdensity_       =   atom    -> density;
+    TimeStep        =   update  -> dt;
+    radius_         =   atom    -> radius;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -484,7 +448,7 @@ void FixChemShrinkCore::init()
 
     for (int i = 0; i < atom->nlocal; i++)
     {
-        // calcMassLayer(i);
+        calcMassLayer(i);
         layerRad(i);
 
         if (comm -> me == 0 && screen)

@@ -64,8 +64,6 @@ public:
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
 
-  virtual void updatePtrsCreate();
-
  protected:
    int iarg_;
    int ts_create_, couple, ts;
@@ -129,7 +127,7 @@ public:
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii
   double **radLayer_;
-  double **massLayer_, **initMass_;
+  double **massLayer_;
   double *pmass_;                                   // particle mass
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;

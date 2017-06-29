@@ -67,8 +67,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_concC_          =   NULL;
     fix_changeOfA_      =   NULL;
     fix_changeOfC_      =   NULL;
-    fix_rhogas         =   NULL;
-    fix_tgas           =   NULL;
+    fix_rhogas          =   NULL;
+    fix_tgas            =   NULL;
     fix_reactionheat_   =   NULL;
     fix_totalMole_      =   NULL;
     fix_nuField_        =   NULL;
@@ -266,8 +266,8 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_reactionheat_)  modify  ->  delete_fix("reactionHeat");
         if(fix_changeOfA_)     modify  ->  delete_fix(massA);
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
-        if(fix_totalMole_)     modify   ->  delete_fix("partN");
-        if(fix_nuField_)       modify   ->  delete_fix("partNu");
+        if(fix_totalMole_)     modify  ->  delete_fix("partN");
+        if(fix_nuField_)       modify  ->  delete_fix("partNu");
         if(fix_partRe_)        modify  ->  delete_fix("partRe");
     }
 }
