@@ -160,12 +160,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     strcat(cha, "_diffCoeff");
     strcpy(diffA, cha);
 
-    radLayer_ = new double*[atom->nlocal];
-    for (int i = 0; i < atom->nlocal; i++)
-    {
-        radLayer_[i]    =   new double [nmaxlayers_+1];
-    }
-
     nevery = 1;
     time_depend = 1;
     force_reneighbor = 1;
@@ -189,12 +183,6 @@ FixChemShrinkCore::~FixChemShrinkCore()
 
     delete speciesA;
     delete speciesC;
-
-    for (int i=0; i < atom -> nlocal; i++)
-    {
-        delete[] radLayer_[i];
-    }
-    delete [] radLayer_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -449,7 +437,6 @@ void FixChemShrinkCore::init()
     for (int i = 0; i < atom->nlocal; i++)
     {
         calcMassLayer(i);
-        layerRad(i);
 
         if (comm -> me == 0 && screen)
         {
@@ -564,19 +551,6 @@ double FixChemShrinkCore::partSurfArea(double radius)
      return (A_p);
 }
 
-/* ------------------- compute layer radius with relRadii --------------- */
-
-void FixChemShrinkCore::layerRad(int i)
-{
-   /* if (screen)
-        fprintf(screen,"CALCULATE LAYER RADIUS \n"); */
-
-    for (int j = 0 ; j <= nmaxlayers_; j++)
-    {
-        radLayer_[i][j] =   relRadii_[i][j]*radius_[i];
-    }
-}
-
 /* ---------------------------------------------------------------------- */
 
 // returns number of active layers
@@ -585,7 +559,7 @@ int FixChemShrinkCore::active_layers(int i)
 {
     for(int j  = 1; j <= layers_; j++)
     {
-        if (radLayer_[i][j] < rmin_)
+        if (relRadii_[i][j]*radius_[i] < rmin_)
         {
             layers_ -= 1;
             calcMassLayer(i);
@@ -961,6 +935,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     double sum_mass_new = 0;                  // just for control case --- delete afterwards
     double vBr_[3] = {1, 1, 3};
     double vBp_[3] = {1, 3, 2};
+    double radLayer_[nmaxlayers_+1];
 
     // double diff_radius;
     // Calculate mass flow rates (dmB[j])
@@ -1004,17 +979,17 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // from the new layer masses, get new total mass, layer radii and total density
     pmass_[i]   =   sum_mass_new;
     
-    radLayer_[i][layers_]   =   pow((0.75*massLayer_[i][layers_]/(layerDensities_[layers_]*M_PI)),0.333333);
+    radLayer_[layers_]   =   pow((0.75*massLayer_[i][layers_]/(layerDensities_[layers_]*M_PI)),0.333333);
     for (int j = layers_-1; j >= 0 ; j--)
     {
-        radLayer_[i][j]   =   pow((0.75*massLayer_[i][j]/(M_PI*layerDensities_[j])+radLayer_[i][j+1]*radLayer_[i][j+1]*radLayer_[i][j+1]),0.333333);
+        radLayer_[j]   =   pow((0.75*massLayer_[i][j]/(M_PI*layerDensities_[j])+radLayer_[j+1]*radLayer_[j+1]*radLayer_[j+1]),0.333333);
     }
-    radius_[i] = radLayer_[i][0];
+    radius_[i] = radLayer_[0];
     
     //detemine the new relative layer radii
     for (int j = 0; j <= layers_; j++)
     {
-        relRadii_[i][j] = radLayer_[i][j]/radius_[i];
+        relRadii_[i][j] = radLayer_[j]/radius_[i];
     }
     
     // calculate particle total density
@@ -1030,10 +1005,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen,"post-layerMass[3]: %f \n",massLayer_[i][3]);
         fprintf(screen,"post-new mass: %f \n",pmass_[i]);
 
-        fprintf(screen,"post redox radius of particle (rl): %f \n",radLayer_[i][0]);
-        fprintf(screen,"post redox radius of wustite: %f \n",radLayer_[i][1]);
-        fprintf(screen,"post redox radius of magnetite: %f \n",radLayer_[i][2]);
-        fprintf(screen,"post redox radius of hematite: %f \n",radLayer_[i][3]);
+        fprintf(screen,"post redox radius of particle (rl): %f \n",radLayer_[0]);
+        fprintf(screen,"post redox radius of wustite: %f \n",radLayer_[1]);
+        fprintf(screen,"post redox radius of magnetite: %f \n",radLayer_[2]);
+        fprintf(screen,"post redox radius of hematite: %f \n",radLayer_[3]);
         fprintf(screen,"post redox radius of particle (R): %f \n",radius_[i]);
 
         fprintf(screen,"post-relrad[0]: %f \n",relRadii_[i][0]);

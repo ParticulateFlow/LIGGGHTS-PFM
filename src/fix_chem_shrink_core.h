@@ -60,7 +60,6 @@ public:
   void getB(int, double *);
   void getMassT(int, double *);
   void getXi(int, double *, double *);
-  void layerRad(int);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
 
@@ -126,7 +125,6 @@ public:
 
   double *radius_;                                  // radius of particle
   double **relRadii_;                               // relative radii
-  double **radLayer_;
   double **massLayer_;
   double *pmass_;                                   // particle mass
   double *pdensity_;
