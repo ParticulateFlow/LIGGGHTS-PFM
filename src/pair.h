@@ -132,8 +132,8 @@ class Pair : protected Pointers {
   virtual void compute_outer(int, int) {}
 
   virtual double single(int, int, int, int,
-                        double, double, double, 
-			double& fforce) {
+                        double, double, double,
+                        double& fforce) {
     fforce = 0.0;
     return 0.0;
   }
@@ -189,8 +189,6 @@ class Pair : protected Pointers {
   // custom data type for accessing Coulomb tables
 
   typedef union {int i; float f;} union_int_float_t;
-
-  double THIRD;
 
   int vflag_fdotr;
   int maxeatom,maxvatom;
