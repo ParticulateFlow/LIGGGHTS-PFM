@@ -29,6 +29,7 @@
 #include "mpi_liggghts.h"
 #include "fix_ave_euler.h"
 #include "compute_stress_atom.h"
+#include "math_const.h"
 #include "math_extra_liggghts.h"
 #include "atom.h"
 #include "force.h"
@@ -49,6 +50,7 @@
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
 
@@ -626,7 +628,7 @@ void FixAveEuler::calculate_eu()
             stress_[icell][5] += -rmass[iatom]*(v[iatom][0]-v_av_[icell][0])*(v[iatom][2]-v_av_[icell][2]) + stress_atom[iatom][4];
             stress_[icell][6] += -rmass[iatom]*(v[iatom][1]-v_av_[icell][1])*(v[iatom][2]-v_av_[icell][2]) + stress_atom[iatom][5]; //NP modified A.A.: it was stress_[icell][5]
         }
-        stress_[icell][0] = -0.333333333333333*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
+        stress_[icell][0] = -THIRD*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
         if(weight_[icell] < eps_ntry)
             vectorZeroizeN(stress_[icell],7);
         else
@@ -640,7 +642,7 @@ void FixAveEuler::calculate_eu()
 
         // recalc pressure based on allreduced stress
         for(int icell = 0; icell < ncells_; icell++)
-            stress_[icell][0] = -0.333333333333333*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
+            stress_[icell][0] = -THIRD*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
     }
 
     // wrap with clear/add
