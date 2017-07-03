@@ -33,12 +33,14 @@
 #include "force.h"
 #include "modify.h"
 #include "comm.h"
+#include "math_const.h"
 #include "math_extra.h"
 #include "fix_property_global.h"
 #include "fix_gravity.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 #define EPSILON 0.0001
 
@@ -345,7 +347,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         //NP cos_gamma cannot be < 0
         if(cos_gamma < EPSILON || 3.*sin_gamma > cos_gamma)
         {
-            E = 0.33333 * cos_gamma * cos_gamma;
+            E = THIRD * cos_gamma * cos_gamma;
             /*NL*///if (screen) fprintf(screen," wear1 %e\n",E);
         }
         else

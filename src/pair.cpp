@@ -37,8 +37,10 @@
 #include "atom_masks.h"
 #include "memory.h"
 #include "error.h"
+#include "math_const.h"
 
 using namespace LAMMPS_NS;
+using namespace MathConst;
 
 #define EWALD_F   1.12837917
 
@@ -48,8 +50,6 @@ enum{RLINEAR,RSQ,BMP};
 
 Pair::Pair(LAMMPS *lmp) : Pointers(lmp)
 {
-  THIRD = 1.0/3.0;
-
   eng_vdwl = eng_coul = 0.0;
 
   comm_forward = comm_reverse = comm_reverse_off = 0;

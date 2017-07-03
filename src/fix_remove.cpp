@@ -34,9 +34,11 @@
 #include "random_park.h"
 #include "fix_multisphere.h"
 #include "multisphere_parallel.h"
+#include "math_const.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 enum{REMOVE_SHRINK,REMOVE_DELETE};
 
@@ -471,7 +473,7 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
     if(mass_shrink_me > 0. && mass_to_remove_me > 0.)
     {
         ratio_m = 1. - mass_to_remove_me / mass_shrink_me;
-        ratio_r = pow(ratio_m,0.33333);
+        ratio_r = pow(ratio_m, THIRD);
 
         for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
         {

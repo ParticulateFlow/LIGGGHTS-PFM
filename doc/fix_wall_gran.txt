@@ -30,7 +30,7 @@ wallstyle args for wallstyle {mesh} = {n_meshes} and {meshes} :l
   {meshes} values = meshlist
     meshlist =  id(s) of the mesh(es) (see "fix mesh/surface"_fix_mesh_surface.html) to be used. These must be defined before :pre
 
-wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zplane} or {xcylinder} or {ycylinder} or {zcylinder} :l
+wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zplane} or {xcylinder} or {ycylinder} or {zcylinder} or {general_plane} or {general_cylinder} :l
   {type} args = tp
     tp = atom_type (material type) of the wall
   {xplane} or {yplane} or {zplane} args = pos
@@ -40,7 +40,11 @@ wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zp
     c1,c2 = coordinates of center axis in other 2 dims (distance units)
   {general_plane} args = px py pz nx ny nz
     px,py,pz = coordinates of a point on the plane
-    nx,ny,nz = compnents of a vector orthogonal to the plane :pre
+    nx,ny,nz = components of a vector orthogonal to the plane
+  {general_cylinder} args = radius px py pz axisx axisy axisz
+    radius = cylinder radius (distance units)
+    px,py,pz = coordinates of a point on cylinder axis
+    axisx,axisy,axisz = components of a vector parallel to cylinder axis :pre
 
 zero or more general_keyword/value pairs may be appended :l
 general_keyword =  {shear} or {store_force} or {store_force_contact} :l
@@ -102,11 +106,14 @@ For {wallstyle primitive}, the atom_type (material type) has to be provided via
 keyword {type}. Primitve walls can be {xplane} or {yplane} or {zplane} or {cylindrical} 
 or {general_plane}. 
 The three axis-aligned planar options specify a single wall in a dimension.
-Wall positions are given by values for lo and hi. For an {xcylinder}, {ycylinder} or
-{zcylinder}, the radius and the cylinder axis in the other two dims is specified.
+For an {xcylinder}, {ycylinder} or {zcylinder}, the radius and the cylinder axis
+in the other two dims are specified.
 The {general_plane} is an arbitrarily oriented plane, where a point on the plane 
-and a vector orthogonal to the plane need
-to be specified. The vector does not need to be a unit vector.
+and a vector orthogonal to the plane need to be specified.
+The vector does not need to be a unit vector.
+The {general_cylinder} is an arbitrarily oriented cylinder, where the radius, a point
+on and a direction vector parallel to the cylinder axis need to be specified.
+The direction vector does not need to be normalized.
 
 :line
 
