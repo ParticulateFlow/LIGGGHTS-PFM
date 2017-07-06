@@ -90,7 +90,6 @@ public:
   // gas-phase properties
   char *speciesA, *speciesC;
 
-  class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C [as mass fractions]
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
   class FixPropertyAtom *fix_rhogas_;                           //  density of gas
   class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
@@ -110,7 +109,7 @@ public:
   double molMass_A_, molMass_C_;
 
   // handle names
-  double *changeOfA_, *changeOfC_, *rhogas_, *concA_, *concC_, *T_, *reactionHeat_, *N_, *dCoeff_, *nuf_, *Rep_, *X0_;
+  double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *N_, *dCoeff_, *nuf_, *Rep_, *X0_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
