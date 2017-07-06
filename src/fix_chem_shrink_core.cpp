@@ -73,8 +73,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
 
     // defaults
-    fix_concA_          =   NULL;
-    fix_concC_          =   NULL;
     fix_changeOfA_      =   NULL;
     fix_changeOfC_      =   NULL;
     fix_rhogas_         =   NULL;
@@ -200,8 +198,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 {
     if (unfixflag)
     {
-        if (fix_concA_)         modify  ->  delete_fix(speciesA);
-        if (fix_concC_)         modify  ->  delete_fix(speciesC);
         if (fix_rhogas_)        modify  ->  delete_fix("partRho");
         if (fix_tgas_)          modify  ->  delete_fix("partTemp");
         if (fix_totalmole_)     modify  ->  delete_fix("partN");
@@ -311,8 +307,6 @@ void FixChemShrinkCore::updatePtrs()
     changeOfA_      =   fix_changeOfA_  ->  vector_atom;
     changeOfC_      =   fix_changeOfC_  ->  vector_atom;
     rhogas_         =   fix_rhogas_     ->  vector_atom;
-    concA_          =   fix_concA_      ->  vector_atom;
-    concC_          =   fix_concC_      ->  vector_atom;
     T_              =   fix_tgas_       ->  vector_atom;
     N_              =   fix_totalmole_  ->  vector_atom;
     reactionHeat_   =   fix_reactionHeat_-> vector_atom;
@@ -409,8 +403,6 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     // references
-    fix_concA_          =   static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesA, "property/atom", "scalar", 0, 0, id));
-    fix_concC_          =   static_cast<FixPropertyAtom*>(modify->find_fix_property(speciesC, "property/atom", "scalar", 0, 0, id));
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
     fix_rhogas_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));
@@ -423,9 +415,9 @@ void FixChemShrinkCore::init()
     fix_molefraction_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFrac, "property/atom", "scalar", 0, 0, id));
 
     // lookup porosity,tortuosity and pore diameter values
-    fix_porosity_   =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("porosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
-    fix_tortuosity_   =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
-    fix_pore_diameter_   =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
+    fix_porosity_       =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("porosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
+    fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
+    fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
 
     updatePtrs();
 
@@ -1043,20 +1035,20 @@ double FixChemShrinkCore::K_eq(int layer, double T)
     if(strcmp(speciesA,"CO")==0)
      {
          if (layer == 0)
-             Keq_   =   pow(10,(917/T-1.097));
+             Keq_   =   exp(2744.63/T-2.946);   //Keq_   =   pow(10,(917/T-1.097));
          else if (layer == 1)
-             Keq_   =   pow(10,(-1834/T+2.17));
+             Keq_   =   exp(-3585.64/T+8.98);   // Keq_   =   pow(10,(-1834/T+2.17));
          else if (layer == 2)
-             Keq_   =   exp(3968.37/T+3.94);
+             Keq_   =   exp(3968.37/T+3.94);    // Keq_   =   exp(3968.37/T+3.94);
      }
      else if(strcmp(speciesA,"H2")==0)
      {
          if (layer == 0)
-             Keq_   =   pow(10,(-827/T+0.468));
+             Keq_   =   exp(-1586.9/T+0.9317);  // Keq_   =   pow(10,(-827/T+0.468));
          else if (layer == 1)
-             Keq_   =   pow(10,(-3577/T+3.74));
+             Keq_   =   exp(-7916.6/T+8.46);    // Keq_   =   pow(10,(-3577/T+3.74));
          else if (layer == 2)
-             Keq_   =   exp(-362.6/T+10.344);
+             Keq_   =   exp(-362.6/T+10.344);   // Keq_   =   exp(-362.6/T+10.344);
      }
     else
      {
