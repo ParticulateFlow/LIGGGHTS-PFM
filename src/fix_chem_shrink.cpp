@@ -266,7 +266,7 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_reactionheat_)  modify  ->  delete_fix("reactionHeat");
         if(fix_changeOfA_)     modify  ->  delete_fix(massA);
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
-        if(fix_totalMole_)     modify  ->  delete_fix("partN");
+        if(fix_totalMole_)     modify  ->  delete_fix("partMolarConc");
         if(fix_nuField_)       modify  ->  delete_fix("partNu");
         if(fix_partRe_)        modify  ->  delete_fix("partRe");
     }
@@ -395,7 +395,7 @@ void FixChemShrink::init()
     fix_tgas            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
     fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
-    fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partN","property/atom","scalar",0,0,style));
+    fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
     fix_nuField_        =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style));
     fix_partRe_         =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style));
 
