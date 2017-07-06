@@ -56,8 +56,9 @@ public:
  protected:
   char* speciesA, *speciesC;
   char* massA, *massC;
+  char* moleFracA, *moleFracC;
 
-  class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C
+  // class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C
   class FixPropertyAtom *fix_rhogas;                           //  density of gas
   class FixPropertyAtom *fix_tgas;                             //  temperature of gas
@@ -66,6 +67,9 @@ public:
   // checking communication for nuField and Rep
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
+
+  class FixPropertyAtom *fix_moleFractionA_, *fix_moleFractionC_;
+  double *xA_, *xC_;
 
   double *nuf_;
   double *Rep_;
@@ -94,8 +98,8 @@ public:
   double *changeOfA_;
   double *changeOfC_;
   double *rhogas_;
-  double *concA_;
-  double *concC_;
+  //double *concA_;
+  //double *concC_;
   double *tgas_;
   double *N_;
 
