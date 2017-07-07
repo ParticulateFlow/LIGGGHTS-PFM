@@ -10,6 +10,8 @@
 
 shell "mkdir -p post"
 
+variable counter equal 1
+
 atom_style	granular
 atom_modify	map array
 boundary	f f f
@@ -52,18 +54,19 @@ fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 2500 radius
 fix		pdd1 all particledistribution/discrete 1.  2 pts1 0.3 pts2 0.7
 
 
-#region and insertion
+#insertion
 region		insertionRegion block -0.2 0.2 -0.2 0.2 0.4 0.45 units box
-
-#fix ins all insert/rate/region seed 1001 distributiontemplate pdd1 nparticles 1000 particlerate 15 insert_every 10 region insertionRegion
 fix ins all insert/rate/region seed 1001 distributiontemplate pdd1 nparticles 100000 particlerate 500 insert_every 1000 region insertionRegion
 
 
-
+#speedControl, gain parameter is optional
 region		forceReg block -0.45 0.45 -0.45 0.45 -0.4 0.2 units box
-#region checkreg cylinder z 0. 0. 0.45 -0.15 -0.45 units box
+fix kick all speedControl NULL 0.0 -0.1 region forceReg gain 0.1
 
-fix kick all speedControl NULL 0.0 -0.1 region forceReg
+
+
+# mesh dump
+dump mshdmp all mesh/vtk 2 post/cone*.vtk output face id cad
 
 
 
@@ -72,7 +75,7 @@ fix kick all speedControl NULL 0.0 -0.1 region forceReg
 #apply nve integration to all particles that are inserted as single particles
 fix		integr all nve/sphere
 
-#output settings, include total thermal energy
+#output settings
 compute		1 all erotate/sphere
 thermo_style	custom step atoms ke c_1 vol
 thermo		1000
@@ -82,18 +85,28 @@ compute_modify	thermo_temp dynamic yes
 #insert the first particles so that dump is not empty
 run		1
 
+
+# stop dumping the mesh, no changes in this department
+undump mshdmp
+
+
 run 20000
 
-dump		dmp all custom 500 post/dump*.speedControl id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius 
+dump		dmp all custom 2000 post/dump*.speedControl id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius 
 
 
 label loop_start
 
 run 10000
 
+# increment counter and check loop condition
+variable counter equal ${counter}+1
+if "${counter} > 50" then "jump SELF loop_end"
+
 
 jump SELF loop_start
 
-unfix		ins
 
- 
+# the end
+unfix		ins
+label loop_end
