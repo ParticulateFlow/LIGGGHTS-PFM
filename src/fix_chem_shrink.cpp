@@ -74,7 +74,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
     screenflag_ = 0;
     iarg_ = 3;
-    k = 0;
+    k0 = 0;
     molMass_A_ = 0;
     molMass_C_ = 0;
     molMass_B_ = 0;
@@ -186,9 +186,9 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
         {
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
-            k = atof(arg[iarg_+1]);
-            if (k == 0)
-                error -> fix_error(FLERR, this, "k is not defined");
+            k0 = atof(arg[iarg_+1]);
+            if (k0 <= 0)
+                error -> fix_error(FLERR, this, "k is not (well-)defined");
             iarg_ +=2;
             hasargs = true;
         }
@@ -303,7 +303,6 @@ void FixChemShrink::updatePtrs()
 {
     xA_         =   fix_moleFractionA_  -> vector_atom;
     xC_         =   fix_moleFractionC_  ->  vector_atom;
-
     changeOfA_  =   fix_changeOfA_  ->  vector_atom;
     changeOfC_  =   fix_changeOfC_  ->  vector_atom;
     rhogas_     =   fix_rhogas      ->  vector_atom;
@@ -331,17 +330,15 @@ void FixChemShrink::reaction()
                 // Current time step concentration change of reactant A and product C
                 double dA   =   0.0;
 
-                if(nu_A_ < 2)
-                {
-                    // dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
-                    dA  =   -k*xA_[i]*molarConc_[i]*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
-                }
-                else
-                {
-                    // dA   =   -k*pow((rhogas_[i]*concA_[i]/molMass_A_),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
-                    dA   =   -k*pow((xA_[i]*molarConc_[i]),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
-                }
-
+		double k = reactionRatConst(i);
+		if(nu_A_ < 2)
+		{
+                    dA  =   -k*xA_[i]*N_[i]*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
+		}
+		else
+		{
+                    dA   =   -k*pow((xA_[i]*N_[i]),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+		}
                 double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
                 // mass removed from particle
                 double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
@@ -355,11 +352,6 @@ void FixChemShrink::reaction()
                 // Mass of single particle
                 pmass_[i]           +=  dB;
 
-                // radius removed
-                // dr   =   -k*concA_[i]*rhogas_[i]*TimeStep*molMass_B_*3/(molMass_A_*pdensity_[i]);
-
-                // radius particle
-                // radius_[i]          +=  dr;
 
                 // change of radius of particle -assumption: density of particle is constant
                 radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
@@ -375,6 +367,11 @@ void FixChemShrink::reaction()
                 }
             }
         }
+}
+
+double FixChemShrink::reactionRatConst(int i)
+{
+    return k0;
 }
 
 /* ----------------- compute particle surface area ------------------------ */
