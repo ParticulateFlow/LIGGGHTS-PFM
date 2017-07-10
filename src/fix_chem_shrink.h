@@ -40,12 +40,12 @@ class FixChemShrink : public Fix  {
 
 public:
   FixChemShrink(class LAMMPS *, int, char **);
-  ~FixChemShrink();
+  virtual ~FixChemShrink();
   void pre_delete(bool unfixflag);
 
   void reaction();
   double partSurfArea(double);
-  void updatePtrs();
+  virtual void updatePtrs();
 
   int setmask();
   virtual void init();
@@ -80,7 +80,7 @@ public:
   int iarg_;
 
   // values from user
-  double k;                                         // reaction rate coefficient
+  double k0;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
   int nu_A_, nu_B_, nu_C_;                          // stoichiometric coefficients
   double hertzpct;
@@ -120,6 +120,8 @@ public:
   double vmax_;
   double **Yeff_;
   const double *Y, *nu;
+  
+  virtual double reactionRatConst(int);
 
 
 };
