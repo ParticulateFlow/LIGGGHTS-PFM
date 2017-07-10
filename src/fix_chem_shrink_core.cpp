@@ -77,13 +77,12 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_changeOfC_      =   NULL;
     fix_rhogas_         =   NULL;
     fix_tgas_           =   NULL;
-    fix_totalmole_      =   NULL;
     fix_reactionHeat_   =   NULL;
     fix_diffcoeff_      =   NULL;
     fix_nuField_        =   NULL;
     fix_partRe_         =   NULL;
 
-
+    screenflag_ =   0;
     molMass_A_  =   molMass_C_ = 0;
     pmass_      =   NULL;
     fc_         =   NULL;
@@ -137,6 +136,15 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
                 error->fix_error(FLERR, this, "molar mass of C is not defined");
             hasargs = true;
             iarg_ += 2;
+        }
+        else if (strcmp(arg[iarg_],"screen") == 0)
+        {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) screenflag_ = 1;
+            else if (strcmp(arg[iarg_+1],"no") == 0) screenflag_ = 0;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+            hasargs = true;
         }
     }
 
@@ -200,7 +208,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
     {
         if (fix_rhogas_)        modify  ->  delete_fix("partRho");
         if (fix_tgas_)          modify  ->  delete_fix("partTemp");
-        if (fix_totalmole_)     modify  ->  delete_fix("partMolarConc");
         if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
         if (fix_changeOfA_)     modify  ->  delete_fix(massA);
         if (fix_changeOfC_)     modify  ->  delete_fix(massC);
@@ -255,7 +262,7 @@ void FixChemShrinkCore::post_create()
         char* fixname = new char [50];
         strcpy(fixname,"density_");
         strcat(fixname,group->names[igroup]);
-        if (screen)
+        if (screenflag_ && screen)
             fprintf(screen, "density_ = %s \n", fixname);
 
         const char* fixarg[9];
@@ -308,7 +315,6 @@ void FixChemShrinkCore::updatePtrs()
     changeOfC_      =   fix_changeOfC_  ->  vector_atom;
     rhogas_         =   fix_rhogas_     ->  vector_atom;
     T_              =   fix_tgas_       ->  vector_atom;
-    N_              =   fix_totalmole_  ->  vector_atom;
     reactionHeat_   =   fix_reactionHeat_-> vector_atom;
     // nu field & part Reynolds
     nuf_            =   fix_nuField_    ->  vector_atom;
@@ -397,7 +403,7 @@ void FixChemShrinkCore::init()
     fixname = new char [50];
     strcpy(fixname,"molMass_");
     strcat(fixname,group->names[igroup]);
-    if (screen)
+    if (screenflag_ && screen)
         fprintf(screen, "molMass_ = %s \n", fixname);
     fix_molMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
     delete []fixname;
@@ -407,7 +413,6 @@ void FixChemShrinkCore::init()
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
     fix_rhogas_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));
     fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style));
-    fix_totalmole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
     fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
     fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, id));
     fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style));
@@ -471,7 +476,7 @@ void FixChemShrinkCore::post_force(int)
     ts = update->ntimestep;
 
     // testing
-    if(comm -> me == 0 && screen)
+    if(screenflag_ && screen)
     {
         fprintf(screen,"ts-create : %d \n",ts_create_);
         fprintf(screen,"couple interval: %d \n",couple);
@@ -484,7 +489,7 @@ void FixChemShrinkCore::post_force(int)
         if (ts > ts_create_ + couple)
         {
             comm_established = true;
-            if(comm -> me == 0 && screen)
+            if(screenflag_ && screen)
                 fprintf(screen,"comm establsihed at: %d \n",ts);
         }
     }
@@ -496,7 +501,7 @@ void FixChemShrinkCore::post_force(int)
             if (mask[i] & groupbit)
             {
                 // debug check
-                if (screen)
+                if (screenflag_ && screen)
                 {
                     fprintf(screen, "diffusion coefficient from CFD: %f \n",dCoeff_[i]);
                     fprintf(screen, "nufield from DEM: %f \n", nuf_[i]);
@@ -567,8 +572,7 @@ int FixChemShrinkCore::active_layers(int i)
             break;
         }
     }
-    //if (comm -> me == 0 && screen)
-    if (screen)
+    if (screenflag_ && screen)
         fprintf(screen,"active layers: %i \n", layers_);
 
     return layers_;
@@ -609,7 +613,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 
         // for debug
         // ==========================================
-        if (comm -> me == 0 && screen)
+        if (screenflag_ && comm -> me == 0 && screen)
         {
             fprintf(screen,"x0_eq : %f \n", x0_eq_[j]);
             fprintf(screen,"xp_eq : %f \n", xp_eq_[j]);
@@ -619,7 +623,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 
     // for debug
     // ==========================================
-    if (screen)
+    if (screenflag_ && screen)
         fprintf(screen,"x0_: %f \n", X0_[i]);
     // ==========================================
 }
@@ -639,7 +643,7 @@ void FixChemShrinkCore::getA(int i, double *a_)
         a_[j]   =   (1/(k0_[j]*exp(-Ea_[j]/(Runiv*T_[i]))))*(1/(1+1/K_eq(j,T_[i])))*(1/(relRadii_[i][j+1]*relRadii_[i][j+1]));
     }
 
-    if (screen)
+    if (screenflag_ && screen)
     {
         fprintf(screen, "reaction resistance term 1 : %f \n",a_[0]);
         fprintf(screen, "reaction resistance term 2 : %f \n",a_[1]);
@@ -656,7 +660,8 @@ void FixChemShrinkCore::getB(int i, double *b_)
 {
     if (screen)
     fprintf(screen,"DO GET B FUNCTION!! \n");
-    if (screen)
+
+    if (screenflag_ && screen)
     {
         fprintf(screen, "relRadii_[i][j], %f\n",relRadii_[i][1]);
         fprintf(screen, "relRadii_[i][j], %f\n",relRadii_[i][2]);
@@ -676,10 +681,11 @@ void FixChemShrinkCore::getB(int i, double *b_)
    deBinary_[i] =   (int)(deBinary_[i]/1e-6)*1e-6;
    // simplify for effective diffusion
    deff_mol_[i] =   1.0/deBinary_[i];
-   if (screen)
+   if (screenflag_ && screen)
+   {
        fprintf(screen,"eff. binary diff: %6.7f \n",deBinary_[i]);
-   if (screen)
        fprintf(screen,"eff. mol. bin. diff: %6.8f \n",deff_mol_[i]);
+   }
 
     // Knudsen diff equation is either
     // Dik = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
@@ -689,17 +695,18 @@ void FixChemShrinkCore::getB(int i, double *b_)
     deKnudsen_[i]    =   48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
     // simplify for effective diffusion
     deff_knud_[i]   =   1.0/deKnudsen_[i];
-    if (screen)
+    if (screenflag_ && screen)
+    {
         fprintf(screen,"eff. knudsen diff: %6.15f \n",deKnudsen_[i]);
-    if (screen)
         fprintf(screen,"deff_knud: %f \n",deff_knud_[i]);
+    }
 
     // total effective diffusivity
     // Eq. : 1/D_i,j = 1/D_eff_binary + 1/D_eff_knudsen
     // diffEff_[i] = 1/D_i,j
     diffEff_[i] = deff_mol_[i] + deff_knud_[i];
 
-    if (screen)
+    if (screenflag_ && screen)
         fprintf(screen,"eff. diff: %6.15f \n",diffEff_[i]);
 
     if (diffEff_[i] < SMALL)
@@ -716,7 +723,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
         b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
     }
 
-    if (screen)
+    if (screenflag_ && screen)
     {
         fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
         fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
@@ -737,7 +744,7 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
     masst_[i] = Sh_[i]/(diffEff_[i]*2*radius_[i]);
     masst_[i] = 1/masst_[i];
 
-    if (screen)
+    if (screenflag_ && screen)
     {
         fprintf(screen, "Schmidt number: %f \n",Sc_[i]);
         fprintf(screen, "Sherwood number: %f \n",Sh_[i]);
@@ -943,7 +950,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     }
 
     // print out mass transfer rates for particle layers
-    if (screen)
+    if (screenflag_ && screen)
     {
         fprintf(screen,"dmB[0]: %f \n",dmB_[0]);
         fprintf(screen,"dmB[1]: %f \n",dmB_[1]);
@@ -983,7 +990,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // update total partilce density
     pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
 
-    if (screen)
+    if (screenflag_ && screen)
     {
         fprintf(screen,"post-layerMass[0]: %f \n",massLayer_[i][0]);
         fprintf(screen,"post-layerMass[1]: %f \n",massLayer_[i][1]);
