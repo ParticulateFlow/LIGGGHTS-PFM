@@ -330,15 +330,16 @@ void FixChemShrink::reaction()
                 // Current time step concentration change of reactant A and product C
                 double dA   =   0.0;
 
-		double k = reactionRatConst(i);
-		if(nu_A_ < 2)
-		{
-                    dA  =   -k*xA_[i]*N_[i]*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
-		}
-		else
-		{
-                    dA   =   -k*pow((xA_[i]*N_[i]),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
-		}
+                double k = reactionRatConst(i);
+                if(nu_A_ < 2)
+                {
+                    dA  =   -k*xA_[i]*molarConc_[i]*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
+                }
+                else
+                {
+                    dA   =   -k*pow((xA_[i]*molarConc_[i]),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+                }
+
                 double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
                 // mass removed from particle
                 double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
