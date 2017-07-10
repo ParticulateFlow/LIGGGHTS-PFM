@@ -152,7 +152,7 @@ int FixInsertPackDense::setmask()
 void FixInsertPackDense::post_create()
 {
 
-  if(x_init) delete[] x_init;
+  delete[] x_init;
   x_init = new double[3];
 
   double sublo[3],subhi[3];
@@ -401,7 +401,7 @@ void FixInsertPackDense::handle_next_front_sphere()
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
     n_inserted_local++;
 
-    if(newsphere) delete newsphere;
+    delete newsphere;
     newsphere = new Particle(*closest_candidate);
     particles->push_back(*closest_candidate);
 
@@ -559,7 +559,7 @@ ParticleToInsert* FixInsertPackDense::get_next_pti()
 
 FixInsertPackDense::~FixInsertPackDense()
 {
-  if(x_init) delete[] x_init;
+  delete[] x_init;
 }
 
 /* ---------------------------------------------------------------------- */
