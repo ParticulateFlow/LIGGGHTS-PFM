@@ -54,6 +54,8 @@ public:
   void default_radius();
 
  protected:
+  int screenflag_;
+   
   char* speciesA, *speciesC;
   char* massA, *massC;
   char* moleFracA, *moleFracC;
