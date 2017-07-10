@@ -71,9 +71,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_tgas            =   NULL;
     fix_reactionheat_   =   NULL;
     fix_totalMole_      =   NULL;
-    fix_nuField_        =   NULL;
-    fix_partRe_         =   NULL;
-
 
     screenflag_ = 0;
     iarg_ = 3;
@@ -220,14 +217,15 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (nevery <= 0) error->fix_error(FLERR,this,"");
             iarg_+=2;
             hasargs = true;
-        }else if (strcmp(arg[iarg_],"screen") == 0) {
+        }else if (strcmp(arg[iarg_],"screen") == 0)
+        {
             if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
             if (strcmp(arg[iarg_+1],"yes") == 0) screenflag_ = 1;
             else if (strcmp(arg[iarg_+1],"no") == 0) screenflag_ = 0;
             else error->all(FLERR,"Illegal fix/chem/shrink command");
             iarg_ += 2;
-	    hasargs = true;
-	}
+            hasargs = true;
+        }
     }
 
     // define changed species mass A
@@ -287,8 +285,6 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_changeOfA_)     modify  ->  delete_fix(massA);
         if(fix_changeOfC_)     modify  ->  delete_fix(massC);
         if(fix_totalMole_)     modify  ->  delete_fix("partMolarConc");
-        if(fix_nuField_)       modify  ->  delete_fix("partNu");
-        if(fix_partRe_)        modify  ->  delete_fix("partRe");
     }
 }
 
@@ -311,9 +307,7 @@ void FixChemShrink::updatePtrs()
     changeOfA_  =   fix_changeOfA_  ->  vector_atom;
     changeOfC_  =   fix_changeOfC_  ->  vector_atom;
     rhogas_     =   fix_rhogas      ->  vector_atom;
-    N_          =   fix_totalMole_  ->  vector_atom;
-    nuf_        =   fix_nuField_    ->  vector_atom;
-    Rep_        =   fix_partRe_     ->  vector_atom;
+    molarConc_  =   fix_totalMole_  ->  vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -336,16 +330,18 @@ void FixChemShrink::reaction()
 
                 // Current time step concentration change of reactant A and product C
                 double dA   =   0.0;
-		if(nu_A_ < 2)
-		{
+
+                if(nu_A_ < 2)
+                {
                     // dA   =   -k*rhogas_[i]*concA_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
-            dA  =   -k*xA_[i]*N_[i]*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
-		}
-		else
-		{
-            // dA   =   -k*pow((rhogas_[i]*concA_[i]/molMass_A_),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
-            dA   =   -k*pow((xA_[i]*N_[i]),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
-		}
+                    dA  =   -k*xA_[i]*molarConc_[i]*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
+                }
+                else
+                {
+                    // dA   =   -k*pow((rhogas_[i]*concA_[i]/molMass_A_),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+                    dA   =   -k*pow((xA_[i]*molarConc_[i]),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+                }
+
                 double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
                 // mass removed from particle
                 double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
@@ -375,10 +371,7 @@ void FixChemShrink::reaction()
                     fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
                     fprintf(screen,"Particle Mass %f \n",pmass_[i]);
                     fprintf(screen,"Gas Density %f \n",rhogas_[i]);
-                    fprintf(screen,"total number of moles in chem/shrink: %f \n",N_[i]);
-                    // testin communication nufield and Rep
-                    fprintf(screen,"nufield from DEM: %f \n", nuf_[i]);
-                    fprintf(screen,"particle Reynolds from DEM: %f \n", Rep_[i]);
+                    fprintf(screen,"total number of moles in chem/shrink: %f \n",molarConc_[i]);
                 }
             }
         }
@@ -405,21 +398,14 @@ void FixChemShrink::init()
       error->fix_error(FLERR,this,"requires atom tags and an atom map");
 
     // references
-    // fix_concA_           =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesA,"property/atom","scalar",0,0,style));
-    // fix_concC_           =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(speciesC,"property/atom","scalar",0,0,style));
     fix_moleFractionA_  =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(moleFracA,"property/atom","scalar",0,0,style));
     fix_moleFractionC_  =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(moleFracC,"property/atom","scalar",0,0,style));
-
-
     fix_changeOfA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massA,"property/atom","scalar",0,0,style));
     fix_changeOfC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massC,"property/atom","scalar",0,0,style));
-
     fix_tgas            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
     fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
-    fix_nuField_        =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style));
-    fix_partRe_         =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style));
 
     if (rdef)
     {

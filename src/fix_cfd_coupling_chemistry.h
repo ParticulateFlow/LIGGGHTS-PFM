@@ -49,7 +49,6 @@ class FixCfdCouplingChemistry : public Fix  {
   virtual void init();
   virtual void initial_integrate(int);
   virtual void post_force(int);
-  virtual void updatePtrs();
 
  protected:
   int num_species;                              // # of species

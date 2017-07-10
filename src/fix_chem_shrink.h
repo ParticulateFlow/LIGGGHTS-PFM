@@ -103,7 +103,7 @@ public:
   //double *concA_;
   //double *concC_;
   double *tgas_;
-  double *N_;
+  double *molarConc_;
 
   // while loop integers
   int spcA;

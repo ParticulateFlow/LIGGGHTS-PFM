@@ -294,7 +294,6 @@ void FixCfdCouplingChemistry::post_create()
     fix_molarfraction_  =   new FixPropertyAtom*[num_species];
     for (int i=0; i<num_species;i++)
     {
-
         // register masschange/changeOfSpeciesMass
         {
             const char* fixarg[9];
@@ -394,7 +393,7 @@ void FixCfdCouplingChemistry::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixCfdCouplingChemistry::initial_integrate(int vflag)
+void FixCfdCouplingChemistry::initial_integrate(int)
 {
     /* if (comm -> me == 0 && screen)
         fprintf(screen,"activate initial integrate \n"); */
