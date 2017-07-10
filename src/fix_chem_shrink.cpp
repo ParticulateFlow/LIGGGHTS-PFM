@@ -76,6 +76,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_moleFractionA_  =   NULL;
     fix_moleFractionC_  =   NULL;
 
+    screenflag_ = 0;
     iarg_ = 3;
     k = 0;
     molMass_A_ = 0;
@@ -220,7 +221,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (nevery <= 0) error->fix_error(FLERR,this,"");
             iarg_+=2;
             hasargs = true;
-        }
+        }else if (strcmp(arg[iarg_],"screen") == 0) {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) screenflag_ = 1;
+            else if (strcmp(arg[iarg_+1],"no") == 0) screenflag_ = 0;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+	    hasargs = true;
+	}
     }
 
     // define changed species mass A
@@ -331,7 +339,7 @@ void FixChemShrink::reaction()
         {
             if(radius_[i] > rmin)
             {
-                if (screen)
+                if (screenflag_ && screen)
                 {
                     // fprintf(screen,"check mass frac %f \n",concA_[i]);
                     fprintf(screen,"check TimeStep %f \n",TimeStep);
@@ -373,7 +381,7 @@ void FixChemShrink::reaction()
                 radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
 
                 // uncomment if postproc (verification)
-                if (screen)
+                if (screenflag_ && screen)
                 {
                     fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
                     fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
@@ -537,7 +545,7 @@ void FixChemShrink::default_radius()
     MPI_Max_Scalar(vmax_,world);
     vmax_ = (2.*vmax_);
 
-    if (screen)
+    if (screenflag_ && screen)
     {
         fprintf(screen,"vmax value is: %f \n", vmax_);
     }
