@@ -407,7 +407,9 @@ void FixInsertPackDense::handle_next_front_sphere()
 
     candidatePoints.erase(closest_candidate);
   }
-  
+
+  delete newsphere;
+
   frontSpheres.pop_front();
 }
 
@@ -560,6 +562,8 @@ ParticleToInsert* FixInsertPackDense::get_next_pti()
 FixInsertPackDense::~FixInsertPackDense()
 {
   delete[] x_init;
+  delete[] idregion;
+  delete random;
 }
 
 /* ---------------------------------------------------------------------- */
