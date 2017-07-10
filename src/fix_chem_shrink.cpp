@@ -63,8 +63,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
 
     // defaults
-    //fix_concA_          =   NULL;
-    //fix_concC_          =   NULL;
+    fix_moleFractionA_  =   NULL;
+    fix_moleFractionC_  =   NULL;
     fix_changeOfA_      =   NULL;
     fix_changeOfC_      =   NULL;
     fix_rhogas          =   NULL;
@@ -73,8 +73,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_totalMole_      =   NULL;
     fix_nuField_        =   NULL;
     fix_partRe_         =   NULL;
-    fix_moleFractionA_  =   NULL;
-    fix_moleFractionC_  =   NULL;
+
 
     iarg_ = 3;
     k = 0;
@@ -236,9 +235,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     strcpy(massC,cha);
 
     // EKI:
-    // or we write directly in liggghts script instead of just speciesA as O2, instead X_O2.
-    // if so the massA and C should also be changed.
-    // reacting species molar fraction
     moleFracA  =   new char[n];
     strcpy(cha,"X_");
     strcat(cha,speciesA);
@@ -275,8 +271,6 @@ void FixChemShrink::pre_delete(bool unfixflag)
 {
     if (unfixflag)
     {
-        //if(fix_concA_)         modify  ->  delete_fix(speciesA);
-        //if(fix_concC_)         modify  ->  delete_fix(speciesC);
         if(fix_moleFractionA_)  modify  ->  delete_fix(moleFracA);
         if(fix_moleFractionC_)  modify  ->  delete_fix(moleFracC);
         if(fix_rhogas)         modify  ->  delete_fix("partRho");
@@ -303,12 +297,7 @@ int FixChemShrink::setmask()
 
 void FixChemShrink::updatePtrs()
 {
-    //concA_      =   fix_concA_      -> vector_atom;
-    //vector_atom = concA_;
     xA_         =   fix_moleFractionA_  -> vector_atom;
-
-    //concC_      =   fix_concC_      -> vector_atom;
-    //vector_atom = concC_;
     xC_         =   fix_moleFractionC_  ->  vector_atom;
 
     changeOfA_  =   fix_changeOfA_  ->  vector_atom;
@@ -333,7 +322,6 @@ void FixChemShrink::reaction()
             {
                 if (screen)
                 {
-                    // fprintf(screen,"check mass frac %f \n",concA_[i]);
                     fprintf(screen,"check TimeStep %f \n",TimeStep);
                     fprintf(screen,"check current timestep %d \n", current_timestep);
                 }

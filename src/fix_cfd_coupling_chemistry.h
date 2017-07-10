@@ -69,13 +69,11 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom**   fix_diffusionCoeff_;
   class FixPropertyAtom*    fix_nufField_;
   class FixPropertyAtom*    fix_partReynolds_;
-  class FixPropertyAtom**    fix_molarfraction_;
+  class FixPropertyAtom**   fix_molarfraction_;
 
  private:
   bool use_Re_;
 
-  double *rhogas;
-  double *N;
   double **concentrations;
   double **changeOfSpeciesMass;
   double *diffCoeff_;
