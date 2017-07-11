@@ -36,7 +36,7 @@ enum{NONE,CONSTANT,EQUAL,ATOM};
 FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg)
 {
-  if (narg < 6) error->all(FLERR,"Illegal fix addforce command");
+  if (narg < 6) error->all(FLERR,"Illegal fix speedControl command");
 
   scalar_flag = 1;
   vector_flag = 1;
@@ -238,7 +238,6 @@ void FixSpeedControl::post_force(int vflag)
   
 
   // constant force
-  // potential energy = - x dot f in unwrapped coords
 
   if (varflag == CONSTANT) {
     for (int i = 0; i < nlocal; i++)
@@ -253,7 +252,6 @@ void FixSpeedControl::post_force(int vflag)
       }
 
   // variable force, wrap with clear/add
-  // potential energy = evar if defined, else 0.0
   // wrap with clear/add
 
   } else {
