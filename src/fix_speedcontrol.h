@@ -15,7 +15,6 @@
 
 this fix controls the velocity of the particles
 based on the fix addforce
-may need some cleaning
 
 contributing authors
 Gerhard Holzinger (K1MET)
