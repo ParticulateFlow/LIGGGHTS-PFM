@@ -52,7 +52,7 @@ fix ins all insert/rate/region seed 1001 distributiontemplate pdd1 nparticles 10
 
 #speedControl, gain parameter is optional
 region		forceReg block -0.45 0.45 -0.45 0.45 -0.4 0.2 units box
-fix kick all speedControl NULL 0.0 -0.1 region forceReg gain 0.1
+fix kick all speedcontrol NULL 0.0 -0.1 region forceReg gain 0.1
 
 # mesh dump
 dump mshdmp all mesh/vtk 2 post/cone*.vtk output face id cad
