@@ -43,10 +43,12 @@
 #include "force.h"
 #include "group.h"
 #include "vector_liggghts.h"
+#include "math_const.h"
 
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 #define SMALL   1e-10
 #define Runiv   8.3144
@@ -144,6 +146,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             else if (strcmp(arg[iarg_+1],"no") == 0) screenflag_ = 0;
             else error->all(FLERR,"Illegal fix/chem/shrink command");
             iarg_ += 2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"nevery") == 0)
+        {
+            nevery = atoi(arg[iarg_+1]);
+            if (nevery <= 0) error->fix_error(FLERR,this,"");
+            iarg_+=2;
             hasargs = true;
         }
     }
@@ -475,13 +484,6 @@ void FixChemShrinkCore::post_force(int)
     double masst_[nlocal];
     ts = update->ntimestep;
 
-    // testing
-    if(screenflag_ && screen)
-    {
-        fprintf(screen,"ts-create : %d \n",ts_create_);
-        fprintf(screen,"couple interval: %d \n",couple);
-    }
-
     // do chem/shrink/core calculations if communication between CFDEM and LIGGGHTS already happened
     // need initial values from CFDEM side
     if (!comm_established)
@@ -500,7 +502,6 @@ void FixChemShrinkCore::post_force(int)
         {
             if (mask[i] & groupbit)
             {
-                // debug check
                 if (screenflag_ && screen)
                 {
                     fprintf(screen, "diffusion coefficient from CFD: %f \n",dCoeff_[i]);
@@ -658,59 +659,46 @@ void FixChemShrinkCore::getA(int i, double *a_)
 // effective diffusion coefficient.
 void FixChemShrinkCore::getB(int i, double *b_)
 {
-    if (screen)
-    fprintf(screen,"DO GET B FUNCTION!! \n");
+    if (comm -> me == 0 && screen)
+        fprintf(screen,"DO GET B FUNCTION!! \n");
+
+    double deBinary_[atom->nlocal];
+    double deKnudsen_[atom->nlocal];
+    diffEff_    =   new double [atom->nlocal];
+
+    // effecitve binary diffusion coefficient
+    deBinary_[i] = dCoeff_[i]*porosity_[i]/tortuosity_[i];
 
     if (screenflag_ && screen)
     {
-        fprintf(screen, "relRadii_[i][j], %f\n",relRadii_[i][1]);
-        fprintf(screen, "relRadii_[i][j], %f\n",relRadii_[i][2]);
-        fprintf(screen, "relRadii_[i][j], %f\n",relRadii_[i][3]);
-        fprintf(screen, "radius_, %f\n",radius_[i]);
+        fprintf(screen,"eff. binary diff: %f \n",deBinary_[i]);
+        fprintf(screen,"dCoeff value is : %f \n", dCoeff_[i]);
     }
 
-    double deBinary_[atom->nlocal];
-    double deff_mol_[atom->nlocal];
-    double deKnudsen_[atom->nlocal];
-    double deff_knud_[atom->nlocal];
-    diffEff_    =   new double [atom->nlocal];
-
-    // molecular binary diffusion
-   deBinary_[i] = dCoeff_[i]*porosity_[i]/tortuosity_[i];
-   // add decimal point limit
-   deBinary_[i] =   (int)(deBinary_[i]/1e-6)*1e-6;
-   // simplify for effective diffusion
-   deff_mol_[i] =   1.0/deBinary_[i];
-   if (screenflag_ && screen)
-   {
-       fprintf(screen,"eff. binary diff: %6.7f \n",deBinary_[i]);
-       fprintf(screen,"eff. mol. bin. diff: %6.8f \n",deff_mol_[i]);
-   }
+    if (dCoeff_[i] != 0.0) // or (deBinary_[i] != 0)
+    {
+        deBinary_[i]   =   1.0/deBinary_[i];
+    }
 
     // Knudsen diff equation is either
     // Dik = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
     // or simplified as
     // Dik = 4850*dp*sqrt(T_[i]/molMass_A_) dp supposed to be in cm
     // we use si units so convert from meter to cm!
-    deKnudsen_[i]    =   48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
-    // simplify for effective diffusion
-    deff_knud_[i]   =   1.0/deKnudsen_[i];
+    deKnudsen_[i]   =  48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
+    deKnudsen_[i]   =   1.0/deKnudsen_[i];
     if (screenflag_ && screen)
     {
-        fprintf(screen,"eff. knudsen diff: %6.15f \n",deKnudsen_[i]);
-        fprintf(screen,"deff_knud: %f \n",deff_knud_[i]);
+        fprintf(screen,"eff. knudsen diff: %f \n",deKnudsen_[i]);
     }
 
     // total effective diffusivity
     // Eq. : 1/D_i,j = 1/D_eff_binary + 1/D_eff_knudsen
     // diffEff_[i] = 1/D_i,j
-    diffEff_[i] = deff_mol_[i] + deff_knud_[i];
+    diffEff_[i] = deBinary_[i] + deKnudsen_[i];
 
     if (screenflag_ && screen)
-        fprintf(screen,"eff. diff: %6.15f \n",diffEff_[i]);
-
-    if (diffEff_[i] < SMALL)
-        diffEff_[i] =   SMALL;
+        fprintf(screen,"eff. diff: %f \n",diffEff_[i]);
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
@@ -740,9 +728,16 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
     double Sh_[atom->nlocal];
 
     Sc_[i]  =   nuf_[i]*diffEff_[i];
-    Sh_[i]  =   2+0.2*pow(Rep_[i],0.5)*pow(Sc_[i],0.333333);
-    masst_[i] = Sh_[i]/(diffEff_[i]*2*radius_[i]);
-    masst_[i] = 1/masst_[i];
+    Sh_[i]  =   2+0.6*pow(Rep_[i],0.5)*pow(Sc_[i],THIRD);
+
+    if (diffEff_[i] == 0.)
+    {
+        masst_[i]   =   0.0;
+    } else
+    {
+        masst_[i] = Sh_[i]/(diffEff_[i]*2*radius_[i]);
+        masst_[i] = 1/masst_[i];
+    }
 
     if (screenflag_ && screen)
     {
@@ -806,7 +801,7 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_eq_
     {
         // mass flow rate for reactant gas species
         // scaled up Timestep to match 0.01;
-        dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep;
+        dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
     }
 }
 
@@ -865,7 +860,7 @@ void FixChemShrinkCore::reaction2(int i, double *a_, double *dmA_, double *x0_eq
     {
         // mass flow rate for reactant gas species
         // scaled up Timestep to match 0.01;
-        dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep;
+        dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
     }
 }
 
@@ -916,7 +911,7 @@ void FixChemShrinkCore::reaction3(int i, double *a_, double *dmA_, double *x0_eq
 
     for (int j = 0 ; j < nmaxlayers_; j++)
     {
-        dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep;     }
+        dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep*nevery;     }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -972,10 +967,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // from the new layer masses, get new total mass, layer radii and total density
     pmass_[i]   =   sum_mass_new;
     
-    radLayer_[layers_]   =   pow((0.75*massLayer_[i][layers_]/(layerDensities_[layers_]*M_PI)),0.333333);
+    radLayer_[layers_]   =   pow((0.75*massLayer_[i][layers_]/(layerDensities_[layers_]*M_PI)),THIRD);
     for (int j = layers_-1; j >= 0 ; j--)
     {
-        radLayer_[j]   =   pow((0.75*massLayer_[i][j]/(M_PI*layerDensities_[j])+radLayer_[j+1]*radLayer_[j+1]*radLayer_[j+1]),0.333333);
+        radLayer_[j]   =   pow((0.75*massLayer_[i][j]/(M_PI*layerDensities_[j])+radLayer_[j+1]*radLayer_[j+1]*radLayer_[j+1]),THIRD);
     }
     radius_[i] = radLayer_[0];
     
