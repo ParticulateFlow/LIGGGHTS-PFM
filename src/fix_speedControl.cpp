@@ -112,8 +112,6 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
     } else error->all(FLERR,"Illegal fix speedControl command");
   }
 
-  force_flag = 0;
-
   maxatom = 0;
   sforce = NULL;
 }
@@ -232,10 +230,7 @@ void FixSpeedControl::post_force(int vflag)
     memory->destroy(sforce);
     memory->create(sforce,maxatom,4,"speedControl:sforce");
   }
-  
-  force_flag = 0;
-  
-  
+
 
   // constant force
 

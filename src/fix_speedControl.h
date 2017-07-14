@@ -53,7 +53,6 @@ class FixSpeedControl : public Fix {
   char *xstr,*ystr,*zstr;
   char *idregion;
   int xvar,yvar,zvar,evar,xstyle,ystyle,zstyle;
-  int force_flag;
   int nlevels_respa;
 
   int maxatom;
