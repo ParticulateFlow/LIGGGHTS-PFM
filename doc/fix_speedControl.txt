@@ -17,7 +17,7 @@ speedControl = style name of this fix command :l
 vx,vy,vz = set-velocity component values (velocity units) :l
   any of vx,vy,vz can be a variable (see below) :pre
 zero or more keyword/value pairs may be appended to args :l
-keyword = {region} or {energy} :l
+keyword = {region} or {gain} :l
   {region} value = region-ID
     region-ID = ID of region atoms must be in to have added force
   {gain} value = gain
