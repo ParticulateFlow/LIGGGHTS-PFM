@@ -38,13 +38,6 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
 {
   if (narg < 6) error->all(FLERR,"Illegal fix speedControl command");
 
-  scalar_flag = 1;
-  vector_flag = 1;
-  size_vector = 3;
-  global_freq = 1;
-  extscalar = 1;
-  extvector = 1;
-
   xstr = ystr = zstr = NULL;
 
   if (strstr(arg[3],"v_") == arg[3]) {
