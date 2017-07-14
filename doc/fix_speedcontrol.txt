@@ -6,14 +6,14 @@
 
 :line
 
-fix speedControl command :h3
+fix speedcontrol command :h3
 
 [Syntax:]
 
-fix ID group-ID speedControl vx vy vz keyword value ... :pre
+fix ID group-ID speedcontrol vx vy vz keyword value ... :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
-speedControl = style name of this fix command :l
+speedcontrol = style name of this fix command :l
 vx,vy,vz = set-velocity component values (velocity units) :l
   any of vx,vy,vz can be a variable (see below) :pre
 zero or more keyword/value pairs may be appended to args :l
@@ -26,9 +26,9 @@ keyword = {region} or {gain} :l
 
 [Examples:]
 
-fix kick flow speedControl 1.0 0.0 0.0
-fix kick flow speedControl 1.0 0.0 v_oscillate region force_reg
-fix kick flow speedControl 0.0 NULL v_push gain v_gain :pre
+fix kick flow speedcontrol 1.0 0.0 0.0
+fix kick flow speedcontrol 1.0 0.0 v_oscillate region force_reg
+fix kick flow speedcontrol 0.0 NULL v_push gain v_gain :pre
 
 [Description:]
 
