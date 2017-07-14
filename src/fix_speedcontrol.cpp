@@ -13,7 +13,7 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "fix_speedControl.h"
+#include "fix_speedcontrol.h"
 #include "atom.h"
 #include "update.h"
 #include "modify.h"
