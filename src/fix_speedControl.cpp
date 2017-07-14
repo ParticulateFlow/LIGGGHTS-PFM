@@ -70,11 +70,11 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
     zvalue = force->numeric(FLERR,arg[5]);
     zstyle = CONSTANT;
   }
-  
+
   if (xstyle == NONE && ystyle == NONE && zstyle == NONE) {
     error->fix_error(FLERR,this,"no set-velocity specified; all velocity components are left floating, remove this fix!");
   }
-  
+
   // default controller gain
   K = 0.1;
 
@@ -101,7 +101,7 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
       if(K <= 0.0)
         error->fix_error(FLERR,this,"gain K must be in range ]0;inf[");
       iarg += 2;
-      
+
     } else error->all(FLERR,"Illegal fix speedControl command");
   }
 

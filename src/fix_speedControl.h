@@ -57,7 +57,7 @@ class FixSpeedControl : public Fix {
 
   int maxatom;
   double **sforce;
-  
+
   double K;
 };
 
