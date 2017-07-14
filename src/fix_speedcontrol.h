@@ -23,7 +23,7 @@ Gerhard Holzinger (K1MET)
 
 #ifdef FIX_CLASS
 
-FixStyle(speedControl,FixSpeedControl)
+FixStyle(speedcontrol,FixSpeedControl)
 
 #else
 
@@ -74,15 +74,15 @@ Self-explanatory.  Check the input script syntax and compare to the
 documentation for the command.  You can use -echo screen as a
 command-line option when running LAMMPS to see the offending line.
 
-E: Region ID for fix speedControl does not exist
+E: Region ID for fix speedcontrol does not exist
 
 Self-explanatory.
 
-E: Variable name for fix speedControl does not exist
+E: Variable name for fix speedcontrol does not exist
 
 Self-explanatory.
 
-E: Variable for fix speedControl is invalid style
+E: Variable for fix speedcontrol is invalid style
 
 Self-explanatory.
 

@@ -36,7 +36,7 @@ enum{NONE,CONSTANT,EQUAL,ATOM};
 FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg)
 {
-  if (narg < 6) error->all(FLERR,"Illegal fix speedControl command");
+  if (narg < 6) error->all(FLERR,"Illegal fix speedcontrol command");
 
   xstr = ystr = zstr = NULL;
 
@@ -86,23 +86,23 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
   int iarg = 6;
   while (iarg < narg) {
     if (strcmp(arg[iarg],"region") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix speedControl command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix speedcontrol command");
       iregion = domain->find_region(arg[iarg+1]);
       if (iregion == -1)
-        error->all(FLERR,"Region ID for fix speedControl does not exist");
+        error->all(FLERR,"Region ID for fix speedcontrol does not exist");
       int n = strlen(arg[iarg+1]) + 1;
       idregion = new char[n];
       strcpy(idregion,arg[iarg+1]);
       iarg += 2;
     }
     else if (strcmp(arg[iarg],"gain") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal fix speedControl command");
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix speedcontrol command");
       K = force->numeric(FLERR,arg[iarg+1]);
       if(K <= 0.0)
         error->fix_error(FLERR,this,"gain K must be in range ]0;inf[");
       iarg += 2;
 
-    } else error->all(FLERR,"Illegal fix speedControl command");
+    } else error->all(FLERR,"Illegal fix speedcontrol command");
   }
 
   maxatom = 0;
@@ -140,26 +140,26 @@ void FixSpeedControl::init()
   if (xstr) {
     xvar = input->variable->find(xstr);
     if (xvar < 0)
-      error->all(FLERR,"Variable name for fix speedControl does not exist");
+      error->all(FLERR,"Variable name for fix speedcontrol does not exist");
     if (input->variable->equalstyle(xvar)) xstyle = EQUAL;
     else if (input->variable->atomstyle(xvar)) xstyle = ATOM;
-    else error->all(FLERR,"Variable for fix speedControl is invalid style");
+    else error->all(FLERR,"Variable for fix speedcontrol is invalid style");
   }
   if (ystr) {
     yvar = input->variable->find(ystr);
     if (yvar < 0)
-      error->all(FLERR,"Variable name for fix speedControl does not exist");
+      error->all(FLERR,"Variable name for fix speedcontrol does not exist");
     if (input->variable->equalstyle(yvar)) ystyle = EQUAL;
     else if (input->variable->atomstyle(yvar)) ystyle = ATOM;
-    else error->all(FLERR,"Variable for fix speedControl is invalid style");
+    else error->all(FLERR,"Variable for fix speedcontrol is invalid style");
   }
   if (zstr) {
     zvar = input->variable->find(zstr);
     if (zvar < 0)
-      error->all(FLERR,"Variable name for fix speedControl does not exist");
+      error->all(FLERR,"Variable name for fix speedcontrol does not exist");
     if (input->variable->equalstyle(zvar)) zstyle = EQUAL;
     else if (input->variable->atomstyle(zvar)) zstyle = ATOM;
-    else error->all(FLERR,"Variable for fix speedControl is invalid style");
+    else error->all(FLERR,"Variable for fix speedcontrol is invalid style");
   }
 
   // set index and check validity of region
@@ -167,7 +167,7 @@ void FixSpeedControl::init()
   if (iregion >= 0) {
     iregion = domain->find_region(idregion);
     if (iregion == -1)
-      error->all(FLERR,"Region ID for fix speedControl does not exist");
+      error->all(FLERR,"Region ID for fix speedcontrol does not exist");
   }
 
   if (xstyle == ATOM || ystyle == ATOM || zstyle == ATOM)
@@ -221,7 +221,7 @@ void FixSpeedControl::post_force(int vflag)
   if (varflag == ATOM && nlocal > maxatom) {
     maxatom = atom->nmax;
     memory->destroy(sforce);
-    memory->create(sforce,maxatom,4,"speedControl:sforce");
+    memory->create(sforce,maxatom,4,"speedcontrol:sforce");
   }
 
 
