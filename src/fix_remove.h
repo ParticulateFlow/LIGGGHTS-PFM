@@ -32,8 +32,6 @@ FixStyle(remove,FixRemove)
 #include "fix.h"
 #include <vector>
 
-using namespace std;
-
 namespace LAMMPS_NS {
 
 class FixRemove : public Fix {
@@ -88,9 +86,9 @@ class FixRemove : public Fix {
   class MultisphereParallel *ms_;
 
   //NP list of bodies to remove
-  vector<int> atom_tags_eligible_;
-  vector<int> body_tags_eligible_;
-  vector<int> body_tags_delete_;
+  std::vector<int> atom_tags_eligible_;
+  std::vector<int> body_tags_eligible_;
+  std::vector<int> body_tags_delete_;
 };
 
 }

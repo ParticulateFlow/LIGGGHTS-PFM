@@ -35,6 +35,7 @@
 #include "cfd_datacoupling_mpi.h"
 
 using namespace LAMMPS_NS;
+using namespace std;
 
 #define DELTA 10000
 

@@ -38,6 +38,7 @@
 using MODIFIED_ANDREW_AUX::Circle;
 using MODIFIED_ANDREW_AUX::Point;
 using namespace LAMMPS_NS;
+using namespace std;
 
 /* ---------------------------------------------------------------------- */
 

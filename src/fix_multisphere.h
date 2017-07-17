@@ -37,8 +37,6 @@ FixStyle(multisphere/nointegration,FixMultisphere)
 #include "atom.h"
 #include "comm.h"
 
-using namespace std;
-
 namespace LAMMPS_NS {
 
 enum
@@ -215,7 +213,7 @@ class FixMultisphere : public Fix
 
       double dtv,dtf,dtq;
 
-      vector<FixRemove*> fix_remove_;
+      std::vector<FixRemove*> fix_remove_;
 
       // MS communication
       int ntypes_;
