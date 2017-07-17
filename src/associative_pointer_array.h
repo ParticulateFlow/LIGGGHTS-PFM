@@ -55,11 +55,11 @@ class AssociativePointerArray
         template <typename U>
         U* getPointerByIndex(int i);
 
-        T* getBasePointerByIndex(int i);
+        T* getBasePointerByIndex(int i) const;
 
         void grow(int to);
 
-        int size();
+        int size() const;
 
         bool sameLength(int _len);
 
@@ -83,7 +83,7 @@ class AssociativePointerArray
         void moveElement(int i,double *delta);
         void scale(double factor);
 
-        inline int bufSize(int operation,bool scale,bool translate,bool rotate);
+        inline int bufSize(int operation,bool scale,bool translate,bool rotate) const;
         inline int pushToBuffer(double *buf, int operation,bool scale,bool translate, bool rotate);
         inline int popFromBuffer(double *buf, int operation,bool scale,bool translate, bool rotate);
 
