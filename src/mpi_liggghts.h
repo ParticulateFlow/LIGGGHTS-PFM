@@ -160,7 +160,8 @@ inline void MPI_Allgather_Sum_Scalar(int scalar,int &scalar_acc,MPI_Comm comm)
    returns allocated and populated array vector0 to caller
 ------------------------------------------------------------------------- */
 
-inline int MPI_Gather0_Vector(double *vector, int size ,double *&vector_0,MPI_Comm comm)
+template<typename T>
+inline int MPI_Gather0_Vector(T *vector, int size ,T *&vector_0,MPI_Comm comm)
 {
     int me,nprocs, *recvcnts, *displs;
     int size_0;
@@ -187,14 +188,14 @@ inline int MPI_Gather0_Vector(double *vector, int size ,double *&vector_0,MPI_Co
 
     //NP allocate
     if(me == 0)
-        vector_0 = new double[size_0];
+        vector_0 = new T[size_0];
     else
         vector_0 = 0;
 
     //NP use MPI_Gatherv to gather vector data at proc 0
     //NP MPI_Gatherv(sendbuf, sendcnt, sendtype, recvbuf, recvcnts, displs, recvtype, root, comm)
 
-    MPI_Gatherv(vector,size,MPI_DOUBLE,vector_0, recvcnts, displs, MPI_DOUBLE,0, comm);
+    MPI_Gatherv(vector,size,mpi_type<T>(),vector_0, recvcnts, displs, mpi_type<T>(),0, comm);
 
     delete []recvcnts;
     delete []displs;
