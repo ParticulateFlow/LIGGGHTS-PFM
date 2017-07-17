@@ -24,6 +24,7 @@
 
 #include <mpi.h>
 #include <stdio.h>
+#include "lmptype.h"
 
 /* ---------------------------------------------------------------------- */
 // a poor man's inline MPI wrappers for LIGGGHTS
@@ -33,7 +34,7 @@ namespace LAMMPS_NS
 {
 
 /* ----------------------------------------------------------------------
-   Helper function to be able to templetize wrappers
+   Helper function to be able to templatize wrappers
 ------------------------------------------------------------------------- */
 
 template<typename T>
@@ -53,6 +54,12 @@ template<>
 inline MPI_Datatype mpi_type<int>()
 {
   return MPI_INT;
+}
+
+template<>
+inline MPI_Datatype mpi_type<int64_t>()
+{
+  return MPI_LONG_LONG_INT;
 }
 
 /* ---------------------------------------------------------------------- */
