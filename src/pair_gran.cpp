@@ -397,7 +397,7 @@ void PairGran::init_style()
     if(force->newton_pair == 1) error->all(FLERR,"Have to implement rev comm of energy terms");
   }
 
-  // register per-particle properties for energy tracking
+  // register per-particle properties for contact force tracking
   if(store_contact_forces_ && 0 == fix_contact_forces_)
   {
     char **fixarg = new char*[17];
