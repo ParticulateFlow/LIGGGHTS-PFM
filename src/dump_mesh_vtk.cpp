@@ -1156,7 +1156,7 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
       }
       buf_pos++;
   }
-  if(dump_what_ & DUMP_NNEIGHS)
+  if(dump_what_ & DUMP_MIN_ACTIVE_EDGE_DIST)
   {
       //write owner data
       fprintf(fp,"SCALARS min_active_edge_dist float 1\nLOOKUP_TABLE default\n");
