@@ -244,7 +244,7 @@
               if(!edgeActive(iTri)[iNode])
                 return LARGE_TRIMESH;
 
-              vectorAddMultiple3D(n,distFromNode,edge[ipp],closestPoint);
+              vectorAddMultiple3D(n,distFromNode,edge[iNode],closestPoint);
 
               bary[ipp] = 0.;
               bary[iNode] = 1. - distFromNode/edgeLen(iTri)[iNode];
