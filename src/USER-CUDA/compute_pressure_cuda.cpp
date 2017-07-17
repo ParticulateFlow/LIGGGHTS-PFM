@@ -55,8 +55,6 @@
 
 using namespace LAMMPS_NS;
 
-enum{DUMMY0,INVOKED_SCALAR,INVOKED_VECTOR,DUMMMY3,INVOKED_PERATOM};
-
 /* ---------------------------------------------------------------------- */
 
 ComputePressureCuda::ComputePressureCuda(LAMMPS *lmp, int narg, char **arg) :
