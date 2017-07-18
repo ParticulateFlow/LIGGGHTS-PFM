@@ -200,6 +200,7 @@ void FixPropertyAtomTracerStream::mark_tracers(int ilo, int ihi)
     FixPropertyAtom *fix_release = fix_ins_stream_->fix_prop_release();
     double **release_data = fix_release->array_atom;
     double *marker = this->vector_atom;
+    int *mask = atom->mask;
     int s, step0;
     int release_step_index = fix_ins_stream_->release_step_index();
 
@@ -211,6 +212,10 @@ void FixPropertyAtomTracerStream::mark_tracers(int ilo, int ihi)
 
     for(int i = ilo; i < ihi; i++)
     {
+        // skip particles of wrong group
+        if (!(mask[i] & groupbit))
+            continue;
+
         s = static_cast<int>(release_data[i][release_step_index]);
         if (s >= step0)
         {
