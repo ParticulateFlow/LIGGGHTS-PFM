@@ -41,7 +41,7 @@ class DeleteAtoms : protected Pointers {
   void delete_porosity(int, char **);
   void options(int, char **);
 
-  inline int sbmask(int j) {
+  inline int sbmask(int j) const {
     return j >> SBBITS & 3;
   }
   // static variable for ring communication callback to access class data
