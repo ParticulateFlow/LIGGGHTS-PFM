@@ -51,6 +51,10 @@ using MODIFIED_ANDREW_AUX::Circle;
 
 namespace LAMMPS_NS{
 
+  /**
+   * @brief ModifiedAndrew class
+   *        Andrew's monotone chain convex hull algorithm
+   */
 class ModifiedAndrew : protected Pointers {
 
 public:
