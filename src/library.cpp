@@ -435,15 +435,16 @@ void lammps_gather_atoms(void *ptr, const char *name,
     int *tag = lmp->atom->tag;
     int nlocal = lmp->atom->nlocal;
 
-    if (count == 1)
+    if (count == 1) {
       for (i = 0; i < nlocal; i++)
         copy[tag[i]-1] = vector[i];
-    else
+    } else {
       for (i = 0; i < nlocal; i++) {
         offset = count*(tag[i]-1);
         for (j = 0; j < count; j++)
           copy[offset++] = array[i][j];
       }
+    }
 
     MPI_Allreduce(copy,data,count*natoms,MPI_INT,MPI_SUM,lmp->world);
     lmp->memory->destroy(copy);
