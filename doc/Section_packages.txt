@@ -282,7 +282,7 @@ See the doc pages for these commands for details.
 There are example scripts for using this package in
 examples/USER/cg-cmm.
 
-This is the second generation implementation reducing the the clutter
+This is the second generation implementation reducing the clutter
 of the previous version. For many systems with electrostatics, it will
 be faster to use pair_style hybrid/overlay with lj/sdk and coul/long
 instead of the combined lj/sdk/coul/long style.  since the number of

@@ -189,7 +189,7 @@ X-Server GPUs.
 Use of the {timing} keyword will output detailed timing information
 for various subroutines.
 
-The {test} keyword will output info for the the specified atom at
+The {test} keyword will output info for the specified atom at
 several points during each time step.  This is mainly usefull for
 debugging purposes.  Note that the simulation will be severly slowed
 down if this option is used.

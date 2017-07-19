@@ -60,7 +60,7 @@ added to it.
 
 No information about this fix is written to "binary restart
 files"_restart.html. No "fix_modify"_fix_modify.html option applies
-to this fix. This fix computes a a global 3-vector of the total
+to this fix. This fix computes a global 3-vector of the total
 buoyancy force, which can be accessed by various "output
 commands"_Section_howto.html#howto_15.
 No parameter of this fix can be used with the {start/stop} keywords of
