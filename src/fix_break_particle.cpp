@@ -1689,7 +1689,7 @@ void FixBreakParticle::pre_insert()
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (breaking_atom_tags_this.find(tag[iPart]) == breaking_atom_tags_this.end()) continue;
 
-            double delta[3];
+            double delta[3] = {};
             double deltan = fwg->primitiveWall()->resolveContact(x[iPart], radius[iPart], delta);
 
             if (deltan < 0.0) {
