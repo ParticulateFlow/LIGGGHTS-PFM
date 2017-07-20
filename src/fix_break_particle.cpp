@@ -23,9 +23,9 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_break_particle.h"
 #include "atom.h"
 #include "atom_vec.h"

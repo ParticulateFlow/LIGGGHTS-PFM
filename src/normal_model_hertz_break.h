@@ -32,7 +32,7 @@ NORMAL_MODEL(HERTZ_BREAK,hertz/break,7)
 #define NORMAL_MODEL_HERTZ_BREAK_H_
 #include "contact_models.h"
 #include "global_properties.h"
-#include "math.h"
+#include <math.h>
 
 namespace LIGGGHTS {
 
