@@ -60,7 +60,7 @@ namespace ContactModels
       hsetup->add_history_value("enx", "1");
       hsetup->add_history_value("eny", "1");
       hsetup->add_history_value("enz", "1");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "HERTZ/BREAK loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HERTZ/BREAK loaded\n");
     }
 
     void registerSettings(Settings & settings)
@@ -151,7 +151,7 @@ namespace ContactModels
       const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
       double gamman=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(Sn*meff);
       double gammat=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(St*meff);
-      /*NL*/ //fprintf(screen,"tangential_damping %s\n",tangential_damping?"yes":"no");
+      /*NL*/ //if (screen) fprintf(screen,"tangential_damping %s\n",tangential_damping?"yes":"no");
       if (!tangential_damping) gammat = 0.0;
 
       if (!displayedSettings) {
@@ -159,7 +159,7 @@ namespace ContactModels
 
         /*
         if(limitForce)
-            if(0 == comm->me) fprintf(screen," NormalModel<HERTZ_STIFFNESS>: will limit normal force.\n");
+            if(0 == comm->me && screen) fprintf(screen," NormalModel<HERTZ_STIFFNESS>: will limit normal force.\n");
         */
       }
       // convert Kn and Kt from pressure units to force/distance^2
