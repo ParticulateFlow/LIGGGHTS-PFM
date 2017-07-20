@@ -42,6 +42,11 @@ namespace LAMMPS_NS {
 class PrimitiveWall;
 class TriMeshContacts;
 
+enum {
+ NORMAL_MODEL_HERTZ_BREAK = 7,
+ NORMAL_MODEL_HOOKE_BREAK = 8
+};
+
 class FixTemplateFragments : public FixTemplateSphere {
  public:
 
@@ -49,13 +54,10 @@ class FixTemplateFragments : public FixTemplateSphere {
   virtual ~FixTemplateFragments();
 
   virtual void post_create();
-  virtual double min_rad();
-  virtual double max_rad();
-  virtual double max_r_bound();
+  virtual double min_rad() const;
+  virtual double max_rad() const;
+  virtual double max_r_bound() const;
   virtual int number_spheres();
-
-  // single insertion
-  virtual void randomize_single();
 
   // multi insertion
   virtual void init_ptilist(int);

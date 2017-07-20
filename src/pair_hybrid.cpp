@@ -11,10 +11,10 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "pair_hybrid.h"
 #include "atom.h"
 #include "force.h"
@@ -331,7 +331,7 @@ void PairHybrid::coeff(int narg, char **arg)
   // 4th arg = pair sub-style index if name used multiple times
   // allow for "none" as valid sub-style name
 
-  int multflag;
+  int multflag = 0;
   int m;
 
   for (m = 0; m < nstyles; m++) {
@@ -721,7 +721,7 @@ void *PairHybrid::extract(const char *str, int &dim)
 {
   void *cutptr = NULL;
   void *ptr;
-  double cutvalue;
+  double cutvalue = 0.0;
 
   for (int m = 0; m < nstyles; m++) {
     ptr = styles[m]->extract(str,dim);

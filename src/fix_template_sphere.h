@@ -49,16 +49,13 @@ class FixTemplateSphere : public Fix {
   // access to protected properties
   virtual double volexpect();           //NP expectancy value for particle volume
   virtual double massexpect();          //NP expectancy value for particle mass
-  virtual double min_rad();
-  virtual double max_rad();
-  virtual double max_r_bound();
+  virtual double min_rad() const;
+  virtual double max_rad() const;
+  virtual double max_r_bound() const;
   virtual int number_spheres();
-  int type();
+  virtual int maxtype();
+  virtual int mintype();
   class Region *region();
-
-  // single particle generation, used by fix pour/dev
-  virtual void randomize_single();    //NP generates one random particle
-  class ParticleToInsert *pti;
 
   // many particle generation, used by fix insert commands
   virtual void init_ptilist(int);
@@ -69,7 +66,9 @@ class FixTemplateSphere : public Fix {
 
   virtual void finalize_insertion() {}
 
- protected:
+  ParticleToInsert* get_single_random_pti(int distribution_groupbit);
+
+protected:
 
   int iarg;
 
@@ -87,6 +86,8 @@ class FixTemplateSphere : public Fix {
   double volume_expect;
   double mass_expect;
   double vol_limit;
+
+  void randomize_single_pti(ParticleToInsert* &pti, int distribution_groupbit);
 };
 
 }

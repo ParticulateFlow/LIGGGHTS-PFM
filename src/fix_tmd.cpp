@@ -17,10 +17,10 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_tmd.h"
 #include "atom.h"
 #include "update.h"
@@ -86,6 +86,8 @@ FixTMD::FixTMD(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg)
   }
 
   masstotal = group->mass(igroup);
+  if (masstotal == 0.0)
+    error->all(FLERR,"Cannot use fix TMD on massless group");
 
   // rho_start = initial rho
   // xold = initial x or 0.0 if not in group
@@ -394,7 +396,7 @@ void FixTMD::readfile(char *file)
 
   char *buffer = new char[CHUNK*MAXLINE];
   char *next,*bufptr;
-  int i,m,nlines,tag,imageflag,ix,iy,iz;
+  int i,m,nlines,tag,imageflag=0,ix,iy,iz;
   double x,y,z,xprd,yprd,zprd;
 
   int firstline = 1;

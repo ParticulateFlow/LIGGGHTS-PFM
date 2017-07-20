@@ -21,13 +21,13 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
-#include "unistd.h"
-#include "sys/stat.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "input.h"
 #include "style_command.h"
 #include "universe.h"
@@ -467,7 +467,7 @@ void Input::substitute(char *&str, char *&str2, int &max, int &max2, int flag)
         value = variable->retrieve(var);
       }
       if (value == NULL) {
-          /*NL*/ fprintf(screen,"Illegal variable: the unknown variable name is '%s'\n",var);
+          /*NL*/ if (screen) fprintf(screen,"Illegal variable: the unknown variable name is '%s'\n",var);
           error->one(FLERR,"Substitution for illegal variable");
       }
 
@@ -538,7 +538,6 @@ int Input::execute_command()
   else if (!strcmp(command,"quit")) quit();
   else if (!strcmp(command,"shell")) shell();
   else if (!strcmp(command,"variable")) variable_command();
-
   else if (!strcmp(command,"angle_coeff")) angle_coeff();
   else if (!strcmp(command,"angle_style")) angle_style();
   else if (!strcmp(command,"atom_modify")) atom_modify();
@@ -592,7 +591,7 @@ int Input::execute_command()
   else if (!strcmp(command,"unfix")) unfix();
   else if (!strcmp(command,"units")) units();
   else if (!strcmp(command,"modify_timing")) modify_timing(); //NP modified by R.B.
-
+  else if (!strcmp(command,"partitioner_style")) partitioner_style(); //NP modified by R.B.
   else flag = 0;
 
   // return if command was listed above
@@ -928,7 +927,7 @@ void Input::partition()
 {
   if (narg < 3) error->all(FLERR,"Illegal partition command");
 
-  int yesflag;
+  int yesflag = 0;
   if (strcmp(arg[0],"yes") == 0) yesflag = 1;
   else if (strcmp(arg[0],"no") == 0) yesflag = 0;
   else error->all(FLERR,"Illegal partition command");
@@ -1128,6 +1127,14 @@ void Input::atom_style()
   if (domain->box_exist)
     error->all(FLERR,"Atom_style command after simulation box is defined");
   atom->create_avec(arg[0],narg-1,&arg[1],lmp->suffix);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void Input::partitioner_style()
+{
+  if (narg < 1) error->all(FLERR,"Illegal partitioner_style command");
+  atom->create_partitioner(arg[0],narg-1,&arg[1],lmp->suffix);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1368,7 +1375,7 @@ void Input::neighbor_command()
 
 void Input::newton()
 {
-  int newton_pair,newton_bond;
+  int newton_pair=1,newton_bond=1;
 
   if (narg == 1) {
     if (strcmp(arg[0],"off") == 0) newton_pair = newton_bond = 0;

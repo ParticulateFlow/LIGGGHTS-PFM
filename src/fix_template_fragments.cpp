@@ -26,7 +26,7 @@
 #include "fix_template_fragments.h"
 #include "atom.h"
 #include "atom_vec.h"
-#include "stdlib.h"
+#include <stdlib.h>
 #include "vector_liggghts.h"
 #include "force.h"
 #include "memory.h"
@@ -130,7 +130,7 @@ FixTemplateFragments::~FixTemplateFragments()
 void FixTemplateFragments::post_create()
 {
   pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
-  max_type = pair_gran->mpg->max_type();
+  max_type = pair_gran->get_properties()->max_type();
   dnum = pair_gran->dnum();
 
   // don't know these in advance ...
@@ -142,21 +142,21 @@ void FixTemplateFragments::post_create()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateFragments::min_rad()
+double FixTemplateFragments::min_rad() const
 {
   return 0.0;
 }
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateFragments::max_rad()
+double FixTemplateFragments::max_rad() const
 {
   return 0.0;
 }
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateFragments::max_r_bound()
+double FixTemplateFragments::max_r_bound() const
 {
   return r_bound;
 }
@@ -167,13 +167,6 @@ int FixTemplateFragments::number_spheres()
 {
   if (LMP_DEBUGMODE_FRAGMENTS) fprintf(screen,"FixTemplateFragments::number_spheres: nspheres = %d\n", nspheres);
   return nspheres;
-}
-
-/* ----------------------------------------------------------------------*/
-
-void FixTemplateFragments::randomize_single()
-{
-  error->all(FLERR,"re-implement FixTemplateFragments::randomize_single()!");
 }
 
 /* ----------------------------------------------------------------------*/
@@ -305,9 +298,9 @@ void FixTemplateFragments::pre_insert(
       double CF = breakdata[i][9]/energy;
 
       const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
-      if (normalmodel == 6) { // hertz/break
+      if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
         CF = cbrt(CF*CF); // force scales with deltan^(3/2)
-      } else if (normalmodel == 7) { // hooke/break
+      } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
         CF = CF; // force scales with deltan
       }
 
@@ -351,10 +344,10 @@ double FixTemplateFragments::elastic_energy(const std::vector<double> &radius, c
           double reff = radius[pi] * radius[pj] / radsum;
           double kn = 0.0;
 
-          if (normalmodel == 6) { // hertz/break
+          if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
             kn = 4./3.*Yeff*sqrt(reff * deltan);
             energy += 0.4 * kn * deltan * deltan; // 0.4 = (2./5.)
-          } else if (normalmodel == 7) { // hooke/break
+          } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
             const double sqrtval = sqrt(reff);
             const double mi = MY_4PI3 * radius[pi] * radius[pi] * radius[pi] * density;
             const double mj = MY_4PI3 * radius[pj] * radius[pj] * radius[pj] * density;

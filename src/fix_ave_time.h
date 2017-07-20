@@ -20,7 +20,7 @@ FixStyle(ave/time,FixAveTime)
 #ifndef LMP_FIX_AVE_TIME_H
 #define LMP_FIX_AVE_TIME_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "fix.h"
 
 namespace LAMMPS_NS {
@@ -47,7 +47,7 @@ class FixAveTime : public Fix {
   FILE *fp;
   int nrows;
 
-  int ave,nwindow,nsum,startstep,mode;
+  int ave,nwindow,startstep,mode;
   int noff,overwrite;
   int *offlist;
   char *title1,*title2,*title3;

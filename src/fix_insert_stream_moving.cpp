@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_insert_stream_moving.h"
 #include "fix_mesh_surface.h"
 #include "atom.h"
@@ -145,8 +145,8 @@ void FixInsertStreamMoving::finalize_insertion(int ninserted_spheres_this_local)
     int ilo = atom->nlocal - ninserted_spheres_this_local;
     int ihi = atom->nlocal;
 
-    int tri_id;
-    double bary[3], dist_normal;
+    int tri_id = 0;
+    double bary[3]={}, dist_normal;
     double **x = atom->x;
     double dt = update->dt;
 
@@ -163,10 +163,10 @@ void FixInsertStreamMoving::finalize_insertion(int ninserted_spheres_this_local)
 
         /*NL*/ //double xtest[3];
         /*NL*/ //ins_face_planar->constructPositionFromBary(tri_id,bary,xtest);
-        /*NL*/ //fprintf(screen,"dist_normal %f\n",dist_normal);
-        /*NL*/ //printVec3D(screen,"x[i]",x[i]);
-        /*NL*/ //printVec3D(screen,"bary",bary);
-        /*NL*/ //printVec3D(screen,"xtest",xtest);
+        /*NL*/ //if (screen) fprintf(screen,"dist_normal %f\n",dist_normal);
+        /*NL*/ //if (screen) printVec3D(screen,"x[i]",x[i]);
+        /*NL*/ //if (screen) printVec3D(screen,"bary",bary);
+        /*NL*/ //if (screen) printVec3D(screen,"xtest",xtest);
 
         n_steps = static_cast<int>((dist_normal+FIX_INSERT_STREAM_TINY)/(vectorMag3D(v_normal)*dt));
 
@@ -203,18 +203,7 @@ void FixInsertStreamMoving::finalize_insertion(int ninserted_spheres_this_local)
         //NP from release step for body
 
         // could ramdonize vel, omega, quat here
-        if(v_randomSetting==1)
-        {
-            v_toInsert[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
-            v_toInsert[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
-            v_toInsert[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
-        }
-        else if(v_randomSetting==2)
-        {
-            v_toInsert[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
-            v_toInsert[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
-            v_toInsert[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
-        }
+        generate_random_velocity(v_toInsert);
 
         // 10 11 12 is velocity, 13 14 15 is omega
         vectorCopy3D(v_toInsert,&release_data[i][10]);
@@ -236,7 +225,7 @@ void FixInsertStreamMoving::end_of_step()
     int nlocal = atom->nlocal;
     double **release_data = fix_release->array_atom;
     double time_elapsed, dist_elapsed[3], v_integrate[3], *v_toInsert, *omega_toInsert;
-    double x_ins[3], bary[3], dist_extrude0[3], dist_extrude[3];
+    double x_ins[3]={}, bary[3]={}, dist_extrude0[3]={}, dist_extrude[3]={};
     double dt = update->dt;
 
     double **x = atom->x;
@@ -344,8 +333,8 @@ void FixInsertStreamMoving::reset_releasedata(bigint newstep,bigint oldstep)
   int nlocal = atom->nlocal;
   double **x = atom->x;
   double **release_data = fix_release->array_atom;
-  double bary[3], dist_normal;
-  int tri_id;
+  double bary[3]={}, dist_normal;
+  int tri_id = 0;
 
   for(int i = 0; i < nlocal; i++)
   {

@@ -16,7 +16,7 @@ create_box	2 reg
 neighbor	0.002 bin
 neigh_modify	delay 0
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype 5.e6 5.e6
 fix 		m2 all property/global poissonsRatio peratomtype 0.45 0.45
@@ -25,8 +25,8 @@ fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.05 0.05 0.0
 fix         m5 all property/global thermalEmissivity peratomtype 0.5 0.5
 
 
-#New pair style
-pair_style 	gran/hertz/history #Hertzian without cohesion
+#pair style
+pair_style gran model hertz tangential history #Hertzian without cohesion
 pair_coeff	* *
 
 timestep	0.0001
@@ -37,8 +37,8 @@ fix 		ftca all property/global thermalCapacity peratomtype 10.0 10.0
 fix     	heattransfer all heat/gran/conduction initial_temperature 600.
 
 #particle distributions and insertion
-fix		pts2 all particletemplate/sphere 1 atom_type 2 density constant 8730.0 radius constant 0.01
-fix		pdd2 all particledistribution/discrete 1.  1 pts2 1.0
+fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant 8730.0 radius constant 0.01
+fix		pdd2 all particledistribution/discrete 1 1 pts2 1.0
 
 fix		ins all insert/pack seed 100001 distributiontemplate pdd2 vel constant 0. 0. 0.0 &
 		insert_every once overlapcheck yes all_in yes particles_in_region 1 region reg
@@ -56,11 +56,11 @@ compute_modify	thermo_temp dynamic yes
 #insert the first particles so that dump is not empty
 run		1
 
-dump    dmp all custom 10000 post/dump*.heatGran id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_Temp[0] f_heatFlux[0]
+dump    dmp all custom 10000 post/dump*.heatGran id type x y z vx vy vz fx fy fz omegax omegay omegaz radius f_Temp[0] f_heatFlux[0]
 unfix		ins
 
 unfix   heattransfer
-fix     heattransfer all heat/gran/radiation initial_temperature 600. seed 5335 max_bounces 1 background_temperature 300.
+fix     heattransfer all heat/gran/radiation initial_temperature 600. seed 5335 max_bounces 1 background_temperature 300. cutoff 0.025
 
 #run to see heat transfer // 1 second: 10000 timesteps
 run   600000

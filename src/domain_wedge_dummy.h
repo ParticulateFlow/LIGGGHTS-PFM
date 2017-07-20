@@ -37,7 +37,7 @@ class DomainWedge : public Domain
 
   public:
 
-    DomainWedge(class LAMMPS *lmp) : Domain(lmp) {};
+    DomainWedge(class LAMMPS *lmp) : Domain(lmp) {}
     void set_domain(class RegWedge *rw) {}
 
     inline int index_axis()

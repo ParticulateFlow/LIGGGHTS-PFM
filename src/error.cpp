@@ -21,15 +21,15 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdlib.h"
+#include <mpi.h>
+#include <stdlib.h>
 #include "error.h"
 #include "universe.h"
 #include "output.h"
 #include "fix.h" //NP modified C.K.
 #include "force.h" //NP modified C.K.
 #include "compute.h" //NP modified C.K.
-#include "string.h" //NP modified C.K.
+#include <string.h> //NP modified C.K.
 
 using namespace LAMMPS_NS;
 

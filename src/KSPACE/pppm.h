@@ -21,7 +21,7 @@ KSpaceStyle(pppm,PPPM)
 #define LMP_PPPM_H
 
 #include "lmptype.h"
-#include "mpi.h"
+#include <mpi.h>
 
 #ifdef FFT_SINGLE
 typedef float FFT_SCALAR;

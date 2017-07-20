@@ -32,7 +32,7 @@
 
 #include "cg_cmm_parms.h"
 
-#include "math.h"
+#include <math.h>
 
 namespace LAMMPS_NS {
 

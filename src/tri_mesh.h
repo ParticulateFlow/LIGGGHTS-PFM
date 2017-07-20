@@ -65,6 +65,8 @@ namespace LAMMPS_NS
 
       private:
 
+        inline double precision_trimesh()
+        { return MultiNodeMesh<3>::precision(); }
         double calcDist(double *cs, double *closestPoint, double *en0);
         double calcDistToPlane(double *p, double *pPlane, double *nPlane);
 

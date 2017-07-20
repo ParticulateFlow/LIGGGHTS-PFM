@@ -62,7 +62,7 @@ namespace MODEL_PARAMS
      {
        const double hMaxEff= hCutEff[i][j]*100; // force f(hMax)/f(hCut) = 0.0001
        matrix->data[i][j] = hMaxEff;
-       maxhMaxEff = max(maxhMaxEff,hMaxEff); // get maximum hMaxEff for skin check
+       maxhMaxEff = std::max(maxhMaxEff,hMaxEff); // get maximum hMaxEff for skin check
      }
    }
 
@@ -78,7 +78,6 @@ namespace MODEL_PARAMS
 
 namespace LIGGGHTS {
 namespace ContactModels {
-  using namespace std;
   using namespace LAMMPS_NS;
 
   template<>
@@ -90,7 +89,7 @@ namespace ContactModels {
     {
       if(domain->dimension!=3)
           error->all(FLERR,"Cohesion model valid for 3d simulations only");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "COHESION/HAMAKER loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "COHESION/HAMAKER loaded\n");
     }
 
     void registerSettings(Settings&) {}

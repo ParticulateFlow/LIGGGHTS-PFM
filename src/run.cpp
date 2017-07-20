@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "run.h"
 #include "domain.h"
 #include "update.h"
@@ -49,7 +49,7 @@ void Run::command(int narg, char **arg)
   int uptoflag = 0;
   int startflag = 0;
   int stopflag = 0;
-  bigint start,stop;
+  bigint start = 0, stop = 0;
   int preflag = 1;
   int postflag = 1;
   int nevery = 0;

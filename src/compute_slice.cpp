@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "compute_slice.h"
 #include "update.h"
 #include "modify.h"
@@ -25,9 +25,6 @@
 using namespace LAMMPS_NS;
 
 enum{COMPUTE,FIX};
-
-#define INVOKED_VECTOR 2
-#define INVOKED_ARRAY 4
 
 /* ---------------------------------------------------------------------- */
 

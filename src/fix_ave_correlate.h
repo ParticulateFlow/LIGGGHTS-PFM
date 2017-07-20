@@ -20,7 +20,7 @@ FixStyle(ave/correlate,FixAveCorrelate)
 #ifndef LMP_FIX_AVE_CORRELATE_H
 #define LMP_FIX_AVE_CORRELATE_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "fix.h"
 
 namespace LAMMPS_NS {
@@ -46,7 +46,6 @@ class FixAveCorrelate : public Fix {
 
   int type,ave,startstep,overwrite;
   double prefactor;
-  char *title1,*title2,*title3;
   long filepos;
 
   int firstindex;      // index in values ring of earliest time sample

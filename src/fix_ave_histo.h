@@ -20,7 +20,7 @@ FixStyle(ave/histo,FixAveHisto)
 #ifndef LMP_FIX_AVE_HISTO_H
 #define LMP_FIX_AVE_HISTO_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "fix.h"
 
 namespace LAMMPS_NS {
@@ -59,7 +59,7 @@ class FixAveHisto : public Fix {
   double *vector;
   int maxatom;
 
-  int ave,nwindow,nsum,startstep,mode;
+  int ave,nwindow,startstep,mode;
   char *title1,*title2,*title3;
   int iwindow,window_limit;
 

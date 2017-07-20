@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -19,9 +19,16 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
+
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 #include "fix_insert_pack.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -63,6 +70,9 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       int iregion = domain->find_region(arg[iarg+1]);
       if (iregion == -1) error->fix_error(FLERR,this,"region ID does not exist");
+      int n = strlen(arg[iarg+1]) + 1;
+      idregion = new char[n];
+      strcpy(idregion,arg[iarg+1]);
       ins_region = domain->regions[iregion];
       iarg += 2;
       hasargs = true;
@@ -115,7 +125,7 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
 
 FixInsertPack::~FixInsertPack()
 {
-
+  delete []idregion;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -129,6 +139,7 @@ FixInsertPack::~FixInsertPack()
 void FixInsertPack::init_defaults()
 {
       ins_region = NULL;
+      idregion = 0;
       ntry_mc = 100000;
 
       volumefraction_region = 0.0;
@@ -140,6 +151,21 @@ void FixInsertPack::init_defaults()
       insertion_ratio = 0.;
 
       warn_region = true;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsertPack::init()
+{
+    FixInsert::init();
+
+    if (ins_region)
+    {
+        int iregion = domain->find_region(idregion);
+        if (iregion == -1)
+            error->fix_error(FLERR,this,"region ID does not exist");
+        ins_region = domain->regions[iregion];
+    }
 }
 
 /* ----------------------------------------------------------------------
@@ -160,7 +186,7 @@ void FixInsertPack::calc_insertion_properties()
     if(ins_region->dynamic_check())
         error->fix_error(FLERR,this,"dynamic regions are not allowed");
 
-    /*NL*///fprintf(screen,"FixInsertPack: Volume of insertion region: %f\n",region_volume);
+    /*NL*///if (screen) fprintf(screen,"FixInsertPack: Volume of insertion region: %f\n",region_volume);
 
     // error check on insert_every
     if(insert_every < 0)
@@ -194,7 +220,7 @@ void FixInsertPack::calc_region_volume_local()
 {
     ins_region->volume_mc(ntry_mc,all_in_flag==0?false:true,fix_distribution->max_r_bound(),
                           region_volume,region_volume_local);
-    /*NL*/ //fprintf(screen,"region_volume %e region_volume_local %e diff %e\n",region_volume,region_volume_local,region_volume-region_volume_local);
+    /*NL*/ //if (screen) fprintf(screen,"region_volume %e region_volume_local %e diff %e\n",region_volume,region_volume_local,region_volume-region_volume_local);
 }
 
 /* ----------------------------------------------------------------------
@@ -279,14 +305,14 @@ int FixInsertPack::calc_ninsert_this()
       MPI_Sum_Scalar(vol_region,world);
       ninsert_this = static_cast<int>((volumefraction_region*region_volume - vol_region) / fix_distribution->vol_expect() + random->uniform());
       insertion_ratio = vol_region / (volumefraction_region*region_volume);
-      /*NL*/ fprintf(screen,"ninsert_this %d, region_volume %f vol_region %f vol_expect %f\n",ninsert_this,region_volume,vol_region,fix_distribution->vol_expect());
+      /*NL*/ //if (screen) fprintf(screen,"ninsert_this %d, region_volume %f vol_region %f vol_expect %f\n",ninsert_this,region_volume,vol_region,fix_distribution->vol_expect());
   }
   else if(ntotal_region > 0)
   {
       MPI_Sum_Scalar(np_region,world);
       ninsert_this = ntotal_region - np_region;
       insertion_ratio = static_cast<double>(np_region) / static_cast<double>(ntotal_region);
-      /*NL*/ //fprintf(screen,"ninsert_this %d np_region %d\n",ninsert_this,np_region);
+      /*NL*/ //if (screen) fprintf(screen,"ninsert_this %d np_region %d\n",ninsert_this,np_region);
   }
   else if(masstotal_region > 0.)
   {
@@ -297,9 +323,16 @@ int FixInsertPack::calc_ninsert_this()
   else error->one(FLERR,"Internal error in FixInsertPack::calc_ninsert_this()");
 
   // can be < 0 due to overflow, round-off etc
-  if(ninsert_this < -200000)
-    error->fix_error(FLERR,this,"overflow in particle number calculation: inserting too many particles in one step");
-  if(ninsert_this < 0) ninsert_this = 0;
+  int const warning_limit = static_cast<int>(0.9 * static_cast<double>( INT_MAX ) );
+  if(ninsert_this < 0){
+    if(comm->me == 0)
+      error->warning(FLERR,"No insertion at this time step. Either the insertion region is full, or (unlikely) an overflow in particle number calculation has occurred.");
+    ninsert_this = 0;
+  } else if(ninsert_this > warning_limit && comm->me == 0) {
+    char warning_msg[500];
+    sprintf(warning_msg,"Attempting to insert a very high number (%d) of particles - do you really want that?",ninsert_this);
+    error->warning(FLERR,warning_msg);
+  }
 
   if(insertion_ratio < 0.) insertion_ratio = 0.;
   if(insertion_ratio > 1.) insertion_ratio = 1.;
@@ -309,7 +342,7 @@ int FixInsertPack::calc_ninsert_this()
   //NP if(fix_rm && (np_region > 0 || vol_region > 0. || mass_region > 0.))
   //NP   error->warning(FLERR,"Fix insert/pack insertion volume is partly filled and you are using multisphere particles - command does not work accurately in this case");
 
-  /*NL*/ //fprintf(screen,"ninsert_this %d\n",ninsert_this);
+  /*NL*/ //if (screen) fprintf(screen,"ninsert_this %d\n",ninsert_this);
 
   return ninsert_this;
 }
@@ -322,7 +355,7 @@ double FixInsertPack::insertion_fraction()
     if(domain->box_change)
         calc_region_volume_local();
 
-    /*NL*/ //fprintf(screen,"proc %d: region_volume_local %f , region_volume %f\n",comm->me,region_volume_local,region_volume);
+    /*NL*/ //if (screen) fprintf(screen,"proc %d: region_volume_local %f , region_volume %f\n",comm->me,region_volume_local,region_volume);
 
     return region_volume_local/region_volume;
 }
@@ -343,6 +376,21 @@ inline int FixInsertPack::is_nearby(int i)
 
     if(ins_region->match_expandby_cut(pos,cut)) return 1;
     return 0;
+}
+
+BoundingBox FixInsertPack::getBoundingBox() const {
+  BoundingBox bb(ins_region->extent_xlo, ins_region->extent_xhi,
+                 ins_region->extent_ylo, ins_region->extent_yhi,
+                 ins_region->extent_zlo, ins_region->extent_zhi);
+
+  bb.shrinkToSubbox(domain->sublo, domain->subhi);
+
+  // extend to include ghost particles
+  const double cut = 2.*maxrad;
+  const double extend = cut + extend_cut_ghost();
+  bb.extendByDelta(extend);
+
+  return bb;
 }
 
 /* ----------------------------------------------------------------------
@@ -378,7 +426,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
     double v_toInsert[3];
     vectorZeroize3D(v_toInsert);
 
-    /*NL*/ //fprintf(screen,"STARTED, on proc %d maxtry %d ninsert_this_local %d\n",comm->me,maxtry,ninsert_this_local);
+    /*NL*/ //if (screen) fprintf(screen,"STARTED, on proc %d maxtry %d ninsert_this_local %d\n",comm->me,maxtry,ninsert_this_local);
 
     // no overlap check
     if(!check_ol_flag)
@@ -388,7 +436,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             pti = fix_distribution->pti_list[ninserted_this_local];
             double rbound = pti->r_bound_ins;
 
-            if(print_stats_during_flag && (ninsert_this_local >= 10) && (0 == itotal % (ninsert_this_local/10)))
+            if(screen && print_stats_during_flag && (ninsert_this_local >= 10) && (0 == itotal % (ninsert_this_local/10)))
                 fprintf(screen,"insertion: proc %d at %d %%\n",comm->me,10*itotal/(ninsert_this_local/10));
 
             do
@@ -405,18 +453,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             // randomize vel, omega, quat here
             vectorCopy3D(v_insert,v_toInsert);
             // could ramdonize vel, omega, quat here
-            if(v_randomSetting==1)
-            {
-                v_toInsert[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
-                v_toInsert[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
-                v_toInsert[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
-            }
-            if(v_randomSetting==2)
-            {
-                v_toInsert[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
-                v_toInsert[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
-                v_toInsert[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
-            }
+            generate_random_velocity(v_toInsert);
 
             if(quat_random_)
                 MathExtraLiggghts::random_unit_quat(random,quat_insert);
@@ -427,7 +464,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             mass_inserted_this_local += pti->mass_ins;
             ninserted_this_local++;
 
-            /*NL*///printVec3D(screen,"random pos",pos);
+            /*NL*///if (screen) printVec3D(screen,"random pos",pos);
         }
     }
     // overlap check
@@ -435,15 +472,15 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
     // pti checks against xnear and adds self contributions
     else
     {
-        /*NL*///fprintf(screen,"proc %d ninsert_this_local %d maxtry %d\n",comm->me,ninsert_this_local,maxtry);
+        /*NL*///if (screen) fprintf(screen,"proc %d ninsert_this_local %d maxtry %d\n",comm->me,ninsert_this_local,maxtry);
 
         while(ntry < maxtry && ninserted_this_local < ninsert_this_local)
         {
-            /*NL*///fprintf(screen,"proc %d setting props for pti #%d, maxtry %d\n",comm->me,ninserted_this_local,maxtry);
+            /*NL*///if (screen) fprintf(screen,"proc %d setting props for pti #%d, maxtry %d\n",comm->me,ninserted_this_local,maxtry);
             pti = fix_distribution->pti_list[ninserted_this_local];
             double rbound = pti->r_bound_ins;
 
-            if(print_stats_during_flag && (ninsert_this_local >= 10) && (0 == ninserted_this_local % (ninsert_this_local/10)) )
+            if(screen && print_stats_during_flag && (ninsert_this_local >= 10) && (0 == ninserted_this_local % (ninsert_this_local/10)) )
                 fprintf(screen,"insertion: proc %d at %d %%\n",comm->me,10*ninserted_this_local/(ninsert_this_local/10));
 
             int nins = 0;
@@ -461,27 +498,16 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
                 // randomize vel, omega, quat here
                 vectorCopy3D(v_insert,v_toInsert);
 
-                // could ramdonize vel, omega, quat here
-                if(v_randomSetting==1)
-                {
-                    v_toInsert[0] = v_insert[0] + v_insertFluct[0] * 2.0 * (random->uniform()-0.50);
-                    v_toInsert[1] = v_insert[1] + v_insertFluct[1] * 2.0 * (random->uniform()-0.50);
-                    v_toInsert[2] = v_insert[2] + v_insertFluct[2] * 2.0 * (random->uniform()-0.50);
-                }
-                else if(v_randomSetting==2)
-                {
-                    v_toInsert[0] = v_insert[0] + v_insertFluct[0] * random->gaussian();
-                    v_toInsert[1] = v_insert[1] + v_insertFluct[1] * random->gaussian();
-                    v_toInsert[2] = v_insert[2] + v_insertFluct[2] * random->gaussian();
-                }
+                // could randomize vel, omega, quat here
+                generate_random_velocity(v_toInsert);
 
                 if(quat_random_)
                     MathExtraLiggghts::random_unit_quat(random,quat_insert);
 
-                nins = pti->check_near_set_x_v_omega(pos,v_toInsert,omega_insert,quat_insert,xnear,nspheres_near);
+                nins = pti->check_near_set_x_v_omega(pos,v_toInsert,omega_insert,quat_insert,neighList);
 
-                /*NL*///printVec3D(screen,"random pos",pos);
-                /*NL*///fprintf(screen,"nins %d\n",nins);
+                /*NL*///if (screen) printVec3D(screen,"random pos",pos);
+                /*NL*///if (screen) fprintf(screen,"nins %d\n",nins);
             }
 
             if(nins > 0)
@@ -492,8 +518,10 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             }
         }
     }
-    /*NL*/ //fprintf(screen,"FINISHED on proc %d\n",comm->me);
+    /*NL*/ //if (screen) fprintf(screen,"FINISHED on proc %d\n",comm->me);
 }
+
+
 
 /* ---------------------------------------------------------------------- */
 

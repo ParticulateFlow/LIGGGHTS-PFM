@@ -391,7 +391,7 @@ void FixBreakParticle::init()
   }
 
   pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
-  max_type = pair_gran->mpg->max_type();
+  max_type = pair_gran->get_properties()->max_type();
 
   dnum = pair_gran->dnum();
   deltaMaxOffset = pair_gran->get_history_value_offset("deltaMax");
@@ -459,6 +459,20 @@ inline int FixBreakParticle::is_nearby(int i)
   // need not check overlap with existing particles since we
   // know space originally taken by deleted particles is free
   return 0;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixBreakParticle::load_xnear(int)
+{
+  return 0;
+}
+
+/* ---------------------------------------------------------------------- */
+
+BoundingBox FixBreakParticle::getBoundingBox() const
+{
+  return BoundingBox();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1640,11 +1654,11 @@ void FixBreakParticle::pre_insert()
                   }
 
                   double E_el = 0.0;
-                  if (normalmodel == 6) { // hertz/break
+                  if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
                     const double sqrtval = sqrt(radius[iPart]*deltan);
                     const double kn = 4./3. * Yeff * sqrtval;
                     E_el = 0.4*kn*deltan*deltan;
-                  } else if (normalmodel == 7) { // hooke/break
+                  } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
                     const double sqrtval = sqrt(radius[iPart]);
                     const double meff = rmass[iPart];
                     const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
@@ -1709,11 +1723,11 @@ void FixBreakParticle::pre_insert()
               }
 
               double E_el = 0.0;
-              if (normalmodel == 6) { // hertz/break
+              if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
                 const double sqrtval = sqrt(radius[iPart]*deltan);
                 const double kn = 4./3. * Yeff * sqrtval;
                 E_el = 0.4*kn*deltan*deltan;
-              } else if (normalmodel == 7) { // hooke/break
+              } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
                 const double sqrtval = sqrt(radius[iPart]);
                 const double meff = rmass[iPart];
                 const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();

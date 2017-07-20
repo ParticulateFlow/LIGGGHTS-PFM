@@ -47,7 +47,7 @@ inline bool Comm::decide(int i,int dim,double lo,double hi,int ineed)
     double **x = atom->x;
     double *radius = atom->radius;
 
-    /*NL*/ //fprintf(screen,"called 'decide'\n");
+    /*NL*/ //if (screen) fprintf(screen,"called 'decide'\n");
 
     //NP only extracted half cutghost before in setup()
     //NP so account for radius here
@@ -71,8 +71,8 @@ inline bool Comm::decide_wedge(int i,int dim,double lo,double hi,int ineed)
     coo[0] = x[i][iphi];
     coo[1] = x[i][(iphi+1)%3];
 
-    /*NL*/ //printVec3D(screen,"coo",x[i]);
-    /*NL*/ //fprintf(screen,"coo %f %f\n",coo[0],coo[1]);
+    /*NL*/ //if (screen) printVec3D(screen,"coo",x[i]);
+    /*NL*/ //if (screen) fprintf(screen,"coo %f %f\n",coo[0],coo[1]);
     /*NL*/ //error->all(FLERR,"end");
 
     //NP going left
@@ -81,11 +81,11 @@ inline bool Comm::decide_wedge(int i,int dim,double lo,double hi,int ineed)
         vectorSubtract2D(coo,pleft,d);
         if(vectorDot2D(d,nleft) >= -(use_gran_opt()? radius[i] : 0.))
         {
-            /*NL*/ //fprintf(screen,"particle tag %d: left YES, vectorDot2D(d,nleft) %f ineed %d\n",atom->tag[i],vectorDot2D(d,nleft),ineed);
-            /*NL*/ //printVec3D(screen," x",atom->x[i]);
-            /*NL*/ //printVec2D(screen," coo",coo);
-            /*NL*/ //printVec2D(screen," d",d);
-            /*NL*/ //printVec2D(screen," pleft",pleft);
+            /*NL*/ //if (screen) fprintf(screen,"particle tag %d: left YES, vectorDot2D(d,nleft) %f ineed %d\n",atom->tag[i],vectorDot2D(d,nleft),ineed);
+            /*NL*/ //if (screen) printVec3D(screen," x",atom->x[i]);
+            /*NL*/ //if (screen) printVec2D(screen," coo",coo);
+            /*NL*/ //if (screen) printVec2D(screen," d",d);
+            /*NL*/ //if (screen) printVec2D(screen," pleft",pleft);
             return true;
         }
     }
@@ -95,19 +95,19 @@ inline bool Comm::decide_wedge(int i,int dim,double lo,double hi,int ineed)
         vectorSubtract2D(coo,pright,d);
         if(vectorDot2D(d,nright) >= -(use_gran_opt()? radius[i] : 0.))
         {
-            /*NL*/ //fprintf(screen,"particle tag %d: right YES, vectorDot2D(d,nright) %f ineed %d\n",atom->tag[i],vectorDot2D(d,nright),ineed);
-            /*NL*/ //printVec3D(screen," x",atom->x[i]);
-            /*NL*/ //printVec2D(screen," d",d);
-            /*NL*/ //printVec2D(screen," pright",pright);
+            /*NL*/ //if (screen) fprintf(screen,"particle tag %d: right YES, vectorDot2D(d,nright) %f ineed %d\n",atom->tag[i],vectorDot2D(d,nright),ineed);
+            /*NL*/ //if (screen) printVec3D(screen," x",atom->x[i]);
+            /*NL*/ //if (screen) printVec2D(screen," d",d);
+            /*NL*/ //if (screen) printVec2D(screen," pright",pright);
             return true;
         }
     }
-    /*NL*/ //fprintf(screen,"particle tag %d: NO, vectorDot2D(d,nl/r) %f %f ineed %d\n",atom->tag[i],vectorDot2D(d,nleft),vectorDot2D(d,nright),ineed);
-    /*NL*/ //printVec3D(screen," x",atom->x[i]);
-    /*NL*/ //printVec2D(screen," coo",coo);
-    /*NL*/ //printVec2D(screen," d",d);
-    /*NL*/ //printVec2D(screen," pleft",pleft);
-    /*NL*/ //printVec2D(screen," pright",pright);
+    /*NL*/ //if (screen) fprintf(screen,"particle tag %d: NO, vectorDot2D(d,nl/r) %f %f ineed %d\n",atom->tag[i],vectorDot2D(d,nleft),vectorDot2D(d,nright),ineed);
+    /*NL*/ //if (screen) printVec3D(screen," x",atom->x[i]);
+    /*NL*/ //if (screen) printVec2D(screen," coo",coo);
+    /*NL*/ //if (screen) printVec2D(screen," d",d);
+    /*NL*/ //if (screen) printVec2D(screen," pleft",pleft);
+    /*NL*/ //if (screen) printVec2D(screen," pright",pright);
     return false;
 }
 

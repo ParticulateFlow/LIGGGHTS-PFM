@@ -32,11 +32,11 @@
    Rules"_http://lammps.sandia.gov/open_source.html
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "mpi.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <mpi.h>
 #include "pair_bop.h"
 #include "atom.h"
 #include "neighbor.h"

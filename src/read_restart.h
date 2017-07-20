@@ -20,7 +20,7 @@ CommandStyle(read_restart,ReadRestart)
 #ifndef LMP_READ_RESTART_H
 #define LMP_READ_RESTART_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "pointers.h"
 
 namespace LAMMPS_NS {
@@ -33,7 +33,6 @@ class ReadRestart : protected Pointers {
  private:
   int me,nprocs,nprocs_file;
   FILE *fp;
-  int nfix_restart_global,nfix_restart_peratom;
   int swapflag;
 
   void file_search(char *, char *);

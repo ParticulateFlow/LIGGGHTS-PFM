@@ -11,10 +11,10 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "ctype.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 #include "dump_image.h"
 #include "image.h"
 #include "atom.h"
@@ -647,8 +647,8 @@ void DumpImage::view_params()
 void DumpImage::create_image()
 {
   int i,j,m,itype,atom1,atom2;
-  double diameter,delx,dely,delz;
-  double *color,*color1,*color2;
+  double diameter=0.0,delx,dely,delz;
+  double *color=NULL,*color1=NULL,*color2=NULL;
   double xmid[3];
 
   // render my atoms

@@ -28,7 +28,7 @@
 ------------------------------------------------------------------------- */
 
 #include "mesh_mover.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "math_extra_liggghts.h"
 #include "input.h"
@@ -103,12 +103,12 @@ MeshMoverLinearVariable::MeshMoverLinearVariable(LAMMPS *lmp,AbstractMesh *_mesh
       strcpy(var1str_,&var1[2]);
       myvar1_ = input->variable->find(var1str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var2[2]) + 1;
       var2str_ = new char[n];
       strcpy(var2str_,&var2[2]);
       myvar2_ = input->variable->find(var2str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var3[2]) + 1;
       var3str_ = new char[n];
       strcpy(var3str_,&var3[2]);
       myvar3_ = input->variable->find(var3str_);
@@ -172,6 +172,15 @@ void MeshMoverLinearVariable::setup()
 {
     //NP in analogy to time_since_setup_ = 0 in fix move/mesh
     vectorZeroize3D(dX_);
+
+    // check if variable still exists
+    myvar1_ = input->variable->find(var1str_);
+    myvar2_ = input->variable->find(var2str_);
+    myvar3_ = input->variable->find(var3str_);
+
+    if (myvar1_ < 0) error->all(FLERR,"Variable name 1 for fix move/mesh linear/variable does not exist");
+    if (myvar2_ < 0) error->all(FLERR,"Variable name 2 for fix move/mesh linear/variable does not exist");
+    if (myvar3_ < 0) error->all(FLERR,"Variable name 3 for fix move/mesh linear/variable does not exist");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -187,11 +196,11 @@ void MeshMoverLinearVariable::initial_integrate(double dTAbs,double dTSetup,doub
     modify->clearstep_compute();
 
     // evaluate variable
-    /*NL*///fprintf(screen,"######### var=%d %d %d\n ########",myvar1,myvar2,myvar3);
+    /*NL*///if (screen) fprintf(screen,"######### var=%d %d %d\n ########",myvar1,myvar2,myvar3);
     vel_[0] = input->variable->compute_equal(myvar1_);
     vel_[1] = input->variable->compute_equal(myvar2_);
     vel_[2] = input->variable->compute_equal(myvar3_);
-    /*NL*///fprintf(screen,"######### var=%f %f %f\n ########",vel_[0],vel_[1],vel_[2]);
+    /*NL*///if (screen) fprintf(screen,"######### var=%f %f %f\n ########",vel_[0],vel_[1],vel_[2]);
 
     modify->addstep_compute(update->ntimestep + 1);
 
@@ -247,7 +256,7 @@ void MeshMoverWiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
     //double cosine = cos(omega_ * dTAbs) - cos(omega_ * (dTAbs-dTSetup));
 
     /*NL*///if(15001 == update->ntimestep) {
-    /*NL*///  fprintf(screen,"dTAbs %f dTSetup %f sine %f cosine %f omega_ %f\n",dTAbs,dTSetup,sine,cosine,omega_);
+    /*NL*///  if (screen) fprintf(screen,"dTAbs %f dTSetup %f sine %f cosine %f omega_ %f\n",dTAbs,dTSetup,sine,cosine,omega_);
     /*NL*///  error->all(FLERR,"end"); }
 
     //NP size includes owned and ghost elements
@@ -315,7 +324,7 @@ MeshMoverRotate::~MeshMoverRotate()
 
 void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
-    double node[3],vRot[3],omegaVec[3],rPA[3];
+    double omegaVec[3];
     double reference_point[3];
     double totalPhi = omega_*dTSetup;
     double incrementalPhi = omega_*dt;
@@ -326,12 +335,12 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
     get_reference_point(reference_point);
 
     //NP size includes owned and ghost elements
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
-    double ***v_node = get_v();
-    double ***nodes = get_nodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
+    double *** const v_node = get_v();
+    double *** const nodes = get_nodes();
 
-    /*NL*/ //fprintf(screen,"dTAbs %f dTSetup %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
+    /*NL*/ //if (screen) fprintf(screen,"dTAbs %f dTSetup %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
     /*NL*/ //               dTAbs,dTSetup,totalPhi,incrementalPhi,reference_point[0],reference_point[1],reference_point[2]);
 
     // rotate the mesh
@@ -339,12 +348,16 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
+
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
       {
-          vectorCopy3D(nodes[i][iNode],node);
-          vectorSubtract3D(node,reference_point,rPA);
+          double vRot[3],rPA[3];
+          vectorSubtract3D(nodes[i][iNode],reference_point,rPA);
           vectorCross3D(omegaVec,rPA,vRot);
           vectorAdd3D(v_node[i][iNode],vRot,v_node[i][iNode]);
       }
@@ -426,13 +439,18 @@ void MeshMoverRotateVariable::setup()
 {
     //NP in analogy to time_since_setup_ = 0 in fix move/mesh
     totalPhi_ = 0.;
+
+    // check if variable still exists
+    myvar1_ = input->variable->find(var1str_);
+    if (myvar1_ < 0)
+        error->all(FLERR,"Variable name 1 for fix move/mesh rotate dynamic does not exist");
 }
 
 /* ---------------------------------------------------------------------- */
 
 void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
 {
-    double node[3],vRot[3],omegaVec[3],rPA[3];
+    double omegaVec[3];
     double reference_point[3];
     double incrementalPhi;
 
@@ -461,12 +479,16 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
 
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
+
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec,nodes)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
       {
-          vectorCopy3D(nodes[i][iNode],node);
-          vectorSubtract3D(node,reference_point,rPA);
+          double rPA[3], vRot[3];
+          vectorSubtract3D(nodes[i][iNode],reference_point,rPA);
           vectorCross3D(omegaVec,rPA,vRot);
           vectorAdd3D(v_node[i][iNode],vRot,v_node[i][iNode]);
       }

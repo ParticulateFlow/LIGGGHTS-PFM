@@ -15,10 +15,10 @@
    Contributing author: Xiaowang Zhou (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_eim.h"
 #include "atom.h"
 #include "force.h"

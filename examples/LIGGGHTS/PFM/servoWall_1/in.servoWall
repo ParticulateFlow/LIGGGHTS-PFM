@@ -57,7 +57,7 @@ create_box	1 reg
 neighbor	    ${skin} bin
 neigh_modify	delay 0
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 fix     m1 all property/global youngsModulus peratomtype 5.e6
 fix     m2 all property/global poissonsRatio peratomtype 0.45
 fix     m3 all property/global coefficientRestitution peratomtypepair 1 0.9
@@ -99,8 +99,8 @@ fix     ins all insert/pack seed 5332 distributiontemplate pdd maxattempt 100 in
 fix		integr all nve/sphere
 
 #output settings, include total thermal energy
-compute		    1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 vol
+compute		    rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
 thermo		    ${dumpfreq}
 thermo_modify	lost ignore norm no
 compute_modify  thermo_temp dynamic yes
@@ -111,7 +111,7 @@ fix_modify cad1 integrate stop
 
 #insert the first particles so that dump is not empty
 run		  1
-dump    dmp all custom ${dumpfreq} post/dump*.servoWall id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump    dmp all custom ${dumpfreq} post/dump*.servoWall id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 dump    dumpstl1 all mesh/stl ${dumpfreq} post/dump_*.cad1.stl cad1
 

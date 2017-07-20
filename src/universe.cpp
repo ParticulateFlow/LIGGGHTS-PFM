@@ -21,10 +21,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdlib.h"
-#include "string.h"
-#include "stdio.h"
+#include <mpi.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "universe.h"
 #include "version.h"
 #include "version_liggghts.h" //NP modified C.K.
@@ -154,7 +154,7 @@ void Universe::reorder(char *style, char *arg)
 
   // create new uworld communicator
 
-  int ome,key;
+  int ome,key = 0;
   MPI_Comm_rank(uorig,&ome);
   for (int i = 0; i < nprocs; i++)
     if (uni2orig[i] == ome) key = i;

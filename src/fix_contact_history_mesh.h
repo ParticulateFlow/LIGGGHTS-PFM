@@ -31,7 +31,7 @@ FixStyle(contacthistory/mesh,FixContactHistoryMesh) //NP for use by pair Style N
 #include "fix_contact_history.h"
 #include "fix_property_atom.h"
 #include "my_page.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "atom.h"
 #include "update.h"
@@ -79,7 +79,9 @@ class FixContactHistoryMesh : public FixContactHistory {
 
   // OMP interface
   void resetDeletionPage(int tid);
+  void markForDeletion(int tid, int i);
   void markForDeletion(int tid, int ifrom, int ito);
+  void cleanUpContact(int i);
   void cleanUpContacts(int ifrom, int ito);
 
   void reset_history();

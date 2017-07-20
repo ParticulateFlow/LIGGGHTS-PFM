@@ -42,6 +42,7 @@ enum
 class FixPropertyAtom : public Fix {
  friend class Set;
  friend class FixPropertyAtomUpdateFix;
+ friend class FixPropertyAtomRandom;
  public:
   FixPropertyAtom(class LAMMPS *, int, char **,bool parse = true);
   ~FixPropertyAtom();
@@ -55,6 +56,7 @@ class FixPropertyAtom : public Fix {
   double memory_usage();
   void grow_arrays(int);
   void copy_arrays(int, int,int);
+  void pre_set_arrays();
   virtual void set_arrays(int);
 
   void set_all(double value);
@@ -86,6 +88,10 @@ class FixPropertyAtom : public Fix {
   int commGhostRev;     // 1 if rev communicated from ghost particles (via pack_comm_rev/unpack_comm_rev), 0 if not
   int nvalues;
   double *defaultvalues; // default values at particle creation
+
+  // in case of initialization from property - name of property
+  char *propertyname;
+  double *property;
 }; //end class
 
 }

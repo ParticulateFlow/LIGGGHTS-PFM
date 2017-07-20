@@ -26,7 +26,7 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 #ifdef NORMAL_MODEL
-NORMAL_MODEL(HOOKE_BREAK,hooke/break,7)
+NORMAL_MODEL(HOOKE_BREAK,hooke/break,8)
 #else
 #ifndef NORMAL_MODEL_HOOKE_BREAK_H_
 #define NORMAL_MODEL_HOOKE_BREAK_H_

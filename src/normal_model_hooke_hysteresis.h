@@ -30,7 +30,7 @@ NORMAL_MODEL(HOOKE_HYSTERESIS,hooke/hysteresis,2)
 #ifndef NORMAL_MODEL_HOOKE_HYSTERESIS_H_
 #define NORMAL_MODEL_HOOKE_HYSTERESIS_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "atom.h"
 #include "force.h"
 #include "update.h"
@@ -50,8 +50,8 @@ namespace ContactModels
         kn2kc(NULL),
         phiF(NULL)
     {
-      history_offset = hsetup->add_history_value("deltaMax", "1");
-      /*NL*/ if(Pointers::comm->me == 0) fprintf(Pointers::screen, "HOOKE/HYSTERESIS loaded\n");
+      history_offset = hsetup->add_history_value("deltaMax", "0");
+      /*NL*/ if(Pointers::comm->me == 0 && Pointers::screen) fprintf(Pointers::screen, "HOOKE/HYSTERESIS loaded\n");
     }
 
     inline void registerSettings(Settings & settings){

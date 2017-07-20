@@ -18,8 +18,8 @@ andreas.eitzlmayr@tugraz.at
 Christoph Kloss (DCS)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "compute_reduce.h"
 #include "atom.h"
 #include "update.h"
@@ -40,11 +40,6 @@ enum{SUM,MINN,MAXX,AVE};
 enum{X,V,F,COMPUTE,FIX,VARIABLE,RHO,P}; //NP modified C.K.
 enum{PERATOM,LOCAL};
 
-#define INVOKED_VECTOR 2
-#define INVOKED_ARRAY 4
-#define INVOKED_PERATOM 8
-#define INVOKED_LOCAL 16
-
 #define BIG 1.0e20
 
 /* ---------------------------------------------------------------------- */
@@ -52,7 +47,7 @@ enum{PERATOM,LOCAL};
 ComputeReduce::ComputeReduce(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg)
 {
-  int iarg;
+  int iarg = 0;
   if (strcmp(style,"reduce") == 0) {
     if (narg < 5) error->all(FLERR,"Illegal compute reduce command");
     idregion = NULL;
@@ -66,7 +61,7 @@ ComputeReduce::ComputeReduce(LAMMPS *lmp, int narg, char **arg) :
     idregion = new char[n];
     strcpy(idregion,arg[3]);
     iarg = 4;
-  }
+  } else error->all(FLERR,"Illegal compute reduce command: invalid style");
 
   if (strcmp(arg[iarg],"sum") == 0) mode = SUM;
   else if (strcmp(arg[iarg],"min") == 0) mode = MINN;
@@ -464,7 +459,7 @@ double ComputeReduce::compute_one(int m, int flag)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
-  double one;
+  double one = 0.0;
   if (mode == SUM) one = 0.0;
   else if (mode == MINN) one = BIG;
   else if (mode == MAXX) one = -BIG;

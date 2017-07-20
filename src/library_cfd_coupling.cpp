@@ -23,8 +23,8 @@
    CFD-DEM Coupling Stuff
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
+#include <mpi.h>
+#include <string.h>
 #include "library_cfd_coupling.h"
 #include "lammps.h"
 #include "input.h"

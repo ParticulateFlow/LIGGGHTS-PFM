@@ -19,15 +19,16 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_property_atom.h"
 #include "atom.h"
 #include "memory.h"
 #include "error.h"
 
 //NP modified C.K.
+#include "pair_gran.h"
 #include "atom_vec.h"
 #include "force.h"
 #include "update.h"
@@ -47,9 +48,11 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixPropertyAtom::FixPropertyAtom(LAMMPS *lmp, int narg, char **arg, bool parse) :
-  Fix(lmp, narg, arg)
+  Fix(lmp, narg, arg),
+  propertyname(0),
+  property(0)
 {
-    /*NL*/ //fprintf(screen,"HERRE parse for id %s\n",id);
+    /*NL*/ //if (screen) fprintf(screen,"HERRE parse for id %s\n",id);
     if(parse) parse_args(narg,arg);
 }
 
@@ -100,15 +103,48 @@ void FixPropertyAtom::parse_args(int narg, char **arg)
 
     // fix handles properties that need to be initialized at particle creation
     create_attribute = 1;
-    for (int j = 0; j < nvalues; j++)
+
+    // special case: only implemented for scalar default value from scalar
+    // initialize property from another existing scalar, which is found via Property class
+    // since this fix must exist already, it is initialized before this fix property
+    propertyname = NULL;
+    if(FIXPROPERTY_ATOM_SCALAR == data_style)
     {
-        // if any of the values is none, this fix will not init properties
-        if(strcmp(arg[8+j],"none") == 0)
+        char *prop = arg[8];
+        int n = strlen(prop);
+        bool is_digit = false;
+        for (int i = 0; i < n; i++)
+            if (isdigit(prop[i])) is_digit = true;
+
+        if(!is_digit)
         {
-            create_attribute = 0;
-            continue;
+            if(!force->pair_match("gran", 0))
+                error->fix_error(FLERR,this,"requires a granular pair style to be used with non-digit initialization");
+            PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+
+            // scalar property found
+            int len1,len2;
+            if(pair_gran->get_properties()->find_property(prop,"scalar-atom",len1,len2))
+            {
+                propertyname = new char[n+1];
+                strcpy(propertyname,prop);
+            }
         }
-        defaultvalues[j] = force->numeric(FLERR,arg[8+j]);
+    }
+
+    // set default values
+    if(!propertyname)
+    {
+        for (int j = 0; j < nvalues; j++)
+        {
+            // if any of the values is none, this fix will not init properties
+            if(strcmp(arg[8+j],"none") == 0)
+            {
+                create_attribute = 0;
+                continue;
+            }
+            defaultvalues[j] = force->numeric(FLERR,arg[8+j]);
+        }
     }
 
     if (data_style) size_peratom_cols = nvalues;
@@ -138,14 +174,27 @@ void FixPropertyAtom::parse_args(int narg, char **arg)
     int nlocal = atom->nlocal;
     if(create_attribute)
     {
-        for (int i = 0; i < nlocal; i++)
+        if(propertyname)
         {
-          if (data_style)
-          {
-            for (int m = 0; m < nvalues; m++)
-                array_atom[i][m] = defaultvalues[m];
-          }
-          else vector_atom[i] = defaultvalues[0];
+            // not implemented
+            if(data_style)
+                error->all(FLERR,"internal error");
+
+            pre_set_arrays();
+            for (int i = 0; i < nlocal; i++)
+                vector_atom[i] = property[i];
+        }
+        else
+        {
+            for (int i = 0; i < nlocal; i++)
+            {
+                if (data_style)
+                {
+                    for (int m = 0; m < nvalues; m++)
+                    array_atom[i][m] = defaultvalues[m];
+                }
+                else vector_atom[i] = defaultvalues[0];
+            }
         }
     }
 
@@ -173,6 +222,7 @@ FixPropertyAtom::~FixPropertyAtom()
   // delete locally stored arrays
   delete[] variablename;
   delete[] defaultvalues;
+  if(propertyname) delete []propertyname;
 
   if (data_style) memory->destroy(array_atom);
   else memory->destroy(vector_atom);
@@ -183,8 +233,8 @@ FixPropertyAtom::~FixPropertyAtom()
 Fix* FixPropertyAtom::check_fix(const char *varname,const char *svmstyle,int len1,int len2,const char *caller,bool errflag)
 {
     char errmsg[400];
-    /*NL*/ //fprintf(screen,"checking fix id %s\n",id);
-    /*NL*/ //fprintf(screen," with variablename %s\n",variablename);
+    /*NL*/ //if (screen) fprintf(screen,"checking fix id %s\n",id);
+    /*NL*/ //if (screen) fprintf(screen," with variablename %s\n",variablename);
 
     if(strcmp(varname,variablename) == 0)
     {
@@ -271,7 +321,7 @@ void FixPropertyAtom::grow_arrays(int nmax)
 {
     if (data_style) memory->grow(array_atom,nmax,nvalues,"FixPropertyAtom:array_atom");
     else memory->grow(vector_atom, nmax, "FixPropertyAtom:vector_atom");
-    /*NL*/ //fprintf(screen,"GROW nmax %d\n",nmax);
+    /*NL*/ //if (screen) fprintf(screen,"GROW nmax %d\n",nmax);
 }
 
 /* ----------------------------------------------------------------------
@@ -285,16 +335,45 @@ void FixPropertyAtom::copy_arrays(int i, int j, int delflag)
 }
 
 /* ----------------------------------------------------------------------
+   called before set_arrays is called for each atom
+------------------------------------------------------------------------- */
+
+void FixPropertyAtom::pre_set_arrays()
+{
+
+    property = 0;
+    if(propertyname)
+    {
+
+        if(!force->pair_match("gran", 0))
+            error->fix_error(FLERR,this,"requires a granular pair style to be used with non-digit initialization");
+        PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+
+        int len1,len2;
+
+        property = (double*) pair_gran->get_properties()->find_property(propertyname,"scalar-atom",len1,len2);
+        if(!property)
+        {
+            char errstr[200];
+            sprintf(errstr,"Property %s not found",propertyname);
+
+            error->fix_error(FLERR,this,errstr);
+        }
+
+    }
+}
+
+/* ----------------------------------------------------------------------
    initialize one atom's array values, called when atom is created
 ------------------------------------------------------------------------- */
 
 void FixPropertyAtom::set_arrays(int i)
 {
-    /*NL*///fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
+    /*NL*///if (screen) fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
     if (data_style)
         for(int k=0;k<nvalues;k++)
             array_atom[i][k] = defaultvalues[k];
-    else vector_atom[i] = defaultvalues[0];
+    else vector_atom[i] = property ? property[i] : defaultvalues[0];
 }
 
 /* ----------------------------------------------------------------------
@@ -303,7 +382,7 @@ void FixPropertyAtom::set_arrays(int i)
 
 void FixPropertyAtom::set_all(double value)
 {
-    /*NL*///fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
+    /*NL*///if (screen) fprintf(screen,"set_arrays(int i) called for %d, variable %s, defaultvalues[0] %f, vector_atom %d\n",i,variablename,defaultvalues[0],vector_atom);
     int nlocal = atom->nlocal;
     if (data_style)
     {

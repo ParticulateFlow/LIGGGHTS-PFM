@@ -15,6 +15,8 @@
 #define LMP_ATOM_H
 
 #include "pointers.h"
+#include "partitioner.h"
+#include <vector>
 
 namespace LAMMPS_NS {
 
@@ -47,6 +49,7 @@ class Atom : protected Pointers {
   int *tag,*type,*mask;
   tagint *image;
   double **x,**v,**f;
+  int * thread;
 
   int *molecule;
   double *q,**mu;
@@ -192,8 +195,8 @@ class Atom : protected Pointers {
   void delete_callback(const char *, int);
   void update_callback(int);
 
-  int find_custom(char *, int &);
-  int add_custom(char *, int);
+  int find_custom(const char *, int &);
+  int add_custom(const char *, int);
   void remove_custom(int, int);
 
   void *extract(const char *, int &); //NP modified C.K.
@@ -225,6 +228,8 @@ class Atom : protected Pointers {
   void map_one(int, int);
   void map_delete();
   int map_find_hash(int);
+
+  void fill_permute_by_spatial_sorted_bins(std::vector<int> & ilist, int * target_permute);
 
  private:
 
@@ -260,8 +265,22 @@ class Atom : protected Pointers {
 
   size_t memlength;                  // allocated size of memstr  //NP modified R.B.
   char *memstr;                   // string of array names already counted
+  Partitioner * partitioner;
+ public:
+  char * partitioner_style;
+  void create_partitioner(const char *style, int narg, const char * const * arg, const char *suffix = NULL);
+  Partitioner * new_partitioner(const char * style, int narg, const char * const * arg, const char *suffix, int & sflag);
+
+  bool dirty;                     // current partitions are not valid
+  std::vector<int> thread_offsets;
+
+  bool same_thread(int i, int j) const;
+  bool in_thread_region(int tid, int i) const;
 
   void setup_sort_bins();
+  void spatial_sort();
+  void partitioner_sort();
+
   int next_prime(int);
 };
 

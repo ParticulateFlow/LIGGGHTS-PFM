@@ -20,7 +20,7 @@ ComputeStyle(rdf,ComputeRDF)
 #ifndef LMP_COMPUTE_RDF_H
 #define LMP_COMPUTE_RDF_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "compute.h"
 
 namespace LAMMPS_NS {
@@ -34,7 +34,6 @@ class ComputeRDF : public Compute {
   void compute_array();
 
  private:
-  int first;
   int nbin;                         // # of rdf bins
   int npairs;                     // # of rdf pairs
   double delr,delrinv;                 // bin width and its inverse
@@ -47,6 +46,8 @@ class ComputeRDF : public Compute {
   int *typecount;
   int *icount,*jcount;
 
+  bool use_neigh_cutoff2;
+  
   class NeighList *list;         // half neighbor list
 };
 

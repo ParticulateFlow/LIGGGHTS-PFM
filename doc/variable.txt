@@ -58,8 +58,8 @@ style = {delete} or {index} or {loop} or {world} or {universe} or {uloop} or {st
 		      angmom(group,dim,region), torque(group,dim,region), 
 		      inertia(group,dimdim,region), omega(group,dim,region)
     special functions = sum(x), min(x), max(x), ave(x), trap(x), gmask(x), rmask(x), grmask(x,y), next(x)
-    atom value = id\[i\], mass\[i\], type\[i\], x\[i\], y\[i\], z\[i\], vx\[i\], vy\[i\], vz\[i\], fx\[i\], fy\[i\], fz\[i\]
-    atom vector = id, mass, type, x, y, z, vx, vy, vz, fx, fy, fz
+    atom value = id\[i\], mass\[i\], type\[i\], x\[i\], y\[i\], z\[i\], vx\[i\], vy\[i\], vz\[i\], fx\[i\], fy\[i\], fz\[i\], radius\[i\], omegax\[i\], omegay\[i\], omegaz\[i\], tqx\[i\], tqy\[i\], tqz\[i\]
+    atom vector = id, mass, type, x, y, z, vx, vy, vz, fx, fy, fz, radius, omegax, omegay, omegaz, tqx, tqy, tqz
     compute references = c_ID, c_ID\[i\], c_ID\[i\]\[j\]
     fix references = f_ID, f_ID\[i\], f_ID\[i\]\[j\]
     variable references = v_name, v_name\[i\] :pre

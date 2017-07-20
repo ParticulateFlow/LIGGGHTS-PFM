@@ -62,6 +62,8 @@ class FixBreakParticle : public FixInsert {
   virtual void calc_insertion_properties();
   virtual void pre_insert();
   int is_nearby(int);
+  virtual int load_xnear(int);
+  virtual BoundingBox getBoundingBox() const;
   void x_v_omega(int ninsert_this_local,int &ninserted_this_local, int &ninserted_spheres_this_local, double &mass_inserted_this_local);
   double insertion_fraction();
 

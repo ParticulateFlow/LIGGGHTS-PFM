@@ -18,6 +18,14 @@
 
 namespace LAMMPS_NS {
 
+enum {
+  INVOKED_SCALAR  = 1<<0,
+  INVOKED_VECTOR  = 1<<1,
+  INVOKED_ARRAY   = 1<<2,
+  INVOKED_PERATOM = 1<<3,
+  INVOKED_LOCAL   = 1<<4
+};
+
 class Compute : protected Pointers {
  public:
   char *id,*style;
@@ -131,7 +139,7 @@ class Compute : protected Pointers {
 
   int molecules_in_group(int &, int &);
 
-  inline int sbmask(int j) {
+  inline int sbmask(int j) const {
     return j >> SBBITS & 3;
   }
 };

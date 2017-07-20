@@ -19,18 +19,18 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "memory.h"
 #include "input.h"
 #include "modify.h"
 #include "update.h"
 #include "error.h"
 #include "domain.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "input_mesh_tri.h"
 #include "tri_mesh.h"
@@ -38,7 +38,10 @@
 using namespace LAMMPS_NS;
 
 InputMeshTri::InputMeshTri(LAMMPS *lmp, int argc, char **argv) : Input(lmp, argc, argv),
-verbose_(false)
+verbose_(false),
+i_exclusion_list_(0),
+size_exclusion_list_(0),
+exclusion_list_(0)
 {}
 
 InputMeshTri::~InputMeshTri()
@@ -48,9 +51,12 @@ InputMeshTri::~InputMeshTri()
    process all input from filename
 ------------------------------------------------------------------------- */
 
-void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh,bool verbose)
+void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh, bool verbose, const int size_exclusion_list, int *exclusion_list)
 {
   verbose_ = verbose;
+  size_exclusion_list_ = size_exclusion_list;
+  exclusion_list_ = exclusion_list;
+
   if(strlen(filename) < 5)
     error->all(FLERR,"Illegal command, file name too short for input of triangular mesh");
   const char *ext = &(filename[strlen(filename)-3]);
@@ -77,12 +83,12 @@ void InputMeshTri::meshtrifile(const char *filename, class TriMesh *mesh,bool ve
 
   if(is_stl)
   {
-      if (comm->me == 0) fprintf(screen,"\nReading STL file '%s' \n",filename);
+      if (comm->me == 0 && screen) fprintf(screen,"\nReading STL file '%s' \n",filename);
       meshtrifile_stl(mesh);
   }
   else if(is_vtk)
   {
-      if (comm->me == 0) fprintf(screen,"\nReading VTK file '%s' \n",filename);
+      if (comm->me == 0 && screen) fprintf(screen,"\nReading VTK file '%s' \n",filename);
       meshtrifile_vtk(mesh);
   }
   else error->all(FLERR,"Illegal command, need either an STL file or a VTK file as input for triangular mesh.");
@@ -98,16 +104,17 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
 {
   int n,m;
 
-  double **points;
+  double **points = NULL;
   int ipoint = 0,npoints = 0;
 
-  int **cells, *lines;
-  int icell,ncells = 0;
+  int **cells = NULL, *lines = NULL;
+  int icell = 0,ncells = 0;
 
   int ntris = 0;
   int iLine = 0;
 
   int nLines = 0;
+  int nPointLines = 0;
 
   while (1)
   {
@@ -158,31 +165,33 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
     parse_nonlammps();
     // skip empty lines
     if(narg == 0){
-         if (me == 0 && verbose_)
+         if (me == 0 && screen && verbose_)
             fprintf(screen,"Note: Skipping empty line in VTK mesh file\n");
       continue;
     }
 
+    // Note that the first line of an ASCII VTK files start with '#' and will be skipped
+
     //increase line counter
     iLine++;
 
-    if(iLine < 3) continue;
+    if(iLine < 2) continue;
 
-    if(iLine == 3)
+    if(iLine == 2)
     {
         if(strcmp(arg[0],"ASCII"))
             error->all(FLERR,"Expecting ASCII VTK mesh file, cannot continue");
         continue;
     }
 
-    if(iLine == 4)
+    if(iLine == 3)
     {
-        if(strcmp(arg[0],"DATASET UNSTRUCTURED_GRID"))
+        if(strcmp(arg[0],"DATASET") || strcmp(arg[1],"UNSTRUCTURED_GRID"))
             error->all(FLERR,"Expecting ASCII VTK unstructured grid mesh file, cannot continue");
         continue;
     }
 
-    if(iLine == 5)
+    if(iLine == 4)
     {
         if(strcmp(arg[0],"POINTS"))
             error->all(FLERR,"Expecting 'POINTS' section in ASCII VTK mesh file, cannot continue");
@@ -191,19 +200,24 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
         continue;
     }
 
-    if(iLine <= 5+npoints)
+    if(ipoint < npoints)
     {
-        if(narg != 3)
-            error->all(FLERR,"Expecting 3 values for each point in 'POINTS' section of ASCII VTK mesh file, cannot continue");
+        if(narg % 3)
+            error->all(FLERR,"Expecting multiple of 3 values of point data in 'POINTS' section of ASCII VTK mesh file, cannot continue");
 
-        points[ipoint][0] = atof(arg[0]);
-        points[ipoint][1] = atof(arg[1]);
-        points[ipoint][2] = atof(arg[2]);
-        ipoint++;
+        for(int i = 0; i < narg/3; ++i)
+        {
+            for(int j = 0; j < 3; ++j)
+            {
+                points[ipoint][j] = atof(arg[3*i+j]);
+            }
+            ++ipoint;
+        }
+        ++nPointLines;
         continue;
     }
 
-    if(iLine == 6+npoints)
+    if(iLine == 5+nPointLines)
     {
         if(strcmp(arg[0],"CELLS"))
             error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
@@ -214,7 +228,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
     }
 
     //copy data of all which have 3 values - can be tri, polygon etc
-    if(iLine <= 6+npoints+ncells)
+    if(iLine <= 5+nPointLines+ncells)
     {
         if(narg == 4)
             for (int j=0;j<3;j++) cells[icell][j] = atoi(arg[1+j]);
@@ -227,7 +241,7 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
         continue;
     }
 
-    if(iLine == 7+npoints+ncells)
+    if(iLine == 6+nPointLines+ncells)
     {
         if(strcmp(arg[0],"CELL_TYPES"))
             error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
@@ -238,9 +252,9 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
     }
 
     //only take triangles (cell type 5 according to VTK standard) - count them
-    if(iLine <= 7+npoints+2*ncells)
+    if(iLine <= 6+nPointLines+2*ncells)
     {
-        if(strcmp(arg[0],"5")) cells[icell][0] = -1; //remove if not a tet
+        if(strcmp(arg[0],"5")) cells[icell][0] = -1; //remove if not a tri
         else ntris++;
         icell++;
         continue;
@@ -252,6 +266,12 @@ void InputMeshTri::meshtrifile_vtk(class TriMesh *mesh)
   for(int i = 0; i < ncells; i++)
   {
       if(cells[i][0] == -1) continue;
+      if(size_exclusion_list_ > 0 && lines[i] == exclusion_list_[i_exclusion_list_])
+      {
+         if(i_exclusion_list_ < size_exclusion_list_-1)
+            i_exclusion_list_++;
+         continue;
+      }
       addTriangle(mesh,points[cells[i][0]],points[cells[i][1]],points[cells[i][2]],lines[i]);
   }
 
@@ -324,8 +344,8 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
 
     // skip empty lines
     if(narg==0){
-         if (me == 0 && verbose_)
-            fprintf(screen,"Note: Skipping empty line in STL file\n");
+      if (me == 0 && screen && verbose_)
+        fprintf(screen,"Note: Skipping empty line in STL file\n");
       continue;
     }
 
@@ -335,18 +355,18 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
       if (insideSolidObject)
         error->all(FLERR,"Corrupt or unknown STL file: New solid object begins without closing prior solid object.");
       insideSolidObject=true;
-      if (me == 0 && verbose_){
-         fprintf(screen,"Solid body detected in STL file\n");
-       }
+      if (me == 0 && screen && verbose_){
+        fprintf(screen,"Solid body detected in STL file\n");
+      }
     }
     else if (strcmp(arg[0],"endsolid") == 0)
     {
-       if (!insideSolidObject)
-         error->all(FLERR,"Corrupt or unknown STL file: End of solid object found, but no begin.");
-       insideSolidObject=false;
-       if (me == 0 && verbose_) {
-         fprintf(screen,"End of solid body detected in STL file.\n");
-       }
+      if (!insideSolidObject)
+        error->all(FLERR,"Corrupt or unknown STL file: End of solid object found, but no begin.");
+      insideSolidObject=false;
+      if (me == 0 && screen && verbose_) {
+        fprintf(screen,"End of solid body detected in STL file.\n");
+      }
     }
 
     // detect begin and end of a facet within a solids object
@@ -375,14 +395,20 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
          error->all(FLERR,"Corrupt or unknown STL file: Number of vertices not equal to three (no triangle).");
 
       // add triangle to mesh
-      //printVec3D(screen,"vertex",vertices[0]);
-      //printVec3D(screen,"vertex",vertices[1]);
-      //printVec3D(screen,"vertex",vertices[2]);
-      addTriangle(mesh,vertices[0],vertices[1],vertices[2],nLinesTri);
+      //if (screen) printVec3D(screen,"vertex",vertices[0]);
+      //if (screen) printVec3D(screen,"vertex",vertices[1]);
+      //if (screen) printVec3D(screen,"vertex",vertices[2]);
+      if(size_exclusion_list_ > 0 && nLinesTri == exclusion_list_[i_exclusion_list_])
+      {
+         if(i_exclusion_list_ < size_exclusion_list_-1)
+            i_exclusion_list_++;
+      }
+      else
+         addTriangle(mesh,vertices[0],vertices[1],vertices[2],nLinesTri);
 
-       if (me == 0) {
-         //fprintf(screen,"  End of facet detected in in solid body.\n");
-       }
+      //if (me == 0 && screen) {
+        //fprintf(screen,"  End of facet detected in in solid body.\n");
+      //}
     }
 
     //detect begin and end of an outer loop within a facet
@@ -395,28 +421,28 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
       insideOuterLoop = true;
       iVertex = 0;
 
-      if (me == 0){
-         //fprintf(screen,"    Outer loop detected in facet.\n");
-       }
+      //if (me == 0 && screen){
+        //fprintf(screen,"    Outer loop detected in facet.\n");
+      //}
     }
     else if (strcmp(arg[0],"endloop") == 0)
     {
-       if (!insideOuterLoop)
-         error->all(FLERR,"Corrupt or unknown STL file: End of outer loop found, but no begin.");
-       insideOuterLoop=false;
-       if (me == 0) {
-         //fprintf(screen,"    End of outer loop detected in facet.\n");
-       }
+      if (!insideOuterLoop)
+        error->all(FLERR,"Corrupt or unknown STL file: End of outer loop found, but no begin.");
+      insideOuterLoop=false;
+      //if (me == 0 && screen) {
+        //fprintf(screen,"    End of outer loop detected in facet.\n");
+      //}
     }
 
     else if (strcmp(arg[0],"vertex") == 0)
     {
-       if (!insideOuterLoop)
-         error->all(FLERR,"Corrupt or unknown STL file: Vertex found outside a loop.");
+      if (!insideOuterLoop)
+        error->all(FLERR,"Corrupt or unknown STL file: Vertex found outside a loop.");
 
-       if (me == 0) {
-         //fprintf(screen,"      Vertex found.\n");
-       }
+      //if (me == 0 && screen) {
+        //fprintf(screen,"      Vertex found.\n");
+      //}
 
       // read the vertex
       for (int j=0;j<3;j++)
@@ -424,7 +450,7 @@ void InputMeshTri::meshtrifile_stl(class TriMesh *mesh)
 
       iVertex++;
       if (iVertex > 3)
-         error->all(FLERR,"Corrupt or unknown STL file: Can not have more than 3 vertices "
+        error->all(FLERR,"Corrupt or unknown STL file: Can not have more than 3 vertices "
                           "in a facet (only triangular meshes supported).");
     }
   }

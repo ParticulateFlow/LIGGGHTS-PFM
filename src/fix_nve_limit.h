@@ -36,10 +36,10 @@ class FixNVELimit : public Fix {
   void reset_dt();
   double compute_scalar();
 
- private:
+ protected:
   double dtv,dtf;
   double *step_respa;
-  int mass_require,ncount;
+  int ncount;
   double xlimit,vlimitsq;
 
   int relflag; //NP modified C.K.

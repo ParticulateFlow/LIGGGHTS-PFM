@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
-#include "ctype.h"
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "force.h"
 #include "style_bond.h"
 #include "style_angle.h"
@@ -764,7 +764,14 @@ void Force::bounds(char *str, int nmax, int &nlo, int &nhi, int nmin)
 
 double Force::numeric(const char *file, int line, char *str)
 {
+  if (!str)
+    error->all(file,line,"Expected floating point parameter "
+               "in input script or data file");
   int n = strlen(str);
+  if (n == 0)
+    error->all(file,line,"Expected floating point parameter "
+               "in input script or data file");
+
   for (int i = 0; i < n; i++) {
     if (isdigit(str[i])) continue;
     if (str[i] == '-' || str[i] == '+' || str[i] == '.') continue;
@@ -784,7 +791,14 @@ double Force::numeric(const char *file, int line, char *str)
 
 int Force::inumeric(const char *file, int line, char *str)
 {
+  if (!str) 
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
   int n = strlen(str);
+  if (n == 0) 
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
+
   for (int i = 0; i < n; i++) {
     if (isdigit(str[i]) || str[i] == '-' || str[i] == '+') continue;
     error->all(file,line,
@@ -792,6 +806,56 @@ int Force::inumeric(const char *file, int line, char *str)
   }
 
   return atoi(str);
+}
+
+/* ----------------------------------------------------------------------
+   read a big integer value from a string
+   generate an error if not a legitimate integer value
+   called by various commands to check validity of their arguments
+------------------------------------------------------------------------- */
+
+bigint Force::bnumeric(const char *file, int line, char *str)
+{
+  if (!str) 
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
+  int n = strlen(str);
+  if (n == 0) 
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
+
+  for (int i = 0; i < n; i++) {
+    if (isdigit(str[i]) || str[i] == '-' || str[i] == '+') continue;
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
+  }
+
+  return ATOBIGINT(str);
+}
+
+/* ----------------------------------------------------------------------
+   read a tag integer value from a string
+   generate an error if not a legitimate integer value
+   called by various commands to check validity of their arguments
+------------------------------------------------------------------------- */
+
+tagint Force::tnumeric(const char *file, int line, char *str)
+{
+  if (!str) 
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
+  int n = strlen(str);
+  if (n == 0) 
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
+
+  for (int i = 0; i < n; i++) {
+    if (isdigit(str[i]) || str[i] == '-' || str[i] == '+') continue;
+    error->all(file,line,
+               "Expected integer parameter in input script or data file");
+  }
+
+  return ATOTAGINT(str);
 }
 
 /* ----------------------------------------------------------------------

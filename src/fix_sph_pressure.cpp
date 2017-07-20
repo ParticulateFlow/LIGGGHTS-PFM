@@ -29,10 +29,10 @@ Andreas Eitzlmayr (Institute for Process and Particle Engineering, TU Graz)
 andreas.eitzlmayr@tugraz.at
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "mpi.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <mpi.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_sph_pressure.h"
 #include "update.h"
 #include "respa.h"

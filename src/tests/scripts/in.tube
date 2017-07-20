@@ -1,0 +1,236 @@
+#########################################################################################
+# title: in.repose_init_packing                                                      #
+# version: 5.01                                                                         #
+# additional files: folder mesh,                                                        #
+#                   folder matlab,                                                      #
+#                   loop input script in.shearCell_loop                                 #
+# date: Aug. 2014                                                                       #
+# authors: Benvenuti, L., Queteschiner, D., Aigner, A. ,Hager, A., Goniva, C., Kloss, C., Berger R.   #
+# e-mail: luca.benvenuti@jku.at                                                         #
+# short description: liggghts-input file for computing the angle of repose while        #
+#   varying the coefficient of rolling friction. Part of the material characterization  #
+#   project                                                   #
+#########################################################################################
+#########################################################################################
+#                               user defined settings: settings                         #
+#########################################################################################
+variable    rad     equal       518e-6          # particle radius [m]
+variable    radmu   equal       518e-6             # particle radius mean [m]
+variable  radsigma  equal       0.000287             # particle radius sigma[m]
+variable  radR1     equal       0.001
+variable  radPerc1  equal       0.175
+variable  radR2     equal       0.0008
+variable  radPerc2  equal       0.139
+variable  radR3     equal       0.000625
+variable  radPerc3  equal       0.098
+variable  radR4     equal       0.0005
+variable  radPerc4  equal       0.091
+variable  radR5     equal       0.000315
+variable  radPerc5  equal       0.3
+variable  radR6     equal       0.0001575
+variable  radPerc6  equal       0.197
+variable    dens    equal       3000         #sinterfine   # particle density [kg/m3]
+variable    ym      equal       1e7             # Young's modulus  [Pa]
+variable    pr      equal       0.4            # Poisson ratio   [-]
+variable    rest    equal       0.5            # coefficient of restitution [-]
+variable    fric    equal       0.3        # coefficient of friction (loop variable) [-]
+variable    rf      equal       0.3         # coefficient of rolling friction (optional loop) [-]
+#variable    rvd    equal        1.0		#coefficientRollingViscousDamping (only for epsd rolling model)
+variable    rolfrtypnum equal	4		# rolling friction option ( 1 = off, 2 = cdt, 3 = epsd, 4 = epsd2)
+variable    uniSys  equal       1		 # unit System ( 1=SI, 2=cgs)
+variable    radDist equal       3          # radius distribution (1 = (25%rad*0.99 , 25%rad*1.01, 50%rad ; 
+                                           # 2=gaussian distribution with radmu & radsigma)
+                                           # for 2 you must uncomment radsigma & radmu, the latter must be equal to rad
+                                           # 3=discrete distribution with real values
+variable    dt      equal       1e-6            # time step width [s]
+
+variable    dCylDp  equal      ${DCYLDP}         # ratio cylinder diameter to particle diameter (optional loop)
+variable    G_D_RATIO  equal   ${dCylDp}
+
+variable    accGrev equal       9.81            # acceleration due to gravity [m/s2]
+
+processors  ${XPROCS} ${YPROCS} ${ZPROCS}
+
+variable    numProc equal       ${XPROCS}*${YPROCS}*${ZPROCS}
+
+#########################################################################################
+#   IF YOU CHANGE ANYTHING BELOW THIS LINE, YOU MIGHT ADAPT THE POSTPROCESSING SCRIPT   #
+#########################################################################################
+
+#########################################################################################
+#                               internal settings - do not touch                        #
+#########################################################################################
+variable vthre equal 0.005   # [m/s]; threshold for loop condition
+#########################################################################################
+units		si              
+#########################################################################################
+# geometry scaling, mass, number of timesteps, ...
+variable    rad1            equal   0.99*${rad}
+variable    rad2            equal   1.01*${rad}
+
+variable    skin            equal   0.50*${radR1}
+
+#variable    cylDiameter     equal   ${dCylDp}*2*${rad} # 50 particle in cyl diameter
+#variable    cylRadius       equal   0.5*${cylDiameter} # cylinder radius; scale for geometry
+#variable    cylArea         equal   0.25*${cylDiameter}*${cylDiameter}*PI
+
+#variable    desiredMass     equal   ${cylArea}*0.75*${cylDiameter}*0.65*${dens}
+variable    desiredVolumeFraction     equal   0.62
+
+variable    characteristicVelocity equal 0.1
+
+#variable    rmRegZPos       equal   1.5*${cylRadius}
+
+# dimensions of simulation domain
+#variable    nx  equal   -${cylRadius}         # neg. x-value
+#variable    px  equal    ${cylRadius}         # pos. x-value
+#variable    ny  equal   -${cylRadius}         # neg. y-value
+#variable    py  equal    ${cylRadius}         # pos. y-value
+#variable    nz  equal    0.0                  # neg. z-value
+#variable    pz  equal    4*${cylRadius}       # pos. z-value
+
+# run & dump times
+variable    nDump           equal   round(1e-2/${dt})
+variable    nScreen         equal   round(1e-3/${dt})
+
+#variable    nStepsSettle    equal   round(${pz}/(0.5*${velMax}*${dt}))
+#variable    nStepsRun       equal   round(0.5*0.375*${cylRadius}/(${velWall}*${dt}))
+
+variable	nStepsSettle equal round(0.001/${dt})
+variable	nStepsRun    equal round(0.01/${dt})
+variable	dumpfreq     equal round(0.01/${dt})
+variable	thermofreq   equal round(0.001/${dt})
+
+#########################################################################################
+#rolling friction options
+
+if "${rolfrtypnum} == 1" then &
+  "variable    rolfrtyp string	off" &
+elif "${rolfrtypnum} == 2" &
+  "variable    rolfrtyp string	cdt" &
+elif "${rolfrtypnum} == 3" &
+  "variable    rolfrtyp string	epsd" &
+else &
+  "variable    rolfrtyp string	epsd2" 
+#########################################################################################
+
+# create directories
+shell   mkdir post
+
+atom_style	granular
+atom_modify	map array
+boundary	m m fm
+newton      off
+
+communicate	single vel yes
+
+# will be extended automatically (boundary m m fm)
+region		reg block -0.01 0.01 -0.01 0.01 -0.15 0.01 units box
+create_box	2 reg
+
+neighbor	    ${skin} bin
+neigh_modify	delay 0
+
+#Material properties required for new pair styles
+fix     m1 all property/global youngsModulus peratomtype ${ym} ${ym}
+fix     m2 all property/global poissonsRatio peratomtype ${pr} ${pr}
+fix     m3 all property/global coefficientRestitution peratomtypepair 2 ${rest} ${rest} ${rest} ${rest}
+fix     m4 all property/global coefficientFriction peratomtypepair 2 ${fric} 0.0 0.0 0.0
+fix     m5 all property/global coefficientRollingFriction peratomtypepair 2 ${rf} 0.0 0.0 0.0
+fix     m6 all property/global characteristicVelocity scalar ${characteristicVelocity}
+#fix    m7 all property/global coefficientRollingViscousDamping peratomtypepair 2 ${rvd} 0.0 0.0 0.0
+
+# pair style
+pair_style 	gran model hertz tangential history rolling_friction ${rolfrtyp}
+pair_coeff	* *
+
+#Timestep
+timestep	${dt}
+
+
+fix		gravi all gravity ${accGrev} vector 0.0 0.0 -1.0
+
+# define the material in use  ## pts1 0.25 pts2 0.25  volume_limit ${volMin}"   
+if "${radDist} == 2" then                            &
+  "fix    pts3 all particletemplate/sphere 5328 atom_type 1 density constant ${dens} radius gaussian number ${radmu} ${radsigma}"  &
+  "fix	pdd  all particledistribution/discrete 5332  1 pts3 1.0 "   & 
+  "print 'particle radius distribution gaussian'"                         &
+elif "${radDist} == 3" &
+  "fix		ptsd1  all particletemplate/sphere 5333 atom_type 1 density constant ${dens} radius constant ${radR1}"                                & 
+  "fix		ptsd2  all particletemplate/sphere 5334 atom_type 1 density constant ${dens} radius constant ${radR2}"                                & 
+  "fix		ptsd3  all particletemplate/sphere 5335 atom_type 1 density constant ${dens} radius constant ${radR3}"                                & 
+  "fix		ptsd4  all particletemplate/sphere 5336 atom_type 1 density constant ${dens} radius constant ${radR4}"                                & 
+  "fix		ptsd5  all particletemplate/sphere 5337 atom_type 1 density constant ${dens} radius constant ${radR5}"                                & 
+  "fix		ptsd6  all particletemplate/sphere 5338 atom_type 1 density constant ${dens} radius constant ${radR6}" & 
+  "fix		pdd  all particledistribution/discrete 5339  6 ptsd1 ${radPerc1} ptsd2 ${radPerc2} ptsd3 ${radPerc3} ptsd4 ${radPerc4} ptsd5 ${radPerc5} ptsd6 ${radPerc6}"  &       
+  "print 'particle radius distribution discrete REAL'"    &
+else &
+  "fix		pts  all particletemplate/sphere 5330 atom_type 1 density constant ${dens} radius constant ${rad}"                                & 
+  "fix		pts1 all particletemplate/sphere 5329 atom_type 1 density constant ${dens} radius constant ${rad1}"                                & 
+  "fix		pts2 all particletemplate/sphere 5331 atom_type 1 density constant ${dens} radius constant ${rad2}" & 
+  "fix		pdd  all particledistribution/discrete 5332  3 pts 0.5 pts1 0.25 pts2 0.25"                         &       
+  "print 'particle radius distribution discrete zero99 one oneoone'" 
+
+# calculate maximum diameter in simulation
+fix		maxdiam all diam/max
+variable	maxdiam equal f_maxdiam
+#variable	maxdiam equal ${rad}*2
+#print		"max diameter in sim: ${maxdiam}"
+
+variable	dx_relax equal ${maxdiam}/20.
+
+# scaling factor for mesh
+variable scale equal ${G_D_RATIO}*${maxdiam}/1.5
+
+print	"G_D_RATIO ${G_D_RATIO}"
+print	"maxdiam ${maxdiam}"
+print	"Scaling factor ${scale}"
+
+# region and insertion
+variable rcyl equal ${G_D_RATIO}*${maxdiam}*0.9/2.
+variable hcyl equal 8./13.*${G_D_RATIO}*${maxdiam}
+
+# meshes # use the imported meshes as granular wall
+fix		cad1 all mesh/surface file scripts/meshes/ground.stl type 1 scale ${scale} 
+fix		cad2 all mesh/surface file scripts/meshes/cylinder.stl type 1 scale ${scale}
+fix		granwalls all wall/gran model hooke mesh n_meshes 2 meshes cad1 cad2  
+fix      topwall all wall/gran model hooke primitive type 1 zplane ${hcyl}
+
+
+#region and insertion
+#region  bc cylinder z 0.0 0.0 ${cylRadius} ${nz} ${pz} units box
+region	bc cylinder z 0.0 0.0 ${rcyl}  0.0 ${hcyl} units box
+fix     ins all insert/pack seed 5332 distributiontemplate pdd maxattempt 1000 insert_every once overlapcheck yes all_in yes &
+		region bc volumefraction_region ${desiredVolumeFraction} ntry_mc 10000 warn_region no
+
+#apply nve integration to all particles that are inserted as single particles
+#fix		integr all nve/sphere
+#fix		integr all nve/limit absolute ${dx_relax}
+fix		integr all nve/limit absolute ${dx_relax} 
+
+# lower region to delete particles from
+region		lower block INF INF INF INF INF 0. units box
+
+# load balancing
+#fix     lb all balance 0 xyz 10 1.05
+
+#check timestep
+#fix     ts all check/timestep/gran 1 0.1 0.1 #use small values to produce output
+fix		ts all check/timestep/gran ${thermofreq} 0.1 0.1
+
+#output settings, include total thermal energy
+compute		    rke all erotate/sphere
+#thermo_style	custom step atoms ke c_rke vol cpu
+thermo_style	custom step atoms ke c_rke f_ts[1] f_ts[2] cpu vol
+#thermo		    ${nScreen}
+thermo		${thermofreq}
+thermo_modify	lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+# --- runs ---
+
+# dump stl
+#dump		dumpstl all stl ${dumpfreq} post/stldump_pack_*.stl
+
+#insert the first particles so that dump is not empty
+run		1

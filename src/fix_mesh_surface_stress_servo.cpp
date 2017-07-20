@@ -39,9 +39,11 @@
 #include "vector_liggghts.h"
 #include "fix_property_global.h"
 #include "modified_andrew.h"
+#include "math_extra_liggghts.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathExtraLiggghts;
 using MODIFIED_ANDREW_AUX::Circle;
 
 #define EPSILON 1.0e-7
@@ -267,7 +269,7 @@ void FixMeshSurfaceStressServo::init_defaults()
 
 void FixMeshSurfaceStressServo::error_checks()
 {
-  /*NL*/ //fprintf(screen,"sizes xcm %d moi %d\n",xcm_.size(),moi_.size());
+  /*NL*/ //if (screen) fprintf(screen,"sizes xcm %d moi %d\n",xcm_.size(),moi_.size());
 
   if(ctrl_style_ == NONE)
     error->fix_error(FLERR,this,"please define 'ctrlPV' for the mesh");
@@ -300,7 +302,7 @@ void FixMeshSurfaceStressServo::error_checks()
   if (strcmp(update->integrate_style,"respa") == 0)
     error->fix_error(FLERR,this,"not respa-compatible");
 
-  /*NL*/ //fprintf(screen,"nmove %d\n",mesh()->nMove() );
+  /*NL*/ //if (screen) fprintf(screen,"nmove %d\n",mesh()->nMove() );
 }
 
 /* ---------------------------------------------------------------------- */
@@ -309,8 +311,8 @@ void FixMeshSurfaceStressServo::init()
 {
   /*NL*/ //int size1 = (mesh()->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v"))->size();
   /*NL*/ //int size2 = (mesh()->prop().getElementProperty<ScalarContainer<int> >("id"))->size();
-  /*NL*/ //fprintf(screen,"proc %d, size of v container %d\n",comm->me,size1);
-  /*NL*/ //fprintf(screen,"proc %d, size of ID container %d\n",comm->me,size2);
+  /*NL*/ //if (screen) fprintf(screen,"proc %d, size of v container %d\n",comm->me,size1);
+  /*NL*/ //if (screen) fprintf(screen,"proc %d, size of ID container %d\n",comm->me,size2);
 
 
   FixMeshSurfaceStress::init();
@@ -348,7 +350,7 @@ void FixMeshSurfaceStressServo::init()
   }
   MPI_Min_Scalar(r_min,world);
   vel_min_ = ratio_*r_min/dtv_;
-  /*NL*/// fprintf(screen,"TEST: vel_min_ = %e and r_min = %e\n",vel_min_,r_min);
+  /*NL*/// if (screen) fprintf(screen,"TEST: vel_min_ = %e and r_min = %e\n",vel_min_,r_min);
 
   // set pointers for controller
   switch (ctrl_style_) {
@@ -435,8 +437,8 @@ void FixMeshSurfaceStressServo::initial_integrate(int vflag)
         //NP which could happen b/c move, rotate is done incrementally
 
         set_p_ref(xcm_(0));
-        /*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
-        /*NL*/ //printVec3D(screen,"xcm",xcm_(0));
+        /*NL*/ //if (screen) fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
+        /*NL*/ //if (screen) printVec3D(screen,"xcm",xcm_(0));
 
         break;
 
@@ -483,7 +485,7 @@ void FixMeshSurfaceStressServo::final_integrate()
       sp_mag_ = -input->variable->compute_equal(sp_var_);
       if (sp_mag_ == 0.) error->fix_error(FLERR,this,"Set point (desired force/torque/shear) has to be != 0.0");
       sp_mag_inv_ = 1./fabs(sp_mag_);
-      /*NL*/ //fprintf(screen,"sp_mag_ = %e \n",sp_mag_);
+      /*NL*/ //if (screen) fprintf(screen,"sp_mag_ = %e \n",sp_mag_);
 
       modify->addstep_compute(update->ntimestep + 1);
 
@@ -502,7 +504,7 @@ void FixMeshSurfaceStressServo::final_integrate()
       const double ctrl_scale = 0.1;
 
       int totNumContacts = fix_mesh_neighlist_->getTotalNumContacts();
-      /*NL*/// fprintf(screen,"TESTOUTPUT: total number of contacts = %d \n",totNumContacts);
+      /*NL*/// if (screen) fprintf(screen,"TESTOUTPUT: total number of contacts = %d \n",totNumContacts);
 
       if (totNumContacts == 0) {
         // cruise mode
@@ -538,11 +540,11 @@ void FixMeshSurfaceStressServo::final_integrate()
       // save process value for next timestep
       old_pv_mag_ = pv_mag_;
 
-      /*NL*/ //fprintf(screen,"TEST: pv_vec_ = %g and f_total_ = %g\n",*pv_vec_,f_total(2));
-      /*NL*/ //fprintf(screen,"TEST: ctrl_op_ = %g and vcm_(0)[2] = %g \n",*ctrl_op_,vcm_(0)[2]);
+      /*NL*/ //if (screen) fprintf(screen,"TEST: pv_vec_ = %g and f_total_ = %g\n",*pv_vec_,f_total(2));
+      /*NL*/ //if (screen) fprintf(screen,"TEST: ctrl_op_ = %g and vcm_(0)[2] = %g \n",*ctrl_op_,vcm_(0)[2]);
 
-      /*NL*/ //fprintf(screen,"Vector: f_total = %f %f %f\n",f_total(0),f_total(1),f_total(2));
-      /*NL*/ //fprintf(screen,"Vector: vcm_(0)[%d] = %g \n",i,vcm_(0)[i]);
+      /*NL*/ //if (screen) fprintf(screen,"Vector: f_total = %f %f %f\n",f_total(0),f_total(1),f_total(2));
+      /*NL*/ //if (screen) fprintf(screen,"Vector: vcm_(0)[%d] = %g \n",i,vcm_(0)[i]);
 
     }
 
@@ -682,7 +684,7 @@ double FixMeshSurfaceStressServo::getMaxRad()
 
   // get max for all processors
   MPI_Max_Scalar(rPaMax,world);
-  /*NL*/// fprintf(screen,"rPaMax = %f \n",rPaMax);
+  /*NL*/// if (screen) fprintf(screen,"rPaMax = %f \n",rPaMax);
   return rPaMax;
 }
 

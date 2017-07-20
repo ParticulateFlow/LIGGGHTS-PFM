@@ -23,14 +23,14 @@
 #define LMP_MATH_EXTRA_LIGGGHTS_H
 
 #include "pointers.h"
-#include "math.h"
-#include "stdio.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
 #include "error.h"
 #include "vector_liggghts.h"
 #include "math_extra.h"
 #include "random_park.h"
-#include "ctype.h"
+#include <ctype.h>
 
 #define TOLERANCE_ORTHO 1e-10
 
@@ -59,6 +59,11 @@ namespace MathExtraLiggghts {
   inline double min(double *input, int n,int &which);
   inline double max(double *input, int n,int &which);
   inline double abs(double a);
+
+  // signum function
+  template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+  }
 
   //NP modified C.K. barycentric operations on tets
   inline void matrix_invert_4x4_special(double matrix[4][4]);

@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "compute_reduce_region.h"
 #include "atom.h"
 #include "update.h"
@@ -31,11 +31,6 @@ using namespace LAMMPS_NS;
 enum{SUM,MINN,MAXX,AVE};
 enum{X,V,F,COMPUTE,FIX,VARIABLE,RHO,P}; //NP modified C.K.
 enum{PERATOM,LOCAL};
-
-#define INVOKED_VECTOR 2
-#define INVOKED_ARRAY 4
-#define INVOKED_PERATOM 8
-#define INVOKED_LOCAL 16
 
 #define BIG 1.0e20
 
@@ -71,7 +66,7 @@ double ComputeReduceRegion::compute_one(int m, int flag)
   int n = value2index[m];
   int j = argindex[m];
 
-  double one;
+  double one=0.0;
   if (mode == SUM) one = 0.0;
   else if (mode == MINN) one = BIG;
   else if (mode == MAXX) one = -BIG;

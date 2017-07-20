@@ -1,0 +1,154 @@
+<HTML>
+<CENTER><A HREF = "http://lammps.sandia.gov">LAMMPS WWW Site</A> - <A HREF = "Manual.html">LAMMPS Documentation</A> - <A HREF = "Section_commands.html#comm">LAMMPS Commands</A> 
+</CENTER>
+
+
+
+
+
+
+<HR>
+
+<H3>MPI/OpenMP hybrid parallelization in LIGGGHTS 
+</H3>
+<H4>Motivation 
+</H4>
+<P>The MPI/OpenMP hybrid parallelization in LIGGGHTS is a new way to achieve better load-balancing within simulations. Traditional MPI simulations can only be load-balanced using <A HREF = "fix_balance.html">fix/balance</A>. The following figure illustrates how static 8x1 decomposition might look like. In this example colors are used to show areas which require high amount of computational work (red) in contract to other areas which leave processors idle (blue). Using a static decomposition processes the boundaries of the domain can become idle quickly. To avoid this, MPI dynamic load balancing was introduced with <A HREF = "fix_balance.html">fix/balance</A>. It adjusts the boundaries making sure each subdomain has an equal amount of particles in them.
+</P>
+<CENTER><IMG SRC = "1Ddecomposition.png">
+</CENTER>
+<P>MPI load-balancing works very well with simple decompositions. However load-imbalance remains a dominant issue if higher number of cores used. At some point decomposing along one dimension alone will no longer add any benefit. Adding a cut to additional dimensions will only work well if the load is symmetric. The following figure shows how the symmetric testcase can easily be computed using 16 processes in stead of 8 by adding another decomposition along the y-Axis.
+</P>
+<CENTER><IMG SRC = "2Ddecomposition.png">
+</CENTER>
+<P>Unsymmetrical loads are very difficult to decompose. The margin of error is significant. Simulations can take 2x-4x more time if decompositions are chosen poorly and MPI load-balancing used improperly. The following illustrates a simulation which is harder to decompose because the cuts in space span the entire domain.
+</P>
+<CENTER><IMG SRC = "2Ddecomposition_unsymmetric.png">
+</CENTER>
+<P>A hybrid parallelization which uses MPI and OpenMP allows us to reduce the amount of MPI processes and let automatic partitioning figure out a good decomposition inside our subdomains. In our next Figure we show how the hybrid can use only two MPI processes to cut the domain in half along the y-Axis and then partitions the subdomains among 8 threads. In other words, our hybrid parallelization adds a second layer of parallelization to LIGGGHTS which is more flexible and does automatic load-balancing.
+</P>
+<CENTER><IMG SRC = "2Ddecomposition_hybrid.png">
+</CENTER>
+<P>The main idea behind using a hybrid parallelization therefore is to first split the domain into large, potentially MPI-load-balanced portions. Each MPI subdomain is then further partitioned for a given number of threads.
+</P>
+<CENTER><IMG SRC = "Hybrid_Overview.png">
+</CENTER>
+<H4>Installation 
+</H4>
+<P>The hybrid parallelization is implemented using the OpenMP standard. This standard for threading is supported by most compiler vendors by now. Some still compilers only support it in their development versions right now. To compile LIGGGHTS with hybrid parallelization we need additional compiler flags and additional implementation files which replace some core components of the usual LIGGGHTS integration loop with threaded versions.
+</P>
+<H5>Prerequisites 
+</H5>
+<UL><LI>GCC >= 4.7 
+
+<LI>Zoltan Library 3.6 
+</UL>
+<H5>Compiling Zoltan & Installing Zoltan 
+</H5>
+<P>Zoltan is a library containing many useful partitioning and load-balancing algorithms. We utilize this library in our implementation. Before compiling LIGGGHTS with hybrid parallelization, we need to compile and install this library as follows:
+</P>
+<PRE>cd LIGGGHTS-PFM/
+git submodule init
+git submodule update
+cd lib/zoltan/
+mkdir BUILD
+cd BUILD
+../configure
+make everything
+make install 
+</PRE>
+<H5>Compiling LIGGGHTS with hybrid parallelization 
+</H5>
+<P>Once all the prerequisites are met, we can compile a hybrid version of LIGGGHTS using the <I>hybrid</I> makefile.
+</P>
+<PRE>cd LIGGGHTS-PFM/src/
+make -j 4 hybrid 
+</PRE>
+<H4>Basic Usage 
+</H4>
+<P>Using this new parallelization of LIGGGHTS requires the compilation of a LIGGGHTS binary as mentioned in the previous section. This version of LIGGGHTS supports additional styles and fixes which all end with an additional /omp suffix.
+</P>
+<H5>Package OMP 
+</H5>
+<P>Prior to using any OpenMP styles or fixes, one must enable OpenMP by using the <A HREF = "package.html">package</A> command.
+</P>
+<PRE>package omp 8 force/neigh thread-binding verbose 
+</PRE>
+<P>The thread-binding option will force each thread to be bound to a CPU core using SMP-style numbering. This means that it assumes that cores which are next to each other are numbered with consecutive numbers.
+</P>
+<H5>Partitioning of Data 
+</H5>
+<P>Pair styles and wall fixes require particle data to be partitioned. Each thread will then operate on one of the partitions. Currently there is only a single partitioner implemented using the Zoltan library. Key-Value pairs passed as arguments to the <I>partitioner_style</I> are passed 1:1 to the Zoltan library.
+</P>
+<PRE>partitioner_style zoltan RCB_REUSE 1 
+</PRE>
+<P>By default, the partitioner uses the following options:
+</P>
+<DIV ALIGN=center><TABLE  BORDER=1 >
+<TR><TD >DEBUG_LEVEL</TD><TD > 0</TD><TD > Controls Debug output</TD></TR>
+<TR><TD >LB_METHOD</TD><TD > RCB</TD><TD > Selection of RCB as partitioning algorithm</TD></TR>
+<TR><TD >NUM_GID_ENTRIES</TD><TD > 1</TD><TD > number of global ids per lement <B>DO NOT CHANGE</B></TD></TR>
+<TR><TD >NUM_LID_ENTRIES</TD><TD > 1</TD><TD > number of local ids per element <B>DO NOT CHANGE</B></TD></TR>
+<TR><TD >NUM_LOCAL_PARTS</TD><TD > <I>NUM_THREADS</I></TD><TD > number of partitions generated. this should always be equal to the number of threads. This is done by default, therefore <B>DO NOT CHANGE</B></TD></TR>
+<TR><TD >RETURN_LISTS</TD><TD > PARTS</TD><TD > tells Zoltan to return a list containing the mapping of particles to parts <B>DO NOT CHANGE</B></TD></TR>
+<TR><TD >KEEP_CUTS</TD><TD > 1</TD><TD > Zoltan should keep information of past partitionings <B>DO NOT CHANGE</B></TD></TR>
+<TR><TD >RCB_REUSE</TD><TD > 0</TD><TD > Zoltan should use past partitioning information for repartitioning <B>Recommended to set to 1</B></TD></TR>
+<TR><TD >RCB_OUTPUT_LEVEL</TD><TD > 0</TD><TD > RCB specific debug output</TD></TR>
+<TR><TD >RCB_RECTILINEAR_BLOCKS</TD><TD > 0</TD><TD > RCB specific option </TD></TR>
+</TABLE></DIV>
+
+<P>Additional information can be found <A HREF = "http://www.cs.sandia.gov/zoltan/ug_html/ug_alg_rcb.html">here</A>.
+</P>
+<H5>Pair Styles 
+</H5>
+<P>All granular pair styles have a OpenMP implementation. To select them simply use <I>gran/omp</I> instead of <I>gran</I> as <A HREF = "pair_style.html">pair_style</A>.
+</P>
+<PRE>pair_style gran/omp model hertz tangential history 
+</PRE>
+<H5>Meshes 
+</H5>
+<P>Meshes of type <A HREF = "fix_mesh_surface.html">mesh/surface</A> which are used by a wall fix are required to be replaced by their OpenMP version of <A HREF = "fix_mesh_surface.html">mesh/surface/omp</A>.
+</P>
+<PRE>fix cadMix1 all mesh/surface/omp file meshes/Mixer.stl type 1 
+</PRE>
+<H5>Walls 
+</H5>
+<P>Walls of type <A HREF = "fix_wall_gran.html">wall/gran</A> should be replaced by their OpenMP version of <A HREF = "fix_wall_gran.html">wall/gran/omp</A>.
+</P>
+<PRE>fix meshes all wall/gran/omp model hertz tangential history mesh n_meshes 12 meshes cadShaft cadBlade1 cadBlade2 cadBlade3 cadBlade4 cadMix1 cadMix2 cadMix3 cadMix4 cadMix5 cadMix6 cadDrum 
+</PRE>
+<H5>Other Fixes 
+</H5>
+<P>The implementation of the hybrid parallelization is not feature complete. Some fixes might not even need an OpenMP version at all. Here is a list of other fixes which have been optimized so far.
+</P>
+<H6>Gravity 
+</H6>
+<P>The <A HREF = "fix_gravity.html">gravity</A> fix should be replaced by <A HREF = "fix_gravity.html">gravity/omp</A>.
+</P>
+<PRE>fix gravi all gravity/omp 9.81 vector 0.0 0.0 -1.0 
+</PRE>
+<H6>Integration 
+</H6>
+<P>The <A HREF = "fix_nve_sphere.html">nve/sphere</A> integration fix should be replaced by <A HREF = "fix_nve_sphere.html">nve/sphere/omp</A>.
+</P>
+<PRE>fix integr nve_group nve/sphere/omp 
+</PRE>
+<P><B>Restrictions:</B>
+</P>
+<P>The MPI/OpenMP hybrid implementation can only be used if LIGGGHTS
+was built with the USER-OMP and USER-ZOLTAN package. See the
+<A HREF = "Section_start.html#start_3">Making LAMMPS</A> section for more info.
+</P>
+<P>Insertion of particles is currently not optimized with OpenMP.
+</P>
+<P><B>Related commands:</B>
+</P>
+<P><A HREF = "package.html">package</A>
+<A HREF = "pair_style.html">pair_style</A>
+<A HREF = "fix_wall_gran.html">fix/wall/gran/omp</A>
+<A HREF = "fix_mesh_surface.html">fix/mesh/surface/omp</A>
+<A HREF = "fix_nve_sphere.html">fix/nve/sphere/omp</A>
+<A HREF = "fix_gravity.html">fix/gravity/omp</A>
+<A HREF = "suffix.html">suffix</A>
+</P>
+</HTML>

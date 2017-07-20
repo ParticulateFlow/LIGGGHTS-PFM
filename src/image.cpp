@@ -15,11 +15,11 @@
    Contributing author: Nathan Fabian (Sandia)
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "math.h"
-#include "ctype.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 #include "image.h"
 #include "math_extra.h"
 #include "random_mars.h"
@@ -454,7 +454,7 @@ void Image::draw_sphere(double *x, double *surfaceColor, double diameter)
 void Image::draw_cube(double *x, double *surfaceColor, double diameter)
 {
   double xlocal[3],surface[3],normal[3];
-  double t,tdir[3];
+  double t=0.0,tdir[3];
   double depth;
 
   xlocal[0] = x[0] - xctr;

@@ -15,9 +15,9 @@
    Contributing author: Pieter in 't Veld (SNL)
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
-#include "unistd.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "fix_ave_time.h"
 #include "update.h"
 #include "modify.h"
@@ -35,10 +35,6 @@ using namespace FixConst;
 enum{COMPUTE,FIX,VARIABLE};
 enum{ONE,RUNNING,WINDOW};
 enum{SCALAR,VECTOR};
-
-#define INVOKED_SCALAR 1
-#define INVOKED_VECTOR 2
-#define INVOKED_ARRAY 4
 
 /* ---------------------------------------------------------------------- */
 
@@ -242,7 +238,7 @@ FixAveTime::FixAveTime(LAMMPS *lmp, int narg, char **arg) :
   // nrows = # of rows in output array
 
   if (mode == VECTOR) {
-    int length;
+    int length = 0;
 
     for (int i = 0; i < nvalues; i++) {
       if (which[i] == COMPUTE) {
@@ -384,7 +380,7 @@ FixAveTime::FixAveTime(LAMMPS *lmp, int narg, char **arg) :
       array_flag = 1;
       size_array_rows = nrows;
       size_array_cols = nvalues;
-      int value;
+      int value = -1;
       for (int i = 0; i < nvalues; i++) {
         if (which[i] == COMPUTE) {
           Compute *compute = modify->compute[modify->find_compute(ids[i])];
@@ -523,7 +519,7 @@ void FixAveTime::end_of_step()
 void FixAveTime::invoke_scalar(bigint ntimestep)
 {
   int i,m;
-  double scalar;
+  double scalar = 0.0;
 
   // zero if first step
 

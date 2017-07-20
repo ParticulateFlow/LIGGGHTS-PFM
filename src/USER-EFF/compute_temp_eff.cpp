@@ -15,9 +15,9 @@
    Contributing author: Andres Jaramillo-Botero (Caltech)
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "math.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <string.h>
 #include "compute_temp_eff.h"
 #include "atom.h"
 #include "update.h"

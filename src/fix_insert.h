@@ -5,9 +5,9 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2014 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -19,9 +19,14 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#ifdef FIX_CLASS
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Richard Berger (JKU Linz)
+------------------------------------------------------------------------- */
 
 //NP abstract class - so nothing here
+#ifdef FIX_CLASS
 
 #else
 
@@ -29,6 +34,8 @@
 #define LMP_FIX_INSERT_H
 
 #include "fix.h"
+#include "bounding_box.h"
+#include "region_neighbor_list.h"
 
 namespace LAMMPS_NS {
 
@@ -41,7 +48,7 @@ class FixInsert : public Fix {
   virtual void init();
   virtual void setup_pre_exchange() {}
   void setup(int vflag);
-  double extend_cut_ghost();
+  double extend_cut_ghost() const;
   void pre_exchange();
   virtual void end_of_step() {}
 
@@ -52,11 +59,11 @@ class FixInsert : public Fix {
 
   double compute_vector(int index);
 
-  virtual double min_rad(int);  //NP modified C.K.
-  virtual double max_rad(int);  //NP modified C.K.
-  virtual double max_r_bound();  //NP modified C.K.
-  int min_type();
-  int max_type();
+  virtual double min_rad(int) const;  //NP modified C.K.
+  virtual double max_rad(int) const;  //NP modified C.K.
+  virtual double max_r_bound() const;  //NP modified C.K.
+  int min_type() const;
+  int max_type() const;
 
   int ins_every()
   { return insert_every; }
@@ -124,8 +131,7 @@ class FixInsert : public Fix {
   int maxattempt;
 
   // positions generated, and for overlap check
-  int nspheres_near;
-  double **xnear;
+  LIGGGHTS::RegionNeighborList neighList;
 
   // velocity and ang vel distribution
   // currently constant for omega - could also be a distribution
@@ -150,6 +156,9 @@ class FixInsert : public Fix {
   int print_stats_start_flag;
   int print_stats_during_flag;
 
+  // warn if box extent too small for insertion
+  bool warn_boxentent;
+
   class FixMultisphere *fix_multisphere;
   class MultisphereParallel *multisphere;
 
@@ -162,22 +171,26 @@ class FixInsert : public Fix {
   virtual void sanity_check();
   virtual void calc_insertion_properties() = 0;
 
-  virtual void pre_insert() {};
+  virtual void pre_insert() {}
   virtual int calc_ninsert_this();
   virtual int load_xnear(int);
   virtual int count_nnear();
   virtual int is_nearby(int) = 0;
+  virtual BoundingBox getBoundingBox() const = 0;
 
   virtual void x_v_omega(int,int&,int&,double&) = 0;
   virtual double insertion_fraction() = 0;
 
-  virtual void finalize_insertion(int){};
+  virtual void finalize_insertion(int){}
+
+ protected:
+  void generate_random_velocity(double * velocity);
 
  private:
 
   bool setup_flag;
 
-  int distribute_ninsert_this(int);
+  virtual int distribute_ninsert_this(int);
 };
 
 }

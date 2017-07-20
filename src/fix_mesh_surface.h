@@ -133,6 +133,7 @@ namespace LAMMPS_NS
 
         // mesh curvature
         double curvature_;
+        bool curvature_tolerant_;
   };
 
 } /* namespace LAMMPS_NS */

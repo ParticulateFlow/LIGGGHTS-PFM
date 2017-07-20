@@ -34,7 +34,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
+#include <mpi.h>
 #include <cstring>
 #include <cstdlib>
 #include "compute_pressure_cuda.h"
@@ -54,8 +54,6 @@
 #include "cuda.h"
 
 using namespace LAMMPS_NS;
-
-enum{DUMMY0,INVOKED_SCALAR,INVOKED_VECTOR,DUMMMY3,INVOKED_PERATOM};
 
 /* ---------------------------------------------------------------------- */
 

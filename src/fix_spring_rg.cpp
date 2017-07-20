@@ -16,9 +16,9 @@
                         Paul Crozier (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_spring_rg.h"
 #include "atom.h"
 #include "update.h"
@@ -125,10 +125,12 @@ void FixSpringRG::post_force(int vflag)
       dy = unwrap[1] - xcm[1];
       dz = unwrap[2] - xcm[2];
       term1 = 2.0 * k * (1.0 - rg0/rg);
-      massfrac = mass[type[i]]/masstotal;
-      f[i][0] -= term1*dx*massfrac;
-      f[i][1] -= term1*dy*massfrac;
-      f[i][2] -= term1*dz*massfrac;
+      if (masstotal > 0.0) {
+        massfrac = mass[type[i]]/masstotal;
+        f[i][0] -= term1*dx*massfrac;
+        f[i][1] -= term1*dy*massfrac;
+        f[i][2] -= term1*dz*massfrac;
+      }
     }
 }
 

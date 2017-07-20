@@ -28,17 +28,19 @@
 
 #include "fix_mesh_surface_stress.h"
 #include <stdio.h>
-#include "string.h"
+#include <string.h>
 #include "error.h"
 #include "force.h"
 #include "modify.h"
 #include "comm.h"
+#include "math_const.h"
 #include "math_extra.h"
 #include "fix_property_global.h"
 #include "fix_gravity.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 #define EPSILON 0.0001
 
@@ -67,7 +69,7 @@ FixMeshSurfaceStress::FixMeshSurfaceStress(LAMMPS *lmp, int narg, char **arg)
     stress_flag_ = true;
 
     vector_flag = 1;
-    size_vector = 6;
+    size_vector = 9;
     global_freq = 1;
     extvector = 1;
 
@@ -247,7 +249,7 @@ void FixMeshSurfaceStress::pre_force(int vflag)
         vectorZeroize3D(torque_total_);
     }
 
-    /*NL*/ //fprintf(screen,"force on tri0: %f %f %f\n",f(0)[0],f(0)[2],f(0)[2]);
+    /*NL*/ //if (screen) fprintf(screen,"force on tri0: %f %f %f\n",f(0)[0],f(0)[2],f(0)[2]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -268,7 +270,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
                                 double *delta,int iTri,double *v_wall)
 {
     double E,c[3],v_rel[3],v_rel_mag,cos_gamma,sin_gamma,sin_2gamma;
-    double contactPoint[3],surfNorm[3], tmp[3], tmp2[3];
+    double contactPoint[3]={},surfNorm[3], tmp[3], tmp2[3];
 
     // do not include if not in fix group
     if(!(atom->mask[ip] & groupbit)) return;
@@ -282,8 +284,8 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
 
     if(trackStress())
     {
-        /*NL*/ //if(strcmp(id,"servo")==0) printVec3D(screen,"added force",frc);
-        /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT", added force %f %f %f\n",update->ntimestep,frc[0],frc[1],frc[2]);
+        /*NL*/ //if(screen && strcmp(id,"servo")==0) printVec3D(screen,"added force",frc);
+        /*NL*/ //if(screen) fprintf(screen,"step " BIGINT_FORMAT ", added force %f %f %f\n",update->ntimestep,frc[0],frc[1],frc[2]);
 
         // add contribution to triangle force
         vectorAdd3D(f(iTri),frc,f(iTri));
@@ -291,8 +293,8 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         // add contribution to total body force and torque
         vectorAdd3D(f_total_,frc,f_total_);
         vectorSubtract3D(contactPoint,p_ref_(0),tmp);
-        /*NL*/ //fprintf(screen,"p_ref_ %f %f %f\n",p_ref_(0)[0],p_ref_(0)[1],p_ref_(0)[2]);
-        /*NL*/ //fprintf(screen,"tmp %f %f %f\n",tmp[0],tmp[1],tmp[2]);
+        /*NL*/ //if (screen) fprintf(screen,"p_ref_ %f %f %f\n",p_ref_(0)[0],p_ref_(0)[1],p_ref_(0)[2]);
+        /*NL*/ //if (screen) fprintf(screen,"tmp %f %f %f\n",tmp[0],tmp[1],tmp[2]);
         vectorCross3D(tmp,frc,tmp2); // tmp2 is torque contrib
         vectorAdd3D(torque_total_,tmp2,torque_total_);
     }
@@ -335,7 +337,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         if(cos_gamma > 1.) cos_gamma = 1.;
         if(sin_gamma > 1.) sin_gamma = 1.;
 
-        /*NL*/ //fprintf(screen,"sin_gamma %e cos_gamma %e, stl normal mag %f ",sin_gamma,cos_gamma,vectorMag3D(surfNorm));
+        /*NL*/ //if (screen) fprintf(screen,"sin_gamma %e cos_gamma %e, stl normal mag %f ",sin_gamma,cos_gamma,vectorMag3D(surfNorm));
 
         //NP http://www1.ansys.com/customer/content/documentation/120/cfx/xthry.pdf
         //NP Eqn 5.70
@@ -343,20 +345,20 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
         //NP cos_gamma cannot be < 0
         if(cos_gamma < EPSILON || 3.*sin_gamma > cos_gamma)
         {
-            E = 0.33333 * cos_gamma * cos_gamma;
-            /*NL*///fprintf(screen," wear1 %e\n",E);
+            E = THIRD * cos_gamma * cos_gamma;
+            /*NL*///if (screen) fprintf(screen," wear1 %e\n",E);
         }
         else
         {
             sin_2gamma = 2. * sin_gamma * cos_gamma;
             E = sin_2gamma - 3. * sin_gamma * sin_gamma;
-            /*NL*///fprintf(screen," wear2 %e\n",E);
+            /*NL*///if (screen) fprintf(screen," wear2 %e\n",E);
         }
         E *= 2.*k_finnie_[atomTypeWall()-1][atom->type[ip]-1] * v_rel_mag * vectorMag3D(frc);
-        //NP fprintf(screen," k_finnie %f, vmag%f, frcmag %f ,wear %1.15f\n",k_finnie[atom_type_wall-1][atom->type[ip]-1],vmag,vectorMag3D(frc),E);
+        //NP if (screen) fprintf(screen," k_finnie %f, vmag%f, frcmag %f ,wear %1.15f\n",k_finnie[atom_type_wall-1][atom->type[ip]-1],vmag,vectorMag3D(frc),E);
         //NP error->all("wear");
 
-        wear_step(iTri) += E / triMesh()->areaElem(iTri);
+        wear_step(iTri) += E*update->dt / triMesh()->areaElem(iTri);
     }
 }
 
@@ -407,7 +409,7 @@ void FixMeshSurfaceStress::calc_total_force()
 
         MPI_Sum_Vector(f_total_,3,world);
         MPI_Sum_Vector(torque_total_,3,world);
-        /*NL*/ //printVec3D(screen,"f_total_",f_total_);
+        /*NL*/ //if (screen) printVec3D(screen,"f_total_",f_total_);
 
         for(int i = 0; i < nTri; i++)
         {
@@ -417,7 +419,7 @@ void FixMeshSurfaceStress::calc_total_force()
 
             // calculate normal force
             sigma_n(i) = vectorDot3D(f(i),surfNorm);
-            /*NL*/ //printVec3D(screen,"force tri",f(i));
+            /*NL*/ //if (screen) printVec3D(screen,"force tri",f(i));
 
             // calculate tangential force
             vectorScalarMult3D(surfNorm,sigma_n(i),temp);
@@ -432,8 +434,8 @@ void FixMeshSurfaceStress::calc_total_force()
             // divide by area so have stress
             sigma_n(i) *= invSurfArea;
             sigma_t(i) *= invSurfArea;
-            /*NL*/ //fprintf(screen,"sigma_n tri %f\n",sigma_n(i));
-            /*NL*/ //fprintf(screen,"sigma_t tri %f\n",sigma_t(i));
+            /*NL*/ //if (screen) fprintf(screen,"sigma_n tri %f\n",sigma_n(i));
+            /*NL*/ //if (screen) fprintf(screen,"sigma_t tri %f\n",sigma_t(i));
         }
     }
 }
@@ -445,5 +447,6 @@ void FixMeshSurfaceStress::calc_total_force()
 double FixMeshSurfaceStress::compute_vector(int n)
 {
   if(n < 3) return f_total_[n];
-  else      return torque_total_[n-3];
+  else if(n < 6)     return torque_total_[n-3];
+  else return p_ref_(0)[n-6];
 }

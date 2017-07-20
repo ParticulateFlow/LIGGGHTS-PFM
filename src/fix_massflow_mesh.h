@@ -31,8 +31,6 @@ FixStyle(massflow/mesh,FixMassflowMesh)
 #include "fix.h"
 #include <vector>
 
-using namespace std;
-
 namespace LAMMPS_NS {
 
 class FixMassflowMesh : public Fix {
@@ -57,6 +55,20 @@ class FixMassflowMesh : public Fix {
 
   double compute_vector(int index);
 
+ protected:
+
+  // true if any given particle is
+  // counted only once
+  bool once_;
+
+  // in case particles counted should be deleted or transferred
+  bool delete_atoms_;
+  std::vector<int> atom_tags_delete_;
+  double mass_deleted_;
+  double nparticles_deleted_;
+
+  class FixPropertyAtom* fix_orientation_;
+
  private:
 
   class FixMeshSurface *fix_mesh_;
@@ -71,10 +83,6 @@ class FixMassflowMesh : public Fix {
   bool   insideOut_;
   double pointAtOutlet_[3];
 
-  // true if any given particle is
-  // counted only once
-  bool once_;
-
   // mass and particles which was counted
   double mass_;
   int nparticles_;
@@ -86,18 +94,13 @@ class FixMassflowMesh : public Fix {
   // data write
   bool screenflag_;
   FILE *fp_;
+  bool writeTime_; //switch to write time to the outfile
 
   // data for particle and mass flow calculation
   double mass_last_;
   int nparticles_last_;
   double t_count_, delta_t_;
   bool reset_t_count_;
-
-  // in case particles counted should be deleted
-  bool delete_atoms_;
-  vector<int> atom_tags_delete_;
-  double mass_deleted_;
-  double nparticles_deleted_;
 
   class FixMultisphere* fix_ms_;
   class MultisphereParallel *ms_;

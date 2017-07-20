@@ -53,6 +53,8 @@ namespace LAMMPS_NS
 
         void setPrecision(double _precision);
 
+        void setElementExclusionList(FILE *_file);
+
         void autoRemoveDuplicates();
 
         // scale mesh
@@ -81,7 +83,7 @@ namespace LAMMPS_NS
         void unregisterMove(bool _scale, bool _translate, bool _rotate);
 
         // bbox stuff
-        BoundingBox getGlobalBoundingBox() const;
+        BoundingBox getGlobalBoundingBox();
         BoundingBox getElementBoundingBoxOnSubdomain(int const n);
         void updateGlobalBoundingBox();
 
@@ -201,10 +203,18 @@ namespace LAMMPS_NS
         //NP resets node pos and global Props
         virtual bool resetToOrig();
 
+        inline double precision()
+        { return precision_; }
+
+        inline FILE* elementExclusionList()
+        { return element_exclusion_list_; }
+
       private:
 
         // mesh precision
         double precision_;
+
+        FILE *element_exclusion_list_;
 
         // state if elements should be automatically removed if duplicate
         bool autoRemoveDuplicates_;

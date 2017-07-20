@@ -27,6 +27,8 @@
 #ifndef LMP_PRIMITIVE_WALL_DEFINITIONS
 #define LMP_PRIMITIVE_WALL_DEFINITIONS
 
+#include "vector_liggghts.h"
+
 /*
  * Necessary steps to add new primitive walls:
  * (1) add an enum for your primitive to WallType, but insert it before NUM_WTYPE
@@ -50,6 +52,8 @@ namespace LAMMPS_NS
         XCYLINDER,
         YCYLINDER,
         ZCYLINDER,
+        GENERAL_PLANE,
+        GENERAL_CYLINDER,
         NUM_WTYPE
     };
 
@@ -60,7 +64,9 @@ namespace LAMMPS_NS
         "zplane",
         "xcylinder",
         "ycylinder",
-        "zcylinder"
+        "zcylinder",
+        "general_plane",
+        "general_cylinder"
     };
 
     static int numArgs[] =
@@ -70,7 +76,9 @@ namespace LAMMPS_NS
         1,
         3,
         3,
-        3
+        3,
+        6,
+        7
     };
 
     /*
@@ -205,6 +213,116 @@ namespace LAMMPS_NS
 /* ---------------------------------------------------------------------- */
 
     /*
+     * a plane is defined by a point and a vector perpendicular to the
+     * plane. Parameters:
+     * param[0,1,2] point on plane
+     * param[3,4,5] vector perpendicular to the plane
+     */
+
+    struct GeneralPlane {
+    public:
+      // setParams needs to be called before any
+      // computation takes place!!!
+      static void setParams(double *param, double *p, double *n)
+      {
+        p[0] = param[0]; p[1] = param[1]; p[2] = param[2];
+        n[0] = param[3]; n[1] = param[4]; n[2] = param[5];
+
+        vectorNormalize3D(n);
+      }
+      // relies on p, n to be properly set
+      // returns signed distance
+      static double distToPlane(double *pos, double *p,  double *n)
+      {
+        double vec[3];
+        vectorSubtract3D(pos,p,vec);
+        return vectorDot3D(vec,n);
+      }
+
+      static double resolveContact(double *pos, double r, double *delta, double *param)
+      {
+        double p[3],n[3];
+        setParams(param,p,n);
+
+        double dist = distToPlane(pos,p,n);
+        vectorCopy3D(n,delta);
+        vectorScalarMult3D(delta,-dist);
+        double absdist = (dist > 0.0) ? dist : -dist;
+        return absdist - r;
+      }
+
+      static bool resolveNeighlist(double *pos, double r, double treshold, double *param)
+      {
+        double p[3],n[3];
+        setParams(param,p,n);
+
+        double dMax = r + treshold;
+        double dist = distToPlane(pos,p,n);
+        double absdist = (dist > 0.0) ? dist : -dist;
+        return (absdist <= dMax);
+      }
+
+    };
+
+/* ---------------------------------------------------------------------- */
+    /*
+     * a cylinder is defined by a radius, a point on and a vector parallel to
+     * cylinder axis
+     * param[0] = radius
+     * param[1,2,3] point on cylinder axis
+     * param[4,5,6] vector parallel to cylinder axis
+     */
+    struct GeneralCylinder
+    {
+      static double calcRadialDistance(double *pos, double *param, double &dx, double &dy, double &dz)
+      {
+        double p[3],v[3],w[3],pb[3];
+        vectorCopy3D(&param[1],p);
+        vectorCopy3D(&param[4],v);
+
+        vectorSubtract3D(pos,p,w);
+
+        const double c1 = vectorDot3D(w,v);
+        const double c2 = vectorDot3D(v,v);
+        const double b = c1 / c2;
+
+        vectorAddMultiply3D(p,v,b,pb);
+
+        dx = pos[0] - pb[0];
+        dy = pos[1] - pb[1];
+        dz = pos[2] - pb[2];
+        return sqrt(dx*dx + dy*dy + dz*dz);
+      }
+
+      static double resolveContact(double *pos, double r, double *delta, double *param)
+      {
+        double dx,dy,dz,fact,dr;
+        double dist = calcRadialDistance(pos,param,dx,dy,dz);
+        if(dist > *param){
+          dr = dist - *param - r;
+          fact = (dist - *param) / dist;
+          delta[0] = -dx*fact; delta[1] = -dy*fact; delta[2] = -dz*fact;
+         } else {
+          dr = *param - dist - r;
+          fact = (*param - dist) / dist;
+          delta[0] = +dx*fact; delta[1] = +dy*fact; delta[2] = +dz*fact;
+        }
+        return dr;
+      }
+
+      static bool resolveNeighlist(double *pos, double r, double treshold, double *param)
+      {
+        double dx,dy,dz;
+        double dMax = r + treshold;
+        double dist = calcRadialDistance(pos,param,dx,dy,dz) - *param;
+        return (dMax < dist || -dMax < dist);
+      }
+
+    };
+
+/* ---------------------------------------------------------------------- */
+
+    /*
      * functions to choose the correct template
      */
 
@@ -226,6 +344,10 @@ namespace LAMMPS_NS
         return Cylinder<1>::resolveContact(x,r,delta,param);
       case ZCYLINDER:
         return Cylinder<2>::resolveContact(x,r,delta,param);
+      case GENERAL_PLANE:
+        return GeneralPlane::resolveContact(x,r,delta,param);
+      case GENERAL_CYLINDER:
+        return GeneralCylinder::resolveContact(x,r,delta,param);
 
       default: // default: no contact
         return 1.;
@@ -269,6 +391,10 @@ namespace LAMMPS_NS
         return Cylinder<1>::resolveNeighlist(x,r,treshold,param);
       case ZCYLINDER:
         return Cylinder<2>::resolveNeighlist(x,r,treshold,param);
+      case GENERAL_PLANE:
+        return GeneralPlane::resolveNeighlist(x,r,treshold,param);
+      case GENERAL_CYLINDER:
+        return GeneralCylinder::resolveNeighlist(x,r,treshold,param);
 
       default: // default value: every particle will be added to neighbor list
         return true;
@@ -304,6 +430,8 @@ namespace LAMMPS_NS
       case ZCYLINDER:
         dz = 0.;
         return Cylinder<2>::calcRadialDistance(pos,param,dx,dy);
+      case GENERAL_CYLINDER:
+        return GeneralCylinder::calcRadialDistance(pos,param,dx,dy,dz);
 
       default:
         dx = dy = dz = 0.;

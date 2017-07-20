@@ -11,8 +11,8 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "delete_atoms.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -53,6 +53,11 @@ void DeleteAtoms::command(int narg, char **arg)
   // store state before delete
 
   bigint natoms_previous = atom->natoms;
+
+  if(modify->n_fixes_style_strict("contacthistory") > 0)
+    modify->find_fix_style_strict("contacthistory",0)->pre_exchange();
+  if(modify->n_fixes_style_strict("bond/propagate/gran") > 0)
+    modify->find_fix_style_strict("bond/propagate/gran",0)->pre_exchange();
 
   // delete the atoms
 

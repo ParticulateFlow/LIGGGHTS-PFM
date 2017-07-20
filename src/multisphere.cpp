@@ -171,21 +171,23 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
     {
         /*NL*///char id[200];
         /*NL*///cb->id(id);
-        /*NL*///fprintf(screen,"iProperty %d, property %s\n",iProperty,id);
+        /*NL*///if (screen) fprintf(screen,"iProperty %d, property %s\n",iProperty,id);
 
         //NP this funtion is inlinable
         if(cb->useDefault())
         {
             //NP this is virtual fct
             cb->setToDefault(n);
-            /*NL*///fprintf(screen,"    setting default here\n");
+            /*NL*///if (screen) fprintf(screen,"    setting default here\n");
         }
     }
 
+    /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"start_step_ins %d\n",start_step_ins);
     /*NL*/ //printVec3D(screen,"vcm(n)",vcm_(n));
-    /*NL*/// printVec3D(screen,"omega_(n)",omega_(n));
-    /*NL*/// printVec3D(screen,"angmom_(n)",angmom_(n));
+    /*NL*/ //printVec3D(screen,"omega_(n)",omega_(n));
+    /*NL*/ //printVec3D(screen,"angmom_(n)",angmom_(n));
+    /*NL*/ //}
 
     // increase local body counter
     nbody_++;
@@ -219,7 +221,7 @@ void Multisphere::remap_bodies(int *body)
     vectorSubtract3D(xbnd,xbnd_old,xbnd_diff);
     vectorAdd3D(xcm_(ibody),xbnd_diff,xcm_(ibody));
 
-    /*NL*/ //if(tag(ibody) == 1) fprintf(screen,"step "BIGINT_FORMAT" OLD %f %f %f NEW %f %f %f\n",update->ntimestep,xbnd_old[0],xbnd_old[1],xbnd_old[2],xbnd[0],xbnd[1],xbnd[2]);
+    /*NL*/ //if(tag(ibody) == 1 && screen) fprintf(screen,"step " BIGINT_FORMAT " OLD %f %f %f NEW %f %f %f\n",update->ntimestep,xbnd_old[0],xbnd_old[1],xbnd_old[2],xbnd[0],xbnd[1],xbnd[2]);
 
     if (original == imagebody_(ibody)) remapflag_(ibody)[3] = 0;
     else {
@@ -251,7 +253,7 @@ void Multisphere::remap_bodies(int *body)
   {
 
     /*NL*/ //if(1 == atom->tag[i] || 2 == atom->tag[i] || 3 == atom->tag[i]) { //){(ibody) == 1125 && eval) {
-    /*NL*/ //     fprintf(screen,"step "BIGINT_FORMAT" proc %d atom tag %d ghost %s, imageflag_y before %d\n",
+    /*NL*/ //     if (screen) fprintf(screen,"step " BIGINT_FORMAT " proc %d atom tag %d ghost %s, imageflag_y before %d\n",
     /*NL*/ //                                      update->ntimestep,comm->me,atom->tag[i],i>=nlocal?"yes":"no",(atomimage[i] >> 10 & 1023) - 512);
     /*NL*/ //}
 
@@ -313,7 +315,7 @@ void Multisphere::id_extend_body_extend(int *body)
 
   mapTagMax_ = MathExtraLiggghts::max(mapTagMax_,idmax_all);
 
-  /*NL*/ //fprintf(this->screen,"id_extend proc %d: idmax %d, idmax_all %d mapTagMax_ %d nbody_ %d\n",comm->me,idmax,idmax_all,mapTagMax_,nbody_);
+  /*NL*/ //if (this->screen) fprintf(this->screen,"id_extend proc %d: idmax %d, idmax_all %d mapTagMax_ %d nbody_ %d\n",comm->me,idmax,idmax_all,mapTagMax_,nbody_);
 
   // noid = # of bodies I own with no id (id = -1)
   // noid_sum = # of total bodies on procs <= me with no tag
@@ -361,7 +363,7 @@ void Multisphere::id_extend_body_extend(int *body)
     if (id_(ibody) == -1)
     {
         id_(ibody) = itag;
-        /*NL*/ //fprintf(screen,"proc %d setting id of local body %d to %d\n",comm->me,ibody,id_(ibody));
+        /*NL*/ //if (screen) fprintf(screen,"proc %d setting id of local body %d to %d\n",comm->me,ibody,id_(ibody));
 
         if(nobody_first == nlocal-1)
             error->one(FLERR,"Internal error: atom body id inconsistent");
@@ -371,7 +373,7 @@ void Multisphere::id_extend_body_extend(int *body)
             if(body[iatom] != -2)
                 error->one(FLERR,"Internal error: atom body id inconsistent");
             body[iatom] = itag;
-            /*NL*/ //if((itag==39||itag==40)) fprintf(screen,"atom tag %d belongs to body tag %d\n",atom->tag[iatom],itag);
+            /*NL*/ //if((itag==39||itag==40) && screen) fprintf(screen,"atom tag %d belongs to body tag %d\n",atom->tag[iatom],itag);
         }
         nobody_first += nrigid_(ibody);
 
@@ -410,7 +412,7 @@ void Multisphere::generate_map()
     MPI_Max_Scalar(idmax,idmax_all,world);
     mapTagMax_ = MathExtraLiggghts::max(mapTagMax_,idmax_all);
 
-    /*NL*/ //fprintf(this->screen,"generate_map proc %d: idmax %d, mapTagMax_ %d nbody_ %d\n",comm->me,idmax,mapTagMax_,nbody_);
+    /*NL*/ //if (this->screen) fprintf(this->screen,"generate_map proc %d: idmax %d, mapTagMax_ %d nbody_ %d\n",comm->me,idmax,mapTagMax_,nbody_);
 
     // alocate and initialize new array
     // IDs start at 1, have to go up to (inclusive) mapTagMax_
@@ -423,7 +425,7 @@ void Multisphere::generate_map()
     // build map
     for (int i = nbody_-1; i >= 0; i--)
     {
-        /*NL*/// fprintf(this->screen,"id_(i) %d\n",id_(i));
+        /*NL*/// if (this->screen) fprintf(this->screen,"id_(i) %d\n",id_(i));
         mapArray_[id_(i)] = i;
     }
 }
@@ -443,8 +445,8 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     vectorZeroizeN(nrigid_current,nbody_);
     vectorZeroizeN(delflag,nbody_);
 
-    /*NL*///fprintf(screen,"CHECKING lost atoms for %d bodies, %d atoms on proc %d\n",nbody_,nall,comm->me);
-    /*NL*/ //if(map(7833) >= 0) fprintf(screen,"C proc %d has body %d\n",comm->me,7833);
+    /*NL*/ //if (screen) fprintf(screen,"CHECKING lost atoms for %d bodies, %d atoms on proc %d\n",nbody_,nall,comm->me);
+    /*NL*/ //if (screen && map(7833) >= 0) fprintf(screen,"C proc %d has body %d\n",comm->me,7833);
 
     //NP 2 ways of deleting:
     //NP (1) particles exit and are deleted, but body is stil in domain
@@ -461,10 +463,12 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     for(i = 0; i < nall; i++)
     {
         body_tag = body[i];
+        /*NL*/ //if (screen) {
         /*NL*/ //fprintf(screen,"body_tag %d\n",body_tag);
         /*NL*/ //fprintf(screen,"map(body_tag) %d\n",map(body_tag));
-        /*NL*///fprintf(screen,"proc %d step %d particle id %d, local %d (nlocal %d nghost %d) body_tag %d map(body_tag) %d is_unique_on_this_proc %d\n",
-        /*NL*///                comm->me,update->ntimestep,atom->tag[i],i,atom->nlocal,atom->nghost,body_tag,map(body_tag),domain->is_unique_on_this_proc(i));
+        /*NL*/ //fprintf(screen,"proc %d step %d particle id %d, local %d (nlocal %d nghost %d) body_tag %d map(body_tag) %d is_unique_on_this_proc %d\n",
+        /*NL*/ //                comm->me,update->ntimestep,atom->tag[i],i,atom->nlocal,atom->nghost,body_tag,map(body_tag),domain->is_unique_on_this_proc(i));
+        /*NL*/ //}
 
         //NP if particle belongs to a rigid body and the body is owned on this proc
         //NP specific case if ghost in periodic system with procgrid[idim] == 1
@@ -473,7 +477,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
         if(body_tag >= 0 && map(body_tag) >= 0 && domain->is_owned_or_first_ghost(i))
         {
             nrigid_current[map(body_tag)]++;
-            /*NL*/// if(38 == body_tag) fprintf(screen,"step "BIGINT_FORMAT" atom tag %d exists in body %d i %d nlocal %d\n",
+            /*NL*/// if(38 == body_tag && screen) fprintf(screen,"step " BIGINT_FORMAT " atom tag %d exists in body %d i %d nlocal %d\n",
             /*NL*///                             update->ntimestep,atom->tag[i],body_tag,i,atom->nlocal);
             body_existflag[i] = 1.;
         }
@@ -487,13 +491,13 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     {
         if(nrigid_current[ibody] > nrigid_(ibody))
         {
-            /*NL*/if(screen) fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step "BIGINT_FORMAT", nrigid_current %d nrigid %d\n",
+            /*NL*/if(screen) fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step " BIGINT_FORMAT ", nrigid_current %d nrigid %d\n",
             /*NL*/                comm->me,tag(ibody),ibody,update->ntimestep,nrigid_current[ibody],nrigid_(ibody));
             error->one(FLERR,"Internal error in multisphere method");
         }
         if(nrigid_current[ibody] != nrigid_(ibody))
         {
-            /*NL*///fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step "BIGINT_FORMAT", nrigid_current %d nrigid %d\n",
+            /*NL*///if (screen) fprintf(screen,"proc %d FLAGGING removal of body tag %d ibody %d on step " BIGINT_FORMAT ", nrigid_current %d nrigid %d\n",
             /*NL*///                comm->me,tag(ibody),ibody,update->ntimestep,nrigid_current[ibody],nrigid_(ibody));
             delflag[ibody] = 1;
             /*NL*///error->one(FLERR,"end");
@@ -513,7 +517,7 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
         //NP also re-set body flag
         if(ibody >= 0 && delflag[ibody])
         {
-           /*NL*///fprintf(screen,"step %d: proc %d deleting atom %d, belongs to body %d\n",update->ntimestep,comm->me,atom->tag[i],body_tag);
+           /*NL*///if (screen) fprintf(screen,"step %d: proc %d deleting atom %d, belongs to body %d\n",update->ntimestep,comm->me,atom->tag[i],body_tag);
            atom_delflag[i] = 1.;
            body[i] = -1;
            deleted = 1;
@@ -526,10 +530,10 @@ bool Multisphere::check_lost_atoms(int *body, double *atom_delflag, double *body
     {
         if(delflag[ibody] == 1)
         {
-            /*NL*///if(screen) fprintf(screen,"DELETING body tag %d ibody %d on step "BIGINT_FORMAT"\n",tag(ibody),ibody,update->ntimestep);
+            /*NL*///if(screen) fprintf(screen,"DELETING body tag %d ibody %d on step " BIGINT_FORMAT "\n",tag(ibody),ibody,update->ntimestep);
             delflag[ibody] = delflag[nbody_-1];
             remove_body(ibody);
-            /*NL*/ //if(map(7833) >= 0) fprintf(screen,"proc %d has body %d\n",comm->me,7833);
+            /*NL*/ //if(map(7833) >= 0 && screen) fprintf(screen,"proc %d has body %d\n",comm->me,7833);
         }
         else ibody++;
     }
@@ -572,7 +576,7 @@ void *Multisphere::extract(const char *name, int &len1, int &len2)
         len1 = len2 = -1;
         return NULL;
         /*
-        fprintf(screen,"ERROR: Property %s not found, which is required for multi-sphere\n",name);
+        if (screen) fprintf(screen,"ERROR: Property %s not found, which is required for multi-sphere\n",name);
         error->all(FLERR,"Property required for multi-sphere not found");
         */
     }
@@ -625,7 +629,7 @@ double Multisphere::extract_ke()
 
   MPI_Sum_Scalar(ke,world);
 
-  /*NL*/ fprintf(screen,"calculated ke of %f\n",0.5*ke);
+  /*NL*/ if (screen) fprintf(screen,"calculated ke of %f\n",0.5*ke);
   return 0.5*mvv2e*ke;
 }
 

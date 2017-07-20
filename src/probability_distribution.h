@@ -22,9 +22,9 @@
 #ifndef LMP_PROBABILITY_DISTRIBUTION_H
 #define LMP_PROBABILITY_DISTRIBUTION_H
 
-#include "math.h"
-#include "stdio.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
 #include "random_park.h"
 #include "error.h"
 #include "pointers.h"
@@ -57,7 +57,7 @@ namespace LMP_PROBABILITY_NS {
 
       LAMMPS_NS::Error *error;
 
-      inline int rand_style()
+      inline int rand_style() const
       { return rand_style_; }
 
       inline void set_min_max(double min,double max)
@@ -164,7 +164,7 @@ namespace LMP_PROBABILITY_NS {
   {
      if(pdf->mass_shift_)
         pdf->error->all(FLERR,"mass distribution not implemented for uniform");
-      
+
      return 0.25*(pdf->max_*pdf->max_*pdf->max_+
                   pdf->max_*pdf->max_*pdf->min_+
                   pdf->max_*pdf->min_*pdf->min_+

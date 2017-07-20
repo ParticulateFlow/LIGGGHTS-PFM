@@ -133,7 +133,7 @@
   }
 
   template<typename T>
-  T* AssociativePointerArray<T>::getBasePointerByIndex(int i)
+  T* AssociativePointerArray<T>::getBasePointerByIndex(int i) const
   {
     if(i >= size() || i < 0) return 0;
     else return content_[i];
@@ -150,20 +150,13 @@
     // for(int i=0;i<numElem_+1;i++)
     //  printf("%d %s %d\n",i,id_[i], strcmp(id_[i],"v"));
 
-    T ** tmp = new T*[maxElem_];
-
-    for(int i = 0; i < maxElem_; i++)
-        tmp[i] = content_[i];
-
-    delete[] content_;
-
-    maxElem_++;
-    content_ = new T*[maxElem_];
+    T ** tmp = new T*[++maxElem_];
 
     for(int i = 0; i < numElem_; i++)
-        content_[i] = tmp[i];
+      tmp[i] = content_[i];
 
-    delete[] tmp;
+    delete[] content_;
+    content_ = tmp;
 
     //for(int i=0;i<numElem_+1;i++)
     //  printf("%d %s %d\n",i,id_[i], strcmp(id_[i],"v"));
@@ -182,7 +175,7 @@
   }
 
   template<typename T>
-  int AssociativePointerArray<T>::size()
+  int AssociativePointerArray<T>::size() const
   {
     return numElem_;
   }
@@ -378,7 +371,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T>
-  int AssociativePointerArray<T>::bufSize(int operation,bool scale,bool translate,bool rotate)
+  int AssociativePointerArray<T>::bufSize(int operation,bool scale,bool translate,bool rotate) const
   {
     int buf_size = 0;
     for(int i=0;i<numElem_;i++)

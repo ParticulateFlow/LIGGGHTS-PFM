@@ -26,7 +26,7 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 #ifdef NORMAL_MODEL
-NORMAL_MODEL(HERTZ_BREAK,hertz/break,6)
+NORMAL_MODEL(HERTZ_BREAK,hertz/break,7)
 #else
 #ifndef NORMAL_MODEL_HERTZ_BREAK_H_
 #define NORMAL_MODEL_HERTZ_BREAK_H_

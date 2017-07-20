@@ -133,7 +133,8 @@ public:
 
   virtual double stressStrainExponent() = 0;
 
-  class MechParamGran *mpg;
+  class Properties* get_properties()
+  {return properties; }
 
   int fix_extra_dnum_index(class Fix *fix);
 
@@ -170,7 +171,7 @@ public:
 
   std::vector<HistoryArg> history_arg;
 
-  void history_args(char ** args) {
+  void history_args(char ** args) const {
     for(size_t i = 0; i < history_arg.size(); i++) {
       args[2*i] = (char*)history_arg[i].name.c_str();
       args[2*i+1] = (char*)history_arg[i].newtonflag.c_str();
@@ -234,6 +235,8 @@ public:
   void allocate();
 
  private:
+
+  class Properties *properties;
 
   // shear history
   int dnum_all;

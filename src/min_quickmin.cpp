@@ -12,8 +12,8 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "math.h"
+#include <mpi.h>
+#include <math.h>
 #include "min_quickmin.h"
 #include "universe.h"
 #include "atom.h"

@@ -25,11 +25,11 @@ Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
 andreas.aigner@jku.at
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
-#include "math.h"
+#include <math.h>
 #include "error.h"
 #include "fix_check_timestep_sph.h"
 #include "fix_property_global.h"
@@ -182,7 +182,7 @@ void FixCheckTimestepSph::calc_courant_estims_eval()
   int *ilist,*jlist,*numneigh,**firstneigh;
   double vmag,courant_time_one;
   double cmean;
-  int j_maxmu;
+  int j_maxmu = 0;
 
   double **x = atom->x;
   double **v = atom->v;

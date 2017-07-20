@@ -19,10 +19,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "mpi.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <mpi.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_bond_propagate_gran.h"
 #include "update.h"
 #include "respa.h"
@@ -90,8 +90,8 @@ void FixBondPropagateGran::pre_exchange()
   //NP propagate bond contact history
   if(!n_bondhist) return;
 
-  /*NL*/ //fprintf(screen,"step "BIGINT_FORMAT": FixBondPropagateGran::pre_exchange() (id %s)\n",update->ntimestep,id);
-  /*NL*/ //fprintf(screen,"nbondlist_propagate %d\n",nbondlist);
+  /*NL*/ //if(screen) fprintf(screen,"step " BIGINT_FORMAT ": FixBondPropagateGran::pre_exchange() (id %s)\n",update->ntimestep,id);
+  /*NL*/ //if(screen) fprintf(screen,"nbondlist_propagate %d\n",nbondlist);
 
   for (n = 0; n < nbondlist; n++) {
     i1 = bondlist[n][0];
@@ -109,7 +109,7 @@ void FixBondPropagateGran::pre_exchange()
            }
         if(ip == -1)
         {
-            /*NL*/ if(screen) fprintf(screen,"step "BIGINT_FORMAT": tags %d %d \n",
+            /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
             error->all(FLERR,"Failed to operate on granular bond history during copy");
         }
@@ -130,7 +130,7 @@ void FixBondPropagateGran::pre_exchange()
            }
         if(ip == -1)
         {
-            /*NL*/ if(screen) fprintf(screen,"step "BIGINT_FORMAT": tags %d %d \n",
+            /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
             error->all(FLERR,"Failed to operate on granular bond history during copy");
         }
@@ -169,7 +169,7 @@ void FixBondPropagateGran::pre_exchange()
            }
         if(ip == -1)
         {
-            /*NL*/ if(screen) fprintf(screen,"step "BIGINT_FORMAT": tags %d %d \n",
+            /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
             error->all(FLERR,"Failed to operate on granular bond history during deletion1");
         }
@@ -186,7 +186,7 @@ void FixBondPropagateGran::pre_exchange()
            }
         if(ip == -1)
         {
-            /*NL*/ if(screen) fprintf(screen,"step "BIGINT_FORMAT": tags %d %d \n",
+            /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
             error->all(FLERR,"Failed to operate on granular bond history during deletion2");
         }
@@ -197,7 +197,7 @@ void FixBondPropagateGran::pre_exchange()
 
 inline void FixBondPropagateGran::remove_bond(int ilocal,int ibond)
 {
-    /*NL*///fprintf(screen,"step "BIGINT_FORMAT": atom tag %d removing bond with atom tag %d\n",
+    /*NL*///if(screen) fprintf(screen,"step " BIGINT_FORMAT ": atom tag %d removing bond with atom tag %d\n",
     /*NL*///        update->ntimestep,atom->tag[ilocal],atom->bond_atom[ilocal][ibond]);
     /*NL*///error->one(FLERR,"removing bond");
     int nbond = atom->num_bond[ilocal];

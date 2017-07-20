@@ -20,6 +20,7 @@
 #include "my_page.h"
 #include "memory.h"
 #include "error.h"
+#include <string.h>
 
 using namespace LAMMPS_NS;
 
@@ -156,6 +157,9 @@ void NeighList::grow(int nmax)
   memory->create(numneigh,maxatoms,"neighlist:numneigh");
   firstneigh = (int **) memory->smalloc(maxatoms*sizeof(int *),
                                         "neighlist:firstneigh");
+
+  memset(ilist, 0, maxatoms*sizeof(int));
+  memset(numneigh, 0, maxatoms*sizeof(int));
 
   if (dnum)
     firstdouble = (double **) memory->smalloc(maxatoms*sizeof(double *),

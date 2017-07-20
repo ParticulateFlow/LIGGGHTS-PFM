@@ -21,10 +21,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_rigid.h"
 #include "math_extra.h"
 #include "atom.h"
@@ -60,7 +60,7 @@ enum{ISO,ANISO,TRICLINIC};
 #define EPSILON 1.0e-7
 
 #define SINERTIA 0.4            // moment of inertia prefactor for sphere
-#define EINERTIA 0.4            // moment of inertia prefactor for ellipsoid
+#define EINERTIA 0.2            // moment of inertia prefactor for ellipsoid
 #define LINERTIA (1.0/12.0)     // moment of inertia prefactor for line segment
 
 /* ---------------------------------------------------------------------- */
@@ -105,7 +105,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   // set nbody and body[i] for each atom
 
   if (narg < 4) error->all(FLERR,"Illegal fix rigid command");
-  int iarg;
+  int iarg = 0;
 
   mol2body = NULL;
   body2mol = NULL;
@@ -295,7 +295,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
       int mlo,mhi;
       force->bounds(arg[iarg+1],nbody,mlo,mhi);
 
-      double xflag,yflag,zflag;
+      double xflag=0.0,yflag=0.0,zflag=0.0;
       if (strcmp(arg[iarg+2],"off") == 0) xflag = 0.0;
       else if (strcmp(arg[iarg+2],"on") == 0) xflag = 1.0;
       else error->all(FLERR,"Illegal fix rigid command");
@@ -326,7 +326,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
       int mlo,mhi;
       force->bounds(arg[iarg+1],nbody,mlo,mhi);
 
-      double xflag,yflag,zflag;
+      double xflag=0.0,yflag=0.0,zflag=0.0;
       if (strcmp(arg[iarg+2],"off") == 0) xflag = 0.0;
       else if (strcmp(arg[iarg+2],"on") == 0) xflag = 1.0;
       else error->all(FLERR,"Illegal fix rigid command");
@@ -983,7 +983,7 @@ void FixRigid::final_integrate()
 void FixRigid::no_squish_rotate(int k, double *p, double *q,
                                 double *inertia, double dt) const
 {
-  double phi,c_phi,s_phi,kp[4],kq[4];
+  double phi,c_phi,s_phi,kp[4]={},kq[4]={};
 
   // apply permuation operator on p and q, get kp and kq
 
@@ -1231,7 +1231,7 @@ void FixRigid::set_xv()
   int ibody;
   int xbox,ybox,zbox;
   double x0,x1,x2,v0,v1,v2,fc0,fc1,fc2,massone;
-  double xy,xz,yz;
+  double xy=0.0,xz=0.0,yz=0.0;
   double ione[3],exone[3],eyone[3],ezone[3],vr[6],p[3][3];
 
   tagint *image = atom->image;
@@ -1337,11 +1337,11 @@ void FixRigid::set_xv()
     double theta_body,theta;
     double *shape,*quatatom,*inertiaatom;
 
-    AtomVecEllipsoid::Bonus *ebonus;
+    AtomVecEllipsoid::Bonus *ebonus = NULL;
     if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
-    AtomVecLine::Bonus *lbonus;
+    AtomVecLine::Bonus *lbonus = NULL;
     if (avec_line) lbonus = avec_line->bonus;
-    AtomVecTri::Bonus *tbonus;
+    AtomVecTri::Bonus *tbonus = NULL;
     if (avec_tri) tbonus = avec_tri->bonus;
     double **omega_one = atom->omega;
     double **angmom_one = atom->angmom;
@@ -1407,7 +1407,7 @@ void FixRigid::set_v()
 {
   int xbox,ybox,zbox;
   double x0,x1,x2,v0,v1,v2,fc0,fc1,fc2,massone;
-  double xy,xz,yz;
+  double xy=0.0,xz=0.0,yz=0.0;
   double ione[3],exone[3],eyone[3],ezone[3],delta[3],vr[6];
 
   double **x = atom->x;
@@ -1495,9 +1495,9 @@ void FixRigid::set_v()
   if (extended) {
     double *shape,*quatatom,*inertiaatom;
 
-    AtomVecEllipsoid::Bonus *ebonus;
+    AtomVecEllipsoid::Bonus *ebonus = NULL;
     if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
-    AtomVecTri::Bonus *tbonus;
+    AtomVecTri::Bonus *tbonus = NULL;
     if (avec_tri) tbonus = avec_tri->bonus;
     double **omega_one = atom->omega;
     double **angmom_one = atom->angmom;
@@ -1552,11 +1552,11 @@ void FixRigid::setup_bodies_static()
 
   extended = orientflag = dorientflag = 0;
 
-  AtomVecEllipsoid::Bonus *ebonus;
+  AtomVecEllipsoid::Bonus *ebonus = NULL;
   if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
-  AtomVecLine::Bonus *lbonus;
+  AtomVecLine::Bonus *lbonus = NULL;
   if (avec_line) lbonus = avec_line->bonus;
-  AtomVecTri::Bonus *tbonus;
+  AtomVecTri::Bonus *tbonus = NULL;
   if (avec_tri) tbonus = avec_tri->bonus;
   double **mu = atom->mu;
   double *radius = atom->radius;
@@ -1688,7 +1688,7 @@ void FixRigid::setup_bodies_static()
   // overwrite masstotal and center-of-mass with file values
   // inbody[i] = 0/1 if Ith rigid body is initialized by file
 
-  int *inbody;
+  int *inbody = NULL;
   if (infile) {
     memory->create(inbody,nbody,"rigid:inbody");
     for (ibody = 0; ibody < nbody; ibody++) inbody[ibody] = 0;
@@ -2089,7 +2089,7 @@ void FixRigid::setup_bodies_dynamic()
   // extended particles add their rotation to angmom of body
 
   if (extended) {
-    AtomVecLine::Bonus *lbonus;
+    AtomVecLine::Bonus *lbonus = NULL;
     if (avec_line) lbonus = avec_line->bonus;
     double **omega_one = atom->omega;
     double **angmom_one = atom->angmom;
@@ -2146,7 +2146,7 @@ void FixRigid::readfile(int which, double *vec, double **array, int *inbody)
 {
   int j,nchunk,id,eofflag;
   int nlines;
-  FILE *fp;
+  FILE *fp = NULL;
   char *eof,*start,*next,*buf;
   char line[MAXLINE];
 

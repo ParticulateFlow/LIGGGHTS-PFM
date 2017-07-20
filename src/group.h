@@ -14,8 +14,9 @@
 #ifndef LMP_GROUP_H
 #define LMP_GROUP_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "pointers.h"
+#include <map>
 
 namespace LAMMPS_NS {
 
@@ -25,11 +26,12 @@ class Group : protected Pointers {
   char **names;                // name of each group
   int *bitmask;                // one-bit mask for each group
   int *inversemask;            // inverse mask for each group
+  int *dynamic;                // 1 if dynamic, 0 if not
 
   Group(class LAMMPS *);
   ~Group();
   void assign(int, char **);         // assign atoms to a group
-  void create(char *, int *);        // add flagged atoms to a group
+  void create(const char *, int *);  // add flagged atoms to a group
   int find(const char *);            // lookup name in list of groups
   void write_restart(FILE *);
   void read_restart(FILE *);
@@ -62,8 +64,17 @@ class Group : protected Pointers {
 
  private:
   int me;
+  std::map<tagint,int> *hash;
 
   int find_unused();
+  void add_molecules(int, int);
+
+  // static variable for ring communication callback to access class data
+  // callback functions for ring communication
+
+  static Group *cptr;
+  static void molring(int, char *);
+  int molbit;
 };
 
 }

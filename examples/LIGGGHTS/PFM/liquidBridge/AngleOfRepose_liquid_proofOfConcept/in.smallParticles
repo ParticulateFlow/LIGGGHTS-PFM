@@ -42,7 +42,7 @@ neighbor		${rad} bin
 neigh_modify    delay 0
 
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype ${ym} ${ym}
 fix 		m2 all property/global poissonsRatio peratomtype ${pr} ${pr}
@@ -54,7 +54,7 @@ fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 ${rf} 
 fix 		m6 all property/global liquidVolume scalar ${VLiqu}
 fix		    m7 all property/global surfaceTension scalar ${sigma}
 
-#New pair style
+#pair style
 pair_style 	gran model hertz tangential history cohesion capillary rolling_friction cdt #Hertzian with cohesion
 pair_coeff	* *
 
@@ -79,15 +79,12 @@ fix		pts2 all particletemplate/sphere 1 atom_type 1 density constant ${dens} rad
 fix		pts3 all particletemplate/sphere 1 atom_type 1 density constant ${dens} radius constant ${rad3}
 fix		pdd1 all particledistribution/discrete 1. 3 pts1 0.4 pts2 0.3 pts3 0.3
 
-#particle insertion
-group		nve_group region reg
-
 region	bc cylinder z 0. 0. ${cylinderRad} 0 ${cylinderHeight} units box
-fix 	ins nve_group insert/pack seed 100001 distributiontemplate pdd1 insert_every once overlapcheck yes all_in yes mass_in_region ${mParticles} region bc
+fix 	ins all insert/pack seed 100001 distributiontemplate pdd1 insert_every once overlapcheck yes all_in yes mass_in_region ${mParticles} region bc
 
 
 #apply nve integration to all particles that are inserted as single particles
-fix		integr nve_group nve/sphere
+fix		integr all nve/sphere
 
 #output settings, include total thermal energy
 fix		ts all check/timestep/gran 20000 0.1 0.1
@@ -100,7 +97,7 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run		1
-dump		dmp all custom 1000 post/dump*.cohesion id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_force_granwalls[1] f_force_granwalls[2] f_force_granwalls[3]
+dump		dmp all custom 1000 post/dump*.cohesion id type x y z vx vy vz fx fy fz omegax omegay omegaz radius f_force_granwalls[1] f_force_granwalls[2] f_force_granwalls[3]
 dump 		dumpstress all mesh/gran/VTK 1000 post/dump*.vtk stress pt1 pt2 pt3 inface
 dump 		inface all mesh/gran/VTK 1000 post/dump_inface*.vtk stress inface
 

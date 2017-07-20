@@ -118,6 +118,8 @@ class Force : protected Pointers {
   void bounds(char *, int, int &, int &, int nmin=1);
   double numeric(const char *, int, char *);
   int inumeric(const char *, int, char *);
+  bigint bnumeric(const char *, int, char *);
+  tagint tnumeric(const char *, int, char *);
   bigint memory_usage();
 
   inline double cg() //NP modified C.K.

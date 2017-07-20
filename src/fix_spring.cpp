@@ -15,9 +15,9 @@
    Contributing author: Paul Crozier (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_spring.h"
 #include "atom.h"
 #include "update.h"
@@ -197,9 +197,11 @@ void FixSpring::spring_tether()
   if (dr < 0.0) ftotal[3] = -ftotal[3];
   espring = 0.5*k_spring * dr*dr;
 
-  fx /= masstotal;
-  fy /= masstotal;
-  fz /= masstotal;
+  if (masstotal > 0.0) {
+    fx /= masstotal;
+    fy /= masstotal;
+    fz /= masstotal;
+  }
 
   // apply restoring force to atoms in group
 
@@ -264,12 +266,19 @@ void FixSpring::spring_couple()
   if (dr < 0.0) ftotal[3] = -ftotal[3];
   espring = 0.5*k_spring * dr*dr;
 
-  fx2 = fx/masstotal2;
-  fy2 = fy/masstotal2;
-  fz2 = fz/masstotal2;
-  fx /= masstotal;
-  fy /= masstotal;
-  fz /= masstotal;
+  fx2 = fx;
+  fy2 = fy;
+  fz2 = fz;
+  if (masstotal2 > 0.0) {
+    fx2 /= masstotal2;
+    fy2 /= masstotal2;
+    fz2 /= masstotal2;
+  }
+  if (masstotal > 0.0) {
+    fx /= masstotal;
+    fy /= masstotal;
+    fz /= masstotal;
+  }
 
   // apply restoring force to atoms in group
   // f = -k*(r-r0)*mass/masstotal
