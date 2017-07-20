@@ -100,6 +100,20 @@ namespace LMP_PROBABILITY_NS {
       return 0.;
   }
 
+  // probability density function
+  template <int RAND_STYLE> inline double pdf(PDF *pdf,double)
+  {
+      pdf->error->all(FLERR,"Faulty usage of Probability::pdf");
+      return 0.;
+  }
+
+  // cumulative distribution function
+  template <int RAND_STYLE> inline double cdf(PDF *pdf,double)
+  {
+      pdf->error->all(FLERR,"Faulty usage of Probability::cdf");
+      return 0.;
+  }
+
   template <int RAND_STYLE> inline double rand_value(PDF *pdf,LAMMPS_NS::RanPark *rp)
   {
       pdf->error->all(FLERR,"Faulty usage of Probability::rand");
@@ -277,6 +291,24 @@ namespace LMP_PROBABILITY_NS {
   template<> inline double expectancy_value<RANDOM_WEIBULL>(PDF *pdf)
   {
     return pdf->sigma_ * tgamma(1.0 + 1.0/pdf->mu_);
+  }
+
+  template<> inline double pdf<RANDOM_WEIBULL>(PDF *pdf,double x)
+  {
+    if(x < 0.0)
+      return 0.0;
+    x /= pdf->sigma_;
+    double x_k1 = pow(x, pdf->mu_-1.0);
+    return (pdf->mu_/pdf->sigma_) * x_k1 * exp(-x_k1*x);
+  }
+
+  template<> inline double cdf<RANDOM_WEIBULL>(PDF *pdf,double x)
+  {
+    if(x < 0.0)
+      return 0.0;
+    x /= pdf->sigma_;
+    double x_k = pow(x, pdf->mu_);
+    return 1.0 - exp(-x_k);
   }
 
   template<> inline double rand_value<RANDOM_WEIBULL>(PDF *pdf,LAMMPS_NS::RanPark *rp)
