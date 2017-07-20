@@ -155,9 +155,11 @@ FixBreakParticle::FixBreakParticle(LAMMPS *lmp, int narg, char **arg) :
         breakability_distribution = BD_UNIFORM;
       } else if (strcmp(arg[iarg+1],"gaussian") == 0) {
         if (iarg+4 > narg) error->fix_error(FLERR,this,"not enough arguments: breakability");
+        pdf_breakability = new PDF(error);
         rand_expected_value = atof(arg[iarg+2]);
         rand_sigma = atof(arg[iarg+3]);
         if (rand_expected_value < 0. || rand_expected_value > 1.) error->fix_error(FLERR,this,"breakability must be >= 0 and < 1");
+        pdf_breakability->set_params<RANDOM_GAUSSIAN>(rand_expected_value,rand_sigma);
         breakability_distribution = BD_GAUSSIAN;
         iarg +=2;
       } else if (strcmp(arg[iarg+1],"weibull") == 0) {
@@ -666,10 +668,8 @@ void FixBreakParticle::check_energy_criterion()
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
           case BD_WEIBULL:
-            breakability[i] = rand(pdf_breakability,random);
-            break;
           case BD_GAUSSIAN:
-            breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
+            breakability[i] = rand(pdf_breakability,random);
             break;
           case BD_CONSTANT:
             breakability[i] = const_breakability;
@@ -765,10 +765,8 @@ void FixBreakParticle::check_energy_criterion()
                   if (breakability[iPart] == 0.0) {
                     switch (breakability_distribution) {
                     case BD_WEIBULL:
-                      breakability[iPart] = rand(pdf_breakability,random);
-                      break;
                     case BD_GAUSSIAN:
-                      breakability[iPart] = random->gaussian()*rand_sigma + rand_expected_value;
+                      breakability[iPart] = rand(pdf_breakability,random);
                       break;
                     case BD_CONSTANT:
                       breakability[iPart] = const_breakability;
@@ -840,10 +838,8 @@ void FixBreakParticle::check_energy_criterion()
             if (breakability[iPart] == 0.0) {
               switch (breakability_distribution) {
               case BD_WEIBULL:
-                breakability[iPart] = rand(pdf_breakability,random);
-                break;
               case BD_GAUSSIAN:
-                breakability[iPart] = random->gaussian()*rand_sigma + rand_expected_value;
+                breakability[iPart] = rand(pdf_breakability,random);
                 break;
               case BD_CONSTANT:
                 breakability[iPart] = const_breakability;
@@ -1179,10 +1175,8 @@ void FixBreakParticle::check_force_criterion()
       if (breakability[i] == 0.0) {
         switch (breakability_distribution) {
         case BD_WEIBULL:
-          breakability[i] = rand(pdf_breakability,random);
-          break;
         case BD_GAUSSIAN:
-          breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
+          breakability[i] = rand(pdf_breakability,random);
           break;
         case BD_CONSTANT:
           breakability[i] = const_breakability;
@@ -1395,10 +1389,8 @@ void FixBreakParticle::check_von_mises_criterion()
         if (breakability[i] == 0.0) {
           switch (breakability_distribution) {
           case BD_WEIBULL:
-            breakability[i] = rand(pdf_breakability,random);
-            break;
           case BD_GAUSSIAN:
-           breakability[i] = random->gaussian()*rand_sigma + rand_expected_value;
+            breakability[i] = rand(pdf_breakability,random);
             break;
           case BD_CONSTANT:
             breakability[i] = const_breakability;
