@@ -679,20 +679,8 @@ void FixBreakParticle::check_energy_criterion()
           probability = 1.0 - exp(-fMat        * 2.0*radius[i] * flag[i]);
         }
 
-        if (breakability[i] == 0.0) {
-          switch (breakability_distribution) {
-          case BD_WEIBULL:
-          case BD_GAUSSIAN:
-            breakability[i] = rand(pdf_breakability,random);
-            break;
-          case BD_CONSTANT:
-            breakability[i] = const_breakability;
-            break;
-          default:
-            breakability[i] = random->uniform();
-            break;
-          }
-        }
+        set_breakability(breakability, i);
+
         if (probability > breakability[i]) {
           fix_breaker->set_vector_atom_int(i, breaker_tag[i]);
         }
@@ -759,20 +747,8 @@ void FixBreakParticle::check_energy_criterion()
                     probability = 1.0 - exp(-fMat            * 2.0*radius[iPart] * flag[iPart]);
                   }
 
-                  if (breakability[iPart] == 0.0) {
-                    switch (breakability_distribution) {
-                    case BD_WEIBULL:
-                    case BD_GAUSSIAN:
-                      breakability[iPart] = rand(pdf_breakability,random);
-                      break;
-                    case BD_CONSTANT:
-                      breakability[iPart] = const_breakability;
-                      break;
-                    default:
-                      breakability[iPart] = random->uniform();
-                      break;
-                    }
-                  }
+                  set_breakability(breakability, iPart);
+
                   if (probability > breakability[iPart]) {
                     fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
                     fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
@@ -821,20 +797,8 @@ void FixBreakParticle::check_energy_criterion()
               probability = 1.0 - exp(-fMat            * 2.0*radius[iPart] * flag[iPart]);
             }
 
-            if (breakability[iPart] == 0.0) {
-              switch (breakability_distribution) {
-              case BD_WEIBULL:
-              case BD_GAUSSIAN:
-                breakability[iPart] = rand(pdf_breakability,random);
-                break;
-              case BD_CONSTANT:
-                breakability[iPart] = const_breakability;
-                break;
-              default:
-                breakability[iPart] = random->uniform();
-                break;
-              }
-            }
+            set_breakability(breakability, iPart);
+
             if (probability > breakability[iPart]) {
               fix_breaker->set_vector_atom_int(iPart, 0); // remove any particle breaker
               fix_breaker_wall->set_vector_atom_int(iPart, breaker_tag[iPart]);
@@ -1106,20 +1070,8 @@ void FixBreakParticle::check_force_criterion()
         }
       }
 
-      if (breakability[i] == 0.0) {
-        switch (breakability_distribution) {
-        case BD_WEIBULL:
-        case BD_GAUSSIAN:
-          breakability[i] = rand(pdf_breakability,random);
-          break;
-        case BD_CONSTANT:
-          breakability[i] = const_breakability;
-          break;
-        default:
-          breakability[i] = random->uniform();
-          break;
-        }
-      }
+      set_breakability(breakability, i);
+
       if (probability > breakability[i]) {
         flag[i] = -probability;  // sign indicates breakage
       }
@@ -1272,20 +1224,9 @@ void FixBreakParticle::check_von_mises_criterion()
                                      + stress[i][3]*stress[i][3] + stress[i][4]*stress[i][4] + stress[i][5]*stress[i][5];
       if (von_Mises_stress > 0.0) {
         von_Mises_stress = sqrt(3.0 * von_Mises_stress);
-        if (breakability[i] == 0.0) {
-          switch (breakability_distribution) {
-          case BD_WEIBULL:
-          case BD_GAUSSIAN:
-            breakability[i] = rand(pdf_breakability,random);
-            break;
-          case BD_CONSTANT:
-            breakability[i] = const_breakability;
-            break;
-          default:
-            breakability[i] = random->uniform();
-            break;
-          }
-        }
+
+        set_breakability(breakability, i);
+
         double probability;
         // P = 1 - exp(-fMat * (d/d0)^3 * (sigma/sigma0)^m)
         // m ... Weibull modulus (shape parameter)
@@ -1362,6 +1303,26 @@ void FixBreakParticle::sum_particle_stress(double **stress, int iPart, double Fn
   stress[iPart][3] += r_over_vol[iPart] * eny * Fn * enz;
   stress[iPart][4] += r_over_vol[iPart] * enx * Fn * enz;
   stress[iPart][5] += r_over_vol[iPart] * enx * Fn * eny;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixBreakParticle::set_breakability(double *breakability, int iPart)
+{
+  if (breakability[iPart] == 0.0) {
+    switch (breakability_distribution) {
+    case BD_WEIBULL:
+    case BD_GAUSSIAN:
+      breakability[iPart] = rand(pdf_breakability,random);
+      break;
+    case BD_CONSTANT:
+      breakability[iPart] = const_breakability;
+      break;
+    default:
+      breakability[iPart] = random->uniform();
+      break;
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */

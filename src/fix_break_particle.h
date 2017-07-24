@@ -79,6 +79,7 @@ class FixBreakParticle : public FixInsert {
   void sum_particle_stress(double **stress, int iPart, double Fn, double enx, double eny, double enz, const std::vector<double>& r_over_vol);
   double getYeff(int itype, int jtype);
   double elastic_energy_particle_wall(int64_t normalmodel, double radius, double deltan, double Yeff, double meff);
+  void set_breakability(double *breakability, int iPart);
 
   // per breakage flag
   class FixPropertyAtom *fix_break;
