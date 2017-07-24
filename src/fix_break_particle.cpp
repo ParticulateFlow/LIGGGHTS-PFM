@@ -1175,21 +1175,11 @@ void FixBreakParticle::check_von_mises_criterion()
       double enz = contact_history[normalOffset+2];
 
       if (mask[i] & groupbit && radius[i] > min_break_rad) {
-        stress[i][0] += r_over_vol[i] * enx * Fn * enx;
-        stress[i][1] += r_over_vol[i] * eny * Fn * eny;
-        stress[i][2] += r_over_vol[i] * enz * Fn * enz;
-        stress[i][3] += r_over_vol[i] * eny * Fn * enz;
-        stress[i][4] += r_over_vol[i] * enx * Fn * enz;
-        stress[i][5] += r_over_vol[i] * enx * Fn * eny;
+        sum_particle_stress(stress, i, Fn, enx, eny, enz, r_over_vol);
       }
 
       if (mask[j] & groupbit && radius[j] > min_break_rad) {
-        stress[j][0] += r_over_vol[j] * enx * Fn * enx;
-        stress[j][1] += r_over_vol[j] * eny * Fn * eny;
-        stress[j][2] += r_over_vol[j] * enz * Fn * enz;
-        stress[j][3] += r_over_vol[j] * eny * Fn * enz;
-        stress[j][4] += r_over_vol[j] * enx * Fn * enz;
-        stress[j][5] += r_over_vol[j] * enx * Fn * eny;
+        sum_particle_stress(stress, j, Fn, enx, eny, enz, r_over_vol);
       }
     }
   }
@@ -1236,12 +1226,7 @@ void FixBreakParticle::check_von_mises_criterion()
               double eny = contact_history[normalOffset+1];
               double enz = contact_history[normalOffset+2];
 
-              stress[iPart][0] += r_over_vol[iPart] * enx * Fn * enx;
-              stress[iPart][1] += r_over_vol[iPart] * eny * Fn * eny;
-              stress[iPart][2] += r_over_vol[iPart] * enz * Fn * enz;
-              stress[iPart][3] += r_over_vol[iPart] * eny * Fn * enz;
-              stress[iPart][4] += r_over_vol[iPart] * enx * Fn * enz;
-              stress[iPart][5] += r_over_vol[iPart] * enx * Fn * eny;
+              sum_particle_stress(stress, iPart, Fn, enx, eny, enz, r_over_vol);
             }
           }
         }
@@ -1270,12 +1255,7 @@ void FixBreakParticle::check_von_mises_criterion()
           double eny = contact_history[normalOffset+1];
           double enz = contact_history[normalOffset+2];
 
-          stress[iPart][0] += r_over_vol[iPart] * enx * Fn * enx;
-          stress[iPart][1] += r_over_vol[iPart] * eny * Fn * eny;
-          stress[iPart][2] += r_over_vol[iPart] * enz * Fn * enz;
-          stress[iPart][3] += r_over_vol[iPart] * eny * Fn * enz;
-          stress[iPart][4] += r_over_vol[iPart] * enx * Fn * enz;
-          stress[iPart][5] += r_over_vol[iPart] * enx * Fn * eny;
+          sum_particle_stress(stress, iPart, Fn, enx, eny, enz, r_over_vol);
         }
       }
     }
@@ -1370,6 +1350,18 @@ double** FixBreakParticle::get_primitive_wall_contact_history(FixWallGran *fwg)
   }
 
   return NULL;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixBreakParticle::sum_particle_stress(double **stress, int iPart, double Fn, double enx, double eny, double enz, const std::vector<double>& r_over_vol)
+{
+  stress[iPart][0] += r_over_vol[iPart] * enx * Fn * enx;
+  stress[iPart][1] += r_over_vol[iPart] * eny * Fn * eny;
+  stress[iPart][2] += r_over_vol[iPart] * enz * Fn * enz;
+  stress[iPart][3] += r_over_vol[iPart] * eny * Fn * enz;
+  stress[iPart][4] += r_over_vol[iPart] * enx * Fn * enz;
+  stress[iPart][5] += r_over_vol[iPart] * enx * Fn * eny;
 }
 
 /* ---------------------------------------------------------------------- */

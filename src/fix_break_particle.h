@@ -76,6 +76,7 @@ class FixBreakParticle : public FixInsert {
   void check_von_mises_criterion();
   double *  get_triangle_contact_history(class TriMesh *mesh, class FixContactHistoryMesh *fix_contact, int iPart, int iTri);
   double ** get_primitive_wall_contact_history(class FixWallGran *fwg);
+  void sum_particle_stress(double **stress, int iPart, double Fn, double enx, double eny, double enz, const std::vector<double>& r_over_vol);
 
   // per breakage flag
   class FixPropertyAtom *fix_break;
