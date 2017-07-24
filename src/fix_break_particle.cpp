@@ -785,18 +785,7 @@ void FixBreakParticle::check_energy_criterion()
       }
     } else { // primitive wall
 
-      double **c_history = NULL;
-
-      if (fwg->dnum() > 0) {
-        //NP depends on naming in fix_wall_gran!
-        std::string hist_name("history_");
-        hist_name += fwg->id;
-        FixPropertyAtom *fix_history_primitive_ =
-        static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
-        if (fix_history_primitive_) {
-          c_history = fix_history_primitive_->array_atom;
-        }
-      }
+      double **c_history = get_primitive_wall_contact_history(fwg);
 
       if (c_history) {
         // loop neighbor list
@@ -962,17 +951,7 @@ void FixBreakParticle::check_energy_criterion()
         }
       } else { // primitive wall
 
-        double **c_history = NULL;
-
-        if (fwg->dnum() > 0) {
-          std::string hist_name("history_");
-          hist_name += fwg->id;
-          FixPropertyAtom *fix_history_primitive_ =
-          static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
-          if (fix_history_primitive_) {
-            c_history = fix_history_primitive_->array_atom;
-          }
-        }
+        double **c_history = get_primitive_wall_contact_history(fwg);
 
         if (c_history) {
           // loop neighbor list
@@ -1085,18 +1064,7 @@ void FixBreakParticle::check_force_criterion()
       }
     } else { // primitive wall
 
-      double **c_history = NULL;
-
-      if (fwg->dnum() > 0) {
-        //NP depends on naming in fix_wall_gran!
-        std::string hist_name("history_");
-        hist_name += fwg->id;
-        FixPropertyAtom *fix_history_primitive_ =
-          static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
-        if (fix_history_primitive_) {
-          c_history = fix_history_primitive_->array_atom;
-        }
-      }
+      double **c_history = get_primitive_wall_contact_history(fwg);
 
       if (c_history) {
         // loop neighbor list
@@ -1280,18 +1248,7 @@ void FixBreakParticle::check_von_mises_criterion()
       }
     } else { // primitive wall
 
-      double **c_history = NULL;
-
-      if (fwg->dnum() > 0) {
-        //NP depends on naming in fix_wall_gran!
-        std::string hist_name("history_");
-        hist_name += fwg->id;
-        FixPropertyAtom *fix_history_primitive_ =
-          static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
-        if (fix_history_primitive_) {
-          c_history = fix_history_primitive_->array_atom;
-        }
-      }
+      double **c_history = get_primitive_wall_contact_history(fwg);
 
       if (c_history) {
         // loop neighbor list
@@ -1391,6 +1348,24 @@ double* FixBreakParticle::get_triangle_contact_history(TriMesh *mesh, FixContact
       if (fix_contact->partner(iPart, j) == idTri) {
         return fix_contact->contacthistory(iPart, j);
       }
+    }
+  }
+
+  return NULL;
+}
+
+/* ---------------------------------------------------------------------- */
+
+double** FixBreakParticle::get_primitive_wall_contact_history(FixWallGran *fwg)
+{
+  if (fwg->dnum() > 0) {
+    // NOTE: depends on naming in fix_wall_gran!
+    std::string hist_name("history_");
+    hist_name += fwg->id;
+    FixPropertyAtom *fix_history_primitive_ =
+      static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
+    if (fix_history_primitive_) {
+      return fix_history_primitive_->array_atom;
     }
   }
 

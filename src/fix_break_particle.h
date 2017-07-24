@@ -74,7 +74,8 @@ class FixBreakParticle : public FixInsert {
   void check_energy_criterion();
   void check_force_criterion();
   void check_von_mises_criterion();
-  double *get_triangle_contact_history(class TriMesh *mesh, class FixContactHistoryMesh *fix_contact, int iPart, int iTri);
+  double *  get_triangle_contact_history(class TriMesh *mesh, class FixContactHistoryMesh *fix_contact, int iPart, int iTri);
+  double ** get_primitive_wall_contact_history(class FixWallGran *fwg);
 
   // per breakage flag
   class FixPropertyAtom *fix_break;
