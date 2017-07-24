@@ -1168,11 +1168,11 @@ void FixBreakParticle::check_von_mises_criterion()
       const int j = jlist[jj];
       double * contact_history = &allhist[dnum*jj];
 
-      double Fn = contact_history[forceMaxOffset];
+      const double Fn = contact_history[forceMaxOffset];
       //NP en points from j to i
-      double enx = contact_history[normalOffset];
-      double eny = contact_history[normalOffset+1];
-      double enz = contact_history[normalOffset+2];
+      const double enx = contact_history[normalOffset];
+      const double eny = contact_history[normalOffset+1];
+      const double enz = contact_history[normalOffset+2];
 
       if (mask[i] & groupbit && radius[i] > min_break_rad) {
         sum_particle_stress(stress, i, Fn, enx, eny, enz, r_over_vol);
@@ -1220,11 +1220,11 @@ void FixBreakParticle::check_von_mises_criterion()
             double *contact_history = get_triangle_contact_history(mesh, fix_contact, iPart, iTri);
 
             if (contact_history) {
-              double Fn = contact_history[forceMaxOffset];
+              const double Fn = contact_history[forceMaxOffset];
               //NP en points from j to i
-              double enx = contact_history[normalOffset];
-              double eny = contact_history[normalOffset+1];
-              double enz = contact_history[normalOffset+2];
+              const double enx = contact_history[normalOffset];
+              const double eny = contact_history[normalOffset+1];
+              const double enz = contact_history[normalOffset+2];
 
               sum_particle_stress(stress, iPart, Fn, enx, eny, enz, r_over_vol);
             }
@@ -1249,11 +1249,11 @@ void FixBreakParticle::check_von_mises_criterion()
 
           double *contact_history = c_history[iPart];
 
-          double Fn = contact_history[forceMaxOffset];
+          const double Fn = contact_history[forceMaxOffset];
           //NP en points from j to i
-          double enx = contact_history[normalOffset];
-          double eny = contact_history[normalOffset+1];
-          double enz = contact_history[normalOffset+2];
+          const double enx = contact_history[normalOffset];
+          const double eny = contact_history[normalOffset+1];
+          const double enz = contact_history[normalOffset+2];
 
           sum_particle_stress(stress, iPart, Fn, enx, eny, enz, r_over_vol);
         }
