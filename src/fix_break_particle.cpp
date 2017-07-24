@@ -1539,7 +1539,7 @@ void FixBreakParticle::pre_insert()
             // get neighborList and numNeigh
             FixNeighlistMesh * meshNeighlist = fwg->mesh_list()[iMesh]->meshNeighlist();
 
-            int atom_type_wall = fwg->mesh_list()[iMesh]->atomTypeWall();
+            const int atom_type_wall = fwg->mesh_list()[iMesh]->atomTypeWall();
 
             std::map<int,std::set<int> > contacting_triangles; // atom_tag, triangle
             // loop owned and ghost triangles
@@ -1567,28 +1567,9 @@ void FixBreakParticle::pre_insert()
                   deltan = -deltan;
                   deltaMax[tag[iPart]] = std::max(deltaMax[tag[iPart]], deltan);
 
-                  double Yeff;
-                  {
-                    int itype = atom->type[iPart];
-                    int jtype = atom_type_wall;
-                    const double *Y, *nu;
-                    Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
-                    nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
-                    Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
-                  }
+                  double Yeff = getYeff(atom->type[iPart], atom_type_wall);
 
-                  double E_el = 0.0;
-                  if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
-                    const double sqrtval = sqrt(radius[iPart]*deltan);
-                    const double kn = 4./3. * Yeff * sqrtval;
-                    E_el = 0.4*kn*deltan*deltan;
-                  } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
-                    const double sqrtval = sqrt(radius[iPart]);
-                    const double meff = rmass[iPart];
-                    const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
-                    const double kn = (16./15.) * sqrtval * Yeff * pow(15. * meff * charVel * charVel /(16. * sqrtval * Yeff), 0.2);
-                    E_el = 0.5 * kn * deltan * deltan;
-                  }
+                  double E_el = elastic_energy_particle_wall(normalmodel, radius[iPart], deltan, Yeff, rmass[iPart]);
 
                   double v_el = sqrt(2.0 * E_el / rmass[iPart]);
                   const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
@@ -1618,6 +1599,7 @@ void FixBreakParticle::pre_insert()
           // loop neighbor list
           int *neighborList;
           int nNeigh = fwg->primitiveWall()->getNeighbors(neighborList);
+          const int atom_type_wall = fwg->atom_type_wall();
 
           for (int iCont = 0; iCont < nNeigh ; iCont++, neighborList++) {
             int iPart = *neighborList;
@@ -1636,28 +1618,9 @@ void FixBreakParticle::pre_insert()
               deltan = -deltan;
               deltaMax[tag[iPart]] = std::max(deltaMax[tag[iPart]], deltan);
 
-              double Yeff;
-              {
-                  int itype = atom->type[iPart];
-                  int jtype = fwg->atom_type_wall();
-                  const double *Y, *nu;
-                  Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
-                  nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
-                  Yeff = 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1]+(1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
-              }
+              double Yeff = getYeff(atom->type[iPart], atom_type_wall);
 
-              double E_el = 0.0;
-              if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
-                const double sqrtval = sqrt(radius[iPart]*deltan);
-                const double kn = 4./3. * Yeff * sqrtval;
-                E_el = 0.4*kn*deltan*deltan;
-              } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
-                const double sqrtval = sqrt(radius[iPart]);
-                const double meff = rmass[iPart];
-                const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
-                const double kn = (16./15.) * sqrtval * Yeff * pow(15. * meff * charVel * charVel /(16. * sqrtval * Yeff), 0.2);
-                E_el = 0.5 * kn * deltan * deltan;
-              }
+              double E_el = elastic_energy_particle_wall(normalmodel, radius[iPart], deltan, Yeff, rmass[iPart]);
 
               double v_el = sqrt(2.0 * E_el / rmass[iPart]);
               const double rsq = delta[0] * delta[0] + delta[1] * delta[1] + delta[2] * delta[2];
@@ -1739,6 +1702,38 @@ void FixBreakParticle::pre_insert()
 
   // print stats
   print_stats_breakage_during();
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixBreakParticle::getYeff(int itype, int jtype)
+{
+  const double *Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
+  const double *nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
+  return 1./((1.-nu[itype-1]*nu[itype-1])/Y[itype-1] + (1.-nu[jtype-1]*nu[jtype-1])/Y[jtype-1]);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double FixBreakParticle::elastic_energy_particle_wall(int64_t normalmodel, double radius, double deltan, double Yeff, double meff)
+{
+  switch (normalmodel) {
+  case NORMAL_MODEL_HERTZ_BREAK: // hertz/break
+    {
+      const double sqrtval = sqrt(radius*deltan);
+      const double kn = 4./3. * Yeff * sqrtval;
+      return 0.4 * kn * deltan * deltan;
+    }
+  case NORMAL_MODEL_HOOKE_BREAK: // hooke/break
+    {
+      const double sqrtval = sqrt(radius);
+      const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
+      const double kn = (16./15.) * sqrtval * Yeff * pow(15. * meff * charVel * charVel /(16. * sqrtval * Yeff), 0.2);
+      return 0.5 * kn * deltan * deltan;
+    }
+  default:
+    return 0.0;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
