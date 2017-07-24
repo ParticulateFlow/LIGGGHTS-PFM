@@ -735,24 +735,7 @@ void FixBreakParticle::check_energy_criterion()
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
 
-            double *contact_history = NULL;
-            {
-              // get contact history of particle iPart and triangle idTri
-              //NP depends on naming in fix_wall_gran!
-              std::string fix_nneighs_name("n_neighs_mesh_");
-              fix_nneighs_name += mesh->mesh_id();
-              FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
-              if (fix_nneighs) {
-                int idTri = mesh->id(iTri);
-                const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
-                for (int j = 0; j < nneighs; ++j) {
-                  if (fix_contact->partner(iPart, j) == idTri) {
-                    contact_history = fix_contact->contacthistory(iPart, j);
-                    break;
-                  }
-                }
-              }
-            }
+            double *contact_history = get_triangle_contact_history(mesh, fix_contact, iPart, iTri);
 
             if (contact_history) {
               double impact_energy_limited_i;
@@ -962,21 +945,7 @@ void FixBreakParticle::check_energy_criterion()
               if (radius[iPart] < min_break_rad) continue;
               if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(JSHash(fwg->id))) continue;
 
-              double *contact_history = NULL;
-              {
-                // get contact history of particle iPart and triangle idTri
-                int idTri = mesh->id(iTri);
-                std::string fix_nneighs_name("n_neighs_mesh_");
-                fix_nneighs_name += mesh->mesh_id();
-                FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
-                const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
-                for (int j = 0; j < nneighs; ++j) {
-                  if (fix_contact->partner(iPart, j) == idTri) {
-                    contact_history = fix_contact->contacthistory(iPart, j);
-                    break;
-                  }
-                }
-              }
+              double *contact_history = get_triangle_contact_history(mesh, fix_contact, iPart, iTri);
 
               if (contact_history) {
                 if (contact_history[deltaMaxOffset] < 0.0) {
@@ -1106,24 +1075,7 @@ void FixBreakParticle::check_force_criterion()
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
 
-            double *contact_history = NULL;
-            {
-              // get contact history of particle iPart and triangle idTri
-              //NP depends on naming in fix_wall_gran!
-              std::string fix_nneighs_name("n_neighs_mesh_");
-              fix_nneighs_name += mesh->mesh_id();
-              FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
-              if (fix_nneighs) {
-                int idTri = mesh->id(iTri);
-                const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
-                for (int j = 0; j < nneighs; ++j) {
-                  if (fix_contact->partner(iPart, j) == idTri) {
-                    contact_history = fix_contact->contacthistory(iPart, j);
-                    break;
-                  }
-                }
-              }
-            }
+            double *contact_history = get_triangle_contact_history(mesh, fix_contact, iPart, iTri);
 
             if (contact_history) {
               forceMax[iPart] = std::max(forceMax[iPart], contact_history[forceMaxOffset]);
@@ -1307,24 +1259,7 @@ void FixBreakParticle::check_von_mises_criterion()
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
 
-            double *contact_history = NULL;
-            {
-              // get contact history of particle iPart and triangle idTri
-              //NP depends on naming in fix_wall_gran!
-              std::string fix_nneighs_name("n_neighs_mesh_");
-              fix_nneighs_name += mesh->mesh_id();
-              FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
-              if (fix_nneighs) {
-                int idTri = mesh->id(iTri);
-                const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
-                for (int j = 0; j < nneighs; ++j) {
-                  if (fix_contact->partner(iPart, j) == idTri) {
-                    contact_history = fix_contact->contacthistory(iPart, j);
-                    break;
-                  }
-                }
-              }
-            }
+            double *contact_history = get_triangle_contact_history(mesh, fix_contact, iPart, iTri);
 
             if (contact_history) {
               double Fn = contact_history[forceMaxOffset];
@@ -1438,6 +1373,28 @@ void FixBreakParticle::check_von_mises_criterion()
     }
   }
 
+}
+
+/* ---------------------------------------------------------------------- */
+
+double* FixBreakParticle::get_triangle_contact_history(TriMesh *mesh, FixContactHistoryMesh *fix_contact, int iPart, int iTri)
+{
+  // get contact history of particle iPart and triangle idTri
+  // NOTE: depends on naming in fix_wall_gran!
+  std::string fix_nneighs_name("n_neighs_mesh_");
+  fix_nneighs_name += mesh->mesh_id();
+  FixPropertyAtom* fix_nneighs = static_cast<FixPropertyAtom*>(modify->find_fix_property(fix_nneighs_name.c_str(),"property/atom","scalar",0,0,this->style));
+  if (fix_nneighs) {
+    int idTri = mesh->id(iTri);
+    const int nneighs = fix_nneighs->get_vector_atom_int(iPart);
+    for (int j = 0; j < nneighs; ++j) {
+      if (fix_contact->partner(iPart, j) == idTri) {
+        return fix_contact->contacthistory(iPart, j);
+      }
+    }
+  }
+
+  return NULL;
 }
 
 /* ---------------------------------------------------------------------- */
