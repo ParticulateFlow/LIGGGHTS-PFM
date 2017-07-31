@@ -297,10 +297,13 @@ void FixTemplateFragments::pre_insert(
       double CF = breakdata[i][BD_FRAGMENTATION_ENERGY]/energy;
 
       const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
-      if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
+      switch (normalmodel) {
+      case NORMAL_MODEL_HERTZ_BREAK: // hertz/break
         CF = cbrt(CF*CF); // force scales with deltan^(3/2)
-      } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
+        break;
+      case NORMAL_MODEL_HOOKE_BREAK: // hooke/break
         CF = CF; // force scales with deltan
+        break;
       }
 
       collision_factor.push_back(CF);
@@ -343,17 +346,24 @@ double FixTemplateFragments::elastic_energy(const std::vector<double> &radius, c
           double reff = radius[pi] * radius[pj] / radsum;
           double kn = 0.0;
 
-          if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
-            kn = 4./3.*Yeff*sqrt(reff * deltan);
-            energy += 0.4 * kn * deltan * deltan; // 0.4 = (2./5.)
-          } else if (normalmodel == NORMAL_MODEL_HOOKE_BREAK) { // hooke/break
-            const double sqrtval = sqrt(reff);
-            const double mi = MY_4PI3 * radius[pi] * radius[pi] * radius[pi] * density;
-            const double mj = MY_4PI3 * radius[pj] * radius[pj] * radius[pj] * density;
-            const double meff = mi * mj / (mi + mj);
-            const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
-            kn = (16./15.) * sqrtval * Yeff * pow(15. * meff * charVel * charVel /(16. * sqrtval * Yeff), 0.2);
-            energy += 0.5 * kn * deltan * deltan;
+          switch (normalmodel) {
+          case NORMAL_MODEL_HERTZ_BREAK: // hertz/break
+            {
+              kn = 4./3.*Yeff*sqrt(reff * deltan);
+              energy += 0.4 * kn * deltan * deltan; // 0.4 = (2./5.)
+              break;
+            }
+          case NORMAL_MODEL_HOOKE_BREAK: // hooke/break
+            {
+              const double sqrtval = sqrt(reff);
+              const double mi = MY_4PI3 * radius[pi] * radius[pi] * radius[pi] * density;
+              const double mj = MY_4PI3 * radius[pj] * radius[pj] * radius[pj] * density;
+              const double meff = mi * mj / (mi + mj);
+              const double charVel = static_cast<FixPropertyGlobal*>(modify->find_fix_property("characteristicVelocity","property/global","scalar",0,0,style))->compute_scalar();
+              kn = (16./15.) * sqrtval * Yeff * pow(15. * meff * charVel * charVel /(16. * sqrtval * Yeff), 0.2);
+              energy += 0.5 * kn * deltan * deltan;
+              break;
+            }
           }
         }
       }
