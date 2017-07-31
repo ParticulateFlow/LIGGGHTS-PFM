@@ -47,6 +47,21 @@ enum {
  NORMAL_MODEL_HOOKE_BREAK = 8
 };
 
+enum {
+  BD_POS_X = 0,
+  BD_POS_Y,
+  BD_POS_Z,
+  BD_SCALED_V_X,
+  BD_SCALED_V_Y,
+  BD_SCALED_V_Z,
+  BD_RADIUS,
+  BD_BREAKAGE_PROBABILITY,
+  BD_BREAKER_TAG,
+  BD_FRAGMENTATION_ENERGY,
+  BD_BREAKER_DELTA_MAX,
+  BD_SIZE
+};
+
 class FixTemplateFragments : public FixTemplateSphere {
  public:
 

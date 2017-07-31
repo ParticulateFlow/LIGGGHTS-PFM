@@ -1617,7 +1617,7 @@ void FixBreakParticle::pre_insert()
 
     if (n_break_this_local > 0) {
 
-      memory->create(breakdata,n_break_this_local,11,"FixBreakParticle::breakdata");
+      memory->create(breakdata,n_break_this_local,BD_SIZE,"FixBreakParticle::breakdata");
 
       // fill breakage data and remove particles
       //NP leave ghosts alone
@@ -1627,14 +1627,14 @@ void FixBreakParticle::pre_insert()
       while (i < nlocal) {
         if ((mask[i] & groupbit) && (flag[i] < 0.0)) {
           // copy data needed for insertion
-          vectorCopy3D(x[i],&breakdata[ibreak][0]);
-          vectorCopy3D(v[i],&breakdata[ibreak][3]);
-          vectorScalarMult3D(&breakdata[ibreak][3], eMF);
-          breakdata[ibreak][6] = radius[i];
-          breakdata[ibreak][7] = -flag[i];
-          breakdata[ibreak][8] = tag[i];
-          breakdata[ibreak][9] = (1.0 - eMF*eMF) * 0.5 * rmass[i] * (v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2]);
-          breakdata[ibreak][10] = deltaMax[tag[i]];
+          vectorCopy3D(x[i],&breakdata[ibreak][BD_POS_X]);
+          vectorCopy3D(v[i],&breakdata[ibreak][BD_SCALED_V_X]);
+          vectorScalarMult3D(&breakdata[ibreak][BD_SCALED_V_X], eMF);
+          breakdata[ibreak][BD_RADIUS]               = radius[i];
+          breakdata[ibreak][BD_BREAKAGE_PROBABILITY] = -flag[i];
+          breakdata[ibreak][BD_BREAKER_TAG]          = tag[i];
+          breakdata[ibreak][BD_FRAGMENTATION_ENERGY] = (1.0 - eMF*eMF) * 0.5 * rmass[i] * (v[i][0]*v[i][0] + v[i][1]*v[i][1] + v[i][2]*v[i][2]);
+          breakdata[ibreak][BD_BREAKER_DELTA_MAX]    = deltaMax[tag[i]];
 
           ++ibreak;
 

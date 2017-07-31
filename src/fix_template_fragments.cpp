@@ -236,17 +236,16 @@ void FixTemplateFragments::pre_insert(
     return;
   }
 
-  // breakdata[i][6] ... radius
   double density = expectancy(pdf_density);
   x_sphere_list.resize(n_total);
 
 #define OVERLAP_SCALE 0.75
   for (int i = 0; i < n_total; ++i) {
-    if (breakdata[i][6]*rad_min_pct > breakdata[i][6]-OVERLAP_SCALE*breakdata[i][10]) {
+    if (breakdata[i][BD_RADIUS]*rad_min_pct > breakdata[i][BD_RADIUS]-OVERLAP_SCALE*breakdata[i][BD_BREAKER_DELTA_MAX]) {
       error->warning(FLERR, "Even fragments with minimum radius may produce overlap energy!");
     }
 
-    ParticleSizeDistribution psd(breakdata[i][7], density, breakdata[i][6], breakdata[i][6]*rad_min_pct, breakdata[i][6]-OVERLAP_SCALE*breakdata[i][10], t10_max, rad_omit, omit_post_generation);
+    ParticleSizeDistribution psd(breakdata[i][BD_BREAKAGE_PROBABILITY], density, breakdata[i][BD_RADIUS], breakdata[i][BD_RADIUS]*rad_min_pct, breakdata[i][BD_RADIUS]-OVERLAP_SCALE*breakdata[i][BD_BREAKER_DELTA_MAX], t10_max, rad_omit, omit_post_generation);
     std::map<double, double> rmf(radiiMassFractions);
     psd.range_mass_fractions(rmf);
     std::vector<double> radii;
@@ -254,8 +253,8 @@ void FixTemplateFragments::pre_insert(
     r_sphere_list.push_back(radii);
 
     if (radii.size() > 0) {
-      if (r_bound < breakdata[i][6]) {
-        r_bound = breakdata[i][6];
+      if (r_bound < breakdata[i][BD_RADIUS]) {
+        r_bound = breakdata[i][BD_RADIUS];
       }
       if (nspheres < static_cast<int>(radii.size())) {
         nspheres = static_cast<int>(radii.size());
@@ -265,7 +264,7 @@ void FixTemplateFragments::pre_insert(
       std::vector<std::vector<double> > ext_atoms;
       {
         std::pair<std::multimap<int,std::vector<double> >::const_iterator, std::multimap<int,std::vector<double> >::const_iterator> ret;
-        ret = contacting_atoms_mm.equal_range(static_cast<int>(breakdata[i][8]));
+        ret = contacting_atoms_mm.equal_range(static_cast<int>(breakdata[i][BD_BREAKER_TAG]));
         for (std::multimap<int,std::vector<double> >::const_iterator it = ret.first; it != ret.second; ++it) {
           ext_atoms.push_back(it->second);
         }
@@ -275,7 +274,7 @@ void FixTemplateFragments::pre_insert(
       std::vector<PrimitiveWall*> prim_walls;
       {
         std::pair<std::multimap<int,PrimitiveWall*>::const_iterator, std::multimap<int,PrimitiveWall*>::const_iterator> ret;
-        ret = prim_walls_mm.equal_range(static_cast<int>(breakdata[i][8]));
+        ret = prim_walls_mm.equal_range(static_cast<int>(breakdata[i][BD_BREAKER_TAG]));
         for (std::multimap<int,PrimitiveWall*>::const_iterator it = ret.first; it != ret.second; ++it) {
           prim_walls.push_back(it->second);
         }
@@ -285,17 +284,17 @@ void FixTemplateFragments::pre_insert(
       std::vector<TriMeshContacts*> meshes;
       {
         std::pair<std::multimap<int,TriMeshContacts*>::const_iterator, std::multimap<int,TriMeshContacts*>::const_iterator> ret;
-        ret = meshes_mm.equal_range(static_cast<int>(breakdata[i][8]));
+        ret = meshes_mm.equal_range(static_cast<int>(breakdata[i][BD_BREAKER_TAG]));
         for (std::multimap<int,TriMeshContacts*>::const_iterator it = ret.first; it != ret.second; ++it) {
           meshes.push_back(it->second);
         }
       }
 
-      ParticleSpatialDistribution pxd(random, breakdata[i][10], maxattempt);
-      pxd.randomInsertion(&breakdata[i][0], breakdata[i][6], radii, x_sphere_list[i], ext_atoms, prim_walls, meshes);
+      ParticleSpatialDistribution pxd(random, breakdata[i][BD_BREAKER_DELTA_MAX], maxattempt);
+      pxd.randomInsertion(&breakdata[i][BD_POS_X], breakdata[i][BD_RADIUS], radii, x_sphere_list[i], ext_atoms, prim_walls, meshes);
 
       double energy = elastic_energy(r_sphere_list[i], x_sphere_list[i]);
-      double CF = breakdata[i][9]/energy;
+      double CF = breakdata[i][BD_FRAGMENTATION_ENERGY]/energy;
 
       const int64_t normalmodel = pair_gran->hashcode() & 0x0f;
       if (normalmodel == NORMAL_MODEL_HERTZ_BREAK) { // hertz/break
