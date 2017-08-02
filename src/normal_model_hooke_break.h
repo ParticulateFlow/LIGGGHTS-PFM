@@ -160,9 +160,6 @@ namespace ContactModels
         if (*deltaMax == 0.0) { // new contact
           *deltaMax = deltan;
           history[4] = 0.5 * cdata.vn * cdata.vn; // mass specific impact energy
-          if (!cdata.is_wall) {
-            history[4] = history[4] * cdata.meff/(cdata.mi + cdata.mj);
-          }
         } else if (*deltaMax > deltan || *deltaMax < 0.0) {
           *deltaMax = -deltan;
           history[4] = 0.0;
