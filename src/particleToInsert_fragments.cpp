@@ -89,3 +89,23 @@ int ParticleToInsertFragments::insert()
 
   return inserted;
 }
+
+/* ---------------------------------------------------------------------- */
+
+int ParticleToInsertFragments::set_x_v_omega(double *x, double *v, double *omega, double *quat)
+{
+  UNUSED(quat);
+  // add insertion position
+  // relative position of spheres to each other already stored at this point
+  // do not take quat into account, the given configuration must be used to avoid
+  // overlaps with existing particles
+  for(int i = 0; i < nspheres; i++) {
+    vectorAdd3D(x_ins[i],x,x_ins[i]);
+  }
+
+  // set velocity and omega
+  vectorCopy3D(v,v_ins);
+  vectorCopy3D(omega,omega_ins);
+
+  return nspheres;
+}

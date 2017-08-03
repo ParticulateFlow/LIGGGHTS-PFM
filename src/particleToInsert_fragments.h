@@ -40,6 +40,7 @@ namespace LAMMPS_NS {
         virtual ~ParticleToInsertFragments();
 
         virtual int insert();
+        virtual int set_x_v_omega(double *,double *,double *,double *);
         double collision_factor;
         std::string fix_property_atom_id;
     };
