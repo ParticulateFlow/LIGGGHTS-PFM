@@ -26,6 +26,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
+#include <sstream>
+#include <algorithm>
 #include "fix_break_particle.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -47,8 +50,6 @@
 #include "pair_gran.h"
 #include "force.h"
 #include "neigh_list.h"
-#include <string>
-#include <algorithm>
 #include "math_const.h"
 #include "math_extra.h"
 #include "fix_wall_gran.h"
@@ -1277,12 +1278,13 @@ double* FixBreakParticle::get_triangle_contact_history(TriMesh *mesh, FixContact
 
 /* ---------------------------------------------------------------------- */
 
-double** FixBreakParticle::get_primitive_wall_contact_history(FixWallGran *fwg)
+double** FixBreakParticle::get_primitive_wall_contact_history(FixWallGran *fwg, int iprimitive)
 {
   if (fwg->dnum() > 0) {
     // NOTE: depends on naming in fix_wall_gran!
-    std::string hist_name("history_");
-    hist_name += fwg->id;
+    std::ostringstream os;
+    os << "history_" << fwg->id << "_" << iprimitive;
+    std::string hist_name = os.str();
     FixPropertyAtom *fix_history_primitive_ =
       static_cast<FixPropertyAtom*>(modify->find_fix_property(hist_name.c_str(),"property/atom","vector",fwg->dnum(),0,fwg->style));
     if (fix_history_primitive_) {
