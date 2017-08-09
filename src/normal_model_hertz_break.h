@@ -128,7 +128,7 @@ namespace ContactModels
         // detect new contact / maximum overlap
         if (*deltaMax == 0.0) { // new contact
           *deltaMax = deltan;
-          history[4] = 0.5 * cdata.vn * cdata.vn; // mass specific impact energy
+          history[4] = 0.5 * cdata.meff * cdata.vn * cdata.vn; // impact energy
         } else if (*deltaMax > deltan || *deltaMax < 0.0) {
           *deltaMax = -deltan;
           history[4] = 0.0;
