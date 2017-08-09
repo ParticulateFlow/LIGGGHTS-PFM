@@ -298,10 +298,7 @@
     double dot0 = vectorDot3D(surfNorm, x0) + d;
     double dot1 = vectorDot3D(surfNorm, x1) + d;
 
-    if (std::signbit(dot0) == std::signbit(dot1))
-      return true;
-
-    return false;
+    return (std::signbit(dot0) == std::signbit(dot1));
   }
 
   /* ---------------------------------------------------------------------- */
