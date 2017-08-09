@@ -138,10 +138,11 @@ of breakage is calculated as
 implementation.
 </P>
 <P>The material parameter <I>fMat</I> characterises the resistance against fracture.
-It is related to the Julius Kruttschnitt standard "slope" parameter determined
-experimentally in drop weight tests. Compared to the impact energy criterion,
-<I>fMat</I> must be scaled by 1/d0 and 1/d0^3, respectively, for the maximum force
-and the von Mises stress criterion.
+In case of the impact energy based criterion, it is related to the Julius Kruttschnitt
+standard "slope" parameter determined experimentally in drop weight tests and is
+specified in kg/Jm. For the the maximum force and the von Mises stress criterion
+<I>fMat</I> is a dimensionless model parameter multiplied by 1/d<sub>0</sub> and
+1/d<sub>0</sub><sup>3</sup>, respectively.
 </P>
 <P>Any of <I>fMat</I>, <I>energy_threshold</I>, <I>force_threshold</I> and <I>von_mises_stress</I>
 can be specified as an equal-style or atom-style <A HREF = "variable.html">variable</A>.
