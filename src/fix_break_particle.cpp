@@ -1312,7 +1312,8 @@ void FixBreakParticle::sum_particle_stress(double **stress, int iPart, double Fn
 
 void FixBreakParticle::set_breakability(double *breakability, int iPart)
 {
-  if (breakability[iPart] == 0.0) {
+  // need a random number > 0 (to avoid immediate breakage)
+  while (breakability[iPart] == 0.0) {
     switch (breakability_distribution) {
     case BD_WEIBULL:
     case BD_GAUSSIAN:
