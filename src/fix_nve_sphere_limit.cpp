@@ -78,7 +78,10 @@ FixNVESphereLimit::FixNVESphereLimit(LAMMPS *lmp, int narg, char **arg) :
          error->all(FLERR,"Illegal fix nve/sphere/limit command, omegalimit > 0 required");
       iarg += 2;
     }
-    error->all(FLERR,"Illegal fix nve/sphere/limit command");
+    else
+    {
+      error->all(FLERR,"Illegal fix nve/sphere/limit command");
+    }
   }
 
   vlimitsq = vlimit * vlimit;
