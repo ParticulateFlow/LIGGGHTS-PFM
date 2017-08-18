@@ -657,13 +657,13 @@ void FixWallGran::post_force_wall(int vflag)
   if(nlocal_ && !radius_ && r0_ == 0.)
     error->fix_error(FLERR,this,"need either per-atom radius or r0_ being set");
 
-    if(store_force_)
-    {
-        for(int i = 0; i < nlocal_; i++)
-        {
-            vectorZeroize3D(wallforce_[i]);
-        }
-    }
+  if(store_force_)
+  {
+      for(int i = 0; i < nlocal_; i++)
+      {
+          vectorZeroize3D(wallforce_[i]);
+      }
+  }
 
   if(meshwall_ == 1)
     post_force_mesh(vflag);
