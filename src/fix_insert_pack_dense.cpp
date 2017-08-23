@@ -119,7 +119,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   radius_factor = pow(max_volfrac/target_volfrac,MathConst::THIRD);
   if(comm->me==0)
     printf("radius scaling factor: %f\n",radius_factor);
-  
+
   if(!ins_region)
     error->fix_error(FLERR,this,"no insertion region provided");
   if(!fix_distribution)
@@ -195,7 +195,7 @@ void FixInsertPackDense::pre_exchange()
 
   printf("process %d : attempting to insert approximately %d particles\n",
          comm->me,n_insert_estim_local);
-  
+
   // insert first three particles to initialize the algorithm
   insert_first_particles();
 
@@ -207,7 +207,7 @@ void FixInsertPackDense::pre_exchange()
     }
     assert(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local));
     handle_next_front_sphere();
-    
+
     int const n_write = n_insert_estim_local/10;
     int static n_next_write = n_write;
     if(n_inserted_local > n_next_write){
@@ -267,7 +267,7 @@ void FixInsertPackDense::prepare_insertion(){
     neighlist.reset();
     neighlist.setBoundingBox(ins_bbox,rad_max_present);
   }
-  
+
   double volume_present_local = 0.;
   for(int i=0;i<atom->nlocal;i++){
     if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
@@ -278,7 +278,7 @@ void FixInsertPackDense::prepare_insertion(){
   }
   double volume_present = 0.;
   MPI_Sum_Scalar(volume_present,world);
-  
+
   // estimate # of particles to insert
   int const ntry_mc = 100000;
   bool const cutflag(false);
@@ -305,7 +305,7 @@ void FixInsertPackDense::prepare_insertion(){
       error->one(FLERR,errmsg);
     }
   }
-  
+
   // calculate distance field
   distfield.build(ins_region,ins_bbox,fix_distribution->max_rad()*radius_factor);
 }
@@ -329,11 +329,11 @@ void FixInsertPackDense::insert_first_particles()
   p1.radius *= radius_factor;
   p2.radius *= radius_factor;
   p3.radius *= radius_factor;
-  
+
   neighlist.insert(p1.x,p1.radius);
   neighlist.insert(p2.x,p2.radius);
   neighlist.insert(p3.x,p3.radius);
-  
+
   frontSpheres.push_back(p1);
   frontSpheres.push_back(p2);
   frontSpheres.push_back(p3);
@@ -377,13 +377,13 @@ void FixInsertPackDense::handle_next_front_sphere()
         compute_and_append_candidate_points(current,*newsphere,*i,r_insert*radius_factor);
       }
     }
-    
+
     nValid = candidatePoints.size();
     if(nValid == 0){
       rejectedSpheres.push_back(pti);
       break;
     }
-    
+
     // then, search for candidate point closest to insertion center
     double d_min_sqr = 1000;
     ParticleList::iterator closest_candidate;
@@ -426,7 +426,7 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   double const r1=p1->radius_ins[0]*radius_factor,
     r2=p2->radius_ins[0]*radius_factor,
     r3=p3->radius_ins[0]*radius_factor;
-  
+
   x2[0] = r1+r2;
 
   double const a=r2+r3,b=r1+r3,c=r1+r2;
@@ -443,10 +443,10 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   MathExtra::sub3(x1,com,x1);
   MathExtra::sub3(x2,com,x2);
   MathExtra::sub3(x3,com,x3);
-  
+
   // maybe, at some point in the future, implement random orientation
   // of initial packing
-  
+
   // then, move to starting point & write to PTI
   MathExtra::add3(x1,x_init,p1->x_ins[0]);
   MathExtra::add3(x2,x_init,p2->x_ins[0]);
@@ -488,14 +488,14 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
   double n[3];
   MathExtra::sub3(p1.x,p2.x,n);
   MathExtra::normalize3(n,n);
-  
+
   // normal distance of p3 to intersection plane
   double tmp_vec[3];
   MathExtra::sub3(p3.x,c_c,tmp_vec);
   double const lambda = MathExtra::dot3(tmp_vec,n);
   if(lambda > halo3 || -lambda > halo3) return;
 
-  
+
   // intersection circle of circle plane and third sphere
   vectorCopy3D(n,tmp_vec);
   MathExtra::scale3(lambda,tmp_vec);
@@ -512,10 +512,10 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
 
   double const d_sqr_cc_cm = pointDistanceSqr(c_c,c_m);
   if(d_sqr_cc_cm > r_c*r_c) return;
-  
+
   double const h = sqrt(r_c*r_c - d_sqr_cc_cm);
 
-  
+
   if(h < SMALL){ // only one candidate point
     Particle candidate(c_m,0.);
     candidate.radius = pointDistance(c_m,x_init);
@@ -531,7 +531,7 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
     MathExtra::cross3(n,tmp_vec,vec_tmp2);
 
     MathExtra::scale3(h,vec_tmp2);
-    
+
     MathExtra::add3(candidate1.x,vec_tmp2,candidate1.x);
     MathExtra::sub3(candidate2.x,vec_tmp2,candidate2.x);
 
