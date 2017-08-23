@@ -202,10 +202,10 @@ void FixInsertPackDense::pre_exchange()
   // insert_next_particle() returns false
   // if algorithm terminates
   while(!frontSpheres.empty()) {
-    if(!(fix_distribution->pti_list.size() == n_inserted_local)){
-      printf("pti_list.size() %d | n_inserted_local %d\n",fix_distribution->pti_list.size(),n_inserted_local);
+    if(!(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local))){
+      printf("pti_list.size() %lu | n_inserted_local %d\n",fix_distribution->pti_list.size(),n_inserted_local);
     }
-    assert(fix_distribution->pti_list.size() == n_inserted_local);
+    assert(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local));
     handle_next_front_sphere();
     
     int const n_write = n_insert_estim_local/10;
