@@ -117,7 +117,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (strlen(speciesA) < 1)
                 error->fix_error(FLERR, this, "speciesA is not defined");
             molMass_A_ = atof(arg[iarg_ + 1]);
-            if (molMass_A_ < 1)
+            if (molMass_A_ < 0)
                 error->fix_error(FLERR, this, "molar mass of A is not defined");
             hasargs = true;
             iarg_ += 2;
@@ -138,7 +138,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (strlen(speciesC) < 1)
                 error->fix_error(FLERR, this, "speciesC not defined");
             molMass_C_ = atof(arg[iarg_ + 1]);
-            if (molMass_C_ < 1)
+            if (molMass_C_ < 0)
                 error->fix_error(FLERR, this, "molar mass of C is not defined");
             hasargs = true;
             iarg_ += 2;
