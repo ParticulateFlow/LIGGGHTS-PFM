@@ -47,6 +47,7 @@ namespace PairStyles {
     virtual void write_restart_settings(FILE * fp) = 0;
     virtual void read_restart_settings(FILE * fp) = 0;
     virtual void compute_force(LAMMPS_NS::PairGran * pg, int eflag, int vflag, int addflag) = 0;
+    virtual void compute_single_pair_force(ContactModels::CollisionData &cdata, ContactModels::ForceData &i_forces, ContactModels::ForceData &j_forces) = 0;
 
     virtual double stressStrainExponent() = 0;
     virtual int64_t hashcode() = 0;

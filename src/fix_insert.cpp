@@ -734,6 +734,8 @@ void FixInsert::pre_exchange()
 
 int FixInsert::distribute_ninsert_this(int ninsert_this)
 {
+    if(ninsert_this == 0) return 0;
+
     int me, nprocs, ngap, ninsert_this_local, *ninsert_this_local_all;
     double fraction_local, fraction_local_all_sum, *fraction_local_all, *remainder, r, rsum;
 

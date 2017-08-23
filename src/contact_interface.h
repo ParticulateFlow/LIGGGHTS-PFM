@@ -131,7 +131,7 @@ struct ForceUpdate {
 
 class IContactHistorySetup {
 public:
-  virtual int add_history_value(std::string name, std::string newtonflag) = 0;
+  virtual int add_history_value(const std::string & name, const std::string & newtonflag) = 0;
 };
 
 }

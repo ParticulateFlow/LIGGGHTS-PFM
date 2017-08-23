@@ -61,6 +61,8 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   virtual int min_type() const;
   virtual int max_type() const;
 
+  virtual int64_t hashcode();
+
   /* PUBLIC ACCESS FUNCTIONS */
 
   void setSkinDistance(double newSkinDistance)
@@ -75,8 +77,18 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   inline int iarg() const
   { return iarg_; }
 
-  int add_history_value(std::string name, std::string newtonflag) {
+  int add_history_value(const std::string & name, const std::string & newtonflag) {
+      history_arg.push_back(name);
       return dnum_++;
+  }
+
+  int get_history_value_offset(const std::string & name) {
+    for(std::vector<std::string>::size_type it = 0; it != history_arg.size(); ++it) {
+      if (history_arg[it] == name) {
+        return it;
+      }
+    }
+    return -1;
   }
 
   inline int dnum() const
@@ -159,6 +171,7 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
 
   int iarg_, narg_;
   int atom_type_wall_;
+  std::vector<std::string> history_arg;
 
   //NP flag if forces are actually computed
   int computeflag_;

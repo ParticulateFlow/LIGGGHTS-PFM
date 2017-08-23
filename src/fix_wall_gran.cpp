@@ -1238,3 +1238,7 @@ void FixWallGran::addHeatFlux(TriMesh *mesh,int ip, double delta_n, double area_
     /*NL*/ //if (screen) fprintf(screen,"adding heat flux of %g to particle %d, wall %f Part %f hc %f\n",(Temp_wall-Temp_p[ip]) * hc,ip,Temp_wall,Temp_p[ip],hc);
     /*NL*/ //if (screen) fprintf(screen,"tcop %f tcowall %f Acont %f reff_wall %f r %f delta_n %f\n",tcop,tcowall,Acont,reff_wall,r,delta_n);
 }
+
+int64_t FixWallGran::hashcode() {
+  return impl->hashcode();
+}

@@ -55,6 +55,7 @@ public:
 
   virtual void compute(int eflag, int vflag);
   virtual void compute_pgl(int eflag, int vflag);
+  virtual void compute_single_pair(LCM::CollisionData & cdata, LCM::ForceData & i_forces, LCM::ForceData & j_forces);
   virtual void settings(int, char **) = 0;
   virtual void coeff(int, char **);
   virtual void init_style();
@@ -139,12 +140,21 @@ public:
 
   void *extract(const char *str, int &dim);
 
-  int add_history_value(std::string name, std::string newtonflag) {
+  int add_history_value(const std::string & name, const std::string & newtonflag) {
     int offset = history_arg.size();
     history = true;
     history_arg.push_back(HistoryArg(name, newtonflag));
     dnum_pairgran++;
     return offset;
+  }
+
+  int get_history_value_offset(const std::string & name) {
+    for(std::vector<HistoryArg>::size_type it = 0; it != history_arg.size(); ++it) {
+      if (history_arg[it].name == name) {
+        return it;
+      }
+    }
+    return -1;
   }
 
   void do_store_contact_forces()
@@ -156,7 +166,7 @@ public:
     std::string name;
     std::string newtonflag;
 
-    HistoryArg(std::string name, std::string newtonflag) : name(name), newtonflag(newtonflag) {}
+    HistoryArg(const std::string & name, const std::string & newtonflag) : name(name), newtonflag(newtonflag) {}
   };
 
   std::vector<HistoryArg> history_arg;
@@ -169,6 +179,7 @@ public:
   }
 
   virtual void compute_force(int eflag, int vflag,int addflag) = 0;
+  virtual void compute_single_pair_force(LCM::CollisionData & cdata, LCM::ForceData & i_forces, LCM::ForceData & j_forces) = 0;
   virtual bool forceoff();
 
 

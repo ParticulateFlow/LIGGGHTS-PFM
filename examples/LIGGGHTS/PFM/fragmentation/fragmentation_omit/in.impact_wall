@@ -1,0 +1,57 @@
+# Particle Fragmentation - omit small fragments
+
+atom_style      sphere
+atom_modify     map array sort 0 0
+boundary        m m f
+newton          off
+
+communicate     single vel yes
+
+units           si
+
+region          reg block -0.375 0.375 -0.375 0.375 -0.375 0.375 units box
+create_box      1 reg
+
+neighbor        0.025 bin
+neigh_modify    delay 0
+
+# material properties required for granular pair style
+fix m1 all property/global youngsModulus peratomtype 1.e7
+fix m2 all property/global poissonsRatio peratomtype 0.25
+fix m3 all property/global coefficientRestitution peratomtypepair 1 1.0
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.1
+
+# pair style
+pair_style  gran model hertz/break tangential history
+pair_coeff  * *
+
+timestep    0.000001
+
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+create_atoms    1 single 0.0 0.0 0.0 units box
+set             atom 1 type 1 diameter 0.05 density 2650.
+group           break id 1
+velocity        break set 0.0 0.0 -3.5 units box
+
+fix zwalls1 break wall/gran model hertz/break tangential history primitive type 1 zplane -0.375
+fix zwalls2 break wall/gran model hertz/break tangential history primitive type 1 zplane  0.375
+
+fix pts2 break particletemplate/fragments 31 atom_type 1 density constant 2650 breakage_index 0.2 0.083 tn_family 4 2 5 8 12 omit_radius post 0.002125
+fix pdd2 break particledistribution/discrete 21 1 pts2 1.0
+fix breakid break break/particle seed 1000001 distributiontemplate pdd2 every 1 fMat 0.9 energy_threshold 0.037 min_radius 0.024 breakability constant 0.1
+
+# integrator
+fix integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes extra 0
+
+run     50000
+dump    dmp all custom 500 post/dump*.impactwallbreak id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+run     150000 upto
+

@@ -50,6 +50,7 @@ public:
   virtual void write_restart_settings(FILE * fp);
   virtual void read_restart_settings(FILE * fp);
   virtual void compute_force(int eflag, int vflag, int addflag);
+  virtual void compute_single_pair_force(LCM::CollisionData &cdata, LCM::ForceData &i_forces, LCM::ForceData &j_forces);
 
   virtual double stressStrainExponent();
   virtual int64_t hashcode();
