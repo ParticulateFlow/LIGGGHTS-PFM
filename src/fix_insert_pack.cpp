@@ -303,7 +303,7 @@ int FixInsertPack::calc_ninsert_this()
   if(volumefraction_region > 0.)
   {
       MPI_Sum_Scalar(vol_region,world);
-      ninsert_this = static_cast<int>((volumefraction_region*region_volume - vol_region) / fix_distribution->vol_expect() + random->uniform());
+      ninsert_this = static_cast<int>((volumefraction_region*region_volume - vol_region) / fix_distribution->vol_expect() + randomAll->uniform());
       insertion_ratio = vol_region / (volumefraction_region*region_volume);
       /*NL*/ //if (screen) fprintf(screen,"ninsert_this %d, region_volume %f vol_region %f vol_expect %f\n",ninsert_this,region_volume,vol_region,fix_distribution->vol_expect());
   }
@@ -317,7 +317,7 @@ int FixInsertPack::calc_ninsert_this()
   else if(masstotal_region > 0.)
   {
       MPI_Sum_Scalar(mass_region,world);
-      ninsert_this = static_cast<int>((masstotal_region - mass_region) / fix_distribution->mass_expect() + random->uniform());
+      ninsert_this = static_cast<int>((masstotal_region - mass_region) / fix_distribution->mass_expect() + randomAll->uniform());
       insertion_ratio = mass_region / masstotal_region;
   }
   else error->one(FLERR,"Internal error in FixInsertPack::calc_ninsert_this()");
