@@ -62,6 +62,7 @@ public:
   void getXi(int, double *);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
+  void FractionalReduction(int);
 
  protected:
    int iarg_;
@@ -98,6 +99,7 @@ public:
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
   class FixPropertyAtom *fix_molefraction_;
+  class FixPropertyAtom *fix_fracRed;
 
   // define porosity values for all particles (glibal
   class FixPropertyGlobal *fix_porosity_;
@@ -130,6 +132,9 @@ public:
   const double *k0_, *Ea_;
 
   class FixCfdCoupling* fc_;
+
+  //
+  double **fracRed_;
 };
 }
 
