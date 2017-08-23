@@ -335,7 +335,7 @@ void FixChemShrinkCore::updatePtrs()
     nuf_            =   fix_nuField_    ->  vector_atom;
     Rep_            =   fix_partRe_     ->  vector_atom;
     // diffusion coefficient
-    dCoeff_         =   fix_diffcoeff_  ->  vector_atom;
+    molecularDiffusion_         =   fix_diffcoeff_  ->  vector_atom;
     // bulk gas mole fraction at particle location
     X0_             =   fix_molefraction_   -> vector_atom;
 
@@ -515,7 +515,7 @@ void FixChemShrinkCore::post_force(int)
             {
                 if (screenflag_ && screen)
                 {
-                    fprintf(screen, "diffusion coefficient from CFD: %f \n",dCoeff_[i]);
+                    fprintf(screen, "diffusion coefficient from CFD: %f \n",molecularDiffusion_[i]);
                     fprintf(screen, "nufield from DEM: %f \n", nuf_[i]);
                     fprintf(screen, "particle Reynolds from DEM: %f \n", Rep_[i]);
                     fprintf(screen, "temperature from DEM: %f \n", T_[i]);
@@ -673,40 +673,40 @@ void FixChemShrinkCore::getB(int i, double *b_)
     if (comm -> me == 0 && screen)
         fprintf(screen,"DO GET B FUNCTION!! \n");
 
-    double deBinary_[atom->nlocal];
-    double deKnudsen_[atom->nlocal];
+    double effMolecularDiff_[atom->nlocal];
+    double effKnudsenDiff_[atom->nlocal];
     diffEff_    =   new double [atom->nlocal];
 
     // effecitve binary diffusion coefficient
- /*   deBinary_[i] = dCoeff_[i]*porosity_[i]/tortuosity_[i];
+ /*   effMolecularDiff_[i] = molecularDiffusion_[i]*porosity_[i]/tortuosity_[i];
 
     if (screenflag_ && screen)
     {
-        fprintf(screen,"eff. binary diff: %f \n",deBinary_[i]);
-        fprintf(screen,"dCoeff value is : %f \n", dCoeff_[i]);
+        fprintf(screen,"eff. binary diff: %f \n",effMolecularDiff_[i]);
+        fprintf(screen,"dCoeff value is : %f \n", molecularDiffusion_[i]);
     }
 
-    if (dCoeff_[i] != 0.0) // or (deBinary_[i] != 0)
+    if (molecularDiffusion_[i] != 0.0) // or (effMolecularDiff_[i] != 0)
     {
-        deBinary_[i]   =   1.0/deBinary_[i];
+        effMolecularDiff_[i]   =   1.0/effMolecularDiff_[i];
     }
 
     // Knudsen diff equation is either
-    // Dik = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
+    // D_{i,k} = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
     // or simplified as
-    // Dik = 4850*dp*sqrt(T_[i]/molMass_A_) dp supposed to be in cm
+    // D_{i,k} = 4850*dp*sqrt(T_[i]/molMass_A_) dp supposed to be in cm
     // we use si units so convert from meter to cm!
-    deKnudsen_[i]   =  48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
-    deKnudsen_[i]   =   1.0/deKnudsen_[i];
+    effKnudsenDiff_[i]   =  48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
+    effKnudsenDiff_[i]   =   1.0/effKnudsenDiff_[i];
     if (screenflag_ && screen)
     {
-        fprintf(screen,"eff. knudsen diff: %f \n",deKnudsen_[i]);
+        fprintf(screen,"eff. knudsen diff: %f \n",effKnudsenDiff_[i]);
     }
 
     // total effective diffusivity
     // Eq. : 1/D_i,j = 1/D_eff_binary + 1/D_eff_knudsen
     // diffEff_[i] = 1/D_i,j
-    diffEff_[i] = deBinary_[i] + deKnudsen_[i];
+    diffEff_[i] = effMolecularDiff_[i] + effKnudsenDiff_[i];
 
     if (screenflag_ && screen)
         fprintf(screen,"eff. diff: %f \n",diffEff_[i]); */

@@ -110,7 +110,7 @@ public:
   double molMass_A_, molMass_C_;
 
   // handle names
-  double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *dCoeff_, *nuf_, *Rep_, *X0_;
+  double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
