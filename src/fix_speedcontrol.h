@@ -5,7 +5,7 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   K1MET Metallurgical compentence center
+   K1MET Metallurgical Competence Center
    Copyright 2017- K1MET
 
    LIGGGHTS is based on LAMMPS
