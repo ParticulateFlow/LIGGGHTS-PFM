@@ -5,9 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Department for Particule Flow Modelling
+   Copyright 2017- JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -20,8 +19,8 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-   contributing authors
-   Philippe Seil (JKU)
+   Contributing authors:
+   Philippe Seil (JKU Linz)
    ---------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
@@ -55,14 +54,14 @@ class FixInsertPackDense : public Fix {
   virtual int setmask();
 
   virtual void post_create();
-  
+
   virtual void pre_exchange();
 protected:
 
   double *x_init; // starting point for insertion
 
   double maxrad; // maximum radius to be expected
-  
+
   // region to be used for insertion
   class Region *ins_region;
   char *idregion;
@@ -79,27 +78,27 @@ protected:
   PTIList rejectedSpheres;
 
   ParticleList candidatePoints;
-  
+
   class RanPark *random;
   int seed;
 
   RegionNeighborList neighlist;
   RegionDistanceField distfield;
-  
+
   BoundingBox ins_bbox;
 
   bool insertion_done;
   double region_volume, region_volume_local;
   int n_insert_estim, n_insert_estim_local;
   double radius_factor;
-  
+
   void prepare_insertion();
-  
+
   void insert_first_particles();
   bool insert_next_particle(); // returns false if no insertion possible
 
   void handle_next_front_sphere();
-  
+
   void compute_and_append_candidate_points(Particle const &p1,
                                            Particle const &p2,
                                            Particle const &p3,
@@ -109,7 +108,7 @@ protected:
                                class ParticleToInsert *&p3);
 
   class ParticleToInsert* get_next_pti();
-  
+
   Particle particle_from_pti(class ParticleToInsert *pti);
   bool is_completely_in_subregion(Particle &p);
   bool candidate_point_is_valid(Particle &p);
