@@ -84,6 +84,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     pmass_ = NULL;
     rmin = 0.;
     rdefault = 0.;
+    minMolarFrac = 1e-4;
     hertzpct = 0.;
     spcA = 0;
     spcC = 0;
@@ -315,7 +316,8 @@ void FixChemShrink::reaction()
 {
         updatePtrs();
         int nlocal  =   atom -> nlocal;
-        // double dr;
+        double molarConc;
+	double molarFrac;
 
         for (int i = 0 ; i < nlocal; i++)
         {
@@ -329,15 +331,20 @@ void FixChemShrink::reaction()
 
                 // Current time step concentration change of reactant A and product C
                 double dA   =   0.0;
-
+                molarConc = molarConc_[i];
+		molarFrac = xA_[i];
+		if(molarFrac < minMolarFrac)
+		{
+		    continue;
+		}
                 double k = reactionRatConst(i);
                 if(nu_A_ < 2)
                 {
-                    dA  =   -k*xA_[i]*molarConc_[i]*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
+                    dA  =   -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
                 }
                 else
                 {
-                    dA   =   -k*pow((xA_[i]*molarConc_[i]),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+                    dA   =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
                 }
 
                 double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
@@ -449,7 +456,7 @@ void FixChemShrink::post_force(int)
 
     reaction();
 
-    delete_atoms();
+ /*   delete_atoms();
 
     bigint nblocal = atom->nlocal;
     MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
@@ -468,6 +475,7 @@ void FixChemShrink::post_force(int)
         atom->map_set();
       }
     }
+    */
 }
 
 /* ---------------------------------------------------------------------- */

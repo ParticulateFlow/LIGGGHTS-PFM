@@ -95,6 +95,7 @@ public:
   double rdefault;
   double radius_origin;
   bool rdef;
+  double minMolarFrac;
 
   // pointer updaters
   double *changeOfA_;
