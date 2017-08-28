@@ -7,7 +7,6 @@ newton		off
 communicate	single vel yes
 units		si
 
-#region		reg block -.1 0.6 -.1 0.2 -0.3 0.25 units box
 region		reg block -1 1 -.5 .5 -.5 .5 units box
 create_box	1 reg
 
@@ -48,15 +47,15 @@ group		nve_group region reg
 fix			ins nve_group pour/legacy 1500 1 1 vol 0.7 1000 diam 0.08 0.08 dens 2500 2500 vel 0. 0. 0. 0. -0.8 region bc
 
 #thermo settings
-compute		1 all erotate/sphere
-thermo_style	custom step atoms ke c_1 vol
+compute		rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
 thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
 
 
 #make a dump of particles and the stl file 
-dump	dmp all custom 200 post/dump*.movingMesh id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump	dmp all custom 200 post/dump*.movingMesh id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 dump 	dumpstl all mesh/stl 200 post/dump*.stl
 
 #run with particle insertion

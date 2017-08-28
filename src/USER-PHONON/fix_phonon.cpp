@@ -23,7 +23,7 @@
      konglt@sjtu.edu.cn; konglt@gmail.com
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "fix_phonon.h"
 #include "atom.h"
 #include "compute.h"
@@ -41,8 +41,6 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
-#define INVOKED_SCALAR 1
-#define INVOKED_VECTOR 2
 #define MAXLINE 512
 
 static const char cite_fix_phonon[] =

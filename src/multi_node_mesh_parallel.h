@@ -37,7 +37,7 @@ namespace LAMMPS_NS
   {
       public:
 
-        void initalSetup();
+        void initialSetup();
         void pbcExchangeBorders(int setupFlag);
         void clearReverse();
         void forwardComm();

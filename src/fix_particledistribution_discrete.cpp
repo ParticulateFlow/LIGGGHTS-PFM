@@ -18,13 +18,15 @@
 
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
-
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "fix_template_sphere.h"
 #include "fix_particledistribution_discrete.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+#include "fix_template_sphere.h"
 #include "atom.h"
 #include "atom_vec.h"
 #include "domain.h"
@@ -190,17 +192,11 @@ FixParticledistributionDiscrete::FixParticledistributionDiscrete(LAMMPS *lmp, in
       n--;
   } while(swaped && n > 0);
 
-  /*NL*/ //if(comm->me==0&&screen){
+  /*NL*/ //if(comm->me == 0 && screen) {
   /*NL*/ //    fprintf(screen,"particledistribution/discrete (id %s): sorted distributions based on volume extectancy. beginning from large, the rank is as follows:\n",this->id);
   /*NL*/ //    for(int i=0;i<ntemplates;i++)
   /*NL*/ //      fprintf(screen,"    %s: d=%e (bounding sphere) number%%=%f%%\n",templates[distorder[i]]->id,2.*templates[distorder[i]]->pti->r_bound,100.*distweight[distorder[i]]);
   /*NL*/ //}
-
-  //NP wire to first template
-  pti = templates[distorder[0]]->pti;
-
-  pti_list = NULL;
-  n_pti = n_pti_max = 0;
 
   //calc max radius and bounding sphere radius
 
@@ -230,7 +226,6 @@ FixParticledistributionDiscrete::~FixParticledistributionDiscrete()
     delete []cumweight;
     delete []parttogen;
     delete []distorder;
-    if(pti_list) delete []pti_list;
     delete random;
 }
 
@@ -242,65 +237,6 @@ int FixParticledistributionDiscrete::setmask()
     return mask;
 }
 
-/* ----------------------------------------------------------------------
-   prepares the fix for a series of randomize_single() commands
-   typically called once per insertion step
-------------------------------------------------------------------------- */
-
-int FixParticledistributionDiscrete::random_init_single(int ntotal)
-{
-    ninsert = ntotal;
-    ninserted = 0;
-
-    for(int i = 0; i < ntemplates; i++)
-       parttogen[i] = static_cast<int>(static_cast<double>(ninsert) * distweight[i] + random->uniform());
-
-    /*NL*/ //if(comm->me == 0) fprintf(screen,"randomizing particles to generate out of the distribution\n");
-    /*NL*/ //for(int i=0;i<ntemplates;i++)
-    /*NL*/ //    if(comm->me == 0) ffprintf(screen,"dist %d: statistically %f particles should be generated, chose to generate %d particles\n",
-    /*NL*/ //    i,static_cast<double>(ninsert)*distweight[i],parttogen[i]);
-
-    ninsert = 0;
-    for(int i = 0; i < ntemplates; i++)
-        ninsert += parttogen[i];
-    return ninsert;
-}
-
-/* ----------------------------------------------------------------------
-   request one template to generate one pti
-------------------------------------------------------------------------- */
-
-Region* FixParticledistributionDiscrete::randomize_single()
-{
-    if(ntemplates == 1){
-         templates[0]->randomize_single();
-         /*NL*/ //fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
-         return templates[0]->region(); //NP already wired
-    }
-
-    //choose a template from the discrete distribution, beginning from large to small particles
-    int chosen = 0;
-    int chosendist = distorder[chosen];
-    int ntoinsert = parttogen[chosendist];
-    while(ninserted >= ntoinsert && chosen < ntemplates-1)
-    {
-        chosen++;
-        chosendist = distorder[chosen];
-        ntoinsert += parttogen[chosendist];
-    }
-
-    //NP call chosen template
-    templates[chosendist]->randomize_single();
-
-    //NP wire to chosen template
-    pti = templates[chosendist]->pti;
-
-    ninserted++;
-
-    return templates[chosendist]->region();
-
-    /*NL*/ //fprintf(screen,"randomized one particle, pti->x_ins[0]=%e %e %e,   pti->radius_ins[0]=%e\n",pti->x_ins[0][0],pti->x_ins[0][1],pti->x_ins[0][2],pti->radius_ins[0]);
-}
 
 /* ----------------------------------------------------------------------
    prepares the fix for a series of randomize_list() command
@@ -342,14 +278,7 @@ void FixParticledistributionDiscrete::random_init_list(int ntotal)
     }
 
     // re-allocate if need more total ptis in distribution than allocated so far
-    if(n_pti_max_requested > n_pti_max)
-    {
-        n_pti_max = n_pti_max_requested;
-        if(pti_list) delete []pti_list;
-        pti_list = new ParticleToInsert*[n_pti_max];
-    }
-
-    /*NL*///fprintf(screen,"random_init_list for %s: ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
+    pti_list.reserve(n_pti_max_requested);
 }
 
 /* ----------------------------------------------------------------------
@@ -364,12 +293,6 @@ void FixParticledistributionDiscrete::random_init_list(int ntotal)
 
 int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupbit,int exact_number)
 {
-    if(ntotal > n_pti_max)
-    {
-        /*NL*/if(screen) fprintf(screen," fix %s, ntotal %d, n_pti_max %d\n",id,ntotal,n_pti_max);
-        error->one(FLERR,"Faulty implementation: FixParticledistributionDiscrete::randomize_list() called for more particles than defined in random_init_list()");
-    }
-
     ninsert = ntotal;
     ninserted = 0;
 
@@ -380,7 +303,7 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
         for(int i = 0; i < ntemplates; i++)
         {
            parttogen[i] = static_cast<int>(static_cast<double>(ninsert) * distweight[i] + random->uniform());
-           /*NL*///fprintf(screen,"parttogen[%d] = %d, ninsert %d \n",i,parttogen[i],ninsert);
+           /*NL*///if (screen) fprintf(screen,"parttogen[%d] = %d, ninsert %d \n",i,parttogen[i],ninsert);
         }
     }
     // truncate distribution so # particles to insert is met exactly
@@ -395,7 +318,7 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
            parttogen[i] = static_cast<int>(static_cast<double>(ninsert) * distweight[i]);
            ninsert_truncated += parttogen[i];
            remainder[i] = static_cast<double>(ninsert) * distweight[i] - static_cast<double>(parttogen[i]);
-           /*NL*/ //fprintf(screen,"parttogen[i] %d remainder[i] %f\n",parttogen[i],remainder[i]);
+           /*NL*/ //if (screen) fprintf(screen,"parttogen[i] %d remainder[i] %f\n",parttogen[i],remainder[i]);
         }
 
         int ninsert_gap = ninsert - ninsert_truncated;
@@ -403,7 +326,7 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
         //NP check if sum of remainders is equal to gap
         /*NL*/ rsum = 0.;
         /*NL*/ for(int i = 0; i < ntemplates; i++) rsum+=remainder[i];
-        /*NL*/ //fprintf(screen,"ninsert_gap %d, remaindersum %f - SHOULD BE EQUAL\n",ninsert_gap,rsum);
+        /*NL*/ //if (screen) fprintf(screen,"ninsert_gap %d, remaindersum %f - SHOULD BE EQUAL\n",ninsert_gap,rsum);
 
         // distribute remaining ninsert_gap particles
         for(int i = 0; i < ninsert_gap; i++)
@@ -417,19 +340,19 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
                 rsum += remainder[j];
                 j++;
             }
-            /*NL*/ //fprintf(screen,"chose template %d\n",j);
+            /*NL*/ //if (screen) fprintf(screen,"chose template %d\n",j);
             parttogen[j]++;
         }
 
         delete []remainder;
     }
 
-    /*NL*/// MPI_Barrier(world); fprintf(screen,"FixParticledistributionDiscrete::randomize_list on proc %d\n",comm->me);
+    /*NL*/// MPI_Barrier(world); if (screen) fprintf(screen,"FixParticledistributionDiscrete::randomize_list on proc %d\n",comm->me);
 
-    /*NL*/ //if(comm->me == 0) fprintf(screen,"randomizing particles to generate out of the distribution\n");
+    /*NL*/ //if(comm->me == 0 && screen) { fprintf(screen,"randomizing particles to generate out of the distribution\n");
     /*NL*/ //for(int i=0;i<ntemplates;i++)
-    /*NL*/ //    if(comm->me == 0) ffprintf(screen,"dist %d: statistically %f particles should be generated, chose to generate %d particles\n",
-    /*NL*/ //    i,static_cast<double>(ninsert)*distweight[i],parttogen[i]);
+    /*NL*/ //    fprintf(screen,"dist %d: statistically %f particles should be generated, chose to generate %d particles\n",
+    /*NL*/ //    i,static_cast<double>(ninsert)*distweight[i],parttogen[i]); }
 
     // count total particle number to be inserted, let templates generate a pti_list
     ninsert = 0;
@@ -441,18 +364,16 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
 
     // wire lists, make sure in correct order (large to small particles)
 
-    n_pti = 0;
     for(int i = 0; i < ntemplates; i++)
     {
         int chosendist = distorder[i];
         for (int j = 0; j < parttogen[chosendist]; j++)
         {
-            pti_list[n_pti + j] = templates[chosendist]->pti_list[j];
+          pti_list.push_back(templates[chosendist]->pti_list[j]);
         }
-        n_pti += parttogen[chosendist];
     }
 
-    if(n_pti != ninsert) error->all(FLERR,"Internal error in FixParticledistributionDiscrete::randomize_list");
+    if(static_cast<int>(pti_list.size()) != ninsert) error->all(FLERR,"Internal error in FixParticledistributionDiscrete::randomize_list");
 
     ninserted = ninsert;
     return ninsert;
@@ -476,15 +397,16 @@ void FixParticledistributionDiscrete::pre_insert()
 
 /* ----------------------------------------------------------------------
    set particle properties - only pti needs to know which properties to set
-   loop to n, not n_pti, since not all particles may have been inserted
+   loop to n, not pti_list.size(), since not all particles may have been inserted
 ------------------------------------------------------------------------- */
 
 int FixParticledistributionDiscrete::insert(int n)
 {
     int ninserted_spheres_local = 0;
+    assert(n <= static_cast<int>(pti_list.size()));
     for(int i = 0; i < n; i++)
     {
-        /*NL*/ //fprintf(screen,"inserting pti #%d\n",i);
+        /*NL*/ //if (screen) fprintf(screen,"inserting pti #%d\n",i);
         ninserted_spheres_local += pti_list[i]->insert();
     }
     return ninserted_spheres_local;
@@ -494,10 +416,19 @@ int FixParticledistributionDiscrete::insert(int n)
    wrap up insertion
 ------------------------------------------------------------------------- */
 
-void FixParticledistributionDiscrete::finalize_insertion()
+void FixParticledistributionDiscrete::finalize_insertion(bool pti_delete_flag)
 {
-    for(int i = 0; i < ntemplates; i++)
-        templates[i]->finalize_insertion();
+  for(int i = 0; i < ntemplates; i++)
+    templates[i]->finalize_insertion();
+
+  if(pti_delete_flag){
+    for(pti_list_type::iterator it = pti_list.begin();it != pti_list.end();it++){
+      if(*it != 0)
+        delete *it;
+    }
+  }
+
+  pti_list.clear();
 }
 
 /* ----------------------------------------------------------------------*/
@@ -516,7 +447,7 @@ double FixParticledistributionDiscrete::mass_expect()
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscrete::min_rad(int type)
+double FixParticledistributionDiscrete::min_rad(int type) const
 {
     //get minrad
     double minrad_type = 1000.;
@@ -534,7 +465,7 @@ double FixParticledistributionDiscrete::min_rad(int type)
 
 /* ----------------------------------------------------------------------*/
 
-double FixParticledistributionDiscrete::max_rad(int type)
+double FixParticledistributionDiscrete::max_rad(int type) const
 {
     //get maxrad
     double maxrad_type = 0.;
@@ -552,21 +483,21 @@ double FixParticledistributionDiscrete::max_rad(int type)
 
 /* ----------------------------------------------------------------------*/
 
-int FixParticledistributionDiscrete::max_type()
+int FixParticledistributionDiscrete::max_type() const
 {
     return maxtype;
 }
 
 /* ----------------------------------------------------------------------*/
 
-int FixParticledistributionDiscrete::min_type()
+int FixParticledistributionDiscrete::min_type() const
 {
     return mintype;
 }
 
 /* ----------------------------------------------------------------------*/
 
-int FixParticledistributionDiscrete::max_nspheres()
+int FixParticledistributionDiscrete::max_nspheres() const
 {
     return maxnspheres;
 }
@@ -600,4 +531,31 @@ void FixParticledistributionDiscrete::restart(char *buf)
   seed = static_cast<int> (list[n++]) + comm->me;
 
   random->reset(seed);
+}
+/* ----------------------------------------------------------------------
+   return true if any of the templates is of type multisphere
+   ------------------------------------------------------------------------- */
+bool FixParticledistributionDiscrete::has_multisphere()
+{
+  for(int i=0;i<ntemplates;i++){
+    // strstr returns pointer to beginning of substring if substring is found
+    if(strstr(templates[i]->style,"multisphere") != 0)
+      return true;
+  }
+  return false;
+}
+
+ParticleToInsert* FixParticledistributionDiscrete::get_random_particle(int insert_groupbit)
+{
+  // first, choose distribution
+  double r = random->uniform();
+  int i_template=0;
+  while(cumweight[i_template] < r)
+    i_template++;
+
+  // avoid floating point issues
+  if(i_template == ntemplates)
+    i_template = ntemplates-1;
+
+  return templates[i_template]->get_single_random_pti(groupbit | insert_groupbit);
 }

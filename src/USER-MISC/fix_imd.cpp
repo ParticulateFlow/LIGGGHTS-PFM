@@ -786,7 +786,7 @@ void FixIMD::ioworker()
     pthread_mutex_lock(&write_mutex);
     if (buf_has_data < 0) {
       /* master told us to go away */
-      fprintf(screen,"Asynchronous I/O thread is exiting.\n");
+      if (screen) fprintf(screen,"Asynchronous I/O thread is exiting.\n");
       buf_has_data=0;
       pthread_mutex_unlock(&write_mutex);
       pthread_exit(NULL);

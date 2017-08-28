@@ -21,8 +21,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "ctype.h"
+#include <string.h>
+#include <ctype.h>
 #include "fix.h"
 #include "atom.h"
 #include "group.h"
@@ -75,6 +75,12 @@ Fix::Fix(LAMMPS *lmp, int narg, char **arg) : Pointers(lmp)
 
   scalar_flag = vector_flag = array_flag = 0;
   peratom_flag = local_flag = 0;
+
+  // need to be set to appropriate values by each fix
+  // if corresponding flags are enabled
+  size_vector = size_array_rows = size_array_cols = 0;
+  size_peratom_cols = size_local_rows = size_local_cols = 0;
+  global_freq = peratom_freq = local_freq = 1;
 
   comm_forward = comm_reverse = comm_border = 0;
   restart_reset = 0;

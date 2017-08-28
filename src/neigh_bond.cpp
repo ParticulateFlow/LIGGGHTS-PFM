@@ -82,7 +82,7 @@ void Neighbor::bond_all()
             for(int j = 0; j < n_bondhist; j++)
             {
                 bondhistlist[nbondlist][j] = bond_hist[i][m][j];
-                //NP fprintf(screen,"setting hist to %f\n",bond_hist[i][m][j]);
+                //NP if (screen) fprintf(screen,"setting hist to %f\n",bond_hist[i][m][j]);
             }
         }
         nbondlist++;
@@ -145,7 +145,7 @@ void Neighbor::bond_check()
 {
   int i,j;
   double dx,dy,dz,dxstart,dystart,dzstart;
-  
+
   double **x = atom->x;
   int flag = 0;
 
@@ -267,7 +267,7 @@ void Neighbor::angle_check()
 {
   int i,j,k;
   double dx,dy,dz,dxstart,dystart,dzstart;
-  
+
   double **x = atom->x;
   int flag = 0;
 
@@ -415,7 +415,7 @@ void Neighbor::dihedral_check(int nlist, int **list)
 {
   int i,j,k,l;
   double dx,dy,dz,dxstart,dystart,dzstart;
-  
+
   double **x = atom->x;
   int flag = 0;
 
@@ -461,7 +461,7 @@ void Neighbor::dihedral_check(int nlist, int **list)
 
   int flag_all;
   MPI_Allreduce(&flag,&flag_all,1,MPI_INT,MPI_SUM,world);
-  if (flag_all) 
+  if (flag_all)
     error->all(FLERR,"Dihedral/improper extent > half of periodic box length");
 }
 

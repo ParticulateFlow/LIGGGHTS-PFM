@@ -43,7 +43,7 @@ public varaibles:
 #ifndef LAMMPS_MY_POOL_CHUNK_H
 #define LAMMPS_MY_POOL_CHUNK_H
 
-#include "stdlib.h"
+#include <stdlib.h>
 
 namespace LAMMPS_NS {
 
@@ -89,6 +89,7 @@ class MyPoolChunk {
 
     ndatum = nchunk = size = 0;
     pages = NULL;
+    whichbin = NULL;
     npage = 0;
   }
 

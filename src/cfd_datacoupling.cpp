@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "modify.h"
 #include "memory.h"
@@ -232,7 +232,7 @@ void CfdDatacoupling::check_datatransfer()
 
 void CfdDatacoupling::add_pull_property(const char *name, const char *type)
 {
-    /*NL*/ //fprintf(screen,"add_pull_property called for name %s type %s\n",name,type);
+    /*NL*/ //if(screen) fprintf(screen,"add_pull_property called for name %s type %s\n",name,type);
 
     if(strlen(name) >= MAXLENGTH) error->all(FLERR,"Fix couple/cfd: Maximum string length for a variable exceeded");
     if(npull_ >= nvalues_max_) grow_();
@@ -266,7 +266,7 @@ void CfdDatacoupling::add_pull_property(const char *name, const char *type)
 
 void CfdDatacoupling::add_push_property(const char *name, const char *type)
 {
-    /*NL*/ //fprintf(screen,"***caleed for name %s, type %s\n",name,type);
+    /*NL*/ //if(screen) fprintf(screen,"***caleed for name %s, type %s\n",name,type);
 
     if(strlen(name) >= MAXLENGTH)
         error->all(FLERR,"Fix couple/cfd: Maximum string length for a variable exceeded");

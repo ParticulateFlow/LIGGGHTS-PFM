@@ -26,7 +26,7 @@
 
 inline int MultisphereParallel::pack_exchange_rigid(int i, double *buf)
 {
-  /*NL*///fprintf(screen,"packing tag %d\n",local2global[i]);
+  /*NL*///if (screen) fprintf(screen,"packing tag %d\n",local2global[i]);
 
   int m = 1; //NP # of elements in buffer
   double xbound[3];
@@ -43,12 +43,12 @@ inline int MultisphereParallel::pack_exchange_rigid(int i, double *buf)
 
   // have to pack xbound first because exchange() tests against first 3 values in buffer
   vectorToBuf3D(xbound,buf,m);
-  /*NL*/// fprintf(screen,"proc %d pack xbound %f %f %f id %d at step %d\n",comm->me,xbound[0],xbound[1],xbound[2],id_(i),update->ntimestep);
+  /*NL*/// if (screen) fprintf(screen,"proc %d pack xbound %f %f %f id %d at step %d\n",comm->me,xbound[0],xbound[1],xbound[2],id_(i),update->ntimestep);
 
   m += customValues_.pushElemToBuffer(i,&(buf[m]),OPERATION_COMM_EXCHANGE,dummy,dummy,dummy);
 
   buf[0] = m;
-  /*NL*/ //for(int i = 0; i < m; i++) fprintf(screen,"pack buf value %d: %f\n",i,buf[i]);
+  /*NL*/ //if (screen) for(int i = 0; i < m; i++) fprintf(screen,"pack buf value %d: %f\n",i,buf[i]);
   return m;
 }
 
@@ -67,15 +67,17 @@ inline int MultisphereParallel::unpack_exchange_rigid(double *buf)
 
   nbody_++;
 
-  /*NL*/// fprintf(screen,"proc %d unpack xbound %f %f %f id %d at step %d\n",comm->me,xbound[0],xbound[1],xbound[2],id_(nbody_-1),update->ntimestep);
+  /*NL*/ //if (screen) {
+  /*NL*/ // fprintf(screen,"proc %d unpack xbound %f %f %f id %d at step %d\n",comm->me,xbound[0],xbound[1],xbound[2],id_(nbody_-1),update->ntimestep);
 
-  /*NL*/ //for(int i = 0; i < nvalues; i++) fprintf(screen,"unpack buf value %d: %f\n",i,buf[i]);
-  /*NL*/ //fprintf(screen,"nvalues %d m %d lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
+  /*NL*/ // for(int i = 0; i < nvalues; i++) fprintf(screen,"unpack buf value %d: %f\n",i,buf[i]);
+  /*NL*/ // fprintf(screen,"nvalues %d m %d lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
   /*NL*/ //                 nvalues,m,xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
-  /*NL*/// for (int i = 0; i < nbody_; i++) {
+  /*NL*/ // for (int i = 0; i < nbody_; i++) {
   /*NL*/ //  fprintf(screen,"proc %d: id_(%d) %d\n",comm->me,i,id_(i));
   /*NL*/ //  printVec3D(screen,"xcm_",xcm_(i));
   /*NL*/ //  printVec3D(screen,"vcm_",vcm_(i));
+  /*NL*/ // }
   /*NL*/ //}
 
   return nvalues;

@@ -37,8 +37,6 @@ FixStyle(multisphere/nointegration,FixMultisphere)
 #include "atom.h"
 #include "comm.h"
 
-using namespace std;
-
 namespace LAMMPS_NS {
 
 enum
@@ -68,7 +66,7 @@ class FixMultisphere : public Fix
       virtual void setup_pre_force(int) {}
       virtual void setup_pre_neighbor();
 
-      virtual double extend_cut_ghost();
+      virtual double extend_cut_ghost() const;
 
       void initial_integrate(int);
       virtual void pre_force(int) {}
@@ -122,7 +120,7 @@ class FixMultisphere : public Fix
 
       int dof(int);
       double ** get_dump_ref(int &nb, int &nprop, char* prop);
-      double max_r_bound();
+      double max_r_bound() const;
 
       void add_remove_callback(FixRemove *ptr);
 
@@ -215,7 +213,7 @@ class FixMultisphere : public Fix
 
       double dtv,dtf,dtq;
 
-      vector<FixRemove*> fix_remove_;
+      std::vector<FixRemove*> fix_remove_;
 
       // MS communication
       int ntypes_;

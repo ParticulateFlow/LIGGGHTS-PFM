@@ -13,12 +13,12 @@
 
 /* Single-processor "stub" versions of MPI routines */
 
-#include "stdlib.h"
-#include "string.h"
-#include "stdio.h"
-#include "stdint.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <sys/time.h>
-#include "mpi.h"
+#include <mpi.h>
 
 /* lo-level data structure */
 

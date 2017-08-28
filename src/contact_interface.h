@@ -116,11 +116,22 @@ struct ForceData {
     delta_torque[2] = 0.0;
   }
 };
+
+struct ForceUpdate {
+  double * f;
+  double * torque;
+  ForceData forces;
+
+  ForceUpdate(double * f, double * torque, ForceData & forces) : f(f), torque(torque), forces(forces)
+  {
+  }
+};
+
 }
 
 class IContactHistorySetup {
 public:
-  virtual int add_history_value(std::string name, std::string newtonflag) = 0;
+  virtual int add_history_value(const std::string & name, const std::string & newtonflag) = 0;
 };
 
 }

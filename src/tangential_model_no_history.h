@@ -31,14 +31,12 @@ TANGENTIAL_MODEL(TANGENTIAL_NO_HISTORY,no_history,0)
 #define TANGENTIAL_MODEL_NO_HISTORY_H_
 #include "contact_models.h"
 #include <algorithm>
-#include "math.h"
+#include <math.h>
 #include "global_properties.h"
 
 namespace LIGGGHTS {
 namespace ContactModels
 {
-  using namespace std;
-
   template<>
   class TangentialModel<TANGENTIAL_NO_HISTORY> : protected Pointers
   {
@@ -71,7 +69,7 @@ namespace ContactModels
       const double Ft_damping = cdata.gammat*vrel;     //NP modified C.K.
       double Ft;
 
-      if (vrel != 0.0) Ft = min(Ft_friction, Ft_damping) / vrel;
+      if (vrel != 0.0) Ft = std::min(Ft_friction, Ft_damping) / vrel;
       else Ft = 0.0;
 
       // tangential force due to tangential velocity damping

@@ -24,7 +24,7 @@
 #ifndef LMP_DOMAIN_H
 #define LMP_DOMAIN_H
 
-#include "math.h"
+#include <math.h>
 #include "pointers.h"
 #include "error.h" //NP modified C.K.
 #include "comm.h" //NP modified C.K.
@@ -133,7 +133,7 @@ class Domain : protected Pointers {
   void set_lattice(int, char **);
   void add_region(int, char **);
   void delete_region(int, char **);
-  int find_region(char *);
+  int find_region(const char *);
   virtual void set_boundary(int, char **, int); //NP modified C.K.
   void set_box(int, char **);
   virtual void print_box(const char *); //NP modified C.K.

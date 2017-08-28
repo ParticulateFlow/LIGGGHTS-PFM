@@ -47,6 +47,8 @@ namespace LAMMPS_NS
 
         virtual void setPrecision(double _precision) = 0;
 
+        virtual void setElementExclusionList(FILE *_file) = 0;
+
         virtual void autoRemoveDuplicates() = 0;
 
         // scale mesh
@@ -88,7 +90,7 @@ namespace LAMMPS_NS
         //NP interface to MultiNodeMeshParallel
         //NP ***************************************
 
-        virtual void initalSetup() = 0;
+        virtual void initialSetup() = 0;
         virtual void pbcExchangeBorders(int setupFlag) = 0;
         virtual void clearReverse() = 0;
         virtual void forwardComm() = 0;

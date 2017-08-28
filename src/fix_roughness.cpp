@@ -31,7 +31,7 @@
 #include "math_const.h"
 #include "modify.h"
 #include "pair_gran.h"
-#include "stdlib.h"
+#include <stdlib.h>
 #include "random_park.h"
 #include "comm.h"
 
@@ -67,13 +67,13 @@ FixRoughness::FixRoughness(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, a
   seed = atoi(arg[iarg++]);
 
 
-  peratom_flag = 1;      
-  size_peratom_cols = 0; 
+  peratom_flag = 1;
+  size_peratom_cols = 0;
   peratom_freq = 1;
   time_depend = 1;
 
-  scalar_flag = 1; 
-  global_freq = 1; 
+  scalar_flag = 1;
+  global_freq = 1;
 
   haveNonZeroDeltaGamma_ = false;
   if(deltaGammaMean>0.0) haveNonZeroDeltaGamma_= true;
@@ -83,7 +83,7 @@ FixRoughness::FixRoughness(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, a
   FHG_init_flag = false;
 
   // random number generator, different for CPUs
-  random_equal = new RanPark(lmp,seed + 3000 * comm->me); 
+  random_equal = new RanPark(lmp,seed + 3000 * comm->me);
 
 }
 FixRoughness::~FixRoughness()
@@ -110,7 +110,7 @@ void FixRoughness::pre_delete(bool unfixflag)
 
 void FixRoughness::updatePtrs(){
 
-  vector_atom = liqOnParticle; 
+  vector_atom = liqOnParticle;
 
 
 }
@@ -158,14 +158,14 @@ int FixRoughness::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-int FixRoughness::n_history_extra()
+int FixRoughness::n_history_extra() const
 {
     return 2+3+3; //2 values for orientation, 3 for contact point, 3 for first normal vector of plane
 }
 
 /* ---------------------------------------------------------------------- */
 
-bool FixRoughness::history_args(char** args)
+bool FixRoughness::history_args(char** args) const
 {
     //provide names and newtonflags for each history value
     //newtonflag = 0 means that the value is same
@@ -185,19 +185,19 @@ bool FixRoughness::history_args(char** args)
     args[13] = (char *) "0";
     args[14] = (char *) "contactN1Z";
     args[15] = (char *) "0";
-    
+
     return true;
 }
 
 /* ---------------------------------------------------------------------- */
 double FixRoughness::generateDeltaGamma(double gamma)
 {
-    double deltaGamma =0; 
+    double deltaGamma = 0.0;
     do
     {
         deltaGamma = random_equal->gaussian() * deltaGammaMean;
     } while( (gamma/2.0+deltaGamma) < 0.0);
-    
+
     if(deltaGamma>MathConst::MY_PI/2.0)
         deltaGamma=MathConst::MY_PI/2.0 - gamma;
 
@@ -223,7 +223,7 @@ void FixRoughness::initial_integrate(int vflag)
   //sources are not reset
   int *mask = atom->mask;
 
-  
+
   int *ilist,*jlist,*numneigh,**firstneigh;
   int *touchpair,**firsttouch;
   double *allhist, **firsthist;
@@ -240,7 +240,7 @@ void FixRoughness::initial_integrate(int vflag)
   firsthist = pair_gran->listgranhistory->firstdouble;
 
   // loop over neighbors of my atoms
-  for (ii = 0; ii < inum; ii++) 
+  for (ii = 0; ii < inum; ii++)
   {
     i = ilist[ii];
     jnum = numneigh[i];
@@ -248,15 +248,15 @@ void FixRoughness::initial_integrate(int vflag)
     touchpair = firsttouch[i];
 
     allhist = firsthist[i];
-    for (jj = 0; jj < jnum; jj++) 
+    for (jj = 0; jj < jnum; jj++)
     {
       j = jlist[jj];
       if (!(mask[i] & groupbit) && !(mask[j] & groupbit)) continue;
 
       //reset the extra values if particles not longer touch
-      deltaGamma = &allhist[(dnum+n_history_extra())*jj+3]; //the deltaGamma of the contact with jj 
-      psi        = &allhist[(dnum+n_history_extra())*jj+4];   //the psi value of contact with jj 
-      if (!touchpair[jj] )  
+      deltaGamma = &allhist[(dnum+n_history_extra())*jj+3]; //the deltaGamma of the contact with jj
+      psi        = &allhist[(dnum+n_history_extra())*jj+4];   //the psi value of contact with jj
+      if (!touchpair[jj] )
       {
             deltaGamma[0] = 0.0;
             psi[0]        = 0.0;
@@ -268,10 +268,10 @@ void FixRoughness::initial_integrate(int vflag)
 #if 0
 	  history = fopen("roughnessHistory.txt","a+");
 	  fprintf(history,"i/j: %d %d,dnum/n_history_extra: %d %d, touchpair[jj] %d, allhistory %f %f %f , deltaGamma/psi %f %f \n",
-                                   i, j,
-                                   dnum, n_history_extra(),
-                                   touchpair[jj],
-                                   allhist[(dnum+n_history_extra())*jj], allhist[(dnum+n_history_extra())*jj+1], allhist[(dnum+n_history_extra())*jj+2], deltaGamma[0], psi[0]);
+				   i, j,
+				   dnum, n_history_extra(),
+				   touchpair[jj],
+				   allhist[(dnum+n_history_extra())*jj], allhist[(dnum+n_history_extra())*jj+1], allhist[(dnum+n_history_extra())*jj+2], deltaGamma[0], psi[0]);
 	  fclose(history);
 #endif
     }

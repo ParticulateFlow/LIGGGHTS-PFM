@@ -15,9 +15,9 @@
    Contributing author: Pieter in 't Veld (SNL)
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
-#include "unistd.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "fix_ave_spatial.h"
 #include "atom.h"
 #include "update.h"
@@ -41,7 +41,6 @@ enum{SAMPLE,ALL};
 enum{BOX,LATTICE,REDUCED};
 enum{ONE,RUNNING,WINDOW};
 
-#define INVOKED_PERATOM 8
 #define BIG 1000000000
 
 /* ---------------------------------------------------------------------- */

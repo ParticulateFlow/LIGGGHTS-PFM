@@ -1,0 +1,88 @@
+# Particle Fragmentation in a Crusher
+
+atom_style  granular
+atom_modify map array sort 0 0
+boundary    f f f
+newton      off
+
+communicate	single vel yes
+
+units       si
+
+region      reg block -0.95 0.001 -0.1251 0.1251 0.0 0.55 units box
+create_box  1 reg
+
+neighbor        0.0125 bin
+neigh_modify    delay 0
+
+# material properties required for pair style
+fix     m1 all property/global youngsModulus peratomtype 1.e7
+fix     m2 all property/global poissonsRatio peratomtype 0.45
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 0.6
+fix     m4 all property/global coefficientFriction peratomtypepair 1 0.3
+fix     m5 all property/global coefficientRollingFriction peratomtypepair 1 0.005
+
+# pair style
+pair_style  gran model hertz/break tangential history rolling_friction epsd2
+pair_coeff  * *
+
+timestep    0.000005
+
+fix     gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix     xwall1 all wall/gran model hertz/break tangential history rolling_friction epsd2 primitive type 1 xplane -0.95
+fix     ywall1 all wall/gran model hertz/break tangential history rolling_friction epsd2 primitive type 1 yplane -0.125
+fix     ywall2 all wall/gran model hertz/break tangential history rolling_friction epsd2 primitive type 1 yplane  0.125
+fix     zwall1 all wall/gran model hertz/break tangential history rolling_friction epsd2 primitive type 1 zplane  0.0
+
+fix     cyl  all mesh/surface file meshes/cyl_part.stl type 1 scale 1.0 move 0.0 0.0 0.051
+fix     wall all mesh/surface file meshes/wall.stl     type 1 scale 1.0 move 0.0 0.0 0.020
+fix     granwalls all wall/gran model hertz/break tangential history rolling_friction epsd2 mesh n_meshes 2 meshes cyl wall
+
+# distributions for insertion
+fix     pts1 all particletemplate/sphere 11 atom_type 1 density constant 2500 radius constant 0.019
+fix     pts2 all particletemplate/sphere 21 atom_type 1 density constant 2500 radius constant 0.025
+fix     pdd1 all particledistribution/discrete 31 2 pts1 0.4 pts2 0.6
+
+# region and insertion
+region  ins_reg block -0.95 -0.38 -0.125 0.125 0.0 0.10 units box
+
+# particle insertion
+fix     ins all insert/pack seed 5330 distributiontemplate pdd1 &
+            maxattempt 200 insert_every once overlapcheck yes all_in yes vel constant 0.0 0.0 0.0 &
+            region ins_reg volumefraction_region 0.4
+
+# integrator
+fix     integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          2000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run     1
+dump    dmpmesh all mesh/gran/VTK 2000 post/cyl*.vtk id cyl wall
+dump    dmp all custom 2000 post/dump*.crush id type x y z vx vy vz fx fy fz omegax omegay omegaz radius density
+run     400000 upto
+
+variable time equal step*dt
+variable period equal 2.0*PI/3.0
+variable dynamicviscosity equal 1.0
+variable currentt equal step*dt-400000*dt
+variable fluidvx equal -0.45*cos(3.0*v_currentt)
+variable deltavx atom v_fluidvx-vx
+variable forceX atom "PI*radius*v_deltavx"
+variable forceY atom 0.0
+variable forceZ atom 0.0
+
+fix     pts3 all particletemplate/fragments 11 atom_type 1 density constant 2500 breakage_index 0.24 0.099 tn_family 3 2 5 10 maxattempt 300
+fix     pdd2 all particledistribution/discrete 31 1 pts3 1.0
+fix     breakid all break/particle seed 21 distributiontemplate pdd2 every 200 fMat 675.0 von_mises_stress 250000.0 3 min_radius 0.012 breakability weibull 0.5 3
+
+fix     move all move/mesh mesh cyl wiggle amplitude 0.0 0.0 -0.03 period ${period}
+fix     dragforce all addforce v_forceX v_forceY v_forceZ
+
+run     2000000 upto
+

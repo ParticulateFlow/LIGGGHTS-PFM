@@ -11,9 +11,9 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
-#include "stdlib.h"
+#include <mpi.h>
+#include <string.h>
+#include <stdlib.h>
 #include "dump_local.h"
 #include "atom.h"
 #include "modify.h"
@@ -29,7 +29,6 @@ using namespace LAMMPS_NS;
 
 enum{INT,DOUBLE};
 
-#define INVOKED_LOCAL 16
 #define ONEFIELD 32
 #define DELTA 1048576
 

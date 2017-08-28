@@ -16,9 +16,9 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "pair_lj_cut_coul_msm_gpu.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -34,7 +34,7 @@
 #include "update.h"
 #include "domain.h"
 #include "kspace.h"
-#include "string.h"
+#include <string.h>
 #include "gpu_extra.h"
 
 // External functions from cuda library for atom decomposition

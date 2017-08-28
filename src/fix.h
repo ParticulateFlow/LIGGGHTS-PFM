@@ -211,13 +211,13 @@ class Fix : protected Pointers {
   virtual unsigned int data_mask() {return datamask;}
   virtual unsigned int data_mask_ext() {return datamask_ext;}
 
-  virtual double min_rad(int) {return 0.0;} //NP modified C.K.
-  virtual double max_rad(int) {return 0.0;} //NP modified C.K.
-  virtual int min_type() {return 0;} //NP modified C.K.
-  virtual int max_type() {return 0;} //NP modified C.K.
-  virtual double extend_cut_ghost() {return 0.0;} //NP modified C.K.
-  virtual int n_history_extra() {return 0;} //NP modified C.K.
-  virtual bool history_args(char** args) { UNUSED(args); return false; } //NP modified C.K.
+  virtual double min_rad(int) const {return 0.0;} //NP modified C.K.
+  virtual double max_rad(int) const {return 0.0;} //NP modified C.K.
+  virtual int min_type() const {return 0;} //NP modified C.K.
+  virtual int max_type() const {return 0;} //NP modified C.K.
+  virtual double extend_cut_ghost() const {return 0.0;} //NP modified C.K.
+  virtual int n_history_extra() const {return 0;} //NP modified C.K.
+  virtual bool history_args(char** args) const { UNUSED(args); return false; } //NP modified C.K.
 
  protected:
   int evflag;
@@ -295,6 +295,7 @@ namespace FixConst {
   static const int POST_RUN =                1<<19;
   static const int ITERATE_IMPLICITLY =      1<<20; //NP modified C.K.
   static const int FIX_CONST_LAST =          1<<21; //NP modified C.K.
+  static const int PARALLEL_OPENMP =         1<<31; //NP modified R.B.
 }
 
 }

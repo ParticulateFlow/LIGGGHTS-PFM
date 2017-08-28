@@ -16,10 +16,10 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
-   
+
    Description
    Basic fix to account for particle roughness in
-   particle-particle, as well as particle-wall collisions.   
+   particle-particle, as well as particle-wall collisions.
 ------------------------------------------------------------------------- */
 #ifdef FIX_CLASS
 
@@ -56,29 +56,29 @@ namespace LAMMPS_NS {
     double generateDeltaGamma(double gamma);
     double generatePsi();
 
-    inline bool    haveNonZeroDeltaGamma(){return haveNonZeroDeltaGamma_;} 
+    inline bool    haveNonZeroDeltaGamma(){return haveNonZeroDeltaGamma_;}
 
-    int     n_history_extra();
-    bool   history_args(char** args);
+    int     n_history_extra() const;
+    bool   history_args(char** args) const;
 
   protected:
     template <int> void post_force_eval(int,int);
     class ComputePairGranLocal *cpl;
 
     //Arrays Holding particle information
-    double *liqFlux;   
-    double *liqSource; 
-    double *liqOnParticle;       
-    double **condLiqFlux; 
+    double *liqFlux;
+    double *liqSource;
+    double *liqOnParticle;
+    double **condLiqFlux;
 
     double transfer_ratio;
 
     //Mean particle roughness and deltaGammaMean
     bool    haveNonZeroDeltaGamma_;
-    double roughMean;          
-    double deltaGammaMean;        
+    double roughMean;
+    double deltaGammaMean;
 
-    bool FHG_init_flag; 
+    bool FHG_init_flag;
 
     class PairGran *pair_gran;
     int dnum,dnum_mine;

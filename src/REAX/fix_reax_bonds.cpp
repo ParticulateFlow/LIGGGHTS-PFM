@@ -15,8 +15,8 @@
    Contributing author: Aidan Thompson (Sandia)
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "fix_reax_bonds.h"
 #include "pair_reax_fortran.h"
 #include "atom.h"

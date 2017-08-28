@@ -36,7 +36,7 @@ FixStyle(mesh/surface/stress/servo,FixMeshSurfaceStressServo)
 
 #include "fix.h"
 #include "input.h"
-#include "math.h"
+#include <math.h>
 #include "fix_mesh_surface_stress.h"
 
 

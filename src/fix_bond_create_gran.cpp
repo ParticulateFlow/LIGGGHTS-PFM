@@ -19,10 +19,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "mpi.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <mpi.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_bond_create_gran.h"
 #include "update.h"
 #include "respa.h"
@@ -468,7 +468,7 @@ void FixBondCreateGran::post_integrate()
           if (0.5*(min+max) >= fraction) continue;
         }
 
-        /*NL*///fprintf(screen,"creating bond btw atoms %d and %d (i has now %d bonds) at step %d\n",i,j,num_bond[i]+1,update->ntimestep);
+        /*NL*///if (screen) fprintf(screen,"creating bond btw atoms %d and %d (i has now %d bonds) at step %d\n",i,j,num_bond[i]+1,update->ntimestep);
 
         // if newton_bond is set, only store with I or J
         // if not newton_bond, store bond with both I and J
@@ -506,7 +506,7 @@ void FixBondCreateGran::post_integrate()
   createcounttotal += createcount;
   atom->nbonds += createcount;
 
-  /*NL*/ if(createcount && comm->me == 0) fprintf(screen,"Created %d bonds at timestep " BIGINT_FORMAT "\n",createcount,update->ntimestep);
+  /*NL*/ if(createcount && comm->me == 0 && screen) fprintf(screen,"Created %d bonds at timestep " BIGINT_FORMAT "\n",createcount,update->ntimestep);
 
   // trigger reneighboring if any bonds were formed
 

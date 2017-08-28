@@ -25,9 +25,9 @@ Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
 andreas.aigner@jku.at
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "fix_wall_region.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -222,7 +222,7 @@ void FixWallRegionSph::post_force_eval(int vflag)
       // if returned contact dist r = 0, is on surface, also an error
       if (!region->match(x[i][0],x[i][1],x[i][2])) {
         onflag = 1;
-        fprintf(screen,"Particle %d with the Coordinates x= %f, y= %f, z= %f is on or inside fix wall/region/sph surface. \n",tag[i],x[i][0],x[i][1],x[i][2]); //TEST OUTPUT
+        if (screen) fprintf(screen,"Particle %d with the Coordinates x= %f, y= %f, z= %f is on or inside fix wall/region/sph surface. \n",tag[i],x[i][0],x[i][1],x[i][2]); //TEST OUTPUT
         continue;
       }
 
@@ -234,7 +234,7 @@ void FixWallRegionSph::post_force_eval(int vflag)
         // check wall distance
         if (region->contact[m].r <= 0.0) {
           onflag = 1;
-          fprintf(screen,"Particle %d with the Coordinates x= %f, y= %f, z= %f has zero distance. \n",tag[i],x[i][0],x[i][1],x[i][2]); // TEST OUTPUT
+          if (screen) fprintf(screen,"Particle %d with the Coordinates x= %f, y= %f, z= %f has zero distance. \n",tag[i],x[i][0],x[i][1],x[i][2]); // TEST OUTPUT
           continue;
         }
 

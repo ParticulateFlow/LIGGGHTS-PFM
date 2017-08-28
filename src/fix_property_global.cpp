@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "atom_vec.h"
 #include "force.h"
@@ -221,7 +221,7 @@ void FixPropertyGlobal::init()
 
     if(FIXPROPERTY_GLOBAL_VECTOR == data_style && is_atomtype_bound && nvalues != ntypes)
     {
-        /*NL*/ //fprintf(screen,"nvalues %d, ntypes %d\n",nvalues,ntypes);
+        /*NL*/ //if (screen) fprintf(screen,"nvalues %d, ntypes %d\n",nvalues,ntypes);
         sprintf(errmsg,"Fix property/global: Length not correct for variable %s, length should be equal to %d (= number of atom types)",
                 variablename,ntypes);
         error->fix_error(FLERR,this,errmsg);

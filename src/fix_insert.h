@@ -48,7 +48,7 @@ class FixInsert : public Fix {
   virtual void init();
   virtual void setup_pre_exchange() {}
   void setup(int vflag);
-  double extend_cut_ghost();
+  double extend_cut_ghost() const;
   void pre_exchange();
   virtual void end_of_step() {}
 
@@ -59,11 +59,11 @@ class FixInsert : public Fix {
 
   double compute_vector(int index);
 
-  virtual double min_rad(int);  //NP modified C.K.
-  virtual double max_rad(int);  //NP modified C.K.
-  virtual double max_r_bound();  //NP modified C.K.
-  int min_type();
-  int max_type();
+  virtual double min_rad(int) const;  //NP modified C.K.
+  virtual double max_rad(int) const;  //NP modified C.K.
+  virtual double max_r_bound() const;  //NP modified C.K.
+  int min_type() const;
+  int max_type() const;
 
   int ins_every()
   { return insert_every; }
@@ -146,6 +146,7 @@ class FixInsert : public Fix {
 
   // random generator
   class RanPark *random;
+  class RanPark *randomAll;
   int seed;
 
   // all2all comm
@@ -171,7 +172,7 @@ class FixInsert : public Fix {
   virtual void sanity_check();
   virtual void calc_insertion_properties() = 0;
 
-  virtual void pre_insert() {};
+  virtual void pre_insert() {}
   virtual int calc_ninsert_this();
   virtual int load_xnear(int);
   virtual int count_nnear();
@@ -181,7 +182,7 @@ class FixInsert : public Fix {
   virtual void x_v_omega(int,int&,int&,double&) = 0;
   virtual double insertion_fraction() = 0;
 
-  virtual void finalize_insertion(int){};
+  virtual void finalize_insertion(int){}
 
  protected:
   void generate_random_velocity(double * velocity);

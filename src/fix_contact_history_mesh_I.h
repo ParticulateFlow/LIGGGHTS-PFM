@@ -30,7 +30,7 @@
 
   /*NL*/inline void FixContactHistoryMesh::debug(int iP, int idTri)
   /*NL*/{
-  /*NL*/ if(10024 == update->ntimestep) {
+  /*NL*/ if(screen && 10024 == update->ntimestep) {
   /*NL*/        int iDeb = atom->map(DEBUG_P_TAG);
   /*NL*/        int nn = static_cast<int>(round(fix_nneighs_->vector_atom[iDeb]));
   /*NL*/        fprintf(screen,"***contact particle id %d with tri ID %d at step " BIGINT_FORMAT ", nn %d iDeb %d\n",atom->tag[iP],idTri,update->ntimestep,nn,iDeb);
@@ -42,14 +42,14 @@
 
   inline bool FixContactHistoryMesh::handleContact(int iP, int idTri, double *&history)
   {
-    /*NL*/ //if(DEBUG_P_TAG == atom->tag[iP]) fprintf(screen,"***contact with tri ID %d (index %d) at step " BIGINT_FORMAT "\n",idTri,iP,update->ntimestep);
+    /*NL*/ //if(screen && DEBUG_P_TAG == atom->tag[iP]) fprintf(screen,"***contact with tri ID %d (index %d) at step " BIGINT_FORMAT "\n",idTri,iP,update->ntimestep);
 
     // check if contact with iTri was there before
     // if so, set history to correct location and return
     if(haveContact(iP,idTri,history))
       return true;
 
-    /*NL*/// fprintf(screen,"   new contact - adding\n");
+    /*NL*/// if (screen) fprintf(screen,"   new contact - adding\n");
 
     // else new contact - add contact if did not calculate contact with coplanar neighbor already
     //NP this can be detected via delflag == false
@@ -103,7 +103,7 @@
     int *tri = partner_[iP];
     const int nneighs = fix_nneighs_->get_vector_atom_int(iP);
 
-    /*NL*/ //fprintf(screen,"nneighs %d dnum_ %d\n",nneighs,dnum_);
+    /*NL*/ //if (screen) fprintf(screen,"nneighs %d dnum_ %d\n",nneighs,dnum_);
 
     for(int i = 0; i < nneighs; i++)
     {
@@ -124,15 +124,15 @@
     const int nneighs = fix_nneighs_->get_vector_atom_int(iP);
     for(int i = 0; i < nneighs; i++)
     {
-      /*NL*/// fprintf(screen," step %d: iP %d, partner %d: %d, coplanar %s delflag %s, mesh_->map(tri[i]) %d\n",
+      /*NL*/// if (screen) fprintf(screen," step %d: iP %d, partner %d: %d, coplanar %s delflag %s, mesh_->map(tri[i]) %d\n",
       /*NL*///                update->ntimestep,iP,i,tri[i],mesh_->areCoplanarNodeNeighs(tri[i],idTri)?"y":"n",delflag[iP][i]?"y":"n",mesh_->map(tri[i]));
-      /*NL*/ //fprintf(screen,"ip %d i %d idTri %d tri[i] %d\n",iP,i,idTri,tri[i]);
+      /*NL*/ //if (screen) fprintf(screen,"ip %d i %d idTri %d tri[i] %d\n",iP,i,idTri,tri[i]);
       //NP do only if old partner owned or ghost on this proc
       int idPartnerTri = partner_[iP][i];
 
       if(idPartnerTri >= 0 && idPartnerTri != idTri && mesh_->map(idPartnerTri) >= 0 && mesh_->areCoplanarNodeNeighs(idPartnerTri,idTri))
       {
-        /*NL*/ //fprintf(screen," step %d: idTri %d, delflag %s \n",update->ntimestep,idTri,delflag[iP][i]?"true":"false");
+        /*NL*/ //if (screen) fprintf(screen," step %d: idTri %d, delflag %s \n",update->ntimestep,idTri,delflag[iP][i]?"true":"false");
 
         // other coplanar contact handled already - do not handle this contact
         if(keepflag_[iP][i]) return true;
@@ -160,9 +160,9 @@
 
           // copy contact history
           if(dnum_ > 0) vectorCopyN(&(contacthistory_[iP][i*dnum_]),history,dnum_);
-          /*NL*/// fprintf(screen,"Found coplanar contact, old contact hist %f %f %f\n",
+          /*NL*/// if (screen) fprintf(screen,"Found coplanar contact, old contact hist %f %f %f\n",
           /*NL*///                   contacthistory[iP][i][0],contacthistory[iP][i][1],contacthistory[iP][i][2]);
-          /*NL*/// fprintf(screen,"Found coplanar contact, new contact hist %f %f %f\n",
+          /*NL*/// if (screen) fprintf(screen,"Found coplanar contact, new contact hist %f %f %f\n",
           /*NL*///                   history[0],history[1],history[2]);
           /*NL*/ //error->one(FLERR,"end");
       }
@@ -184,9 +184,12 @@
 
       if(npartner_[iP] >= nneighs)
       {
-        /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT ": for particle tag %d, proc %d npartner %d nneighs %d newcontact id %d\n",update->ntimestep,atom->tag[iP],comm->me,npartner_[iP],nneighs,idTri);
-        /*NL*/ //for(int kk = 0; kk < nneighs; kk++)
+        /*NL*/ //if (screen)
+        /*NL*/ //{
+        /*NL*/ //  fprintf(screen,"step " BIGINT_FORMAT ": for particle tag %d, proc %d npartner %d nneighs %d newcontact id %d\n",update->ntimestep,atom->tag[iP],comm->me,npartner_[iP],nneighs,idTri);
+        /*NL*/ //  for(int kk = 0; kk < nneighs; kk++)
         /*NL*/ //    fprintf(screen,"  neigh %d: tri id %d\n",kk,partner_[iP][kk]);
+        /*NL*/ //}
         error->one(FLERR,"internal error");
       }
 
@@ -216,7 +219,7 @@
 
       npartner_[iP]++;
 
-      /*NL*/ //if(DEBUG_P_TAG == atom->tag[iP]) {
+      /*NL*/ //if(screen && DEBUG_P_TAG == atom->tag[iP]) {
       /*NL*/ //   fprintf(screen,"step " BIGINT_FORMAT " adding contact # %d: tri id %d, npartner %d nneighs %d\n",update->ntimestep,npartner_[iP],idTri,npartner_[iP],nneighs);
       /*NL*/ //       for(int kk = 0; kk < nneighs; kk++)
       /*NL*/ //         fprintf(screen,"    neigh %d: tri id %d\n",kk,partner_[iP][kk]); }

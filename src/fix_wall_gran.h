@@ -35,6 +35,8 @@ FixStyle(wall/gran,FixWallGran)
 #include <vector>
 #include "fix_contact_property_atom_wall.h"
 #include "compute_pair_gran_local.h"
+#include "primitive_wall.h"
+#include "fix_property_atom.h"
 
 namespace LCM = LIGGGHTS::ContactModels;
 
@@ -56,8 +58,10 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   virtual void post_force_pgl();
   virtual void post_force_respa(int, int, int);
 
-  virtual int min_type();
-  virtual int max_type();
+  virtual int min_type() const;
+  virtual int max_type() const;
+
+  virtual int64_t hashcode();
 
   /* PUBLIC ACCESS FUNCTIONS */
 
@@ -67,32 +71,42 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   void setDnum(int newDnum)
   { dnum_ = newDnum; }
 
-  inline int store_force()
+  inline int store_force() const
   { return store_force_; }
 
-  inline int iarg()
+  inline int iarg() const
   { return iarg_; }
 
-  int add_history_value(std::string name, std::string newtonflag) {
+  int add_history_value(const std::string & name, const std::string & newtonflag) {
+      history_arg.push_back(name);
       return dnum_++;
   }
 
-  inline int dnum()
+  int get_history_value_offset(const std::string & name) {
+    for(std::vector<std::string>::size_type it = 0; it != history_arg.size(); ++it) {
+      if (history_arg[it] == name) {
+        return it;
+      }
+    }
+    return -1;
+  }
+
+  inline int dnum() const
   { return dnum_; }
 
-  inline int n_meshes()
+  inline int n_meshes() const
   { return n_FixMesh_; }
 
-  inline class FixMeshSurface ** mesh_list()
+  inline class FixMeshSurface ** mesh_list() const
   { return FixMesh_list_; }
 
-  inline int atom_type_wall()
+  inline int atom_type_wall() const
   { return atom_type_wall_; }
 
-  inline bool is_mesh_wall()
+  inline bool is_mesh_wall() const
   { return 1 == meshwall_; }
 
-  inline bool store_force_contact()
+  inline bool store_force_contact() const
   { return store_force_contact_; }
 
   class PrimitiveWall* primitiveWall();
@@ -101,12 +115,14 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   int n_contacts_all(int);
   int n_contacts_local();
   int n_contacts_local(int);
+  int n_ghosts_all();
+  int n_ghosts_local();
   int is_moving();
 
   void register_compute_wall_local(ComputePairGranLocal *,int&);
   void unregister_compute_wall_local(ComputePairGranLocal *ptr);
 
-  ComputePairGranLocal * compute_pair_gran_local() {
+  ComputePairGranLocal * compute_pair_gran_local() const {
     return cwl_;
   }
 
@@ -114,15 +130,15 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
     return addflag_;
   }
 
-  int body(int i) {
+  int body(int i) const {
     return body_[i];
   }
 
-  double masstotal(int i) {
+  double masstotal(int i) const {
     return masstotal_[i];
   }
 
-  class FixRigid *fix_rigid() {
+  class FixRigid *fix_rigid() const {
     return fix_rigid_;
   }
 
@@ -155,6 +171,7 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
 
   int iarg_, narg_;
   int atom_type_wall_;
+  std::vector<std::string> history_arg;
 
   //NP flag if forces are actually computed
   int computeflag_;
@@ -240,8 +257,8 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   // true if any of the meshes tracks stresses
   bool stress_flag_;
 
-  class PrimitiveWall *primitiveWall_;
-  class FixPropertyAtom *fix_history_primitive_;
+  std::vector<PrimitiveWall*> primitiveWalls_;
+  std::vector<FixPropertyAtom*> primitiveWallsHistory_;
 
   // class to keep track of wall contacts
   bool rebuildPrimitiveNeighlist_;

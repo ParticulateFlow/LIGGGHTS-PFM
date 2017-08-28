@@ -32,13 +32,12 @@ COHESION_MODEL(COHESION_CAPILLARY,capillary,4)
 #ifndef COHESION_MODEL_CAPILLARY_H_
 #define COHESION_MODEL_CAPILLARY_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "math_extra_liggghts.h"
 #include "global_properties.h"
 
 namespace LIGGGHTS {
 namespace ContactModels {
-  using namespace std;
   using namespace LAMMPS_NS;
 
   template<>
@@ -185,9 +184,9 @@ namespace ContactModels {
      * Mikami et al., CES 1998, 50(16)
      */
     double compute_force_mikami(double lBond, double radi, double radj, double delta) {
-      const double Aparam = -1.1*pow((max(1e-64,lBond)),-0.53);
-      const double Bparam = -0.0082*log(max(1e-64,lBond))+0.48;
-      const double Cparam = 0.0018*log(max(1e-64,lBond))+0.078;
+      const double Aparam = -1.1*pow((std::max(1e-64,lBond)),-0.53);
+      const double Bparam = -0.0082*log(std::max(1e-64,lBond))+0.48;
+      const double Cparam = 0.0018*log(std::max(1e-64,lBond))+0.078;
 
       if (delta > 0) {
         return - M_PI*surfaceTension*sqrt(radi*radj)*(exp(Aparam*delta+Bparam)+Cparam);
@@ -201,7 +200,7 @@ namespace ContactModels {
      */
     double compute_force_willet(double lBond, double radi, double radj, double delta) {
       double Fn_coh = 0.0;
-      double tmpVar  = 2.3*log(max(1e-64,lBond));
+      double tmpVar  = 2.3*log(std::max(1e-64,lBond));
       double tmpVar2 = tmpVar*tmpVar;
       double tmpVar3 = tmpVar*tmpVar2;
 

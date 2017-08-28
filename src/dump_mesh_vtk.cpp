@@ -24,7 +24,7 @@
    Felix Kleinfeldt (OVGU Magdeburg)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "dump_mesh_vtk.h"
 #include "tri_mesh.h"
 #include "domain.h"
@@ -54,7 +54,7 @@ enum
     DUMP_ACORNERS = 512,
     DUMP_INDEX = 1024,
     DUMP_NNEIGHS = 2048,
-    DUMP_MIN_ACTIVE_EDGE_DIST = 2048
+    DUMP_MIN_ACTIVE_EDGE_DIST = 4096
 };
 
 enum
@@ -110,7 +110,7 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
           if (iarg+2 > narg) error->all(FLERR,"Dump mesh/vtk: not enough arguments for 'interpolate'");
           if(strcmp(arg[iarg+1],"face")==0) dataMode_ = 0;
           else if(strcmp(arg[iarg+1],"interpolate")==0) dataMode_ = 1;
-          else error->all(FLERR,"Dump mesh/vtk: wrong arrgument for 'output'");
+          else error->all(FLERR,"Dump mesh/vtk: wrong argument for 'output'");
           iarg += 2;
           hasargs = true;
       }
@@ -231,7 +231,7 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
       meshList_ = new TriMesh*[nMesh_];
       for (int iMesh = 0; iMesh < nMesh_; iMesh++)
       {
-          /*NL*/ //fprintf(screen,"nMesh_ %d, found mesh %s\n",nMesh_,modify->find_fix_style("mesh",iMesh)->id);
+          /*NL*/ //if (screen) fprintf(screen,"nMesh_ %d, found mesh %s\n",nMesh_,modify->find_fix_style("mesh",iMesh)->id);
           meshList_[iMesh] = static_cast<FixMeshSurface*>(modify->find_fix_style("mesh/surface",iMesh))->triMesh();
       }
 
@@ -308,7 +308,7 @@ DumpMeshVTK::~DumpMeshVTK()
 
 void DumpMeshVTK::init_style()
 {
-  /*NL*/ // fprintf(screen,"DumpMeshVTK::init_style()\n");
+  /*NL*/ // if (screen) fprintf(screen,"DumpMeshVTK::init_style()\n");
 
   //multifile=1;             // 0 = one big file, 1 = one file per timestep
   //multiproc=0;             // 0 = proc 0 writes for all, 1 = one file/proc
@@ -397,7 +397,7 @@ int DumpMeshVTK::count()
   n_calls_ = 0;
   n_all_ = 0;
 
-  /*NL*///fprintf(screen,"nMesh_ %d\n",nMesh_);
+  /*NL*///if (screen) fprintf(screen,"nMesh_ %d\n",nMesh_);
 
   getRefs();
 
@@ -406,10 +406,10 @@ int DumpMeshVTK::count()
     if(!meshList_[i]->isParallel() && 0 != comm->me)
         continue;
     numTri += meshList_[i]->sizeLocal();
-    /*NL*///fprintf(screen,"mesh %d numTri %d\n",i,meshList_[i]->sizeLocal());
+    /*NL*///if (screen) fprintf(screen,"mesh %d numTri %d\n",i,meshList_[i]->sizeLocal());
   }
 
-  /*NL*///fprintf(screen,"numTri %d\n",numTri);
+  /*NL*///if (screen) fprintf(screen,"numTri %d\n",numTri);
 
   return numTri;
 }
@@ -441,7 +441,7 @@ void DumpMeshVTK::getRefs()
       for(int i = 0; i < nMesh_; i++)
       {
           v_node_[i] = meshList_[i]->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v");
-          /*NL*/ //fprintf(screen,"v_node_[i] is %s\n",v_node_[i] ? "non-null" : "null");
+          /*NL*/ //if (screen) fprintf(screen,"v_node_[i] is %s\n",v_node_[i] ? "non-null" : "null");
       }
   }
   if(dump_what_ & DUMP_WEAR)
@@ -486,19 +486,19 @@ void DumpMeshVTK::getGeneralRefs()
   {
       bool found_scalar = false, found_vector = false;
 
-      /*NL*/ //fprintf(screen,"looking for container %s\n",container_args_[ib]);
+      /*NL*/ //if (screen) fprintf(screen,"looking for container %s\n",container_args_[ib]);
 
       for(int i = 0; i < nMesh_; i++)
       {
           if(meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]))
           {
-              /*NL*/ //fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
+              /*NL*/ //if (screen) fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
               found_scalar = true;
               scalar_containers_[n_scalar_containers_][i] = meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]);
               scalar_containers_[n_scalar_containers_][i]->id(cid);
               strcpy(scalar_container_names_[n_scalar_containers_],cid);
           }
-          /*NL*/ //else  fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
+          /*NL*/ //else if (screen) fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
 
           if(meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]))
           {
@@ -518,7 +518,7 @@ void DumpMeshVTK::getGeneralRefs()
         error->all(FLERR,"Illegal dump mesh/vtk command, unknown keyword or mesh");
   }
 
-  /*NL*/ //fprintf(screen,"n_scalar_containers_ %d n_vector_containers_ %d\n",n_scalar_containers_,n_vector_containers_);
+  /*NL*/ //if (screen) fprintf(screen,"n_scalar_containers_ %d n_vector_containers_ %d\n",n_scalar_containers_,n_vector_containers_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -597,8 +597,8 @@ void DumpMeshVTK::pack(int *ids)
             else
                 vectorZeroize3D(avg);
 
-            /*NL*///if(vectorMag3DSquared(avg) > 0.) fprintf(screen,"mesh id %s\n",mesh->mesh_id());
-            /*NL*///if(vectorMag3DSquared(avg) > 0.) printVec3D(screen,"avg",avg);
+            /*NL*///if(screen && vectorMag3DSquared(avg) > 0.) fprintf(screen,"mesh id %s\n",mesh->mesh_id());
+            /*NL*///if(screen && vectorMag3DSquared(avg) > 0.) printVec3D(screen,"avg",avg);
 
             // push to buffer
             buf[m++] = avg[0];
@@ -960,7 +960,7 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
 
   // n is the number of elements
 
-  /*NL*///fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
+  /*NL*///if (screen) fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
 
   // write point data
   fprintf(fp,"DATASET UNSTRUCTURED_GRID\nPOINTS %d float\n",3*n);
@@ -1156,7 +1156,7 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
       }
       buf_pos++;
   }
-  if(dump_what_ & DUMP_NNEIGHS)
+  if(dump_what_ & DUMP_MIN_ACTIVE_EDGE_DIST)
   {
       //write owner data
       fprintf(fp,"SCALARS min_active_edge_dist float 1\nLOOKUP_TABLE default\n");
@@ -1175,7 +1175,7 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
       //write owner data
       fprintf(fp,"SCALARS %s float 1\nLOOKUP_TABLE default\n",scalar_container_names_[ib]);
       m = buf_pos;
-      /*NL*/ //fprintf(screen,"size_one %d\n",size_one);
+      /*NL*/ //if (screen) fprintf(screen,"size_one %d\n",size_one);
       for (int i = 0; i < n; i++)
       {
           fprintf(fp,"%f\n",mybuf[m]);

@@ -16,9 +16,9 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "pair_soft_gpu.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -33,7 +33,7 @@
 #include "universe.h"
 #include "update.h"
 #include "domain.h"
-#include "string.h"
+#include <string.h>
 #include "gpu_extra.h"
 #include "math_const.h"
 

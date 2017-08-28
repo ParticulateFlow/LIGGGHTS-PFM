@@ -22,7 +22,7 @@
 #ifndef LMP_VECTOR_LIGGGHTS_H
 #define LMP_VECTOR_LIGGGHTS_H
 
-#include "math.h"
+#include <math.h>
 #include "lammps.h"
 
 namespace LAMMPS_NS {
@@ -82,6 +82,16 @@ inline double pointDistance(const double *point1, const double *point2)
   );
 }
 
+inline double pointDistanceSqr(const double *point1, const double *point2)
+{
+  return
+  (
+   (point1[0]-point2[0]) * (point1[0]-point2[0]) +
+   (point1[1]-point2[1]) * (point1[1]-point2[1]) +
+   (point1[2]-point2[2]) * (point1[2]-point2[2])
+  );
+}
+ 
 inline double vectorMag4DSquared(const double *v)
 {
   return (  v[0]*v[0]+v[1]*v[1]+v[2]*v[2]+v[3]*v[3]  );
@@ -292,6 +302,13 @@ inline void vectorScalarSubtract3D(double *v, double s)
   v[2]-=s;
 }
 
+  // returns v1+s*v2 to res
+inline void vectorAddMultiply3D(double *v1, double *v2, double s, double *res)
+{
+  for(int i=0;i<3;i++)
+    res[i] = v1[i]+v2[i]*s;
+}
+ 
 inline void vectorNegate3D(double *v, double *result)
 {
   result[0]=-v[0];

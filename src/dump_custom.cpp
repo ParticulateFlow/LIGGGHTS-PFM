@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "dump_custom.h"
 #include "atom.h"
 #include "force.h"
@@ -53,11 +53,10 @@ enum{ID,MOL,TYPE,ELEMENT,MASS,
      OMEGAX,OMEGAY,OMEGAZ,ANGMOMX,ANGMOMY,ANGMOMZ,
      TQX,TQY,TQZ,SPIN,ERADIUS,ERVEL,ERFORCE,
      COMPUTE,FIX,VARIABLE,INAME,DNAME,
-     DENSITY, RHO, P}; //NP modified C.K. included DENSITY .. A.A. included RHO and P
+     DENSITY, RHO, P, THREAD}; //NP modified C.K. included DENSITY .. A.A. included RHO and P .. R.B. included THREAD
 enum{LT,LE,GT,GE,EQ,NEQ};
 enum{INT,DOUBLE,STRING};    // same as in DumpCFG
 
-#define INVOKED_PERATOM 8
 #define ONEFIELD 32
 #define DELTA 1048576
 
@@ -918,6 +917,12 @@ int DumpCustom::count()
         ptr = dchoose;
         nstride = 1;
       }
+      else if (thresh_array[ithresh] == THREAD) {
+        int *thread = atom->thread;
+        for (i = 0; i < nlocal; i++) dchoose[i] = thread[i];
+        ptr = dchoose;
+        nstride = 1;
+      }
 
       // unselect atoms that don't meet threshhold criterion
 
@@ -1262,6 +1267,9 @@ int DumpCustom::parse_fields(int narg, char **arg)
         error->all(FLERR,"Dumping an atom quantity that isn't allocated");
       pack_choice[i] = &DumpCustom::pack_erforce;
       vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"thread") == 0) {
+      pack_choice[i] = &DumpCustom::pack_thread;
+      vtype[i] = INT;
 
     // compute value = c_ID
     // if no trailing [], then arg is set to 0, else arg is int between []
@@ -1645,6 +1653,7 @@ int DumpCustom::modify_param(int narg, char **arg)
     else if (strcmp(arg[1],"density") == 0) thresh_array[nthresh] = DENSITY; //NP modified C.K.
     else if (strcmp(arg[1],"p") == 0) thresh_array[nthresh] = P; //NP modified C.K.
     else if (strcmp(arg[1],"rho") == 0) thresh_array[nthresh] = RHO; //NP modified C.K.
+    else if (strcmp(arg[1],"thread") == 0) thresh_array[nthresh] = THREAD; //NP modified R.B.
     else if (strcmp(arg[1],"mux") == 0) thresh_array[nthresh] = MUX;
     else if (strcmp(arg[1],"muy") == 0) thresh_array[nthresh] = MUY;
     else if (strcmp(arg[1],"muz") == 0) thresh_array[nthresh] = MUZ;
@@ -2726,6 +2735,18 @@ void DumpCustom::pack_erforce(int n)
 
   for (int i = 0; i < nchoose; i++) {
     buf[n] = erforce[clist[i]];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_thread(int n)
+{
+  int *thread = atom->thread;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = comm->me * comm->nprocs + thread[clist[i]];
     n += size_one;
   }
 }

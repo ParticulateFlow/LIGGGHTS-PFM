@@ -1,0 +1,99 @@
+solid BoxInBox
+
+facet normal 0 0 -1
+  outer loop
+    vertex 0.1 0.1 0.1
+    vertex 0.4 0.1 0.1
+    vertex 0.1 0.4 0.1
+  endloop
+endfacet
+
+facet normal 0 0 -1
+  outer loop
+    vertex 0.4 0.1 0.1
+    vertex 0.4 0.4 0.1
+    vertex 0.1 0.4 0.1
+  endloop
+endfacet
+
+facet normal 0 0 1
+  outer loop
+    vertex 0.1 0.1 0.4
+    vertex 0.4 0.1 0.4
+    vertex 0.1 0.4 0.4
+  endloop
+endfacet
+
+facet normal 0 0 1
+  outer loop
+    vertex 0.4 0.1 0.4
+    vertex 0.4 0.4 0.4
+    vertex 0.1 0.4 0.4
+  endloop
+endfacet
+
+facet normal 0 -1 0
+  outer loop
+    vertex 0.1 0.1 0.1
+    vertex 0.4 0.1 0.1
+    vertex 0.1 0.1 0.4
+  endloop
+endfacet
+
+facet normal 0 -1 0
+  outer loop
+    vertex 0.4 0.1 0.1
+    vertex 0.1 0.1 0.4
+    vertex 0.4 0.1 0.4
+  endloop
+endfacet
+
+facet normal 0 1 0
+  outer loop
+    vertex 0.1 0.4 0.1
+    vertex 0.4 0.4 0.1
+    vertex 0.1 0.4 0.4
+  endloop
+endfacet
+
+facet normal 0 1 0
+  outer loop
+    vertex 0.4 0.4 0.1
+    vertex 0.1 0.4 0.4
+    vertex 0.4 0.4 0.4
+  endloop
+endfacet
+
+facet normal -1 0 0
+  outer loop
+    vertex 0.1 0.1 0.1
+    vertex 0.1 0.4 0.1
+    vertex 0.1 0.1 0.4
+  endloop
+endfacet
+
+facet normal -1 0 0
+  outer loop
+    vertex 0.1 0.4 0.1
+    vertex 0.1 0.1 0.4
+    vertex 0.1 0.4 0.4
+  endloop
+endfacet
+
+facet normal 1 0 0
+  outer loop
+    vertex 0.4 0.1 0.1
+    vertex 0.4 0.4 0.1
+    vertex 0.4 0.1 0.4
+  endloop
+endfacet
+
+facet normal 1 0 0
+  outer loop
+    vertex 0.4 0.4 0.1
+    vertex 0.4 0.1 0.4
+    vertex 0.4 0.4 0.4
+  endloop
+endfacet
+
+endsolid BoxInBox

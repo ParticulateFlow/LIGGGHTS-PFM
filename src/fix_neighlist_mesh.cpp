@@ -39,6 +39,10 @@
 #include "update.h"
 #include <stdio.h>
 #include <algorithm>
+#ifndef NDEBUG
+#define NDEBUG
+#endif
+#include <assert.h>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -203,6 +207,7 @@ void FixNeighlistMesh::min_pre_force(int vflag)
 
 //NP this is called before FixContactHistoryMesh::pre_force()
 //NP because of the order of creation in FixWallGran::post_create()
+//NP this is important so building new neigh list before refreshing contact hist
 
 void FixNeighlistMesh::pre_force(int)
 {
@@ -211,13 +216,14 @@ void FixNeighlistMesh::pre_force(int)
     changingMesh = mesh_->isMoving() || mesh_->isDeforming();
     changingDomain = (domain->nonperiodic == 2) || domain->box_change;
 
-    /*NL*/ //fprintf(screen,"***building neighbor list at timestep " BIGINT_FORMAT "\n",update->ntimestep);
+    /*NL*/ //if (screen) fprintf(screen,"***building neighbor list at timestep " BIGINT_FORMAT "\n",update->ntimestep);
 
     buildNeighList = false;
     numAllContacts_ = 0;
 
-    // set num_neigh = 0
-    memset(fix_nneighs_->vector_atom, 0, atom->nlocal*sizeof(double));
+    // copy current to old # of neighbors
+    //NP this is important for correct contact history copy
+    memset(fix_nneighs_->vector_atom, 0, sizeof(double)*atom->nmax);
 
     x = atom->x;
     r = atom->radius;
@@ -273,6 +279,7 @@ void FixNeighlistMesh::pre_force(int)
     /*NL*/      atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID) >= 0)
     /*NL*/ {
     /*NL*/          if(!r) error->one(FLERR,"debugmode not made for SPH");
+    /*NL*/          if(screen) {
     /*NL*/          int iTriDeb = mesh_->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID);
     /*NL*/          int iAtomDeb = atom->map(DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID);
     /*NL*/          int ixDeb, iyDeb, izDeb;
@@ -281,6 +288,7 @@ void FixNeighlistMesh::pre_force(int)
     /*NL*/                      update->ntimestep,DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID,
     /*NL*/                      iBinDeb,ixDeb, iyDeb, izDeb,comm->me,
     /*NL*/                      mesh_->resolveTriSphereNeighbuild(iTriDeb,atom->radius[iAtomDeb]*neighbor->contactDistanceFactor,atom->x[iAtomDeb],skin) ? "true" : "false" );
+    /*NL*/          }
     /*NL*/ }
 
     for(size_t iTri = 0; iTri < nall; iTri++) {
@@ -313,7 +321,7 @@ void FixNeighlistMesh::pre_force(int)
     }
   }
 
-    /*NL*/ //if(nall > 0) fprintf(screen,"size numContactsSum %d numAllContacts_ %d vs. %d\n",numContactsSum.size(),numAllContacts_,numContacts(nall-1)+numContactsSum(nall-1));
+    /*NL*/ //if(nall > 0 && screen) fprintf(screen,"size numContactsSum %d numAllContacts_ %d vs. %d\n",numContactsSum.size(),numAllContacts_,numContacts(nall-1)+numContactsSum(nall-1));
 
     if(globalNumAllContacts_) {
       MPI_Sum_Scalar(numAllContacts_,world);
@@ -342,7 +350,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
       if(changingMesh || changingDomain)
       {
         getBinBoundariesForTriangle(iTri,ixMin,ixMax,iyMin,iyMax,izMin,izMax);
-    /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
+    /*NL*/ if(screen && DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
     /*NL*/ {
     /*NL*/          double lo[3],hi[3];
     /*NL*/          //b.getBoxBounds(lo,hi);
@@ -363,7 +371,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
               int iBin = iz*mbiny*mbinx + iy*mbinx + ix;
               if(iBin < 0 || iBin >= maxhead) continue;
 
-              /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
+              /*NL*/ if(screen && DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
               /*NL*/          fprintf(screen, "       handleTriangle tri id %d on proc %d - checking bin %d\n",
               /*NL*/                      mesh_->id(iTri),comm->me, iBin);
 
@@ -379,7 +387,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
                 }
                 nchecked++;
 
-                /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
+                /*NL*/ if(screen && DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
                 /*NL*/                                     && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID == atom->map(iAtom) )
                 /*NL*/          fprintf(screen, "   handleTriangle atom %d for tri id %d on proc %d\n",
                 /*NL*/                      atom->map(iAtom),mesh_->id(iTri),comm->me);
@@ -387,7 +395,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
                 {
                   //NP include iAtom in neighbor list
                   neighbors.push_back(iAtom);
-                  /*NL*/ //if(377==atom->tag[iAtom]) fprintf(screen,"proc %d, step " BIGINT_FORMAT " adding pair tri tag %d atom ta %d to NEIGHLIST\n",comm->me,update->ntimestep,mesh_->id(iTri),atom->tag[iAtom]);
+                  /*NL*/ //if(screen && 377==atom->tag[iAtom]) fprintf(screen,"proc %d, step " BIGINT_FORMAT " adding pair tri tag %d atom ta %d to NEIGHLIST\n",comm->me,update->ntimestep,mesh_->id(iTri),atom->tag[iAtom]);
                 }
                 if(bins) iAtom = bins[iAtom];
                 else iAtom = -1;
@@ -400,7 +408,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
         const int bincount = triangleBins.size();
         for(int i = 0; i < bincount; i++) {
           const int iBin = triangleBins[i];
-          /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
+          /*NL*/ if(screen && DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri))
           /*NL*/          fprintf(screen, "       handleTriangle tri id %d on proc %d - checking bin %d\n",
           /*NL*/                      mesh_->id(iTri),comm->me, iBin);
 
@@ -415,7 +423,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
             }
             nchecked++;
 
-            /*NL*/ if(DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
+            /*NL*/ if(screen && DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && DEBUG_LMP_FIX_NEIGHLIST_MESH_M_ID == mesh_->id(iTri)
             /*NL*/                                     && DEBUG_LMP_FIX_NEIGHLIST_MESH_P_ID == atom->map(iAtom) )
             /*NL*/          fprintf(screen, "   handleTriangle atom %d for tri id %d on proc %d\n",
             /*NL*/                      atom->map(iAtom),mesh_->id(iTri),comm->me);
@@ -431,7 +439,7 @@ void FixNeighlistMesh::handleTriangle(int iTri)
       }
     }
 
-    /*NL*/// fprintf(screen,"iTri %d numContacts %d\n",iTri, neighbors.size());
+    /*NL*/// if (screen) fprintf(screen,"iTri %d numContacts %d\n",iTri, neighbors.size());
 }
 
 /* ---------------------------------------------------------------------- */
@@ -538,8 +546,8 @@ void FixNeighlistMesh::generate_bin_list(size_t nall)
           }
         }
       }
-      /*NL*/ if (DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && comm->me == 0) fprintf(screen, "triangle %lu bins: %lu / %d\n", iTri, binlist.size(), total);
-      /*NL*/ if (DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && comm->me == 0) fprintf(logfile, "triangle %lu bins: %lu / %d\n", iTri, binlist.size(), total);
+      /*NL*/ if (DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && comm->me == 0 && screen) fprintf(screen, "triangle %lu bins: %lu / %d\n", iTri, binlist.size(), total);
+      /*NL*/ if (DEBUGMODE_LMP_FIX_NEIGHLIST_MESH && comm->me == 0 && logfile) fprintf(logfile, "triangle %lu bins: %lu / %d\n", iTri, binlist.size(), total);
     }
   }
 

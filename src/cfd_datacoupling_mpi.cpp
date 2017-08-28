@@ -19,8 +19,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
 #include "respa.h"
@@ -28,13 +28,14 @@
 #include "memory.h"
 #include "comm.h"
 #include "modify.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "fix_cfd_coupling.h"
 #include "fix_multisphere.h"
 #include "cfd_datacoupling_mpi.h"
 
 using namespace LAMMPS_NS;
+using namespace std;
 
 #define DELTA 10000
 

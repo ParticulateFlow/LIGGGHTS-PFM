@@ -21,8 +21,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "compute_stress_atom.h"
 #include "atom.h"
 #include "update.h"

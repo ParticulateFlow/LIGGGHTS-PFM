@@ -25,7 +25,7 @@
 ------------------------------------------------------------------------- */
 
 #ifdef LAMMPS_VTK
-#include "string.h"
+#include <string.h>
 #include "dump_atom_vtk.h"
 #include "atom.h"
 #include "group.h"
@@ -37,15 +37,15 @@
 #ifndef VTK_MAJOR_VERSION
 #include <vtkConfigure.h>
 #endif
-#include<vtkCellArray.h>
-#include<vtkDoubleArray.h>
-#include<vtkIntArray.h>
-#include<vtkPoints.h>
-#include<vtkPointData.h>
-#include<vtkCellData.h>
-#include<vtkSmartPointer.h>
-#include<vtkUnstructuredGrid.h>
-#include<vtkXMLUnstructuredGridWriter.h>
+#include <vtkCellArray.h>
+#include <vtkDoubleArray.h>
+#include <vtkIntArray.h>
+#include <vtkPoints.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkXMLUnstructuredGridWriter.h>
 
 using namespace LAMMPS_NS;
 

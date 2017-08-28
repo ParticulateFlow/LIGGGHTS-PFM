@@ -67,7 +67,7 @@
     // this function is always called in serial mode
     //NP so use sizeLocal()
 
-    /*NL*/ //fprintf(this->screen,"TrackingMesh<NUM_NODES>::addElement\n");
+    /*NL*/ //if (this->screen) fprintf(this->screen,"TrackingMesh<NUM_NODES>::addElement\n");
 
     if(MultiNodeMeshParallel<NUM_NODES>::addElement(nodeToAdd))
     {
@@ -80,7 +80,7 @@
         id_(this->sizeLocal()-1) = this->sizeLocal()-1;
         (*lineNo_)(this->sizeLocal()-1) = lineNumb;
 
-        /*NL*/ //fprintf(this->screen,"elem %d: line %d\n",this->sizeLocal()-1,lineNumb);
+        /*NL*/ //if (this->screen) fprintf(this->screen,"elem %d: line %d\n",this->sizeLocal()-1,lineNumb);
         return true;
     }
     return false;
@@ -174,7 +174,7 @@
       int idmax = id_.max(nall);
       MPI_Max_Scalar(idmax,mapTagMax_,this->world);
 
-      /*NL*/ //if(this->update->ntimestep >= 600000) fprintf(this->screen,"proc %d idmax %d, mapTagMax_ %d nall %d\n",this->comm->me,idmax,mapTagMax_,nall);
+      /*NL*/ //if(this->update->ntimestep >= 600000 && this->screen) fprintf(this->screen,"proc %d idmax %d, mapTagMax_ %d nall %d\n",this->comm->me,idmax,mapTagMax_,nall);
 
       // alocate and initialize new array
       // IDs start at 0, so have to use mapTagMax_+1
@@ -185,7 +185,7 @@
       // build map for owned and ghost particles
       for (int i = nall-1; i >= 0; i--)
       {
-          /*NL*/ //fprintf(this->screen,"id_(i) %d\n",id_(i));
+          /*NL*/ //if (this->screen) fprintf(this->screen,"id_(i) %d\n",id_(i));
           mapArray_[id_(i)] = i;
       }
   }
@@ -201,7 +201,7 @@
 
      /*NL*///int nn = this->sizeLocal()+this->sizeGhost()-1;
      /*NL*///VectorContainer<double,3> &test = *prop().template getElementProperty< VectorContainer<double,3> >("surfaceNorm");
-     /*NL*///fprintf(this->screen,"normal vec of last element before clearGhostForward %f %f %f\n",
+     /*NL*///if (this->screen) fprintf(this->screen,"normal vec of last element before clearGhostForward %f %f %f\n",
      /*NL*/// test(nn)[0],test(nn)[1],test(nn)[2]);
 
       // delete ghost data from container classes
@@ -209,7 +209,7 @@
       for(int i = this->sizeLocal()+this->sizeGhost()-1; i >= this->sizeLocal(); i--)
           customValues_.deleteForwardElement(i,scale,translate,rotate);
 
-     /*NL*///fprintf(this->screen,"normal vec of last element after clearGhostForward %f %f %f\n",
+     /*NL*///if (this->screen) fprintf(this->screen,"normal vec of last element after clearGhostForward %f %f %f\n",
      /*NL*/// test(nn)[0],test(nn)[1],test(nn)[2]);
   }
 
@@ -282,9 +282,9 @@
   {
     int buf_size = 0;
     buf_size += MultiNodeMeshParallel<NUM_NODES>::elemBufSize(operation,scale,translate,rotate);
-    /*NL*///fprintf(this->screen,"operation %d, buf_size1 %d\n",operation,buf_size);
+    /*NL*///if (this->screen) fprintf(this->screen,"operation %d, buf_size1 %d\n",operation,buf_size);
     buf_size += customValues_.elemBufSize(operation,scale,translate,rotate);
-    /*NL*///fprintf(this->screen,"operation %d, buf_size2 %d\n",operation,buf_size);
+    /*NL*///if (this->screen) fprintf(this->screen,"operation %d, buf_size2 %d\n",operation,buf_size);
     return buf_size;
   }
 
@@ -302,7 +302,7 @@
   {
     int nrecv = 0;
     nrecv += MultiNodeMeshParallel<NUM_NODES>::popElemFromBuffer(&buf[nrecv],operation,scale,translate,rotate);
-    /*NL*///fprintf(this->screen,"restart: restoring id %f\n",buf[nrecv]);
+    /*NL*///if (this->screen) fprintf(this->screen,"restart: restoring id %f\n",buf[nrecv]);
     nrecv += customValues_.popElemFromBuffer(&buf[nrecv],operation,scale,translate,rotate);
     return nrecv;
   }
@@ -316,7 +316,7 @@
   {
     int buf_size = 0;
     buf_size += customValues_.globalPropsBufSize(operation,scale,translate,rotate);
-    /*NL*///fprintf(this->screen,"operation %d, buf_size2 %d\n",operation,buf_size);
+    /*NL*///if (this->screen) fprintf(this->screen,"operation %d, buf_size2 %d\n",operation,buf_size);
     return buf_size;
   }
 

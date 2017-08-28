@@ -28,7 +28,7 @@
 ------------------------------------------------------------------------- */
 
 #include "mesh_mover.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "math_extra_liggghts.h"
 #include "input.h"
@@ -103,12 +103,12 @@ MeshMoverLinearVariable::MeshMoverLinearVariable(LAMMPS *lmp,AbstractMesh *_mesh
       strcpy(var1str_,&var1[2]);
       myvar1_ = input->variable->find(var1str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var2[2]) + 1;
       var2str_ = new char[n];
       strcpy(var2str_,&var2[2]);
       myvar2_ = input->variable->find(var2str_);
 
-      n = strlen(&var1[2]) + 1;
+      n = strlen(&var3[2]) + 1;
       var3str_ = new char[n];
       strcpy(var3str_,&var3[2]);
       myvar3_ = input->variable->find(var3str_);
@@ -196,11 +196,11 @@ void MeshMoverLinearVariable::initial_integrate(double dTAbs,double dTSetup,doub
     modify->clearstep_compute();
 
     // evaluate variable
-    /*NL*///fprintf(screen,"######### var=%d %d %d\n ########",myvar1,myvar2,myvar3);
+    /*NL*///if (screen) fprintf(screen,"######### var=%d %d %d\n ########",myvar1,myvar2,myvar3);
     vel_[0] = input->variable->compute_equal(myvar1_);
     vel_[1] = input->variable->compute_equal(myvar2_);
     vel_[2] = input->variable->compute_equal(myvar3_);
-    /*NL*///fprintf(screen,"######### var=%f %f %f\n ########",vel_[0],vel_[1],vel_[2]);
+    /*NL*///if (screen) fprintf(screen,"######### var=%f %f %f\n ########",vel_[0],vel_[1],vel_[2]);
 
     modify->addstep_compute(update->ntimestep + 1);
 
@@ -256,7 +256,7 @@ void MeshMoverWiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
     //double cosine = cos(omega_ * dTAbs) - cos(omega_ * (dTAbs-dTSetup));
 
     /*NL*///if(15001 == update->ntimestep) {
-    /*NL*///  fprintf(screen,"dTAbs %f dTSetup %f sine %f cosine %f omega_ %f\n",dTAbs,dTSetup,sine,cosine,omega_);
+    /*NL*///  if (screen) fprintf(screen,"dTAbs %f dTSetup %f sine %f cosine %f omega_ %f\n",dTAbs,dTSetup,sine,cosine,omega_);
     /*NL*///  error->all(FLERR,"end"); }
 
     //NP size includes owned and ghost elements
@@ -340,7 +340,7 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
     double *** const v_node = get_v();
     double *** const nodes = get_nodes();
 
-    /*NL*/ //fprintf(screen,"dTAbs %f dTSetup %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
+    /*NL*/ //if (screen) fprintf(screen,"dTAbs %f dTSetup %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
     /*NL*/ //               dTAbs,dTSetup,totalPhi,incrementalPhi,reference_point[0],reference_point[1],reference_point[2]);
 
     // rotate the mesh
@@ -348,6 +348,10 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
+
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
@@ -476,6 +480,9 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
     // set mesh velocity, w x rPA
     vectorScalarMult3D(axis_,omega_,omegaVec);
 
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec,nodes)
+    #endif
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)

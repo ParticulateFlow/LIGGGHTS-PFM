@@ -25,10 +25,10 @@ Andreas Aigner (CD Lab Particulate Flow Modelling, JKU)
 andreas.aigner@jku.at
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "mpi.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <mpi.h>
+#include <string.h>
+#include <stdlib.h>
 #include "fix_sph_density_corr.h"
 #include "update.h"
 #include "respa.h"
@@ -240,7 +240,7 @@ void FixSphDensityCorr::pre_force_eval()
         W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,sli,sliInv);
         if (W < 0.)
         {
-          fprintf(screen,"s = %f, W = %f\n",s,W);
+          if (screen) fprintf(screen,"s = %f, W = %f\n",s,W);
           error->one(FLERR,"Illegal kernel used, W < 0");
         }
 
@@ -305,7 +305,7 @@ void FixSphDensityCorr::pre_force_eval()
         W = SPH_KERNEL_NS::sph_kernel(kernel_id,s,slCom,slComInv);
         if (W < 0.)
         {
-          fprintf(screen,"s = %f, W = %f\n",s,W);
+          if (screen) fprintf(screen,"s = %f, W = %f\n",s,W);
           error->one(FLERR,"Illegal kernel used, W < 0");
         }
 
@@ -337,7 +337,7 @@ void FixSphDensityCorr::pre_force_eval()
         W = SPH_KERNEL_NS::sph_kernel(kernel_id,0.,sli,sliInv);
         if (W < 0.)
         {
-          fprintf(screen,"s = %f, W = %f\n",s,W);
+          if (screen) fprintf(screen,"s = %f, W = %f\n",s,W);
           error->one(FLERR,"Illegal kernel used, W < 0");
         }
 
@@ -407,7 +407,7 @@ void FixSphDensityCorr::pre_force_eval()
         W = SPH_KERNEL_NS::sph_kernel(kernel_id,s,slCom,slComInv);
         if (W < 0.)
         {
-          fprintf(screen,"s = %f, W = %f\n",s,W);
+          if (screen) fprintf(screen,"s = %f, W = %f\n",s,W);
           error->one(FLERR,"Illegal kernel used, W < 0");
         }
 

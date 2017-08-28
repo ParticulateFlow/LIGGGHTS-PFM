@@ -25,10 +25,10 @@
  * 24-Sep-11 - AS: Adapted code to new interface of Error::one() function.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_meam_spline.h"
 #include "atom.h"
 #include "force.h"

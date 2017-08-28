@@ -1,0 +1,31 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix property/atom/cumulativetracer command :h3
+
+[Syntax:]
+
+fix ID group-ID property/atom/cumulativetracer keyword values :pre
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+property/atom/cumulativetracer = style name of this fix command :l
+several keyword/value pairs need to be appended :l
+keyword = {region_mark} or {source_strength} or {begin_time} or {end_time} :l
+  {region_mark} values = region ID :pre
+  {source_strength} values = concentration injected per timestep :pre
+  {begin_time} values = time at which injection starts :pre
+  {end_time} values = time at which injection stops :pre
+:ule
+
+[Examples:]
+
+fix tracers all property/atom/cumulativetracer region_mark mark source_strength 0.000001 begin_time 0.0 end_time 75.0 :pre
+
+[Description:]
+
+This fix injects a certain total amount of passive species into the particles currently in a specified region. If no particles are available at a timestep, the amount to be injected accumulates.

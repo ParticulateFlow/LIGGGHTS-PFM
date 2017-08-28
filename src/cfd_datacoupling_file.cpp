@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "sys/stat.h"
-#include "string.h"
-#include "stdlib.h"
+#include <sys/stat.h>
+#include <string.h>
+#include <stdlib.h>
 #include "atom.h"
 #include "comm.h"
 #include "update.h"
@@ -29,7 +29,7 @@
 #include "error.h"
 #include "memory.h"
 #include "modify.h"
-#include "math.h"
+#include <math.h>
 #include "vector_liggghts.h"
 #include "fix_property_atom.h"
 #include "fix_property_global.h"
@@ -54,7 +54,7 @@ CfdDatacouplingFile::CfdDatacouplingFile(LAMMPS *lmp, int iarg,int narg, char **
 {
     iarg_ = iarg;
     int n_arg = narg - iarg_;
-    //NP fprintf(screen,"jarg %d, narg %d \n",jarg,narg);
+    //NP if(screen) fprintf(screen,"jarg %d, narg %d \n",jarg,narg);
     if(n_arg < 1) error->all(FLERR,"Cfd file coupling: wrong # arguments");
 
     liggghts_is_active = true;
@@ -163,7 +163,7 @@ void CfdDatacouplingFile::push(const char *name, const char *type, void *&to, co
 
     void * from = find_push_property(name,type,len1,len2);
 
-    //NPfprintf(screen,"called for var %s, style %s, from is %s \n",name,type,(from==NULL?"NULL":"not NULL"));
+    //NP if(screen) fprintf(screen,"called for var %s, style %s, from is %s \n",name,type,(from==NULL?"NULL":"not NULL"));
 
     if(from && strcmp(type,"scalar-atom") == 0)
     {
@@ -222,7 +222,7 @@ void CfdDatacouplingFile::op_complete(const char *name)
     if(!append) return;
     char *oldfile = getFilePath(name,true);
     char *newfile = getFilePath(name,false);
-    /*NL*///fprintf(screen,"renaming %s to %s\n",oldfile,newfile);
+    /*NL*///if(screen) fprintf(screen,"renaming %s to %s\n",oldfile,newfile);
     rename(oldfile,newfile);
     delete []oldfile;
     delete []newfile;
@@ -235,11 +235,11 @@ void CfdDatacouplingFile::readVectorData(const char *name, double ** field)
     // get output path
     char *file = getFilePath(name,true);
 
-    fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+    if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
     struct stat st;
     while (stat(file,&st)) sleep(10);
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
 
     // set file pointer
     ifstream inputPtr(file);
@@ -250,7 +250,7 @@ void CfdDatacouplingFile::readVectorData(const char *name, double ** field)
     // write data to variable
     int numberOfParticles;
     inputPtr >> numberOfParticles;
-    /*NL*///fprintf(screen,"numberOfParticles %d  atom->nlocal %d \n",numberOfParticles,atom->nlocal);
+    /*NL*///if(screen) fprintf(screen,"numberOfParticles %d  atom->nlocal %d \n",numberOfParticles,atom->nlocal);
     if(atom->nlocal!=numberOfParticles) error->all(FLERR,"Fix couple/cfd/file: Data corruption: # particles in file does not match # particles in LIGGGHTS.\n"
                                                    "Note that file-based coupling currently does not support inserting or deleting particles during a coupled run.");
 
@@ -271,11 +271,11 @@ void CfdDatacouplingFile::readScalarData(const char* name, double *field)
     // get output path
     char *file = getFilePath(name,true);
 
-    fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+    if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
     struct stat st;
     while (stat(file,&st)) sleep(10);
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
 
     // set file pointer
     ifstream inputPtr(file);
@@ -309,11 +309,11 @@ void CfdDatacouplingFile::readGlobalArrayData(const char *name, double ** field,
     // get output path
     char *file = getFilePath(name,true);
 
-    fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+    if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
     struct stat st;
     while (stat(file,&st)) sleep(10);
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
 
     // set file pointerfrom
     ifstream inputPtr(file);
@@ -329,7 +329,7 @@ void CfdDatacouplingFile::readGlobalArrayData(const char *name, double ** field,
     if(l1 != len1 || l2 != len2)
         error->one(FLERR,"Global array received has different length than the corresponding global array in LIGGGHTS");
 
-    /*NL*///fprintf(screen,"lens %d %d \n",l1,l2);
+    /*NL*///if(screen) fprintf(screen,"lens %d %d \n",l1,l2);
 
     for(int index = 0; index < len1; ++index)
     {
@@ -338,7 +338,7 @@ void CfdDatacouplingFile::readGlobalArrayData(const char *name, double ** field,
             if(inputPtr.eof())
                 error->one(FLERR,"Global array received has different length than the corresponding global array in LIGGGHTS");
             inputPtr >> field[index][i];
-            /*NL*///fprintf(screen,"i %d j %d val %f\n",index,i,field[index][i]);
+            /*NL*///if(screen) fprintf(screen,"i %d j %d val %f\n",index,i,field[index][i]);
         }
     }
 
@@ -354,11 +354,11 @@ void CfdDatacouplingFile::readGlobalVectorData(const char* name, double *field, 
     // get output path
     char *file = getFilePath(name,true);
 
-    fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+    if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
     struct stat st;
     while (stat(file,&st)) sleep(10);
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: reading from file: %s\n",file);
 
     // set file pointer
     int l1;
@@ -391,12 +391,12 @@ void CfdDatacouplingFile::writeVectorData(const char *name,  double ** field)
 
     if(!firstexec)
     {
-      fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
-       struct stat st;
-       while (stat(file,&st)) sleep(10);
+        if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+        struct stat st;
+        while (stat(file,&st)) sleep(10);
     }
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
 
     // set file pointer
     ofstream outputPtr(file);
@@ -424,12 +424,12 @@ void CfdDatacouplingFile::writeScalarData(const char* name, double * field)
 
     if(!firstexec)
     {
-      fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
-       struct stat st;
-       while (stat(file,&st)) sleep(10);
+        if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+        struct stat st;
+        while (stat(file,&st)) sleep(10);
     }
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
 
     // set file pointer
     ofstream outputPtr(file);
@@ -458,12 +458,12 @@ void CfdDatacouplingFile::writeGlobalVectorData(const char *name,  double *field
 
     if(!firstexec)
     {
-      fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
-       struct stat st;
-       while (stat(file,&st)) sleep(10);
+        if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+        struct stat st;
+        while (stat(file,&st)) sleep(10);
     }
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
 
     // set file pointer
     ofstream outputPtr(file);
@@ -492,12 +492,12 @@ void CfdDatacouplingFile::writeGlobalArrayData(const char* name, double **field,
 
     if(!firstexec)
     {
-      fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
-       struct stat st;
-       while (stat(file,&st)) sleep(10);
+        if(screen) fprintf(screen,"Fix couple/cfd/file: waiting for file: %s\n",file);
+        struct stat st;
+        while (stat(file,&st)) sleep(10);
     }
 
-    /*NL*///fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
+    /*NL*///if(screen) fprintf(screen,"Fix couple/cfd/file: writing to file: %s\n",file);
 
     // set file pointer
     ofstream outputPtr(file);

@@ -132,8 +132,8 @@ class Pair : protected Pointers {
   virtual void compute_outer(int, int) {}
 
   virtual double single(int, int, int, int,
-                        double, double, double, 
-			double& fforce) {
+                        double, double, double,
+                        double& fforce) {
     fforce = 0.0;
     return 0.0;
   }
@@ -190,8 +190,6 @@ class Pair : protected Pointers {
 
   typedef union {int i; float f;} union_int_float_t;
 
-  double THIRD;
-
   int vflag_fdotr;
   int maxeatom,maxvatom;
 
@@ -211,7 +209,7 @@ class Pair : protected Pointers {
   FILE *open_potential(const char *);
   const char *potname(const char *);
 
-  inline int sbmask(int j) {
+  inline int sbmask(int j) const {
     return j >> SBBITS & 3;
   }
 };
