@@ -533,8 +533,8 @@ void FixChemShrinkCore::post_force(int)
                     getB(i,b_);
                     getMassT(i,masst_);
                     // reaction(i, a_, dmA_,x0_eq_, b_, masst_);
-                    // reaction2(i,a_,dmA_,x0_eq_, b_);
-                    reaction3(i,a_,dmA_,x0_eq_);
+                    reaction2(i,a_,dmA_,x0_eq_, b_);
+                    // reaction3(i,a_,dmA_,x0_eq_);
                     update_atom_properties(i,dmA_);
                     update_gas_properties(i,dmA_);
                     FractionalReduction(i);
@@ -678,7 +678,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
     diffEff_    =   new double [atom->nlocal];
 
     // effecitve binary diffusion coefficient
- /*   effMolecularDiff_[i] = molecularDiffusion_[i]*porosity_[i]/tortuosity_[i];
+    effMolecularDiff_[i] = molecularDiffusion_[i]*porosity_[i]/tortuosity_[i];
 
     if (screenflag_ && screen)
     {
@@ -709,8 +709,8 @@ void FixChemShrinkCore::getB(int i, double *b_)
     diffEff_[i] = effMolecularDiff_[i] + effKnudsenDiff_[i];
 
     if (screenflag_ && screen)
-        fprintf(screen,"eff. diff: %f \n",diffEff_[i]); */
-    diffEff_[i] = 1.0;
+        fprintf(screen,"eff. diff: %f \n",diffEff_[i]);
+    // diffEff_[i] = 1.0;
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
