@@ -532,8 +532,8 @@ void FixChemShrinkCore::post_force(int)
                     getA(i,a_);
                     getB(i,b_);
                     getMassT(i,masst_);
-                    // reaction(i, a_, dmA_,x0_eq_, b_, masst_);
-                    reaction2(i,a_,dmA_,x0_eq_, b_);
+                    reaction(i, a_, dmA_,x0_eq_, b_, masst_);
+                    // reaction2(i,a_,dmA_,x0_eq_, b_);
                     // reaction3(i,a_,dmA_,x0_eq_);
                     update_atom_properties(i,dmA_);
                     update_gas_properties(i,dmA_);
@@ -735,7 +735,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
 void FixChemShrinkCore::getMassT(int i, double *masst_)
 {
-/*    // initialize sherwood & schmidt numbers for every particle
+    // initialize sherwood & schmidt numbers for every particle
     double Sc_[atom->nlocal];
     double Sh_[atom->nlocal];
 
@@ -756,8 +756,7 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
         fprintf(screen, "Schmidt number: %f \n",Sc_[i]);
         fprintf(screen, "Sherwood number: %f \n",Sh_[i]);
         fprintf(screen, "masst: %f \n",masst_[i]);
-    } */
-   masst_[i] = 1.0;
+    }
 }
 /* ---------------------------------------------------------------------- */
 
