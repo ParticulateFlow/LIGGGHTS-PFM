@@ -83,17 +83,17 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     nu_C_ = 1;
     pmass_ = NULL;
     rmin = 0.;
-    rdefault = 0.;
-    minMolarFrac = 1e-4;
-    hertzpct = 0.;
+ //   rdefault = 0.;
+    minMolarFrac = 1e-3;
+//    hertzpct = 0.;
     spcA = 0;
     spcC = 0;
-    Yeff_ = NULL;
+//    Yeff_ = NULL;
     int n = 16;
     char cha[30];
 
     bool hasargs = true;
-    rdef = false;
+//    rdef = false;
 
     if (narg < 16)
         error -> all (FLERR,"not enough arguments");
@@ -202,7 +202,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
                 error -> fix_error(FLERR, this, "rmin is not defined");
             iarg_+=2;
             hasargs = true;
-        }else if (strcmp(arg[iarg_],"rdef") == 0)
+ /*       }else if (strcmp(arg[iarg_],"rdef") == 0)
         {
             if (screen)
                 fprintf(screen, "rmin is not given, default radius value is used! \n");
@@ -211,7 +211,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (hertzpct == 0)
                 error -> fix_error(FLERR, this, "hertzpct can not be 0");
             iarg_+=3;
-            hasargs = true;
+ */           hasargs = true;
         }else if (strcmp(arg[iarg_],"nevery") == 0)
         {
             nevery = atoi(arg[iarg_+1]);
@@ -358,7 +358,15 @@ void FixChemShrink::reaction()
                 changeOfC_[i]       +=  dC;
 
                 // Mass of single particle
-                pmass_[i]           +=  dB;
+		// never remove more than half the particle's mass at once
+                if(-dB > 0.5*pmass_[i])
+                {
+                     pmass_[i] *= 0.5; 
+                }
+                else
+                {
+                    pmass_[i] += dB;
+                }
 
 
                 // change of radius of particle -assumption: density of particle is constant
@@ -412,7 +420,7 @@ void FixChemShrink::init()
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
 
-    if (rdef)
+ /*   if (rdef)
     {
         PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
         if(!pair_gran)
@@ -425,7 +433,7 @@ void FixChemShrink::init()
         force->registry.registerProperty("Yeff_", &MODEL_PARAMS::createYeff);
         force->registry.connect("Yeff_", Yeff_,this->style);
     }
-
+*/
     updatePtrs();
 }
 
@@ -448,11 +456,11 @@ void FixChemShrink::post_force(int)
         return;
     }
 
-    if (rdef)   default_radius();
+ //   if (rdef)   default_radius();
 
     // allocate and initialize deletion list and shrink list
-    memory->create(dlist,nlocal,"delete_atoms:dlist");
-    for (i = 0; i < nlocal; i++) dlist[i] = 0;
+ //   memory->create(dlist,nlocal,"delete_atoms:dlist");
+ //   for (i = 0; i < nlocal; i++) dlist[i] = 0;
 
     reaction();
 
@@ -479,7 +487,7 @@ void FixChemShrink::post_force(int)
 }
 
 /* ---------------------------------------------------------------------- */
-
+/*
 void FixChemShrink::delete_atoms()
 {
    int nlocal = atom->nlocal;
@@ -496,10 +504,10 @@ void FixChemShrink::delete_atoms()
 
       atom->nlocal = nlocal;
 }
-
+*/
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrink::default_radius()
+/*void FixChemShrink::default_radius()
 {
     int nlocal  = atom->nlocal;
     double **v  = atom -> v;
@@ -560,3 +568,4 @@ void FixChemShrink::default_radius()
     MPI_Max_Scalar(rdefault,world);
     rmin = rdefault;
 }
+*/
