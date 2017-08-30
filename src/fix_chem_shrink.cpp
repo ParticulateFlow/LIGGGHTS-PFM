@@ -59,8 +59,8 @@ using namespace FixConst;
 FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg)
 {
-    if (strncmp(style,"chem/shrink",16) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
-            error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
+    if ((strncmp(style,"chem/shrink",11) == 0) && (!atom->radius_flag||!atom->rmass_flag))
+            error -> all (FLERR,"Fix chem/shrink needs per particle radius and mass");
 
     // defaults
     fix_moleFractionA_  =   NULL;

@@ -71,8 +71,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_pore_diameter_(0),   //[m]
     fix_molefraction_(0)
 {
-    if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
-        error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
+    if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
+        error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
     // defaults
     fix_changeOfA_      =   NULL;
