@@ -1033,7 +1033,7 @@ double FixChemShrinkCore::K_eq(int layer, double T)
     // ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
     // for the reactions under consideration, this should not be the case (double-check !!!)
     // 0 = wustite, 1 = mangetite, 2 = hematite;
-    double Keq_;
+    double Keq_ = 0.;
     if(strcmp(speciesA,"CO")==0)
      {
          if (layer == 0)
