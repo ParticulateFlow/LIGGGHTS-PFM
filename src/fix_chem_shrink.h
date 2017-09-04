@@ -104,8 +104,6 @@ public:
   double TimeStep;
   int current_timestep;
   virtual double reactionRatConst(int);
-
-
 };
 
 }
