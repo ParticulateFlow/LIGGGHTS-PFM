@@ -50,7 +50,6 @@ public:
   int setmask();
   virtual void init();
   virtual void post_force(int);
- // void default_radius();
 
  protected:
   int screenflag_;
@@ -74,15 +73,12 @@ public:
 
   double *nuf_;
   double *Rep_;
-
-
   int iarg_;
 
   // values from user
   double k0;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
   int nu_A_, nu_B_, nu_C_;                          // stoichiometric coefficients
-//  double hertzpct;
 
   // particle properties
   double *radius_;                                  // radius of particle
@@ -91,17 +87,12 @@ public:
 
   // minimum radius value -rmin input from user
   double rmin;
- // double rdefault;
- // double radius_origin;
- // bool rdef;
   double minMolarFrac;
 
   // pointer updaters
   double *changeOfA_;
   double *changeOfC_;
   double *rhogas_;
-  //double *concA_;
-  //double *concC_;
   double *tgas_;
   double *molarConc_;
 
@@ -112,15 +103,6 @@ public:
   // TimeStep
   double TimeStep;
   int current_timestep;
-
-  // delete atoms lsit & shrink list
- // int *dlist;
-
-  // get values for default radius minimum
- // double vmax_;
- // double **Yeff_;
- // const double *Y, *nu;
-  
   virtual double reactionRatConst(int);
 
 

@@ -83,17 +83,13 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     nu_C_ = 1;
     pmass_ = NULL;
     rmin = 0.;
- //   rdefault = 0.;
     minMolarFrac = 1e-3;
-//    hertzpct = 0.;
     spcA = 0;
     spcC = 0;
-//    Yeff_ = NULL;
     int n = 16;
     char cha[30];
 
     bool hasargs = true;
-//    rdef = false;
 
     if (narg < 16)
         error -> all (FLERR,"not enough arguments");
@@ -202,16 +198,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
                 error -> fix_error(FLERR, this, "rmin is not defined");
             iarg_+=2;
             hasargs = true;
- /*       }else if (strcmp(arg[iarg_],"rdef") == 0)
-        {
-            if (screen)
-                fprintf(screen, "rmin is not given, default radius value is used! \n");
-            rdef = true;
-            hertzpct = atof(arg[iarg_+1]);
-            if (hertzpct == 0)
-                error -> fix_error(FLERR, this, "hertzpct can not be 0");
-            iarg_+=3;
- */           hasargs = true;
         }else if (strcmp(arg[iarg_],"nevery") == 0)
         {
             nevery = atoi(arg[iarg_+1]);
@@ -314,75 +300,77 @@ void FixChemShrink::updatePtrs()
 
 void FixChemShrink::reaction()
 {
-        updatePtrs();
-        int nlocal  =   atom -> nlocal;
-        double molarConc;
+    updatePtrs();
+    int nlocal  =   atom -> nlocal;
+    double molarConc;
 	double molarFrac;
 
-        for (int i = 0 ; i < nlocal; i++)
+    for (int i = 0 ; i < nlocal; i++)
+    {
+        if(radius_[i] > rmin)
         {
-            if(radius_[i] > rmin)
+            if (screenflag_ && screen)
             {
-                if (screenflag_ && screen)
-                {
-                    fprintf(screen,"check TimeStep %f \n",TimeStep);
-                    fprintf(screen,"check current timestep %d \n", current_timestep);
-                }
+                fprintf(screen,"check TimeStep %f \n",TimeStep);
+                fprintf(screen,"check current timestep %d \n", current_timestep);
+            }
 
-                // Current time step concentration change of reactant A and product C
-                double dA   =   0.0;
-                molarConc = molarConc_[i];
-		molarFrac = xA_[i];
-		if(molarFrac < minMolarFrac)
-		{
-		    continue;
-		}
-                double k = reactionRatConst(i);
-                if(nu_A_ < 2)
-                {
-                    dA  =   -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
-                }
-                else
-                {
-                    dA   =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
-                }
+            // Current time step concentration change of reactant A and product C
+            double dA   =   0.0;
+            molarConc = molarConc_[i];
+            molarFrac = xA_[i];
 
-                double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
-                // mass removed from particle
-                double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
+            if(molarFrac < minMolarFrac)
+            {
+                continue;
+            }
 
-                // total rate of change for species A
-                changeOfA_[i]       +=  dA;
+            double k = reactionRatConst(i);
 
-                // total rate of change for species C
-                changeOfC_[i]       +=  dC;
+            if(nu_A_ < 2)
+            {
+                dA  =   -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
+            }
+            else
+            {
+                dA   =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+            }
 
-                // Mass of single particle
-		// never remove more than half the particle's mass at once
-                if(-dB > 0.5*pmass_[i])
-                {
-                     pmass_[i] *= 0.5; 
-                }
-                else
-                {
-                    pmass_[i] += dB;
-                }
+            double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
+            // mass removed from particle
+            double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
 
+            // total rate of change for species A
+            changeOfA_[i]       +=  dA;
 
-                // change of radius of particle -assumption: density of particle is constant
-                radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+            // total rate of change for species C
+            changeOfC_[i]       +=  dC;
 
-                // uncomment if postproc (verification)
-                if (screenflag_ && screen)
-                {
-                    fprintf(screen,"%s Mass %f \n",speciesC,changeOfC_[i]);
-                    fprintf(screen,"%s Mass %f \n",speciesA,changeOfA_[i]);
-                    fprintf(screen,"Particle Mass %f \n",pmass_[i]);
-                    fprintf(screen,"Gas Density %f \n",rhogas_[i]);
-                    fprintf(screen,"total number of moles in chem/shrink: %f \n",molarConc_[i]);
-                }
+            // Mass of single particle
+            // never remove more than half the particle's mass at once
+            if(-dB > 0.5*pmass_[i])
+            {
+                pmass_[i] *= 0.5;
+            }
+            else
+            {
+                pmass_[i] += dB;
+            }
+
+            // change of radius of particle -assumption: density of particle is constant
+            radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+
+            // uncomment if postproc (verification)
+            if (screenflag_ && screen)
+            {
+                fprintf(screen,"%s Mass %f \n",speciesC,changeOfC_[i]);
+                fprintf(screen,"%s Mass %f \n",speciesA,changeOfA_[i]);
+                fprintf(screen,"Particle Mass %f \n",pmass_[i]);
+                fprintf(screen,"Gas Density %f \n",rhogas_[i]);
+                fprintf(screen,"total number of moles in chem/shrink: %f \n",molarConc_[i]);
             }
         }
+    }
 }
 
 double FixChemShrink::reactionRatConst(int i)
@@ -420,20 +408,6 @@ void FixChemShrink::init()
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
 
- /*   if (rdef)
-    {
-        PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
-        if(!pair_gran)
-            error->fix_error(FLERR,this,"'area_correction' requires using a granular pair style");
-        int max_type = pair_gran->get_properties()->max_type();
-
-        Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
-        nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
-
-        force->registry.registerProperty("Yeff_", &MODEL_PARAMS::createYeff);
-        force->registry.connect("Yeff_", Yeff_,this->style);
-    }
-*/
     updatePtrs();
 }
 
@@ -456,73 +430,5 @@ void FixChemShrink::post_force(int)
         return;
     }
 
- //   if (rdef)   default_radius();
-
     reaction();
-
 }
-
-/* ---------------------------------------------------------------------- */
-
-/*void FixChemShrink::default_radius()
-{
-    int nlocal  = atom->nlocal;
-    double **v  = atom -> v;
-    double vmag;
-    int *mask   = atom -> mask;
-    int *type   = atom -> type;
-
-    double m_;
-    double denom;
-    double numer;
-
-    vmax_ = 0;
-
-    for (int i = 0; i < nlocal; i++)
-    {
-        if (mask[i] & groupbit)
-        {
-            vmag = sqrt(v[i][0]*v[i][0]+v[i][1]*v[i][1]+v[i][2]*v[i][2]);
-            if(vmag > vmax_) vmax_=vmag;
-        }
-    }
-
-    MPI_Max_Scalar(vmax_,world);
-    vmax_ = (2.*vmax_);
-
-    if (screenflag_ && screen)
-    {
-        fprintf(screen,"vmax value is: %f \n", vmax_);
-    }
-
-    PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
-    int max_type = pair_gran->get_properties()->max_type();
-
-    for (int a = 1; a < max_type + 1; a++)
-    {
-        for (int b = a; b < max_type + 1; b++)
-        {
-            const double Eeff = Yeff_[a][b];
-
-            for (int i = 0; i < nlocal; i++)
-            {
-                if (mask[i] & groupbit)
-                {
-                    if (type[i]!=a || type[i]!=b) continue;
-                    // Hertzain time step can be calculated with
-                    // 2.87 * radius *( m / (Y*vmax))^0.2
-                    // here it is considered that Hertzian ts is 20 percent of normal dt
-                    // with this the minimum radius is calculated
-                    m_ = 4 * M_PI / (3 * pdensity_[i]);
-                    denom = Eeff*Eeff*vmax_;
-                    numer = 2*m_*m_;
-                    rdefault = (hertzpct / 2.87)  * TimeStep * pow(numer/denom,-0.2);
-                }
-            }
-        }
-    }
-
-    MPI_Max_Scalar(rdefault,world);
-    rmin = rdefault;
-}
-*/
