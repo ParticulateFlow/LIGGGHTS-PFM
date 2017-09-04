@@ -15,8 +15,8 @@
    Contributing authors: Chris Lorenz and Mark Stevens (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "bond_quartic.h"
 #include "atom.h"
 #include "neighbor.h"

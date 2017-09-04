@@ -12,9 +12,9 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <stdlib.h>
+#include <string.h>
 #include "irregular.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -233,7 +233,7 @@ int Irregular::migrate_check()
       }
       if (igz != myloc[2] && igz != glo && igz != ghi) flag = 1;
 
-      /*NL*/ //if(1 == flag)fprintf(screen,"proc %d particle id %d at pos %f %f %f, sublo/hi %f %f newproc %d\n",
+      /*NL*/ //if(1 == flag && screen)fprintf(screen,"proc %d particle id %d at pos %f %f %f, sublo/hi %f %f newproc %d\n",
       /*NL*/ //              comm->me,atom->tag[i],x[i][0],x[i][1],x[i][2],domain->sublo[2],domain->subhi[2],newproc);
       /*NL*/ //if(1 == flag) error->one(FLERR,"end");
     }

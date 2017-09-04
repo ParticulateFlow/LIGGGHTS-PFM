@@ -62,7 +62,7 @@ namespace MODEL_PARAMS
      {
        const double hMaxEff= hCutEff[i][j]*100; // force f(hMax)/f(hCut) = 0.0001
        matrix->data[i][j] = hMaxEff;
-       maxhMaxEff = max(maxhMaxEff,hMaxEff); // get maximum hMaxEff for skin check
+       maxhMaxEff = std::max(maxhMaxEff,hMaxEff); // get maximum hMaxEff for skin check
      }
    }
 
@@ -78,7 +78,6 @@ namespace MODEL_PARAMS
 
 namespace LIGGGHTS {
 namespace ContactModels {
-  using namespace std;
   using namespace LAMMPS_NS;
 
   template<>

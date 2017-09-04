@@ -25,12 +25,7 @@
 #define LMP_LBALANCE_H
 
 #include "neighbor.h"
-#include "string.h"
-
-#define BIG   1.0e20
-#define SMALL 1.0e-4
-#define DELTA 1
-#define FABS(a) ((a) > 0 ? (a) : (-a))
+#include <string.h>
 
 namespace LAMMPS_NS {
 

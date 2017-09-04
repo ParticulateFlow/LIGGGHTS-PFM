@@ -76,7 +76,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_fracRed(0)
 {
     if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
-        error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
+        error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
     // defaults
     fix_changeOfA_      =   NULL;
@@ -710,7 +710,6 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     if (screenflag_ && screen)
         fprintf(screen,"eff. diff: %f \n",diffEff_[i]);
-    // diffEff_[i] = 1.0;
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
@@ -983,7 +982,6 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     {
         radLayer_[j]   =   pow((0.75*massLayer_[i][j]/(M_PI*layerDensities_[j])+radLayer_[j+1]*radLayer_[j+1]*radLayer_[j+1]),THIRD);
     }
-    // TODO: if only hematite layer exists this might cause errors.
     radius_[i] = radLayer_[0];
     
     //detemine the new relative layer radii
@@ -1045,7 +1043,7 @@ double FixChemShrinkCore::K_eq(int layer, double T)
     // ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
     // for the reactions under consideration, this should not be the case (double-check !!!)
     // 0 = wustite, 1 = mangetite, 2 = hematite;
-    double Keq_;
+    double Keq_ = 0.;
     if(strcmp(speciesA,"CO")==0)
      {
          if (layer == 0)

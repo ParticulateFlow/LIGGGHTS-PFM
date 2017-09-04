@@ -11,10 +11,10 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
+#include <mpi.h>
 #include "lammps.h"
 #include "input.h"
-#include "string.h"
+#include <string.h>
 
 using namespace LAMMPS_NS;
 
@@ -24,7 +24,12 @@ using namespace LAMMPS_NS;
 
 int main(int argc, char **argv)
 {
+#if defined(_OPENMP)
+  int provided = 0;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+#else
   MPI_Init(&argc,&argv);
+#endif
 
   LAMMPS *lammps = new LAMMPS(argc,argv,MPI_COMM_WORLD);
   lammps->input->file();

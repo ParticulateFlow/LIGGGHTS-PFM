@@ -12,11 +12,11 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "velocity.h"
 #include "atom.h"
 #include "update.h"

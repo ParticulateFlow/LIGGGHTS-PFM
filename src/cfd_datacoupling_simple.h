@@ -33,7 +33,7 @@ class CfdDatacouplingSimple : public CfdDatacoupling {
     : CfdDatacoupling(lmp,jarg,narg,arg,NULL) {}
 
   virtual ~CfdDatacouplingSimple() {}
-  void exchange() {};
+  void exchange() {}
 
   void* find_pull_property(const char *name, const char *type, int &len1, int &len2)
   { return CfdDatacoupling::find_pull_property(name,type,len1,len2); }

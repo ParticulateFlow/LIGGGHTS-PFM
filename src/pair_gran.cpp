@@ -25,10 +25,10 @@
    Contributing authors for original version: Leo Silbert (SNL), Gary Grest (SNL)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "atom_vec.h"
 #include "domain.h"
@@ -254,7 +254,7 @@ void PairGran::init_style()
   {
       fix_dnum[ifix] = modify->fix[ifix];
       dnum_index[ifix] = dnum_pairgran + dnum_extra;
-      /*NL*/ //fprintf(screen,"fix %s: dnum_index %d\n",fix_dnum[ifix]->id,dnum_index[ifix]);
+      /*NL*/ //if (screen) fprintf(screen,"fix %s: dnum_index %d\n",fix_dnum[ifix]->id,dnum_index[ifix]);
       dnum_extra += fix_dnum[ifix]->n_history_extra();
   }
 
@@ -397,7 +397,7 @@ void PairGran::init_style()
     if(force->newton_pair == 1) error->all(FLERR,"Have to implement rev comm of energy terms");
   }
 
-  // register per-particle properties for energy tracking
+  // register per-particle properties for contact force tracking
   if(store_contact_forces_ && 0 == fix_contact_forces_)
   {
     char **fixarg = new char*[17];
@@ -412,7 +412,7 @@ void PairGran::init_style()
     fixarg[8]=(char *) "0";
     fixarg[9]=(char *) "fz";
     fixarg[10]=(char *) "0";
-    fixarg[11]=(char *) "ty";
+    fixarg[11]=(char *) "tx";
     fixarg[12]=(char *) "0";
     fixarg[13]=(char *) "ty";
     fixarg[14]=(char *) "0";
@@ -484,7 +484,7 @@ void PairGran::init_style()
   MPI_Allreduce(&onerad_dynamic[1],&maxrad_dynamic[1],atom->ntypes,MPI_DOUBLE,MPI_MAX,world);
   MPI_Allreduce(&onerad_frozen[1],&maxrad_frozen[1],atom->ntypes,MPI_DOUBLE,MPI_MAX,world);
 
-  /*NL*/ //fprintf(screen,"maxrad for type 1 %f\n",maxrad_dynamic[1]);
+  /*NL*/ //if (screen) fprintf(screen,"maxrad for type 1 %f\n",maxrad_dynamic[1]);
 
   //NP derived classes do their inits here
   init_granular();
@@ -529,7 +529,7 @@ int PairGran::fix_extra_dnum_index(class Fix *fix)
 
 void PairGran::init_list(int id, NeighList *ptr)
 {
-  /*NL*/ //fprintf(screen,"init_list called\n");
+  /*NL*/ //if (screen) fprintf(screen,"init_list called\n");
   if (id == 0) list = ptr;
   else if (id == 1) listgranhistory = ptr;
 }
@@ -627,6 +627,14 @@ void PairGran::compute_pgl(int eflag, int vflag)
   //NP else contact history does not know if shear hist has been updated before
   if(reset_computeflag)
     computeflag_ = 1;
+}
+
+/* ----------------------------------------------------------------------
+   compute as called via fix break particle
+------------------------------------------------------------------------- */
+void PairGran::compute_single_pair(LCM::CollisionData &cdata, LCM::ForceData &i_forces, LCM::ForceData &j_forces)
+{
+  compute_single_pair_force(cdata, i_forces, j_forces);
 }
 
 /* ---------------------------------------------------------------------- */

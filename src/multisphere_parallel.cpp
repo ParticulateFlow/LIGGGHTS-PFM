@@ -110,8 +110,8 @@ void MultisphereParallel::exchange()
 
   // loop over dimensions
 
-  /*NL*/// fprintf(screen,"step %d: proc %d has %d bodies pre exchange\n",update->ntimestep,comm->me,nbody_);
-  /*NL*/// if(nbody) fprintf(screen,"step %d: proc %d body 0: xcv %f vcm %f\n",update->ntimestep,comm->me,xcm[0][2],vcm[0][2]);
+  /*NL*/// if(screen) fprintf(screen,"step %d: proc %d has %d bodies pre exchange\n",update->ntimestep,comm->me,nbody_);
+  /*NL*/// if(screen && nbody) fprintf(screen,"step %d: proc %d body 0: xcv %f vcm %f\n",update->ntimestep,comm->me,xcm[0][2],vcm[0][2]);
 
   for (int dim = 0; dim < 3; dim++) {
 
@@ -127,19 +127,19 @@ void MultisphereParallel::exchange()
           MathExtraLiggghts::local_coosys_to_cartesian(x,xcm_to_xbound_(i),ex_space_(i),ey_space_(i),ez_space_(i));
           vectorAdd3D(xcm_(i),x,x);
 
-          /*NL*///fprintf(screen,"step %d proc %d x %f %f %f, lo %f, hi %f\n",update->ntimestep,comm->me,x[0],x[1],x[2],lo,hi);
+          /*NL*///if (screen) fprintf(screen,"step %d proc %d x %f %f %f, lo %f, hi %f\n",update->ntimestep,comm->me,x[0],x[1],x[2],lo,hi);
 
           if (x[dim] < lo || x[dim] >= hi)
           {
             if (nsend > maxsend_)
                 grow_send(nsend,1);
             nsend += pack_exchange_rigid(i,&buf_send_[nsend]);
-            /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
+            /*NL*/// if(screen) fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
-            /*NL*/// if(60  == id_(i)) fprintf(screen,"removing body id %d: x %f xcm %f dim %d\n",
+            /*NL*/// if(60  == id_(i) && screen) fprintf(screen,"removing body id %d: x %f xcm %f dim %d\n",
             /*NL*///                  id_(i),x[dim],xcm_(i)[dim],dim);
             remove_body(i);
-            /*NL*/// fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
+            /*NL*/// if(screen) fprintf(screen,"lengths: xcm %d, vcm %d fcm %d id %d nbody_ %d\n",
             /*NL*///                  xcm_.size(),vcm_.size(),fcm_.size(),id_.size(),nbody_);
           }
           else i++;
@@ -193,14 +193,14 @@ void MultisphereParallel::exchange()
 
     while (m < nrecv) {
       value = buf[m+dim+1];
-      /*NL*///fprintf(screen,"value %f, lo %f hi %f\n",value,lo,hi);
+      /*NL*///if (screen) fprintf(screen,"value %f, lo %f hi %f\n",value,lo,hi);
       //NP unpack data if body in my subbox,  also adds the body
       if (value >= lo && value < hi) m += unpack_exchange_rigid(&buf[m]);
       else m += static_cast<int> (buf[m]);
     }
   }
 
-  /*NL*/ //fprintf(screen,"step %d: proc %d has %d bodies post exchange\n",update->ntimestep,comm->me,nbody_);
+  /*NL*/ //if (screen) fprintf(screen,"step %d: proc %d has %d bodies post exchange\n",update->ntimestep,comm->me,nbody_);
 }
 
 /* ----------------------------------------------------------------------
@@ -219,8 +219,8 @@ void MultisphereParallel::writeRestart(FILE *fp)
     int sizeLocal = n_body() * (customValues_.elemBufSize(OPERATION_RESTART,dummy,dummy,dummy) + 4);
     int sizeGlobal = 0, sizeOne = 0;
 
-    /*NL*/ //fprintf(screen,"nba %f\n",nba);
-    /*NL*/ //fprintf(screen,"sizeLocal %d\n",sizeLocal);
+    /*NL*/ //if (screen) fprintf(screen,"nba %f\n",nba);
+    /*NL*/ //if (screen) fprintf(screen,"sizeLocal %d\n",sizeLocal);
 
     // allocate send buffer and pack element data
     // all local elements are in list
@@ -236,11 +236,11 @@ void MultisphereParallel::writeRestart(FILE *fp)
         sendbuf[sizeLocal+1] = xbnd[0];
         sendbuf[sizeLocal+2] = xbnd[1];
         sendbuf[sizeLocal+3] = xbnd[2];
-        /*NL*/// fprintf(screen,"sendbuf[%d] = %d\n",sizeLocal,sizeOne+4);
+        /*NL*/// if (screen) fprintf(screen,"sendbuf[%d] = %d\n",sizeLocal,sizeOne+4);
         sizeLocal += (sizeOne+4);
     }
 
-    /*NL*/ //fprintf(screen,"sizeLocal %d\n",sizeLocal);
+    /*NL*/ //if (screen) fprintf(screen,"sizeLocal %d\n",sizeLocal);
 
     // gather the per-element data
     //NP send from all to proc 0
@@ -248,13 +248,13 @@ void MultisphereParallel::writeRestart(FILE *fp)
     sizeGlobal = MPI_Gather0_Vector(sendbuf,sizeLocal,recvbuf,world);
 
 
-    /*NL*/ //fprintf(screen,"id index %d, xcm index %d\n",customValues_.getElementPropertyIndex("id"),customValues_.getElementPropertyIndex("xcm"));
-    /*NL*/ //printVecN(screen,"recvbuf",recvbuf,1248);
+    /*NL*/ //if (screen) fprintf(screen,"id index %d, xcm index %d\n",customValues_.getElementPropertyIndex("id"),customValues_.getElementPropertyIndex("xcm"));
+    /*NL*/ //if (screen) printVecN(screen,"recvbuf",recvbuf,1248);
 
     // write data to file
     if(comm->me == 0)
     {
-        /*NL*/ //fprintf(screen,"sizeGlobal %d\n",sizeGlobal);
+        /*NL*/ //if (screen) fprintf(screen,"sizeGlobal %d\n",sizeGlobal);
 
         // size with 1 extra value (nba)
         int size = (1+sizeGlobal) * sizeof(double);
@@ -291,16 +291,16 @@ void MultisphereParallel::restart(double *list)
 
     nbody_ = nbody_all_ = 0;
 
-    /*NL*/ //printVecN(screen,"list",list,1248);
+    /*NL*/ //if (screen) printVecN(screen,"list",list,1248);
 
     for(int i = 0; i < nbody_all_old; i++)
     {
         nrecv_this = static_cast<int>(list[m]);
-        /*NL*///fprintf(screen,"nrecv_this %d\n",nrecv_this);
+        /*NL*///if (screen) fprintf(screen,"nrecv_this %d\n",nrecv_this);
 
         //NP xcm is first in buffer
         double *x_bnd = &(list[m+1]);
-        /*NL*/ //printVec3D(screen,"pos",pos);
+        /*NL*/ //if (screen) printVec3D(screen,"pos",pos);
         if(domain->is_in_subdomain(x_bnd))
         {
             //NP addZero() creates all properties
@@ -322,5 +322,5 @@ void MultisphereParallel::restart(double *list)
     generate_map();
     reset_forces(true);
 
-    /*NL*/ //fprintf(screen,"BLABLA nbody_ %d nbody_all %d nbody_all_old %d\n",nbody_,nbody_all_,nbody_all_old);
+    /*NL*/ //if (screen) fprintf(screen,"BLABLA nbody_ %d nbody_all %d nbody_all_old %d\n",nbody_,nbody_all_,nbody_all_old);
 }

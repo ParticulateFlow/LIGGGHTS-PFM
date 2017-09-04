@@ -12,8 +12,8 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include "rerun.h"
 #include "read_dump.h"
 #include "domain.h"

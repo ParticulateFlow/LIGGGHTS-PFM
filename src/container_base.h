@@ -28,7 +28,7 @@
 #ifndef LMP_CONTAINER_BASE_H
 #define LMP_CONTAINER_BASE_H
 
-#include "string.h"
+#include <string.h>
 
 namespace LAMMPS_NS
 {
@@ -62,9 +62,10 @@ namespace LAMMPS_NS
 
           virtual void addZero() = 0;
           virtual void addUninitialized(int n) = 0;
-          virtual int size() = 0;
-          virtual int nVec() = 0;
-          virtual int lenVec() = 0;
+          virtual int size() const = 0;
+          virtual int capacity() const = 0;
+          virtual int nVec() const = 0;
+          virtual int lenVec() const = 0;
           virtual void* begin_slow_dirty() = 0;
 
           virtual void copy(int from,int to) = 0;
@@ -89,7 +90,7 @@ namespace LAMMPS_NS
           // buffer functions for parallelization
 
           virtual int bufSize(int operation = OPERATION_UNDEFINED,
-                            bool scale=false,bool translate=false, bool rotate=false) = 0;
+                            bool scale=false,bool translate=false, bool rotate=false) const = 0;
           virtual int popFromBuffer(double *buf,int operation,
                             bool scale=false,bool translate=false, bool rotate=false) = 0;
           virtual int pushToBuffer(double *buf,int operation,
@@ -118,18 +119,18 @@ namespace LAMMPS_NS
           ContainerBase(const char *_id, const char* _comm, const char* _ref, const char *_restart,int _scalePower);
           ContainerBase(ContainerBase const &orig);
 
-          inline bool isScaleInvariant();
-          inline bool isTranslationInvariant();
-          inline bool isRotationInvariant();
+          inline bool isScaleInvariant() const;
+          inline bool isTranslationInvariant() const;
+          inline bool isRotationInvariant() const;
 
           //NP decide on wheater at all an operation is performed here
-          inline bool decidePackUnpackOperation(int operation,bool scale,bool translate, bool rotate);
+          inline bool decidePackUnpackOperation(int operation,bool scale,bool translate, bool rotate) const;
 
           //NP decide if operation performs data communication
-          inline bool decideCommOperation(int operation);
+          inline bool decideCommOperation(int operation) const;
 
           //NP decide if unpack creates new element or overwrites existing data
-          inline bool decideCreateNewElements(int operation);
+          inline bool decideCreateNewElements(int operation) const;
 
 
           char *id_;

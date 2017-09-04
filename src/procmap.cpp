@@ -276,7 +276,7 @@ void ProcMap::custom_grid(char *cfile, int nprocs,
                           int *user_procgrid, int *procgrid)
 {
   FILE *fp = NULL;
-  char line[MAXLINE];
+  char line[MAXLINE]={};
 
   int me;
   MPI_Comm_rank(world,&me);

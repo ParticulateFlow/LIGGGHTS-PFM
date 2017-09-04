@@ -21,10 +21,10 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "set.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -755,7 +755,7 @@ void Set::set(int keyword)
         }
         if(varflag)
         {
-            /*NL*/ //fprintf(screen,"dvalue %f\n");
+            /*NL*/ //if (screen) fprintf(screen,"dvalue %f\n");
             if (updFix->data_style)
             {
                 updFix->array_atom[i][0] = xvalue;

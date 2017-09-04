@@ -28,8 +28,9 @@ class FixGravityOMP : public FixGravity {
 
  public:
   FixGravityOMP(class LAMMPS *, int, char **);
+
+  virtual int setmask();
   virtual void post_force(int);
-  virtual void post_force_respa(int, int, int);
 };
 
 }

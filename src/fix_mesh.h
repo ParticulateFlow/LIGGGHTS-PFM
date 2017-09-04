@@ -63,8 +63,8 @@ namespace LAMMPS_NS
 
         void box_extent(double &xlo,double &xhi,double &ylo,double &yhi,double &zlo,double &zhi);
 
-        int min_type();
-        int max_type();
+        int min_type() const;
+        int max_type() const;
 
         class AbstractMesh* mesh()
         { return mesh_; }
@@ -94,6 +94,8 @@ namespace LAMMPS_NS
 
       private:
 
+        void handle_exclusion_list();
+
         void initialSetup();
 
         // mesh object
@@ -113,6 +115,12 @@ namespace LAMMPS_NS
 
         // mesh precision
         double precision_;
+
+        // mesh correction
+        FILE *element_exclusion_list_;
+        bool read_exclusion_list_;
+        int *exclusion_list_;
+        int size_exclusion_list_;
   };
 
 } /* namespace LAMMPS_NS */

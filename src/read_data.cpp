@@ -22,11 +22,11 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "math.h"
-#include "string.h"
-#include "stdlib.h"
-#include "ctype.h"
+#include <mpi.h>
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include "read_data.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -133,7 +133,7 @@ void ReadData::command(int narg, char **arg)
   fix_header = NULL;
   fix_section = NULL;
 
-  /*NL*/ if(DEBUG_READ_DATA) fprintf(screen,"READ_DATA 0\n");
+  /*NL*/ if(DEBUG_READ_DATA && screen) fprintf(screen,"READ_DATA 0\n");
 
   int iarg = 1;
   while (iarg < narg) {
@@ -169,7 +169,7 @@ void ReadData::command(int narg, char **arg)
     }
   }
 
-  /*NL*/ if(DEBUG_READ_DATA) fprintf(screen,"READ_DATA 1\n");
+  /*NL*/ if(DEBUG_READ_DATA && screen) fprintf(screen,"READ_DATA 1\n");
 
   // scan data file to determine max topology needed per atom
   // allocate initial topology arrays
@@ -195,7 +195,7 @@ void ReadData::command(int narg, char **arg)
     atom->bond_per_atom = atom->angle_per_atom =
       atom->dihedral_per_atom = atom->improper_per_atom = 0;
 
-  /*NL*/ if(DEBUG_READ_DATA) fprintf(screen,"READ_DATA 2\n");
+  /*NL*/ if(DEBUG_READ_DATA && screen) fprintf(screen,"READ_DATA 2\n");
 
   // read header info
 
@@ -222,7 +222,7 @@ void ReadData::command(int narg, char **arg)
   if (!domain->box_exist) domain->box_exist = 1; //NP modified C.K.
   // problem setup using info from header
 
-  /*NL*/ if(DEBUG_READ_DATA) fprintf(screen,"READ_DATA 3\n");
+  /*NL*/ if(DEBUG_READ_DATA && screen) fprintf(screen,"READ_DATA 3\n");
 
   int n;
 
@@ -244,7 +244,7 @@ void ReadData::command(int narg, char **arg)
       domain->set_local_box();
   }
 
-  /*NL*/ if(DEBUG_READ_DATA) fprintf(screen,"READ_DATA 4\n");
+  /*NL*/ if(DEBUG_READ_DATA && screen) fprintf(screen,"READ_DATA 4\n");
 
   // customize for new sections
   // read rest of file in free format
@@ -416,7 +416,7 @@ void ReadData::command(int narg, char **arg)
     parse_keyword(0,1);
   }
 
-  /*NL*/ if(DEBUG_READ_DATA) fprintf(screen,"READ_DATA 5\n");
+  /*NL*/ if(DEBUG_READ_DATA && screen) fprintf(screen,"READ_DATA 5\n");
 
   // close file
 
@@ -577,7 +577,7 @@ void ReadData::header(int flag, int add) //NP modified C.K.
         {
             sscanf(line,BIGINT_FORMAT,&natoms_add);
             if(add == 1) atom->natoms += natoms_add;
-            /*NL*///fprintf(screen,"proc %d natoms_add " BIGINT_FORMAT ", atom->natoms " BIGINT_FORMAT "\n",comm->me,natoms_add,atom->natoms);
+            /*NL*///if (screen) fprintf(screen,"proc %d natoms_add " BIGINT_FORMAT ", atom->natoms " BIGINT_FORMAT "\n",comm->me,natoms_add,atom->natoms);
             /*NL*///error->all("end");
         }
         else if (strstr(line,"atom types"))
@@ -716,7 +716,7 @@ void ReadData::atoms()
     {
         for (int j = 0; j < modify->nfix; j++)
         {
-            /*NL*///fprintf(screen,"checking id %s\n",modify->fix[j]->id);
+            /*NL*///if (screen) fprintf(screen,"checking id %s\n",modify->fix[j]->id);
             if (modify->fix[j]->create_attribute)
                 modify->fix[j]->set_arrays(ii);
         }
@@ -783,7 +783,7 @@ void ReadData::atoms()
           for(int i = nlocal_old; i < nlocal; i++)
             if(atom->tag[i] <= tag_max_old)
             {
-                fprintf(screen,"for i= %d\n",i);
+                if (screen) fprintf(screen,"for i= %d\n",i);
                 error->one(FLERR,"Atom from data file uses atom tag that is already used by atom in the simulation");
             }
           atom->tag_extend();
@@ -1326,7 +1326,7 @@ void ReadData::scan(int &bond_per_atom, int &angle_per_atom,
       }
       if (i < nfix) continue;
     }
-     /*NL*/ //fprintf(screen,"keyword %s\n",keyword);
+     /*NL*/ //if (screen) fprintf(screen,"keyword %s\n",keyword);
     if (strcmp(keyword,"Masses") == 0) skip_lines(atom->ntypes);
     else if (strcmp(keyword,"Atoms") == 0) skip_lines(add_to_existing?natoms_add:natoms);  //NP modified C.K.
     else if (strcmp(keyword,"Velocities") == 0) skip_lines(add_to_existing?natoms_add:natoms); //NP modified C.K.

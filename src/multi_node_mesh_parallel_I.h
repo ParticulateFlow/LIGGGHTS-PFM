@@ -107,7 +107,7 @@
   template<int NUM_NODES>
   bool MultiNodeMeshParallel<NUM_NODES>::addElement(double **nodeToAdd)
   {
-    /*NL*/ //fprintf(this->screen,"MultiNodeMeshParallel<NUM_NODES>::addElement\n");
+    /*NL*/ //if (this->screen) fprintf(this->screen,"MultiNodeMeshParallel<NUM_NODES>::addElement\n");
 
     if(MultiNodeMesh<NUM_NODES>::addElement(nodeToAdd))
     {
@@ -161,11 +161,11 @@
 
       /*NL*///MPI_Barrier(this->world);
       /*NL*/// int ndel = 0, ni = nGhost_;
-      /*NL*/// fprintf(this->screen,"**mesh %s proc %d having %d ghosts\n",this->mesh_id_,this->comm->me,nGhost_);
+      /*NL*/// if (this->screen) fprintf(this->screen,"**mesh %s proc %d having %d ghosts\n",this->mesh_id_,this->comm->me,nGhost_);
 
       while(nGhost_ > 0)
       {
-          /*NL*/// if(ndel > ni-10)fprintf(this->screen,"proc %d deleting ghost # %d of %d (element %d)\n",this->comm->me,ndel,ni,nLocal_);
+          /*NL*/// if(ndel > ni-10 && this->screen)fprintf(this->screen,"proc %d deleting ghost # %d of %d (element %d)\n",this->comm->me,ndel,ni,nLocal_);
           /*NL*/// ndel++;
           deleteElement(nLocal_);
       }
@@ -206,7 +206,7 @@
     for(int i=0;i<sizeLocal();i++)
       for(int j=0;j<NUM_NODES;j++)
       {
-        /*NL*/ //printVec3D(screen,"node ",node_(i)[j]);
+        /*NL*/ //if (screen) printVec3D(screen,"node ",node_(i)[j]);
         if(!this->domain->is_in_domain(this->node_(i)[j]))
         {
             flag = 1;
@@ -273,8 +273,8 @@
        maxreverse_ = size_reverse_;
 
        /*NP
-       fprintf(this->screen,"size_forward_ %d\n",size_forward_);
-       fprintf(this->screen,"size_border_ %d\n",size_border_);
+       if (this->screen) fprintf(this->screen,"size_forward_ %d\n",size_forward_);
+       if (this->screen) fprintf(this->screen,"size_border_ %d\n",size_border_);
        this->error->all(FLERR,"check if this is reasonable");
        */
 
@@ -314,10 +314,10 @@
        MPI_Allgather(sublo,3,MPI_DOUBLE,&(sublo_all[0][0]),3,MPI_DOUBLE,this->world);
        MPI_Allgather(subhi,3,MPI_DOUBLE,&(subhi_all[0][0]),3,MPI_DOUBLE,this->world);
 
-       /*NL*///printVec3D(this->screen,"sublo",sublo);
-       /*NL*///printVec3D(this->screen,"sublo_all",sublo_all[me]);
-       /*NL*///printVec3D(this->screen,"subhi",subhi);
-       /*NL*///printVec3D(this->screen,"subhi_all",subhi_all[me]);
+       /*NL*///if (this->screen) printVec3D(this->screen,"sublo",sublo);
+       /*NL*///if (this->screen) printVec3D(this->screen,"sublo_all",sublo_all[me]);
+       /*NL*///if (this->screen) printVec3D(this->screen,"subhi",subhi);
+       /*NL*///if (this->screen) printVec3D(this->screen,"subhi_all",subhi_all[me]);
        /*NL*///this->error->all(FLERR,"check if this is the same");
 
 
@@ -392,14 +392,14 @@
        destroy(sublo_all);
        destroy(subhi_all);
 
-       /*NL*/// fprintf(this->screen,"proc %d: sendneed_[0]: %d %d  sendneed_[1]: %d %d  sendneed_[2]: %d %d   maxneed %d %d %d \n",
+       /*NL*/// if (this->screen) fprintf(this->screen,"proc %d: sendneed_[0]: %d %d  sendneed_[1]: %d %d  sendneed_[2]: %d %d   maxneed %d %d %d \n",
        /*NL*///            this->comm->me,sendneed_[0][0],sendneed_[0][1],sendneed_[1][0],sendneed_[1][1],sendneed_[2][0],sendneed_[2][1],
        /*NL*///            maxneed_[0],maxneed_[1],maxneed_[2]);
        /*NL*/// this->error->all(FLERR,"check if this is reasonable");
 
        /*NP
-       fprintf(this->screen,"cut_ghost %f\n",cut_ghost);
-       printVec3D(this->screen,"maxneed_",maxneed_);
+       if (this->screen) fprintf(this->screen,"cut_ghost %f\n",cut_ghost);
+       if (this->screen) printVec3D(this->screen,"maxneed_",maxneed_);
        this->error->all(FLERR,"check if this is reasonable");
        */
 
@@ -534,7 +534,7 @@
   void MultiNodeMeshParallel<NUM_NODES>::grow_send(int n, int flag)
   {
       maxsend_ = static_cast<int> (BUFFACTOR_MNMP * n);
-      /*NL*///fprintf(this->screen,"grow_send at proc %d with flag %d, maxsend_ %d\n",this->comm->me,flag,maxsend_);
+      /*NL*///if (this->screen) fprintf(this->screen,"grow_send at proc %d with flag %d, maxsend_ %d\n",this->comm->me,flag,maxsend_);
       if (flag)
         this->memory->grow(buf_send_,(maxsend_+BUFEXTRA_MNMP),"MultiNodeMeshParallel:buf_send");
       else {
@@ -572,7 +572,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMeshParallel<NUM_NODES>::initalSetup()
+  void MultiNodeMeshParallel<NUM_NODES>::initialSetup()
   {
       nGlobalOrig_ = sizeLocal();
 
@@ -629,7 +629,7 @@
       // stuff that should be done before resuming simulation
       postBorders();
 
-      /*NL*/// fprintf(this->screen,"INITIALSETUP: proc %d, mesh %s - nLocal %d, nGhost %d\n",
+      /*NL*/// if (this->screen) fprintf(this->screen,"INITIALSETUP: proc %d, mesh %s - nLocal %d, nGhost %d\n",
       /*NL*///                      this->comm->me,this->mesh_id_,nLocal_,nGhost_);
 
       //NP TODO: calc properties of all new elements, including ghosts
@@ -694,7 +694,7 @@
       // stuff that should be done before resuming simulation
       postBorders();
 
-      /*NL*/// fprintf(this->screen,"PBCEXCHBRDRS: proc %d, mesh %s - nLocal %d, nGhost %d\n",
+      /*NL*/// if (this->screen) fprintf(this->screen,"PBCEXCHBRDRS: proc %d, mesh %s - nLocal %d, nGhost %d\n",
       /*NL*///                      this->comm->me,this->mesh_id_,nLocal_,nGhost_);
 
       //NP build mesh topology and neigh list
@@ -721,7 +721,7 @@
   template<int NUM_NODES>
   void MultiNodeMeshParallel<NUM_NODES>::deleteUnowned()
   {
-      /*NL*///fprintf(this->screen,"proc %d has %d owned elements (is equal to nglobal here)\n",this->comm->me,nLocal_);
+      /*NL*///if (this->screen) fprintf(this->screen,"proc %d has %d owned elements (is equal to nglobal here)\n",this->comm->me,nLocal_);
 
       int i = 0;
 
@@ -741,7 +741,7 @@
       else
         nGlobal_ = nLocal_;
 
-      /*NL*/// fprintf(this->screen,"proc %d has %d owned elements, nglobal is %d\n",this->comm->me,nLocal_,nGlobal_);
+      /*NL*/// if (this->screen) fprintf(this->screen,"proc %d has %d owned elements, nglobal is %d\n",this->comm->me,nLocal_,nGlobal_);
       /*NL*/// this->error->all(FLERR,"check this\n");
   }
 
@@ -811,7 +811,7 @@
 
           nsend = pushExchange(dim);
 
-          /*NL*/ //fprintf(this->screen,"proc %d pushing %d doubles to buf, dim %d on step %d\n",this->comm->me,nsend,dim,this->update->ntimestep);
+          /*NL*/ //if (this->screen) fprintf(this->screen,"proc %d pushing %d doubles to buf, dim %d on step %d\n",this->comm->me,nsend,dim,this->update->ntimestep);
 
           // send/recv in both directions
           // if 1 proc in dimension, no send/recv, set recv buf to send buf
@@ -828,7 +828,7 @@
             MPI_Sendrecv(&nsend,1,MPI_INT,procneigh[dim][0],0,&nrecv1,1,MPI_INT,procneigh[dim][1],0,world,&status);
             nrecv = nrecv1;
 
-            /*NL*/ //fprintf(this->screen,"nrecv1 %d on proc %d, dim %d on step %d\n",nrecv1,this->comm->me,dim,this->update->ntimestep);
+            /*NL*/ //if (this->screen) fprintf(this->screen,"nrecv1 %d on proc %d, dim %d on step %d\n",nrecv1,this->comm->me,dim,this->update->ntimestep);
 
             if (this->comm->procgrid[dim] > 2)
             {
@@ -855,10 +855,10 @@
           // check incoming elements to see if they are in my box
           // if so, add on this proc
 
-          /*NL*/// fprintf(this->screen,"proc %d has %d owned elems, dim %d on step %d\n",this->comm->me,nLocal_,dim,this->update->ntimestep);
-          /*NL*/// fprintf(this->screen,"received %d doubles on proc %d, dim %d on step %d\n",nrecv,this->comm->me,dim,this->update->ntimestep);
+          /*NL*/// if (this->screen) fprintf(this->screen,"proc %d has %d owned elems, dim %d on step %d\n",this->comm->me,nLocal_,dim,this->update->ntimestep);
+          /*NL*/// if (this->screen) fprintf(this->screen,"received %d doubles on proc %d, dim %d on step %d\n",nrecv,this->comm->me,dim,this->update->ntimestep);
           popExchange(nrecv,dim, buf);
-          /*NL*/// fprintf(this->screen,"proc %d has %d owned elems, dim %d on step %d\n",this->comm->me,nLocal_,dim,this->update->ntimestep);
+          /*NL*/// if (this->screen) fprintf(this->screen,"proc %d has %d owned elems, dim %d on step %d\n",this->comm->me,nLocal_,dim,this->update->ntimestep);
       }
 
       // re-calculate nGlobal as some element might have been lost
@@ -931,13 +931,13 @@
                   if(ineed % 2 == 1 && this->comm->myloc[dim] == this->comm->procgrid[dim]-1)
                     sendflag = false;
 
-                  /*NL*/// if(this->comm->me == 1 && iswap == 2)
+                  /*NL*/// if(this->comm->me == 1 && iswap == 2 && this->screen)
                   /*NL*///    fprintf(this->screen,"   mesh %s: proc %d swap # %d: sendflag %s\n",this->mesh_id_,this->comm->me,iswap,sendflag?"true":"false");
 
                   // find send elements
                   if(sendflag)
                   {
-                      /*NL*/// if(true/*this->comm->me == 1 && iswap == 2*/)
+                      /*NL*/// if(this->screen/*this->comm->me == 1 && iswap == 2*/)
                       /*NL*///    fprintf(this->screen,"   mesh %s: proc %d checks elements from %d to %d for send on swap # %d\n",this->mesh_id_,this->comm->me,nfirst,nlast,iswap);
 
                       for (int i = nfirst; i < nlast; i++)
@@ -949,13 +949,13 @@
                                   grow_list(iswap,nsend);
                               sendlist_[iswap][nsend++] = i;
 
-                              /*NL*/ if(LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(i))
+                              /*NL*/ if(this->screen && LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(i))
                               /*NL*/    fprintf(this->screen,"     mesh %s: proc %d prepares element id %d for send on swap # %d\n",this->mesh_id_,this->comm->me,id(i),iswap);
                           }
                       }
                   }
 
-                  /*NL*/// fprintf(this->screen,"mesh %s: proc %d sends %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nsend,iswap);
+                  /*NL*/// if (this->screen) fprintf(this->screen,"mesh %s: proc %d sends %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nsend,iswap);
 
                   // pack up list of border elements
 
@@ -993,11 +993,11 @@
 
                   // unpack buffer
 
-                  /*NL*/// fprintf(this->screen,"mesh %s: proc %d received %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nrecv,iswap);
+                  /*NL*/// if (this->screen) fprintf(this->screen,"mesh %s: proc %d received %d elements on swap # %d\n",this->mesh_id_,this->comm->me,nrecv,iswap);
 
                   n = popElemListFromBuffer(nLocal_+nGhost_,nrecv,buf_recv_,OPERATION_COMM_BORDERS,dummy,dummy,dummy);
 
-                  /*NL*/// if(LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(nLocal_+nGhost_-1))
+                  /*NL*/// if(this->screen && LMP_MULTI_NODE_MESH_PARALLEL_I_H_DEBUG && LMP_MULTI_NODE_MESH_PARALLEL_I_H_ID == id(nLocal_+nGhost_-1))
                   /*NL*///    fprintf(this->screen,"     mesh %s: proc %d recvs element id %d on swap # %d\n",this->mesh_id_,this->comm->me,id(nLocal_+nGhost_-1),iswap);
 
                   // set pointers & counters
@@ -1036,7 +1036,7 @@
   template<int NUM_NODES>
   inline bool MultiNodeMeshParallel<NUM_NODES>::checkBorderElementLeft(int i,int dim,double lo, double hi)
   {
-      /*NL*/// fprintf(this->screen,"this->center_(i)[dim] %f, rbound is %f, lo %f hi %f\n",this->center_(i)[dim],this->rBound_(i),lo,hi);
+      /*NL*/// if (this->screen) fprintf(this->screen,"this->center_(i)[dim] %f, rbound is %f, lo %f hi %f\n",this->center_(i)[dim],this->rBound_(i),lo,hi);
       if (this->center_(i)[dim] >= lo                     &&
           this->center_(i)[dim] <= hi + this->rBound_(i)     )
         return true;
@@ -1099,7 +1099,7 @@
       bool translate = this->isTranslating();
       bool rotate = this->isRotating();
 
-      /*NL*/// fprintf(this->screen,"mesh %s: size_forward_ %d\n",this->mesh_id_,size_forward_);
+      /*NL*/// if (this->screen) fprintf(this->screen,"mesh %s: size_forward_ %d\n",this->mesh_id_,size_forward_);
 
       // exit here if no forward communication at all
       //NP done for efficiency reasons
@@ -1123,8 +1123,8 @@
                     MPI_Irecv(buf_recv_,size_forward_recv_[iswap],MPI_DOUBLE,recvproc_[iswap],0,this->world,&request);
 
                 n = pushElemListToBuffer(sendnum_[iswap],sendlist_[iswap],buf_send_,OPERATION_COMM_FORWARD,scale,translate,rotate);
-                /*NL*/// fprintf(this->screen,"proc %d: sendnum_[iswap] %d, recvnum_[iswap] %d,size_forward_recv_[iswap] %d\n",this->comm->me,sendnum_[iswap],recvnum_[iswap],size_forward_recv_[iswap]);
-                /*NL*/// fprintf(this->screen,"proc %d: pushing n %d doubles to fwd buff, sendnum_[iswap] %d\n",this->comm->me,n,sendnum_[iswap]);
+                /*NL*/// if (this->screen) fprintf(this->screen,"proc %d: sendnum_[iswap] %d, recvnum_[iswap] %d,size_forward_recv_[iswap] %d\n",this->comm->me,sendnum_[iswap],recvnum_[iswap],size_forward_recv_[iswap]);
+                /*NL*/// if (this->screen) fprintf(this->screen,"proc %d: pushing n %d doubles to fwd buff, sendnum_[iswap] %d\n",this->comm->me,n,sendnum_[iswap]);
 
                 if (n)
                     MPI_Send(buf_send_,n,MPI_DOUBLE,sendproc_[iswap],0,this->world);
@@ -1133,7 +1133,7 @@
                     MPI_Wait(&request,&status);
 
                 n = popElemListFromBuffer(firstrecv_[iswap],recvnum_[iswap],buf_recv_,OPERATION_COMM_FORWARD,scale,translate,rotate);
-                /*NL*/// fprintf(this->screen,"proc %d: popping n %d doubles from fwd buff, recvnum_[iswap] %d\n",this->comm->me,n,recvnum_[iswap]);
+                /*NL*/// if (this->screen) fprintf(this->screen,"proc %d: popping n %d doubles from fwd buff, recvnum_[iswap] %d\n",this->comm->me,n,recvnum_[iswap]);
           }
           else
           {

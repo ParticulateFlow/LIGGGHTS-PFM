@@ -22,10 +22,10 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "thermo.h"
 #include "atom.h"
 #include "update.h"
@@ -58,7 +58,7 @@ using namespace MathConst;
 // customize a new keyword by adding to this list:
 
 // step, elapsed, elaplong, dt, time, cpu, tpcpu, spcpu, cpuremain, part
-// atoms, temp, press, pe, ke, etotal, enthalpy
+// atoms, ghosts, temp, press, pe, ke, etotal, enthalpy
 // evdwl, ecoul, epair, ebond, eangle, edihed, eimp, emol, elong, etail
 // vol, density, lx, ly, lz, xlo, xhi, ylo, yhi, zlo, zhi, xy, xz, yz,
 // xlat, ylat, zlat
@@ -76,10 +76,6 @@ enum{IGNORE,WARN,ERROR};           // same as write_restart.cpp
 enum{ONELINE,MULTILINE};
 enum{INT,FLOAT,BIGINT};
 enum{SCALAR,VECTOR,ARRAY};
-
-#define INVOKED_SCALAR 1
-#define INVOKED_VECTOR 2
-#define INVOKED_ARRAY 4
 
 #define DELTA 8
 
@@ -683,6 +679,8 @@ void Thermo::parse_fields(char *str)
       addfield("Cu",&Thermo::compute_cu,FLOAT);
     } else if (strcmp(word,"atoms") == 0) {
       addfield("Atoms",&Thermo::compute_atoms,BIGINT);
+    } else if (strcmp(word,"ghosts") == 0) {
+      addfield("Ghosts",&Thermo::compute_ghosts,BIGINT);
     } else if (strcmp(word,"temp") == 0) {
       addfield("Temp",&Thermo::compute_temp,FLOAT);
       index_temp = add_compute(id_temp,SCALAR);
@@ -1056,6 +1054,10 @@ int Thermo::evaluate_keyword(char *word, double *answer)
 
   } else if (strcmp(word,"atoms") == 0) {
     compute_atoms();
+    dvalue = bivalue;
+
+  } else if (strcmp(word,"ghosts") == 0) {
+    compute_ghosts();
     dvalue = bivalue;
 
   } else if (strcmp(word,"temp") == 0) {
@@ -1591,6 +1593,15 @@ void Thermo::compute_part()
 void Thermo::compute_atoms()
 {
   bivalue = atom->natoms;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void Thermo::compute_ghosts()
+{
+  long nghost = atom->nghost;
+  bivalue = 0;
+  MPI_Allreduce(&nghost,&bivalue,1,MPI_LONG,MPI_SUM,world);
 }
 
 /* ---------------------------------------------------------------------- */

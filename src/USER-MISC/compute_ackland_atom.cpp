@@ -16,7 +16,7 @@
                         Copyright (C) 2007
 ------------------------------------------------------------------------- */
 
-#include "string.h"
+#include <string.h>
 #include "compute_ackland_atom.h"
 #include "atom.h"
 #include "update.h"

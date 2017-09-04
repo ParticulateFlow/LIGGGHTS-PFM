@@ -303,7 +303,7 @@
     /*NL*///for(int i=0;i<elementProperties_.numElem_;i++)
     /*NL*///{
     /*NL*///  elementProperties_.getBasePointerByIndex(i)->id(_id);
-    /*NL*///  fprintf(this->screen,"prop %s size %d\n",_id,elementProperties_.getBasePointerByIndex(i)->elemBufSize(operation,scale,translate,rotate));
+    /*NL*///  if (this->screen) fprintf(this->screen,"prop %s size %d\n",_id,elementProperties_.getBasePointerByIndex(i)->elemBufSize(operation,scale,translate,rotate));
     /*NL*///}
     return elementProperties_.elemBufSize(operation,scale,translate,rotate);
   }

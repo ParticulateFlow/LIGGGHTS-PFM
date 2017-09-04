@@ -15,8 +15,8 @@
    Contributing author: Andres Jaramillo-Botero (Caltech)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "atom_vec_electron.h"
 #include "atom.h"
 #include "comm.h"

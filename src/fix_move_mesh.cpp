@@ -158,9 +158,9 @@ int FixMoveMesh::setmask()
 
 void FixMoveMesh::setup(int vflag)
 {
-    /*NL*///  fprintf(screen,"FixMoveMesh::setup()\n");
+    /*NL*///  if (screen) fprintf(screen,"FixMoveMesh::setup()\n");
     time_since_setup_ = 0.;
-    /*NL*/// fprintf(screen,"time_since_setup_ %f\n",time_since_setup_);
+    /*NL*/// if (screen) fprintf(screen,"time_since_setup_ %f\n",time_since_setup_);
 
     reset_reference_point();
 
@@ -170,7 +170,7 @@ void FixMoveMesh::setup(int vflag)
         //NP for ghost elements on reneighboring steps
         mesh_->prop().addElementProperty<MultiVectorContainer<double,3,3> >("v","comm_exchange_borders","frame_invariant","restart_no");
         /*NL*/// int size = mesh_->prop().getElementProperty<MultiVectorContainer<double,3,3> >("v")->size();
-        /*NL*/// fprintf(screen,"proc %d, FixMoveMesh::setup size %d\n",comm->me,size);
+        /*NL*/// if (screen) fprintf(screen,"proc %d, FixMoveMesh::setup size %d\n",comm->me,size);
     }
 
     move_->setup();
@@ -229,7 +229,7 @@ void FixMoveMesh::write_restart(FILE *fp)
   int n = 0;
   double * list = new double[1 + move_->n_restart()];
   list[n++] = time_;
-  /*NL*///fprintf(screen,"time %f\n",time_);
+  /*NL*///if (screen) fprintf(screen,"time %f\n",time_);
 
   move_->write_restart(&(list[n]));
   n += move_->n_restart();
@@ -255,7 +255,7 @@ void FixMoveMesh::restart(char *buf)
   time_ = static_cast<double> (list[n++]);
   move_->read_restart(&(list[n]));
 
-  /*NL*///fprintf(screen,"time %f\n",time_);
+  /*NL*///if (screen) fprintf(screen,"time %f\n",time_);
 }
 
 /* ----------------------------------------------------------------------
@@ -270,7 +270,7 @@ void FixMoveMesh::add_reference_point(double *point)
     if(mesh_->prop().getGlobalProperty<VectorContainer<double,3> >(refpt_id))
         error->fix_error(FLERR,this,"only one reference point allowed");
 
-    /*NL*/ //printVec3D(screen,"adding point",point);
+    /*NL*/ //if (screen) printVec3D(screen,"adding point",point);
     vectorCopy3D(point,reference_point_);
 
     mesh_->prop().addGlobalProperty<VectorContainer<double,3> >(refpt_id,"comm_none","frame_general","restart_no");
@@ -299,7 +299,7 @@ void FixMoveMesh::get_reference_point(double *point)
 
     refpt->get(0,point);
     vectorCopy3D(point,reference_point_);
-    /*NL*/ //printVec3D(screen,"getting point",point);
+    /*NL*/ //if (screen) printVec3D(screen,"getting point",point);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -326,5 +326,5 @@ void FixMoveMesh::reset_reference_point()
     // set orig value for property
     mesh_->prop().storeGlobalPropOrig(refpt_id);
 
-    /*NL*/ //printVec3D(screen,"re-setting point",reference_point_);
+    /*NL*/ //if (screen) printVec3D(screen,"re-setting point",reference_point_);
 }

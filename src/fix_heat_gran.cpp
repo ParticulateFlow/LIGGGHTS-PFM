@@ -29,7 +29,7 @@
 #include "math_extra.h"
 #include "modify.h"
 #include "pair_gran.h"
-#include "stdlib.h"
+#include <stdlib.h>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;

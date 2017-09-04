@@ -15,14 +15,14 @@
    Contributing author: Paul Crozier (SNL)
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "ctype.h"
-#include "float.h"
-#include "limits.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <mpi.h>
+#include <ctype.h>
+#include <float.h>
+#include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair.h"
 #include "atom.h"
 #include "neighbor.h"
@@ -37,8 +37,10 @@
 #include "atom_masks.h"
 #include "memory.h"
 #include "error.h"
+#include "math_const.h"
 
 using namespace LAMMPS_NS;
+using namespace MathConst;
 
 #define EWALD_F   1.12837917
 
@@ -48,8 +50,6 @@ enum{RLINEAR,RSQ,BMP};
 
 Pair::Pair(LAMMPS *lmp) : Pointers(lmp)
 {
-  THIRD = 1.0/3.0;
-
   eng_vdwl = eng_coul = 0.0;
 
   comm_forward = comm_reverse = comm_reverse_off = 0;
@@ -287,7 +287,7 @@ void Pair::init_tables(double cut_coul, double *cut_respa)
   double qqrd2e = force->qqrd2e;
 
   if (force->kspace == NULL)
-    error->all(FLERR,"Pair style requres a KSpace style");
+    error->all(FLERR,"Pair style requires a KSpace style");
   double g_ewald = force->kspace->g_ewald;
 
   double cut_coulsq = cut_coul * cut_coul;

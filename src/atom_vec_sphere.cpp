@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom_vec_sphere.h"
 #include "atom.h"
 #include "comm.h"
@@ -452,7 +452,7 @@ void AtomVecSphere::unpack_comm_vel(int n, int first, double *buf)
       omega[i][0] = buf[m++];
       omega[i][1] = buf[m++];
       omega[i][2] = buf[m++];
-      /*NL*/ //printVec3D(screen,"FW comm: ghost x",x[i]);
+      /*NL*/ //if (screen) printVec3D(screen,"FW comm: ghost x",x[i]);
     }
   } else {
     m = 0;
@@ -536,8 +536,8 @@ void AtomVecSphere::unpack_reverse(int n, int *list, double *buf)
   m = 0;
   for (i = 0; i < n; i++) {
     j = list[i];
-    /*NL*/ //fprintf(screen,"Unpacking at tag %d\n",atom->tag[j]);
-    /*NL*/ //printVec3D(screen," f_add",&buf[m]);
+    /*NL*/ //if (screen) fprintf(screen,"Unpacking at tag %d\n",atom->tag[j]);
+    /*NL*/ //if (screen) printVec3D(screen," f_add",&buf[m]);
     f[j][0] += buf[m++];
     f[j][1] += buf[m++];
     f[j][2] += buf[m++];
@@ -783,7 +783,7 @@ void AtomVecSphere::unpack_border_vel(int n, int first, double *buf)
     omega[i][0] = buf[m++];
     omega[i][1] = buf[m++];
     omega[i][2] = buf[m++];
-    /*NL*/ //printVec3D(screen,"creating ghost at",x[i]);
+    /*NL*/ //if (screen) printVec3D(screen,"creating ghost at",x[i]);
   }
   if (atom->nextra_border)
     for (int iextra = 0; iextra < atom->nextra_border; iextra++)
@@ -912,7 +912,7 @@ int AtomVecSphere::pack_restart(int i, double *buf)
   buf[m++] = ubuf(type[i]).d;
   buf[m++] = ubuf(mask[i]).d;
   buf[m++] = ubuf(image[i]).d;
-  /*NL*/ //fprintf(screen,"image before restart %d, value of buf %e\n",image[i],buf[m-1]);
+  /*NL*/ //if (screen) fprintf(screen,"image before restart %d, value of buf %e\n",image[i],buf[m-1]);
   buf[m++] = v[i][0];
   buf[m++] = v[i][1];
   buf[m++] = v[i][2];
@@ -953,7 +953,7 @@ int AtomVecSphere::unpack_restart(double *buf)
   type[nlocal] = (int) ubuf(buf[m++]).i;
   mask[nlocal] = (int) ubuf(buf[m++]).i;
   image[nlocal] = (tagint) ubuf(buf[m++]).i;
-  /*NL*/ //fprintf(screen,"image after restart %d\n",image[nlocal]);
+  /*NL*/ //if (screen) fprintf(screen,"image after restart %d\n",image[nlocal]);
   v[nlocal][0] = buf[m++];
   v[nlocal][1] = buf[m++];
   v[nlocal][2] = buf[m++];
@@ -968,7 +968,7 @@ int AtomVecSphere::unpack_restart(double *buf)
   double **extra = atom->extra;
   if (atom->nextra_store) {
     int size = static_cast<int> (buf[0]) - m;
-    /*NL*/ //fprintf(screen,"reading %d values from buf \n",size);
+    /*NL*/ //if (screen) fprintf(screen,"reading %d values from buf \n",size);
     for (int i = 0; i < size; i++) extra[nlocal][i] = buf[m++];
   }
 

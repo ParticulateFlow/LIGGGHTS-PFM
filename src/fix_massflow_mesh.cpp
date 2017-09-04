@@ -19,9 +19,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "atom_vec.h"
 #include "comm.h"
@@ -64,6 +64,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
   property_sum_(0.),
   screenflag_(false),
   fp_(0),
+  writeTime_(false),
   mass_last_(0.),
   nparticles_last_(0.),
   t_count_(0.),
@@ -123,6 +124,10 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
                 error->fix_error(FLERR,this,"expecting 'once' or 'multiple' after 'count'");
             iarg++;
             hasargs = true;
+        } else if( strcmp(arg[iarg],"writeTime") == 0) {
+            writeTime_ = true;
+            iarg++;
+            hasargs = true;
         } else if(strcmp(arg[iarg],"point_at_outlet") == 0) {
             if(narg < iarg+4)
                 error->fix_error(FLERR,this,"not enough arguments for 'point_at_outlet'");
@@ -145,17 +150,18 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
 
             char* filecurrent = new char[strlen(arg[iarg+1]) + 8];
             if (1 < comm->nprocs) //open a separate file for each processor
-                 sprintf(filecurrent,"%s%s%d",arg[iarg+1],".",comm->me);
+                sprintf(filecurrent,"%s.%d",arg[iarg+1],comm->me);
             else  //open one file for proc 0
-                 sprintf(filecurrent,"%s",arg[iarg+1]);
+                sprintf(filecurrent,"%s",arg[iarg+1]);
 
             if (strcmp(arg[iarg],"file") == 0)
                 fp_ = fopen(filecurrent,"w");
             else
                 fp_ = fopen(filecurrent,"a");
+            delete [] filecurrent;
             if (fp_ == NULL) {
-               char str[128];
-               sprintf(str,"Cannot open file %s",arg[iarg+1]);
+                char str[128];
+                sprintf(str,"Cannot open file %s",arg[iarg+1]);
                 error->fix_error(FLERR,this,str);
             }
             iarg += 2;
@@ -180,9 +186,24 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             error->fix_error(FLERR,this,"unknown keyword");
     }
 
-    if(fp_ && 1 < comm->nprocs && 0 == comm->me)
+    if(fp_ && comm->nprocs > 1 && comm->me == 0 && screen)
       fprintf(screen,"**FixMassflowMesh: > 1 process - "
                      " will write to multiple files\n");
+
+    if(fp_)
+    {
+        //write header
+        fprintf(fp_,"# ID");
+
+        if(writeTime_)
+          fprintf(fp_," time ");
+
+        fprintf(fp_," diameter x y z u v w");
+
+        fprintf(fp_,"  (ex ey ez, color)\n");
+
+        fflush(fp_);
+    }
 
     // error checks on necessary args
 
@@ -202,8 +223,8 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
     fix_mesh_->triMesh()->surfaceNorm(0,nvec_);
     double dot = vectorDot3D(nvec_,sidevec_);
 
-    /*NL*/ //printVec3D(screen,"nvec_",nvec_);
-    /*NL*/ //printVec3D(screen,"sidevec_",sidevec_);
+    /*NL*/ //if (screen) printVec3D(screen,"nvec_",nvec_);
+    /*NL*/ //if (screen) printVec3D(screen,"sidevec_",sidevec_);
 
     if(fabs(dot) < 1e-6 && !havePointAtOutlet_ )
         error->fix_error(FLERR,this,"need to change 'vec_side', it is currently in or to close to the mesh plane");
@@ -328,6 +349,7 @@ void FixMassflowMesh::post_integrate()
     double **v = atom->v;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
+    int *mask = atom->mask;
     double *counter = fix_counter_->vector_atom;
     double dot,delta[3]={};
     double mass_this = 0.;
@@ -356,7 +378,7 @@ void FixMassflowMesh::post_integrate()
         reset_t_count_ = true;
     }
 
-    /*NL*///if(fix_property_)
+    /*NL*///if(fix_property_ && screen)
     /*NL*///    fprintf(screen,"FOUNDE PROP, id %s style %s\n",fix_property_->id,fix_property_->style);
 
     // loop owned and ghost triangles
@@ -373,10 +395,15 @@ void FixMassflowMesh::post_integrate()
         {
             const int iPart = neighborList[iNeigh];
 
-            /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"step " BIGINT_FORMAT ": checking particle tag %d\n",update->ntimestep,atom->tag[iPart]);
+            /*NL*/ //if(screen && 523 == atom->tag[iPart]) fprintf(screen,"step " BIGINT_FORMAT ": checking particle tag %d\n",update->ntimestep,atom->tag[iPart]);
 
             // skip ghost particles
-            if(iPart >= nlocal) continue;
+            if(iPart >= nlocal)
+                continue;
+
+            // skip particles not in fix group
+            if (!(mask[iPart] & groupbit))
+                continue;
 
             const int ibody = fix_ms_ ? ( (fix_ms_->belongs_to(iPart) > -1) ? (ms_->map(fix_ms_->belongs_to(iPart))) : -1 ) : -1;
 
@@ -411,7 +438,7 @@ void FixMassflowMesh::post_integrate()
                     (*ms_counter_)(ibody) = (dot <= 0.) ? 0. : 1.;
                 else
                     counter[iPart] = (dot <= 0.) ? 0. : 1.;
-                /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"    1 counter set to %f\n",counter[iPart]);
+                /*NL*/ //if(screen && 523 == atom->tag[iPart]) fprintf(screen,"    1 counter set to %f\n",counter[iPart]);
                 continue;
             }
 
@@ -426,12 +453,14 @@ void FixMassflowMesh::post_integrate()
                     nparticles_this ++;
                     if(fix_property_)
                     {
-                        /*NL*/ //fprintf(screen,"adding %e\n",fix_property_->vector_atom[iPart]);
+                        /*NL*/ //if (screen) fprintf(screen,"adding %e\n",fix_property_->vector_atom[iPart]);
                         property_this += fix_property_->vector_atom[iPart];
                     }
 
                     if(delete_atoms_)
                     {
+                        //reset counter to avoid problems with other fixes & mark to be deleted
+                        counter[iPart] = -1.0;
                         atom_tags_delete_.push_back(atom->tag[iPart]);
                     }
 
@@ -442,12 +471,15 @@ void FixMassflowMesh::post_integrate()
                                        v[iPart][0],v[iPart][1],v[iPart][2]);
                     if(fp_)
                     {
-                        fprintf(fp_," %d %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g",
-                                   tag[iPart],2.*radius[iPart]/force->cg(),
+                        fprintf(fp_,"%d", tag[iPart]);
+
+                        if(writeTime_)
+                            fprintf(fp_,"  %4.4g ", update->dt*update->ntimestep);
+
+                        fprintf(fp_," %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g %4.4g",
+                                   2.*radius[iPart]/force->cg(),
                                    x[iPart][0],x[iPart][1],x[iPart][2],
                                    v[iPart][0],v[iPart][1],v[iPart][2]);
-                        if (fixColFound)
-                            fprintf(fp_,"    %4.0g ", fix_color->vector_atom[iPart]);
 
                         if(fix_orientation_)
                         {
@@ -456,6 +488,8 @@ void FixMassflowMesh::post_integrate()
                             fprintf(fp_,"    %4.4g %4.4g %4.4g ",
                                     orientation[iPart][0], orientation[iPart][1], orientation[iPart][2]);
                         }
+                        if (fixColFound)
+                            fprintf(fp_,"    %4.0g ", fix_color->vector_atom[iPart]);
                         fprintf(fp_,"\n");
                         fflush(fp_);
                     }
@@ -463,9 +497,9 @@ void FixMassflowMesh::post_integrate()
 
                 if(ibody > -1)
                     (*ms_counter_)(ibody) = once_ ? 2. : 1.;
-                else
+                else if(!delete_atoms_) //only set if not marked for deletion
                     counter[iPart] = once_ ? 2. : 1.;
-                /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"    2 counter set to %f\n",counter[iPart]);
+                /*NL*/ //if(screen && 523 == atom->tag[iPart]) fprintf(screen,"    2 counter set to %f\n",counter[iPart]);
             }
             else // dot <= 0
             {
@@ -473,7 +507,7 @@ void FixMassflowMesh::post_integrate()
                     (*ms_counter_)(ibody) = 0;
                 else
                     counter[iPart] = 0.;
-                /*NL*/ //if(523 == atom->tag[iPart]) fprintf(screen,"    3 counter set to %f\n",counter[iPart]);
+                /*NL*/ //if(screen && 523 == atom->tag[iPart]) fprintf(screen,"    3 counter set to %f\n",counter[iPart]);
             }
         }
     }
@@ -482,7 +516,7 @@ void FixMassflowMesh::post_integrate()
     MPI_Sum_Scalar(nparticles_this,world);
     if(fix_property_) MPI_Sum_Scalar(property_this,world);
 
-    /*NL*/ //fprintf(screen,"property_this %e\n",property_this);
+    /*NL*/ //if (screen) fprintf(screen,"property_this %e\n",property_this);
 
     mass_ += mass_this;
     nparticles_ += nparticles_this;

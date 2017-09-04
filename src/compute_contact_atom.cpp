@@ -21,9 +21,9 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
-#include "stdlib.h"
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include "compute_contact_atom.h"
 #include "atom.h"
 #include "update.h"
@@ -105,7 +105,7 @@ void ComputeContactAtom::init()
 void ComputeContactAtom::init_list(int id, NeighList *ptr)
 {
   list = ptr;
-  /*NL*/ //fprintf(screen,"list ptr %d\n",ptr);
+  /*NL*/ //if (screen) fprintf(screen,"list ptr %d\n",ptr);
 }
 
 /* ---------------------------------------------------------------------- */

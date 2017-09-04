@@ -18,8 +18,8 @@ andreas.eitzlmayr@tugraz.at
 Christoph Kloss (DCS)
 ------------------------------------------------------------------------- */
 
-#include "string.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdlib.h>
 #include "compute_reduce.h"
 #include "atom.h"
 #include "update.h"
@@ -39,11 +39,6 @@ using namespace LAMMPS_NS;
 enum{SUM,MINN,MAXX,AVE};
 enum{X,V,F,COMPUTE,FIX,VARIABLE,RHO,P}; //NP modified C.K.
 enum{PERATOM,LOCAL};
-
-#define INVOKED_VECTOR 2
-#define INVOKED_ARRAY 4
-#define INVOKED_PERATOM 8
-#define INVOKED_LOCAL 16
 
 #define BIG 1.0e20
 

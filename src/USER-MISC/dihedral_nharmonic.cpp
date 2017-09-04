@@ -17,8 +17,8 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "math.h"
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "dihedral_nharmonic.h"
 #include "atom.h"
 #include "neighbor.h"

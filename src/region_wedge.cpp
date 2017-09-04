@@ -28,9 +28,9 @@ Christoph Kloss (DCS Computing GmbH, Linz and JKU Linz)
 #include "region_wedge.h"
 #include "error.h"
 #include "domain.h"
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "math_extra.h"
 #include "update.h"
 #include "vector_liggghts.h"
@@ -168,7 +168,7 @@ RegWedge::RegWedge(LAMMPS *lmp, int narg, char **arg) : Region(lmp, narg, arg)
 
   if(iarg != 16)
     error->all(FLERR,"Illegal region wedge implementation, adapt options() call");
-  //  fprintf(screen,"debug wedge: region id wedge %c %f %f %f %f %f %f %f\n",
+  //  if (screen) fprintf(screen,"debug wedge: region id wedge %c %f %f %f %f %f %f %f\n",
   //       axis,c1,c2,radius,lo,hi,angle1,dang);
 
   // error checks

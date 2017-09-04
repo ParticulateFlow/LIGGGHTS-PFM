@@ -15,9 +15,9 @@
    Contributing authors: Ezwanur Rahman, J.T. Foster (UTSA)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pair_peri_ves.h"
 #include "atom.h"
 #include "domain.h"

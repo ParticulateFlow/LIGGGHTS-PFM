@@ -20,7 +20,7 @@ DihedralStyle(quadratic,DihedralQuadratic)
 #ifndef LMP_DIHEDRAL_QUADRATIC_H
 #define LMP_DIHEDRAL_QUADRATIC_H
 
-#include "stdio.h"
+#include <stdio.h>
 #include "dihedral.h"
 
 namespace LAMMPS_NS {

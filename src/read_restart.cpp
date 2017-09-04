@@ -12,11 +12,10 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "string.h"
-#include "stdlib.h"
-//#include "sys/types.h"
-#include "dirent.h"
+#include <mpi.h>
+#include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
 #include "read_restart.h"
 #include "atom.h"
 #include "atom_vec.h"

@@ -17,10 +17,10 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "stdlib.h"
-#include "math.h"
+#include <stdlib.h>
+#include <math.h>
 #include "atom.h"
-#include "string.h"
+#include <string.h>
 #include "fix_ave_atom.h"
 #include "fix_reaxc_species.h"
 #include "domain.h"

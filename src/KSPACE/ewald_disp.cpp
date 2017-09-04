@@ -15,11 +15,11 @@
    Contributing authors: Pieter in 't Veld (SNL), Stan Moore (SNL)
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "math.h"
+#include <mpi.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include "ewald_disp.h"
 #include "math_vector.h"
 #include "math_const.h"

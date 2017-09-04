@@ -88,7 +88,7 @@ namespace LAMMPS_NS
           // push / pop all elements
           //NP used for restart
           inline int bufSize(int operation = OPERATION_UNDEFINED,
-                            bool scale=false,bool translate=false, bool rotate=false);
+                            bool scale=false,bool translate=false, bool rotate=false) const;
           inline int pushToBuffer(double *buf, int operation,
                            bool scale=false,bool translate=false, bool rotate=false);
           inline int popFromBuffer(double *buf, int operation,
@@ -124,20 +124,23 @@ namespace LAMMPS_NS
 
           void addUninitialized(int n);
 
-          inline int size()
+          inline int size() const
           { return numElem_; }
 
-          inline int nVec()
+          inline int nVec() const
           { return NUM_VEC; }
 
-          inline int lenVec()
+          inline int lenVec() const
           { return LEN_VEC; }
 
-          inline int capacity()
+          inline int capacity() const
           { return maxElem_; }
 
           inline void clearContainer()
           { numElem_ = 0; }
+
+          void copy(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other);
+          void copy_n(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other, const size_t n);
 
           inline void setDefaultValue(T val)
           { defaultValue_ = val; useDefault_ = true; }
@@ -155,6 +158,14 @@ namespace LAMMPS_NS
           int numElem_, maxElem_;
 
           T*** arr_;
+
+          T* _begin() const {
+            return &arr_[0][0][0];
+          }
+
+          T* _end() const {
+            return &arr_[0][0][0] + numElem_*(NUM_VEC*LEN_VEC);
+          }
 
           T defaultValue_;
   };

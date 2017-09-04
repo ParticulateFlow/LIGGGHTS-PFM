@@ -21,8 +21,8 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "string.h"
+#include <mpi.h>
+#include <string.h>
 #include "compute_ke_multisphere.h"
 #include "update.h"
 #include "modify.h"
@@ -65,6 +65,6 @@ double ComputeKEMultisphere::compute_scalar()
 {
   invoked_scalar = update->ntimestep;
   scalar = fix_ms_->extract_ke();
-  /*NL*/ fprintf(screen,"ke %f\n",scalar);
+  /*NL*/ if (screen) fprintf(screen,"ke %f\n",scalar);
   return scalar;
 }

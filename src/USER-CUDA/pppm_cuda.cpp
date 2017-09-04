@@ -39,7 +39,7 @@
 ------------------------------------------------------------------------- */
 
 
-#include "mpi.h"
+#include <mpi.h>
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>

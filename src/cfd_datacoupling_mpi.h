@@ -32,7 +32,7 @@
 #include "multisphere_parallel.h"
 #include "error.h"
 #include "properties.h"
-#include "mpi.h"
+#include <mpi.h>
 
 namespace LAMMPS_NS {
 
@@ -166,7 +166,7 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to)
 
     if (atom->nlocal && (!from || len1 < 0 || len2 < 0))
     {
-        /*NL*/ //fprintf(screen,"nlocal %d, len1 %d lens2 %d\n",atom->nlocal,len1,len2);
+        /*NL*/ //if(screen) fprintf(screen,"nlocal %d, len1 %d lens2 %d\n",atom->nlocal,len1,len2);
         if(screen) fprintf(screen,"LIGGGHTS could not find property %s to write data from calling program to.\n",name);
         lmp->error->one(FLERR,"This is fatal");
     }
@@ -222,10 +222,10 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to)
             for (int j = 0; j < len2; j++)
             {
                 allred[(id-1)*len2 + j] = from_t[i][j];
-                /*NL*/ //fprintf(screen,"id  %d from %d %d: %f\n",id ,i,j,from_t[i][j]);
+                /*NL*/ //if(screen) fprintf(screen,"id  %d from %d %d: %f\n",id ,i,j,from_t[i][j]);
             }
         }
-        /*NL*/ //printVecN(screen,"allred",allred,len1*len2);
+        /*NL*/ //if (screen) printVecN(screen,"allred",allred,len1*len2);
     }
     else if(strcmp(type,"scalar-global") == 0 || strcmp(type,"vector-global") == 0 || strcmp(type,"matrix-global") == 0)
     {

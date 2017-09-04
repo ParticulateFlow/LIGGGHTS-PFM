@@ -59,6 +59,7 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
 
         void setCurvature(double _curvature);
         //NP cannot change min_angle_, since called upon construction
+        void setCurvatureTolerant(bool _tol);
 
         bool addElement(double **nodeToAdd,int lineNumb);
 
@@ -200,6 +201,7 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
 
         // mesh properties
         double curvature_;
+        bool curvature_tolerant_;
         double minAngle_; //NP cannot change min_angle_, since called upon construction
         ScalarContainer<double>& areaMesh_; //NP see above what is contained
 

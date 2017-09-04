@@ -133,7 +133,7 @@
   }
 
   template<typename T>
-  T* AssociativePointerArray<T>::getBasePointerByIndex(int i)
+  T* AssociativePointerArray<T>::getBasePointerByIndex(int i) const
   {
     if(i >= size() || i < 0) return 0;
     else return content_[i];
@@ -175,7 +175,7 @@
   }
 
   template<typename T>
-  int AssociativePointerArray<T>::size()
+  int AssociativePointerArray<T>::size() const
   {
     return numElem_;
   }
@@ -371,7 +371,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T>
-  int AssociativePointerArray<T>::bufSize(int operation,bool scale,bool translate,bool rotate)
+  int AssociativePointerArray<T>::bufSize(int operation,bool scale,bool translate,bool rotate) const
   {
     int buf_size = 0;
     for(int i=0;i<numElem_;i++)

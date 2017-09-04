@@ -49,6 +49,8 @@ namespace LAMMPS_NS
         double resolveTriSphereContactBary(int iPart, int nTri, double rSphere, double *cSphere,
                                            double *contactPoint,double *bary);
 
+        bool resolveSameSide(int nTri, double *x0, double *x1);
+
         bool resolveTriSphereNeighbuild(int nTri, double rSphere, double *cSphere, double treshold);
 
         int generateRandomOwnedGhost(double *pos);
@@ -63,6 +65,8 @@ namespace LAMMPS_NS
 
       private:
 
+        inline double precision_trimesh()
+        { return MultiNodeMesh<3>::precision(); }
         double calcDist(double *cs, double *closestPoint, double *en0);
         double calcDistToPlane(double *p, double *pPlane, double *nPlane);
 

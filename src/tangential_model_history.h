@@ -31,7 +31,7 @@ TANGENTIAL_MODEL(TANGENTIAL_HISTORY,history,1)
 #ifndef TANGENTIAL_MODEL_HISTORY_H_
 #define TANGENTIAL_MODEL_HISTORY_H_
 #include "contact_models.h"
-#include "math.h"
+#include <math.h>
 #include "update.h"
 #include "global_properties.h"
 #include "atom.h"

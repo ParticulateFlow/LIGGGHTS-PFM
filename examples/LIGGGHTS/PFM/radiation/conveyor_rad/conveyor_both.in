@@ -16,7 +16,7 @@ create_box	1 reg
 neighbor	0.01 bin
 neigh_modify	delay 0
 
-#Material properties required for new pair styles
+#Material properties required for granular pair styles
 
 fix		m1 all property/global youngsModulus peratomtype 5.e6
 fix		m2 all property/global poissonsRatio peratomtype 0.45
@@ -75,7 +75,7 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run		1
-dump		dmp all custom 400 post/dump*.conveyor id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius f_Temp[0] 
+dump		dmp all custom 400 post/dump*.conveyor id type x y z vx vy vz fx fy fz omegax omegay omegaz radius f_Temp[0] 
 
 #insert particles
 run		140000 upto

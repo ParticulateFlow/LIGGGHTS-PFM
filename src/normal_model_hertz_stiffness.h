@@ -31,7 +31,7 @@ NORMAL_MODEL(HERTZ_STIFFNESS,hertz/stiffness,4)
 #define NORMAL_MODEL_HERTZ_STIFFNESS_H_
 #include "contact_models.h"
 #include "global_properties.h"
-#include "math.h"
+#include <math.h>
 
 namespace LIGGGHTS {
 namespace ContactModels
@@ -106,7 +106,7 @@ namespace ContactModels
 
         /*
         if(limitForce)
-            if(0 == comm->me) fprintf(screen," NormalModel<HERTZ_STIFFNESS>: will limit normal force.\n");
+            if(0 == comm->me && screen) fprintf(screen," NormalModel<HERTZ_STIFFNESS>: will limit normal force.\n");
         */
       }
       // convert Kn and Kt from pressure units to force/distance^2

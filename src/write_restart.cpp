@@ -22,8 +22,8 @@
 ------------------------------------------------------------------------- */
 
 #include "lmptype.h"
-#include "mpi.h"
-#include "string.h"
+#include <mpi.h>
+#include <string.h>
 #include "write_restart.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -169,7 +169,7 @@ void WriteRestart::write(char *file)
           if(region->match(atom->x[i][0],atom->x[i][1],atom->x[i][2]))
              nblocal += 1;
   }
-  /*NL*/ //fprintf(screen,"Identified %f particles to be written to restart file for proc %d\n",rlocal,comm->me);
+  /*NL*/ //if (screen) fprintf(screen,"Identified %f particles to be written to restart file for proc %d\n",rlocal,comm->me);
 
 
   MPI_Allreduce(&nblocal,&natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
@@ -244,7 +244,7 @@ void WriteRestart::write(char *file)
       send_size = n;
   }
 
-  /*NL*/ // fprintf(screen,"Writing restart file:post avec\n");
+  /*NL*/ // if (screen) fprintf(screen,"Writing restart file:post avec\n");
 
   // if any fix requires it, remap each atom's coords via PBC
   // is because fix changes atom coords (excepting an integrate fix)

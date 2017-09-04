@@ -6,7 +6,7 @@ namespace LAMMPS_NS
 class MultiLevelGrid
 {
   public:
-    MultiLevelGrid() {};
+    MultiLevelGrid() {}
     double foo;
 };
 }

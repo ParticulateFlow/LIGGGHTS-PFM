@@ -100,7 +100,7 @@ void FixChemShrinkArrhenius::updatePtrs()
 double FixChemShrinkArrhenius::reactionRatConst(int i)
 {
     double t = tgas_[i];
-    if(t < 0.1)
+    if(t < 100.0)
     {
         return 0.0;
     }

@@ -31,7 +31,7 @@ ROLLING_MODEL(ROLLING_CDT,cdt,1)
 #define ROLLING_MODEL_CDT_H_
 #include "contact_models.h"
 #include <algorithm>
-#include "math.h"
+#include <math.h>
 #include "math_extra_liggghts.h"
 
 namespace LIGGGHTS {

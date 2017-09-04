@@ -16,8 +16,8 @@
                          Mario Pinto (Computational Research Lab, Pune, India)
 ------------------------------------------------------------------------- */
 
-#include "math.h"
-#include "string.h"
+#include <math.h>
+#include <string.h>
 #include "compute_heat_flux.h"
 #include "atom.h"
 #include "update.h"
@@ -27,8 +27,6 @@
 #include "error.h"
 
 using namespace LAMMPS_NS;
-
-#define INVOKED_PERATOM 8
 
 /* ---------------------------------------------------------------------- */
 

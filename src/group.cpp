@@ -11,11 +11,11 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "mpi.h"
-#include "math.h"
-#include "stdio.h"
-#include "string.h"
-#include "stdlib.h"
+#include <mpi.h>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include "group.h"
 #include "domain.h"
 #include "atom.h"
@@ -546,7 +546,7 @@ void Group::assign(int narg, char **arg)
    add flagged atoms to a new or existing group
 ------------------------------------------------------------------------- */
 
-void Group::create(char *name, int *flag)
+void Group::create(const char *name, int *flag)
 {
   int i;
 
