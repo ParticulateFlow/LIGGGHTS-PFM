@@ -75,7 +75,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     //
     fix_fracRed(0)
 {
-    if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
+    if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
 
     // defaults
@@ -187,7 +187,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     strcat(cha,speciesA);
     strcpy(moleFrac, cha);
 
-    nevery = 1;
+    // nevery = 1;
     time_depend = 1;
     force_reneighbor = 1;
     next_reneighbor = update -> ntimestep + nevery;
@@ -812,7 +812,6 @@ void FixChemShrinkCore::reaction(int i, double *a_, double *dmA_, double *x0_eq_
     for (int j = 0 ; j < nmaxlayers_; j++)
     {
         // mass flow rate for reactant gas species
-        // scaled up Timestep to match 0.01;
         dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
     }
 }
@@ -1050,20 +1049,20 @@ double FixChemShrinkCore::K_eq(int layer, double T)
     if(strcmp(speciesA,"CO")==0)
      {
          if (layer == 0)
-             Keq_   =   exp(2744.63/T-2.946);   //Keq_   =   pow(10,(917/T-1.097));
+             Keq_   =   Keq_   =   pow(10,(917/T-1.097));
          else if (layer == 1)
-             Keq_   =   exp(-3585.64/T+8.98);   // Keq_   =   pow(10,(-1834/T+2.17));
+             Keq_   =   Keq_   =   pow(10,(-1834/T+2.17));
          else if (layer == 2)
-             Keq_   =   exp(3968.37/T+3.94);    // Keq_   =   exp(3968.37/T+3.94);
+             Keq_   =   Keq_   =   exp(3968.37/T+3.94);
      }
      else if(strcmp(speciesA,"H2")==0)
      {
          if (layer == 0)
-             Keq_   =   exp(-1586.9/T+0.9317);  // Keq_   =   pow(10,(-827/T+0.468));
+             Keq_   =   Keq_   =   pow(10,(-827/T+0.468));
          else if (layer == 1)
-             Keq_   =   exp(-7916.6/T+8.46);    // Keq_   =   pow(10,(-3577/T+3.74));
+             Keq_   =   Keq_   =   pow(10,(-3577/T+3.74));
          else if (layer == 2)
-             Keq_   =   exp(-362.6/T+10.344);   // Keq_   =   exp(-362.6/T+10.344);
+             Keq_   =   Keq_   =   exp(-362.6/T+10.344);
      }
     else
      {
