@@ -50,7 +50,6 @@ public:
   int setmask();
   virtual void init();
   virtual void post_force(int);
- // void delete_atoms();
  // void default_radius();
 
  protected:

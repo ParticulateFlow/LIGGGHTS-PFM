@@ -241,7 +241,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     strcat(cha,speciesC);
     strcpy(massC,cha);
 
-    // EKI:
+    // reactant species molar fraction
     moleFracA  =   new char[n];
     strcpy(cha,"X_");
     strcat(cha,speciesA);
@@ -458,53 +458,10 @@ void FixChemShrink::post_force(int)
 
  //   if (rdef)   default_radius();
 
-    // allocate and initialize deletion list and shrink list
- //   memory->create(dlist,nlocal,"delete_atoms:dlist");
- //   for (i = 0; i < nlocal; i++) dlist[i] = 0;
-
     reaction();
 
- /*   delete_atoms();
-
-    bigint nblocal = atom->nlocal;
-    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
-
-    //NP tags and maps
-    if (atom->molecular == 0) {
-    int *tag = atom->tag;
-    for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
-    atom->tag_extend();
-    }
-
-    if (atom->tag_enable) {
-      if (atom->map_style) {
-        atom->nghost = 0;
-        atom->map_init();
-        atom->map_set();
-      }
-    }
-    */
 }
 
-/* ---------------------------------------------------------------------- */
-/*
-void FixChemShrink::delete_atoms()
-{
-   int nlocal = atom->nlocal;
-    int i = 0;
-
-    while (i < nlocal) {
-        dlist[i] = radius_[i] < rmin;
-        if (dlist[i]) {
-        atom -> avec -> copy(nlocal-1,i,1);
-        dlist[i] = dlist[nlocal-1];
-        nlocal--;
-        } else i++;
-      }
-
-      atom->nlocal = nlocal;
-}
-*/
 /* ---------------------------------------------------------------------- */
 
 /*void FixChemShrink::default_radius()
