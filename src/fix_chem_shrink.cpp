@@ -375,8 +375,6 @@ void FixChemShrink::reaction()
                 // uncomment if postproc (verification)
                 if (screenflag_ && screen)
                 {
- //                   fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
- //                   fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
                     fprintf(screen,"%s Mass %f \n",speciesC,changeOfC_[i]);
                     fprintf(screen,"%s Mass %f \n",speciesA,changeOfA_[i]);
                     fprintf(screen,"Particle Mass %f \n",pmass_[i]);
