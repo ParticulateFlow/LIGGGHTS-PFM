@@ -71,8 +71,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_pore_diameter_(0),   //[m]
     fix_molefraction_(0)
 {
-    if (strncmp(style, "chem/shrink/core", 11) == 0 && (!atom->radius_flag) || (!atom->rmass_flag))
-        error->all(FLERR, "Fix chem/shrink needs particle radius and mass");
+    if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
+        error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
     // defaults
     fix_changeOfA_      =   NULL;
@@ -1033,7 +1033,7 @@ double FixChemShrinkCore::K_eq(int layer, double T)
     // ATTENTION: K is usually given for partial pressures, might be necessary to convert to molar concentrations
     // for the reactions under consideration, this should not be the case (double-check !!!)
     // 0 = wustite, 1 = mangetite, 2 = hematite;
-    double Keq_;
+    double Keq_ = 0.;
     if(strcmp(speciesA,"CO")==0)
      {
          if (layer == 0)
