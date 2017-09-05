@@ -1047,20 +1047,20 @@ double FixChemShrinkCore::K_eq(int layer, double T)
     if(strcmp(speciesA,"CO")==0)
      {
          if (layer == 0)
-             Keq_   =   Keq_   =   pow(10,(917/T-1.097));
+             Keq_   =   pow(10,(917/T-1.097));
          else if (layer == 1)
-             Keq_   =   Keq_   =   pow(10,(-1834/T+2.17));
+             Keq_   =   pow(10,(-1834/T+2.17));
          else if (layer == 2)
-             Keq_   =   Keq_   =   exp(3968.37/T+3.94);
+             Keq_   =   exp(3968.37/T+3.94);
      }
      else if(strcmp(speciesA,"H2")==0)
      {
          if (layer == 0)
-             Keq_   =   Keq_   =   pow(10,(-827/T+0.468));
+             Keq_   =   pow(10,(-827/T+0.468));
          else if (layer == 1)
-             Keq_   =   Keq_   =   pow(10,(-3577/T+3.74));
+             Keq_   =   pow(10,(-3577/T+3.74));
          else if (layer == 2)
-             Keq_   =   Keq_   =   exp(-362.6/T+10.344);
+             Keq_   =   exp(-362.6/T+10.344);
      }
     else
      {
