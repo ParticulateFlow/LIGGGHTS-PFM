@@ -86,8 +86,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     minMolarFrac = 1e-3;
     spcA = 0;
     spcC = 0;
-    int n = 16;
-    char cha[30];
 
     bool hasargs = true;
 
@@ -216,34 +214,29 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     }
 
     // define changed species mass A
-    massA = new char [n];
-    strcpy(cha,"Modified_");
-    strcat(cha,speciesA);
-    strcpy(massA,cha);
+    massA = new char [strlen("Modified_")+strlen(speciesA)+1];
+    strcpy(massA,"Modified_");
+    strcat(massA,speciesA);
 
     // define changed species mass C
-    massC = new char [n];
-    strcpy(cha,"Modified_");
-    strcat(cha,speciesC);
-    strcpy(massC,cha);
+    massC = new char [strlen("Modified_")+strlen(speciesC)+1];
+    strcpy(massC,"Modified_");
+    strcat(massC,speciesC);
 
     // reactant species molar fraction
-    moleFracA  =   new char[n];
-    strcpy(cha,"X_");
-    strcat(cha,speciesA);
-    strcpy(moleFracA, cha);
+    moleFracA = new char [strlen("X_")+strlen(speciesA)+1];
+    strcpy(moleFracA,"X_");
+    strcat(moleFracA,speciesA);
 
     // product species molar fraction
-    moleFracC  =   new char[n];
-    strcpy(cha,"X_");
-    strcat(cha,speciesC);
-    strcpy(moleFracC, cha);
+    moleFracC = new char [strlen("X_")+strlen(speciesC)+1];
+    strcpy(moleFracC,"X_");
+    strcat(moleFracC,speciesC);
 
     time_depend = 1;
     force_reneighbor =1;
     next_reneighbor = update ->ntimestep + nevery;
-
-    restart_global = 1;
+    restart_global = 0;
 }
 
 
