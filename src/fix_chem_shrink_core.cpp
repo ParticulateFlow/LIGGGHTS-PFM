@@ -162,30 +162,24 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     }
 
     // define changed species mass A
-    int z = 16;
-    char cha[30];
-    massA = new char[z];
-    strcpy(cha, "Modified_");
-    strcat(cha, speciesA);
-    strcpy(massA, cha);
+    massA = new char [strlen("Modified_")+strlen(speciesA)+1];
+    strcpy(massA,"Modified_");
+    strcat(massA,speciesA);
 
     // define changed species mass C
-    massC = new char[z];
-    strcpy(cha, "Modified_");
-    strcat(cha, speciesC);
-    strcpy(massC, cha);
+    massC = new char [strlen("Modified_")+strlen(speciesC)+1];
+    strcpy(massC,"Modified_");
+    strcat(massC,speciesC);
 
     // define diffusant species
-    diffA = new char[z];
-    strcpy(cha, speciesA);
-    strcat(cha, "_diffCoeff");
-    strcpy(diffA, cha);
+    diffA = new char [strlen(speciesA)+strlen("_diffCoeff")+1];
+    strcpy(diffA,speciesA);
+    strcat(diffA,"_diffCoeff");
 
     // reacting species bulk molar fraction
-    moleFrac  =   new char[z];
-    strcpy(cha,"X_");
-    strcat(cha,speciesA);
-    strcpy(moleFrac, cha);
+    moleFrac = new char [strlen("X_")+strlen(speciesA)+1];
+    strcpy(moleFrac,"X_");
+    strcat(moleFrac,speciesA);
 
     // nevery = 1;
     time_depend = 1;
