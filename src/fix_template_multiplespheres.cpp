@@ -75,10 +75,6 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
   r_sphere = new double[nspheres];
   atom_type_sphere = 0;
 
-  // re-create pti with correct nspheres
-  delete pti;
-  pti = new ParticleToInsert(lmp,nspheres);
-
   for (int i = 0; i < 3; i++) {
       x_min[i] = LARGE;
       x_max[i] = -LARGE;
@@ -382,14 +378,14 @@ void FixTemplateMultiplespheres::calc_center_of_mass()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::max_r_bound()
+double FixTemplateMultiplespheres::max_r_bound() const
 {
     return r_bound;
 }
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::min_rad()
+double FixTemplateMultiplespheres::min_rad() const
 {
     double rmin = 0.;
 
@@ -401,7 +397,7 @@ double FixTemplateMultiplespheres::min_rad()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::max_rad()
+double FixTemplateMultiplespheres::max_rad() const
 {
     double rmax = 0.;
 
@@ -416,37 +412,6 @@ double FixTemplateMultiplespheres::max_rad()
 int FixTemplateMultiplespheres::number_spheres()
 {
     return nspheres;
-}
-
-/* ----------------------------------------------------------------------*/
-
-void FixTemplateMultiplespheres::randomize_single()
-{
-  //NP displace, ex,ey,ez are for reference orientation
-
-  pti->nspheres = nspheres;
-  pti->density_ins = expectancy(pdf_density);
-  pti->volume_ins = volume_expect;
-  pti->mass_ins = mass_expect;
-  pti->r_bound_ins = r_bound;
-  vectorCopy3D(x_bound,pti->x_bound_ins);
-  pti->atom_type = atom_type;
-  if(atom_type_sphere)
-  {
-    vectorCopy3D(atom_type_sphere,pti->atom_type_vector);
-    pti->atom_type_vector_flag = true;
-  }
-
-  for(int j = 0; j < nspheres; j++)
-  {
-      pti->radius_ins[j] = r_sphere[j];
-      vectorCopy3D(x_sphere[j],pti->x_ins[j]);
-  }
-
-  vectorZeroize3D(pti->v_ins);
-  vectorZeroize3D(pti->omega_ins);
-
-  pti->groupbit = groupbit;
 }
 
 /* ----------------------------------------------------------------------*/

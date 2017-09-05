@@ -28,6 +28,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include "fix_insert_pack.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -302,7 +303,7 @@ int FixInsertPack::calc_ninsert_this()
   if(volumefraction_region > 0.)
   {
       MPI_Sum_Scalar(vol_region,world);
-      ninsert_this = static_cast<int>((volumefraction_region*region_volume - vol_region) / fix_distribution->vol_expect() + random->uniform());
+      ninsert_this = static_cast<int>((volumefraction_region*region_volume - vol_region) / fix_distribution->vol_expect() + randomAll->uniform());
       insertion_ratio = vol_region / (volumefraction_region*region_volume);
       /*NL*/ //if (screen) fprintf(screen,"ninsert_this %d, region_volume %f vol_region %f vol_expect %f\n",ninsert_this,region_volume,vol_region,fix_distribution->vol_expect());
   }
@@ -316,15 +317,22 @@ int FixInsertPack::calc_ninsert_this()
   else if(masstotal_region > 0.)
   {
       MPI_Sum_Scalar(mass_region,world);
-      ninsert_this = static_cast<int>((masstotal_region - mass_region) / fix_distribution->mass_expect() + random->uniform());
+      ninsert_this = static_cast<int>((masstotal_region - mass_region) / fix_distribution->mass_expect() + randomAll->uniform());
       insertion_ratio = mass_region / masstotal_region;
   }
   else error->one(FLERR,"Internal error in FixInsertPack::calc_ninsert_this()");
 
   // can be < 0 due to overflow, round-off etc
-  if(ninsert_this < -200000)
-    error->fix_error(FLERR,this,"overflow in particle number calculation: inserting too many particles in one step");
-  if(ninsert_this < 0) ninsert_this = 0;
+  int const warning_limit = static_cast<int>(0.9 * static_cast<double>( INT_MAX ) );
+  if(ninsert_this < 0){
+    if(comm->me == 0)
+      error->warning(FLERR,"No insertion at this time step. Either the insertion region is full, or (unlikely) an overflow in particle number calculation has occurred.");
+    ninsert_this = 0;
+  } else if(ninsert_this > warning_limit && comm->me == 0) {
+    char warning_msg[500];
+    sprintf(warning_msg,"Attempting to insert a very high number (%d) of particles - do you really want that?",ninsert_this);
+    error->warning(FLERR,warning_msg);
+  }
 
   if(insertion_ratio < 0.) insertion_ratio = 0.;
   if(insertion_ratio > 1.) insertion_ratio = 1.;
@@ -375,9 +383,13 @@ BoundingBox FixInsertPack::getBoundingBox() const {
                  ins_region->extent_ylo, ins_region->extent_yhi,
                  ins_region->extent_zlo, ins_region->extent_zhi);
 
-  const double cut = 2*maxrad;
-  bb.extendByDelta(cut);
   bb.shrinkToSubbox(domain->sublo, domain->subhi);
+
+  // extend to include ghost particles
+  const double cut = 2.*maxrad;
+  const double extend = cut + extend_cut_ghost();
+  bb.extendByDelta(extend);
+
   return bb;
 }
 

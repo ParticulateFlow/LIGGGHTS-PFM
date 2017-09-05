@@ -29,6 +29,7 @@
 #include "mpi_liggghts.h"
 #include "fix_ave_euler.h"
 #include "compute_stress_atom.h"
+#include "math_const.h"
 #include "math_extra_liggghts.h"
 #include "atom.h"
 #include "force.h"
@@ -43,12 +44,11 @@
 
 #define BIG 1000000000
 
-#define INVOKED_PERATOM 8
-
 #define SMALL 1e-6
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
 
@@ -312,7 +312,7 @@ void FixAveEuler::setup_bins()
         memory->grow(center_,ncells_max_,3,"ave/euler:center_");
         memory->grow(v_av_,  ncells_max_,3,"ave/euler:v_av_");
         memory->grow(vol_fr_,ncells_max_,  "ave/euler:vol_fr_");
-        memory->grow(weight_,ncells_max_,  "ave/euler:vol_fr_");
+        memory->grow(weight_,ncells_max_,  "ave/euler:weight_");
         memory->grow(radius_,ncells_max_,  "ave/euler:radius_");
         memory->grow(ncount_,ncells_max_,  "ave/euler:ncount_");
         memory->grow(mass_,ncells_max_,    "ave/euler:mass_");
@@ -626,7 +626,7 @@ void FixAveEuler::calculate_eu()
             stress_[icell][5] += -rmass[iatom]*(v[iatom][0]-v_av_[icell][0])*(v[iatom][2]-v_av_[icell][2]) + stress_atom[iatom][4];
             stress_[icell][6] += -rmass[iatom]*(v[iatom][1]-v_av_[icell][1])*(v[iatom][2]-v_av_[icell][2]) + stress_atom[iatom][5]; //NP modified A.A.: it was stress_[icell][5]
         }
-        stress_[icell][0] = -0.333333333333333*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
+        stress_[icell][0] = -THIRD*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
         if(weight_[icell] < eps_ntry)
             vectorZeroizeN(stress_[icell],7);
         else
@@ -640,7 +640,7 @@ void FixAveEuler::calculate_eu()
 
         // recalc pressure based on allreduced stress
         for(int icell = 0; icell < ncells_; icell++)
-            stress_[icell][0] = -0.333333333333333*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
+            stress_[icell][0] = -THIRD*(stress_[icell][1]+stress_[icell][2]+stress_[icell][3]);
     }
 
     // wrap with clear/add
@@ -662,8 +662,8 @@ double FixAveEuler::compute_array(int i, int j)
   else if(j < 3) return center_[i][j];
   else if(j == 3) return vol_fr_[i];
   else if(j < 7) return v_av_[i][j-4];
-  else if(j == 7) return stress_[i][0];
-  else if(j < 14) return stress_[i][j-8];
+  else if(j == 7) return stress_[i][0];   // 0: pressure
+  else if(j < 14) return stress_[i][j-7]; // 1 - 6: stress (Voigt notation)
   else if(j < 15) return radius_[i];
   else return 0.0;
 }

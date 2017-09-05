@@ -572,7 +572,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMeshParallel<NUM_NODES>::initalSetup()
+  void MultiNodeMeshParallel<NUM_NODES>::initialSetup()
   {
       nGlobalOrig_ = sizeLocal();
 

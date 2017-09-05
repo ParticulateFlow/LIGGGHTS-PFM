@@ -31,8 +31,6 @@
 
 using namespace LAMMPS_NS;
 
-#define INVOKED_SCALAR 1
-
 /* ---------------------------------------------------------------------- */
 
 ComputeEventDisplace::ComputeEventDisplace(LAMMPS *lmp, int narg, char **arg) :

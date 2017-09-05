@@ -1,0 +1,74 @@
+# Particle Fragmentation in a Ball Mill
+
+atom_style  granular
+atom_modify map array sort 0 0
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block -0.6 0.6 -0.16 0.16 -0.6 0.6 units box
+create_box  2 reg
+
+neighbor        0.0125 bin
+neigh_modify    delay 0
+
+# material properties required for pair style
+fix         m1 all property/global youngsModulus peratomtype 1.e7 1.e8
+fix         m2 all property/global poissonsRatio peratomtype 0.25 0.25
+fix         m3 all property/global coefficientRestitution peratomtypepair 2 0.97 0.97 0.97 0.97
+fix         m4 all property/global coefficientFriction peratomtypepair 2 0.1 0.1 0.1 0.1
+
+# pair style
+pair_style  gran model hertz/break tangential history
+pair_coeff  * *
+
+timestep    0.00001
+
+fix     gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix     mill all mesh/surface file meshes/ballmill.stl type 2
+fix     granwalls all wall/gran model hertz/break tangential history mesh n_meshes 1 meshes mill
+
+region  insreg block -0.4 0.4 -0.15 0.15 -0.4 0.3 units box
+
+# distributions for insertion
+fix     pts1 all particletemplate/sphere 31 atom_type 1 density constant 2650 radius constant 0.025
+fix     pts2 all particletemplate/sphere 21 atom_type 1 density constant 6500 radius constant 0.05
+fix     pdd1 all particledistribution/discrete 41 1 pts1 1.0
+fix     pdd2 all particledistribution/discrete 51 1 pts2 1.0
+
+# particle insertion
+fix     ins1 all insert/pack seed 5330 distributiontemplate pdd1 &
+            maxattempt 200 insert_every once overlapcheck yes all_in yes vel constant 0.0 0.0 0.0 &
+            region insreg particles_in_region 714
+
+# integrator
+fix     integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run     1
+
+dump    dmp all custom 5000 post/dump*.init id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+
+run     100000
+
+group   break region reg
+
+region  insreg2 block -0.4 0.4 -0.15 0.15 -0.1 0.2 units box
+fix     ins2 all insert/pack seed 5331 distributiontemplate pdd2 &
+            maxattempt 500 insert_every once overlapcheck yes all_in yes vel constant 0.0 0.0 0.0 &
+            region insreg2 particles_in_region 24
+
+run     199999 upto
+
+write_restart   ballmill.restart
+

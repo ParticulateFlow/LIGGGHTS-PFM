@@ -83,6 +83,9 @@ public:
   }
 
 
+  int64_t hashcode()
+  { return cmodel.hashcode(); }
+
   virtual void settings(int nargs, char ** args) {
     Settings settings(lmp);
     cmodel.registerSettings(settings);

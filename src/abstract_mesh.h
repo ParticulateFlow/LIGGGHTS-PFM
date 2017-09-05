@@ -90,7 +90,7 @@ namespace LAMMPS_NS
         //NP interface to MultiNodeMeshParallel
         //NP ***************************************
 
-        virtual void initalSetup() = 0;
+        virtual void initialSetup() = 0;
         virtual void pbcExchangeBorders(int setupFlag) = 0;
         virtual void clearReverse() = 0;
         virtual void forwardComm() = 0;

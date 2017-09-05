@@ -92,8 +92,6 @@ enum{LT,LE,GT,GE,EQ,NEQ};
 enum{INT,DOUBLE,STRING};    // same as in DumpCFG
 enum{VTK,VTP,VTU,PVTP,PVTU}; // file formats
 
-#define INVOKED_PERATOM 8
-
 /* ---------------------------------------------------------------------- */
 
 DumpCustomVTK::DumpCustomVTK(LAMMPS *lmp, int narg, char **arg) :

@@ -1,0 +1,62 @@
+# Particle Fragmentation
+
+atom_style  granular
+atom_modify map array sort 0 0
+boundary    f f p
+newton      off
+
+communicate single vel yes
+processors  1 1 *
+
+units       si
+
+region      reg block -0.375 0.375 -0.375 0.375 -0.375 0.375 units box
+create_box  1 reg
+
+neighbor        0.025 bin
+neigh_modify    delay 0
+
+# Material properties required for pair style
+
+fix         m1 all property/global youngsModulus peratomtype 1.e7
+fix         m2 all property/global poissonsRatio peratomtype 0.25
+fix         m3 all property/global coefficientRestitution peratomtypepair 1 1.0
+fix         m4 all property/global coefficientFriction peratomtypepair 1 0.0
+
+# pair style
+pair_style  gran model hertz/break tangential history
+pair_coeff  * *
+
+timestep    0.000001
+
+create_atoms    1 single 0.0 0.0 -0.2 units box
+create_atoms    1 single 0.0 0.0  0.2 units box
+create_atoms    1 single 0.0 0.0  0.0 units box
+set             atom 1 type 1 diameter 0.05 density 2650.
+set             atom 2 type 1 diameter 0.05 density 2650.
+set             atom 3 type 1 diameter 0.10 density 2650.
+group           p1 id 1
+group           p2 id 2
+group           p3 id 3
+group           break id 2
+velocity        p1 set 0.0 0.0  3.0 units box
+velocity        p2 set 0.0 0.0 -3.0 units box
+
+fix     pts2 break particletemplate/fragments 11 atom_type 1 density constant 2650 breakage_index 0.4 0.099 tn_family 3 2 5 10 maxattempt 200
+fix     pdd2 break particledistribution/discrete 1 1 pts2 1.0
+fix     breakid break break/particle seed 221 distributiontemplate pdd2 insert_every 1 fMat 0.9 energy_threshold 0.12 min_radius 0.024
+
+# integrator
+fix     integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run     30000
+dump    dmp all custom 500 post/dump*.impactbreak id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+run     75000 upto
+

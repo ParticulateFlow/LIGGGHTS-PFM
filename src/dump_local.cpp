@@ -29,7 +29,6 @@ using namespace LAMMPS_NS;
 
 enum{INT,DOUBLE};
 
-#define INVOKED_LOCAL 16
 #define ONEFIELD 32
 #define DELTA 1048576
 

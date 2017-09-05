@@ -27,11 +27,6 @@
 #include "neighbor.h"
 #include <string.h>
 
-#define BIG   1.0e20
-#define SMALL 1.0e-4
-#define DELTA 1
-#define FABS(a) ((a) > 0 ? (a) : (-a))
-
 namespace LAMMPS_NS {
 
 class Lbalance : protected Pointers {

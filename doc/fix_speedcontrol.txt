@@ -1,0 +1,87 @@
+"LAMMPS WWW Site"_lws - "LAMMPS Documentation"_ld - "LAMMPS Commands"_lc :c
+
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix speedcontrol command :h3
+
+[Syntax:]
+
+fix ID group-ID speedcontrol vx vy vz keyword value ... :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+speedcontrol = style name of this fix command :l
+vx,vy,vz = set-velocity component values (velocity units) :l
+  any of vx,vy,vz can be a variable (see below) :pre
+zero or more keyword/value pairs may be appended to args :l
+keyword = {region} or {gain} :l
+  {region} value = region-ID
+    region-ID = ID of region atoms must be in to have added force
+  {gain} value = gain
+    gain = proportional gain of the proportional controller :pre
+:ule
+
+[Examples:]
+
+fix kick flow speedcontrol 1.0 0.0 0.0
+fix kick flow speedcontrol 1.0 0.0 v_oscillate region force_reg
+fix kick flow speedcontrol 0.0 NULL v_push gain v_gain :pre
+
+[Description:]
+
+Add vx,vy,vz to the corresponding component of the set-velocity for 
+each atom in the group. This command can be used to constrain the 
+velocity of the atoms in a simulation, e.g. at an outlet with a 
+well-defined massflow (screw conveyor).
+
+This fix applies a force to each atom which is proportional to the 
+controller gain times the difference between the atom's velocity and 
+the set-velocity.
+
+Any of the 3 quantities defining the set-velocity can be specified
+as an equal-style or atom-style "variable"_variable.html, namely {vx},
+{vy}, {vz}.  If the value is a variable, it should be specified as
+v_name, where name is the variable name.  In this case, the variable
+will be evaluated each timestep, and its value(s) used to determine
+the set-velocity component. Any of the x,y,z values can be specified 
+as NULL which means do not include that dimension in the application 
+of the velocity controller.
+
+Equal-style variables can specify formulas with various mathematical
+functions, and include "thermo_style"_thermo_style.html command
+keywords for the simulation box parameters and timestep and elapsed
+time.  Thus it is easy to specify a time-dependent force field.
+
+Atom-style variables can specify the same formulas as equal-style
+variables but can also include per-atom values, such as atom
+coordinates.  Thus it is easy to specify a spatially-dependent force
+field with optional time-dependence as well.
+
+If the {region} keyword is used, the atom must also be in the
+specified geometric "region"_region.html in order to have its velocity 
+controlled.
+
+
+:line
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+No information about this fix is written to "binary restart
+files"_restart.html.
+
+No parameter of this fix can be used with the {start/stop} keywords of
+the "run"_run.html command.
+
+
+[Restrictions:] none
+
+[Related commands:]
+
+"fix addforce"_fix_addforce.html, "fix drag"_fix_drag.html
+
+[Default:]
+
+The option defaults are gain = 0.1

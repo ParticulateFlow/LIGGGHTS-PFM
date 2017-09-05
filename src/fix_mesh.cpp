@@ -396,7 +396,7 @@ void FixMesh::initialSetup()
     //NP   via Verlet::setup() which calls domain->reset_box()
     //NP also note that must do after parsing args since curvature influences
     //NP   neighbor build which is performed here as well
-    mesh_->initalSetup();
+    mesh_->initialSetup();
 
     // warn if there are elements that extend outside box
     if(!mesh_->allNodesInsideSimulationBox() && 0 == comm->me)
@@ -464,7 +464,7 @@ void FixMesh::final_integrate()
 
 /* ---------------------------------------------------------------------- */
 
-int FixMesh::min_type()
+int FixMesh::min_type() const
 {
     if(atom_type_mesh_ == -1) return 1;
     return atom_type_mesh_;
@@ -472,7 +472,7 @@ int FixMesh::min_type()
 
 /* ---------------------------------------------------------------------- */
 
-int FixMesh::max_type()
+int FixMesh::max_type() const
 {
     if(atom_type_mesh_ == -1) return 1;
     return atom_type_mesh_;

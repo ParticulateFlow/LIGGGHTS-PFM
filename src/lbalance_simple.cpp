@@ -33,6 +33,8 @@
 
 using namespace LAMMPS_NS;
 
+#define BIG   1.0e20
+
 /*NL*/ #define LMP_DEBUGMODE_LBALANCE_SIMPLE false
 /*NL*/ #define LMP_DEBUGMODE_LBALANCE_SIMPLE_RESULTS false //(idim==2)//(update->ntimestep>7000)
 /*NL*/ #define LMP_DEBUG_OUT_LBALANCE_SIMPLE screen

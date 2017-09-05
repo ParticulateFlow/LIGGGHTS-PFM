@@ -417,6 +417,10 @@ void lammps_gather_atoms(void *ptr, const char *name,
 
   int i,j,offset;
   void *vptr = lmp->atom->extract(name);
+  if (vptr == NULL) {
+    lmp->error->warning(FLERR,"lammps_gather_atoms: unknown property name");
+    return;
+  }
 
   // copy = Natom length vector of per-atom values
   // use atom ID to insert each atom's values into copy
@@ -435,15 +439,16 @@ void lammps_gather_atoms(void *ptr, const char *name,
     int *tag = lmp->atom->tag;
     int nlocal = lmp->atom->nlocal;
 
-    if (count == 1)
+    if (count == 1) {
       for (i = 0; i < nlocal; i++)
         copy[tag[i]-1] = vector[i];
-    else
+    } else {
       for (i = 0; i < nlocal; i++) {
         offset = count*(tag[i]-1);
         for (j = 0; j < count; j++)
-          copy[offset++] = array[i][0];
+          copy[offset++] = array[i][j];
       }
+    }
 
     MPI_Allreduce(copy,data,count*natoms,MPI_INT,MPI_SUM,lmp->world);
     lmp->memory->destroy(copy);
@@ -506,6 +511,10 @@ void lammps_scatter_atoms(void *ptr, const char *name,
 
   int i,j,m,offset;
   void *vptr = lmp->atom->extract(name);
+  if (vptr == NULL) {
+    lmp->error->warning(FLERR,"lammps_scatter_atoms: unknown property name");
+    return;
+  }
 
   // copy = Natom length vector of per-atom values
   // use atom ID to insert each atom's values into copy

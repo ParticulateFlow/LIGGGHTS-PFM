@@ -22,6 +22,7 @@ namespace MathConst {
   static const double MY_2PI = 6.28318530717958647692; // 2pi
   static const double MY_3PI = 9.42477796076937971538; // 3pi
   static const double MY_4PI = 12.56637061435917295384; // 4pi
+  static const double MY_4PI3 = 4.18879020478639098462; // 4pi/3
   static const double MY_PI2 = 1.57079632679489661923; // pi/2
   static const double MY_PI4 = 0.78539816339744830962; // pi/4
   static const double MY_PIS = 1.77245385090551602729; // sqrt(pi)

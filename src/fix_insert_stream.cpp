@@ -548,12 +548,15 @@ inline int FixInsertStream::is_nearby(int i)
 BoundingBox FixInsertStream::getBoundingBox() const {
   BoundingBox bb = ins_face->getGlobalBoundingBox();
 
-  const double cut = 3*maxrad;
-  bb.extendByDelta(cut);
-
-  const double delta = -(extrude_length + 2*cut);
+  const double cut = 3.*maxrad;
+  const double delta = -(extrude_length + 2.*cut);
   bb.extrude(delta, normalvec);
   bb.shrinkToSubbox(domain->sublo, domain->subhi);
+
+  // extend to include ghost particles
+  const double extend = cut + extend_cut_ghost();
+  bb.extendByDelta(extend);
+
   return bb;
 }
 

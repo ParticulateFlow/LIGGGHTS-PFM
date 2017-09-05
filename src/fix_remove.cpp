@@ -34,9 +34,11 @@
 #include "random_park.h"
 #include "fix_multisphere.h"
 #include "multisphere_parallel.h"
+#include "math_const.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 enum{REMOVE_SHRINK,REMOVE_DELETE};
 
@@ -56,6 +58,8 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   mass_removed_(0.),
   mass_to_remove_(0.),
   time_origin_(update->ntimestep),
+  verbose_(false),
+  compress_flag_(1),
   fix_ms_(0),
   ms_(0)
 {
@@ -106,6 +110,24 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       type_remove_ = atoi(arg[iarg++]);
       if (type_remove_ <= 0)
           error->fix_error(FLERR,this,"'atomtype' > 0 required");
+    } else if(strcmp(arg[iarg],"verbose") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'verbose'");
+      if(strcmp(arg[iarg+1],"yes") == 0)
+        verbose_ = true;
+      else if(strcmp(arg[iarg+1],"no"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'verbose'");
+      iarg += 2;
+    } else if(strcmp(arg[iarg],"compress") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"Illegal compress option");
+      if(strcmp(arg[iarg+1],"yes") == 0)
+        compress_flag_ = 1;
+      else if(strcmp(arg[iarg+1],"no") == 0)
+        compress_flag_ = 0;
+      else
+        error->fix_error(FLERR,this,"Illegal compress option, expecing 'yes' or 'no'");
+      iarg += 2;
     } else error->fix_error(FLERR,this,"unknown keyword");
   }
 
@@ -212,11 +234,14 @@ void FixRemove::pre_exchange()
     // print to logfile
 
     if(0 == comm->me)
-        fprintf( screen,"Timestep %d, removing material, mass to remove this step %f\n",
+    {
+        if(verbose_ && screen)
+            fprintf(screen,"Timestep %d, removing material, mass to remove this step %f\n",
                         time_now,mass_to_remove_);
-    if(0 == comm->me && logfile)
-        fprintf(logfile,"Timestep %d, removing material, mass to remove this step %f\n",
+        if(logfile)
+            fprintf(logfile,"Timestep %d, removing material, mass to remove this step %f\n",
                         time_now,mass_to_remove_);
+    }
 
     // return if nothing to do
     //NP could e.g. be because very large particle was deleted last deletion step
@@ -258,16 +283,23 @@ void FixRemove::pre_exchange()
     MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
     mass_removed_ += mass_removed_this;
 
-    if(comm->me == 0 && screen)
-        fprintf(screen,"    Ammount actually removed %f (#particles totally removed %d)\n",
-                mass_removed_this,nremoved_this);
-    if(comm->me == 0 && logfile)
-        fprintf(logfile,"    Ammount actually removed %f (#particles totally removed %d)\n",
-                mass_removed_this,nremoved_this);
+    if(comm->me == 0)
+    {
+        if(verbose_ && screen)
+            fprintf(screen,"    Ammount actually removed %f (#particles totally removed %d)\n",
+                    mass_removed_this,nremoved_this);
+        if(logfile)
+            fprintf(logfile,"    Ammount actually removed %f (#particles totally removed %d)\n",
+                    mass_removed_this,nremoved_this);
+    }
 
     //NP tags and maps
     int i;
-    if (atom->molecular == 0) {
+
+    // if non-molecular system and compress flag set,
+    // reset atom tags to be contiguous
+
+    if (atom->molecular == 0 && compress_flag_) {
       int *tag = atom->tag;
       for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
       atom->tag_extend();
@@ -358,7 +390,7 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
 
     if(mass_eligible == 0.)
     {
-        if(mass_to_remove_ > 0. && comm->me == 0)
+        if(verbose_ && mass_to_remove_ > 0. && comm->me == 0)
             error->warning(FLERR,"Fix remove requested to removed mass, but no eligible particles found");
         return false;
     }
@@ -399,7 +431,7 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
     }
     body_tags_eligible_.clear();
 
-    if(0 == comm->me)
+    if(verbose_ && 0 == comm->me)
         error->warning(FLERR,"Fix remove removed less mass than requested");
 }
 
@@ -441,7 +473,7 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
     if(mass_shrink_me > 0. && mass_to_remove_me > 0.)
     {
         ratio_m = 1. - mass_to_remove_me / mass_shrink_me;
-        ratio_r = pow(ratio_m,0.33333);
+        ratio_r = pow(ratio_m, THIRD);
 
         for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
         {

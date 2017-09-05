@@ -41,9 +41,6 @@ class FixTemplateMultisphere : public FixTemplateMultiplespheres {
 
   void init();
 
-  // called at single insertion
-  virtual void randomize_single();
-
   // called at multi insertion
   void init_ptilist(int);
   void delete_ptilist();
