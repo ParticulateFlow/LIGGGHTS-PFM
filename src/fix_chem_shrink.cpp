@@ -71,29 +71,25 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_tgas            =   NULL;
     fix_reactionheat_   =   NULL;
     fix_totalMole_      =   NULL;
-
-    screenflag_ = 0;
-    iarg_ = 3;
-    k0 = 0;
-    molMass_A_ = 0;
-    molMass_C_ = 0;
-    molMass_B_ = 0;
-    nu_A_ = 1;
-    nu_B_ = 1;
-    nu_C_ = 1;
     pmass_ = NULL;
+    speciesA = speciesC = NULL;
+
     rmin = 0.;
     minMolarFrac = 1e-3;
-    spcA = 0;
-    spcC = 0;
+    k0 = 0;
+    molMass_A_ = molMass_C_ = molMass_B_ = 0;
+    nu_A_ = nu_B_ = nu_C_ = 1;
 
+    spcA = spcC = 0;
+    screenflag_ = 0;
+
+    iarg_ = 3;
     bool hasargs = true;
 
-    if (narg < 16) error -> all (FLERR,"not enough arguments");
+    if (narg < 24) error -> all (FLERR,"Fix chem/shrink: Wrong number of arguments");
 
     while (iarg_ < narg && hasargs)
     {
-
         hasargs = false;
 
         if (strcmp(arg[iarg_],"speciesA") == 0)
@@ -103,30 +99,26 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             spcA = 1;
             speciesA = new char [strlen(arg[iarg_+1])];
             strcpy(speciesA,arg[iarg_+1]);
-            if(strlen(speciesA) < 1)
-                error -> fix_error(FLERR,this,"speciesA not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"molMassA") == 0)
         {
-            if (spcA != 1)
-                error -> fix_error(FLERR, this, "have to define speciesA before 'molMassA'");
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_A_ = atof(arg[iarg_+1]);
             if (molMass_A_ < 0)
                 error -> fix_error(FLERR, this, "molar mass of A is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"nuA") == 0)
         {
             nu_A_ = atoi(arg[iarg_+1]);
             if (nu_A_ < 1)
                 error -> fix_error(FLERR, this, "nuA is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"speciesC") == 0)
         {
@@ -135,12 +127,9 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             spcC = 1;
             speciesC = new char [strlen(arg[iarg_+1])];
             strcpy(speciesC,arg[iarg_+1]);
-            if (strlen(speciesC) < 1)
-                error -> fix_error(FLERR, this, "speciesC not defined");
-            iarg_ +=2;
             hasargs = true;
-        }
-       else if (strcmp(arg[iarg_],"molMassC") == 0)
+            iarg_ +=2;
+        }else if (strcmp(arg[iarg_],"molMassC") == 0)
         {
             if (spcC != 1)
                 error -> fix_error(FLERR, this, "have to define keyword 'speciesC' before 'molMassC'");
@@ -149,16 +138,16 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             molMass_C_ = atof(arg[iarg_+1]);
             if (molMass_C_ < 0)
                 error -> fix_error(FLERR, this, "molMassC > 0 is required");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"nuC") == 0)
         {
             nu_C_ = atoi(arg[iarg_+1]);
             if (nu_C_ < 1)
                 error -> fix_error(FLERR, this, "nuC is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"molMassB") == 0)
         {
@@ -167,16 +156,16 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             molMass_B_ = atof(arg[iarg_+1]);
             if (molMass_B_ < 0)
                 error -> fix_error(FLERR, this, "molMassB > 0 is required");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"nuB") == 0)
         {
             nu_B_ = atoi(arg[iarg_+1]);
             if (nu_B_ < 1)
                 error -> fix_error(FLERR, this, "nuB is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"k") == 0)
         {
@@ -185,8 +174,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             k0 = atof(arg[iarg_+1]);
             if (k0 <= 0)
                 error -> fix_error(FLERR, this, "k is not (well-)defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"rmin") == 0)
         {
@@ -195,14 +184,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             rmin = atof(arg[iarg_+1]);
             if (rmin == 0)
                 error -> fix_error(FLERR, this, "rmin is not defined");
-            iarg_+=2;
             hasargs = true;
+            iarg_+=2;
         }else if (strcmp(arg[iarg_],"nevery") == 0)
         {
             nevery = atoi(arg[iarg_+1]);
             if (nevery <= 0) error->fix_error(FLERR,this,"");
-            iarg_+=2;
             hasargs = true;
+            iarg_+=2;
         }else if (strcmp(arg[iarg_],"screen") == 0)
         {
             if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
@@ -211,6 +200,10 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             else error->all(FLERR,"Illegal fix/chem/shrink command");
             iarg_ += 2;
             hasargs = true;
+        }
+        else if (strcmp(this->style,"chem/shrink") == 0)
+        {
+            error->fix_error(FLERR,this,"necessary keyword is missing");
         }
     }
 
