@@ -89,13 +89,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
     bool hasargs = true;
 
-    if (narg < 16)
-        error -> all (FLERR,"not enough arguments");
+    if (narg < 16) error -> all (FLERR,"not enough arguments");
+
     while (iarg_ < narg && hasargs)
     {
+
         hasargs = false;
 
-        if(strcmp(arg[iarg_],"speciesA") == 0)
+        if (strcmp(arg[iarg_],"speciesA") == 0)
         {
             if (narg < iarg_ + 2)
                 error -> fix_error(FLERR, this, "not enough arguments for 'speciesA'");
@@ -110,11 +111,11 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
         else if (strcmp(arg[iarg_],"molMassA") == 0)
         {
             if (spcA != 1)
-                error -> fix_error(FLERR, this, "have to define keyword 'speciesA' before 'molMassA'");
+                error -> fix_error(FLERR, this, "have to define speciesA before 'molMassA'");
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_A_ = atof(arg[iarg_+1]);
-            if (molMass_A_ < 1)
+            if (molMass_A_ < 0)
                 error -> fix_error(FLERR, this, "molar mass of A is not defined");
             iarg_ +=2;
             hasargs = true;
@@ -146,7 +147,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_C_ = atof(arg[iarg_+1]);
-            if (molMass_C_ < 1)
+            if (molMass_C_ < 0)
                 error -> fix_error(FLERR, this, "molMassC > 0 is required");
             iarg_ +=2;
             hasargs = true;
@@ -164,7 +165,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_B_ = atof(arg[iarg_+1]);
-            if (molMass_B_ < 1)
+            if (molMass_B_ < 0)
                 error -> fix_error(FLERR, this, "molMassB > 0 is required");
             iarg_ +=2;
             hasargs = true;
@@ -413,9 +414,6 @@ void FixChemShrink::post_force(int)
     pdensity_ = atom -> density;
     TimeStep = update -> dt;
     current_timestep = update->ntimestep;
-
-    int nlocal = atom -> nlocal;
-    int i;
     
     // skip if integration not wanted at this timestep
     if (current_timestep % nevery) 
