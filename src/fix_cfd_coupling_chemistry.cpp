@@ -71,9 +71,11 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         error -> all (FLERR,"Fix couple/cfd/chemistry: Wrong number of arguments");
 
    bool hasargs = true;
+
    while (iarg_ < narg && hasargs)
     {
         hasargs = false;
+
         if (strcmp(arg[iarg_],"n_species") == 0)
         {
             n_species = 1;
@@ -89,11 +91,9 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         else if (strcmp(arg[iarg_],"species_names") == 0)
         {
             if (n_species != 1)
-                error -> fix_error (FLERR,this, "have to define keyword 'n_species' before 'species_names'");
+                error -> fix_error (FLERR,this, "have to define n_species before 'species_names'");
             if (iarg_ + num_species > narg)
                 error -> fix_error(FLERR,this, "Wrong number of arguments");
-            if (num_species < 1)
-                error -> fix_error(FLERR,this,"n_species > 0 is required");
             species_names_ = new char*[num_species];
             iarg_++;
             for (int i = 0; i < num_species; i++)
