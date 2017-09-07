@@ -47,7 +47,6 @@
 #include <iostream>
 #include <fstream>
 
-
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
@@ -62,43 +61,45 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     nmaxlayers_(3),
     layers_(nmaxlayers_),
     rmin_(0.001),       //  [m]
-    fix_k0_(0),         //  [m/s]
-    fix_molMass_(0),    //  [kg/mole]
-    fix_Ea_(0),         //  [J/mol] - [kg*m^2/s^2*mol]
-    fix_dens_(0),       //  [kg/m^3]
-    fix_layerRelRad_(0),
-    fix_layerMass_(0),  //  [kg]
-    fix_porosity_(0),   //  [%]
-    fix_tortuosity_(0),
-    fix_pore_diameter_(0),   //[m]
+    fix_changeOfA_(0),
+    fix_changeOfC_(0),
+    fix_rhogas_(0),
+    fix_tgas_(0),
+    fix_reactionHeat_(0),
+    fix_diffcoeff_(0),
+    fix_nuField_(0),
+    fix_partRe_(0),
     fix_molefraction_(0),
+    // for debug purposes, should be deleted afterwards
+    fix_fracRed(0),
     //
-    fix_fracRed(0)
+    fix_layerRelRad_(0),
+    fix_layerMass_(0),      //  [kg]
+    fix_dens_(0),           //  [kg/m^3]
+    fix_molMass_(0),        //  [kg/mole]
+    fix_k0_(0),             //  [m/s]
+    fix_Ea_(0),             //  [J/mol] - [kg*m^2/s^2*mol]
+    fix_porosity_(0),       //  [%]
+    fix_tortuosity_(0),
+    fix_pore_diameter_(0)  //  [m]
 {
     if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
     // defaults
-    fix_changeOfA_      =   NULL;
-    fix_changeOfC_      =   NULL;
-    fix_rhogas_         =   NULL;
-    fix_tgas_           =   NULL;
-    fix_reactionHeat_   =   NULL;
-    fix_diffcoeff_      =   NULL;
-    fix_nuField_        =   NULL;
-    fix_partRe_         =   NULL;
-
     screenflag_ =   0;
-    molMass_A_  =   molMass_C_ = 0;
+    molMass_A_  =   molMass_C_  = 0;
+    speciesA    =   speciesC    = NULL;
     pmass_      =   NULL;
     fc_         =   NULL;
     comm_established = false;
-
     iarg_ = 3;
+
     if (narg < 11)
         error->all(FLERR, "not enough arguments");
 
     bool hasargs = true;
+
     while (iarg_ < narg && hasargs)
     {
         if (strcmp(arg[iarg_], "speciesA") == 0)
@@ -114,8 +115,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             if (iarg_ + 2 > narg)
                 error->fix_error(FLERR, this, "Wrong number of arguments");
-            if (strlen(speciesA) < 1)
-                error->fix_error(FLERR, this, "speciesA is not defined");
             molMass_A_ = atof(arg[iarg_ + 1]);
             if (molMass_A_ < 0)
                 error->fix_error(FLERR, this, "molar mass of A is not defined");
@@ -135,8 +134,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             if (iarg_ + 2 > narg)
                 error->fix_error(FLERR, this, "Wrong number of arguments");
-            if (strlen(speciesC) < 1)
-                error->fix_error(FLERR, this, "speciesC not defined");
             molMass_C_ = atof(arg[iarg_ + 1]);
             if (molMass_C_ < 0)
                 error->fix_error(FLERR, this, "molar mass of C is not defined");
@@ -149,8 +146,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (strcmp(arg[iarg_+1],"yes") == 0) screenflag_ = 1;
             else if (strcmp(arg[iarg_+1],"no") == 0) screenflag_ = 0;
             else error->all(FLERR,"Illegal fix/chem/shrink command");
-            iarg_ += 2;
             hasargs = true;
+            iarg_ += 2;
         }
         else if (strcmp(arg[iarg_],"nevery") == 0)
         {
@@ -158,6 +155,10 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (nevery <= 0) error->fix_error(FLERR,this,"");
             iarg_+=2;
             hasargs = true;
+        }
+        else if (strcmp(this->style,"chem/shrink") == 0)
+        {
+            error->fix_error(FLERR,this,"necessary keyword is missing");
         }
     }
 
@@ -213,19 +214,17 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 {
     if (unfixflag)
     {
+        if (fix_changeOfA_)     modify  ->  delete_fix(massA);
+        if (fix_changeOfC_)     modify  ->  delete_fix(massC);
         if (fix_rhogas_)        modify  ->  delete_fix("partRho");
         if (fix_tgas_)          modify  ->  delete_fix("partTemp");
         if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
-        if (fix_changeOfA_)     modify  ->  delete_fix(massA);
-        if (fix_changeOfC_)     modify  ->  delete_fix(massC);
         if (fix_diffcoeff_)     modify  ->  delete_fix(diffA);
         if (fix_nuField_)       modify  ->  delete_fix("partNu");
         if (fix_partRe_)        modify  ->  delete_fix("partRe");
         if (fix_molefraction_)  modify  ->  delete_fix(moleFrac);
-        //
+        // fracRed is for debug purposes to see fractional reduction
         if (fix_fracRed)        modify  ->  delete_fix("fracRed");
-
-        // fixes from shrink/core property/globals will not be deleted
         if (fix_layerRelRad_) modify->  delete_fix("relRadii");
         if (fix_layerMass_)   modify -> delete_fix("massLayer");
     }
@@ -325,20 +324,20 @@ void FixChemShrinkCore::updatePtrs()
     rhogas_         =   fix_rhogas_     ->  vector_atom;
     T_              =   fix_tgas_       ->  vector_atom;
     reactionHeat_   =   fix_reactionHeat_-> vector_atom;
-    // nu field & part Reynolds
+    // handle for diffusion coefficient
+    molecularDiffusion_     =   fix_diffcoeff_  ->  vector_atom;
+    // handles for viscosity field and reynolds number
     nuf_            =   fix_nuField_    ->  vector_atom;
     Rep_            =   fix_partRe_     ->  vector_atom;
-    // diffusion coefficient
-    molecularDiffusion_         =   fix_diffcoeff_  ->  vector_atom;
-    // bulk gas mole fraction at particle location
+    // handle for molar fraction
     X0_             =   fix_molefraction_   -> vector_atom;
 
+    // handle for relative radius
     relRadii_       =   fix_layerRelRad_    -> array_atom;
-    layerDensities_ =   fix_dens_           -> get_values();
-
     // mass handle
     massLayer_      = fix_layerMass_    ->  array_atom;
-
+    // density handle
+    layerDensities_ =   fix_dens_           -> get_values();
     // molar mass handle
     layerMolMasses_ = fix_molMass_   -> get_values();
     // chemical prop
