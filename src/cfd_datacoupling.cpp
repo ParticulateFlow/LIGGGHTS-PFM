@@ -359,7 +359,7 @@ bigint CfdDatacoupling::latestpush(const char *name)
     if(comm->me == 0 && screen)
         fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::latestpush(const char *name).\n",name);
     lmp->error->all(FLERR,"This error is fatal");
-    return NULL;
+    return 0;
 }
 
 bigint CfdDatacoupling::latestpull(const char *name)
@@ -374,6 +374,6 @@ bigint CfdDatacoupling::latestpull(const char *name)
     if(comm->me == 0 && screen)
         fprintf(screen,"LIGGGHTS could not find property %s requested by CfdDatacoupling::latestpull(const char *name).\n",name);
     lmp->error->all(FLERR,"This error is fatal");
-    return NULL;
+    return 0;
 }
 
