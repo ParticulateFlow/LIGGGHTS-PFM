@@ -111,6 +111,20 @@
       return 0;
   }
 
+  template<typename T> template<typename U>
+  U* AssociativePointerArray<T>::getPointerByIndex(int i)
+  {
+    if(i >= size() || i < 0) return 0;
+    else return dynamic_cast<U*>(content_[i]);
+  }
+
+  template<typename T>
+  T* AssociativePointerArray<T>::getBasePointerByIndex(int i) const
+  {
+    if(i >= size() || i < 0) return 0;
+    else return content_[i];
+  }
+
   /* ----------------------------------------------------------------------
    memory management
   ------------------------------------------------------------------------- */
@@ -128,7 +142,7 @@
   }
 
   template<typename T>
-  int AssociativePointerArray<T>::size()
+  int AssociativePointerArray<T>::size() const
   {
     return content_.size();
   }
@@ -320,10 +334,10 @@
   ------------------------------------------------------------------------- */
 
   template<typename T>
-  int AssociativePointerArray<T>::bufSize(int operation,bool scale,bool translate,bool rotate)
+  int AssociativePointerArray<T>::bufSize(int operation,bool scale,bool translate,bool rotate) const
   {
     int buf_size = 0;
-    for(content_iterator it = content_.begin(); it != content_.end(); ++it)
+    for(content_const_iterator it = content_.begin(); it != content_.end(); ++it)
       buf_size += it->second->bufSize(operation,scale,translate,rotate);
     return buf_size;
   }

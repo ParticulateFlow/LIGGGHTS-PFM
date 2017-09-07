@@ -84,9 +84,13 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
   iarg = 3;
 
   if(strcmp(arg[iarg++],"seed")) error->fix_error(FLERR,this,"expecting keyword 'seed'");
-  seed = atoi(arg[iarg++]) + comm->me;
+  seed = atoi(arg[iarg++]);
   if (seed <= 0) error->fix_error(FLERR,this,"illegal seed");
 
+  // random number generator, seed independent of proc
+  randomAll = new RanPark(lmp,seed);
+
+  seed += comm->me;
   // random number generator, seed depends on proc
   random = new RanPark(lmp,seed);
 
@@ -284,6 +288,7 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
 FixInsert::~FixInsert()
 {
   delete random;
+  delete randomAll;
   delete [] recvcounts;
   delete [] displs;
   delete [] property_name;
@@ -592,7 +597,7 @@ int FixInsert::calc_ninsert_this()
   if(ninsert_per == 0.) error->fix_error(FLERR,this,"ninsert_per == 0.");
 
   // number of bodies to insert this timestep
-  int ninsert_this = static_cast<int>(ninsert_per + random->uniform());
+  int ninsert_this = static_cast<int>(ninsert_per + randomAll->uniform());
   if (ninsert_exists && ninserted + ninsert_this > ninsert) ninsert_this = ninsert - ninserted;
 
   /*NL*/ // if (screen) fprintf(screen,"ninsert_per %f, ninsert_this %d\n",ninsert_per,ninsert_this);
@@ -797,6 +802,8 @@ void FixInsert::pre_exchange()
 
 int FixInsert::distribute_ninsert_this(int ninsert_this)
 {
+    if(ninsert_this == 0) return 0;
+
     int me, nprocs, ngap, ninsert_this_local, *ninsert_this_local_all;
     double fraction_local, fraction_local_all_sum, *fraction_local_all, *remainder, r, rsum;
 
@@ -988,12 +995,14 @@ void FixInsert::restart(char *buf)
   double *list = (double *) buf;
   bigint next_reneighbor_re;
 
-  seed = static_cast<int> (list[n++]) + comm->me;
+  seed = static_cast<int> (list[n++]);
   ninserted = static_cast<int> (list[n++]);
   first_ins_step = static_cast<int> (list[n++]);
   next_reneighbor_re = static_cast<bigint> (list[n++]);
   massinserted = list[n++];
 
+  randomAll->reset(seed);
+  seed += comm->me;
   random->reset(seed);
 
   // in order to be able to continue pouring with increased number of particles

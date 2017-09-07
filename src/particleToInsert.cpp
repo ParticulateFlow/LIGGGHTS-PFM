@@ -23,6 +23,7 @@
    Contributing authors:
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Richard Berger (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include "particleToInsert.h"
@@ -39,32 +40,34 @@
 
 using namespace LAMMPS_NS;
 
-ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) : Pointers(lmp)
+ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) :
+  Pointers(lmp),
+  nspheres(ns),
+  groupbit(0),
+  atom_type(0),
+  density_ins(0.0),
+  volume_ins(0.0),
+  mass_ins(0.0),
+  r_bound_ins(0.0),
+  atom_type_vector_flag(false)
 {
-        groupbit = 0;
-
-        nspheres = ns;
-
-        memory->create(x_ins,nspheres,3,"x_ins");
-        radius_ins = new double[nspheres];
-
-        atom_type_vector = new int[nspheres];
-        atom_type_vector_flag = false;
-
-        fix_property = 0;
-        fix_property_value = 0.;
-        fix_property_ivalue = 0;
-        property_index = -1;
-        property_iindex = -1;
+    memory->create(x_ins,nspheres,3,"x_ins");
+    radius_ins = new double[nspheres]();
+    atom_type_vector = new int[nspheres]();
+    fix_property = 0;
+    fix_property_value = 0.;
+    fix_property_ivalue = 0;
+    property_index = -1;
+    property_iindex = -1;
 }
 
 /* ---------------------------------------------------------------------- */
 
 ParticleToInsert::~ParticleToInsert()
 {
-        memory->destroy(x_ins);
-        delete []radius_ins;
-        delete []atom_type_vector;
+    memory->destroy(x_ins);
+    delete []radius_ins;
+    delete []atom_type_vector;
 }
 
 /* ---------------------------------------------------------------------- */

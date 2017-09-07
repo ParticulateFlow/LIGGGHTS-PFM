@@ -1,0 +1,62 @@
+# Particle Fragmentation - variable impact energy threshold
+
+atom_style      sphere
+atom_modify     map array sort 0 0
+boundary        m m f
+newton          off
+
+communicate     single vel yes
+
+units           si
+
+region          reg block -0.375 0.375 -0.375 0.375 -0.375 0.375 units box
+create_box      1 reg
+
+neighbor        0.025 bin
+neigh_modify    delay 0
+
+# material properties required for granular pair style
+fix m1 all property/global youngsModulus peratomtype 1.e7
+fix m2 all property/global poissonsRatio peratomtype 0.25
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.97
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.1
+
+# pair style
+pair_style  gran model hertz/break tangential history
+pair_coeff  * *
+
+timestep    0.000001
+
+create_atoms    1 single 0.01 0.0 0.0 units box
+create_atoms    1 single 0.14 0.0 0.0 units box
+create_atoms    1 single 0.27 0.0 0.0 units box
+set             atom 1 type 1 diameter 0.05 density 2650.
+set             atom 2 type 1 diameter 0.05 density 2650.
+set             atom 3 type 1 diameter 0.05 density 2650.
+velocity        all set 0.0 0.0 -3.5 units box
+
+fix zwalls1 all wall/gran model hertz/break tangential history primitive type 1 zplane -0.375
+fix zwalls2 all wall/gran model hertz/break tangential history primitive type 1 zplane  0.375
+
+variable fMatvar      equal 0.9
+variable thresholdvar atom 9.65*x*x
+
+fix pts2 all particletemplate/fragments 34331 atom_type 1 density constant 2650 breakage_index 0.3 0.099 tn_family 4 2 3 5 10
+fix pdd2 all particledistribution/discrete 35621 1 pts2 1.0
+fix breakid all break/particle seed 75221 distributiontemplate pdd2 every 1 fMat v_fMatvar energy_threshold v_thresholdvar &
+    min_radius 0.024 breakability constant 0.1
+
+# integrator
+fix integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes extra 0
+
+run     50000
+dump    dmp all custom 500 post/dump*.impactwallbreak id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+run     150000 upto
+

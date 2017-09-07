@@ -482,7 +482,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T, int NUM_VEC, int LEN_VEC>
-  int GeneralContainer<T,NUM_VEC,LEN_VEC>::bufSize(int operation,bool scale,bool translate,bool rotate)
+  int GeneralContainer<T,NUM_VEC,LEN_VEC>::bufSize(int operation,bool scale,bool translate,bool rotate) const
   {
       if(!this->decidePackUnpackOperation(operation,scale,translate,rotate))
             return 0;

@@ -55,9 +55,14 @@ class AssociativePointerArray
 
         T* getBasePointerById(const char *_id);
 
+        template <typename U>
+        U* getPointerByIndex(int i);
+
+        T* getBasePointerByIndex(int i) const;
+
         void grow(int to);
 
-        int size();
+        int size() const;
 
         bool sameLength(int _len);
 
@@ -82,7 +87,7 @@ class AssociativePointerArray
         void moveElement(int i,double *delta);
         void scale(double factor);
 
-        inline int bufSize(int operation,bool scale,bool translate,bool rotate);
+        inline int bufSize(int operation,bool scale,bool translate,bool rotate) const;
         inline int pushToBuffer(double *buf, int operation,bool scale,bool translate, bool rotate);
         inline int popFromBuffer(double *buf, int operation,bool scale,bool translate, bool rotate);
 
@@ -102,6 +107,7 @@ class AssociativePointerArray
 
         std::map<std::string, T*> content_;
         typedef typename std::map<std::string, T*>:: iterator content_iterator;
+        typedef typename std::map<std::string, T*>:: const_iterator content_const_iterator;
 };
 
   // *************************************

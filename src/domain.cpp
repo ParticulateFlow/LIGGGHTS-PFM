@@ -67,6 +67,7 @@ enum{NO_REMAP,X_REMAP,V_REMAP};                   // same as fix_deform.cpp
 Domain::Domain(LAMMPS *lmp) : Pointers(lmp)
 {
   box_exist = 0;
+  box_change = 0;
 
   dimension = 3;
   nonperiodic = 0;
@@ -1360,7 +1361,7 @@ void Domain::delete_region(int narg, char **arg)
    return -1 if no such region
 ------------------------------------------------------------------------- */
 
-int Domain::find_region(char *name)
+int Domain::find_region(const char *name)
 {
   for (int iregion = 0; iregion < nregion; iregion++)
     if (strcmp(name,regions[iregion]->id) == 0) return iregion;

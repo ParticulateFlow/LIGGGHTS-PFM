@@ -209,7 +209,7 @@ class Pair : protected Pointers {
   FILE *open_potential(const char *);
   const char *potname(const char *);
 
-  inline int sbmask(int j) {
+  inline int sbmask(int j) const {
     return j >> SBBITS & 3;
   }
 };

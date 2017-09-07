@@ -149,6 +149,7 @@ class FixInsert : public Fix {
 
   // random generator
   class RanPark *random;
+  class RanPark *randomAll;
   int seed;
 
   // all2all comm

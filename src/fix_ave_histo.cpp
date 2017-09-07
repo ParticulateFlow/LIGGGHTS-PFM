@@ -35,12 +35,6 @@ enum{SCALAR,VECTOR,WINDOW};
 enum{GLOBAL,PERATOM,LOCAL};
 enum{IGNORE,END,EXTRA};
 
-#define INVOKED_SCALAR 1
-#define INVOKED_VECTOR 2
-#define INVOKED_ARRAY 4
-#define INVOKED_PERATOM 8
-#define INVOKED_LOCAL 16
-
 #define BIG 1.0e20
 /* ---------------------------------------------------------------------- */
 
@@ -250,14 +244,18 @@ FixAveHisto::FixAveHisto(LAMMPS *lmp, int narg, char **arg) :
   for (int i = 0; i < nvalues; i++) {
     if (which[i] == X || which[i] == V || which[i] == F) kindflag = PERATOM;
     else if (which[i] == COMPUTE) {
-      Compute *compute = modify->compute[modify->find_compute(ids[0])];
+      int c_id = modify->find_compute(ids[i]);
+      if (c_id < 0) error->all(FLERR,"Fix ave/histo input is invalid compute");
+      Compute *compute = modify->compute[c_id];
       if (compute->scalar_flag || compute->vector_flag || compute->array_flag)
         kindflag = GLOBAL;
       else if (compute->peratom_flag) kindflag = PERATOM;
       else if (compute->local_flag) kindflag = LOCAL;
       else error->all(FLERR,"Fix ave/histo input is invalid compute");
     } else if (which[i] == FIX) {
-      Fix *fix = modify->fix[modify->find_fix(ids[0])];
+      int f_id = modify->find_fix(ids[i]);
+      if (f_id < 0) error->all(FLERR,"Fix ave/histo input is invalid fix");
+      Fix *fix = modify->fix[f_id];
       if (fix->scalar_flag || fix->vector_flag || fix->array_flag)
         kindflag = GLOBAL;
       else if (fix->peratom_flag) kindflag = PERATOM;
@@ -265,6 +263,7 @@ FixAveHisto::FixAveHisto(LAMMPS *lmp, int narg, char **arg) :
       else error->all(FLERR,"Fix ave/histo input is invalid fix");
     } else if (which[i] == VARIABLE) {
       int ivariable = input->variable->find(ids[i]);
+      if (ivariable < 0) error->all(FLERR,"Fix ave/histo input is invalid variable");
       if (input->variable->equalstyle(ivariable)) kindflag = GLOBAL;
       else if (input->variable->atomstyle(ivariable)) kindflag = PERATOM;
       else error->all(FLERR,"Fix ave/histo input is invalid variable");

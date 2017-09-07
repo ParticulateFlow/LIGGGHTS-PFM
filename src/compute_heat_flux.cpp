@@ -28,8 +28,6 @@
 
 using namespace LAMMPS_NS;
 
-#define INVOKED_PERATOM 8
-
 /* ---------------------------------------------------------------------- */
 
 ComputeHeatFlux::ComputeHeatFlux(LAMMPS *lmp, int narg, char **arg) :

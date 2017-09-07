@@ -5,6 +5,7 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
+   Department of Particulate Flow Modelling
    Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
@@ -18,8 +19,9 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-   contributing authors
-   Philippe Seil (JKU)
+   Contributing authors:
+   Philippe Seil (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
    ---------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS

@@ -651,10 +651,6 @@ Click on the style itself for a full description:
 "molfile"_dump_molfile.html,
 "movie"_dump_image.html :tb(c=4,ea=c)
 
-These are accelerated styles, which can be used if LAMMPS is built with the "appropriate accelerated package"_Section_accelerate.html.
-
- :tb(c=4,ea=c)
-
 :line
 
 fix styles :h4
@@ -680,6 +676,8 @@ of each style or click on the style itself for a full description:
 "bond/create"_fix_bond_create.html,
 "bond/swap"_fix_bond_swap.html,
 "box/relax"_fix_box_relax.html,
+"break/particle"_fix_break_particle.html,
+"buoyancy"_fix_buoyancy.html,
 "cfd/coupling/recurrence"_fix_cfd_coupling_recurrence.html,
 "check/timestep/gran"_fix_check_timestep_gran.html,
 "colvars"_fix_colvars.html,
@@ -758,6 +756,7 @@ of each style or click on the style itself for a full description:
 "nvt/sphere"_fix_nvt_sphere.html,
 "orient/fcc"_fix_orient_fcc.html,
 "particledistribution/discrete"_fix_particledistribution_discrete.html,
+"particletemplate/fragments"_fix_particletemplate_fragments.html,
 "particletemplate/multisphere"_fix_particletemplate_multisphere.html,
 "particletemplate/sphere"_fix_particletemplate_sphere.html,
 "phonon"_fix_phonon.html,
@@ -789,6 +788,7 @@ of each style or click on the style itself for a full description:
 "setforce"_fix_setforce.html,
 "shake"_fix_shake.html,
 "smd"_fix_smd.html,
+"speedcontrol"_fix_speedcontrol.html,
 "sph/density/continuity"_fix_sph_density_continuity.html,
 "sph/density/corr"_fix_sph_density_corr.html,
 "sph/density/summation"_fix_sph_density_summation.html,

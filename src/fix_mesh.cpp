@@ -423,7 +423,7 @@ void FixMesh::initialSetup()
     //NP   via Verlet::setup() which calls domain->reset_box()
     //NP also note that must do after parsing args since curvature influences
     //NP   neighbor build which is performed here as well
-    mesh_->initalSetup();
+    mesh_->initialSetup();
 
     // warn if there are elements that extend outside box
     if(!mesh_->allNodesInsideSimulationBox() && 0 == comm->me)

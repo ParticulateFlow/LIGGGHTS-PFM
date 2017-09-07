@@ -46,6 +46,8 @@ namespace Walls {
     virtual void compute_force(FixWallGran * fwg, ContactModels::CollisionData & cdata, double * v_wall,
                                ContactModels::ForceData & i_forces,
                                ContactModels::ForceData & j_forces) = 0;
+
+    virtual int64_t hashcode() = 0;
   };
 
   class Factory : public Utils::AbstractFactory<IGranularWall> {

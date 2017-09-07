@@ -83,6 +83,9 @@ class FixParticledistribution : public Fix {
   // only set if pti were inserted from outside
   virtual void finalize_insertion(bool pti_delete_flag = false);
 
+  virtual int n_particletemplates() const { return -1; }
+  virtual class FixTemplateSphere** particletemplates() { return NULL; }
+
  protected:
 
   int ninserted;

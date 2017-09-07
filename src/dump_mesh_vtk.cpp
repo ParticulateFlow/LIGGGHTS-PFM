@@ -54,7 +54,7 @@ enum
     DUMP_ACORNERS = 512,
     DUMP_INDEX = 1024,
     DUMP_NNEIGHS = 2048,
-    DUMP_MIN_ACTIVE_EDGE_DIST = 2048
+    DUMP_MIN_ACTIVE_EDGE_DIST = 4096
 };
 
 enum
@@ -113,7 +113,7 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
           if (iarg+2 > narg) error->all(FLERR,"Dump mesh/vtk: not enough arguments for 'interpolate'");
           if(strcmp(arg[iarg+1],"face")==0) dataMode_ = 0;
           else if(strcmp(arg[iarg+1],"interpolate")==0) dataMode_ = 1;
-          else error->all(FLERR,"Dump mesh/vtk: wrong arrgument for 'output'");
+          else error->all(FLERR,"Dump mesh/vtk: wrong argument for 'output'");
           iarg += 2;
           hasargs = true;
       }
@@ -1185,7 +1185,7 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
       }
       buf_pos++;
   }
-  if(dump_what_ & DUMP_NNEIGHS)
+  if(dump_what_ & DUMP_MIN_ACTIVE_EDGE_DIST)
   {
       //write owner data
       fprintf(fp,"SCALARS min_active_edge_dist float 1\nLOOKUP_TABLE default\n");
