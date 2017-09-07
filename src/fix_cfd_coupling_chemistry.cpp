@@ -62,10 +62,9 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   fix_molarfraction_(0)
 {
     num_species = 0;
-    int n = 16;
-    char mod[30];
     n_species = 0;
     iarg_ = 3;
+    mod_spec_names_ = diffusant_names_ = molarfraction_names = NULL;
 
    if (narg < iarg_ + 3)
         error -> all (FLERR,"Fix couple/cfd/chemistry: Wrong number of arguments");
@@ -116,20 +115,17 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
    molarfraction_names = new char *[num_species];
    for (int i = 0; i < num_species; i++)
    {
-       mod_spec_names_[i] = new char [n];
-       diffusant_names_[i] = new char [n];
-       molarfraction_names[i] = new char [n];
-       strcpy(mod,"Modified_");
-       strcat(mod,species_names_[i]);
-       strcpy(mod_spec_names_[i],mod);
+       mod_spec_names_[i] = new char [strlen("Modified_")+strlen(species_names_[i])+1];
+       strcpy(mod_spec_names_[i],"Modified_");
+       strcat(mod_spec_names_[i],species_names_[i]);
 
-       strcpy(mod,species_names_[i]);
-       strcat(mod,"_diffCoeff");
-       strcpy(diffusant_names_[i],mod);
+       diffusant_names_[i] = new char [strlen(species_names_[i])+strlen("_diffCoeff")+1];
+       strcpy(diffusant_names_[i],species_names_[i]);
+       strcat(diffusant_names_[i],"_diffCoeff");
 
-       strcpy(mod,"X_");
-       strcat(mod,species_names_[i]);
-       strcpy(molarfraction_names[i],mod);
+       molarfraction_names[i] = new char [strlen("X_")+strlen(species_names_[i])+1];
+       strcpy(molarfraction_names[i],"X_");
+       strcat(molarfraction_names[i],species_names_[i]);
    }
 
    // flags for vector output
