@@ -62,7 +62,7 @@ FixMassflowMeshFaceUniverse::FixMassflowMeshFaceUniverse(LAMMPS *lmp, int narg, 
     int iarg = 3;
 
     bool hasargs = true;
-    while(iarg < narg && hasargs)
+    while (iarg < narg && hasargs)
     {
         hasargs = false;
 
@@ -121,7 +121,7 @@ void FixMassflowMeshFaceUniverse::send_post_create_data()
 
 void FixMassflowMeshFaceUniverse::send_coupling_data()
 {
-    if((couple_every_ > 0) &&  (update->ntimestep > 0) && ((update->ntimestep-1) % couple_every_ == 0))
+    if ((couple_every_ > 0) &&  (update->ntimestep > 0) && ((update->ntimestep-1) % couple_every_ == 0))
     {
         // only proc 0 sends data
         if (comm->me == 0 && send_to_world_ >= 0)
@@ -130,12 +130,12 @@ void FixMassflowMeshFaceUniverse::send_coupling_data()
 
             MPI_Send(&particles_since_last, 1, MPI_INT, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
 
-            if(particles_since_last > 0)
+            if (particles_since_last > 0)
             {
                 int send_data_size = distributions_faces_.size()*(3+faceid2index_.size());
                 std::vector<double> send_data;
                 send_data.reserve(send_data_size);
-                for(std::map<ConstantParticleTemplateSphere, std::vector<double> >::iterator it=distributions_faces_.begin(); it!=distributions_faces_.end(); ++it)
+                for (std::map<ConstantParticleTemplateSphere, std::vector<double> >::iterator it=distributions_faces_.begin(); it!=distributions_faces_.end(); ++it)
                 {
                     send_data.push_back(it->first.radius_);
                     send_data.push_back(it->first.mass_);
@@ -160,15 +160,15 @@ void FixMassflowMeshFaceUniverse::send_coupling_data()
                 std::transform (mass_face_.begin(), mass_face_.end(), mass_face_last_.begin(), mass_face_since_last_.begin(), std::minus<double>());
 
                 // send vx per face
-                for(int i=0; i<send_data_size; ++i)
+                for (int i=0; i<send_data_size; ++i)
                     send_data[i] = (mass_face_since_last_[i] > 0.) ? average_vx_face_out_[i]/mass_face_since_last_[i] : 0.;
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
                 // send vy per face
-                for(int i=0; i<send_data_size; ++i)
+                for (int i=0; i<send_data_size; ++i)
                     send_data[i] = (mass_face_since_last_[i] > 0.) ? average_vy_face_out_[i]/mass_face_since_last_[i] : 0.;
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
                 // send vz per face
-                for(int i=0; i<send_data_size; ++i)
+                for (int i=0; i<send_data_size; ++i)
                     send_data[i] = (mass_face_since_last_[i] > 0.) ? average_vz_face_out_[i]/mass_face_since_last_[i] : 0.;
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
 
@@ -176,21 +176,21 @@ void FixMassflowMeshFaceUniverse::send_coupling_data()
                 std::transform (inertia_face_.begin(), inertia_face_.end(), inertia_face_last_.begin(), inertia_face_since_last_.begin(), std::minus<double>());
 
                 // send omegax per face
-                for(int i=0; i<send_data_size; ++i)
+                for (int i=0; i<send_data_size; ++i)
                     send_data[i] = (inertia_face_since_last_[i] > 0.) ? average_omegax_face_out_[i]/inertia_face_since_last_[i] : 0.;
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
                 // send omegay per face
-                for(int i=0; i<send_data_size; ++i)
+                for (int i=0; i<send_data_size; ++i)
                     send_data[i] = (inertia_face_since_last_[i] > 0.) ? average_omegay_face_out_[i]/inertia_face_since_last_[i] : 0.;
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
                 // send omegaz per face
-                for(int i=0; i<send_data_size; ++i)
+                for (int i=0; i<send_data_size; ++i)
                     send_data[i] = (inertia_face_since_last_[i] > 0.) ? average_omegaz_face_out_[i]/inertia_face_since_last_[i] : 0.;
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
             }
         }
 
-        if(reset_t_count_)
+        if (reset_t_count_)
         {
             delta_t_ = t_count_;
             t_count_ = 0.;
