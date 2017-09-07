@@ -124,7 +124,7 @@ void FixMassflowMeshFaceUniverse::send_coupling_data()
     if((couple_every_ > 0) &&  (update->ntimestep > 0) && ((update->ntimestep-1) % couple_every_ == 0))
     {
         // only proc 0 sends data
-        if(comm->me == 0)
+        if (comm->me == 0 && send_to_world_ >= 0)
         {
             int particles_since_last = (nparticles_-nparticles_last_)*cg3_;
 
