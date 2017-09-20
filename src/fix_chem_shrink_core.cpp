@@ -622,46 +622,40 @@ void FixChemShrinkCore::getB(int i, double *b_)
     if (comm -> me == 0 && screen)
         fprintf(screen,"DO GET B FUNCTION!! \n");
 
-    double BinaryDiff_[nmaxlayers_];
-    double KnudsenDiff_[nmaxlayers_];
+    double BinaryDiff_= 0.0;
+    double KnudsenDiff_= 0.0;
+    double diffTotal_ = 0.0;
     double fracRedThird_[nmaxlayers_];
-    double diffTotal_[nmaxlayers_];
     diffEff_ = new double [nmaxlayers_];
 
     for (int j = 0; j < layers_; j++)
     {
         // calculate fractional reduction to the power of 1/3 for simpler use
         fracRedThird_[j] = pow((1-fracRed_[i][j]),THIRD);
-
-        // Calculate the effective molecular diffusion affecting every layer (Porosity changes in every layer!!)
-        BinaryDiff_[j] = molecularDiffusion_[i];
-
-        // Due to resistance equation define effective molecular diffusion as 1 over.
-        // Make sure that it is not divided by zero
-        if (molecularDiffusion_[i] != 0.0) // or (BinaryDiff_[i] != 0)
-            BinaryDiff_[j]   =   1.0/BinaryDiff_[j];
-        else
-            BinaryDiff_[j] = 0.0;
-
-        // Calculate the knudsen diffusion of every layer (Porosity changes for every layer!!)
-        KnudsenDiff_[j]  =   pore_diameter_[i]/6.*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_));
-
-        // Due t resistance equation define the Knudsen diffusion as 1 over
-        KnudsenDiff_[j]   =   1.0/KnudsenDiff_[j];
-
-        diffTotal_[j]   = BinaryDiff_[j] + KnudsenDiff_[j]
     }
+
+    // Calculate the effective molecular diffusion
+    BinaryDiff_ = molecularDiffusion_[i];
+
+    // Due to resistance equation define effective molecular diffusion as 1 over.
+    // Make sure that it is not divided by zero
+    if (molecularDiffusion_[i] != 0.0) // or (BinaryDiff_[i] != 0)
+        BinaryDiff_   =   1.0/BinaryDiff_;
+
+    // Calculate the knudsen diffusion
+    KnudsenDiff_  =   pore_diameter_[i]/6.*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_));
+
+    // Due t resistance equation define the Knudsen diffusion as 1 over
+    KnudsenDiff_   =   1.0/KnudsenDiff_;
+
+    diffTotal_   = BinaryDiff_ + KnudsenDiff_;
 
     // debug options -- print out values for effective molecular diffusion to screen
     if (screenflag_ && screen)
     {
         fprintf(screen,"dCoeff value is : %f \n", molecularDiffusion_[i]);
-        fprintf(screen,"eff. binary diff 0: %f \n",BinaryDiff_[0]);
-        fprintf(screen,"eff. binary diff 1: %f \n",BinaryDiff_[1]);
-        fprintf(screen,"eff. binary diff 2: %f \n",BinaryDiff_[2]);
-        fprintf(screen,"eff. knudsen diff 0: %f \n",KnudsenDiff_[0]);
-        fprintf(screen,"eff. knudsen diff 1: %f \n",KnudsenDiff_[1]);
-        fprintf(screen,"eff. knudsen diff 2: %f \n",KnudsenDiff_[2]);
+        fprintf(screen,"binary diff 0: %f \n",BinaryDiff_);
+        fprintf(screen,"knudsen diff: %f \n",KnudsenDiff_);
         fprintf(screen,"layerPorosity 0: %f \n",layerPorosity_(0));
         fprintf(screen,"layerPorosity 1: %f \n",layerPorosity_(1));
         fprintf(screen,"layerPorosity 2: %f \n",layerPorosity_(2));
@@ -673,7 +667,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     for (int j = 0; j < layers_ ; j++)
     {
-        diffEff_[j] = BinaryDiff_[j] + KnudsenDiff_[j];
+        diffEff_[j] = (layerPorosity_(j)/tortuosity_[i])*(1/diffTotal_);
     }
 
     if (screenflag_ && screen)
@@ -685,13 +679,13 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
-    b_[0]   =   (1-fracRedThird_[0])/fracRedThird_[0]*radius_[i]*diffEff_[0];
+    b_[0]   =   (1-fracRedThird_[0])/fracRedThird_[0]*(radius_[i]/diffEff_[0]);
 
     for (int j = 1; j < layers_; j++)
     {
         // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
         // b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
-        b_[j] = (fracRedThird_[j-1]-fracRedThird_[j])/(fracRedThird_[j-1]*fracRedThird_[j])*radius_[i]*diffEff_[j];
+        b_[j] = (fracRedThird_[j-1]-fracRedThird_[j])/(fracRedThird_[j-1]*fracRedThird_[j])*(radius_[i]/diffEff_[j]);
     }
 
     if (screenflag_ && screen)
@@ -767,17 +761,11 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
     double Sc_[atom->nlocal];
     double Sh_[atom->nlocal];
 
-    Sc_[i]  =   nuf_[i]*diffEff_[i];
+    Sc_[i]  =   nuf_[i]/diffEff_[i];
     Sh_[i]  =   2+0.6*pow(Rep_[i],0.5)*pow(Sc_[i],THIRD);
 
-    if (diffEff_[i] == 0.)
-    {
-        masst_[i]   =   0.0;
-    } else
-    {
-        masst_[i] = Sh_[i]/(diffEff_[i]*2*radius_[i]);
-        masst_[i] = 1/masst_[i];
-    }
+    masst_[i] = Sh_[i]*diffEff_[i]/(2*radius_[i]);
+    masst_[i] = 1/masst_[i];
 
     if (screenflag_ && screen)
     {
