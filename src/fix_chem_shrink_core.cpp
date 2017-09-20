@@ -54,6 +54,11 @@ using namespace MathConst;
 #define SMALL   1e-10
 #define Runiv   8.3144
 
+// mass equivalents used to calculate effective densities
+#define q_Fe2O3_Fe3O4   0.966603
+#define q_Fe3O4_FeO     0.9110
+#define q_FeO_Fe        0.699426
+
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
@@ -79,7 +84,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_molMass_(0),        //  [kg/mole]
     fix_k0_(0),             //  [m/s]
     fix_Ea_(0),             //  [J/mol] - [kg*m^2/s^2*mol]
-    fix_porosity_(0),       //  [%]
+    //fix_porosity_(0),       //  [%]
     fix_tortuosity_(0),
     fix_pore_diameter_(0)  //  [m]
 {
@@ -93,6 +98,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fc_         =   NULL;
     comm_established = false;
     iarg_ = 3;
+    rhoeff_Fe2O3 = rhoeff_Fe3O4 = rhoeff_FeO = rhoeff_Fe = 0.;
 
     if (narg < 11)
         error->all(FLERR, "not enough arguments");
@@ -340,7 +346,7 @@ void FixChemShrinkCore::updatePtrs()
     // activation energy
     Ea_             =  fix_Ea_       -> get_values();
     // particle porosity properties
-    porosity_       =   fix_porosity_       -> get_values();
+    //porosity_       =   fix_porosity_       -> get_values();
     tortuosity_     =   fix_tortuosity_     -> get_values();
     pore_diameter_  =   fix_pore_diameter_  -> get_values();
 
@@ -409,7 +415,7 @@ void FixChemShrinkCore::init()
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
 
     // lookup porosity,tortuosity and pore diameter values
-    fix_porosity_       =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("porosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
+    // fix_porosity_       =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("porosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
     fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
     fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
 
@@ -418,6 +424,18 @@ void FixChemShrinkCore::init()
     for (int i = 0; i < atom->nlocal; i++)
     {
         calcMassLayer(i);
+
+        rhoeff_Fe2O3 = atom->density[i];
+        rhoeff_Fe3O4 = rhoeff_Fe2O3*q_Fe2O3_Fe3O4;
+        rhoeff_FeO  =   rhoeff_Fe3O4*q_Fe3O4_FeO;
+        rhoeff_Fe   =   rhoeff_FeO*q_FeO_Fe;
+    }
+    if (screenflag_ && screen)
+    {
+        fprintf(screen, "rhoeff_Fe2O3: %f \n", rhoeff_Fe2O3);
+        fprintf(screen, "rhoeff_Fe3O4: %f \n", rhoeff_Fe3O4);
+        fprintf(screen, "rhoeff_FeO: %f \n", rhoeff_FeO);
+        fprintf(screen, "rhoeff_Fe: %f \n", rhoeff_Fe);
     }
 }
 
@@ -462,11 +480,11 @@ void FixChemShrinkCore::post_force(int)
                         dmA_[j] = 0.0;
                     }
                     getA(i,a_);
-                    // getB(i,b_);
+                    getB(i,b_);
                     // getMassT(i,masst_);
                     // reaction(i, a_, dmA_,x0_eq_, b_, masst_);
-                    // reaction2(i,a_,dmA_,x0_eq_, b_);
-                    reaction3(i,a_,dmA_,x0_eq_);
+                    reaction2(i,a_,dmA_,x0_eq_, b_);
+                    // reaction3(i,a_,dmA_,x0_eq_);
                     update_atom_properties(i,dmA_);
                     update_gas_properties(i,dmA_);
                     FractionalReduction(i);
@@ -546,11 +564,12 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 {
     // calculate equilibrium concentration from K_eq(layer, T)
     double xp_eq_[nmaxlayers_];
+    double kc = 0.4;
 
     for (int j = 0; j < layers_; j++)
     {
-        xp_eq_[j]  =   K_eq(j,T_[i])/(1+K_eq(j,T_[i]));
-        x0_eq_[j]  =   1-xp_eq_[j];
+        xp_eq_[j]  =   kc*K_eq(j,T_[i])/(1+K_eq(j,T_[i]));
+        x0_eq_[j]  =   kc/(1+K_eq(j,T_[i]));
 
         // for debug
         // ==========================================
@@ -561,6 +580,8 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
         }
         // ==========================================
     }
+
+    // X0_[i] = std::min(X0_[i],kc);
 
     // for debug
     // ==========================================
@@ -598,33 +619,101 @@ void FixChemShrinkCore::getA(int i, double *a_)
 // effective diffusion coefficient.
 void FixChemShrinkCore::getB(int i, double *b_)
 {
-  /*  if (comm -> me == 0 && screen)
+    if (comm -> me == 0 && screen)
         fprintf(screen,"DO GET B FUNCTION!! \n");
 
-    double effMolecularDiff_[atom->nlocal];
-    double effKnudsenDiff_[atom->nlocal];
+    double BinaryDiff_[nmaxlayers_];
+    double KnudsenDiff_[nmaxlayers_];
     double fracRedThird_[nmaxlayers_];
+    double diffTotal_[nmaxlayers_];
+    diffEff_ = new double [nmaxlayers_];
 
-    for (int k=0;k<nmaxlayers_;k++)
+    for (int j = 0; j < layers_; j++)
     {
-        fracRedThird_[k] = pow((1-fracRed_[i][k]),THIRD);
+        // calculate fractional reduction to the power of 1/3 for simpler use
+        fracRedThird_[j] = pow((1-fracRed_[i][j]),THIRD);
+
+        // Calculate the effective molecular diffusion affecting every layer (Porosity changes in every layer!!)
+        BinaryDiff_[j] = molecularDiffusion_[i];
+
+        // Due to resistance equation define effective molecular diffusion as 1 over.
+        // Make sure that it is not divided by zero
+        if (molecularDiffusion_[i] != 0.0) // or (BinaryDiff_[i] != 0)
+            BinaryDiff_[j]   =   1.0/BinaryDiff_[j];
+        else
+            BinaryDiff_[j] = 0.0;
+
+        // Calculate the knudsen diffusion of every layer (Porosity changes for every layer!!)
+        KnudsenDiff_[j]  =   pore_diameter_[i]/6.*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_));
+
+        // Due t resistance equation define the Knudsen diffusion as 1 over
+        KnudsenDiff_[j]   =   1.0/KnudsenDiff_[j];
+
+        diffTotal_[j]   = BinaryDiff_[j] + KnudsenDiff_[j]
     }
 
-    diffEff_    =   new double [atom->nlocal];
+    // debug options -- print out values for effective molecular diffusion to screen
+    if (screenflag_ && screen)
+    {
+        fprintf(screen,"dCoeff value is : %f \n", molecularDiffusion_[i]);
+        fprintf(screen,"eff. binary diff 0: %f \n",BinaryDiff_[0]);
+        fprintf(screen,"eff. binary diff 1: %f \n",BinaryDiff_[1]);
+        fprintf(screen,"eff. binary diff 2: %f \n",BinaryDiff_[2]);
+        fprintf(screen,"eff. knudsen diff 0: %f \n",KnudsenDiff_[0]);
+        fprintf(screen,"eff. knudsen diff 1: %f \n",KnudsenDiff_[1]);
+        fprintf(screen,"eff. knudsen diff 2: %f \n",KnudsenDiff_[2]);
+        fprintf(screen,"layerPorosity 0: %f \n",layerPorosity_(0));
+        fprintf(screen,"layerPorosity 1: %f \n",layerPorosity_(1));
+        fprintf(screen,"layerPorosity 2: %f \n",layerPorosity_(2));
+    }
 
-    // effecitve binary diffusion coefficient
-    effMolecularDiff_[i] = molecularDiffusion_[i]*porosity_[i]/tortuosity_[i];
+    // total effective diffusivity
+    // Eq. : 1/D_i,j = 1/D_eff_binary + 1/D_eff_knudsen
+    // diffEff_[i] = 1/D_i,j
+
+    for (int j = 0; j < layers_ ; j++)
+    {
+        diffEff_[j] = BinaryDiff_[j] + KnudsenDiff_[j];
+    }
 
     if (screenflag_ && screen)
     {
-        fprintf(screen,"eff. binary diff: %f \n",effMolecularDiff_[i]);
-        fprintf(screen,"dCoeff value is : %f \n", molecularDiffusion_[i]);
+        fprintf(screen,"eff. diff 0: %f \n",diffEff_[0]);
+        fprintf(screen,"eff. diff 1: %f \n",diffEff_[1]);
+        fprintf(screen,"eff. diff 2: %f \n",diffEff_[2]);
     }
 
-    if (molecularDiffusion_[i] != 0.0) // or (effMolecularDiff_[i] != 0)
+    // calculation of Diffustion Term from Valipour 2009
+    // from wustite to iron
+    b_[0]   =   (1-fracRedThird_[0])/fracRedThird_[0]*radius_[i]*diffEff_[0];
+
+    for (int j = 1; j < layers_; j++)
     {
-        effMolecularDiff_[i]   =   1.0/effMolecularDiff_[i];
+        // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
+        // b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
+        b_[j] = (fracRedThird_[j-1]-fracRedThird_[j])/(fracRedThird_[j-1]*fracRedThird_[j])*radius_[i]*diffEff_[j];
     }
+
+    if (screenflag_ && screen)
+    {
+        fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
+        fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
+        fprintf(screen,"diffusion constant [2]: %f \n",b_[2]);
+    }
+
+    // effecitve binary diffusion coefficient
+    // BinaryDiff_[i] = molecularDiffusion_[i]*porosity_[i]/tortuosity_[i];
+
+    // if (screenflag_ && screen)
+    // {
+    //     fprintf(screen,"eff. binary diff: %f \n",BinaryDiff_[i]);
+    //    fprintf(screen,"dCoeff value is : %f \n", molecularDiffusion_[i]);
+    // }
+
+    //if (molecularDiffusion_[i] != 0.0) // or (BinaryDiff_[i] != 0)
+    //{
+    //    BinaryDiff_[i]   =   1.0/BinaryDiff_[i];
+    //}
 
     // Knudsen diff equation is either
     // D_{i,k} = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
@@ -632,42 +721,50 @@ void FixChemShrinkCore::getB(int i, double *b_)
     // D_{i,k} = 4850*dp*sqrt(T_[i]/molMass_A_) dp supposed to be in cm
     // we use si units so convert from meter to cm!
 
-    // effKnudsenDiff_[i]   =  48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
-    effKnudsenDiff_[i]  =   pore_diameter_[i]/6.*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*porosity_[i]/tortuosity_[i];
-    effKnudsenDiff_[i]   =   1.0/effKnudsenDiff_[i];
-    if (screenflag_ && screen)
-    {
-        fprintf(screen,"eff. knudsen diff: %f \n",effKnudsenDiff_[i]);
-    }
+    // KnudsenDiff_[i]   =  48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
+    // KnudsenDiff_[i]  =   pore_diameter_[i]/6.*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*porosity_[j]/tortuosity_[i];
+    // KnudsenDiff_[i]   =   1.0/KnudsenDiff_[i];
+    // if (screenflag_ && screen)
+    // {
+    //     fprintf(screen,"eff. knudsen diff: %f \n",KnudsenDiff_[i]);
+    // }
 
     // total effective diffusivity
     // Eq. : 1/D_i,j = 1/D_eff_binary + 1/D_eff_knudsen
     // diffEff_[i] = 1/D_i,j
-    diffEff_[i] = effMolecularDiff_[i] + effKnudsenDiff_[i];
+    // diffEff_[i] = BinaryDiff_[i] + KnudsenDiff_[i];
 
-    if (screenflag_ && screen)
-        fprintf(screen,"eff. diff: %f \n",diffEff_[i]);
+    // if (screenflag_ && screen)
+    //    fprintf(screen,"eff. diff: %f \n",diffEff_[i]);
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
     // diffEff_[i] = 1/D_i,j thus instead of dividing radius by diffEff we multiply it.
     // b_[0]   =   (1-relRadii_[i][1])/(relRadii_[i][1])*(radius_[i]*diffEff_[i]);
-    b_[0]   =   (1-fracRedThird_[0])/fracRedThird_[0]*radius_[i]*diffEff_[i];
+    //b_[0]   =   (1-fracRedThird_[0])/fracRedThird_[0]*radius_[i]*diffEff_[i];
 
-    for (int j = 1; j < layers_; j++)
+    /*for (int j = 1; j < layers_; j++)
     {
         // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
         // b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
         b_[j] = (fracRedThird_[j-1]-fracRedThird_[j])/(fracRedThird_[j-1]*fracRedThird_[j])*radius_[i]*diffEff_[i];
+    }
+
+    if (screenflag_ && screen)
+    {
+        fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
+        fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
+        fprintf(screen,"diffusion constant [2]: %f \n",b_[2]);
     } */
+
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrinkCore::getMassT(int i, double *masst_)
 {
-    // initialize sherwood & schmidt numbers for every particle
-/*    double Sc_[atom->nlocal];
+  /*  // initialize sherwood & schmidt numbers for every particle
+    double Sc_[atom->nlocal];
     double Sh_[atom->nlocal];
 
     Sc_[i]  =   nuf_[i]*diffEff_[i];
@@ -687,7 +784,7 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
         fprintf(screen, "Schmidt number: %f \n",Sc_[i]);
         fprintf(screen, "Sherwood number: %f \n",Sh_[i]);
         fprintf(screen, "masst: %f \n",masst_[i]);
-    }*/
+    } */
 }
 /* ---------------------------------------------------------------------- */
 
@@ -997,5 +1094,19 @@ void FixChemShrinkCore::FractionalReduction(int i)
     {
         fracRed_[i][k] = f_[k];
     }
+}
+
+
+/* ---------------------------------------------------------------------- */
+double FixChemShrinkCore::layerPorosity_(int layer)
+{
+    double eps_ = 0.;
+    if (layer == 2)
+        eps_ = 1 - rhoeff_Fe3O4/layerDensities_[2];
+    if (layer == 1)
+        eps_ = 1 - rhoeff_FeO/layerDensities_[1];
+    if (layer == 0)
+        eps_ = 1 - rhoeff_Fe/layerDensities_[0];
+    return eps_;
 }
 

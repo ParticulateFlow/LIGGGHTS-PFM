@@ -63,6 +63,7 @@ public:
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
   void FractionalReduction(int);
+  double layerPorosity_(int);
 
  protected:
    int iarg_;
@@ -76,8 +77,12 @@ public:
    // name of diffusant species
    char *diffA, *moleFrac;
 
+   // effective densities
+   double rhoeff_Fe2O3, rhoeff_Fe3O4, rhoeff_FeO, rhoeff_Fe;
+
    // material properties porosity, tortuosity, and pore diameter
-   const double *porosity_, *tortuosity_, *pore_diameter_;
+   //const double *porosity_,
+   const double *tortuosity_, *pore_diameter_;
    double *diffEff_;
 
   // maximum number of layers to be used for chemical reactions, currently 3
@@ -91,6 +96,22 @@ public:
   // gas-phase properties
   char *speciesA, *speciesC;
 
+  double *radius_;                                  // radius of particle
+  double **relRadii_;                               // relative radii
+  double **massLayer_;
+  double *pmass_;                                   // particle mass
+  double *pdensity_;
+  const double *layerDensities_, *layerMolMasses_;
+  const double *k0_, *Ea_;
+
+  // molar masses of gas species
+  double molMass_A_, molMass_C_;
+
+  // handle names
+  double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_;
+  //
+  double **fracRed_;
+
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
   class FixPropertyAtom *fix_rhogas_;                           //  density of gas
   class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
@@ -100,17 +121,6 @@ public:
   class FixPropertyAtom *fix_partRe_;
   class FixPropertyAtom *fix_molefraction_;
   class FixPropertyAtom *fix_fracRed;
-
-  // define porosity values for all particles (glibal
-  class FixPropertyGlobal *fix_porosity_;
-  class FixPropertyGlobal *fix_tortuosity_;
-  class FixPropertyGlobal *fix_pore_diameter_;
-
-  // molar masses of gas species
-  double molMass_A_, molMass_C_;
-
-  // handle names
-  double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
@@ -123,18 +133,12 @@ public:
   class FixPropertyGlobal *fix_k0_;
   class FixPropertyGlobal *fix_Ea_;
 
-  double *radius_;                                  // radius of particle
-  double **relRadii_;                               // relative radii
-  double **massLayer_;
-  double *pmass_;                                   // particle mass
-  double *pdensity_;
-  const double *layerDensities_, *layerMolMasses_;
-  const double *k0_, *Ea_;
+  // define porosity values for all particles (glibal
+  // class FixPropertyGlobal *fix_porosity_;
+  class FixPropertyGlobal *fix_tortuosity_;
+  class FixPropertyGlobal *fix_pore_diameter_;
 
   class FixCfdCoupling* fc_;
-
-  //
-  double **fracRed_;
 };
 }
 
