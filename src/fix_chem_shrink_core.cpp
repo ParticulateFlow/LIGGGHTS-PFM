@@ -554,6 +554,13 @@ void FixChemShrinkCore::calcMassLayer(int i)
         massLayer_[i][j]   =   1.33333*M_PI*((relRadii_[i][j]*relRadii_[i][j]*relRadii_[i][j])-(relRadii_[i][j+1]*relRadii_[i][j+1]*relRadii_[i][j+1]))*layerDensities_[j];
         massLayer_[i][j]   *= rad*rad*rad;
     }
+    if(screenflag_ && screen)
+    {
+        fprintf(screen, "massLayer Fe: %f \n", massLayer_[i][0]);
+        fprintf(screen, "massLayer FeO: %f \n", massLayer_[i][1]);
+        fprintf(screen, "massLayer Fe3O4: %f \n", massLayer_[i][2]);
+        fprintf(screen, "massLayer Fe2O3: %f \n", massLayer_[i][3]);
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -563,12 +570,10 @@ void FixChemShrinkCore::calcMassLayer(int i)
 void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 {
     // calculate equilibrium concentration from K_eq(layer, T)
-    double xp_eq_[nmaxlayers_];
     double kc = 0.4;
 
     for (int j = 0; j < layers_; j++)
     {
-        xp_eq_[j]  =   kc*K_eq(j,T_[i])/(1+K_eq(j,T_[i]));
         x0_eq_[j]  =   kc/(1+K_eq(j,T_[i]));
 
         // for debug
@@ -576,7 +581,6 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
         if (screenflag_ && screen)
         {
             fprintf(screen,"x0_eq : %f \n", x0_eq_[j]);
-            fprintf(screen,"xp_eq : %f \n", xp_eq_[j]);
         }
         // ==========================================
     }
@@ -622,9 +626,8 @@ void FixChemShrinkCore::getB(int i, double *b_)
     if (comm -> me == 0 && screen)
         fprintf(screen,"DO GET B FUNCTION!! \n");
 
-    double BinaryDiff_= 0.0;
-    double KnudsenDiff_= 0.0;
-    double diffTotal_ = 0.0;
+    double effBinaryDiff_[nmaxlayers_];
+    double effKnudsenDiff_[nmaxlayers_];
     double fracRedThird_[nmaxlayers_];
     diffEff_ = new double [nmaxlayers_];
 
@@ -632,30 +635,44 @@ void FixChemShrinkCore::getB(int i, double *b_)
     {
         // calculate fractional reduction to the power of 1/3 for simpler use
         fracRedThird_[j] = pow((1-fracRed_[i][j]),THIRD);
+
+        // Calculate the effective molecular diffusion
+        effBinaryDiff_[j] = molecularDiffusion_[i]*(layerPorosity_(j)/tortuosity_[i]) + 1e-18;
+
+ /*     // Due to resistance equation define effective molecular diffusion as 1 over.
+        // Make sure that it is not divided by zero
+        if (molecularDiffusion_[i] != 0.0) // or (effBinaryDiff_[i] != 0)
+            effBinaryDiff_   =   1.0/effBinaryDiff_; */
+
+        // Calculate the knudsen diffusion
+        effKnudsenDiff_[j]  =   (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(layerPorosity_(j)/tortuosity_[i]) + 1e-18;
+
+        // Due t resistance equation define the Knudsen diffusion as 1 over
+        // effKnudsenDiff_[j]   =   1.0/effKnudsenDiff_[j];
     }
 
-    // Calculate the effective molecular diffusion
-    BinaryDiff_ = molecularDiffusion_[i];
 
-    // Due to resistance equation define effective molecular diffusion as 1 over.
-    // Make sure that it is not divided by zero
-    if (molecularDiffusion_[i] != 0.0) // or (BinaryDiff_[i] != 0)
-        BinaryDiff_   =   1.0/BinaryDiff_;
+    if (screenflag_ && screen)
+    {
+        fprintf(screen, "fractional Reduction W: %f \n", fracRed_[i][0]);
+        fprintf(screen, "fractional Reduction M: %f \n", fracRed_[i][1]);
+        fprintf(screen, "fractional Reduction H: %f \n", fracRed_[i][2]);
 
-    // Calculate the knudsen diffusion
-    KnudsenDiff_  =   pore_diameter_[i]/6.*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_));
-
-    // Due t resistance equation define the Knudsen diffusion as 1 over
-    KnudsenDiff_   =   1.0/KnudsenDiff_;
-
-    diffTotal_   = BinaryDiff_ + KnudsenDiff_;
+        fprintf(screen, "one third of fractional reduction W: %f \n", fracRedThird_[0]);
+        fprintf(screen, "one third of fractional reduction M: %f \n", fracRedThird_[1]);
+        fprintf(screen, "one third of fractional reduction H: %f \n", fracRedThird_[2]);
+    }
 
     // debug options -- print out values for effective molecular diffusion to screen
     if (screenflag_ && screen)
     {
         fprintf(screen,"dCoeff value is : %f \n", molecularDiffusion_[i]);
-        fprintf(screen,"binary diff 0: %f \n",BinaryDiff_);
-        fprintf(screen,"knudsen diff: %f \n",KnudsenDiff_);
+        fprintf(screen,"binary diff 0: %f \n",effBinaryDiff_[0]);
+        fprintf(screen,"binary diff 0: %f \n",effBinaryDiff_[1]);
+        fprintf(screen,"binary diff 0: %f \n",effBinaryDiff_[2]);
+        fprintf(screen,"knudsen diff 0: %f \n",effKnudsenDiff_[0]);
+        fprintf(screen,"knudsen diff 0: %f \n",effKnudsenDiff_[1]);
+        fprintf(screen,"knudsen diff 0: %f \n",effKnudsenDiff_[2]);
         fprintf(screen,"layerPorosity 0: %f \n",layerPorosity_(0));
         fprintf(screen,"layerPorosity 1: %f \n",layerPorosity_(1));
         fprintf(screen,"layerPorosity 2: %f \n",layerPorosity_(2));
@@ -667,7 +684,8 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     for (int j = 0; j < layers_ ; j++)
     {
-        diffEff_[j] = (layerPorosity_(j)/tortuosity_[i])*(1/diffTotal_);
+        // diffEff_[j] = ((effBinaryDiff_[j]*effKnudsenDiff_[j])/(effBinaryDiff_[j]+effKnudsenDiff_[j]));
+        diffEff_[j] =   1.0/(1.0/effBinaryDiff_[j] + 1.0/effKnudsenDiff_[j]);
     }
 
     if (screenflag_ && screen)
@@ -679,9 +697,9 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     // calculation of Diffustion Term from Valipour 2009
     // from wustite to iron
-    b_[0]   =   (1-fracRedThird_[0])/fracRedThird_[0]*(radius_[i]/diffEff_[0]);
+    b_[0]   =   ((1-fracRedThird_[0])/fracRedThird_[0])*(radius_[i]/diffEff_[0]);
 
-    for (int j = 1; j < layers_; j++)
+    for (int j = 1; j <layers_; j++)
     {
         // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
         // b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
@@ -690,67 +708,10 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     if (screenflag_ && screen)
     {
-        fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
-        fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
-        fprintf(screen,"diffusion constant [2]: %f \n",b_[2]);
+        fprintf(screen,"diffusion resistance term [0]: %f \n",b_[0]);
+        fprintf(screen,"diffusion resistance term [1]: %f \n",b_[1]);
+        fprintf(screen,"diffusion resistance term [2]: %f \n",b_[2]);
     }
-
-    // effecitve binary diffusion coefficient
-    // BinaryDiff_[i] = molecularDiffusion_[i]*porosity_[i]/tortuosity_[i];
-
-    // if (screenflag_ && screen)
-    // {
-    //     fprintf(screen,"eff. binary diff: %f \n",BinaryDiff_[i]);
-    //    fprintf(screen,"dCoeff value is : %f \n", molecularDiffusion_[i]);
-    // }
-
-    //if (molecularDiffusion_[i] != 0.0) // or (BinaryDiff_[i] != 0)
-    //{
-    //    BinaryDiff_[i]   =   1.0/BinaryDiff_[i];
-    //}
-
-    // Knudsen diff equation is either
-    // D_{i,k} = dp/3*sqrt((8*R*T_[i])/(M_PI*molMass_A_))
-    // or simplified as
-    // D_{i,k} = 4850*dp*sqrt(T_[i]/molMass_A_) dp supposed to be in cm
-    // we use si units so convert from meter to cm!
-
-    // KnudsenDiff_[i]   =  48.51*pore_diameter_[i]*sqrt(T_[i]/molMass_A_)*porosity_[i]/tortuosity_[i]; // [m^2/s]
-    // KnudsenDiff_[i]  =   pore_diameter_[i]/6.*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*porosity_[j]/tortuosity_[i];
-    // KnudsenDiff_[i]   =   1.0/KnudsenDiff_[i];
-    // if (screenflag_ && screen)
-    // {
-    //     fprintf(screen,"eff. knudsen diff: %f \n",KnudsenDiff_[i]);
-    // }
-
-    // total effective diffusivity
-    // Eq. : 1/D_i,j = 1/D_eff_binary + 1/D_eff_knudsen
-    // diffEff_[i] = 1/D_i,j
-    // diffEff_[i] = BinaryDiff_[i] + KnudsenDiff_[i];
-
-    // if (screenflag_ && screen)
-    //    fprintf(screen,"eff. diff: %f \n",diffEff_[i]);
-
-    // calculation of Diffustion Term from Valipour 2009
-    // from wustite to iron
-    // diffEff_[i] = 1/D_i,j thus instead of dividing radius by diffEff we multiply it.
-    // b_[0]   =   (1-relRadii_[i][1])/(relRadii_[i][1])*(radius_[i]*diffEff_[i]);
-    //b_[0]   =   (1-fracRedThird_[0])/fracRedThird_[0]*radius_[i]*diffEff_[i];
-
-    /*for (int j = 1; j < layers_; j++)
-    {
-        // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
-        // b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
-        b_[j] = (fracRedThird_[j-1]-fracRedThird_[j])/(fracRedThird_[j-1]*fracRedThird_[j])*radius_[i]*diffEff_[i];
-    }
-
-    if (screenflag_ && screen)
-    {
-        fprintf(screen,"diffusion constant [0]: %f \n",b_[0]);
-        fprintf(screen,"diffusion constant [1]: %f \n",b_[1]);
-        fprintf(screen,"diffusion constant [2]: %f \n",b_[2]);
-    } */
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1084,7 +1045,6 @@ void FixChemShrinkCore::FractionalReduction(int i)
     }
 }
 
-
 /* ---------------------------------------------------------------------- */
 double FixChemShrinkCore::layerPorosity_(int layer)
 {
@@ -1097,4 +1057,3 @@ double FixChemShrinkCore::layerPorosity_(int layer)
         eps_ = 1 - rhoeff_Fe/layerDensities_[0];
     return eps_;
 }
-
