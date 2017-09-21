@@ -69,12 +69,13 @@ public:
    int iarg_;
    int ts_create_, couple, ts;
    bool comm_established, screenflag_;
-
    // timestep
    double TimeStep;
    // modified strings of species concentrations
    char* massA, *massC;
-   // name of diffusant species
+   // molar masses of gas species
+   double molMass_A_, molMass_C_;
+   // name of diffusant species and diffusant species mole fraction
    char *diffA, *moleFrac;
 
    // effective densities
@@ -84,15 +85,12 @@ public:
    //const double *porosity_,
    const double *tortuosity_, *pore_diameter_;
    double *diffEff_;
-
   // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;
   // number of active layers starts with 3, and reduces if a layer is depleted
   int layers_;
-
   // relative radius below which layers are neglected
   const double rmin_;
-
   // gas-phase properties
   char *speciesA, *speciesC;
 
@@ -103,9 +101,6 @@ public:
   double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
   const double *k0_, *Ea_;
-
-  // molar masses of gas species
-  double molMass_A_, molMass_C_;
 
   // handle names
   double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_;
@@ -135,6 +130,7 @@ public:
 
   // define porosity values for all particles (glibal
   // class FixPropertyGlobal *fix_porosity_;
+
   class FixPropertyGlobal *fix_tortuosity_;
   class FixPropertyGlobal *fix_pore_diameter_;
 

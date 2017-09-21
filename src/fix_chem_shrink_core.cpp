@@ -91,7 +91,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
-    // defaults    screenflag_ =   0;
+    // defaults
+    screenflag_ =   0;
     molMass_A_  =   molMass_C_  = 0;
     speciesA    =   speciesC    = NULL;
     pmass_      =   NULL;
