@@ -99,7 +99,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fc_         =   NULL;
     comm_established = false;
     iarg_ = 3;
-    rhoeff_Fe2O3 = rhoeff_Fe3O4 = rhoeff_FeO = rhoeff_Fe = 0.;
 
     if (narg < 11)
         error->all(FLERR, "not enough arguments");
@@ -166,6 +165,23 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             error->fix_error(FLERR,this,"necessary keyword is missing");
         }
+    }
+
+    rhoeff_ = new double [nmaxlayers_+1];
+
+    for (int i = 0; i < atom->nlocal; i++)
+    {
+        rhoeff_[3] = atom->density[i];
+        rhoeff_[2] = rhoeff_[3]*q_Fe2O3_Fe3O4;
+        rhoeff_[1]  =   rhoeff_[2]*q_Fe3O4_FeO;
+        rhoeff_[0]   =   rhoeff_[1]*q_FeO_Fe;
+    }
+    if (screenflag_ && screen)
+    {
+        fprintf(screen, "rhoeff_Fe2O3: %f \n", rhoeff_[3]);
+        fprintf(screen, "rhoeff_Fe3O4: %f \n", rhoeff_[2]);
+        fprintf(screen, "rhoeff_FeO: %f \n", rhoeff_[1]);
+        fprintf(screen, "rhoeff_Fe: %f \n", rhoeff_[0]);
     }
 
     // define changed species mass A
@@ -425,19 +441,8 @@ void FixChemShrinkCore::init()
     for (int i = 0; i < atom->nlocal; i++)
     {
         calcMassLayer(i);
+    }
 
-        rhoeff_Fe2O3 = atom->density[i];
-        rhoeff_Fe3O4 = rhoeff_Fe2O3*q_Fe2O3_Fe3O4;
-        rhoeff_FeO  =   rhoeff_Fe3O4*q_Fe3O4_FeO;
-        rhoeff_Fe   =   rhoeff_FeO*q_FeO_Fe;
-    }
-    if (screenflag_ && screen)
-    {
-        fprintf(screen, "rhoeff_Fe2O3: %f \n", rhoeff_Fe2O3);
-        fprintf(screen, "rhoeff_Fe3O4: %f \n", rhoeff_Fe3O4);
-        fprintf(screen, "rhoeff_FeO: %f \n", rhoeff_FeO);
-        fprintf(screen, "rhoeff_Fe: %f \n", rhoeff_Fe);
-    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -482,9 +487,9 @@ void FixChemShrinkCore::post_force(int)
                     }
                     getA(i,a_);
                     getB(i,b_);
-                    // getMassT(i,masst_);
-                    // reaction(i, a_, dmA_,x0_eq_, b_, masst_);
-                    reaction2(i,a_,dmA_,x0_eq_, b_);
+                    getMassT(i,masst_);
+                    reaction(i, a_, dmA_,x0_eq_, b_, masst_);
+                    // reaction2(i,a_,dmA_,x0_eq_, b_);
                     // reaction3(i,a_,dmA_,x0_eq_);
                     update_atom_properties(i,dmA_);
                     update_gas_properties(i,dmA_);
@@ -548,11 +553,13 @@ int FixChemShrinkCore::active_layers(int i)
 void FixChemShrinkCore::calcMassLayer(int i)
 {
     double rad = radius_[i];
-    massLayer_[i][layers_]   =   1.33333*M_PI*relRadii_[i][layers_]*relRadii_[i][layers_]*relRadii_[i][layers_]*layerDensities_[layers_];
+    // massLayer_[i][layers_]   =   1.33333*M_PI*relRadii_[i][layers_]*relRadii_[i][layers_]*relRadii_[i][layers_]*layerDensities_[layers_];
+    massLayer_[i][layers_]   =   1.33333*M_PI*relRadii_[i][layers_]*relRadii_[i][layers_]*relRadii_[i][layers_]*rhoeff_[layers_];
     massLayer_[i][layers_]   *= rad*rad*rad;
     for (int j=0; j < layers_; j++)
     {
-        massLayer_[i][j]   =   1.33333*M_PI*((relRadii_[i][j]*relRadii_[i][j]*relRadii_[i][j])-(relRadii_[i][j+1]*relRadii_[i][j+1]*relRadii_[i][j+1]))*layerDensities_[j];
+        // massLayer_[i][j]   =   1.33333*M_PI*((relRadii_[i][j]*relRadii_[i][j]*relRadii_[i][j])-(relRadii_[i][j+1]*relRadii_[i][j+1]*relRadii_[i][j+1]))*layerDensities_[j];
+        massLayer_[i][j]   =   1.33333*M_PI*((relRadii_[i][j]*relRadii_[i][j]*relRadii_[i][j])-(relRadii_[i][j+1]*relRadii_[i][j+1]*relRadii_[i][j+1]))*rhoeff_[j];
         massLayer_[i][j]   *= rad*rad*rad;
     }
     if(screenflag_ && screen)
@@ -719,7 +726,7 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
 void FixChemShrinkCore::getMassT(int i, double *masst_)
 {
-  /*  // initialize sherwood & schmidt numbers for every particle
+    // initialize sherwood & schmidt numbers for every particle
     double Sc_[atom->nlocal];
     double Sh_[atom->nlocal];
 
@@ -731,10 +738,8 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
 
     if (screenflag_ && screen)
     {
-        fprintf(screen, "Schmidt number: %f \n",Sc_[i]);
-        fprintf(screen, "Sherwood number: %f \n",Sh_[i]);
         fprintf(screen, "masst: %f \n",masst_[i]);
-    } */
+    }
 }
 /* ---------------------------------------------------------------------- */
 
@@ -956,10 +961,12 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // from the new layer masses, get new total mass, layer radii and total density
     pmass_[i]   =   sum_mass_new;
 
-    radLayer_[layers_]   =   pow((0.75*massLayer_[i][layers_]/(layerDensities_[layers_]*M_PI)),THIRD);
+    // radLayer_[layers_]   =   pow((0.75*massLayer_[i][layers_]/(layerDensities_[layers_]*M_PI)),THIRD);
+    radLayer_[layers_]   =   pow((0.75*massLayer_[i][layers_]/(rhoeff_[layers_]*M_PI)),THIRD);
     for (int j = layers_-1; j >= 0 ; j--)
     {
-        radLayer_[j]   =   pow((0.75*massLayer_[i][j]/(M_PI*layerDensities_[j])+radLayer_[j+1]*radLayer_[j+1]*radLayer_[j+1]),THIRD);
+        // radLayer_[j]   =   pow((0.75*massLayer_[i][j]/(M_PI*layerDensities_[j])+radLayer_[j+1]*radLayer_[j+1]*radLayer_[j+1]),THIRD);
+        radLayer_[j]   =   pow((0.75*massLayer_[i][j]/(M_PI*rhoeff_[j])+radLayer_[j+1]*radLayer_[j+1]*radLayer_[j+1]),THIRD);
     }
     radius_[i] = radLayer_[0];
 
@@ -1051,10 +1058,10 @@ double FixChemShrinkCore::layerPorosity_(int layer)
 {
     double eps_ = 0.;
     if (layer == 2)
-        eps_ = 1 - rhoeff_Fe3O4/layerDensities_[2];
+        eps_ = 1 - rhoeff_[2]/layerDensities_[2];
     if (layer == 1)
-        eps_ = 1 - rhoeff_FeO/layerDensities_[1];
+        eps_ = 1 - rhoeff_[1]/layerDensities_[1];
     if (layer == 0)
-        eps_ = 1 - rhoeff_Fe/layerDensities_[0];
+        eps_ = 1 - rhoeff_[0]/layerDensities_[0];
     return eps_;
 }

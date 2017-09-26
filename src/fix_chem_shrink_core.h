@@ -79,7 +79,8 @@ public:
    char *diffA, *moleFrac;
 
    // effective densities
-   double rhoeff_Fe2O3, rhoeff_Fe3O4, rhoeff_FeO, rhoeff_Fe;
+   // double *rhoeff_Fe2O3, *rhoeff_Fe3O4, *rhoeff_FeO, *rhoeff_Fe;
+   double *rhoeff_;
 
    // material properties porosity, tortuosity, and pore diameter
    //const double *porosity_,
