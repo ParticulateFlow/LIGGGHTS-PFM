@@ -63,7 +63,7 @@ public:
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
   void FractionalReduction(int);
-  double layerPorosity_(int);
+  double layerPorosity_(int, int);
 
  protected:
    int iarg_;
@@ -80,10 +80,10 @@ public:
 
    // effective densities
    // double *rhoeff_Fe2O3, *rhoeff_Fe3O4, *rhoeff_FeO, *rhoeff_Fe;
-   double *rhoeff_;
+   double **rhoeff_;
 
    // material properties porosity, tortuosity, and pore diameter
-   //const double *porosity_,
+   const double *porosity_;
    const double *tortuosity_, *pore_diameter_;
    double *diffEff_;
   // maximum number of layers to be used for chemical reactions, currently 3
@@ -130,8 +130,7 @@ public:
   class FixPropertyGlobal *fix_Ea_;
 
   // define porosity values for all particles (glibal
-  // class FixPropertyGlobal *fix_porosity_;
-
+  class FixPropertyGlobal *fix_porosity_;
   class FixPropertyGlobal *fix_tortuosity_;
   class FixPropertyGlobal *fix_pore_diameter_;
 
