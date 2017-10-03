@@ -655,13 +655,10 @@ void FixChemShrinkCore::getB(int i, double *b_)
         fracRedThird_[j] = pow((1-fracRed_[i][j]),THIRD);
 
         // Calculate the effective molecular diffusion
-        effBinaryDiff_[j] = molecularDiffusion_[i];//*(layerPorosity_(j)/tortuosity_[i]) + 1e-18;
+        effBinaryDiff_[j] = molecularDiffusion_[i]*(layerPorosity_(i,j)/tortuosity_[i]) + 1e-18;
 
         // Calculate the knudsen diffusion
-    //    effKnudsenDiff_[j]  =   (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(layerPorosity_(j)/tortuosity_[i]) + 1e-18;
-
-        // Due t resistance equation define the Knudsen diffusion as 1 over
-        // effKnudsenDiff_[j]   =   1.0/effKnudsenDiff_[j];
+        effKnudsenDiff_[j]  =   (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(layerPorosity_(i,j)/tortuosity_[i]) + 1e-18;
     }
 
 
@@ -683,18 +680,15 @@ void FixChemShrinkCore::getB(int i, double *b_)
         fprintf(screen,"binary diff 0: %.10f \n",effBinaryDiff_[0]);
         fprintf(screen,"binary diff 0: %.10f \n",effBinaryDiff_[1]);
         fprintf(screen,"binary diff 0: %.10f \n",effBinaryDiff_[2]);
-     /*   fprintf(screen,"knudsen diff 0: %.10f \n",effKnudsenDiff_[0]);
+        fprintf(screen,"knudsen diff 0: %.10f \n",effKnudsenDiff_[0]);
         fprintf(screen,"knudsen diff 0: %.10f \n",effKnudsenDiff_[1]);
         fprintf(screen,"knudsen diff 0: %.10f \n",effKnudsenDiff_[2]);
-        fprintf(screen,"layerPorosity 0: %.10f \n",layerPorosity_(0));
-        fprintf(screen,"layerPorosity 1: %.10f \n",layerPorosity_(1));
-        fprintf(screen,"layerPorosity 2: %.10f \n",layerPorosity_(2)); */
+        fprintf(screen,"layerPorosity 0: %.10f \n",layerPorosity_(i,0));
+        fprintf(screen,"layerPorosity 1: %.10f \n",layerPorosity_(i,1));
+        fprintf(screen,"layerPorosity 2: %.10f \n",layerPorosity_(i,2));
     }
 
-/*    // total effective diffusivity
-    // Eq. : 1/D_i,j = 1/D_eff_binary + 1/D_eff_knudsen
-    // diffEff_[i] = 1/D_i,j
-
+    // total effective diffusivity
     for (int j = 0; j < layers_ ; j++)
     {
         // diffEff_[j] = ((effBinaryDiff_[j]*effKnudsenDiff_[j])/(effBinaryDiff_[j]+effKnudsenDiff_[j]));
@@ -714,8 +708,6 @@ void FixChemShrinkCore::getB(int i, double *b_)
 
     for (int j = 1; j <layers_; j++)
     {
-        // diffEff is multiplied here, in normal equation b=... radius/effectiveDiffusion
-        // b_[j]   =   (relRadii_[i][j] - relRadii_[i][j+1])/(relRadii_[i][j]*relRadii_[i][j+1])*(radius_[i]*diffEff_[i]);
         b_[j] = (fracRedThird_[j-1]-fracRedThird_[j])/(fracRedThird_[j-1]*fracRedThird_[j])*(radius_[i]/diffEff_[j]);
     }
 
@@ -725,14 +717,13 @@ void FixChemShrinkCore::getB(int i, double *b_)
         fprintf(screen,"; %.10f",b_[1]);
         fprintf(screen,"; %.10f \n",b_[2]);
     }
-     */
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrinkCore::getMassT(int i, double *masst_)
 {
-    /*// initialize sherwood & schmidt numbers for every particle
+    // initialize sherwood & schmidt numbers for every particle
     double Sc_[atom->nlocal];
     double Sh_[atom->nlocal];
 
@@ -745,8 +736,7 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
     if (screenflag_ && screen)
     {
         fprintf(screen, "masst: %f \n",masst_[i]);
-    } */
-    masst_[i] = 1.0;
+    }
 }
 /* ---------------------------------------------------------------------- */
 
