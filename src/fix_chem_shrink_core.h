@@ -84,7 +84,8 @@ public:
 
    // material properties porosity, tortuosity, and pore diameter
    const double *porosity_;
-   const double *tortuosity_, *pore_diameter_;
+   const double *pore_diameter_;
+   double **tortuosity_;
    double *diffEff_;
   // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;
@@ -129,9 +130,10 @@ public:
   class FixPropertyGlobal *fix_k0_;
   class FixPropertyGlobal *fix_Ea_;
 
-  // define porosity values for all particles (glibal
+  // define porosity values for all particles
   class FixPropertyGlobal *fix_porosity_;
-  class FixPropertyGlobal *fix_tortuosity_;
+  // class FixPropertyGlobal *fix_tortuosity_;
+  class FixPropertyAtom *fix_tortuosity_;
   class FixPropertyGlobal *fix_pore_diameter_;
 
   class FixCfdCoupling* fc_;
