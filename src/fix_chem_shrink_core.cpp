@@ -99,6 +99,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fc_         =   NULL;
     comm_established = false;
     iarg_ = 3;
+    rhoeff_ = NULL;
 
     if (narg < 11)
         error->all(FLERR, "not enough arguments");
@@ -167,13 +168,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         }
     }
 
-    rhoeff_ = new double *[atom->nlocal];
+    /* rhoeff_ = new double *[atom->nlocal];
     for (int i = 0; i < atom->nlocal; ++i)
     {
         rhoeff_[i] = new double [nmaxlayers_+1];
         for (int j = 0; j <= nmaxlayers_; ++j)
             rhoeff_[i][j] = 0.0;
-    }
+    } */
 
     // define changed species mass A
     massA = new char [strlen("Modified_")+strlen(speciesA)+1];
@@ -213,10 +214,11 @@ FixChemShrinkCore::~FixChemShrinkCore()
     delete speciesA;
     delete speciesC;
 
-    for (int i = 0; i < atom->nlocal; ++i)
+    /* for (int i = 0; i < atom->nlocal; ++i)
        if (rhoeff_[i]) delete [] rhoeff_[i];
 
-    delete [] rhoeff_;
+    delete [] rhoeff_; */
+    memory->destroy(rhoeff_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -430,10 +432,11 @@ void FixChemShrinkCore::init()
         fprintf(screen,"molarMass 3: %f \n", layerMolMasses_[3]);
     }
 
+    memory->destroy(rhoeff_);
+    memory->create(rhoeff_,atom->nmax,nmaxlayers_+1,"rhoeff_");
     for (int i = 0; i < atom->nlocal; ++i)
     {
         calcMassLayer(i);
-
         for (int j = 0; j <= nmaxlayers_; ++j)
         {
             rhoeff_[i][3] = atom->density[i];
@@ -721,11 +724,11 @@ void FixChemShrinkCore::getMassT(int i, double *masst_)
     double Sc_[atom->nlocal];
     double Sh_[atom->nlocal];
 
-    Sc_[i]  =   nuf_[i]/diffEff_[i];
+    Sc_[i]  =   nuf_[i]/molecularDiffusion_[i];
     // Sh_[i]  =   2+0.6*pow(Rep_[i],0.5)*pow(Sc_[i],THIRD);
     Sh_[i] = 0.664*pow(Rep_[i],0.5)*pow(Sc_[i],THIRD);
 
-    masst_[i] = Sh_[i]*diffEff_[i]/(2*radius_[i]);
+    masst_[i] = Sh_[i]*molecularDiffusion_[i]/(2*radius_[i]);
     masst_[i] = 1/masst_[i];
 
     if (screenflag_ && screen)
