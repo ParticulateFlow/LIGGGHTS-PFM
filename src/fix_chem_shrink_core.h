@@ -106,8 +106,8 @@ public:
 
   // handle names
   double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_;
-  //
   double **fracRed_;
+  double **Aterm, **Bterm, *Massterm;
 
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
   class FixPropertyAtom *fix_rhogas_;                           //  density of gas
@@ -118,6 +118,11 @@ public:
   class FixPropertyAtom *fix_partRe_;
   class FixPropertyAtom *fix_molefraction_;
   class FixPropertyAtom *fix_fracRed;
+  // for printing out values in orderly fashion
+  class FixPropertyAtom *fix_Aterm;
+  class FixPropertyAtom *fix_Bterm;
+  class FixPropertyAtom *fix_Massterm;
+
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
