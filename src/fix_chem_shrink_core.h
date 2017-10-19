@@ -118,11 +118,10 @@ public:
   class FixPropertyAtom *fix_partRe_;
   class FixPropertyAtom *fix_molefraction_;
   class FixPropertyAtom *fix_fracRed;
-  // for printing out values in orderly fashion
+  // for printing out values
   class FixPropertyAtom *fix_Aterm;
   class FixPropertyAtom *fix_Bterm;
   class FixPropertyAtom *fix_Massterm;
-
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
