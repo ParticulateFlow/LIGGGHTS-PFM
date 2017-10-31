@@ -63,18 +63,19 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   use_reactant_(false)
 {
     num_species = 0;
-    int n = 16;
-    char mod[30];
     n_species = 0;
     iarg_ = 3;
+    mod_spec_names_ = diffusant_names_ = molarfraction_names = NULL;
 
    if (narg < iarg_ + 3)
         error -> all (FLERR,"Fix couple/cfd/chemistry: Wrong number of arguments");
 
    bool hasargs = true;
+
    while (iarg_ < narg && hasargs)
     {
         hasargs = false;
+
         if (strcmp(arg[iarg_],"n_species") == 0)
         {
             n_species = 1;
@@ -90,14 +91,12 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         else if (strcmp(arg[iarg_],"species_names") == 0)
         {
             if (n_species != 1)
-                error -> fix_error (FLERR,this, "have to define keyword 'n_species' before 'species_names'");
+                error -> fix_error (FLERR,this, "have to define n_species before 'species_names'");
             if (iarg_ + num_species > narg)
                 error -> fix_error(FLERR,this, "Wrong number of arguments");
-            if (num_species < 1)
-                error -> fix_error(FLERR,this,"n_species > 0 is required");
             species_names_ = new char*[num_species];
             iarg_++;
-            for (int i = 0; i < num_species; i++)
+            for (int i = 0; i < num_species; ++i)
             {
                 species_names_[i] = new char [strlen(arg[iarg_])+1];
                 strcpy(species_names_[i], arg[iarg_]);
@@ -128,22 +127,19 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
    mod_spec_names_ = new char*[num_species];
    diffusant_names_ = new char *[num_species];
    molarfraction_names = new char *[num_species];
-   for (int i = 0; i < num_species; i++)
+   for (int i = 0; i < num_species; ++i)
    {
-       mod_spec_names_[i] = new char [n];
-       diffusant_names_[i] = new char [n];
-       molarfraction_names[i] = new char [n];
-       strcpy(mod,"Modified_");
-       strcat(mod,species_names_[i]);
-       strcpy(mod_spec_names_[i],mod);
+       mod_spec_names_[i] = new char [strlen("Modified_")+strlen(species_names_[i])+1];
+       strcpy(mod_spec_names_[i],"Modified_");
+       strcat(mod_spec_names_[i],species_names_[i]);
 
-       strcpy(mod,species_names_[i]);
-       strcat(mod,"_diffCoeff");
-       strcpy(diffusant_names_[i],mod);
+       diffusant_names_[i] = new char [strlen(species_names_[i])+strlen("_diffCoeff")+1];
+       strcpy(diffusant_names_[i],species_names_[i]);
+       strcat(diffusant_names_[i],"_diffCoeff");
 
-       strcpy(mod,"X_");
-       strcat(mod,species_names_[i]);
-       strcpy(molarfraction_names[i],mod);
+       molarfraction_names[i] = new char [strlen("X_")+strlen(species_names_[i])+1];
+       strcpy(molarfraction_names[i],"X_");
+       strcat(molarfraction_names[i],species_names_[i]);
    }
 
    // flags for vector output
@@ -157,7 +153,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
 
 FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
 {
-    for (int i=0;i<num_species;i++)
+    for (int i=0;i<num_species;++i)
     {
         if (species_names_[i]) delete [] species_names_[i];
         if (mod_spec_names_[i]) delete [] mod_spec_names_[i];
@@ -185,7 +181,7 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
     if(unfixflag && fix_nufField_)      modify -> delete_fix("partNu");
     if(unfixflag && fix_partReynolds_)  modify -> delete_fix("partRe");
 
-    for (int i = 0; i < num_species; i++)
+    for (int i = 0; i < num_species; ++i)
     {
         if (unfixflag && fix_masschange_[i])        modify -> delete_fix(mod_spec_names_[i]);
         if (unfixflag && fix_diffusionCoeff_[i])    modify -> delete_fix(diffusant_names_[i]);
@@ -308,7 +304,7 @@ void FixCfdCouplingChemistry::post_create()
     fix_masschange_ = new FixPropertyAtom*[num_species];
     fix_diffusionCoeff_ = new FixPropertyAtom*[num_species];
     fix_molarfraction_  =   new FixPropertyAtom*[num_species];
-    for (int i=0; i<num_species;i++)
+    for (int i=0; i<num_species;++i)
     {
         // register masschange/changeOfSpeciesMass
         {
@@ -377,7 +373,7 @@ void FixCfdCouplingChemistry::post_create()
 
 void FixCfdCouplingChemistry::init()
 {
-    // make sure there is only one fix of thfor(int i = 1; i <= n_FixMesh_; i++)is style
+    // make sure there is only one fix of thfor(int i = 1; i <= n_FixMesh_; ++i)is style
     if(modify->n_fixes_style(style) != 1)
       error->fix_error(FLERR,this,"More than one fix of this style is not allowed");
 
@@ -394,7 +390,7 @@ void FixCfdCouplingChemistry::init()
     fix_nufField_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style));
     fix_partReynolds_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style));
 
-    for (int i = 0; i < num_species; i++)
+    for (int i = 0; i < num_species; ++i)
     {
         fix_masschange_[i]      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
         fix_diffusionCoeff_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[i],"property/atom","scalar",0,0,style));
@@ -408,7 +404,7 @@ void FixCfdCouplingChemistry::init()
     fix_coupling_->add_pull_property("partNu","scalar-atom");
     fix_coupling_->add_pull_property("partRe","scalar-atom");
 
-    for (int i=0; i<num_species; i++)
+    for (int i=0; i<num_species; ++i)
     {
         fix_coupling_->add_pull_property(diffusant_names_[i],"scalar-atom");
         fix_coupling_->add_pull_property(molarfraction_names[i],"scalar-atom");
@@ -419,7 +415,7 @@ void FixCfdCouplingChemistry::init()
     //  values to be transfered to OF
     fix_coupling_->add_push_property("reactionHeat","scalar-atom");
 
-    for (int i = 0; i<num_species; i++)
+    for (int i = 0; i<num_species; ++i)
     {
         fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
     }
@@ -439,11 +435,11 @@ void FixCfdCouplingChemistry::initial_integrate(int)
     int *mask   = atom -> mask;
     int  nlocal = atom -> nlocal;
 
-    for (int k = 0; k < num_species; k++)
+    for (int k = 0; k < num_species; ++k)
     {
         if (prev_time == fix_coupling_ -> latestpush(mod_spec_names_[k]))
         {
-            for (int i = 0; i < nlocal; i++)
+            for (int i = 0; i < nlocal; ++i)
             {
                 if (mask[i] & groupbit)
                      fix_masschange_[k] -> vector_atom[i] = 0.;

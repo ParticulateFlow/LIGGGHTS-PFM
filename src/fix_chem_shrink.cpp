@@ -60,8 +60,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg),
     use_reactant_(false)
 {
-    if (strncmp(style,"chem/shrink",16) == 0 && (!atom->radius_flag)||(!atom->rmass_flag))
-            error -> all (FLERR,"Fix chem/shrink needs particle radius and mass");
+    if ((strncmp(style,"chem/shrink",11) == 0) && (!atom->radius_flag||!atom->rmass_flag))
+            error -> all (FLERR,"Fix chem/shrink needs per particle radius and mass");
 
     // defaults
     fix_moleFractionA_  =   NULL;
@@ -83,7 +83,10 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     nu_A_ = 1;
     nu_B_ = 1;
     nu_C_ = 1;
+
     pmass_ = NULL;
+    speciesA = speciesC = NULL;
+
     rmin = 0.;
     minMolarFrac_ = 1e-3;
     spcA = 0;
@@ -91,45 +94,45 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     int n = 16;
     char cha[30];
 
+
+    screenflag_ = 0;
+
+    iarg_ = 3;
     bool hasargs = true;
 
-    if (narg < 16)
-        error -> all (FLERR,"not enough arguments");
+    if (narg < 24) error -> all (FLERR,"Fix chem/shrink: Wrong number of arguments");
+
     while (iarg_ < narg && hasargs)
     {
         hasargs = false;
 
-        if(strcmp(arg[iarg_],"speciesA") == 0)
+        if (strcmp(arg[iarg_],"speciesA") == 0)
         {
             if (narg < iarg_ + 2)
                 error -> fix_error(FLERR, this, "not enough arguments for 'speciesA'");
             spcA = 1;
             speciesA = new char [strlen(arg[iarg_+1])];
             strcpy(speciesA,arg[iarg_+1]);
-            if(strlen(speciesA) < 1)
-                error -> fix_error(FLERR,this,"speciesA not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"molMassA") == 0)
         {
-            if (spcA != 1)
-                error -> fix_error(FLERR, this, "have to define keyword 'speciesA' before 'molMassA'");
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_A_ = atof(arg[iarg_+1]);
-            if (molMass_A_ < 1)
+            if (molMass_A_ < 0)
                 error -> fix_error(FLERR, this, "molar mass of A is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"nuA") == 0)
         {
             nu_A_ = atoi(arg[iarg_+1]);
             if (nu_A_ < 1)
                 error -> fix_error(FLERR, this, "nuA is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"speciesC") == 0)
         {
@@ -138,48 +141,45 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             spcC = 1;
             speciesC = new char [strlen(arg[iarg_+1])];
             strcpy(speciesC,arg[iarg_+1]);
-            if (strlen(speciesC) < 1)
-                error -> fix_error(FLERR, this, "speciesC not defined");
-            iarg_ +=2;
             hasargs = true;
-        }
-       else if (strcmp(arg[iarg_],"molMassC") == 0)
+            iarg_ +=2;
+        }else if (strcmp(arg[iarg_],"molMassC") == 0)
         {
             if (spcC != 1)
                 error -> fix_error(FLERR, this, "have to define keyword 'speciesC' before 'molMassC'");
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_C_ = atof(arg[iarg_+1]);
-            if (molMass_C_ < 1)
+            if (molMass_C_ < 0)
                 error -> fix_error(FLERR, this, "molMassC > 0 is required");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"nuC") == 0)
         {
             nu_C_ = atoi(arg[iarg_+1]);
             if (nu_C_ < 1)
                 error -> fix_error(FLERR, this, "nuC is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"molMassB") == 0)
         {
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_B_ = atof(arg[iarg_+1]);
-            if (molMass_B_ < 1)
+            if (molMass_B_ < 0)
                 error -> fix_error(FLERR, this, "molMassB > 0 is required");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"nuB") == 0)
         {
             nu_B_ = atoi(arg[iarg_+1]);
             if (nu_B_ < 1)
                 error -> fix_error(FLERR, this, "nuB is not defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"k") == 0)
         {
@@ -188,8 +188,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             k0 = atof(arg[iarg_+1]);
             if (k0 <= 0)
                 error -> fix_error(FLERR, this, "k is not (well-)defined");
-            iarg_ +=2;
             hasargs = true;
+            iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"rmin") == 0)
         {
@@ -198,25 +198,15 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             rmin = atof(arg[iarg_+1]);
             if (rmin == 0)
                 error -> fix_error(FLERR, this, "rmin is not defined");
-            iarg_+=2;
             hasargs = true;
- /*       }else if (strcmp(arg[iarg_],"rdef") == 0)
-        {
-            if (screen)
-                fprintf(screen, "rmin is not given, default radius value is used! \n");
-            rdef = true;
-            hertzpct = atof(arg[iarg_+1]);
-            if (hertzpct == 0)
-                error -> fix_error(FLERR, this, "hertzpct can not be 0");
-            iarg_+=3;
- */           hasargs = true;
+            iarg_+=2;
         }
         else if (strcmp(arg[iarg_],"nevery") == 0)
         {
             nevery = atoi(arg[iarg_+1]);
             if (nevery <= 0) error->fix_error(FLERR,this,"");
-            iarg_+=2;
             hasargs = true;
+            iarg_+=2;
         }
         else if(strcmp(arg[iarg_],"use_reactant") == 0)
         {
@@ -241,37 +231,36 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             iarg_ += 2;
             hasargs = true;
         }
+        else if (strcmp(this->style,"chem/shrink") == 0)
+        {
+            error->fix_error(FLERR,this,"necessary keyword is missing");
+        }
     }
 
     // define changed species mass A
-    massA = new char [n];
-    strcpy(cha,"Modified_");
-    strcat(cha,speciesA);
-    strcpy(massA,cha);
+    massA = new char [strlen("Modified_")+strlen(speciesA)+1];
+    strcpy(massA,"Modified_");
+    strcat(massA,speciesA);
 
     // define changed species mass C
-    massC = new char [n];
-    strcpy(cha,"Modified_");
-    strcat(cha,speciesC);
-    strcpy(massC,cha);
+    massC = new char [strlen("Modified_")+strlen(speciesC)+1];
+    strcpy(massC,"Modified_");
+    strcat(massC,speciesC);
 
-    // EKI:
-    moleFracA  =   new char[n];
-    strcpy(cha,"X_");
-    strcat(cha,speciesA);
-    strcpy(moleFracA, cha);
+    // reactant species molar fraction
+    moleFracA = new char [strlen("X_")+strlen(speciesA)+1];
+    strcpy(moleFracA,"X_");
+    strcat(moleFracA,speciesA);
 
     // product species molar fraction
-    moleFracC  =   new char[n];
-    strcpy(cha,"X_");
-    strcat(cha,speciesC);
-    strcpy(moleFracC, cha);
+    moleFracC = new char [strlen("X_")+strlen(speciesC)+1];
+    strcpy(moleFracC,"X_");
+    strcat(moleFracC,speciesC);
 
     time_depend = 1;
     force_reneighbor =1;
     next_reneighbor = update ->ntimestep + nevery;
-
-    restart_global = 1;
+    restart_global = 0;
 }
 
 
@@ -292,14 +281,14 @@ void FixChemShrink::pre_delete(bool unfixflag)
 {
     if (unfixflag)
     {
-        if(fix_moleFractionA_)  modify  ->  delete_fix(moleFracA);
-        if(fix_moleFractionC_)  modify  ->  delete_fix(moleFracC);
-        if(fix_rhogas)         modify  ->  delete_fix("partRho");
-        if(fix_tgas)           modify  ->  delete_fix("partTemp");
-        if(fix_reactionheat_)  modify  ->  delete_fix("reactionHeat");
-        if(fix_changeOfA_)     modify  ->  delete_fix(massA);
-        if(fix_changeOfC_)     modify  ->  delete_fix(massC);
-        if(fix_totalMole_)     modify  ->  delete_fix("partMolarConc");
+        if(fix_moleFractionA_)       modify  ->  delete_fix(moleFracA);
+        if(fix_moleFractionC_)       modify  ->  delete_fix(moleFracC);
+        if(fix_rhogas)               modify  ->  delete_fix("partRho");
+        if(fix_tgas)                 modify  ->  delete_fix("partTemp");
+        if(fix_reactionheat_)        modify  ->  delete_fix("reactionHeat");
+        if(fix_changeOfA_)           modify  ->  delete_fix(massA);
+        if(fix_changeOfC_)           modify  ->  delete_fix(massC);
+        if(fix_totalMole_)           modify  ->  delete_fix("partMolarConc");
 	if(fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
     }
 }
@@ -334,83 +323,84 @@ void FixChemShrink::updatePtrs()
 
 void FixChemShrink::reaction()
 {
-        updatePtrs();
-        int nlocal  =   atom -> nlocal;
-        double molarConc;
-	double molarFrac;
+    updatePtrs();
+    int nlocal  =   atom -> nlocal;
+    double molarConc;
+    double molarFrac;
 
-        for (int i = 0 ; i < nlocal; i++)
+    for (int i = 0 ; i < nlocal; i++)
+    {
+        if(radius_[i] > rmin)
         {
-            if(radius_[i] > rmin)
+            if (screenflag_ && screen)
             {
-                if (screenflag_ && screen)
-                {
-                    fprintf(screen,"check TimeStep %f \n",TimeStep);
-                    fprintf(screen,"check current timestep %d \n", current_timestep);
-                }
+                fprintf(screen,"check TimeStep %f \n",TimeStep);
+                fprintf(screen,"check current timestep %d \n", current_timestep);
+            }
 
-                // Current time step concentration change of reactant A and product C
-                double dA   =   0.0;
-                molarConc = molarConc_[i];
-		molarFrac = xA_[i];
-		if(molarFrac < minMolarFrac_)
-		{
-		    continue;
-		}
-                double k = reactionRatConst(i);
-                if(nu_A_ < 2)
-                {
-                    dA  =   -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
-                }
-                else
-                {
-                    dA   =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
-                }
+            // Current time step concentration change of reactant A and product C
+            double dA   =   0.0;
+            molarConc = molarConc_[i];
+            molarFrac = xA_[i];
+	    if(molarFrac < minMolarFrac_)
+	    {
+		continue;
+	    }
+            double k = reactionRatConst(i);
+            if(nu_A_ < 2)
+            {
+                dA  =   -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
+            }
+            else
+            {
+                dA   =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+            }
 
-                // limit mass change - can't remove more than present in cell
-                // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.8)
-                if(use_reactant_)
-		{
-                    double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * 0.8;
-                    if(-dA > dAmax) dA = -dAmax;
-		}
+            // limit mass change - can't remove more than present in cell
+            // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.8)
+            if(use_reactant_)
+	    {
+	        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+                double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * 0.8;
+                if(-dA > dAmax) dA = -dAmax;
+	    }
 
-                double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
-                // mass removed from particle
-                double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
+            double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
+            // mass removed from particle
+            double dB   =    dA*molMass_B_*nu_B_/(molMass_A_*nu_A_);
 
-                // total rate of change for species A
-                changeOfA_[i]       +=  dA;
+            // total rate of change for species A
+            changeOfA_[i]       +=  dA;
 
-                // total rate of change for species C
-                changeOfC_[i]       +=  dC;
+            // total rate of change for species C
+            changeOfC_[i]       +=  dC;
 
-                // Mass of single particle
-		// never remove more than half the particle's mass at once
-                if(-dB > 0.5*pmass_[i])
-                {
-                     pmass_[i] *= 0.5; 
-                }
-                else
-                {
-                    pmass_[i] += dB;
-                }
+            // Mass of single particle
+	    // never remove more than half the particle's mass at once
+            if(-dB > 0.5*pmass_[i])
+            {
+                 pmass_[i] *= 0.5; 
+            }
+            else
+            {
+                pmass_[i] += dB;
+            }
 
 
-                // change of radius of particle -assumption: density of particle is constant
-                radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+            // change of radius of particle -assumption: density of particle is constant
+            radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
 
-                // uncomment if postproc (verification)
-                if (screenflag_ && screen)
-                {
-                    fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
-                    fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
-                    fprintf(screen,"Particle Mass %f \n",pmass_[i]);
-                    fprintf(screen,"Gas Density %f \n",rhogas_[i]);
-                    fprintf(screen,"total number of moles in chem/shrink: %f \n",molarConc_[i]);
-                }
+            // uncomment if postproc (verification)
+            if (screenflag_ && screen)
+            {
+                fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
+                fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
+                fprintf(screen,"Particle Mass %f \n",pmass_[i]);
+                fprintf(screen,"Gas Density %f \n",rhogas_[i]);
+                fprintf(screen,"total number of moles in chem/shrink: %f \n",molarConc_[i]);
             }
         }
+    }
 }
 
 double FixChemShrink::reactionRatConst(int i)
@@ -447,7 +437,7 @@ void FixChemShrink::init()
     fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
-    
+
     if(use_reactant_)
     {
         fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
@@ -465,9 +455,6 @@ void FixChemShrink::post_force(int)
     pdensity_ = atom -> density;
     TimeStep = update -> dt;
     current_timestep = update->ntimestep;
-
-    int nlocal = atom -> nlocal;
-    int i;
     
     // skip if integration not wanted at this timestep
     if (current_timestep % nevery) 
@@ -476,109 +463,4 @@ void FixChemShrink::post_force(int)
     }
 
     reaction();
-
- /*   delete_atoms();
-
-    bigint nblocal = atom->nlocal;
-    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
-
-    //NP tags and maps
-    if (atom->molecular == 0) {
-    int *tag = atom->tag;
-    for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
-    atom->tag_extend();
-    }
-
-    if (atom->tag_enable) {
-      if (atom->map_style) {
-        atom->nghost = 0;
-        atom->map_init();
-        atom->map_set();
-      }
-    }
-    */
 }
-
-/* ---------------------------------------------------------------------- */
-/*
-void FixChemShrink::delete_atoms()
-{
-   int nlocal = atom->nlocal;
-    int i = 0;
-
-    while (i < nlocal) {
-        dlist[i] = radius_[i] < rmin;
-        if (dlist[i]) {
-        atom -> avec -> copy(nlocal-1,i,1);
-        dlist[i] = dlist[nlocal-1];
-        nlocal--;
-        } else i++;
-      }
-
-      atom->nlocal = nlocal;
-}
-*/
-/* ---------------------------------------------------------------------- */
-
-/*void FixChemShrink::default_radius()
-{
-    int nlocal  = atom->nlocal;
-    double **v  = atom -> v;
-    double vmag;
-    int *mask   = atom -> mask;
-    int *type   = atom -> type;
-
-    double m_;
-    double denom;
-    double numer;
-
-    vmax_ = 0;
-
-    for (int i = 0; i < nlocal; i++)
-    {
-        if (mask[i] & groupbit)
-        {
-            vmag = sqrt(v[i][0]*v[i][0]+v[i][1]*v[i][1]+v[i][2]*v[i][2]);
-            if(vmag > vmax_) vmax_=vmag;
-        }
-    }
-
-    MPI_Max_Scalar(vmax_,world);
-    vmax_ = (2.*vmax_);
-
-    if (screenflag_ && screen)
-    {
-        fprintf(screen,"vmax value is: %f \n", vmax_);
-    }
-
-    PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
-    int max_type = pair_gran->get_properties()->max_type();
-
-    for (int a = 1; a < max_type + 1; a++)
-    {
-        for (int b = a; b < max_type + 1; b++)
-        {
-            const double Eeff = Yeff_[a][b];
-
-            for (int i = 0; i < nlocal; i++)
-            {
-                if (mask[i] & groupbit)
-                {
-                    if (type[i]!=a || type[i]!=b) continue;
-                    // Hertzain time step can be calculated with
-                    // 2.87 * radius *( m / (Y*vmax))^0.2
-                    // here it is considered that Hertzian ts is 20 percent of normal dt
-                    // with this the minimum radius is calculated
-                    m_ = 4 * M_PI / (3 * pdensity_[i]);
-                    denom = Eeff*Eeff*vmax_;
-                    numer = 2*m_*m_;
-                    rdefault = (hertzpct / 2.87)  * TimeStep * pow(numer/denom,-0.2);
-                }
-            }
-        }
-    }
-
-    MPI_Max_Scalar(rdefault,world);
-    rmin = rdefault;
-}
-*/

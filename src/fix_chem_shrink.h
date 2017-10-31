@@ -50,8 +50,6 @@ public:
   int setmask();
   virtual void init();
   virtual void post_force(int);
- // void delete_atoms();
- // void default_radius();
 
  protected:
   int screenflag_;
@@ -76,8 +74,6 @@ public:
 
   double *nuf_;
   double *Rep_;
-
-
   int iarg_;
 
   // values from user
@@ -106,15 +102,14 @@ public:
   int spcA;
   int spcC;
 
+
   // TimeStep
   double TimeStep;
   int current_timestep;
 
   bool use_reactant_;
-  
+ 
   virtual double reactionRatConst(int);
-
-
 };
 
 }
