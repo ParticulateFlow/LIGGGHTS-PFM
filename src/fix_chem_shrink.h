@@ -69,6 +69,7 @@ public:
   // checking communication for nuField and Rep
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
+  class FixPropertyAtom *fix_reactantPerParticle_;
 
   class FixPropertyAtom *fix_moleFractionA_, *fix_moleFractionC_;
   double *xA_, *xC_;
@@ -83,7 +84,6 @@ public:
   double k0;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
   int nu_A_, nu_B_, nu_C_;                          // stoichiometric coefficients
-//  double hertzpct;
 
   // particle properties
   double *radius_;                                  // radius of particle
@@ -92,19 +92,15 @@ public:
 
   // minimum radius value -rmin input from user
   double rmin;
- // double rdefault;
- // double radius_origin;
- // bool rdef;
-  double minMolarFrac;
+  double minMolarFrac_;
 
   // pointer updaters
   double *changeOfA_;
   double *changeOfC_;
   double *rhogas_;
-  //double *concA_;
-  //double *concC_;
   double *tgas_;
   double *molarConc_;
+  double *reactantPerParticle_;
 
   // while loop integers
   int spcA;
@@ -114,13 +110,7 @@ public:
   double TimeStep;
   int current_timestep;
 
-  // delete atoms lsit & shrink list
- // int *dlist;
-
-  // get values for default radius minimum
- // double vmax_;
- // double **Yeff_;
- // const double *Y, *nu;
+  bool use_reactant_;
   
   virtual double reactionRatConst(int);
 
