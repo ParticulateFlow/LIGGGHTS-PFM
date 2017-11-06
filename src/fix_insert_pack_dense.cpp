@@ -39,6 +39,7 @@
 #include "update.h"
 #include "particleToInsert.h"
 #include "math_extra.h"
+#include "math_extra_liggghts.h"
 #include "vector_liggghts.h"
 #include "region_neighbor_list.h"
 #include "bounding_box.h"
@@ -434,6 +435,12 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   x3[0] = b*cos(alpha);
   x3[1] = b*sin(alpha);
 
+  // rotate by random quaternion
+  double rotquat[4];
+  MathExtraLiggghts::random_unit_quat(random,rotquat);
+  MathExtraLiggghts::vec_quat_rotate(x2,rotquat);
+  MathExtraLiggghts::vec_quat_rotate(x3,rotquat);
+  
   // then, compute COM & move COM to origin
   double com[3];
   for(int i=0;i<3;i++)
