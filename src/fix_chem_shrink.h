@@ -67,6 +67,7 @@ public:
   // checking communication for nuField and Rep
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
+  class FixPropertyAtom *fix_reactantPerParticle_;
 
   class FixPropertyAtom *fix_moleFractionA_, *fix_moleFractionC_;
   double *xA_, *xC_;
@@ -87,7 +88,7 @@ public:
 
   // minimum radius value -rmin input from user
   double rmin;
-  double minMolarFrac;
+  double minMolarFrac_;
 
   // pointer updaters
   double *changeOfA_;
@@ -95,6 +96,7 @@ public:
   double *rhogas_;
   double *tgas_;
   double *molarConc_;
+  double *reactantPerParticle_;
 
   // while loop integers
   int spcA;
@@ -104,6 +106,9 @@ public:
   // TimeStep
   double TimeStep;
   int current_timestep;
+
+  bool use_reactant_;
+ 
   virtual double reactionRatConst(int);
 };
 

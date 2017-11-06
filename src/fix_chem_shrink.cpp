@@ -57,7 +57,8 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
-    Fix(lmp,narg,arg)
+    Fix(lmp,narg,arg),
+    use_reactant_(false)
 {
     if ((strncmp(style,"chem/shrink",11) == 0) && (!atom->radius_flag||!atom->rmass_flag))
             error -> all (FLERR,"Fix chem/shrink needs per particle radius and mass");
@@ -71,16 +72,29 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     fix_tgas            =   NULL;
     fix_reactionheat_   =   NULL;
     fix_totalMole_      =   NULL;
+    fix_reactantPerParticle_ = NULL;
+
+    screenflag_ = 0;
+    iarg_ = 3;
+    k0 = 0;
+    molMass_A_ = 0;
+    molMass_C_ = 0;
+    molMass_B_ = 0;
+    nu_A_ = 1;
+    nu_B_ = 1;
+    nu_C_ = 1;
+
     pmass_ = NULL;
     speciesA = speciesC = NULL;
 
     rmin = 0.;
-    minMolarFrac = 1e-3;
-    k0 = 0;
-    molMass_A_ = molMass_C_ = molMass_B_ = 0;
-    nu_A_ = nu_B_ = nu_C_ = 1;
+    minMolarFrac_ = 1e-3;
+    spcA = 0;
+    spcC = 0;
+    int n = 16;
+    char cha[30];
 
-    spcA = spcC = 0;
+
     screenflag_ = 0;
 
     iarg_ = 3;
@@ -186,13 +200,29 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
                 error -> fix_error(FLERR, this, "rmin is not defined");
             hasargs = true;
             iarg_+=2;
-        }else if (strcmp(arg[iarg_],"nevery") == 0)
+        }
+        else if (strcmp(arg[iarg_],"nevery") == 0)
         {
             nevery = atoi(arg[iarg_+1]);
             if (nevery <= 0) error->fix_error(FLERR,this,"");
             hasargs = true;
             iarg_+=2;
-        }else if (strcmp(arg[iarg_],"screen") == 0)
+        }
+        else if(strcmp(arg[iarg_],"use_reactant") == 0)
+        {
+            if(narg < iarg_+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'use_reactant'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"yes") == 0)
+                use_reactant_ = true;
+            else if(strcmp(arg[iarg_],"no") == 0)
+                use_reactant_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_reactant'");
+            iarg_++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"screen") == 0)
         {
             if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
             if (strcmp(arg[iarg_+1],"yes") == 0) screenflag_ = 1;
@@ -251,14 +281,15 @@ void FixChemShrink::pre_delete(bool unfixflag)
 {
     if (unfixflag)
     {
-        if(fix_moleFractionA_)  modify  ->  delete_fix(moleFracA);
-        if(fix_moleFractionC_)  modify  ->  delete_fix(moleFracC);
-        if(fix_rhogas)         modify  ->  delete_fix("partRho");
-        if(fix_tgas)           modify  ->  delete_fix("partTemp");
-        if(fix_reactionheat_)  modify  ->  delete_fix("reactionHeat");
-        if(fix_changeOfA_)     modify  ->  delete_fix(massA);
-        if(fix_changeOfC_)     modify  ->  delete_fix(massC);
-        if(fix_totalMole_)     modify  ->  delete_fix("partMolarConc");
+        if(fix_moleFractionA_)       modify  ->  delete_fix(moleFracA);
+        if(fix_moleFractionC_)       modify  ->  delete_fix(moleFracC);
+        if(fix_rhogas)               modify  ->  delete_fix("partRho");
+        if(fix_tgas)                 modify  ->  delete_fix("partTemp");
+        if(fix_reactionheat_)        modify  ->  delete_fix("reactionHeat");
+        if(fix_changeOfA_)           modify  ->  delete_fix(massA);
+        if(fix_changeOfC_)           modify  ->  delete_fix(massC);
+        if(fix_totalMole_)           modify  ->  delete_fix("partMolarConc");
+	if(fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
     }
 }
 
@@ -281,6 +312,11 @@ void FixChemShrink::updatePtrs()
     changeOfC_  =   fix_changeOfC_  ->  vector_atom;
     rhogas_     =   fix_rhogas      ->  vector_atom;
     molarConc_  =   fix_totalMole_  ->  vector_atom;
+    
+    if(use_reactant_)
+    {
+        reactantPerParticle_ = fix_reactantPerParticle_ -> vector_atom;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -290,7 +326,7 @@ void FixChemShrink::reaction()
     updatePtrs();
     int nlocal  =   atom -> nlocal;
     double molarConc;
-	double molarFrac;
+    double molarFrac;
 
     for (int i = 0 ; i < nlocal; i++)
     {
@@ -306,14 +342,11 @@ void FixChemShrink::reaction()
             double dA   =   0.0;
             molarConc = molarConc_[i];
             molarFrac = xA_[i];
-
-            if(molarFrac < minMolarFrac)
-            {
-                continue;
-            }
-
+	    if(molarFrac < minMolarFrac_)
+	    {
+		continue;
+	    }
             double k = reactionRatConst(i);
-
             if(nu_A_ < 2)
             {
                 dA  =   -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
@@ -322,6 +355,15 @@ void FixChemShrink::reaction()
             {
                 dA   =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
             }
+
+            // limit mass change - can't remove more than present in cell
+            // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.8)
+            if(use_reactant_)
+	    {
+	        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+                double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * 0.8;
+                if(-dA > dAmax) dA = -dAmax;
+	    }
 
             double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
             // mass removed from particle
@@ -334,15 +376,16 @@ void FixChemShrink::reaction()
             changeOfC_[i]       +=  dC;
 
             // Mass of single particle
-            // never remove more than half the particle's mass at once
+	    // never remove more than half the particle's mass at once
             if(-dB > 0.5*pmass_[i])
             {
-                pmass_[i] *= 0.5;
+                 pmass_[i] *= 0.5; 
             }
             else
             {
                 pmass_[i] += dB;
             }
+
 
             // change of radius of particle -assumption: density of particle is constant
             radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
@@ -350,8 +393,8 @@ void FixChemShrink::reaction()
             // uncomment if postproc (verification)
             if (screenflag_ && screen)
             {
-                fprintf(screen,"%s Mass %f \n",speciesC,changeOfC_[i]);
-                fprintf(screen,"%s Mass %f \n",speciesA,changeOfA_[i]);
+                fprintf(screen,"Co2 Mass %f \n",changeOfC_[i]);
+                fprintf(screen,"O2 Mass %f \n",changeOfA_[i]);
                 fprintf(screen,"Particle Mass %f \n",pmass_[i]);
                 fprintf(screen,"Gas Density %f \n",rhogas_[i]);
                 fprintf(screen,"total number of moles in chem/shrink: %f \n",molarConc_[i]);
@@ -394,6 +437,11 @@ void FixChemShrink::init()
     fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
+
+    if(use_reactant_)
+    {
+        fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
+    }
 
     updatePtrs();
 }

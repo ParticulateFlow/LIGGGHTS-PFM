@@ -60,9 +60,9 @@ FixChemShrinkArrhenius::FixChemShrinkArrhenius(LAMMPS *lmp, int narg, char **arg
     FixChemShrink(lmp,narg,arg),
     T0(0.0)
 {
+    // ATTENTION: keyword T needs to come last in input script in fix/chem/shrink/Arrhenius
     while (iarg_ < narg)
     {
-      
         if (strcmp(arg[iarg_],"T") == 0)
         {
             if (iarg_ + 2 > narg)
