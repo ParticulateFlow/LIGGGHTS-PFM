@@ -79,6 +79,7 @@ public:
   // values from user
   double k0;                                         // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
+  double relaxFac_;
   int nu_A_, nu_B_, nu_C_;                          // stoichiometric coefficients
 
   // particle properties
