@@ -225,7 +225,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
         }
         else if (strcmp(arg[iarg_],"relaxFactor") == 0)
         {
-            relaxFac_ = atoi(arg[iarg_+1]);
+            relaxFac_ = atof(arg[iarg_+1]);
             if (relaxFac_ < 0)
                 error -> fix_error(FLERR, this, "relaxFactor is not well-defined");
             hasargs = true;
