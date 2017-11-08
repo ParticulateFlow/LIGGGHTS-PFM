@@ -93,10 +93,19 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 
     // defaults
     screenflag_ =   0;
-    molMass_A_  =   molMass_C_  = 0;
-    speciesA    =   speciesC    = NULL;
-    pmass_      =   NULL;
+    molMass_A_  =   molMass_C_  =   0.;
+    diffA = moleFrac = NULL;
     rhoeff_ = NULL;
+    // double **
+    porosity_ = relRadii_ = massLayer_ = fracRed_ = NULL;
+    Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
+    // double *
+    diffEff_ = radius_ = pmass_ = pdensity_ = Massterm = NULL;
+    changeOfA_ = changeOfC_ = rhogas_ = T_ = reactionHeat_ = NULL;
+    molecularDiffusion_ = nuf_ = Rep_ = X0_ = NULL;
+    // const double *
+    pore_diameter_ = tortuosity_ = layerDensities_ = layerMolMasses_ = k0_ = Ea_ = NULL;
+    speciesA    =   speciesC    =   NULL;
     comm_established = false;
     iarg_ = 3;
 
@@ -225,18 +234,14 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_partRe_)        modify  ->  delete_fix("partRe");
         if (fix_molefraction_)  modify  ->  delete_fix(moleFrac);
         if (fix_fracRed)        modify  ->  delete_fix("fracRed");
-        // debug info print out
-        if (fix_Aterm)          modify -> delete_fix("Aterm");
-        if (fix_Bterm)          modify -> delete_fix("Bterm");
-        if (fix_Massterm)       modify -> delete_fix("Massterm");
-        if (fix_effDiffBinary)  modify -> delete_fix("effDiffBinary");
-        if (fix_effDiffKnud)    modify -> delete_fix("effDiffKnud");
-
-        if (fix_layerRelRad_) modify->  delete_fix("relRadii");
-        if (fix_layerMass_)   modify -> delete_fix("massLayer");
-
-        if (fix_porosity_)  modify -> delete_fix("porosity_");
-        // if (fix_tortuosity_)    modify -> delete_fix("tortuosity_");
+        if (fix_Aterm)          modify  ->  delete_fix("Aterm");
+        if (fix_Bterm)          modify  ->  delete_fix("Bterm");
+        if (fix_Massterm)       modify  ->  delete_fix("Massterm");
+        if (fix_effDiffBinary)  modify  ->  delete_fix("effDiffBinary");
+        if (fix_effDiffKnud)    modify  ->  delete_fix("effDiffKnud");
+        if (fix_layerRelRad_)   modify  ->  delete_fix("relRadii");
+        if (fix_layerMass_)     modify  ->  delete_fix("massLayer");
+        if (fix_porosity_)      modify  ->  delete_fix("porosity_");
     }
 }
 
@@ -298,53 +303,35 @@ void FixChemShrinkCore::post_create()
 
 void FixChemShrinkCore::updatePtrs()
 {
-    changeOfA_      =   fix_changeOfA_  ->  vector_atom;
-    changeOfC_      =   fix_changeOfC_  ->  vector_atom;
-    rhogas_         =   fix_rhogas_     ->  vector_atom;
-    T_              =   fix_tgas_       ->  vector_atom;
-    reactionHeat_   =   fix_reactionHeat_-> vector_atom;
-    // handle for diffusion coefficient
-    molecularDiffusion_     =   fix_diffcoeff_  ->  vector_atom;
-    // handles for viscosity field and reynolds number
-    nuf_            =   fix_nuField_    ->  vector_atom;
-    Rep_            =   fix_partRe_     ->  vector_atom;
-    // handle for molar fraction
-    X0_             =   fix_molefraction_   -> vector_atom;
-
-    // handle for relative radius
-    relRadii_       =   fix_layerRelRad_    -> array_atom;
-    // mass handle
-    massLayer_      = fix_layerMass_    ->  array_atom;
-    // density handle
-    layerDensities_ =   fix_dens_       -> get_values();
-    // molar mass handle
-    layerMolMasses_ = fix_molMass_      -> get_values();
-
-    // chemical prop
-    // frequency factor
-    k0_             =  fix_k0_          -> get_values();
-    // activation energy
-    Ea_             =  fix_Ea_          -> get_values();
-
-    // particle porosity properties
-    porosity_       = fix_porosity_ ->array_atom;
-    // porosity_       =   fix_porosity_       -> get_values();
-    tortuosity_     =   fix_tortuosity_     -> get_values();
-    // tortuosity_     =   fix_tortuosity_     -> array_atom;
-    pore_diameter_  =   fix_pore_diameter_  -> get_values();
+    changeOfA_      =   fix_changeOfA_      ->  vector_atom;
+    changeOfC_      =   fix_changeOfC_      ->  vector_atom;
+    rhogas_         =   fix_rhogas_         ->  vector_atom;
+    T_              =   fix_tgas_           ->  vector_atom;
+    reactionHeat_   =   fix_reactionHeat_   ->  vector_atom;
+    molecularDiffusion_   = fix_diffcoeff_  ->  vector_atom;
+    nuf_            =   fix_nuField_        ->  vector_atom;
+    Rep_            =   fix_partRe_         ->  vector_atom;
+    X0_             =   fix_molefraction_   ->  vector_atom;
+    relRadii_       =   fix_layerRelRad_    ->  array_atom;
+    massLayer_      =   fix_layerMass_      ->  array_atom;
+    layerDensities_ =   fix_dens_           ->  get_values();
+    layerMolMasses_ =   fix_molMass_        ->  get_values();
+    k0_             =   fix_k0_             ->  get_values();
+    Ea_             =   fix_Ea_             ->  get_values();
+    porosity_       =   fix_porosity_       ->  array_atom;
+    tortuosity_     =   fix_tortuosity_     ->  get_values();
+    pore_diameter_  =   fix_pore_diameter_  ->  get_values();
+    fracRed_        =   fix_fracRed         ->  array_atom;
+    Aterm           =   fix_Aterm           ->  array_atom;
+    Bterm           =   fix_Bterm           ->  array_atom;
+    Massterm        =   fix_Massterm        ->  vector_atom;
+    effDiffBinary   =   fix_effDiffBinary   ->  array_atom;
+    effDiffKnud     =   fix_effDiffKnud     ->  array_atom;
 
     pmass_          =   atom    -> rmass;
     pdensity_       =   atom    -> density;
     TimeStep        =   update  -> dt;
     radius_         =   atom    -> radius;
-
-    fracRed_        =   fix_fracRed ->array_atom;
-    Aterm           =   fix_Aterm   ->array_atom;
-    Bterm           =   fix_Bterm   ->array_atom;
-    Massterm        =   fix_Massterm->vector_atom;
-    effDiffBinary   =   fix_effDiffBinary   -> array_atom;
-    effDiffKnud     =   fix_effDiffKnud     -> array_atom;
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -365,17 +352,14 @@ void FixChemShrinkCore::init()
 
     int ntype = atom -> ntypes;
     char* fixname = new char[strlen(id)+1];
-
     // look up pre-exponential factor k0
     // differs for every ore id
     strcpy (fixname,"k0_");
     strcat(fixname,id);
     fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
-    // delete []fixname;
 
     // look up activation energies Ea
     // differs for every ore id
-    // fixname = new char [strlen(id)+1];
     strcpy(fixname, "Ea_");
     strcat(fixname, id);
     fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, "FixChemShrinkCore"));
@@ -395,7 +379,7 @@ void FixChemShrinkCore::init()
     fix_dens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
     delete []fixname;
 
-    // references
+    // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
     fix_rhogas_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));
@@ -406,31 +390,28 @@ void FixChemShrinkCore::init()
     fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style));
     fix_molefraction_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFrac, "property/atom", "scalar", 0, 0, id));
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
-    // debug fixes
     fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Aterm", "property/atom", "vector", 0, 0, style));
     fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Bterm", "property/atom", "vector", 0, 0, style));
     fix_Massterm        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Massterm", "property/atom", "scalar", 0, 0, style));
-    fix_effDiffBinary           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffBinary", "property/atom", "vector", 0, 0, style));
-    fix_effDiffKnud           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffKnud", "property/atom", "vector", 0, 0, style));
-
-
-    // lookup porosity,tortuosity and pore diameter values
-    //fix_porosity_       =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("porosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
-
+    fix_effDiffBinary   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffBinary", "property/atom", "vector", 0, 0, style));
+    fix_effDiffKnud     =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffKnud", "property/atom", "vector", 0, 0, style));
     fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, "FixChemShrinkCore"));
-    // tortuosity is calculated with the empirical correlation of Murayama et al. 1978 - thus different through every interface layer
-    // fix_tortuosity_     =   static_cast<FixPropertyAtom*>(modify->find_fix_property("tortuosity_", "property/atom", "vector", 0, 0, "FixChemShrinkCore"));
-
+    // references for global properties - valid for every particle equally
     fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
     fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
 
     updatePtrs();
+    // create rhoeff array for every particles every layer
     memory->create(rhoeff_,atom->nmax,nmaxlayers_+1,"rhoeff_");
 
+    // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
     {
-        calcRhoEff_(i);
+        for (int layer=0; layer <= layers_; layer++)
+            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
         calcMassLayer(i);
+        // molecular diffusion is the value of diffusion coefficient for multicomponent mixture
+        // we get it from CFDEM - diffusion coefficients
         if (screenflag_ && screen)
         {
             fprintf(screen, "dCoeff value is : %.10f \n", molecularDiffusion_[i]);
@@ -447,7 +428,7 @@ void FixChemShrinkCore::post_force(int)
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
     double x0_eq_[nmaxlayers_];          // molar fraction of reactant gas
-    double dmA_[nmaxlayers_];            // mass flow rate of reactant gas species for each layer
+    double dmA_[nmaxlayers_];            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
     ts = update->ntimestep;
 
     // do chem/shrink/core calculations if communication between CFDEM and LIGGGHTS already happened
@@ -466,10 +447,39 @@ void FixChemShrinkCore::post_force(int)
         {
             if (mask[i] & groupbit)
             {
-                // calcRhoEff_(i);
+                for (int j = 0; j < nmaxlayers_; j++)
+                {
+                    dmA_[j] = 0.0;
+                }
+                // 1st recalculate masses of layers if layer has reduced
+                // is ignored if there is no change in layers
                 active_layers(i);
+                // calculate values for fractional reduction f_i = (1-relRadii_i^3)
+                // or with mass ratio - is irrelevant gives same result
+                // provides simplicity for calculations of A & B terms.
                 FractionalReduction(i);
-                if (layers_ > 0)
+                // get values for equilibrium molar fraction of reactant gas species,
+                // this value is calculated from the Equilibrium constants function Keq(layer,T).
+                // and used in the reaction rate determination.
+                getXi(i,x0_eq_);
+                // calculate the reaction resistance term
+                getA(i);
+                // calculate the diffusion resistance term
+                getB(i);
+                // calculate mass transfer resistance term
+                getMassT(i);
+                // do the reaction calculation with pre-calculated values of A, B and ß (massT)
+                // the USCM model chemical reaction rate with gaseous species model
+                // based on the works of Philbrook, Spitzer and Manning
+                reaction(i, dmA_, x0_eq_);
+                // the results of reaction gives us the mass change of reactant species gas
+                // in the usual case that means the CO gas mass species change is given
+                // this information is used then to calculate mass changes of particle layers
+                update_atom_properties(i, dmA_);
+                // also the results of reaction function is used to calculate
+                // the changes in gas species
+                update_gas_properties(i, dmA_);
+                /*if (layers_ > 0)
                 {
                     getXi(i,x0_eq_);
                     for (int j = 0; j < nmaxlayers_; j++)
@@ -482,7 +492,7 @@ void FixChemShrinkCore::post_force(int)
                     reaction(i, dmA_,x0_eq_);
                     update_atom_properties(i,dmA_);
                     update_gas_properties(i,dmA_);
-                }
+                } */
             }
         }
     }
@@ -506,18 +516,8 @@ void FixChemShrinkCore::post_force(int)
     }
 }
 
-/* ----------------- compute particle surface area ------------------------ */
-
-double FixChemShrinkCore::partSurfArea(double radius)
-{
-     double A_p =   4.0*M_PI*radius*radius;
-     return (A_p);
-}
-
 /* ---------------------------------------------------------------------- */
 
-// returns number of active layers
-// calculate the new masses of layers, (important if layer number has changed)
 int FixChemShrinkCore::active_layers(int i)
 {
     for(int j  = layers_; j >= 1; j--)
@@ -526,7 +526,7 @@ int FixChemShrinkCore::active_layers(int i)
         {
             layers_ -= 1;
             calcMassLayer(i);
-            break;
+            // break;
         }
     }
     if (screen)
@@ -536,17 +536,17 @@ int FixChemShrinkCore::active_layers(int i)
 
 /* ---------------------------------------------------------------------- */
 
-// Determine the mass for every layer -- the latest layer represents the core of the particle.
+// 0 = iron shell, 1 = wüstite layer, 2 = magnetite layer, 3 = hematite layer
 void FixChemShrinkCore::calcMassLayer(int i)
 {
     double rad[nmaxlayers_+1];
     for (int layer = 0; layer <= layers_ ; layer++)
         rad[layer] = radius_[i]*relRadii_[i][layer];
 
-    massLayer_[i][layers_]   =   1.33333*M_PI*rad[layer]*rad[layer]*rad[layer]*rhoeff_[i][layers_];
+    massLayer_[i][layers_]   =   1.33333*M_PI*rad[layers_]*rad[layers_]*rad[layers_]*rhoeff_[i][layers_];
     for (int layer = 0 ; layer < layers_; layer++)
     {
-        massLayer_[i][layer]   =   1.33333*M_PI*(rad[layer]*rad[layer]*rad[layer]-rad[layer+1]*rad[layer+1]*rad[layer+1])*rhoeff_[i][j];
+        massLayer_[i][layer]   =   1.33333*M_PI*(rad[layer]*rad[layer]*rad[layer]-rad[layer+1]*rad[layer+1]*rad[layer+1])*rhoeff_[i][layer];
     }
 
     if (screen)
@@ -562,7 +562,7 @@ void FixChemShrinkCore::calcMassLayer(int i)
 
 double FixChemShrinkCore::K_eq(int layer, double T)
 {
-    // 0 = wustite, 1 = mangetite, 2 = hematite;
+    // 0 = wustite , 1 = mangetite, 2 = hematite interfaces;
     double Keq_ = 0.;
     if(strcmp(speciesA,"CO")==0)
      {
@@ -591,14 +591,13 @@ double FixChemShrinkCore::K_eq(int layer, double T)
 
 /* ---------------------------------------------------------------------- */
 
-// Calculate the equilibrium molar fractions
-// And the bulk molar fraction
 void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 {
     if (screen)
         fprintf(screen,"getXi \n");
 
-    // calculate equilibrium concentration from K_eq(layer, T)
+    // kc is the total value of carbon available in the system!
+    // this should be modified for later cases.
     double kc = 0.4;
 
     for (int j = 0; j < layers_; j++)
@@ -609,16 +608,16 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-// calculate A - the chemical reaction resistance term - starting from wustite(0).
+// calculate A_[j] [s/m] - the chemical reaction resistance term
 // Equation available in literature. (Valipour, Natsui, Nietrost...)
-// A_[j] [s/m]
+// 0 = wüstite interface, 1 = magnetite interface, 2 = hematite interface
 void FixChemShrinkCore::getA(int i)
 {
     if (screen)
         fprintf(screen,"getA \n");
+
     for (int j = 0; j < layers_ ; j++)
     {
-        // a_[j]   =   (1/(k0_[j]*exp(-Ea_[j]/(Runiv*T_[i]))))*(1/(1+1/K_eq(j,T_[i])))*(1/pow((1-fracRed_[i][j]),0.6666));
         Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*pow((1-fracRed_[i][j]),0.6666);
         Aterm[i][j]   =   1/Aterm[i][j];
     }
@@ -626,9 +625,10 @@ void FixChemShrinkCore::getA(int i)
 
 /* ---------------------------------------------------------------------- */
 
-// Calculate B - the diffusion resistance term - 0 = wustite
-// Use binary diffusion for mixture, and knudsen diffusion to determine
-// effective diffusion coefficient.
+// Calculate B [s/m] - the diffusion resistance term
+// Use binary diffusion for mixture, and knudsen diffusion to determine the effective diffusion term
+// 0 : diffusion through iron layer, 1 : diffusion through wüstite, 2 : diffusion through magnetite.
+// there is no diffusion through the hematite layer
 void FixChemShrinkCore::getB(int i)
 {
     if (screen)
@@ -636,31 +636,28 @@ void FixChemShrinkCore::getB(int i)
     double fracRedThird_[nmaxlayers_];
     diffEff_ = new double [nmaxlayers_];
 
-    for (int j = 0; j < layers_; j++)
+    for (int layer = 0; layer < layers_; layer++)
     {
         // calculate fractional reduction to the power of 1/3 for simpler use
-        fracRedThird_[j] = pow((1-fracRed_[i][j]),THIRD);
+        fracRedThird_[layer] = pow((1-fracRed_[i][layer]),THIRD);
 
         // Calculate the effective molecular diffusion
-        effDiffBinary[i][j] = molecularDiffusion_[i]*(porosity_[i][j]/tortuosity_[i]) + 1e-18;
+        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_[i]) + 1e-18;
 
         // Calculate the knudsen diffusion
-        effDiffKnud[i][j]  =  (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][j]/tortuosity_[i]) + 1e-18;
+        effDiffKnud[i][layer]  =  (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_[i]) + 1e-18;
+
+        // total effective diffusivity
+        // diffEff_[layer] =   1.0/(1.0/effDiffBinary[i][layer] + 1.0/effDiffKnud[i][layer]);
+        diffEff_[layer] =   effDiffKnud[i][layer]*effDiffBinary[i][layer]/(effDiffBinary[i][layer]+effDiffKnud[i][layer]);
     }
 
-    // total effective diffusivity
-    for (int j = 0; j < layers_ ; j++)
-    {
-        diffEff_[j] =   1.0/(1.0/effDiffBinary[i][j] + 1.0/effDiffKnud[i][j]);
-    }
-
-    // calculation of Diffustion Term from Valipour 2009
-    // from wustite to iron
+    // calculation of diffusion term
     Bterm[i][0]   =   ((1-fracRedThird_[0])/fracRedThird_[0])*(radius_[i]/diffEff_[0]);
 
-    for (int j = 1; j <layers_; j++)
+    for (int layer = 1; layer <layers_; layer++)
     {
-        Bterm[i][j] = (fracRedThird_[j-1]-fracRedThird_[j])/(fracRedThird_[j-1]*fracRedThird_[j])*(radius_[i]/diffEff_[j]);
+        Bterm[i][layer] = (fracRedThird_[layer-1]-fracRedThird_[layer])/(fracRedThird_[layer-1]*fracRedThird_[layer])*(radius_[i]/diffEff_[layer]);
     }
 }
 
@@ -737,7 +734,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     for (int j = 0 ; j < nmaxlayers_; j++)
     {
         // mass flow rate for reactant gas species
-        dmA_[j] =   dY[j]*rhogas_[i]*partSurfArea(radius_[i])*TimeStep*nevery;
+        dmA_[j] =   dY[j]*rhogas_[i]* 4.0*M_PI*radius_[i]*radius_[i]*TimeStep*nevery;
     }
 }
 
@@ -887,16 +884,10 @@ void FixChemShrinkCore::FractionalReduction(int i)
     // f_[1] = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
     //f_[2] = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
 
-    for (int k=0; k<layers_; k++)
+    for (int layer=0; layer<layers_; layer++)
     {
-        fracRed_[i][k] = 1.0 - relRadii_[i][k+1]*relRadii_[i][k+1]*relRadii_[i][k+1];
+        fracRed_[i][layer] = 1.0 - relRadii_[i][layer+1]*relRadii_[i][layer+1]*relRadii_[i][layer+1];
     }
 }
 
 /* ---------------------------------------------------------------------- */
-
-void FixChemShrinkCore::calcRhoEff_(int i)
-{
-    for (int layer=0; layer <= layers_; layer++)
-        rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
-}

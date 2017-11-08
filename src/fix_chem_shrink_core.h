@@ -45,7 +45,6 @@ public:
   virtual void init();
   virtual void post_force(int);
 
-  double partSurfArea(double);
   int active_layers(int);
   void calcMassLayer(int);
   double K_eq(int, double);
@@ -59,7 +58,6 @@ public:
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
   void FractionalReduction(int);
-  void calcRhoEff_(int);
 
  protected:
    int iarg_;
