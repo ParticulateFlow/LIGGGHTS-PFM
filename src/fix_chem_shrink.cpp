@@ -91,8 +91,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     minMolarFrac_ = 1e-3;
     spcA = 0;
     spcC = 0;
-    int n = 16;
-    char cha[30];
 
 
     screenflag_ = 0;
