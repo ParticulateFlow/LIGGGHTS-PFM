@@ -50,11 +50,11 @@ public:
   void calcMassLayer(int);
   double K_eq(int, double);
   // diff & reaction & massT
-  void reaction(int, double *, double *, double *, double *, double *);   //, double *, double *
-  void getA(int, double *);
+  void reaction(int, double *, double *);   //, double *, double *
+  void getA(int);
   void diffcoeff(int, double *);
-  void getB(int, double *);
-  void getMassT(int, double *);
+  void getB(int);
+  void getMassT(int);
   void getXi(int, double *);
   void update_atom_properties(int, double *);
   void update_gas_properties(int, double *);
@@ -104,7 +104,7 @@ public:
   // handle names
   double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_;
   double **fracRed_;
-  double **Aterm, **Bterm, *Massterm;
+  double **Aterm, **Bterm, *Massterm, **effDiffBinary, **effDiffKnud;
 
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
   class FixPropertyAtom *fix_rhogas_;                           //  density of gas
@@ -119,6 +119,8 @@ public:
   class FixPropertyAtom *fix_Aterm;
   class FixPropertyAtom *fix_Bterm;
   class FixPropertyAtom *fix_Massterm;
+  class FixPropertyAtom *fix_effDiffBinary;
+  class FixPropertyAtom *fix_effDiffKnud;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
