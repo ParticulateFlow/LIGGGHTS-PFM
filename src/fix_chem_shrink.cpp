@@ -80,6 +80,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     molMass_A_ = 0;
     molMass_C_ = 0;
     molMass_B_ = 0;
+    relaxFac_ = 0.5;
     nu_A_ = 1;
     nu_B_ = 1;
     nu_C_ = 1;
@@ -220,6 +221,14 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             iarg_++;
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"relaxFactor") == 0)
+        {
+            relaxFac_ = atof(arg[iarg_+1]);
+            if (relaxFac_ < 0)
+                error -> fix_error(FLERR, this, "relaxFactor is not well-defined");
+            hasargs = true;
+            iarg_ +=2;
+        }
         else if (strcmp(arg[iarg_],"screen") == 0)
         {
             if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
@@ -359,7 +368,7 @@ void FixChemShrink::reaction()
             if(use_reactant_)
 	    {
 	        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
-                double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * 0.8;
+                double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * relaxFac_;
                 if(-dA > dAmax) dA = -dAmax;
 	    }
 
