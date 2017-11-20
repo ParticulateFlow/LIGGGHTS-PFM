@@ -275,11 +275,11 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
 FixChemShrink::~FixChemShrink()
 {
-    delete massA;
-    delete massC;
+    delete []massA;
+    delete []massC;
 
-    delete speciesA;
-    delete speciesC;
+    delete []speciesA;
+    delete []speciesC;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -296,7 +296,7 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_changeOfA_)           modify  ->  delete_fix(massA);
         if(fix_changeOfC_)           modify  ->  delete_fix(massC);
         if(fix_totalMole_)           modify  ->  delete_fix("partMolarConc");
-	if(fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
+        if(fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
     }
 }
 

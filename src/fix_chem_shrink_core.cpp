@@ -100,7 +100,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     porosity_ = relRadii_ = massLayer_ = fracRed_ = NULL;
     Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
     // double *
-    diffEff_ = radius_ = pmass_ = pdensity_ = Massterm = NULL;
+    radius_ = pmass_ = pdensity_ = Massterm = NULL;
     changeOfA_ = changeOfC_ = rhogas_ = T_ = reactionHeat_ = NULL;
     molecularDiffusion_ = nuf_ = Rep_ = X0_ = NULL;
     // const double *
@@ -207,13 +207,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 
 FixChemShrinkCore::~FixChemShrinkCore()
 {
-    delete massA;
-    delete massC;
-    delete diffA;
-    delete moleFrac;
+    delete []massA;
+    delete []massC;
+    delete []diffA;
+    delete []moleFrac;
 
-    delete speciesA;
-    delete speciesC;
+    delete []speciesA;
+    delete []speciesC;
 
     memory->destroy(rhoeff_);
 }
@@ -350,10 +350,11 @@ void FixChemShrinkCore::init()
     fc_ = static_cast<FixCfdCoupling*>(modify->find_fix_style_strict("couple/cfd",0));
     couple = fc_ -> couple_nevery_ + 1;
 
-    int ntype = atom -> ntypes;
-    char* fixname = new char[strlen(id)+1];
+
     // look up pre-exponential factor k0
     // differs for every ore id
+    int ntype = atom -> ntypes;
+    char* fixname = new char[strlen(id)+1];
     strcpy (fixname,"k0_");
     strcat(fixname,id);
     fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
@@ -402,6 +403,7 @@ void FixChemShrinkCore::init()
 
     updatePtrs();
     // create rhoeff array for every particles every layer
+    memory->destroy(rhoeff_);
     memory->create(rhoeff_,atom->nmax,nmaxlayers_+1,"rhoeff_");
 
     // get initial values for rhoeff, and use them to calculate mass of layers
@@ -452,6 +454,7 @@ void FixChemShrinkCore::post_force(int)
                 for (int j = 0; j < nmaxlayers_; j++)
                 {
                     dmA_[j] = 0.0;
+                    x0_eq_[j] = 0.0;
                 }
                 // 1st recalculate masses of layers if layer has reduced
                 // is ignored if there is no change in layers
@@ -615,17 +618,6 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
     {
         x0_eq_[j]  =   kc/(1+K_eq(j,T_[i]));
     }
-
-    double diffX[nmaxlayers_];
-    diffX[0] = X0_[i] - x0_eq_[0];
-    diffX[1] = X0_[i] - x0_eq_[1];
-    diffX[2] = X0_[i] - x0_eq_[2];
-
-    FILE * ConcInPart;
-    ConcInPart = fopen("X0Values.dat","w+");
-    fprintf (ConcInPart, "(x0 - x0_eq_[i]) & x0_eq_[i] = %lf %lf %lf %lf %lf %lf \n",diffX[0], diffX[1], diffX[2], x0_eq_[0], x0_eq_[1], x0_eq_[2]);
-
-    fclose (ConcInPart);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -661,7 +653,7 @@ void FixChemShrinkCore::getB(int i)
     if (screen)
         fprintf(screen,"getB \n");
     double fracRedThird_[nmaxlayers_];
-    diffEff_ = new double [nmaxlayers_];
+    double diffEff_[nmaxlayers_];
 
     for (int layer = 0; layer < layers_; layer++)
     {
@@ -874,6 +866,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // new porosity of layers
     for (int layer = 0; layer <= layers_; layer++)
         porosity_[i][layer] = 1 - rhoeff_[i][layer]/layerDensities_[layer];
+
 }
 
 /* ---------------------------------------------------------------------- */

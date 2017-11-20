@@ -80,7 +80,6 @@ public:
    double **porosity_;
    const double *pore_diameter_;
    const double *tortuosity_;
-   double *diffEff_;
 
    // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;
