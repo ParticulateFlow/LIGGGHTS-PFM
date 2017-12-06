@@ -496,20 +496,6 @@ void FixChemShrinkCore::post_force(int)
                 // also the results of reaction function is used to calculate
                 // the changes in gas species
                 update_gas_properties(i, dmA_);
-                /*if (layers_ > 0)
-                {
-                    getXi(i,x0_eq_);
-                    for (int j = 0; j < nmaxlayers_; j++)
-                    {
-                        dmA_[j] = 0.0;
-                    }
-                    getA(i);
-                    getB(i);
-                    getMassT(i);
-                    reaction(i, dmA_,x0_eq_);
-                    update_atom_properties(i,dmA_);
-                    update_gas_properties(i,dmA_);
-                } */
             }
         }
     }
@@ -655,7 +641,7 @@ void FixChemShrinkCore::getA(int i)
 
     for (int j = 0; j < layers_ ; j++)
     {
-        Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1-1/K_eq(j,T_[i]));
+        Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,T_[i]));
         //Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*pow((1.0-fracRed_[i][j]),0.6666);
         Aterm[i][j]   =   1.0/Aterm[i][j];
     }
@@ -896,7 +882,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         if (porosity_[i][layer] <= porosity_[i][0])
             porosity_[i][layer] = 1 -(1-porosity_init[i][layer])*((rad[layer]*rad[layer]*rad[layer])/(rad_init[i][layer]*rad_init[i][layer]*rad_init[i][layer]));
 
-        rhoeff_[i][layer] = (1 - porosity_[i][layer])*layerDensities_[layer];
+        // rhoeff_[i][layer] = (1 - porosity_[i][layer])*layerDensities_[layer];
     }
 
     /* if (screen)
