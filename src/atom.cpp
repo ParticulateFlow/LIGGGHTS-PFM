@@ -107,6 +107,14 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   cv = NULL;
   vest = NULL;
 
+// Superquadric bonus-----------------------------------
+  shape = NULL; //half axes and blockiness parameters
+  inertia = NULL; //components Ix, Iy, Iz
+  blockiness = NULL;
+  volume = NULL; area = NULL;
+  quaternion = NULL; //quaternion of current orientation and angular moment
+//------------------------------------------------------
+
   maxspecial = 1;
   nspecial = NULL;
   special = NULL;
@@ -114,6 +122,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   num_bond = NULL;
   bond_type = bond_atom = NULL;
   bond_hist = NULL;
+  n_bondhist = 0;
 
   num_angle = NULL;
   angle_type = angle_atom1 = angle_atom2 = angle_atom3 = NULL;
@@ -138,6 +147,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   // customize by adding new flag
 
   sphere_flag = ellipsoid_flag = line_flag = tri_flag = body_flag = 0;
+  superquadric_flag = 0; // superquadric
   peri_flag = electron_flag = 0;
   wavepacket_flag = sph_flag = 0;
 
@@ -271,6 +281,15 @@ Atom::~Atom()
   memory->destroy(improper_atom2);
   memory->destroy(improper_atom3);
   memory->destroy(improper_atom4);
+
+// Superquadric bonus-----------------------------------
+  memory->destroy(shape); //half axes and blockiness parameters
+  memory->destroy(inertia); //components Ix, Iy, Iz
+  memory->destroy(blockiness);
+  memory->destroy(volume);
+  memory->destroy(area);
+  memory->destroy(quaternion); //quaternion of current orientation
+//------------------------------------------------------
 
   // delete custom atom arrays
 
@@ -1210,7 +1229,7 @@ void Atom::check_mass()
 {
   if (mass == NULL) return;
   for (int itype = 1; itype <= ntypes; itype++)
-    if (mass_setflag[itype] == 0) error->all(FLERR,"All masses are not set");
+    if (mass_setflag[itype] == 0 && !rmass_flag) error->all(FLERR,"All masses are not set");
 }
 
 /* ----------------------------------------------------------------------
@@ -1911,6 +1930,11 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"density") == 0) return (void *) density; //NP modified C.K.
   if (strcmp(name,"rho") == 0) return (void *) rho;  //NP modified A.A.
   if (strcmp(name,"pressure") == 0) return (void *) p;  //NP modified A.A.
+  if (strcmp(name,"volume") == 0) return (void *) volume; // superquadric
+  if (strcmp(name,"area") == 0) return (void *) area; // superquadric
+
+  len = 2; // superquadric
+  if (strcmp(name,"blockiness") == 0) return (void *) blockiness; // superquadric
 
   len = 3; //NP modified C.K.
   if (strcmp(name,"x") == 0) return (void *) x;
@@ -1926,6 +1950,13 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"rmass") == 0) return (void *) rmass;
   if (strcmp(name,"vfrac") == 0) return (void *) vfrac;
   if (strcmp(name,"s0") == 0) return (void *) s0;
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  if (strcmp(name,"shape") == 0 && shape!=NULL) return (void *) shape;
+
+  len = 4;
+  if (strcmp(name,"quaternion") == 0 && quaternion!=NULL) return (void *) quaternion;
+#endif
 
   len = -1; //NP modified C.K.
   return NULL;

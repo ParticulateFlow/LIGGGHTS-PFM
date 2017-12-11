@@ -326,3 +326,105 @@ RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double 
 
   return retBin;
 }
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+inline void RegionNeighborList::coord2bin_calc_interpolation_weights(double *x,int ibin,int ix,int iy, int iz,int &quadrant,double &wx,double &wy,double &wz) const
+{
+    quadrant = 0;
+    wx = wy = wz = 0.;
+}
+
+int RegionNeighborList::coord2bin(double *x,int &quadrant,double &wx,double &wy,double &wz) const
+{
+  int ix,iy,iz;
+
+  if (x[0] >= bboxhi[0])
+    ix = static_cast<int> ((x[0]-bboxhi[0])*bininvx) + nbinx;
+  else if (x[0] >= bboxlo[0]) {
+    ix = static_cast<int> ((x[0]-bboxlo[0])*bininvx);
+    ix = std::min(ix,nbinx-1);
+  } else
+    ix = static_cast<int> ((x[0]-bboxlo[0])*bininvx) - 1;
+
+  if (x[1] >= bboxhi[1])
+    iy = static_cast<int> ((x[1]-bboxhi[1])*bininvy) + nbiny;
+  else if (x[1] >= bboxlo[1]) {
+    iy = static_cast<int> ((x[1]-bboxlo[1])*bininvy);
+    iy = std::min(iy,nbiny-1);
+  } else
+    iy = static_cast<int> ((x[1]-bboxlo[1])*bininvy) - 1;
+
+  if (x[2] >= bboxhi[2])
+    iz = static_cast<int> ((x[2]-bboxhi[2])*bininvz) + nbinz;
+  else if (x[2] >= bboxlo[2]) {
+    iz = static_cast<int> ((x[2]-bboxlo[2])*bininvz);
+    iz = std::min(iz,nbinz-1);
+  } else
+    iz = static_cast<int> ((x[2]-bboxlo[2])*bininvz) - 1;
+
+  int ibin = (iz-mbinzlo)*mbiny*mbinx + (iy-mbinylo)*mbinx + (ix-mbinxlo);
+
+  if(ibin < 0 || ibin >= mbins())
+     return -1; // ibin = -1
+  coord2bin_calc_interpolation_weights(x,ibin,ix,iy,iz,quadrant,wx,wy,wz);
+
+  return ibin;
+}
+
+
+bool RegionNeighborList::hasOverlap_superquadric(double * x, double radius, double *quaternion, double *shape, double *blockiness) const
+{
+  int ibin = coord2bin(x);
+
+  for(std::vector<int>::const_iterator it = stencil.begin(); it != stencil.end(); ++it) {
+    const int offset = *it;
+    if((ibin+offset < 0) || ((size_t)(ibin+offset) >= bins.size()))
+    {
+        ///error->one(FLERR,"assertion failed");
+        return true; /// TODO ???
+    }
+    const ParticleBin & plist = bins[ibin+offset];
+
+    Superquadric particle1(x, quaternion, shape, blockiness);
+    for(typename std::vector<Particle>::const_iterator pit = plist.begin(); pit != plist.end(); ++pit) {
+      const Particle & p = *pit;
+      double del[3];
+      vectorSubtract3D(x, p.x, del);
+      const double rsq = vectorMag3DSquared(del);
+      const double radsum = radius + p.radius;
+      if(check_obb_flag) {
+        double x_copy[3], quaternion_copy[4], shape_copy[3], blockiness_copy[2];
+        vectorCopy3D(p.x, x_copy);
+        vectorCopy4D(p.quaternion, quaternion_copy);
+        vectorCopy3D(p.shape, shape_copy);
+        vectorCopy2D(p.blockiness, blockiness_copy);
+        Superquadric particle2(x_copy, quaternion_copy, shape_copy, blockiness_copy);
+        double contact_point[3];
+
+        if (rsq <= radsum*radsum and (MathExtraLiggghtsNonspherical::capsules_intersect(&particle1, &particle2, contact_point) and
+                                      MathExtraLiggghtsNonspherical::obb_intersect(&particle1, &particle2))) {
+            return true;
+        }
+      } else
+        if (rsq <= radsum*radsum) return true;
+    }
+  }
+
+  return false;
+}
+
+
+void RegionNeighborList::insert_superquadric(double * x, double radius, double *quaternion, double *shape, double *blockiness, int index) {
+  int quadrant;
+  double wx,wy,wz;
+  int ibin = coord2bin(x,quadrant,wx,wy,wz);
+  if((ibin < 0) || ((size_t)(ibin) >= bins.size()))
+  {
+      ///error->one(FLERR,"assertion failed");
+      return;
+  }
+
+  bins[ibin].push_back(Particle(index,x,radius,quaternion, shape, blockiness, ibin,quadrant,wx,wy,wz));
+  ++ncount;
+}
+#endif

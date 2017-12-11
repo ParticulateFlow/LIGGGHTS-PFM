@@ -53,7 +53,14 @@ enum{ID,MOL,TYPE,ELEMENT,MASS,
      OMEGAX,OMEGAY,OMEGAZ,ANGMOMX,ANGMOMY,ANGMOMZ,
      TQX,TQY,TQZ,SPIN,ERADIUS,ERVEL,ERFORCE,
      COMPUTE,FIX,VARIABLE,INAME,DNAME,
-     DENSITY, RHO, P, THREAD}; //NP modified C.K. included DENSITY .. A.A. included RHO and P .. R.B. included THREAD
+     DENSITY, RHO, P,
+// superquadric start
+     SHAPEX, SHAPEY, SHAPEZ,
+     QUAT1, QUAT2, QUAT3, QUAT4,
+     BLOCKINESS1, BLOCKINESS2,
+     INERTIAX, INERTIAY, INERTIAZ,
+// superquadric end
+     THREAD}; //NP modified C.K. included DENSITY .. A.A. included RHO and P .. R.B. included THREAD
 enum{LT,LE,GT,GE,EQ,NEQ};
 enum{INT,DOUBLE,STRING};    // same as in DumpCFG
 
@@ -474,7 +481,7 @@ int DumpCustom::count()
       } else if (thresh_array[ithresh] == MOL) {
         if (!atom->molecule_flag)
           error->all(FLERR,
-                     "Threshhold for an atom property that isn't allocated");
+                     "Threshold for an atom property that isn't allocated");
         int *molecule = atom->molecule;
         for (i = 0; i < nlocal; i++) dchoose[i] = molecule[i];
         ptr = dchoose;
@@ -1274,6 +1281,72 @@ int DumpCustom::parse_fields(int narg, char **arg)
     // compute value = c_ID
     // if no trailing [], then arg is set to 0, else arg is int between []
 
+// superquadric start
+    } else if (strcmp(arg[iarg],"shapex") == 0) { 
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_shapex;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"shapey") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_shapey;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"shapez") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_shapez;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"quat1") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_quat1;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"quat2") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_quat2;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"quat3") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_quat3;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"quat4") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_quat4;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"blockiness1") == 0 or strcmp(arg[iarg],"roundness1") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      if(strcmp(arg[iarg],"roundness1") == 0)
+        error->warning(FLERR,"Keyword 'roundness1' will be deprecated in future, please use 'blockiness1' istead");
+      pack_choice[i] = &DumpCustom::pack_blockiness1;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"blockiness2") == 0 or strcmp(arg[iarg],"roundness2") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      if(strcmp(arg[iarg],"roundness2") == 0)
+        error->warning(FLERR,"Keyword 'roundness2' will be deprecated in future, please use 'blockiness2' istead");
+      pack_choice[i] = &DumpCustom::pack_blockiness2;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"inertiax") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_inertiax;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"inertiay") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_inertiay;
+      vtype[i] = DOUBLE;
+    } else if (strcmp(arg[iarg],"inertiaz") == 0) {
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Dumping an atom quantity that isn't allocated");
+      pack_choice[i] = &DumpCustom::pack_inertiaz;
+      vtype[i] = DOUBLE;
+// superquadric end
     } else if (strncmp(arg[iarg],"c_",2) == 0) {
       pack_choice[i] = &DumpCustom::pack_compute;
       vtype[i] = DOUBLE;
@@ -1675,6 +1748,20 @@ int DumpCustom::modify_param(int narg, char **arg)
     else if (strcmp(arg[1],"eradius") == 0) thresh_array[nthresh] = ERADIUS;
     else if (strcmp(arg[1],"ervel") == 0) thresh_array[nthresh] = ERVEL;
     else if (strcmp(arg[1],"erforce") == 0) thresh_array[nthresh] = ERFORCE;
+// superquadric start
+    else if (strcmp(arg[1],"shapex") == 0) thresh_array[nthresh] = SHAPEX; 
+    else if (strcmp(arg[1],"shapey") == 0) thresh_array[nthresh] = SHAPEY;
+    else if (strcmp(arg[1],"shapez") == 0) thresh_array[nthresh] = SHAPEZ;
+    else if (strcmp(arg[1],"quat1") == 0) thresh_array[nthresh] = QUAT1;
+    else if (strcmp(arg[1],"quat2") == 0) thresh_array[nthresh] = QUAT2;
+    else if (strcmp(arg[1],"quat3") == 0) thresh_array[nthresh] = QUAT3;
+    else if (strcmp(arg[1],"quat4") == 0) thresh_array[nthresh] = QUAT4;
+    else if (strcmp(arg[1],"blockiness1") == 0) thresh_array[nthresh] = BLOCKINESS1;
+    else if (strcmp(arg[1],"blockiness2") == 0) thresh_array[nthresh] = BLOCKINESS2;
+    else if (strcmp(arg[1],"inertiax") == 0) thresh_array[nthresh] = INERTIAX;
+    else if (strcmp(arg[1],"inertiay") == 0) thresh_array[nthresh] = INERTIAY;
+    else if (strcmp(arg[1],"inertiaz") == 0) thresh_array[nthresh] = INERTIAZ;
+// superquadric end
 
     // compute value = c_ID
     // if no trailing [], then arg is set to 0, else arg is between []
@@ -2739,6 +2826,149 @@ void DumpCustom::pack_erforce(int n)
   }
 }
 
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_shapex(int n)
+{
+  double **shape = atom->shape;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = shape[clist[i]][0];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_shapey(int n)
+{
+  double **shape = atom->shape;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = shape[clist[i]][1];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_shapez(int n)
+{
+  double **shape = atom->shape;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = shape[clist[i]][2];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_quat1(int n)
+{
+  double **quaternion = atom->quaternion;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = quaternion[clist[i]][0];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_quat2(int n)
+{
+  double **quaternion = atom->quaternion;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = quaternion[clist[i]][1];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_quat3(int n)
+{
+  double **quaternion = atom->quaternion;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = quaternion[clist[i]][2];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_quat4(int n)
+{
+  double **quaternion = atom->quaternion;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = quaternion[clist[i]][3];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_blockiness1(int n)
+{
+  double **blockiness = atom->blockiness;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = blockiness[clist[i]][0];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_blockiness2(int n)
+{
+  double **blockiness = atom->blockiness;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = blockiness[clist[i]][1];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_inertiax(int n)
+{
+  double **inertia = atom->inertia;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = inertia[clist[i]][0];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_inertiay(int n)
+{
+  double **inertia = atom->inertia;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = inertia[clist[i]][1];
+    n += size_one;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void DumpCustom::pack_inertiaz(int n)
+{
+  double **inertia = atom->inertia;
+
+  for (int i = 0; i < nchoose; i++) {
+    buf[n] = inertia[clist[i]][2];
+    n += size_one;
+  }
+}
 /* ---------------------------------------------------------------------- */
 
 void DumpCustom::pack_thread(int n)

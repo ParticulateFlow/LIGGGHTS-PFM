@@ -61,6 +61,12 @@ ComputePropertyAtom::ComputePropertyAtom(LAMMPS *lmp, int narg, char **arg) :
     } else if (strcmp(arg[iarg],"mass") == 0) {
       pack_choice[i] = &ComputePropertyAtom::pack_mass;
 
+// superquadric start
+    } else if (strcmp(arg[iarg],"volume") == 0) {
+      pack_choice[i] = &ComputePropertyAtom::pack_vol;
+    } else if (strcmp(arg[iarg],"eqradius") == 0) {
+      pack_choice[i] = &ComputePropertyAtom::pack_eq_radius;
+// superquadric end
     } else if (strcmp(arg[iarg],"x") == 0) {
       pack_choice[i] = &ComputePropertyAtom::pack_x;
     } else if (strcmp(arg[iarg],"y") == 0) {
@@ -197,28 +203,28 @@ ComputePropertyAtom::ComputePropertyAtom(LAMMPS *lmp, int narg, char **arg) :
     } else if (strcmp(arg[iarg],"quatw") == 0) {
       avec_ellipsoid = (AtomVecEllipsoid *) atom->style_match("ellipsoid");
       avec_body = (AtomVecBody *) atom->style_match("body");
-      if (!avec_ellipsoid && !avec_body) 
+      if (!avec_ellipsoid && !avec_body)
         error->all(FLERR,"Compute property/atom for "
                    "atom property that isn't allocated");
       pack_choice[i] = &ComputePropertyAtom::pack_quatw;
     } else if (strcmp(arg[iarg],"quati") == 0) {
       avec_ellipsoid = (AtomVecEllipsoid *) atom->style_match("ellipsoid");
       avec_body = (AtomVecBody *) atom->style_match("body");
-      if (!avec_ellipsoid && !avec_body) 
+      if (!avec_ellipsoid && !avec_body)
         error->all(FLERR,"Compute property/atom for "
                    "atom property that isn't allocated");
       pack_choice[i] = &ComputePropertyAtom::pack_quati;
     } else if (strcmp(arg[iarg],"quatj") == 0) {
       avec_ellipsoid = (AtomVecEllipsoid *) atom->style_match("ellipsoid");
       avec_body = (AtomVecBody *) atom->style_match("body");
-      if (!avec_ellipsoid && !avec_body) 
+      if (!avec_ellipsoid && !avec_body)
         error->all(FLERR,"Compute property/atom for "
                    "atom property that isn't allocated");
       pack_choice[i] = &ComputePropertyAtom::pack_quatj;
     } else if (strcmp(arg[iarg],"quatk") == 0) {
       avec_ellipsoid = (AtomVecEllipsoid *) atom->style_match("ellipsoid");
       avec_body = (AtomVecBody *) atom->style_match("body");
-      if (!avec_ellipsoid && !avec_body) 
+      if (!avec_ellipsoid && !avec_body)
         error->all(FLERR,"Compute property/atom for "
                    "atom property that isn't allocated");
       pack_choice[i] = &ComputePropertyAtom::pack_quatk;
@@ -471,6 +477,55 @@ void ComputePropertyAtom::pack_type(int n)
 
   for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) buf[n] = type[i];
+    else buf[n] = 0.0;
+    n += nvalues;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputePropertyAtom::pack_vol(int n)
+{
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  double *vol = atom->volume;
+#endif
+  double *rad = atom->radius;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    double volume = 0.0;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    if(atom->superquadric_flag)
+      volume = vol[i];
+    else
+      volume = 4.0*M_PI*rad[i]*rad[i]*rad[i]/3.0;
+#else
+    volume = 4.0*M_PI*rad[i]*rad[i]*rad[i]/3.0;
+#endif
+    if (mask[i] & groupbit) buf[n] = volume;
+    else buf[n] = 0.0;
+    n += nvalues;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void ComputePropertyAtom::pack_eq_radius(int n)
+{
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  double *vol = atom->volume;
+#endif
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    double req = atom->radius[i];
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    if(atom->superquadric_flag)
+      req = cbrt(3.0*vol[i]/(4.0*M_PI));
+#endif
+    if (mask[i] & groupbit) buf[n] = req;
     else buf[n] = 0.0;
     n += nvalues;
   }
@@ -1179,7 +1234,7 @@ void ComputePropertyAtom::pack_quatw(int n)
       n += nvalues;
     }
 
-  } else {
+  } else if (avec_body) {
     AtomVecBody::Bonus *bonus = avec_body->bonus;
     int *body = atom->body;
     int *mask = atom->mask;
@@ -1211,7 +1266,7 @@ void ComputePropertyAtom::pack_quati(int n)
       n += nvalues;
     }
 
-  } else {
+  } else if (avec_body) {
     AtomVecBody::Bonus *bonus = avec_body->bonus;
     int *body = atom->body;
     int *mask = atom->mask;
@@ -1243,7 +1298,7 @@ void ComputePropertyAtom::pack_quatj(int n)
       n += nvalues;
     }
 
-  } else {
+  } else if (avec_body) {
     AtomVecBody::Bonus *bonus = avec_body->bonus;
     int *body = atom->body;
     int *mask = atom->mask;
@@ -1275,7 +1330,7 @@ void ComputePropertyAtom::pack_quatk(int n)
       n += nvalues;
     }
 
-  } else {
+  } else if (avec_body) {
     AtomVecBody::Bonus *bonus = avec_body->bonus;
     int *body = atom->body;
     int *mask = atom->mask;

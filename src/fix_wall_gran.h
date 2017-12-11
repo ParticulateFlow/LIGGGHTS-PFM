@@ -187,6 +187,10 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   int nlocal_;
   double **x_, **f_, *radius_, *rmass_, **wallforce_, r0_;
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  double **quat_, **shape_, **blockiness_;
+#endif
+
   void set_r0(double _r0)
   { r0_ = _r0; }
 
@@ -272,7 +276,7 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
 
   virtual void post_force_wall(int vflag);
 
-  inline void post_force_eval_contact(LCM::CollisionData & cdata, double * v_wall, int iMesh = -1, FixMeshSurface *fix_mesh = 0, TriMesh *mesh = 0, int iTri = 0);
+  inline void post_force_eval_contact(LCM::CollisionData & cdata, bool intersectflag, double * v_wall, int iMesh = -1, FixMeshSurface *fix_mesh = 0, TriMesh *mesh = 0, int iTri = 0);
 };
 
 }

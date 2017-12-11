@@ -529,6 +529,10 @@ void FixAveEuler::calculate_eu()
     double prefactor_vol_fr = 4./3.*M_PI/cell_volume_;
     double prefactor_stress = 1./cell_volume_;
     double vel_x_mass[3]={};
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    const double * const volume = atom->volume;
+    const int superquadric_flag = atom->superquadric_flag;
+#endif
 
     // wrap compute with clear/add
     modify->clearstep_compute();
@@ -576,8 +580,13 @@ void FixAveEuler::calculate_eu()
         {
             vectorScalarMult3D(v[iatom],rmass[iatom],vel_x_mass);
             vectorAdd3D(v_av_[icell],vel_x_mass,v_av_[icell]);
-            vol_fr_[icell] += radius[iatom]*radius[iatom]*radius[iatom];
-            radius_[icell] += radius[iatom];
+            double r = radius[iatom];
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+            if(superquadric_flag)
+                r = cbrt(0.75 * volume[iatom] / M_PI);
+#endif
+            vol_fr_[icell] += r*r*r;
+            radius_[icell] += r;
             mass_[icell] += rmass[iatom];
             ncount_[icell]++;
         }

@@ -145,7 +145,7 @@ namespace ContactModels
       const double cRad = calcContactRadius(itype,jtype,reff,deltan);
 
       const double Fn_damping = -gamman*cdata.vn;
-      const double Fn_contact_hertz = kn*(cdata.radsum-cdata.r);
+      const double Fn_contact_hertz = kn*cdata.deltan;
       const double cRad3 = cRad*cRad*cRad;
       const double Fn_contact = 4/3*Yeff[itype][jtype]*cRad3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*cRad3);
       const double Fn = Fn_contact + Fn_damping;

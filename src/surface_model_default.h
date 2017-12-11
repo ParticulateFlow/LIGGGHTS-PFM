@@ -52,8 +52,20 @@ namespace ContactModels
     inline void registerSettings(Settings&) {}
     inline void connectToProperties(PropertyRegistry&) {}
 
+    inline bool checkSurfaceIntersect(CollisionData & cdata)
+    {
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        cdata.is_non_spherical = false;
+#endif
+        return true;
+    }
+
     inline void collision(CollisionData & cdata, ForceData&, ForceData&)
     {
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if(cdata.is_non_spherical)
+        error->one(FLERR,"Using default surface model for non-spherical particles!");
+#endif
       const double enx = cdata.en[0];
       const double eny = cdata.en[1];
       const double enz = cdata.en[2];

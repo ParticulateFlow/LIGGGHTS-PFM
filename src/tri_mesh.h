@@ -33,6 +33,11 @@
 #include "math_extra_liggghts.h"
 #include <fstream>
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+#include "math_extra_liggghts_superquadric.h"
+using namespace MathExtraLiggghtsNonspherical;
+#endif
+
 namespace LAMMPS_NS
 {
   //NP 3 nodes per face, max 5 neighs per face
@@ -48,6 +53,15 @@ namespace LAMMPS_NS
         double resolveTriSphereContact(int iPart, int nTri, double rSphere, double *cSphere, double *delta);
         double resolveTriSphereContactBary(int iPart, int nTri, double rSphere, double *cSphere,
                                            double *contactPoint,double *bary);
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        double resolveTriSuperquadricContact(int nTri, double *normal, double *contactPoint, Superquadric particle);
+        double resolveTriSuperquadricContact(int nTri, double *normal, double *contactPoint, Superquadric particle, double *bary);
+
+        bool sphereTriangleIntersection(int nTri, double rSphere, double *cSphere);
+        int superquadricTriangleIntersection(int nTri, double *point_of_lowest_potential, Superquadric particle);
+        double pointToTriangleDistance(int iTri, double *Csphere, double *delta, bool treatActiveFlag, double *bary);
+#endif
 
         bool resolveSameSide(int nTri, double *x0, double *x1);
 
@@ -79,6 +93,10 @@ namespace LAMMPS_NS
 
   // *************************************
   #include "tri_mesh_I.h"
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  #include "tri_mesh_I_superquadric.h"
+#endif
+
   // *************************************
 
 } /* LAMMPS_NS */

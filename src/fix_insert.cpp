@@ -95,6 +95,10 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
   // set defaults
   init_defaults();
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  check_obb_flag = 1;
+#endif
+
   // parse args
   //NP args processed by this class parsed here
   //NP let derived classes parse args rest of args
@@ -246,6 +250,17 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
       } else error->fix_error(FLERR,this,"expecting 'random', template' or 'constant' after keyword 'quat'");
       hasargs = true;
     }
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    else if (strcmp(arg[iarg],"check_obb") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"");
+      if(strcmp(arg[iarg+1],"yes")==0) check_obb_flag = 1;
+      else if(strcmp(arg[iarg+1],"no")==0) check_obb_flag = 0;
+      else error->fix_error(FLERR,this,"");
+      if(check_ol_flag==0) check_obb_flag = 0;
+      iarg += 2;
+      hasargs = true;
+    }
+#endif
     //NP throw error only if not derived class
     else if(strcmp(style,"insert") == 0) error->fix_error(FLERR,this,"unknown keyword");
   }
@@ -858,6 +873,9 @@ int FixInsert::load_xnear(int)
 
   BoundingBox bb = getBoundingBox();
   neighList.reset();
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  neighList.set_obb_flag(check_obb_flag);
+#endif
 
 #ifdef LIGGGHTS_DEBUG
   printf("subdomain bounding box: [%g, %g] x [%g, %g] x [%g, %g]\n", domain->sublo[0], domain->subhi[0], domain->sublo[1], domain->subhi[1], domain->sublo[2], domain->subhi[2]);
@@ -868,7 +886,14 @@ int FixInsert::load_xnear(int)
     {
       if (is_nearby(i))
       {
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        if(atom->superquadric_flag && check_obb_flag)
+          neighList.insert_superquadric(x[i], radius[i], atom->quaternion[i], atom->shape[i], atom->blockiness[i]);
+        else
+          neighList.insert(x[i], radius[i]);
+#else
         neighList.insert(x[i], radius[i]);
+#endif
       }
     }
   }

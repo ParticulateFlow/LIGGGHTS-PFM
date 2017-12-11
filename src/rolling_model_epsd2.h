@@ -73,13 +73,21 @@ namespace ContactModels
 
       if(cdata.touch) *cdata.touch |= TOUCH_ROLLING_MODEL;
 
+      const double radi = cdata.radi;
+      const double radj = cdata.radj;
+      double reff = cdata.is_wall ? radi : (radi*radj/(radi+radj));
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if (cdata.is_non_spherical && atom->superquadric_flag)
+        reff = cdata.reff;
+#endif
+
       if(cdata.is_wall) {
         const double wr1 = cdata.wr1;
         const double wr2 = cdata.wr2;
         const double wr3 = cdata.wr3;
-        const double radius = cdata.radi;
 
-        calcRollTorque(r_torque,cdata,radius,wr1,wr2,wr3);
+        calcRollTorque(r_torque,cdata,reff,wr1,wr2,wr3);
 
       } else {
         double wr_roll[3];
@@ -87,9 +95,6 @@ namespace ContactModels
         const int i = cdata.i;
         const int j = cdata.j;
 
-        const double radi = cdata.radi;
-        const double radj = cdata.radj;
-        const double reff = cdata.is_wall ? radi : (radi*radj/(radi+radj));
         const double * const * const omega = atom->omega;
 
         // relative rotational velocity
