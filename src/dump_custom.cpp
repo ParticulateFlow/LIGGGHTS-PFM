@@ -583,7 +583,7 @@ int DumpCustom::count()
         tagint *image = atom->image;
         double yprd = domain->yprd;
         for (i = 0; i < nlocal; i++)
-          dchoose[i] = x[i][1] + 
+          dchoose[i] = x[i][1] +
             ((image[i] >> IMGBITS & IMGMASK) - IMGMAX) * yprd;
         ptr = dchoose;
         nstride = 1;
@@ -639,7 +639,7 @@ int DumpCustom::count()
         double boxxlo = domain->boxlo[0];
         double invxprd = 1.0/domain->xprd;
         for (i = 0; i < nlocal; i++)
-          dchoose[i] = (x[i][0] - boxxlo) * invxprd + 
+          dchoose[i] = (x[i][0] - boxxlo) * invxprd +
             (image[i] & IMGMASK) - IMGMAX;
         ptr = dchoose;
         nstride = 1;
@@ -651,7 +651,7 @@ int DumpCustom::count()
         double invyprd = 1.0/domain->yprd;
         for (i = 0; i < nlocal; i++)
           dchoose[i] =
-            (x[i][1] - boxylo) * invyprd + 
+            (x[i][1] - boxylo) * invyprd +
             (image[i] >> IMGBITS & IMGMASK) - IMGMAX;
         ptr = dchoose;
         nstride = 1;
@@ -662,7 +662,7 @@ int DumpCustom::count()
         double boxzlo = domain->boxlo[2];
         double invzprd = 1.0/domain->zprd;
         for (i = 0; i < nlocal; i++)
-          dchoose[i] = (x[i][2] - boxzlo) * invzprd + 
+          dchoose[i] = (x[i][2] - boxzlo) * invzprd +
             (image[i] >> IMG2BITS) - IMGMAX;
         ptr = dchoose;
         nstride = 1;
@@ -907,16 +907,16 @@ int DumpCustom::count()
         nstride = 1;
 
       } else if (thresh_array[ithresh] == DNAME) {
-	int iwhich,tmp;
+        int iwhich,tmp;
         i = nfield + ithresh;
-	iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
+        iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
         ptr = atom->dvector[iwhich];
         nstride = 1;
 
       } else if (thresh_array[ithresh] == INAME) {
-	int iwhich,tmp;
+        int iwhich,tmp;
         i = nfield + ithresh;
-	iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
+        iwhich = atom->find_custom(id_custom[field2index[i]],tmp);
 
         int *ivector = atom->ivector[iwhich];
         for (i = 0; i < nlocal; i++)
@@ -999,9 +999,9 @@ int DumpCustom::convert_string(int n, double *mybuf)
     }
 
     for (j = 0; j < size_one; j++) {
-      if (vtype[j] == INT) 
+      if (vtype[j] == INT)
         offset += sprintf(&sbuf[offset],vformat[j],static_cast<int> (mybuf[m]));
-      else if (vtype[j] == DOUBLE) 
+      else if (vtype[j] == DOUBLE)
         offset += sprintf(&sbuf[offset],vformat[j],mybuf[m]);
       else if (vtype[j] == STRING)
         offset += sprintf(&sbuf[offset],vformat[j],typenames[(int) mybuf[m]]);
@@ -1282,7 +1282,7 @@ int DumpCustom::parse_fields(int narg, char **arg)
     // if no trailing [], then arg is set to 0, else arg is int between []
 
 // superquadric start
-    } else if (strcmp(arg[iarg],"shapex") == 0) { 
+    } else if (strcmp(arg[iarg],"shapex") == 0) {
       if (!atom->superquadric_flag)
         error->all(FLERR,"Dumping an atom quantity that isn't allocated");
       pack_choice[i] = &DumpCustom::pack_shapex;
@@ -1749,7 +1749,7 @@ int DumpCustom::modify_param(int narg, char **arg)
     else if (strcmp(arg[1],"ervel") == 0) thresh_array[nthresh] = ERVEL;
     else if (strcmp(arg[1],"erforce") == 0) thresh_array[nthresh] = ERFORCE;
 // superquadric start
-    else if (strcmp(arg[1],"shapex") == 0) thresh_array[nthresh] = SHAPEX; 
+    else if (strcmp(arg[1],"shapex") == 0) thresh_array[nthresh] = SHAPEX;
     else if (strcmp(arg[1],"shapey") == 0) thresh_array[nthresh] = SHAPEY;
     else if (strcmp(arg[1],"shapez") == 0) thresh_array[nthresh] = SHAPEZ;
     else if (strcmp(arg[1],"quat1") == 0) thresh_array[nthresh] = QUAT1;

@@ -304,7 +304,7 @@ int RegionNeighborList::coord2bin(double *x) const
 RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double *x, double cutoff)
 {
   assert(cutoff < binsizex && cutoff < binsizey && cutoff < binsizez);
-  
+
   ParticleBin *retBin = new ParticleBin();
 
   const int ibin = coord2bin(x);
@@ -312,7 +312,7 @@ RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double 
   for(std::vector<int>::const_iterator it = stencil.begin(); it != stencil.end(); ++it) {
     const int offset = *it;
     assert(ibin+offset >= 0 || (size_t)(ibin+offset) < bins.size());
-    
+
     const ParticleBin & bin = bins[ibin+offset];
 
     for(ParticleBin::const_iterator pit = bin.begin(); pit != bin.end(); ++pit) {
