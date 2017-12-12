@@ -595,7 +595,7 @@ void FixTemplateSuperquadric::direct_set_ptlist(const int i, const void * const 
 }
 #endif
 
-double FixTemplateSuperquadric::min_rad()
+double FixTemplateSuperquadric::min_rad() const
 {
     double shape_min[3];
     if(pdf_size == NULL) {
@@ -616,7 +616,7 @@ double FixTemplateSuperquadric::min_rad()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateSuperquadric::max_rad()
+double FixTemplateSuperquadric::max_rad() const
 {
     double shape_max[3];
     if(pdf_size == NULL) {
@@ -637,7 +637,7 @@ double FixTemplateSuperquadric::max_rad()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateSuperquadric::max_r_bound()
+double FixTemplateSuperquadric::max_r_bound() const
 {
   return max_rad();
 }

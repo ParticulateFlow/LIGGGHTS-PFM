@@ -105,9 +105,9 @@ class FixTemplateSuperquadric : public FixTemplateSphere {
 
   // access to protected properties
 
-  virtual double min_rad();
-  virtual double max_rad();
-  virtual double max_r_bound();
+  virtual double min_rad() const;
+  virtual double max_rad() const;
+  virtual double max_r_bound() const;
 
   // single particle generation, used by fix insert/* commands
 #if 0
