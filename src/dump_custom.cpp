@@ -1317,14 +1317,14 @@ int DumpCustom::parse_fields(int narg, char **arg)
         error->all(FLERR,"Dumping an atom quantity that isn't allocated");
       pack_choice[i] = &DumpCustom::pack_quat4;
       vtype[i] = DOUBLE;
-    } else if (strcmp(arg[iarg],"blockiness1") == 0 or strcmp(arg[iarg],"roundness1") == 0) {
+    } else if (strcmp(arg[iarg],"blockiness1") == 0 || strcmp(arg[iarg],"roundness1") == 0) {
       if (!atom->superquadric_flag)
         error->all(FLERR,"Dumping an atom quantity that isn't allocated");
       if(strcmp(arg[iarg],"roundness1") == 0)
         error->warning(FLERR,"Keyword 'roundness1' will be deprecated in future, please use 'blockiness1' istead");
       pack_choice[i] = &DumpCustom::pack_blockiness1;
       vtype[i] = DOUBLE;
-    } else if (strcmp(arg[iarg],"blockiness2") == 0 or strcmp(arg[iarg],"roundness2") == 0) {
+    } else if (strcmp(arg[iarg],"blockiness2") == 0 || strcmp(arg[iarg],"roundness2") == 0) {
       if (!atom->superquadric_flag)
         error->all(FLERR,"Dumping an atom quantity that isn't allocated");
       if(strcmp(arg[iarg],"roundness2") == 0)

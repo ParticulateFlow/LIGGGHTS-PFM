@@ -174,7 +174,7 @@ FixTemplateSuperquadric::FixTemplateSuperquadric(LAMMPS *lmp, int narg, char **a
         double values[] = { atof(arg[iarg+2])*force->cg(),
                             atof(arg[iarg+3])*force->cg(),
                             atof(arg[iarg+4])*force->cg()};
-        if( values[0] <= 0. or values[1] <= 0. or values[2] <= 0.)
+        if( values[0] <= 0. || values[1] <= 0. || values[2] <= 0.)
           error->all(FLERR,"Illegal fix particletemplate/superquadric command, shape parameters must be >= 0");
         pdf_shapex->set_params<RANDOM_CONSTANT>(values[0]);
         pdf_shapey->set_params<RANDOM_CONSTANT>(values[1]);
@@ -232,7 +232,7 @@ FixTemplateSuperquadric::FixTemplateSuperquadric(LAMMPS *lmp, int narg, char **a
       else
           error->fix_error(FLERR,this,"fix particletemplate/superquadric currently supports only constant, gaussian and uniform shape params");
       }
-      else if (strcmp(arg[iarg],"shapex") == 0 or strcmp(arg[iarg],"shapey") == 0 or strcmp(arg[iarg],"shapez") == 0) {
+      else if (strcmp(arg[iarg],"shapex") == 0 || strcmp(arg[iarg],"shapey") == 0 || strcmp(arg[iarg],"shapez") == 0) {
         pdf_shapex = new PDF(error);
         pdf_shapey = new PDF(error);
         pdf_shapez = new PDF(error);
@@ -335,7 +335,7 @@ FixTemplateSuperquadric::FixTemplateSuperquadric(LAMMPS *lmp, int narg, char **a
       else
         error->fix_error(FLERR,this,"fix particletemplate/superquadric currently supports only constant, gaussian and uniform shape params");
     }
-    else if (strcmp(arg[iarg],"blockiness") == 0  or strcmp(arg[iarg],"roundness") == 0) {
+    else if (strcmp(arg[iarg],"blockiness") == 0  || strcmp(arg[iarg],"roundness") == 0) {
           hasargs = true;
           if(strcmp(this->style,"particletemplate/superquadric"))
             error->fix_error(FLERR,this,"keyword blockiness only valid for particletemplate/superquadric");
@@ -347,7 +347,7 @@ FixTemplateSuperquadric::FixTemplateSuperquadric(LAMMPS *lmp, int narg, char **a
                   error->warning(FLERR,"Keyword 'roundness' will be deprecated in future, please use 'blockiness' istead");
               double values[] = { atof(arg[iarg+2]),
                                   atof(arg[iarg+3])};
-              if( values[0] < 2. or values[1] < 2.)
+              if( values[0] < 2. || values[1] < 2.)
                 error->all(FLERR,"Illegal fix particletemplate/superquadric command, blockiness parameters must >= 2");
               pdf_blockiness1->set_params<RANDOM_CONSTANT>(values[0]);
               pdf_blockiness2->set_params<RANDOM_CONSTANT>(values[1]);

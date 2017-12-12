@@ -401,8 +401,8 @@ bool RegionNeighborList::hasOverlap_superquadric(double * x, double radius, doub
         Superquadric particle2(x_copy, quaternion_copy, shape_copy, blockiness_copy);
         double contact_point[3];
 
-        if (rsq <= radsum*radsum and (MathExtraLiggghtsNonspherical::capsules_intersect(&particle1, &particle2, contact_point) and
-                                      MathExtraLiggghtsNonspherical::obb_intersect(&particle1, &particle2))) {
+        if (rsq <= radsum*radsum && (MathExtraLiggghtsNonspherical::capsules_intersect(&particle1, &particle2, contact_point) &&
+                                     MathExtraLiggghtsNonspherical::obb_intersect(&particle1, &particle2))) {
             return true;
         }
       } else

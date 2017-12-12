@@ -257,7 +257,7 @@ void Set::command(int narg, char **arg)
       iarg += 4;
 
 // superquadric start
-    } else if (strcmp(arg[iarg],"blockiness") == 0 or strcmp(arg[iarg],"roundness") == 0) {
+    } else if (strcmp(arg[iarg],"blockiness") == 0 || strcmp(arg[iarg],"roundness") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal set command");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
       else xvalue = force->numeric(FLERR,arg[iarg+1]);

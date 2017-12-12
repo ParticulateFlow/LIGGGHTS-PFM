@@ -1917,7 +1917,7 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
       pack_choice[QUAT4] = &DumpCustomVTK::pack_quat4;
       vtype[QUAT4] = DOUBLE;
       name[QUAT4] = arg[iarg];
-    } else if (strcmp(arg[iarg],"blockiness1") == 0 or strcmp(arg[iarg],"roundness1") == 0) {
+    } else if (strcmp(arg[iarg],"blockiness1") == 0 || strcmp(arg[iarg],"roundness1") == 0) {
       if (!atom->superquadric_flag)
         error->all(FLERR,"Dumping an atom quantity that isn't allocated");
       if(strcmp(arg[iarg],"roundness1") == 0)
@@ -1925,7 +1925,7 @@ int DumpCustomVTK::parse_fields(int narg, char **arg)
       pack_choice[BLOCKINESS1] = &DumpCustomVTK::pack_blockiness1;
       vtype[BLOCKINESS1] = DOUBLE;
       name[BLOCKINESS1] = arg[iarg];
-    } else if (strcmp(arg[iarg],"blockiness2") == 0 or strcmp(arg[iarg],"roundness2") == 0) {
+    } else if (strcmp(arg[iarg],"blockiness2") == 0 || strcmp(arg[iarg],"roundness2") == 0) {
       if (!atom->superquadric_flag)
         error->all(FLERR,"Dumping an atom quantity that isn't allocated");
       if(strcmp(arg[iarg],"roundness2") == 0)

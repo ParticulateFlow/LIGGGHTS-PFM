@@ -78,7 +78,7 @@
         vectorSubtract3D(contactPointFace,n[0],node0ToPoint);
         double baryFace[3];
         MathExtraLiggghts::calcBaryTriCoords(node0ToPoint,edgeVec(nTri),edgeLen(nTri),baryFace);
-        if(dFace < 0.001*particle.shape[0] or flag == 0) {
+        if(dFace < 0.001*particle.shape[0] || flag == 0) {
           vectorCopy3D(surfNorm, delta);
           vectorCopy3D(contactPointFace, contactPoint);
           vectorCopy3D(baryFace, bary);
@@ -94,7 +94,7 @@
           f_edge[0] = particle.line_intersection(n[0], n[1], closestPoints[0]);
           f_edge[1] = particle.line_intersection(n[1], n[2], closestPoints[1]);
           f_edge[2] = particle.line_intersection(n[2], n[0], closestPoints[2]);
-          if(f_edge[0] > 0.0 and f_edge[1] > 0.0 and f_edge[2] > 0.0) { //no particle-edge contact
+          if(f_edge[0] > 0.0 && f_edge[1] > 0.0 && f_edge[2] > 0.0) { //no particle-edge contact
             vectorCopy3D(surfNorm, delta);
             vectorCopy3D(contactPointFace, contactPoint);
             return -dFace;
@@ -240,13 +240,13 @@
       return 0;
     else {
       double **n = node_(nTri);
-      if(particle.shape_function_global(n[0]) < 0.0 or
-         particle.shape_function_global(n[1]) < 0.0 or
+      if(particle.shape_function_global(n[0]) < 0.0 ||
+         particle.shape_function_global(n[1]) < 0.0 ||
          particle.shape_function_global(n[2]) < 0.0)
         return 1;
       else {
-        if(particle.edge_intersection(n[0], n[1]) or
-           particle.edge_intersection(n[1], n[2]) or
+        if(particle.edge_intersection(n[0], n[1]) ||
+           particle.edge_intersection(n[1], n[2]) ||
            particle.edge_intersection(n[2], n[0]) )
           return 2;
         else

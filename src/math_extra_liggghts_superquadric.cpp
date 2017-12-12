@@ -140,7 +140,7 @@ double check_inequalities(const int i, const double *delta, const double *a, con
     R = fabs(C[2]*A_delta[1] - C[5]*A_delta[0]);
     break;
   }
-  if(fabs(R0+R1) < 1e-14 and fabs(R) < 1e-14)
+  if(fabs(R0+R1) < 1e-14 && fabs(R) < 1e-14)
     return false;
   else
     return (R > R0+R1);
@@ -196,7 +196,7 @@ bool obb_intersect(Superquadric *particleA, Superquadric *particleB, unsigned in
 //minimal bounding sphere radius calculation
 void bounding_sphere_radius_superquadric(const double *shape, const double *blockiness, double *radius)
 {
-  if(MathExtraLiggghts::compDouble(blockiness[0],2.0) and MathExtraLiggghts::compDouble(blockiness[1],2.0))
+  if(MathExtraLiggghts::compDouble(blockiness[0],2.0) && MathExtraLiggghts::compDouble(blockiness[1],2.0))
     *radius = std::max(std::max(shape[0], shape[1]), shape[2]);
   else {
     const double a = std::max(shape[0], shape[1]);
@@ -906,14 +906,14 @@ void calc_contact_point(Superquadric *particleA, Superquadric *particleB,
       double fi_, fj_;
         double merit2_;
         double res2_ = calc_F(particleA, particleB, fi_, fj_, particleA->gradient, particleB->gradient, NULL, NULL, point_, mu_, F, &merit2_);
-        if(res2_ < res1 or merit2_ < tol1 or deltax < tol2 * size) {
+        if(res2_ < res1 || merit2_ < tol1 || deltax < tol2 * size) {
           merit2 = merit2_;
           res2 = res2_;
         mu = mu_;
         fi = fi_;
         fj = fj_;
         LAMMPS_NS::vectorCopy3D(point_, point);
-          if(merit2 < tol1 or deltax < tol2 * size)
+          if(merit2 < tol1 || deltax < tol2 * size)
           converged = true;
       } else { //make the steepest descent of the residual
         double a = 0.0;
@@ -1126,7 +1126,7 @@ double minimal_distance(Superquadric *particleA, Superquadric *particleB, const 
   double merit01;
   //calculate the residual vector for the first pair candidate
   double res01 = calc_F_IP(particleA, particleB, initial_pointA_1, initial_pointB_1, particleA->gradient, particleB->gradient, &lA1, &lB1, F1, &merit01, &sine1);
-  if(merit01 < tol1 or res01 < tol0) {
+  if(merit01 < tol1 || res01 < tol0) {
     LAMMPS_NS::vectorCopy3D(initial_pointA_1, result_pointA);
     LAMMPS_NS::vectorCopy3D(initial_pointB_1, result_pointB);
     return merit01;
@@ -1230,7 +1230,7 @@ double minimal_distance(Superquadric *particleA, Superquadric *particleB, const 
 
       double merit2_;
       double res2_ = calc_F_IP(particleA, particleB, pointA_, pointB_, particleA->gradient, particleB->gradient, lA_, lB_, F, &merit2_);
-      if(res2_ < res1 or (res2_ < tol0 or merit2_ < tol1) or  deltax < tol2 * size) {
+      if(res2_ < res1 || (res2_ < tol0 || merit2_ < tol1) ||  deltax < tol2 * size) {
         res2 = res2_;
         merit2 = merit2_;
         LAMMPS_NS::vectorCopy3D(pointA_, pointA);
@@ -1239,7 +1239,7 @@ double minimal_distance(Superquadric *particleA, Superquadric *particleB, const 
         lA = lA_;
         lB = lB_;
 
-        if((res2_ < tol0 or merit2_ < tol1) || deltax < tol2 * size)
+        if((res2_ < tol0 || merit2_ < tol1) || deltax < tol2 * size)
         converged = true;
       } else { //steepest descent
         double a = 0.0;
@@ -1289,7 +1289,7 @@ double minimal_distance(Superquadric *particleA, Superquadric *particleB, const 
 
               merit2 = merit2b;
           }
-            if(res2b < tol0 or merit1 < tol1)
+            if(res2b < tol0 || merit1 < tol1)
             converged = true;
           eps = 0.0;
         } else {

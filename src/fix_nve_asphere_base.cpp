@@ -149,7 +149,7 @@ void FixNVEAsphereBase::integrate_quaternion(double dtq, double *quat, double *w
 
 void FixNVEAsphereBase::update_hdtorque(int i, double *rotation_matrix, double *omegaOld, double *omegaNew)
 {
-  if(ksl_rotation and hdtorque) {
+  if(ksl_rotation && hdtorque) {
     double deltaHydrotorquePrime[3], deltaHydrotorque[3];
     for(int dirI = 0; dirI < 3; dirI++)
       deltaHydrotorquePrime[dirI] = ksl_rotation[i][dirI]*(omegaOld[dirI]-omegaNew[dirI]);

@@ -53,7 +53,7 @@ namespace MathExtraLiggghtsNonspherical {
   struct point {
     double x,y,z;
     point():
-      x(0), y(0), z(0) {};
+      x(0), y(0), z(0) {}
     point(double *coords):
       x(coords[0]), y(coords[1]), z(coords[2]) {}
     point(double a, double b, double c):
@@ -189,7 +189,7 @@ inline double MathExtraLiggghtsNonspherical::pow_abs(double base, double exponen
 {
   base = fabs(base);
   double tol = 1e-12;
-  if(fabs(exponent)<tol or fabs(base - 1.0) < tol)
+  if(fabs(exponent) < tol || fabs(base - 1.0) < tol)
     return 1.0;
   else if(fabs(base) < tol)
     return 0.0;
@@ -379,7 +379,7 @@ inline void MathExtraLiggghtsNonspherical::matvecN(const double *A, const double
     c[i] = 0.0;
     for(int j = 0; j < len; j++)
     {
-      if(A[i*len+j] != 0.0 and b[j] != 0.0)
+      if(A[i*len+j] != 0.0 && b[j] != 0.0)
         c[i] += A[i*len+j]*b[j];
     }
   }
@@ -391,7 +391,7 @@ inline void MathExtraLiggghtsNonspherical::matmat(const double *A, double *B, co
     for(int iN = 0; iN < N; iN ++) {
       C[iN * M + iM] = 0.0;
       for(int iK = 0; iK < K; iK++) {
-        if(A[iN * K + iK] != 0.0 and B[iK * M + iM] != 0.0)
+        if(A[iN * K + iK] != 0.0 && B[iK * M + iM] != 0.0)
           C[iN * M + iM] += A[iN * K + iK] * B[iK * M + iM];
       }
     }

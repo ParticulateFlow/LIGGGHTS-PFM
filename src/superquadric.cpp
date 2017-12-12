@@ -84,13 +84,13 @@ void Superquadric::set(double *center_, double *quat_, double *shape_, double *b
     shape_inv[1] = 1.0 / shape[1];
     shape_inv[2] = 1.0 / shape[2];
   }
-  isEllipsoid = MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) and MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
-  isCylinder = !MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) and MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
+  isEllipsoid = MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
+  isCylinder = !MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
 
   if(isEllipsoid)
     useIntBlockiness = true;
   else {
-    if(MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) and MathExtraLiggghtsNonspherical::isInteger(blockiness[1]))
+    if(MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) && MathExtraLiggghtsNonspherical::isInteger(blockiness[1]))
       useIntBlockiness = true;
     else
       useIntBlockiness = false;
@@ -448,7 +448,7 @@ bool Superquadric::plane_intersection(const double *normal_global, const double 
 
   const double d = LAMMPS_NS::vectorDot3D(normal_local, x0_local);
 
-  if(MathExtraLiggghts::compDouble(nx, 0.0, 1e-10) and MathExtraLiggghts::compDouble(ny, 0.0, 1e-10)) {
+  if(MathExtraLiggghts::compDouble(nx, 0.0, 1e-10) && MathExtraLiggghts::compDouble(ny, 0.0, 1e-10)) {
     point_of_maximal_penetration_local[0] = point_of_maximal_penetration_local[1] = 0.0;
     point_of_maximal_penetration_local[2] = 1.0;
 
@@ -587,7 +587,7 @@ bool Superquadric::edge_intersection(const double *pointA, const double *pointB)
       }
       f1 = shape_function_local(closestPointLocal1);
       f2 = shape_function_local(closestPointLocal2);
-      if(f1 < 0.0 or f2 < 0.0) {
+      if(f1 < 0.0 || f2 < 0.0) {
         return true;
       } else {
         if(f1 >= f2) {
@@ -677,12 +677,12 @@ void Superquadric::set_blockiness(double n1, double n2)
   blockiness[0] = n1;
   blockiness[1] = n2;
   calc_koef();
-  isEllipsoid = MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) and MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
-  isCylinder = !MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) and MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
+  isEllipsoid = MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
+  isCylinder = !MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
   if(isEllipsoid)
     useIntBlockiness = true;
   else {
-    if(MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) and MathExtraLiggghtsNonspherical::isInteger(blockiness[1]))
+    if(MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) && MathExtraLiggghtsNonspherical::isInteger(blockiness[1]))
       useIntBlockiness = true;
     else
       useIntBlockiness = false;
@@ -711,16 +711,16 @@ double Superquadric::surface_line_intersection(const int max_num_iters, bool use
   double eps0 = 1e-14;
   double alpha_ellipsoid = 0.0;
 
-  if(isEllipsoid or use_alpha_ellipsoid) {
+  if(isEllipsoid || use_alpha_ellipsoid) {
     double alpha1, alpha2;
     ellipsoid_line_intersection_local(start_point_local, direction_vector_local, alpha1, alpha2);
 
     if(isEllipsoid) { //particle is an ellipsoid/sphere
-      if(alpha1 > -eps0 and alpha2 < -eps0)
+      if(alpha1 > -eps0 && alpha2 < -eps0)
         alpha = alpha1;
-      else if(alpha1 < -eps0 and alpha2 > -eps0)
+      else if(alpha1 < -eps0 && alpha2 > -eps0)
         alpha = alpha2;
-      else if(alpha1 < -eps0 and alpha2 < -eps0)
+      else if(alpha1 < -eps0 && alpha2 < -eps0)
         alpha = std::max(alpha1, alpha2);
       else
         alpha = std::min(alpha1, alpha2);
@@ -790,7 +790,7 @@ double Superquadric::surface_line_intersection(const int max_num_iters, bool use
            double point_[3];
            MathExtraLiggghtsNonspherical::yabx3D(point, delta, direction_vector_local, point_);
            double f_ = shape_function_local(point_);
-           if(fabs(f_) < fabs(f0) or fabs(f_) < eps*koef) {
+           if(fabs(f_) < fabs(f0) || fabs(f_) < eps*koef) {
              f0 = f_;
              alpha += delta;
              LAMMPS_NS::vectorCopy3D(point_, point);
@@ -935,7 +935,7 @@ double Superquadric::point_surface_projection(const int max_num_iters, bool use_
     shape_function_gradient_local(p, grad_local);
     sine = sqrt(fabs(LAMMPS_NS::vectorDot3D(v,v) / (LAMMPS_NS::vectorDot3D(grad_local, grad_local) * LAMMPS_NS::vectorDot3D(n, n))));
     f = fabs(shape_function_local(p));
-    if(sine < tol2 and f < tol)
+    if(sine < tol2 && f < tol)
       converged = true;
 
     if(converged)
