@@ -231,12 +231,12 @@ void FixMeshSurface::createWallNeighList(int igrp)
     char *neighlist_name = new char[strlen(id)+1+20];
     sprintf(neighlist_name,"wall_neighlist_%s",id);
 
-    char **fixarg = new char*[4];
+    const char *fixarg[4];
     fixarg[0]= neighlist_name;
-    fixarg[1]= (char *) "all";
-    fixarg[2]= (char *) "neighlist/mesh";
+    fixarg[1]= "all";
+    fixarg[2]= "neighlist/mesh";
     fixarg[3]= id;
-    modify->add_fix(4,fixarg);
+    modify->add_fix(4,const_cast<char**>(fixarg));
 
     fix_mesh_neighlist_ =
         static_cast<FixNeighlistMesh*>(modify->find_fix_id(neighlist_name));
@@ -249,7 +249,6 @@ void FixMeshSurface::createWallNeighList(int igrp)
     // neighlist build will use this: merging of wall and mesh groupbit
     fix_mesh_neighlist_->groupbit_wall_mesh = group->bitmask[igroup] | igrp;
 
-    delete []fixarg;
     delete []neighlist_name;
 
     /*
@@ -278,12 +277,12 @@ class FixNeighlistMesh* FixMeshSurface::createOtherNeighList(int igrp,const char
     char *neighlist_name = new char[strlen(id)+1+20+strlen(nId)+1];
     sprintf(neighlist_name,"neighlist_%s_%s",nId,id);
 
-    char **fixarg = new char*[4];
+    const char *fixarg[4];
     fixarg[0]= neighlist_name;
-    fixarg[1]= (char *) "all";
-    fixarg[2]= (char *) "neighlist/mesh";
+    fixarg[1]= "all";
+    fixarg[2]= "neighlist/mesh";
     fixarg[3]= id;
-    modify->add_fix(4,fixarg);
+    modify->add_fix(4,const_cast<char**>(fixarg));
 
     neighlist =
         static_cast<FixNeighlistMesh*>(modify->find_fix_id(neighlist_name));
@@ -292,7 +291,6 @@ class FixNeighlistMesh* FixMeshSurface::createOtherNeighList(int igrp,const char
     neighlist->igroup = igrp;
     neighlist->groupbit = group->bitmask[igrp];
 
-    delete []fixarg;
     delete []neighlist_name;
 
     return neighlist;
@@ -315,18 +313,17 @@ void FixMeshSurface::createContactHistory(int dnum)
     char dnum_char[10];
     sprintf(dnum_char,"%d",dnum);
 
-    char **fixarg = new char*[5];
+    const char *fixarg[5];
     fixarg[0] = contacthist_name;
-    fixarg[1] = (char *) "all";
-    fixarg[2] = (char *) "contacthistory/mesh";
+    fixarg[1] = "all";
+    fixarg[2] = "contacthistory/mesh";
     fixarg[3]= dnum_char;
     fixarg[4] = my_id;
 
-    modify->add_fix(5,fixarg);
+    modify->add_fix(5,const_cast<char**>(fixarg));
 
     fix_contact_history_mesh_ = static_cast<FixContactHistoryMesh*>(modify->find_fix_id(contacthist_name));
 
-    delete []fixarg;
     delete []contacthist_name;
     delete []my_id;
 }
@@ -348,32 +345,31 @@ void FixMeshSurface::createMeshforceContact()
 {
     if(fix_meshforce_contact_) return;
 
-    char **fixarg = new char*[19];
+    const char *fixarg[19];
     char fixid[200],propertyid[200];
     sprintf(fixid,"contactforces_%s",id);
     sprintf(propertyid,"contactforces_%s",id);
-    fixarg[0]=(char *) fixid;
-    fixarg[1]=(char *) "all";
-    fixarg[2]=(char *) "contactproperty/atom/wall";
-    fixarg[3]=(char *) propertyid;
-    fixarg[4]=(char *) "6";
-    fixarg[5]=(char *) "fx";
-    fixarg[6]=(char *) "0";
-    fixarg[7]=(char *) "fy";
-    fixarg[8]=(char *) "0";
-    fixarg[9]=(char *) "fz";
-    fixarg[10]=(char *) "0";
-    fixarg[11]=(char *) "tx";
-    fixarg[12]=(char *) "0";
-    fixarg[13]=(char *) "ty";
-    fixarg[14]=(char *) "0";
-    fixarg[15]=(char *) "tz";
-    fixarg[16]=(char *) "0";
-    fixarg[17]=(char *) "mesh";
-    fixarg[18]=(char *) this->id;
-    modify->add_fix(19,fixarg);
+    fixarg[0] = fixid;
+    fixarg[1] = "all";
+    fixarg[2] = "contactproperty/atom/wall";
+    fixarg[3] = propertyid;
+    fixarg[4] = "6";
+    fixarg[5] = "fx";
+    fixarg[6] = "0";
+    fixarg[7] = "fy";
+    fixarg[8] = "0";
+    fixarg[9] = "fz";
+    fixarg[10] = "0";
+    fixarg[11] = "tx";
+    fixarg[12] = "0";
+    fixarg[13] = "ty";
+    fixarg[14] = "0";
+    fixarg[15] = "tz";
+    fixarg[16] = "0";
+    fixarg[17] = "mesh";
+    fixarg[18] = this->id;
+    modify->add_fix(19,const_cast<char**>(fixarg));
     fix_meshforce_contact_ = static_cast<FixContactPropertyAtomWall*>(modify->find_fix_id(fixid));
-    delete []fixarg;
 }
 
 void FixMeshSurface::deleteMeshforceContact()
