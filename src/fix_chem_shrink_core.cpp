@@ -218,8 +218,8 @@ FixChemShrinkCore::~FixChemShrinkCore()
     delete []speciesC;
 
     memory->destroy(rhoeff_);
-    /* memory->destroy(rad_init);
-    memory->destroy(porosity_init); */
+    /* memory->destroy(rad_init); */
+    // memory->destroy(porosity_init);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -410,9 +410,9 @@ void FixChemShrinkCore::init()
     memory->destroy(rhoeff_);
     memory->create(rhoeff_,atom->nmax,nmaxlayers_+1,"rhoeff_");
     /* memory->destroy(rad_init);
-    memory->create(rad_init,atom->nmax,nmaxlayers_+1,"rad_init");
-    memory->destroy(porosity_init);
-    memory->create(porosity_init,atom->nmax,nmaxlayers_+1,"porosity_init"); */
+    memory->create(rad_init,atom->nmax,nmaxlayers_+1,"rad_init"); */
+    // memory->destroy(porosity_init);
+    // memory->create(porosity_init,atom->nmax,nmaxlayers_+1,"porosity_init");
 
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
@@ -420,8 +420,8 @@ void FixChemShrinkCore::init()
         for (int layer=0; layer <= layers_; layer++)
         {
             rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
-            /* rad_init[i][layer] = radius_[i]*relRadii_[i][layer];
-            porosity_init[i][layer] = porosity_[i][layer]; */
+            /* rad_init[i][layer] = radius_[i]*relRadii_[i][layer]; */
+            // porosity_init[i][layer] = porosity_[i][layer];
         }
 
         calcMassLayer(i);
@@ -584,7 +584,7 @@ double FixChemShrinkCore::K_eq(int layer, double T)
          else if (layer == 2)
              Keq_   =   exp(3968.37/T+3.94);
      }*/
-     else if(strcmp(speciesA,"H2")==0)
+     /* else if(strcmp(speciesA,"H2")==0)
      {
          if (layer == 0)
              Keq_   =   pow(10.0,(-827.0/T+0.468));
@@ -592,8 +592,17 @@ double FixChemShrinkCore::K_eq(int layer, double T)
              Keq_   =   pow(10.0,(-3577.0/T+3.74));
          else if (layer == 2)
              Keq_   =   exp(-362.6/T+10.344);
+     } */
+     else if(strcmp(speciesA,"H2")==0)
+     {
+         if (layer == 0)
+             Keq_   =   exp(-1586.9/T + 0.9317);
+         else if (layer == 1)
+             Keq_   =   exp(-7916.6/T + 8.46);
+         else if (layer == 2)
+             Keq_   =   exp(-362.6/T + 10.334);
      }
-    else
+     else
      {
          printf("Error : Undefined Reaction \n");
      }
@@ -646,7 +655,7 @@ void FixChemShrinkCore::getA(int i)
         Aterm[i][j]   =   1.0/Aterm[i][j];
     }
 
-    /*if (layers_ == 2)
+    /* if (layers_ == 2)
         Aterm[i][layers_] = 0.0;
     if (layers_ == 1)
         Aterm[i][layers_] = 0.0; */
@@ -692,7 +701,7 @@ void FixChemShrinkCore::getB(int i)
     /*if (layers_ == 2)
         Bterm[i][layers_] = 0.0;
     if (layers_ == 1)
-        Bterm[i][layers_] = 0.0; */
+        Bterm[i][layers_] = 0.0;*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -856,7 +865,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 
     // update effective layer densities depending on changed mass and volume
     for (int layer = 0; layer <= layers_; layer++)
-         rhoeff_[i][layer] = massLayer_[i][layer]/V_[layer];
+        rhoeff_[i][layer] = massLayer_[i][layer]/V_[layer];
 
     // update the layer radius with the new massLayer
     rad[layers_] = cbrt(0.75*massLayer_[i][layers_]/(rhoeff_[i][layers_]*M_PI));
@@ -876,8 +885,29 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // total particle effective density
     pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
 
+    /* frac_overall = 0.1111*fracRed_[i][2] + 0.2222*fracRed_[i][1] + 0.6666*fracRed_[i][0];
 
-     /*for (int layer = 1; layer <= layers_; layer++)
+    if (screen)
+    {
+        fprintf(screen, "fr1 :%f \n", fracRed_[i][0]);
+        fprintf(screen, "fr2 :%f \n", fracRed_[i][1]);
+        fprintf(screen, "fr3 :%f \n", fracRed_[i][2]);
+        fprintf(screen, "fr_ov :%f \n", frac_overall);
+        fprintf(screen, "por0 :%f \n", porosity_[i][0]);
+    }*/
+
+
+    /* if (porosity_[i][2] < porosity_[i][0])
+        porosity_[i][2] = porosity_init[i][3] + 0.5*(frac_overall - 0.1111*fracRed_[i][2]);
+    else
+        porosity_[i][2] = porosity_[i][0];
+
+    if (porosity_[i][1] < porosity_[i][0])
+        porosity_[i][1] = porosity_init[i][2] + 0.5834*(frac_overall - 0.22222*fracRed_[i][1]);
+    else
+        porosity_[i][1] = porosity_[i][0]; */
+
+    /*for (int layer = 1; layer < layers_; layer++)
     {
         if (porosity_[i][layer] <= porosity_[i][0])
             porosity_[i][layer] = 1 -(1-porosity_init[i][layer])*((rad[layer]*rad[layer]*rad[layer])/(rad_init[i][layer]*rad_init[i][layer]*rad_init[i][layer]));

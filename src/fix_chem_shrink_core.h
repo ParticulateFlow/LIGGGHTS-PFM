@@ -73,7 +73,7 @@ public:
    char *diffA, *moleFrac;
 
    // effective densities
-   double **rhoeff_; // **rad_init, **porosity_init;
+   double **rhoeff_; //**porosity_init; // **rad_init,
 
    // material properties porosity, tortuosity, and pore diameter
    //    const double *porosity_;
