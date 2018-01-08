@@ -93,7 +93,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 
     // defaults
     screenflag_ =   0;
-    molMass_A_  =   molMass_C_  =   0.;
+    molMass_A_  =   molMass_C_  =  kch2_ = 0.;
     diffA = moleFrac = NULL;
     rhoeff_ = NULL;
     // rad_init = NULL;
@@ -132,7 +132,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error->fix_error(FLERR, this, "Wrong number of arguments");
             molMass_A_ = atof(arg[iarg_ + 1]);
-            if (molMass_A_ < 0)
+            if (molMass_A_ < 0.0)
                 error->fix_error(FLERR, this, "molar mass of A is not defined");
             hasargs = true;
             iarg_ += 2;
@@ -151,8 +151,18 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error->fix_error(FLERR, this, "Wrong number of arguments");
             molMass_C_ = atof(arg[iarg_ + 1]);
-            if (molMass_C_ < 0)
+            if (molMass_C_ < 0.0)
                 error->fix_error(FLERR, this, "molar mass of C is not defined");
+            hasargs = true;
+            iarg_ += 2;
+        }
+        else if (strcmp(arg[iarg_],"kch2") == 0)
+        {
+            if (iarg_ + 2 > narg)
+                error->fix_error(FLERR, this, "Wrong number of arguments");
+            kch2_ = atof(arg[iarg_ + 1]);
+            if (kch2_ < 0.0)
+                error->fix_error(FLERR, this, "carbon or hydrogen content is not defined");
             hasargs = true;
             iarg_ += 2;
         }
@@ -361,12 +371,16 @@ void FixChemShrinkCore::init()
     char* fixname = new char[strlen(id)+1];
     strcpy (fixname,"k0_");
     strcat(fixname,id);
+    if (screen)
+        fprintf(screen,"fixname k0_: %s \n", fixname);
     fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
 
     // look up activation energies Ea
     // differs for every ore id
     strcpy(fixname, "Ea_");
     strcat(fixname, id);
+    if (screen)
+        fprintf(screen,"fixname Ea_: %s \n", fixname);
     fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, "FixChemShrinkCore"));
     delete[]fixname;
 
@@ -374,6 +388,8 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("molMass_")+strlen(group->names[igroup])];
     strcpy(fixname,"molMass_");
     strcat(fixname,group->names[igroup]);
+    if (screen)
+        fprintf(screen,"fixname molMass_: %s \n", fixname);
     fix_molMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
     delete []fixname;
 
@@ -381,6 +397,8 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("density_")+strlen(group->names[igroup])];
     strcpy(fixname,"density_");
     strcat(fixname,group->names[igroup]);
+    if (screen)
+        fprintf(screen,"fixname density_: %s \n", fixname);
     fix_dens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
     delete []fixname;
 
@@ -608,7 +626,7 @@ double FixChemShrinkCore::K_eq(int layer, double T)
      }
 
      if(screen)
-         fprintf(screen,"K_eq : %F \n",Keq_);
+         fprintf(screen,"Keq_ : %F \n",Keq_);
 
     return Keq_;
 }
@@ -620,13 +638,13 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
     if (screen)
         fprintf(screen,"getXi \n");
 
-    // kc is the total value of carbon available in the system!
-    // this should be modified for later cases.
-    double kc = 0.4;
+    // NOTICE kc and kh values are to be read from input script.
+    // kc is the total carbon content (CO and CO2) in the system
+    // kh is the total hydrogen content (H2 and H2O) in the system.
 
     for (int j = 0; j < layers_; j++)
     {
-        x0_eq_[j]  =   kc/(1+K_eq(j,T_[i]));
+        x0_eq_[j]  =   kch2_/(1+K_eq(j,T_[i]));
     }
 
     if (screen)
@@ -792,14 +810,14 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     double nu_prod_[3] = {1, 3, 2};
     // particle stuff
     double rad[nmaxlayers_+1];
-    double V_[nmaxlayers_+1];       // Volume of particle layer
+    // double V_[nmaxlayers_+1];       // Volume of particle layer
     double dmL_[nmaxlayers_+1];     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
-    double dV_[nmaxlayers_+1];      // Volume change of particle layer
+    // double dV_[nmaxlayers_+1];      // Volume change of particle layer
     double sum_mass_new = 0;        // just for control case --- delete afterwards
 
     // calculate initial Volume as function of mass and effective density instead of radius
-    for (int layer = 0; layer <= layers_; layer++)
-        V_[layer] = massLayer_[i][layer]/rhoeff_[i][layer];
+    /* for (int layer = 0; layer <= layers_; layer++)
+        V_[layer] = massLayer_[i][layer]/rhoeff_[i][layer]; */
 
      if(screen)
     {
@@ -808,10 +826,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen, "massLayer_w = %6.15f \n", massLayer_[i][1]);
         fprintf(screen, "massLayer_fe = %6.15f \n", massLayer_[i][0]);
 
-        fprintf(screen, "Volume of h: %6.15f \n", V_[3]);
+        /* fprintf(screen, "Volume of h: %6.15f \n", V_[3]);
         fprintf(screen, "Volume of w: %6.15f \n", V_[2]);
         fprintf(screen, "Volume of m: %6.15f \n", V_[1]);
-        fprintf(screen, "Volume of fe: %6.15f \n", V_[0]);
+        fprintf(screen, "Volume of fe: %6.15f \n", V_[0]); */
     }
 
     // calculate mass flow rate of dmL[layer]
@@ -830,10 +848,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     }
 
     // calculate layer volume changes
-    dV_[0] = dmL_[0]/rhoeff_[i][0];
+    /* dV_[0] = dmL_[0]/rhoeff_[i][0];
     for (int layer = 1; layer < layers_ ; layer++)
         dV_[layer] = -dmA_[layer]*nu_prod_[layer]*(layerMolMasses_[layer]/molMass_A_)/rhoeff_[i][layer+1] + dmA_[layer-1]*nu_reac_[layer-1]*(layerMolMasses_[layer]/molMass_A_)/rhoeff_[i][layer];
-    dV_[layers_] = dmL_[layers_]/rhoeff_[i][layers_];
+    dV_[layers_] = dmL_[layers_]/rhoeff_[i][layers_]; */
 
     if (screen)
     {
@@ -842,10 +860,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen, "dmL Wüstite: %6.15f \n", dmL_[1]);
         fprintf(screen, "dmL Iron: %6.15f \n", dmL_[0]);
 
-        fprintf(screen, "dV hematite: %6.15f \n", dV_[3]);
+        /*fprintf(screen, "dV hematite: %6.15f \n", dV_[3]);
         fprintf(screen, "dV magnetite: %6.15f \n", dV_[2]);
         fprintf(screen, "dV Wüstite: %6.15f \n", dV_[1]);
-        fprintf(screen, "dV Iron: %6.15f \n", dV_[0]);
+        fprintf(screen, "dV Iron: %6.15f \n", dV_[0]); */
     }
 
     // get new layer masses and Volumes
@@ -855,17 +873,17 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         if (massLayer_[i][j] < SMALL)
                  massLayer_[i][j] = SMALL;
 
-        V_[j] -= dV_[j];
+       /* V_[j] -= dV_[j];
         if (V_[j] < SMALL)
-            V_[j] = SMALL;
+            V_[j] = SMALL; */
 
         // calculate total mass of particle
         sum_mass_new    +=  massLayer_[i][j];
     }
 
     // update effective layer densities depending on changed mass and volume
-    for (int layer = 0; layer <= layers_; layer++)
-        rhoeff_[i][layer] = massLayer_[i][layer]/V_[layer];
+    /*for (int layer = 0; layer <= layers_; layer++)
+        rhoeff_[i][layer] = massLayer_[i][layer]/V_[layer]; */
 
     // update the layer radius with the new massLayer
     rad[layers_] = cbrt(0.75*massLayer_[i][layers_]/(rhoeff_[i][layers_]*M_PI));
@@ -924,8 +942,8 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     } */
 
     // new porosity of layers
-    for (int layer = 0; layer <= layers_; layer++)
-        porosity_[i][layer] = 1 - (rhoeff_[i][layer]/layerDensities_[layer]);
+    // for (int layer = 0; layer <= layers_; layer++)
+    //     porosity_[i][layer] = 1 - (rhoeff_[i][layer]/layerDensities_[layer]);
 
 }
 

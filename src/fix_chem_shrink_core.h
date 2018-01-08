@@ -68,7 +68,7 @@ public:
    // modified strings of species concentrations
    char* massA, *massC;
    // molar masses of gas species
-   double molMass_A_, molMass_C_;
+   double molMass_A_, molMass_C_, kch2_;
    // name of diffusant species and diffusant species mole fraction
    char *diffA, *moleFrac;
 
