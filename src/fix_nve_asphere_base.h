@@ -48,6 +48,8 @@ class FixNVEAsphereBase : public FixNVE {
   virtual void init();
   virtual void initial_integrate(int);
   virtual void final_integrate();
+
+ private:
   void dynamic_euler(double *wbody, double *tbody, double *inertia, double *result);
   void integrate_dynamic_euler(double dt, double *wbody, double *tbody, double *inertia);
   void integrate_quaternion(double dtq, double *quat, double *wbody);
