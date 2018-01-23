@@ -105,9 +105,9 @@ namespace ContactModels
         i_forces.delta_F[1] += Ft2 * area_ratio;
         i_forces.delta_F[2] += Ft3 * area_ratio;
 #ifdef NONSPHERICAL_ACTIVE_FLAG
-        i_forces.delta_torque[0] += torque_i[0] * area_ratio;
-        i_forces.delta_torque[1] += torque_i[1] * area_ratio;
-        i_forces.delta_torque[2] += torque_i[2] * area_ratio;
+        i_forces.delta_torque[0] = torque_i[0] * area_ratio;
+        i_forces.delta_torque[1] = torque_i[1] * area_ratio;
+        i_forces.delta_torque[2] = torque_i[2] * area_ratio;
 #else
         i_forces.delta_torque[0] = -cdata.cri * tor1 * area_ratio;
         i_forces.delta_torque[1] = -cdata.cri * tor2 * area_ratio;
