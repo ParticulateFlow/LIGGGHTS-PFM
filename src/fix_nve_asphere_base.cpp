@@ -169,9 +169,8 @@ void FixNVEAsphereBase::implicitRotationUpdate
     double *deltaHydrotorquePrime
 )
 {
-      int index1_[3], index2_[3];
-      index1_[0]=2;index1_[1]=0;index1_[2]=1;
-      index2_[0]=1;index2_[1]=2;index2_[2]=0;
+      int index1_[3] = { 2, 0, 1 };
+      int index2_[3] = { 1, 2, 0 };
       double omegaOld[3], dtfm, KslMDeltaT;
       double omegaAngMomTerm;
       for(int dirI=0;dirI<3;dirI++)
