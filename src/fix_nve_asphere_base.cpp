@@ -98,9 +98,10 @@ void FixNVEAsphereBase::init()
 //dynamic Euler equations for angular velocity in body's principal axes
 void FixNVEAsphereBase::dynamic_euler(double *wbody, double *tbody, double *inertia, double *result)
 {
-  result[0] = tbody[0] / inertia[0] + wbody[1]*wbody[2]*((inertia[1] - inertia[2]) / inertia[0]);
-  result[1] = tbody[1] / inertia[1] + wbody[2]*wbody[0]*((inertia[2] - inertia[0]) / inertia[1]);
-  result[2] = tbody[2] / inertia[2] + wbody[0]*wbody[1]*((inertia[0] - inertia[1]) / inertia[2]);
+  // result := angular acceleration
+  result[0] = (tbody[0] + wbody[1]*wbody[2]*(inertia[1] - inertia[2])) / inertia[0];
+  result[1] = (tbody[1] + wbody[2]*wbody[0]*(inertia[2] - inertia[0])) / inertia[1];
+  result[2] = (tbody[2] + wbody[0]*wbody[1]*(inertia[0] - inertia[1])) / inertia[2];
 }
 
 /* ---------------------------------------------------------------------- */
