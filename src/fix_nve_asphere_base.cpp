@@ -44,6 +44,13 @@
 #include "fix_property_atom.h"
 
 /* ---------------------------------------------------------------------- */
+enum {
+  INTEGRATION_SCHEME_RICHARDSON = 0,
+  INTEGRATION_SCHEME_SYMPLECTIC,
+  INTEGRATION_SCHEME_LEAP_FROG,
+  INTEGRATION_SCHEME_WOODEM,
+  INTEGRATION_SCHEME_IMPLICIT
+};
 
 FixNVEAsphereBase::FixNVEAsphereBase(LAMMPS *lmp, int narg, char **arg) :
   FixNVE(lmp, narg, arg)
@@ -54,7 +61,7 @@ FixNVEAsphereBase::FixNVEAsphereBase(LAMMPS *lmp, int narg, char **arg) :
 
   // process extra keywords
 
-  integration_scheme = 1;
+  integration_scheme = INTEGRATION_SCHEME_SYMPLECTIC;
 
   int iarg = 3;
   while (iarg < narg) {
@@ -385,7 +392,8 @@ void FixNVEAsphereBase::initial_integrate(int vflag)
         error->fix_error(FLERR,this,"x[i] is NaN!");
 #endif
 
-      if(integration_scheme == 0)
+      switch(integration_scheme) {
+      case INTEGRATION_SCHEME_RICHARDSON:
       {
         //update angular moment by step t+1/2dt
         angmom[i][0] += dtf * torque[i][0];
@@ -397,9 +405,9 @@ void FixNVEAsphereBase::initial_integrate(int vflag)
         update_hdtorque(i, rotation_matrix, omegaOldPrime, omegaNewPrime);
         //update quaternion by step t+dt
         MathExtra::richardson(quat[i],angmom[i],omega[i],inertia[i],dtq);
+        break;
       }
-      //symplectic scheme
-      else if(integration_scheme == 1)
+      case INTEGRATION_SCHEME_SYMPLECTIC: //symplectic scheme
       {
         MathExtraLiggghtsNonspherical::transpose_matvec(rotation_matrix, angmom[i],mbody);
         MathExtraLiggghtsNonspherical::calc_conjqm(quat[i],mbody,conjqm);
@@ -432,7 +440,10 @@ void FixNVEAsphereBase::initial_integrate(int vflag)
 
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, mbody, angmom[i]);
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, wbody, omega[i]);
-      } else if (integration_scheme == 2) { //direct integration, 2nd order predictor-corrector
+        break;
+      }
+      case INTEGRATION_SCHEME_LEAP_FROG: //direct integration, 2nd order predictor-corrector
+      {
         double omega_half[3];
         MathExtraLiggghtsNonspherical::quat_to_mat(quat[i], rotation_matrix); //calculate rotation matrix from quaternion
         MathExtraLiggghtsNonspherical::transpose_matvec(rotation_matrix, omega[i],wbody); //angular velocity in body principal axes
@@ -455,7 +466,10 @@ void FixNVEAsphereBase::initial_integrate(int vflag)
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, mbody, angmom[i]); // angular momentum to global frame
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, wbody, omega[i]); // angular velocity to global frame
 
-      }  else if(integration_scheme == 3) { //woodem scheme
+        break;
+      }
+      case INTEGRATION_SCHEME_WOODEM: //woodem scheme
+      {
         double angmom_half[3], angmom_half_local[3], angmom_next_local[3];
 
         for(int j = 0; j < 3; j++)
@@ -484,11 +498,18 @@ void FixNVEAsphereBase::initial_integrate(int vflag)
 
         MathExtraLiggghtsNonspherical::quat_to_mat(quat[i], rotation_matrix);
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, omega_next_local, omega[i]);
-      } else if(integration_scheme == 4) {
-        rotationUpdate(true);
+
+        break;
       }
-      else
+      case INTEGRATION_SCHEME_IMPLICIT:
+      {
+        rotationUpdate(true);
+        break;
+      }
+      default:
         error->one(FLERR,"Invalid integration scheme! Please choose between 0, 1 (default), 2 or 3!");
+        break;
+      }
 #ifdef LIGGGHTS_DEBUG
       if(std::isnan(LAMMPS_NS::vectorMag4D(quat[i])))
         error->fix_error(FLERR,this,"quat[i] is NaN!");
@@ -576,7 +597,10 @@ void FixNVEAsphereBase::final_integrate()
         error->fix_error(FLERR,this,"v[i] is NaN!");
 #endif
 
-      if(integration_scheme == 0) {
+      switch(integration_scheme)
+      {
+      case INTEGRATION_SCHEME_RICHARDSON:
+      {
         //update angular moment by step t+dt
         angmom[i][0] += dtf * torque[i][0];
         angmom[i][1] += dtf * torque[i][1];
@@ -585,7 +609,10 @@ void FixNVEAsphereBase::final_integrate()
         MathExtra::mq_to_omega(angmom[i],quat[i],inertia[i],omega[i]);
         MathExtraLiggghtsNonspherical::transpose_matvec(rotation_matrix, omega[i], omegaNewPrime);
         update_hdtorque(i, rotation_matrix, omegaOldPrime, omegaNewPrime);
-      } else if(integration_scheme == 1) {
+        break;
+      }
+      case INTEGRATION_SCHEME_SYMPLECTIC:
+      {
         MathExtraLiggghtsNonspherical::transpose_matvec(rotation_matrix, torque[i], tbody);
         MathExtraLiggghtsNonspherical::transpose_matvec(rotation_matrix, angmom[i], mbody);
         MathExtraLiggghtsNonspherical::calc_conjqm(quat[i], mbody, conjqm);
@@ -609,7 +636,10 @@ void FixNVEAsphereBase::final_integrate()
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, mbody, angmom[i]);
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, wbody, omega[i]);
         update_hdtorque(i, rotation_matrix, omegaOldPrime, wbody);
-      } else if (integration_scheme == 2) {
+        break;
+      }
+      case INTEGRATION_SCHEME_LEAP_FROG:
+      {
         MathExtraLiggghtsNonspherical::quat_to_mat(quat[i], rotation_matrix); //calculate rotation matrix from quaternion
         MathExtraLiggghtsNonspherical::transpose_matvec(rotation_matrix, omega[i],wbody); //angular velocity in body principal axes
         MathExtraLiggghtsNonspherical::transpose_matvec(rotation_matrix, torque[i], tbody); //torque in body principal axes
@@ -624,8 +654,15 @@ void FixNVEAsphereBase::final_integrate()
 
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, mbody, angmom[i]); // angular momentum to global frame
         MathExtraLiggghtsNonspherical::matvec(rotation_matrix, wbody, omega[i]); // angular velocity to global frame
-      } else if(integration_scheme == 4) {
+        break;
+      }
+      case INTEGRATION_SCHEME_IMPLICIT:
+      {
         rotationUpdate(false);
+        break;
+      }
+      default:
+        break;
       }
 
 #ifdef LIGGGHTS_DEBUG
