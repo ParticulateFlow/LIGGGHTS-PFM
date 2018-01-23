@@ -130,29 +130,60 @@ namespace ContactModels
       const double tor2 = enz * Ft1 - enx * Ft3;
       const double tor3 = enx * Ft2 - eny * Ft1;
 
+      double torque_i[3] = {};
+      double torque_j[3] = {};
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+      if(cdata.is_non_spherical)
+      {
+        double xci[3] = {};
+        double Ft_i[3] = { Ft1,  Ft2,  Ft3 };
+        vectorSubtract3D(cdata.contact_point, atom->x[cdata.i], xci);
+        vectorCross3D(xci, Ft_i, torque_i);
+        if (!cdata.is_wall)
+        {
+            double xcj[3] = {};
+            vectorSubtract3D(cdata.contact_point, atom->x[cdata.j], xcj);
+            double Ft_j[3] = { -Ft1,  -Ft2,  -Ft3 };
+            vectorCross3D(xcj, Ft_j, torque_j);
+        }
+      }
+      else
+#endif
+      {
+        torque_i[0] = -cdata.cri * tor1;
+        torque_i[1] = -cdata.cri * tor2;
+        torque_i[2] = -cdata.cri * tor3;
+        if (!cdata.is_wall)
+        {
+          torque_j[0] = -cdata.crj * tor1;
+          torque_j[1] = -cdata.crj * tor2;
+          torque_j[2] = -cdata.crj * tor3;
+        }
+      }
+
       // return resulting forces
       if(cdata.is_wall) {
         const double area_ratio = cdata.area_ratio;
         i_forces.delta_F[0] += Ft1 * area_ratio;
         i_forces.delta_F[1] += Ft2 * area_ratio;
         i_forces.delta_F[2] += Ft3 * area_ratio;
-        i_forces.delta_torque[0] = -cdata.cri * tor1 * area_ratio;
-        i_forces.delta_torque[1] = -cdata.cri * tor2 * area_ratio;
-        i_forces.delta_torque[2] = -cdata.cri * tor3 * area_ratio;
+        i_forces.delta_torque[0] = torque_i[0] * area_ratio;
+        i_forces.delta_torque[1] = torque_i[1] * area_ratio;
+        i_forces.delta_torque[2] = torque_i[2] * area_ratio;
       } else {
         i_forces.delta_F[0] += Ft1;
         i_forces.delta_F[1] += Ft2;
         i_forces.delta_F[2] += Ft3;
-        i_forces.delta_torque[0] = -cdata.cri * tor1;
-        i_forces.delta_torque[1] = -cdata.cri * tor2;
-        i_forces.delta_torque[2] = -cdata.cri * tor3;
+        i_forces.delta_torque[0] = torque_i[0];
+        i_forces.delta_torque[1] = torque_i[1];
+        i_forces.delta_torque[2] = torque_i[2];
 
         j_forces.delta_F[0] += -Ft1;
         j_forces.delta_F[1] += -Ft2;
         j_forces.delta_F[2] += -Ft3;
-        j_forces.delta_torque[0] = -cdata.crj * tor1;
-        j_forces.delta_torque[1] = -cdata.crj * tor2;
-        j_forces.delta_torque[2] = -cdata.crj * tor3;
+        j_forces.delta_torque[0] = torque_j[0];
+        j_forces.delta_torque[1] = torque_j[1];
+        j_forces.delta_torque[2] = torque_j[2];
       }
     }
 
@@ -162,6 +193,8 @@ namespace ContactModels
       // unset non-touching neighbors
       // TODO even if shearupdate == false?
       if(cdata.touch) *cdata.touch &= ~TOUCH_TANGENTIAL_MODEL;
+      if(!cdata.contact_history)
+        return; //DO NOT access contact_history if not available
       double * const shear = &cdata.contact_history[history_offset];
       shear[0] = 0.0;
       shear[1] = 0.0;
