@@ -94,6 +94,9 @@ void FixBondPropagateGran::pre_exchange()
   /*NL*/ //if(screen) fprintf(screen,"nbondlist_propagate %d\n",nbondlist);
 
   for (n = 0; n < nbondlist; n++) {
+
+    if(bondlist[n][3]) continue; //do not copy broken bonds
+
     i1 = bondlist[n][0];
     i2 = bondlist[n][1];
     /*NL*///error->one(FLERR,"bond op...");
@@ -102,19 +105,19 @@ void FixBondPropagateGran::pre_exchange()
     {
         ip = -1;
         for(int k = 0; k < num_bond[i1]; k++)
-           if(bond_atom[i1][k] == tag[i2])
-           {
-               ip = k;
-               break;
-           }
+            if(bond_atom[i1][k] == tag[i2])
+            {
+                ip = k;
+                break;
+            }
+
         if(ip == -1)
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
-            error->all(FLERR,"Failed to operate on granular bond history during copy");
+            error->all(FLERR,"Failed to operate on granular bond history during copy i1");
         }
 
-        /*NL*///error->one(FLERR,"bond op");
         for(int k = 0; k < n_bondhist; k++)
            bond_hist[i1][ip][k] = bondhistlist[n][k];
     }
@@ -123,16 +126,17 @@ void FixBondPropagateGran::pre_exchange()
     {
         ip = -1;
         for(int k = 0; k < num_bond[i2]; k++)
-           if(bond_atom[i2][k] == tag[i1])
-           {
-               ip = k;
-               break;
-           }
+            if(bond_atom[i2][k] == tag[i1])
+            {
+                ip = k;
+                break;
+            }
+
         if(ip == -1)
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
-            error->all(FLERR,"Failed to operate on granular bond history during copy");
+            error->all(FLERR,"Failed to operate on granular bond history during copy i2");
         }
 
         /*NL*///error->one(FLERR,"bond op");
@@ -146,11 +150,10 @@ void FixBondPropagateGran::pre_exchange()
   //NP should be done equally on all processors
 
   for (n = 0; n < nbondlist; n++) {
+    if(!bondlist[n][3]) continue; // continue if not broken
+
     i1 = bondlist[n][0];
     i2 = bondlist[n][1];
-
-    int broken = bondlist[n][3];
-    if(!broken) continue;
 
     //NP if the bond is broken, we remove it from
     //NP both atom data
@@ -162,34 +165,39 @@ void FixBondPropagateGran::pre_exchange()
     {
         ip = -1;
         for(int k = 0; k < num_bond[i1]; k++)
-           if(bond_atom[i1][k] == tag[i2])
-           {
-               ip = k;
-               break;
-           }
+            if(bond_atom[i1][k] == tag[i2])
+            {
+                ip = k;
+                break;
+            }
+
         if(ip == -1)
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
             error->all(FLERR,"Failed to operate on granular bond history during deletion1");
         }
+
         remove_bond(i1,ip);
     }
+
     if (newton_bond || i2 < nlocal)
     {
         ip = -1;
         for(int k = 0; k < num_bond[i2]; k++)
-           if(bond_atom[i2][k] == tag[i1])
-           {
-               ip = k;
-               break;
-           }
+            if(bond_atom[i2][k] == tag[i1])
+            {
+                ip = k;
+                break;
+            }
+
         if(ip == -1)
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
             error->all(FLERR,"Failed to operate on granular bond history during deletion2");
         }
+
         remove_bond(i2,ip);
     }
   }
@@ -216,7 +224,6 @@ inline void FixBondPropagateGran::remove_bond(int ilocal,int ibond)
 
 void FixBondPropagateGran::write_restart(FILE *fp)
 {
-  error->warning(FLERR,"Restart functionality not yet tested for granular bonds...");
 
   //NP write a dummy value
   int n = 0;
@@ -240,10 +247,5 @@ void FixBondPropagateGran::write_restart(FILE *fp)
 
 void FixBondPropagateGran::restart(char *buf)
 {
-  /*int n = 0;
-  double *list = (double *) buf;
 
-  double dummy = static_cast<int> (list[n++]);
-  */
-  error->warning(FLERR,"Restart functionality not yet tested for granular bonds...");
 }

@@ -33,6 +33,7 @@ See the README file in the top-level LAMMPS directory.
 using namespace LAMMPS_NS;
 
 #define DELTA 10000
+#define BOND_GRAN_USE_MOLECULE_ID
 
 /* ---------------------------------------------------------------------- */
 
@@ -49,7 +50,11 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp) :
 
   size_border = 7;
   size_velocity = 3;
-  size_data_atom = 5; //NP 6 with molecule ID
+#ifdef BOND_GRAN_USE_MOLECULE_ID
+  size_data_atom = 6; // with molecule ID
+#else
+  size_data_atom = 5; // without molecule ID
+#endif
   size_data_vel = 4;
   xcol_data = 4;
 
@@ -64,6 +69,7 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp) :
 
 void AtomVecBondGran::settings(int narg, char **arg)
 {
+  if (narg == 0) return; //in case of restart no arguments are given, instead nbondtypes and bond_per_atom are defined by read_restart_settings
 
   if (narg != 4) error->all(FLERR,"Invalid atom_style bond/gran command,expecting exactly 4 arguments");
 
@@ -122,15 +128,16 @@ void AtomVecBondGran::grow(int n)
   special = memory->grow(atom->special,nmax,atom->maxspecial,"atom:special");
 
   num_bond = memory->grow(atom->num_bond,nmax,"atom:num_bond");
-  bond_type = memory->grow(atom->bond_type,nmax,atom->bond_per_atom,
-         "atom:bond_type");
-  bond_atom = memory->grow(atom->bond_atom,nmax,atom->bond_per_atom,
-         "atom:bond_atom");
+  bond_type = memory->grow(atom->bond_type,nmax,atom->bond_per_atom,"atom:bond_type");
+  bond_atom = memory->grow(atom->bond_atom,nmax,atom->bond_per_atom,"atom:bond_atom");
 
   /*NL*/ //if(screen) fprintf(screen,"grow nmax %d, atom->bond_per_atom %d, atom->n_bondhist %d\n",nmax,atom->bond_per_atom,atom->n_bondhist);
 
   if(0 == atom->bond_per_atom)
     error->all(FLERR,"Bonded particles need bond_per_atom > 0");
+
+  if(atom->n_bondhist < 0)
+    error->all(FLERR,"atom->n_bondhist < 0 suggests that 'bond_style gran' has not been called before 'read_restart' command! Please check that.");
 
   if(atom->n_bondhist)
   {
@@ -243,7 +250,7 @@ int AtomVecBondGran::pack_comm_vel(int n, int *list, double *buf,
              int pbc_flag, int *pbc)
 {
   int i,j,m;
-  double dx,dy,dz;
+  double dx,dy,dz,dvx,dvy,dvz;
 
   m = 0;
   if (pbc_flag == 0) {
@@ -266,14 +273,35 @@ int AtomVecBondGran::pack_comm_vel(int n, int *list, double *buf,
       dy = pbc[1]*domain->yprd + pbc[3]*domain->yz;
       dz = pbc[2]*domain->zprd;
     }
-    for (i = 0; i < n; i++) {
-      j = list[i];
-      buf[m++] = x[j][0] + dx;
-      buf[m++] = x[j][1] + dy;
-      buf[m++] = x[j][2] + dz;
-      buf[m++] = v[j][0];
-      buf[m++] = v[j][1];
-      buf[m++] = v[j][2];
+    if (!deform_vremap) {
+      for (i = 0; i < n; i++) {
+        j = list[i];
+        buf[m++] = x[j][0] + dx;
+        buf[m++] = x[j][1] + dy;
+        buf[m++] = x[j][2] + dz;
+        buf[m++] = v[j][0];
+        buf[m++] = v[j][1];
+        buf[m++] = v[j][2];
+      }
+    } else {
+      dvx = pbc[0]*h_rate[0] + pbc[5]*h_rate[5] + pbc[4]*h_rate[4];
+      dvy = pbc[1]*h_rate[1] + pbc[3]*h_rate[3];
+      dvz = pbc[2]*h_rate[2];
+      for (i = 0; i < n; i++) {
+        j = list[i];
+        buf[m++] = x[j][0] + dx;
+        buf[m++] = x[j][1] + dy;
+        buf[m++] = x[j][2] + dz;
+        if (mask[i] & deform_groupbit) {
+          buf[m++] = v[j][0] + dvx;
+          buf[m++] = v[j][1] + dvy;
+          buf[m++] = v[j][2] + dvz;
+        } else {
+          buf[m++] = v[j][0];
+          buf[m++] = v[j][1];
+          buf[m++] = v[j][2];
+        }
+      }
     }
   }
   return m;
@@ -398,7 +426,7 @@ int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
          int pbc_flag, int *pbc)
 {
   int i,j,m;
-  double dx,dy,dz;
+  double dx,dy,dz,dvx,dvy,dvz;
 
   m = 0;
   if (pbc_flag == 0) {
@@ -425,18 +453,43 @@ int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
       dy = pbc[1];
       dz = pbc[2];
     }
-    for (i = 0; i < n; i++) {
-      j = list[i];
-      buf[m++] = x[j][0] + dx;
-      buf[m++] = x[j][1] + dy;
-      buf[m++] = x[j][2] + dz;
-      buf[m++] = tag[j];
-      buf[m++] = type[j];
-      buf[m++] = mask[j];
-      buf[m++] = molecule[j];
-      buf[m++] = v[j][0];
-      buf[m++] = v[j][1];
-      buf[m++] = v[j][2];
+    if (!deform_vremap) {
+      for (i = 0; i < n; i++) {
+        j = list[i];
+        buf[m++] = x[j][0] + dx;
+        buf[m++] = x[j][1] + dy;
+        buf[m++] = x[j][2] + dz;
+        buf[m++] = tag[j];
+        buf[m++] = type[j];
+        buf[m++] = mask[j];
+        buf[m++] = molecule[j];
+        buf[m++] = v[j][0];
+        buf[m++] = v[j][1];
+        buf[m++] = v[j][2];
+      }
+    } else {
+      dvx = pbc[0]*h_rate[0] + pbc[5]*h_rate[5] + pbc[4]*h_rate[4];
+      dvy = pbc[1]*h_rate[1] + pbc[3]*h_rate[3];
+      dvz = pbc[2]*h_rate[2];
+      for (i = 0; i < n; i++) {
+        j = list[i];
+        buf[m++] = x[j][0] + dx;
+        buf[m++] = x[j][1] + dy;
+        buf[m++] = x[j][2] + dz;
+        buf[m++] = tag[j];
+        buf[m++] = type[j];
+        buf[m++] = mask[j];
+        buf[m++] = molecule[j];
+        if (mask[i] & deform_groupbit) {
+          buf[m++] = v[j][0] + dvx;
+          buf[m++] = v[j][1] + dvy;
+          buf[m++] = v[j][2] + dvz;
+        } else {
+          buf[m++] = v[j][0];
+          buf[m++] = v[j][1];
+          buf[m++] = v[j][2];
+        }
+      }
     }
   }
 
@@ -444,6 +497,20 @@ int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
     for (int iextra = 0; iextra < atom->nextra_border; iextra++)
       m += modify->fix[atom->extra_border[iextra]]->pack_border(n,list,&buf[m]);
 
+  return m;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int AtomVecBondGran::pack_border_hybrid(int n, int *list, double *buf)
+{
+  int i,j,m;
+
+  m = 0;
+  for (i = 0; i < n; i++) {
+    j = list[i];
+    buf[m++] = molecule[j];
+  }
   return m;
 }
 
@@ -506,6 +573,19 @@ void AtomVecBondGran::unpack_border_vel(int n, int first, double *buf)
     for (int iextra = 0; iextra < atom->nextra_border; iextra++)
       m += modify->fix[atom->extra_border[iextra]]->
         unpack_border(n,first,&buf[m]);
+}
+
+/* ---------------------------------------------------------------------- */
+
+int AtomVecBondGran::unpack_border_hybrid(int n, int first, double *buf)
+{
+  int i,m,last;
+
+  m = 0;
+  last = first + n;
+  for (i = first; i < last; i++)
+    molecule[i] = static_cast<int> (buf[m++]);
+  return m;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -632,7 +712,7 @@ int AtomVecBondGran::size_restart()
   {
     n += 13 + 2*num_bond[i];
 
-    if(atom->n_bondhist) n += 1/*num_bondhist*/ + num_bond[i] * num_bondhist/*bond_hist*/;
+    if(atom->n_bondhist) n += 1/*num_bondhist*/ + num_bond[i] * atom->n_bondhist/*bond_hist*/;
   }
 
   if (atom->nextra_restart)
@@ -733,7 +813,7 @@ int AtomVecBondGran::unpack_restart(double *buf)
           error->all(FLERR,"Íncompatibel restart file: file was created using a bond model with a different number of history values");
       for (k = 0; k < num_bond[nlocal]; k++)
          for (l = 0; l < atom->n_bondhist; l++)
-            bond_hist[nlocal][k][l] = buf[m++];
+            atom->bond_hist[nlocal][k][l] = buf[m++];
   }
 
   double **extra = atom->extra;
@@ -789,9 +869,15 @@ void AtomVecBondGran::data_atom(double *coord, tagint imagetmp, char **values)
   if (tag[nlocal] <= 0)
     error->one(FLERR,"Invalid atom ID in Atoms section of data file");
 
-  molecule[nlocal] = 0; //NP atoi(values[1]);
+#ifdef BOND_GRAN_USE_MOLECULE_ID
+  molecule[nlocal] = atoi(values[1]);
 
-  type[nlocal] = atoi(values[1]);//NP atoi(values[2]);
+  type[nlocal] = atoi(values[2]);
+#else
+  molecule[nlocal] = 0;
+
+  type[nlocal] = atoi(values[1]);
+#endif
   if (type[nlocal] <= 0 || type[nlocal] > atom->ntypes)
     error->one(FLERR,"Invalid atom type in Atoms section of data file");
 
@@ -817,8 +903,11 @@ void AtomVecBondGran::data_atom(double *coord, tagint imagetmp, char **values)
 
 int AtomVecBondGran::data_atom_hybrid(int nlocal, char **values)
 {
-  molecule[nlocal] = 0; //NP atoi(values[0]);
-
+#ifdef BOND_GRAN_USE_MOLECULE_ID
+  molecule[nlocal] = atoi(values[0]);
+#else
+  molecule[nlocal] = 0;
+#endif
   num_bond[nlocal] = 0;
 
   return 1;
@@ -879,6 +968,22 @@ int AtomVecBondGran::write_data_hybrid(FILE *fp, double *buf)
   error->all(FLERR,"needs revision");
   fprintf(fp," %d",(int) buf[0]);
   return 1;
+}
+
+void AtomVecBondGran::write_restart_settings(FILE *fp)
+{
+  fwrite(&atom->nbondtypes,sizeof(int),1,fp);
+  fwrite(&atom->bond_per_atom,sizeof(int),1,fp);
+}
+
+void AtomVecBondGran::read_restart_settings(FILE *fp)
+{
+  if (comm->me == 0) {
+    fread(&atom->nbondtypes,sizeof(int),1,fp);
+    fread(&atom->bond_per_atom,sizeof(int),1,fp);
+  }
+  MPI_Bcast(&atom->nbondtypes,1,MPI_INT,0,world);
+  MPI_Bcast(&atom->bond_per_atom,1,MPI_INT,0,world);
 }
 
 /* ----------------------------------------------------------------------

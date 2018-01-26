@@ -63,6 +63,15 @@ BondGran::BondGran(LAMMPS *lmp) : Bond(lmp)
 {
     // we need 12 history values - the 6 forces and 6 torques from the last time-step
     n_granhistory(12);
+    // number of entries in bondhistlist. bondhistlist[number of bond][number of value (from 0 to number given here)]
+    // so with this number you can modify how many pieces of information you savae with every bond
+    // following dependencies and processes for saving,copying,growing the bondhistlist:
+
+    // neighbor.cpp:           memory->create(bondhistlist,maxbond,atom->n_bondhist,"neigh:bondhistlist");
+    // neigh_bond.cpp:         memory->grow(bondhistlist,maxbond,atom->n_bondhist,"neighbor:bondhistlist");
+    // bond.cpp:               void Bond::n_granhistory(int nhist) {ngranhistory = nhist; atom->n_bondhist = ngranhistory; if(){FLERR}}
+    // atom_vec_bond_gran.cpp: memory->grow(atom->bond_hist,nmax,atom->bond_per_atom,atom->n_bondhist,"atom:bond_hist");
+
     if(!atom->style_match("bond/gran"))
         error->all(FLERR,"A granular bond style can only be used together with atom style bond/gran");
     if(comm->me == 0)
@@ -110,6 +119,7 @@ void BondGran::compute(int eflag, int vflag)
   double dntorque[3],dttorque[3];
   double rot;
   double A,J;
+  double rbmin;
 
   if (eflag || vflag) ev_setup(eflag,vflag);
   else evflag = 0;
@@ -127,6 +137,7 @@ void BondGran::compute(int eflag, int vflag)
   int nlocal = atom->nlocal;
   int newton_bond = force->newton_bond;
   double dt = update->dt;
+  double cutoff = neighbor->skin;
 
   if(breakmode == BREAKSTYLE_STRESS_TEMP)
   {
@@ -135,13 +146,67 @@ void BondGran::compute(int eflag, int vflag)
   }
 
   for (n = 0; n < nbondlist; n++) {
+    /*NL*/ //if (screen) fprintf(screen,"bondlist[n][3] %d, exec at ts %d\n",bondlist[n][3],update->ntimestep);
+    // continue if bond is broken
+    if(bondlist[n][3])
+    {
+        //NP if (screen) fprintf(screen,"i1 %d i2 %d bondlist[n][3] %d\n",i1,i2,bondlist[n][3]);
+        //NP if (screen) fprintf(screen,"bondlist[n][3] %d, broken ts %d\n",bondlist[n][3],update->ntimestep);
+        //NP error->all(FLERR,"broken");
+        continue;
+    }
+
     i1 = bondlist[n][0];
     i2 = bondlist[n][1];
+
+    // check if bond overlap the box-borders
+    if (       x[i1][0] < (domain->boxlo[0]+cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i1][0] > (domain->boxhi[0]-cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i1][1] < (domain->boxlo[1]+cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i1][1] > (domain->boxhi[1]-cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i1][2] < (domain->boxlo[2]+cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i1][2] > (domain->boxhi[2]-cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    }
+
+    if (       x[i2][0] < (domain->boxlo[0]+cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i2][0] > (domain->boxhi[0]-cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i2][1] < (domain->boxlo[1]+cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i2][1] > (domain->boxhi[1]-cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i2][2] < (domain->boxlo[2]+cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    } else if (x[i2][2] > (domain->boxhi[2]-cutoff)) {
+      bondlist[n][3] = 1;
+      continue;
+    }
+
+
     /*NL*/ //if (screen) fprintf(screen,"ts %d: handling id %d and %d\n",update->ntimestep,tag[i1],tag[i2]);
     type = bondlist[n][2];
+    rbmin = rb[type]*MIN(radius[i1],radius[i2]); //lamda * min(rA,rB) see Potyondy and Cundall, "A bonded-particle model for rock" (2004)
 
-    A = M_PI * rb[type] * rb[type];
-    J = A * 0.5 * rb[type] * rb[type];
+    A = M_PI * rbmin* rbmin;
+    J = A * 0.5 * rbmin * rbmin;
 
     delx = x[i1][0] - x[i2][0];
     dely = x[i1][1] - x[i2][1];
@@ -153,77 +218,67 @@ void BondGran::compute(int eflag, int vflag)
     r = sqrt(rsq);
     rinv = 1./r;
 
-    /*NL*/ //if (screen) fprintf(screen,"bondlist[n][3] %d, exec at ts %d\n",bondlist[n][3],update->ntimestep);
-    //NP continue if bond is broken
-    if(bondlist[n][3])
-    {
-        //NP if (screen) fprintf(screen,"i1 %d i2 %d bondlist[n][3] %d\n",i1,i2,bondlist[n][3]);
-        //NP if (screen) fprintf(screen,"bondlist[n][3] %d, broken ts %d\n",bondlist[n][3],update->ntimestep);
-        //NP error->all(FLERR,"broken");
-        continue;
-    }
-
     // relative translational velocity
 
-        vr1 = v[i1][0] - v[i2][0];
-        vr2 = v[i1][1] - v[i2][1];
-        vr3 = v[i1][2] - v[i2][2];
+    vr1 = v[i1][0] - v[i2][0];
+    vr2 = v[i1][1] - v[i2][1];
+    vr3 = v[i1][2] - v[i2][2];
 
-        // normal component
+    // normal component
 
-        vnnr = vr1*delx + vr2*dely + vr3*delz;
-        vn1 = delx*vnnr * rsqinv;
-        vn2 = dely*vnnr * rsqinv;
-        vn3 = delz*vnnr * rsqinv;
+    vnnr = vr1*delx + vr2*dely + vr3*delz;
+    vn1 = delx*vnnr * rsqinv;
+    vn2 = dely*vnnr * rsqinv;
+    vn3 = delz*vnnr * rsqinv;
 
-        // tangential component
+    // tangential component
 
-        vt1 = vr1 - vn1;
-        vt2 = vr2 - vn2;
-        vt3 = vr3 - vn3;
+    vt1 = vr1 - vn1;
+    vt2 = vr2 - vn2;
+    vt3 = vr3 - vn3;
 
     // relative rotational velocity for shear
 
-        wr1 = (radius[i1]*omega[i1][0] + radius[i2]*omega[i2][0]) * rinv;
-        wr2 = (radius[i1]*omega[i1][1] + radius[i2]*omega[i2][1]) * rinv;
-        wr3 = (radius[i1]*omega[i1][2] + radius[i2]*omega[i2][2]) * rinv;
+    wr1 = (radius[i1]*omega[i1][0] + radius[i2]*omega[i2][0]) * rinv;
+    wr2 = (radius[i1]*omega[i1][1] + radius[i2]*omega[i2][1]) * rinv;
+    wr3 = (radius[i1]*omega[i1][2] + radius[i2]*omega[i2][2]) * rinv;
 
-        // relative velocities for shear
+    // relative velocities for shear
 
-        vtr1 = vt1 - (delz*wr2-dely*wr3);
-        vtr2 = vt2 - (delx*wr3-delz*wr1);
-        vtr3 = vt3 - (dely*wr1-delx*wr2);
+    vtr1 = vt1 - (delz*wr2-dely*wr3);
+    vtr2 = vt2 - (delx*wr3-delz*wr1);
+    vtr3 = vt3 - (dely*wr1-delx*wr2);
 
-        // relative rotational velocity for torsion and bending
+    // relative rotational velocity for torsion and bending
 
-        wr1 = (radius[i1]*omega[i1][0] - radius[i2]*omega[i2][0]) * rinv;
-        wr2 = (radius[i1]*omega[i1][1] - radius[i2]*omega[i2][1]) * rinv;
-        wr3 = (radius[i1]*omega[i1][2] - radius[i2]*omega[i2][2]) * rinv;
+    wr1 = (radius[i1]*omega[i1][0] - radius[i2]*omega[i2][0]) * rinv;
+    wr2 = (radius[i1]*omega[i1][1] - radius[i2]*omega[i2][1]) * rinv;
+    wr3 = (radius[i1]*omega[i1][2] - radius[i2]*omega[i2][2]) * rinv;
 
-        // normal component
+    // normal component
 
-        wnnr = wr1*delx + wr2*dely + wr3*delz;
-        wn1 = delx*wnnr * rsqinv;
-        wn2 = dely*wnnr * rsqinv;
-        wn3 = delz*wnnr * rsqinv;
+    wnnr = wr1*delx + wr2*dely + wr3*delz;
+    wn1 = delx*wnnr * rsqinv;
+    wn2 = dely*wnnr * rsqinv;
+    wn3 = delz*wnnr * rsqinv;
 
     //if (screen) fprintf(screen,"omega[i1] %f %f %f, omega[i2] %f %f %f, wn %f %f %f\n",omega[i1][0],omega[i1][1],omega[i1][2],omega[i2][0],omega[i2][1],omega[i2][2],wn1,wn2,wn3);
 
-        // tangential component
+    // tangential component
 
-        wt1 = wr1 - wn1;
-        wt2 = wr2 - wn2;
-        wt3 = wr3 - wn3;
+    wt1 = wr1 - wn1;
+    wt2 = wr2 - wn2;
+    wt3 = wr3 - wn3;
 
     // calc change in normal forces
     dnforce[0] = - vn1 * Sn[type] * A * dt;
     dnforce[1] = - vn2 * Sn[type] * A * dt;
     dnforce[2] = - vn3 * Sn[type] * A * dt;
 
-        // calc change in shear forces
-        dtforce[0] = - vtr1 * St[type] * A * dt;
-        dtforce[1] = - vtr2 * St[type] * A * dt;
-        dtforce[2] = - vtr3 * St[type] * A * dt;
+    // calc change in shear forces
+    dtforce[0] = - vtr1 * St[type] * A * dt;
+    dtforce[1] = - vtr2 * St[type] * A * dt;
+    dtforce[2] = - vtr3 * St[type] * A * dt;
 
     // calc change in normal torque
     dntorque[0] = - wn1 * St[type] * J * dt;
@@ -238,8 +293,8 @@ void BondGran::compute(int eflag, int vflag)
     // rotate forces
 
     //rotate normal force
-        rot = bondhistlist[n][0]*delx + bondhistlist[n][1]*dely + bondhistlist[n][2]*delz;
-        rot *= rsqinv;
+    rot = bondhistlist[n][0]*delx + bondhistlist[n][1]*dely + bondhistlist[n][2]*delz;
+    rot *= rsqinv;
     bondhistlist[n][0] = rot*delx;
     bondhistlist[n][1] = rot*dely;
     bondhistlist[n][2] = rot*delz;
@@ -252,8 +307,8 @@ void BondGran::compute(int eflag, int vflag)
     bondhistlist[n][5] -= rot*delz;
 
     //rotate normal torque
-        rot = bondhistlist[n][6]*delx + bondhistlist[n][7]*dely + bondhistlist[n][8]*delz;
-        rot *= rsqinv;
+    rot = bondhistlist[n][6]*delx + bondhistlist[n][7]*dely + bondhistlist[n][8]*delz;
+    rot *= rsqinv;
     bondhistlist[n][6] = rot*delx;
     bondhistlist[n][7] = rot*dely;
     bondhistlist[n][8] = rot*delz;
@@ -266,7 +321,7 @@ void BondGran::compute(int eflag, int vflag)
     bondhistlist[n][11] -= rot*delz;
 
     //increment normal and tangential force and torque
-    double dissipate = 0.995;
+    double dissipate = 1.0;
     bondhistlist[n][0] = dissipate * bondhistlist[n][0] + dnforce[0];
     bondhistlist[n][1] = dissipate * bondhistlist[n][1] + dnforce[1];
     bondhistlist[n][2] = dissipate * bondhistlist[n][2] + dnforce[2];
@@ -280,9 +335,9 @@ void BondGran::compute(int eflag, int vflag)
     bondhistlist[n][10] = dissipate * bondhistlist[n][10] + dttorque[1];
     bondhistlist[n][11] = dissipate * bondhistlist[n][11] + dttorque[2];
 
-        tor1 = - rinv * (dely*bondhistlist[n][5] - delz*bondhistlist[n][4]);
-        tor2 = - rinv * (delz*bondhistlist[n][3] - delx*bondhistlist[n][5]);
-        tor3 = - rinv * (delx*bondhistlist[n][4] - dely*bondhistlist[n][3]);
+    tor1 = - rinv * (dely*bondhistlist[n][5] - delz*bondhistlist[n][4]);
+    tor2 = - rinv * (delz*bondhistlist[n][3] - delx*bondhistlist[n][5]);
+    tor3 = - rinv * (delx*bondhistlist[n][4] - dely*bondhistlist[n][3]);
 
         //flag breaking of bond if criterion met
     if(breakmode == BREAKSTYLE_SIMPLE)
@@ -302,8 +357,8 @@ void BondGran::compute(int eflag, int vflag)
         double ntorque_mag = vectorMag3D(&bondhistlist[n][6]);
         double ttorque_mag = vectorMag3D(&bondhistlist[n][9]);
 
-        bool nstress = sigman_break[type] < (nforce_mag/A + 2.*ttorque_mag/J*rb[type]);
-        bool tstress = tau_break[type]    < (tforce_mag/A +    ntorque_mag/J*rb[type]);
+        bool nstress = sigman_break[type] < (nforce_mag/A + 2.*ttorque_mag/J*rbmin);
+        bool tstress = tau_break[type]    < (tforce_mag/A +    ntorque_mag/J*rbmin);
         bool toohot = false;
 
         if(breakmode == BREAKSTYLE_STRESS_TEMP)
@@ -323,7 +378,7 @@ void BondGran::compute(int eflag, int vflag)
     }
 
 
-        //NP if (screen) fprintf(screen,"ts %d, particles %d %d - shear %f %f %f - tor %f %f %f\n",update->ntimestep,tag[i1],tag[i2],bondhistlist[n][3],bondhistlist[n][4],bondhistlist[n][5],tor1,tor2,tor3);
+    //NP if (screen) fprintf(screen,"ts %d, particles %d %d - shear %f %f %f - tor %f %f %f\n",update->ntimestep,tag[i1],tag[i2],bondhistlist[n][3],bondhistlist[n][4],bondhistlist[n][5],tor1,tor2,tor3);
 
     // energy
     //if (eflag) error->all(FLERR,"Granular bonds currently do not support energy calculation");
@@ -382,8 +437,8 @@ void BondGran::coeff(int narg, char **arg)
   if(narg < 4)  error->all(FLERR,"Incorrect args for bond coefficients");
 
   double rb_one = force->numeric(FLERR,arg[1]);
-  double Sn_one = atof(arg[2]);
-  double St_one = atof(arg[3]);
+  double Sn_one = force->numeric(FLERR,arg[2]);
+  double St_one = force->numeric(FLERR,arg[3]);
 
   if(Sn_one < 0. || St_one < 0.)
     error->all(FLERR,"Sn, St must be > 0 (if values > 0 were provided, they are probably too large)");

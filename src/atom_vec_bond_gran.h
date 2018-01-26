@@ -50,9 +50,11 @@ class AtomVecBondGran : public AtomVec {
   void unpack_reverse(int, int *, double *);
   int pack_border(int, int *, double *, int, int *);
   int pack_border_vel(int, int *, double *, int, int *);
+  int pack_border_hybrid(int, int *, double *);
   int pack_border_one(int, double *);
   void unpack_border(int, int, double *);
   void unpack_border_vel(int, int, double *);
+  int unpack_border_hybrid(int, int, double *);
   int unpack_border_one(int, double *);
   int pack_exchange(int, double *);
   int unpack_exchange(double *);
@@ -66,6 +68,8 @@ class AtomVecBondGran : public AtomVec {
   int pack_data_hybrid(int, double *);
   void write_data(FILE *, int, double **);
   int write_data_hybrid(FILE *, double *);
+  void write_restart_settings(FILE *);
+  void read_restart_settings(FILE *);
   bigint memory_usage();
 
  private:

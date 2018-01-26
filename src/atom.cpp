@@ -114,6 +114,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   num_bond = NULL;
   bond_type = bond_atom = NULL;
   bond_hist = NULL;
+  n_bondhist = 0; 
 
   num_angle = NULL;
   angle_type = angle_atom1 = angle_atom2 = angle_atom3 = NULL;
