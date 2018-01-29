@@ -30,7 +30,7 @@ region          reg block -$L $L -1 1 -$L 1 units box
 bond_style      gran
 
 #read_restart can only work correctly AFTER bond_style is set
-read_restart beam.restart
+read_restart post/restart/beam.restart
 
 neighbor        1 bin
 neigh_modify    delay 0
@@ -113,7 +113,7 @@ variable px equal x[${lastone}]
 variable py equal y[${lastone}]
 variable pz equal z[${lastone}]
 
-fix             outfile all print ${filestep} "${time};${px};${py};${pz}" file beam.csv screen no title "t;x;y;z"
+fix             outfile all print ${filestep} "${time};${px};${py};${pz}" file post/beam.csv screen no title "t;x;y;z"
 
 #insert particles
 run             1               #run one step

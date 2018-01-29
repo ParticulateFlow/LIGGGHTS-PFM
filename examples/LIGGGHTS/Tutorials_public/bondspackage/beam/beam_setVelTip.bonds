@@ -122,7 +122,7 @@ variable px equal x[${lastone}]
 variable py equal y[${lastone}]
 variable pz equal z[${lastone}]
 
-fix outfile all print ${filestep} "${time};${px};${py};${pz}" file beam.csv screen no title "t;x;y;z"
+fix outfile all print ${filestep} "${time};${px};${py};${pz}" file post/beam.csv screen no title "t;x;y;z"
 
 #insert particles
 run             1               #run one step

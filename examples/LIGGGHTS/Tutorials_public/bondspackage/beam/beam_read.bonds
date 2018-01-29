@@ -80,7 +80,7 @@ mass            2 1.0 #dummy
 #create_atoms    1 region bc
 #run 1
 
-read_data beam.pour add
+read_data data/beam.pour add
 
 group           bonded id >= 1
 set             group all density 2700 diameter $d
@@ -127,7 +127,7 @@ variable px equal x[${lastone}]
 variable py equal y[${lastone}]
 variable pz equal z[${lastone}]
 
-fix outfile all print ${filestep} "${time};${px};${py};${pz}" file beam.csv screen no title "t;x;y;z"
+fix outfile all print ${filestep} "${time};${px};${py};${pz}" file post/beam.csv screen no title "t;x;y;z"
 
 #insert particles
 run             1               #run one step

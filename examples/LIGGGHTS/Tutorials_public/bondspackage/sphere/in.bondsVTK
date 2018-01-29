@@ -44,11 +44,11 @@ bond_coeff      1 0.8 10000000000 10000000000 ${stressbreak} 1e6 1e6
 # ==============================================================
 # create particles IN A DEFINED REGION to collide against a wall
 # ==============================================================
-region          bc mesh/tet file sphere_fine.vtk  scale 0.05 move 0. 0. 0. rotate 0. 0. 0. units box
+region          bc mesh/tet file meshes/sphere_fine.vtk  scale 0.05 move 0. 0. 0. rotate 0. 0. 0. units box
 lattice         sc 0.005
 create_atoms    1 region bc
 group           bonded region bc
-set             group all density 2500 diameter 0.005 
+set             group all density 2500 diameter 0.005
 set             group all vz 0 vx 0
 
 ###TODO blow the particles up (see examples/LIGGGHTS/Tutorial_Public/packing/###
@@ -69,8 +69,8 @@ timestep        0.00001
 fix             gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 #fix             zwalls all wall/gran/hertz/history primitive type 1 zplane -0.05
-fix             top    all mesh/surface file top.stl    type 1
-fix             bottom all mesh/surface file bottom.stl type 1
+fix             top    all mesh/surface file meshes/top.stl    type 1
+fix             bottom all mesh/surface file meshes/bottom.stl type 1
 fix             walls all wall/gran model hertz tangential history mesh n_meshes 2 meshes top bottom
 
 #region and insertion
