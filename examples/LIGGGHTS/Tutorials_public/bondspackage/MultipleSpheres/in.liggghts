@@ -1,0 +1,121 @@
+## Set Simulation Variables
+variable dt equal 2e-8
+variable cool_down_time equal ceil(5.0e-3/${dt})
+variable thermo_write equal ceil(5.0e-5/${dt})
+variable dump_write equal ceil(1.0e-4/${dt})
+
+## Set Particle Variables
+variable d  equal 0.00283               # atom diameter
+variable rp equal $d/2.0                # atom radius
+variable rb equal 1.0                   # bond radius multiplier
+variable ro equal 1.0                   # bond outer radius multiplier
+variable ri equal 0.00201/0.00283       # bond inner radius multiplier
+variable lb equal 1.0                   # bond length multiplier
+variable bond_damp equal 1.0
+variable density equal 125.0            # atom density
+variable Young equal 4.4e9              # atom Young's Modulus
+variable poiso equal 0.2                # atom Poison's Ratio
+variable plung_speed equal 0.5          # plunger speed
+variable percent_strain equal 0.15      # depth of plunger
+
+## Build Simulation
+
+# Set Atom Style
+atom_style      hybrid granular bond/gran n_bondtypes 1 bonds_per_atom 6
+atom_modify     map array
+
+# Fix boundaries
+boundary        f f f
+# Turn off newton communication (has not been tested with bond equations)
+newton          off
+communicate     single vel yes
+
+units           si
+
+region          domain block -0.2 0.2 -0.2 0.2 -0.01 0.5 units box
+create_box      2 domain
+
+neighbor        0.001 bin
+neigh_modify    delay 0
+
+
+fix             m1 all property/global youngsModulus peratomtype ${Young} 180.0e9
+fix             m2 all property/global poissonsRatio peratomtype ${poiso} 0.3
+fix             m3 all property/global coefficientRestitution peratomtypepair 2 0.50 0.32 &
+                                                                                0.32 0.50
+fix             m4 all property/global coefficientFriction peratomtypepair 2    0.485 0.593 &
+                                                                                0.593 0.200
+ 
+pair_style      gran model hertz tangential history 
+pair_coeff      * *
+
+variable Y_bond equal ${Young}
+variable G_bond equal ${Young}/(2.0*(1+${poiso}))
+
+bond_style      gran
+bond_coeff      1 ${ro} ${ri} ${lb} ${Y_bond} ${G_bond} ${bond_damp} 1 1.0e32 1.0e32
+
+fix             drum all mesh/surface/stress file meshes/drum.stl type 2 scale 0.001 move 0.0 0.0 0.0
+fix             w1 all wall/gran model hertz tangential history primitive type 2 zplane 0.15
+
+fix             pts1 all particletemplate/multiplespheres 15485863 atom_type 1 density constant 2500 nspheres 21 ntry 5000 spheres &
+0.00000 0.0 0.0 0.001415 &
+0.00283 0.0 0.0 0.001415 &
+0.00566 0.0 0.0 0.001415 &
+0.00849 0.0 0.0 0.001415 & 
+0.01132 0.0 0.0 0.001415 & 
+0.01415 0.0 0.0 0.001415 &
+0.01698 0.0 0.0 0.001415 &
+0.01981 0.0 0.0 0.001415 &
+0.02264 0.0 0.0 0.001415 &
+0.02547 0.0 0.0 0.001415 &
+0.02830 0.0 0.0 0.001415 &
+0.03113 0.0 0.0 0.001415 &
+0.03396 0.0 0.0 0.001415 &
+0.03679 0.0 0.0 0.001415 &
+0.03962 0.0 0.0 0.001415 &
+0.04245 0.0 0.0 0.001415 &
+0.04528 0.0 0.0 0.001415 &
+0.04811 0.0 0.0 0.001415 &
+0.05094 0.0 0.0 0.001415 &
+0.05377 0.0 0.0 0.001415 &
+0.05660 0.0 0.0 0.001415 &
+bonded yes
+
+fix             pdd1 all particledistribution/discrete 32452843 1 pts1 1.0
+
+#region and insertion
+region bc cylinder z 0.0 0.0 0.100 0.0 0.1 units box
+
+#particle insertion
+fix             ins all insert/pack seed 32452867 distributiontemplate pdd1 &
+                        maxattempt 100 insert_every once overlapcheck yes orientation random all_in yes vel constant 0.0 0.0 -0.2 &
+                        region bc particles_in_region 2500 ntry_mc 10000
+
+fix             wall all wall/gran model hertz tangential history mesh n_meshes 1 meshes drum
+
+#fix             air_soup all airdrag 1.81e-5 1.23
+
+fix             grav all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix             integr all nve/sphere
+
+compute max_height all reduce max z
+variable max_h equal c_max_height
+
+timestep        ${dt}
+
+variable sim_time equal step*${dt}
+
+
+thermo_style    custom step atoms numbond v_sim_time cpu cpuremain ke v_max_h
+thermo          ${thermo_write}
+thermo_modify   lost ignore norm no
+
+run 1
+
+dump dmp all custom ${dump_write} post/dump*.liggghts id type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
+dump stldrm all mesh/vtk ${dump_write} post/stl_drum*.vtk stress stresscomponents drum
+
+run ${cool_down_time} upto
+
