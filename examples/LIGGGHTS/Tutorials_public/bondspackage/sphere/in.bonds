@@ -32,14 +32,16 @@ variable        stressbreak equal 1
 #fix             boxwalls_y1 all wall/gran model hertz tangential history primitive type 1 yplane 0
 #fix             boxwalls_y2 all wall/gran model hertz tangential history primitive type 1 yplane 2
 #fix             boxwalls_z1 all wall/gran model hertz tangential history primitive type 1 zplane 0
-#fix             boxwalls_z2 all wall/gran model hertz tangential history primitive type 1 zplane 2 
+#fix             boxwalls_z2 all wall/gran model hertz tangential history primitive type 1 zplane 2
 
 #for simplebreak
-#bond_coeff     1 0.0025 10000000000 10000000000 ${simplebreak} 0.002501
+#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break
+#bond_coeff     1 0.0025 0.0 1.0 10000000000 10000000000 0 ${simplebreak} 0.002501
 
 
 #for stressbreak
-bond_coeff      1 1 1e8 1e8 ${stressbreak} 1e4 1e4
+#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND sigma_break tau_break
+bond_coeff      1 1.0 0.0 1.0 1e8 1e8 0 ${stressbreak} 1e4 1e4
 
 # ==============================================================
 # create particles IN A DEFINED REGION to collide against a wall

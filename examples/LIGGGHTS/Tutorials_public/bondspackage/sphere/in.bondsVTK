@@ -35,11 +35,13 @@ fix             walls5 all wall/gran model hertz tangential history primitive ty
 fix             walls6 all wall/gran model hertz tangential history primitive type 1 yplane  1
 
 #for simplebreak
-#bond_coeff     1 0.0025 10000000000 10000000000 ${simplebreak} 0.002501
+#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break
+#bond_coeff     1 0.0025 0.0 1.0 10000000000 10000000000 0 ${simplebreak} 0.002501
 
 
 #for stressbreak
-bond_coeff      1 0.8 10000000000 10000000000 ${stressbreak} 1e6 1e6
+#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND sigma_break tau_break
+bond_coeff      1 0.8 0.0 1.0 10000000000 10000000000 0 ${stressbreak} 1e6 1e6
 
 # ==============================================================
 # create particles IN A DEFINED REGION to collide against a wall

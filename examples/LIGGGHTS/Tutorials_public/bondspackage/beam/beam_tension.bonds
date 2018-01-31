@@ -59,8 +59,8 @@ print $I
 print $A
 print ${kn}
 print ${ks}
-bond_coeff      1 ${rb} ${kn} ${ks} 1 1e4 1e4
-#bond_coeff      1 ${rb} $Y $G 1 1e10 1e10 #N rb Sn_bond St_bond TYPE_OF_BOND r_break|sigma_break tau_break (temp)
+#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break|sigma_break tau_break (temp)
+bond_coeff      1 ${rb} 0.0 1.0 ${kn} ${ks} 0 1 1e4 1e4
 
 #Material properties required for granular pair styles
 
@@ -90,7 +90,7 @@ group           freezed id == 1
 group           tipball id == ${lastone}
 
 run             1
-fix             f1 freezed freeze       #festlager
+fix             f1 freezed freeze       #fixed bearing
 
 fix             bondcr all bond/create/gran 1 1 1 0.51 1 6 #every itype jtype cutoff btype newperts
 

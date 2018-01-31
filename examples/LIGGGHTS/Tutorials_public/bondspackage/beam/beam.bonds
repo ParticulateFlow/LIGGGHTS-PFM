@@ -51,15 +51,15 @@ print $G
 variable I equal 0.25*PI*${rb}*${rb}*${rb}*${rb}
 variable A equal PI*${rb}*${rb}
 
-variable kn equal 2*$Y/$d                #grain behaivior ?
+variable kn equal 2*$Y/$d                #grain behavior ?
 variable ks equal 12*$I*$Y/($A*$d*$d*$d) #${kn}/2.5
 
 print $I
 print $A
 print ${kn}
 print ${ks}
-bond_coeff      1 ${rb} ${kn} ${ks} 1 1e10 1e10
-#bond_coeff      1 ${rb} $Y $G 1 1e10 1e10 #N rb Sn_bond St_bond TYPE_OF_BOND r_break|sigma_break tau_break (temp)
+#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break|sigma_break tau_break (temp)
+bond_coeff      1 ${rb} 0.0 1.0 ${kn} ${ks} 0 1 1e10 1e10
 
 #Material properties required for granular pair styles
 
@@ -89,7 +89,7 @@ group           freezed id == 1
 group           tipball id == ${lastone}
 
 run             1
-fix             f1 freezed freeze #festlager
+fix             f1 freezed freeze #fixed bearing
 
 fix             bondcr all bond/create/gran 1 1 1 0.51 1 6 #every itype jtype cutoff btype newperts
 
