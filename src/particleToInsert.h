@@ -62,7 +62,7 @@ namespace LAMMPS_NS {
         int *atom_type_vector;
 
         // center of bounding sphere
-        
+
         double x_bound_ins[3];
 
         // velocity and omega at insertion
@@ -72,9 +72,18 @@ namespace LAMMPS_NS {
         double v_ins[3];
         double omega_ins[3];
 
+        // value of a fix property/atoms at insertion
+        class FixPropertyAtom **fix_property;
+        int n_fix_property;
+        int *fix_property_nentry;
+        double **fix_property_value;
+
         virtual int insert();
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList);
+        virtual int check_near_set_x_v_omega_ms(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
+        virtual int check_near_set_x_v_omega_ms(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList);
+
         virtual int set_x_v_omega(double *,double *,double *,double *);
 
         virtual void scale_pti(double r_scale);

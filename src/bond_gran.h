@@ -19,6 +19,14 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
+   Patrick Fodor (JKU Linz)
+   Christian Richter (Otto-von-Guericke-University Magdeburg)
+   Matthew Schramm (Iowa State University)
+------------------------------------------------------------------------- */
+
 #ifdef BOND_CLASS
 
 BondStyle(gran,BondGran)
@@ -48,8 +56,15 @@ class BondGran : public Bond {
 
  protected:
   int breakmode;
-  double *rb,*Sn,*St;
+  double *rb;
+  double *Sn,*St;
   double *r_break,*sigman_break,*tau_break,*T_break;
+
+  // flexible bonds
+  double *damp; // damping coefficient
+  double *ro, *ri; // Outside and Inside bond radius multiplier
+  double *lb; // bond length scale
+
   void allocate();
 
   class FixPropertyAtom *fix_Temp;

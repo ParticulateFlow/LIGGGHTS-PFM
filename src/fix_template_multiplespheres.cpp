@@ -38,6 +38,7 @@ a Fortran version of the MC integrator
 #include "modify.h"
 #include "comm.h"
 #include "force.h"
+#include "update.h"
 #include "output.h"
 #include "memory.h"
 #include "error.h"
@@ -75,6 +76,9 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
   r_sphere = new double[nspheres];
   atom_type_sphere = 0;
 
+  bonded = false;
+  fix_bond_random_id = NULL;
+
   for (int i = 0; i < 3; i++) {
       x_min[i] = LARGE;
       x_max[i] = -LARGE;
@@ -106,7 +110,7 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
       if (strcmp(arg[iarg],"file") == 0)
       {
           iarg++;
-          if (narg < iarg+3) error->fix_error(FLERR,this,"not enough arguments");
+          if (narg < iarg+3) error->fix_error(FLERR,this,"not enough arguments for 'file'");
 
           if(different_type)
             atom_type_sphere = new int[nspheres];
@@ -161,6 +165,18 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
           }
       }
     }
+    else if(strcmp(arg[iarg],"bonded") == 0)
+    {
+        if (narg < iarg+2)
+            error->fix_error(FLERR,this,"not enough arguments for 'bonded'");
+        if(strcmp(arg[iarg+1],"yes") == 0)
+            bonded = true;
+        else if(strcmp(arg[iarg+1],"no") == 0)
+            bonded = false;
+        else
+            error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'bonded'");
+        iarg+=2;
+    }
     else if(strcmp(style,"particletemplate/multiplespheres") == 0)
         error->fix_error(FLERR,this,"unknown keyword");
   }
@@ -196,6 +212,27 @@ void FixTemplateMultiplespheres::post_create()
 
     calc_bounding_sphere();
     calc_center_of_mass();
+
+    if(bonded && !fix_bond_random_id)
+    {
+        fix_bond_random_id = static_cast<FixPropertyAtom*>(modify->find_fix_property("bond_random_id","property/atom","scalar",0,0,this->style,false));
+
+        if(!fix_bond_random_id)
+        {
+            const char *fixarg[] = {
+                "bond_random_id",   // fix id
+                "all",              // fix group
+                "property/atom",    // fix style: property/atom
+                "bond_random_id",   // property name
+                "scalar",           // 1 vector per particle
+                "yes",              // restart
+                "yes",              // communicate ghost
+                "no",               // communicate rev
+                "-1."
+            };
+            fix_bond_random_id = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        }
+    }
 }
 
 /* ----------------------------------------------------------------------*/
@@ -204,7 +241,7 @@ int FixTemplateMultiplespheres::maxtype()
 {
     if(!atom_type_sphere)
         return atom_type;
-    return vectorMax3D(atom_type_sphere);
+    return vectorMaxN(atom_type_sphere,nspheres);
 }
 
 /* ----------------------------------------------------------------------*/
@@ -213,7 +250,7 @@ int FixTemplateMultiplespheres::mintype()
 {
     if(!atom_type_sphere)
         return atom_type;
-    return vectorMin3D(atom_type_sphere);
+    return vectorMinN(atom_type_sphere,nspheres);
 }
 
 /* ----------------------------------------------------------------------
@@ -387,7 +424,7 @@ double FixTemplateMultiplespheres::max_r_bound() const
 
 double FixTemplateMultiplespheres::min_rad() const
 {
-    double rmin = 0.;
+    double rmin = 1e9;
 
     for(int j = 0; j < nspheres; j++)
       if(rmin > r_sphere[j]) rmin = r_sphere[j];
@@ -443,7 +480,7 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
           pti->atom_type = atom_type;
           if(atom_type_sphere)
           {
-            vectorCopy3D(atom_type_sphere,pti->atom_type_vector);
+            vectorCopyN(atom_type_sphere,pti->atom_type_vector,nspheres);
             pti->atom_type_vector_flag = true;
           }
 
@@ -457,5 +494,25 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
           vectorZeroize3D(pti->omega_ins);
 
           pti->groupbit = groupbit | distribution_groupbit; //NP also contains insert_groupbit
+
+          if(bonded)
+          {
+            if (!pti_list[i]->fix_property)
+            {
+              pti_list[i]->fix_property = new FixPropertyAtom*[1];
+              if (pti_list[i]->fix_property_value)
+                error->one(FLERR, "Internal error (fix property pti list)");
+              pti_list[i]->fix_property_value = new double*[1];
+              pti_list[i]->fix_property_value[0] = new double[1];
+              if (pti_list[i]->fix_property_nentry)
+                error->one(FLERR, "Internal error (fix property pti list)");
+              pti_list[i]->fix_property_nentry = new int[1];
+            }
+            pti_list[i]->fix_property[0] = fix_bond_random_id;
+
+            pti_list[i]->fix_property_value[0][0] = static_cast<double>(update->ntimestep)+random->uniform();
+            pti_list[i]->n_fix_property = 1;
+            pti_list[i]->fix_property_nentry[0] = 1;
+          }
     }
 }

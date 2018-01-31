@@ -113,13 +113,6 @@ inline void vectorCopy2D(const double *from, double *to)
   to[1]=from[1];
 }
 
-inline void vectorCopy3D(const double *from, double *to)
-{
-  to[0]=from[0];
-  to[1]=from[1];
-  to[2]=from[2];
-}
-
 inline void vectorFlip3D(double *v)
 {
   v[0]=-v[0];
@@ -127,20 +120,15 @@ inline void vectorFlip3D(double *v)
   v[2]=-v[2];
 }
 
-inline void vectorCopyN(const double *from, double *to, int N)
+template<typename T>
+inline void vectorCopyN(const T *from, T *to, int N)
 {
-    for(int i = 0; i < N; i++)
+    for(int i = 0; i < N; ++i)
        to[i] = from[i];
 }
 
-inline void vectorCopy3D(const int *from, int *to)
-{
-  to[0]=from[0];
-  to[1]=from[1];
-  to[2]=from[2];
-}
-
-inline void vectorCopy3D(const bool *from, bool *to)
+template<typename T>
+inline void vectorCopy3D(const T *from, T *to)
 {
   to[0]=from[0];
   to[1]=from[1];
@@ -154,7 +142,8 @@ inline void vectorAbs3D(double *v)
     if(v[2] < 0) v[2] = -v[2];
 }
 
-inline double vectorMin3D(double *v,int &dim)
+template<typename T>
+inline T vectorMin3D(const T *v,int &dim)
 {
     if(v[0] < v[1] && v[0] < v[2])
     {
@@ -172,7 +161,8 @@ inline double vectorMin3D(double *v,int &dim)
     return v[2];
 }
 
-inline double vectorMin3D(double *v)
+template<typename T>
+inline T vectorMin3D(const T *v)
 {
     if(v[0] < v[1] && v[0] < v[2])
     return v[0];
@@ -183,18 +173,8 @@ inline double vectorMin3D(double *v)
     return v[2];
 }
 
-inline int vectorMin3D(int *v)
-{
-    if(v[0] < v[1] && v[0] < v[2])
-    return v[0];
-
-    if(v[1] < v[2])
-    return v[1];
-
-    return v[2];
-}
-
-inline double vectorMax3D(double *v)
+template<typename T>
+inline T vectorMax3D(const T *v)
 {
     if(v[0] > v[1] && v[0] > v[2])
     return v[0];
@@ -205,18 +185,25 @@ inline double vectorMax3D(double *v)
     return v[2];
 }
 
-inline int vectorMax3D(int *v)
+template<typename T>
+inline T vectorMaxN(const T *v, const int n)
 {
-    if(v[0] > v[1] && v[0] > v[2])
-    return v[0];
-
-    if(v[1] > v[2])
-    return v[1];
-
-    return v[2];
+    T max = v[0];
+    for (int i=1;i<n;++i)
+        max = max > v[i] ? max : v[i];
+    return max;
 }
 
-inline void vectorComponentMin3D(double *v1,double *v2,double *min)
+template<typename T>
+inline T vectorMinN(const T *v, const int n)
+{
+    T min = v[0];
+    for (int i=1;i<n;++i)
+        min = min < v[i] ? min : v[i];
+    return min;
+}
+
+inline void vectorComponentMin3D(double const*v1,double const*v2,double *min)
 {
     if(v1[0] > v2[0])
         min[0] = v2[0];
@@ -234,7 +221,7 @@ inline void vectorComponentMin3D(double *v1,double *v2,double *min)
         min[2] = v1[2];
 }
 
-inline void vectorComponentMax3D(double *v1,double *v2,double *max)
+inline void vectorComponentMax3D(double const*v1,double const*v2,double *max)
 {
     if(v1[0] > v2[0])
         max[0] = v1[0];
@@ -338,15 +325,10 @@ inline void vectorAdd3D(const double *v1, const double *v2, double *result)
   result[2]=v1[2]+v2[2];
 }
 
-inline void vectorAddN(double *v1, const double *v2, int n)
+template<typename T>
+inline void vectorAddN(T *v1, const T *v2, int n)
 {
-  for(int i = 0; i < n; i++)
-    v1[i] += v2[i];
-}
-
-inline void vectorAddN(int *v1, const int *v2, int n)
-{
-  for(int i = 0; i < n; i++)
+  for(int i = 0; i < n; ++i)
     v1[i] += v2[i];
 }
 

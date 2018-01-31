@@ -31,6 +31,7 @@ FixStyle(particletemplate/multiplespheres,FixTemplateMultiplespheres)
 
 #include "fix.h"
 #include "fix_template_sphere.h"
+#include "fix_property_atom.h"
 
 namespace LAMMPS_NS {
 
@@ -47,12 +48,16 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   int maxtype();
   int mintype();
   int number_spheres();
+  bool is_bonded() const { return bonded; }
 
   // multi insertion
   virtual void init_ptilist(int);
   void randomize_ptilist(int ,int );
 
   virtual void finalize_insertion() {}
+
+  inline double get_bond_id(const int i) const
+  { return fix_bond_random_id ? fix_bond_random_id->vector_atom[i] : 0.0; }
 
  protected:
 
@@ -93,6 +98,9 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
 
   // number of tries for mc
   int ntry;
+
+  bool bonded;
+  class FixPropertyAtom *fix_bond_random_id;
 };
 
 }

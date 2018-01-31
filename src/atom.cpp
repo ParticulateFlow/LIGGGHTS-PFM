@@ -114,7 +114,7 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   num_bond = NULL;
   bond_type = bond_atom = NULL;
   bond_hist = NULL;
-  n_bondhist = 0; 
+  n_bondhist = 0;
 
   num_angle = NULL;
   angle_type = angle_atom1 = angle_atom2 = angle_atom3 = NULL;
@@ -1211,7 +1211,7 @@ void Atom::check_mass()
 {
   if (mass == NULL) return;
   for (int itype = 1; itype <= ntypes; itype++)
-    if (mass_setflag[itype] == 0) error->all(FLERR,"All masses are not set");
+    if (mass_setflag[itype] == 0 && !rmass_flag) error->all(FLERR,"All masses are not set");
 }
 
 /* ----------------------------------------------------------------------
