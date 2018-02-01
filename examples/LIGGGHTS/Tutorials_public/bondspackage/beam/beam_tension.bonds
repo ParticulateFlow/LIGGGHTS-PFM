@@ -10,7 +10,7 @@ variable rp equal 10*0.0254   #particle radius
 variable d  equal 2*${rp}
 variable sc equal $d-0.000000001
 variable c  equal ${d}+0.1
-variable rb equal 0.8*${rp}
+variable rb equal 0.8
 variable L  equal 200*0.0254+${rp}          #INCH !
 variable 2L equal 2*$L
 
@@ -28,7 +28,7 @@ units           si
 region          reg block -$L ${2L} -1 1 -$L 1 units box
 create_box      2 reg
 
-neighbor        1 bin
+neighbor        0.225 bin
 neigh_modify    delay 0
 
 #pair style
@@ -113,7 +113,7 @@ group           nve_group region reg
 fix             integr nve_group nve/sphere
 
 #output settings, include total thermal energy
-thermo_style    custom step atoms #numbond
+thermo_style    custom step atoms numbond
 thermo          100
 thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic yes

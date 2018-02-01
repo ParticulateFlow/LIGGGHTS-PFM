@@ -10,7 +10,7 @@ variable rp equal 10*0.0254   #particle radius
 variable d  equal 2*${rp}
 variable sc equal $d-0.000000001
 variable c  equal ${d}+0.1
-variable rb equal 0.8*${rp}
+variable rb equal 0.8
 variable L  equal 200*0.0254+${rp}          #INCH !
 
 atom_style      hybrid granular bond/gran n_bondtypes 1 bonds_per_atom 6
@@ -27,7 +27,7 @@ units           si
 region          reg block -$L $L -1 1 -$L 1 units box
 create_box      2 reg
 
-neighbor        1 bin
+neighbor        0.225 bin
 neigh_modify    delay 0
 
 #pair style
@@ -42,8 +42,8 @@ variable Y  equal 6894.75729*1000*1e4
 
 variable p equal 0.3
 variable G equal 3759.4*6894.75729*1000 #$Y/(2*(1+$p))
-print $Y
-print $G
+print "Y = $Y"
+print "G = $G"
 
 #double kn = E/lenght;                          //ZUG - Druck
 #double ks = 12*I*E/(A*lenght*lenght*lenght);   //A*G/lenght; //Schub
@@ -54,10 +54,10 @@ variable A equal PI*${rb}*${rb}
 variable kn equal 2*$Y/$d                #grain behavior ?
 variable ks equal 12*$I*$Y/($A*$d*$d*$d) #${kn}/2.5
 
-print $I
-print $A
-print ${kn}
-print ${ks}
+print "I = $I"
+print "A = $A"
+print "kn = ${kn}"
+print "ks = ${ks}"
 #N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break|sigma_break tau_break (temp)
 bond_coeff      1 ${rb} 0.0 1.0 ${kn} ${ks} 0 1 1e10 1e10
 
@@ -131,7 +131,7 @@ variable KIP  equal 4448.2216   #N
 variable inch equal 0.0254      #mm
 
 variable M equal 100*${KIP}/${inch}
-variable F equal 1*${KIP}       #N
+variable F equal 100*${KIP}     #N
 
 fix             tipF tipball addforce  0 0 -$F    #1kip=4.4482216kN
 #fix             tipM tipball addtorque 0 $M  0    #not possible
