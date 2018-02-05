@@ -49,12 +49,12 @@ class RegHexMesh : public Region {
   int surface_exterior(double *, double);
 
   void add_hex(double **n);
-  int n_hex();
-  double total_vol();
-  double hex_vol(int i);
-  double hex_acc_vol(int i);
-  void hex_bounds(int iHex, double bounds[6]);
-  const double* hex_center(int iHex)
+  int n_hex() const;
+  double total_vol() const;
+  double hex_vol(int i) const;
+  double hex_acc_vol(int i) const;
+  void hex_bounds(int iHex, double bounds[6]) const;
+  const double* hex_center(int iHex) const
   { return center[iHex]; }
 
   inline CustomValueTracker& prop()
@@ -79,7 +79,7 @@ class RegHexMesh : public Region {
 
    void mesh_randpos(double *pos);
    int  mesh_randcell();
-   bool is_cell_orthogonal(int iHex);
+   bool is_cell_orthogonal(int iHex) const;
 
    char *filename;
    double scale_fact;

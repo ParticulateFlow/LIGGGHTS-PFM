@@ -537,7 +537,7 @@ void RegHexMesh::add_hex(double **n)
 
 /* ---------------------------------------------------------------------- */
 
-bool RegHexMesh::is_cell_orthogonal(int iHex)
+bool RegHexMesh::is_cell_orthogonal(int iHex) const
 {
   /*
     7        6
@@ -682,35 +682,35 @@ void RegHexMesh::grow_arrays()
 
 /* ---------------------------------------------------------------------- */
 
-int RegHexMesh::n_hex()
+int RegHexMesh::n_hex() const
 {
   return nHex;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegHexMesh::total_vol()
+double RegHexMesh::total_vol() const
 {
   return total_volume;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegHexMesh::hex_vol(int i)
+double RegHexMesh::hex_vol(int i) const
 {
   return volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegHexMesh::hex_acc_vol(int i)
+double RegHexMesh::hex_acc_vol(int i) const
 {
   return acc_volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
 
-void RegHexMesh::hex_bounds(int iHex, double bounds[6])
+void RegHexMesh::hex_bounds(int iHex, double bounds[6]) const
 {
   bounds[0] = node[iHex][0][0];
   bounds[2] = node[iHex][0][1];

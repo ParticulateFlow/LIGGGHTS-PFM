@@ -112,47 +112,47 @@ void RegTetMesh::precalc_ico_points()
   ico_points[0][0] = 0.;
   ico_points[0][1] = coord1;
   ico_points[0][2] = coord2;
-  
+
   ico_points[1][0] = 0.;
   ico_points[1][1] = -coord1;
   ico_points[1][2] = -coord2;
-  
+
   ico_points[2][0] = 0.;
   ico_points[2][1] = -coord1;
   ico_points[2][2] = coord2;
-  
+
   ico_points[3][0] = 0.;
   ico_points[3][1] = coord1;
   ico_points[3][2] = -coord2;
-  
+
   ico_points[4][0] = coord2;
   ico_points[4][1] = 0.;
   ico_points[4][2] = coord1;
-  
+
   ico_points[5][0] = -coord2;
   ico_points[5][1] = 0.;
   ico_points[5][2] = -coord1;
-  
+
   ico_points[6][0] = -coord2;
   ico_points[6][1] = 0.;
   ico_points[6][2] = coord1;
-  
+
   ico_points[7][0] = coord2;
   ico_points[7][1] = 0.;
   ico_points[7][2] = -coord1;
-  
+
   ico_points[8][0] = coord1;
   ico_points[8][1] = coord2;
   ico_points[8][2] = 0.;
-  
+
   ico_points[9][0] = -coord1;
   ico_points[9][1] = -coord2;
   ico_points[9][2] = 0.;
-  
+
   ico_points[10][0] = -coord1;
   ico_points[10][1] = coord2;
   ico_points[10][2] = 0.;
-  
+
   ico_points[11][0] = coord1;
   ico_points[11][1] = -coord2;
   ico_points[11][2] = 0.;
@@ -203,16 +203,16 @@ int RegTetMesh::surface_interior(double *x, double cutoff)
 {
   // check subdomain
   if(!domain->is_in_subdomain(x)) return 0;
-  
+
   int n_contact = 0;
   double point[3];
-  
+
   // instead of solving the full surface/particle problem, check if
   // the 12 points of a surrounding icosaedron are inside the
-  // domain. 
+  // domain.
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
-    if(!inside(point[0],point[1],point[2])) n_contact++;                     
+    if(!inside(point[0],point[1],point[2])) n_contact++;
   }
 
   return n_contact;
@@ -227,10 +227,10 @@ int RegTetMesh::surface_exterior(double *x, double cutoff)
 
   int n_contact = 0;
   double point[3];
-  
+
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
-    if(inside(x[0],x[1],x[2])) n_contact++;                     
+    if(inside(x[0],x[1],x[2])) n_contact++;
   }
 
   return n_contact;
@@ -291,8 +291,8 @@ void RegTetMesh::add_tet(double **n)
 
     tet_bbox.push_back(BoundingBox());
     for(int i=0;i<4;i++)
-      tet_bbox[nTet].extendToContain(n[i]);      
-    
+      tet_bbox[nTet].extendToContain(n[i]);
+
     nTet++;
 }
 
@@ -309,35 +309,35 @@ void RegTetMesh::grow_arrays()
 
 /* ---------------------------------------------------------------------- */
 
-int RegTetMesh::n_tet()
+int RegTetMesh::n_tet() const
 {
     return nTet;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::total_vol()
+double RegTetMesh::total_vol() const
 {
     return total_volume;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::tet_vol(int i)
+double RegTetMesh::tet_vol(int i) const
 {
     return volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::tet_acc_vol(int i)
+double RegTetMesh::tet_acc_vol(int i) const
 {
     return acc_volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
 
-inline double RegTetMesh::volume_of_tet(int iTet)
+inline double RegTetMesh::volume_of_tet(int iTet) const
 {
     return volume_of_tet(node[iTet][0],node[iTet][1],node[iTet][2],node[iTet][3]);
 }
@@ -348,7 +348,7 @@ inline int RegTetMesh::is_inside_tet(int iTet,double *pos)
 {
 
   if(!tet_bbox[iTet].isInside(pos)) return 0;
-  
+
   double vol1,vol2,vol3,vol4;
 
   vol1 = volume_of_tet(node[iTet][0], node[iTet][1], node[iTet][2], pos          );
@@ -366,7 +366,7 @@ inline int RegTetMesh::is_inside_tet(int iTet,double *pos)
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::volume_of_tet(double* v0, double* v1, double* v2, double* v3)
+double RegTetMesh::volume_of_tet(double* v0, double* v1, double* v2, double* v3) const
 {
    double A[3];
    A[0] = v3[0] - v1[0];
@@ -441,7 +441,7 @@ void RegTetMesh::build_tree()
 {
   tree_key.clear();
   tree_data.clear();
-  
+
   tree_key.push_back(BoundingBox(extent_xlo,extent_xhi,
                                  extent_ylo,extent_yhi,
                                  extent_zlo,extent_zhi));
@@ -497,7 +497,7 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
     extend_bb(bbox,data);
 
   }
-  
+
 
   // if data size is equal, then splitting did not result in any gain
   // thus, empty the bin again
@@ -517,7 +517,7 @@ void RegTetMesh::tree_create_children(int current)
 
   if(!tree_data[left_ind].empty())
     error->one(FLERR,"internal error in region mesh/tet, left child of search tree not empty");
-  
+
   if(!tree_data[right_ind].empty())
     error->one(FLERR,"internal error in region mesh/tet, right child of search tree not empty");
 
@@ -531,7 +531,7 @@ void RegTetMesh::tree_create_children(int current)
     tree_data[left_ind].clear();
     tree_data[right_ind].clear();
   }
-  
+
 }
 
 // lower = true --> return lower half
@@ -612,7 +612,7 @@ bool RegTetMesh::tree_is_inside_bin(double *x, TreeBin const &data)
   for(TreeBin::iterator it=data.begin();it!=data.end();++it)
     if(is_inside_tet(*it,x))
       return true;
-  
+
   return false;
 }
 
