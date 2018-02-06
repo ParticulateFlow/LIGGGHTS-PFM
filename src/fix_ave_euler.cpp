@@ -434,7 +434,7 @@ void FixAveEuler::end_of_step()
 }
 /* ---------------------------------------------------------------------- */
 
-int FixAveEuler::ncells_pack()
+int FixAveEuler::ncells_pack() const
 {
     // in parallel mode, each proc will pack
     if (parallel_)

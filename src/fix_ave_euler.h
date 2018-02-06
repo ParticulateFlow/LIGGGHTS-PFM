@@ -57,48 +57,48 @@ class FixAveEuler : public Fix {
 
   virtual double compute_array(int i, int j);
 
-  int ncells_pack();
+  int ncells_pack() const;
 
-  inline int ncells()
+  inline int ncells() const
   { return ncells_; }
 
-  virtual double cell_volume(int)
+  virtual double cell_volume(int) const
   { return cell_volume_; }
 
   // access functions for cell based values
 
-  virtual double cell_center(int i, int j)
+  virtual double cell_center(int i, int j) const
   { return center_[i][j]; }
 
-  inline double cell_v_av(int i, int j)
+  inline double cell_v_av(int i, int j) const
   { return v_av_[i][j]; }
 
-  inline double cell_vol_fr(int i)
+  inline double cell_vol_fr(int i) const
   { return vol_fr_[i]; }
 
-  inline double cell_mass(int i)
+  inline double cell_mass(int i) const
   { return mass_[i]; }
 
-  inline double cell_radius(int i)
+  inline double cell_radius(int i) const
   { return radius_[i]; }
 
-  inline double cell_pressure(int i)
+  inline double cell_pressure(int i) const
   { return stress_[i][0]; }
 
-  inline double cell_stress(int i,int j)
+  inline double cell_stress(int i,int j) const
   { return stress_[i][j+1]; }
 
-  inline int cell_count(int i)
+  inline int cell_count(int i) const
   { return ncount_[i]; }
 
   inline int cell_head(int i)
   { if (dirty_) lazy_bin_atoms(i); return cellhead_[i]; }
 
-  inline int cell_ptr(int i)
+  inline int cell_ptr(int i) const
   { return cellptr_[i]; }
 
  protected:
-  inline int ntry_per_cell()
+  inline int ntry_per_cell() const
   { return 50; }
 
  private:

@@ -5,7 +5,7 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Department for Particule Flow Modelling
+   Department of Particulate Flow Modelling
    Copyright 2016- JKU Linz
 
    LIGGGHTS is based on LAMMPS
@@ -53,26 +53,26 @@ class FixAveEulerRegion : public FixAveEuler {
 
   virtual double compute_array_by_id(int cell_id, int j);
 
-  virtual double cell_volume(int i);
+  virtual double cell_volume(int i) const;
 
-  virtual double cell_center(int i, int j);
+  virtual double cell_center(int i, int j) const;
 
-  virtual bool has_cell_id(int cell_id)
+  virtual bool has_cell_id(int cell_id) const
   { return cellid2index_.find(cell_id) != cellid2index_.end(); }
 
-  virtual int cell_id(int i)
+  virtual int cell_id(int i) const
   { return cellid_[i]; }
 
   virtual int cell(int cell_id)
   { return cellid2index_[cell_id]; }
 
-  virtual double cell_v_min(int i, int j)
+  virtual double cell_v_min(int i, int j) const
   { return v_min_[i][j]; }
 
-  virtual double cell_v_max(int i, int j)
+  virtual double cell_v_max(int i, int j) const
   { return v_max_[i][j]; }
 
-  virtual void cell_bounds(int i, double bounds[6]);
+  virtual void cell_bounds(int i, double bounds[6]) const;
 
   virtual double* cell_vector_property(int i, const char* property);
 
@@ -82,7 +82,7 @@ class FixAveEulerRegion : public FixAveEuler {
   virtual void bin_atoms();
   virtual void lazy_bin_atoms(int i);
   virtual void calculate_eu();
-  virtual bool is_inside_bounds(double bounds[6], double *pos);
+  virtual bool is_inside_bounds(double bounds[6], double *pos) const;
 
   char *idregion_grid_;
   class Region *region_grid_;

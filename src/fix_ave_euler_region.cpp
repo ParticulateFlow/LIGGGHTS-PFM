@@ -5,7 +5,7 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Department for Particule Flow Modelling
+   Department of Particulate Flow Modelling
    Copyright 2016- JKU Linz
 
    LIGGGHTS is based on LAMMPS
@@ -310,7 +310,7 @@ void FixAveEulerRegion::bin_atoms()
 
 /* ---------------------------------------------------------------------- */
 
-bool FixAveEulerRegion::is_inside_bounds(double bounds[6], double *pos)
+bool FixAveEulerRegion::is_inside_bounds(double bounds[6], double *pos) const
 {
   if(pos[0] < bounds[0] || pos[0] > bounds[1]) return false; // outside bb of hex
   if(pos[1] < bounds[2] || pos[1] > bounds[3]) return false; // outside bb of hex
@@ -498,21 +498,21 @@ void FixAveEulerRegion::calculate_eu()
 
 /* ---------------------------------------------------------------------- */
 
-double FixAveEulerRegion::cell_volume(int i)
+double FixAveEulerRegion::cell_volume(int i) const
 {
   return region_grid_mesh_hex_->hex_vol(i);
 }
 
 /* ---------------------------------------------------------------------- */
 
-double FixAveEulerRegion::cell_center(int i, int j)
+double FixAveEulerRegion::cell_center(int i, int j) const
 {
   return region_grid_mesh_hex_->hex_center(i)[j];
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixAveEulerRegion::cell_bounds(int i, double bounds[6])
+void FixAveEulerRegion::cell_bounds(int i, double bounds[6]) const
 {
   return region_grid_mesh_hex_->hex_bounds(i, bounds);
 }
