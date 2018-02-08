@@ -99,7 +99,7 @@ public:
   const double *k0_, *Ea_;
 
   // handle names
-  double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_;
+  double *changeOfA_, *changeOfC_, *rhogas_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_;
   double **fracRed_;
   double **Aterm, **Bterm, *Massterm, **effDiffBinary, **effDiffKnud;
 
@@ -118,6 +118,7 @@ public:
   class FixPropertyAtom *fix_Massterm;
   class FixPropertyAtom *fix_effDiffBinary;
   class FixPropertyAtom *fix_effDiffKnud;
+  class FixPropertyAtom *fix_partPressure_;
 
   // particle properties
   // these are defined as vectors with the number of components corresponding to the number of active layers
