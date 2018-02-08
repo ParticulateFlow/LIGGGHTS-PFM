@@ -69,6 +69,7 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom*    fix_nufField_;
   class FixPropertyAtom*    fix_partReynolds_;
   class FixPropertyAtom**   fix_molarfraction_;
+  class FixPropertyAtom*    fix_partPressure_;
   class FixPropertyAtom*    fix_reactantPerParticle_;
 
  private:
