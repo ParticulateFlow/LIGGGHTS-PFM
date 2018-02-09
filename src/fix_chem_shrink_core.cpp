@@ -480,7 +480,6 @@ void FixChemShrinkCore::post_force(int)
                 {
                     dmA_[j] = 0.0;
                     x0_eq_[j] = 0.0;
-                    fracRed_[i][j] = 0.0;
                 }
                 // 1st recalculate masses of layers if layer has reduced
                 // is ignored if there is no change in layers
@@ -634,17 +633,10 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
     if (screen)
         fprintf(screen,"getXi \n");
 
-    // NOTICE kc and kh values are to be read from input script.
-    // kc is the total carbon content (CO and CO2) in the system
-    // kh is the total hydrogen content (H2 and H2O) in the system.
-    // double x_h2 = 0.36;
-    // double x_h2o = 0.0;
     for (int j = 0; j < layers_; j++)
     {
         x0_eq_[j]  =   kch2_/(1.0+K_eq(j,T_[i]));
     }
-
-    // X0_[i] = 0.36;
 
     if (screen)
     {
@@ -701,23 +693,14 @@ void FixChemShrinkCore::getB(int i)
         // calculate fractional reduction to the power of 1/3 for simpler use
         fracRedThird_[layer] = cbrt(1.0-fracRed_[i][layer]);
 
-        /*if (molecularDiffusion_[i] < SMALL)
-        {
-            effDiffBinary[i][layer] = 0.0;
-            // Calculate the knudsen diffusion
-            effDiffKnud[i][layer]  =  (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_[i]) + 1e-18;
-            diffEff_[layer] =   0.0;
-        } else*/
-        //{
-            // Calculate the effective molecular diffusion
-            effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_[i]) + 1e-18;
+        // Calculate the effective molecular diffusion
+        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_[i]) + SMALL;
 
-            // Calculate the knudsen diffusion
-            effDiffKnud[i][layer]  =  (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_[i]) + 1e-18;
+        // Calculate the knudsen diffusion
+        effDiffKnud[i][layer]  =  (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_[i]) + SMALL;
 
-            // total effective diffusivity
-            diffEff_[layer] =   effDiffKnud[i][layer]*effDiffBinary[i][layer]/(effDiffBinary[i][layer]+effDiffKnud[i][layer]);
-        //}
+        // total effective diffusivity
+        diffEff_[layer] =   effDiffKnud[i][layer]*effDiffBinary[i][layer]/(effDiffBinary[i][layer]+effDiffKnud[i][layer]) + SMALL;
     }
 
     if (screen)
@@ -727,21 +710,12 @@ void FixChemShrinkCore::getB(int i)
                 ,diffEff_[0], diffEff_[1], diffEff_[2], fracRedThird_[0], fracRedThird_[1] , fracRedThird_[2],fracRed_[0][0], fracRed_[0][1], fracRed_[0][2]);
     }
 
-    /*if (molecularDiffusion_[i] == 0.0)
+    // calculation of diffusion term
+    Bterm[i][0]   =   ((1-fracRedThird_[0])/fracRedThird_[0])*(radius_[i]/diffEff_[0]);
+    for (int layer = 1; layer <layers_; layer++)
     {
-        for (int layer = 0; layer <layers_; layer++)
-        {
-            Bterm[i][layer] = 0.0;
-        }
-    }else
-    {*/
-        // calculation of diffusion term
-        Bterm[i][0]   =   ((1-fracRedThird_[0])/fracRedThird_[0])*(radius_[i]/diffEff_[0]);
-        for (int layer = 1; layer <layers_; layer++)
-        {
-            Bterm[i][layer] = (fracRedThird_[layer-1]-fracRedThird_[layer])/(fracRedThird_[layer-1]*fracRedThird_[layer])*(radius_[i]/diffEff_[layer]);
-        }
-    //}
+        Bterm[i][layer] = (fracRedThird_[layer-1]-fracRedThird_[layer])/(fracRedThird_[layer-1]*fracRedThird_[layer])*(radius_[i]/diffEff_[layer]);
+    }
 
     if (screen)
     {
@@ -750,10 +724,12 @@ void FixChemShrinkCore::getB(int i)
         fprintf(screen, "Bterm layer 3: %f \n",Bterm[i][2]);
     }
 
-    if (layers_ == 2)
+    /* if (layers_ == 2)
         Bterm[i][layers_] = 0.0;
     if (layers_ == 1)
         Bterm[i][layers_] = 0.0;
+    if (layers_ == 0)
+        Bterm[i][layers_] = 0.0; */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -765,19 +741,14 @@ void FixChemShrinkCore::getMassT(int i)
     double Sh_[atom->nlocal];
 
     if (molecularDiffusion_[i] < SMALL)
-    {
-        Sc_[i]  =   0.0;
-        Sh_[i]  =   0.0;
-        Massterm[i]   =   0.0;
-    }
+        Sc_[i] = SMALL;
     else
-    {
         Sc_[i]  =   nuf_[i]/molecularDiffusion_[i] + 1e-18;
-        Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
 
-        Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*radius_[i]) + 1e-18;
-        Massterm[i] = 1.0/Massterm[i];
-    }
+    Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
+
+    Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*radius_[i]) + 1e-18;
+    Massterm[i] = 1.0/Massterm[i];
 
     if (screen)
         fprintf(screen, "Massterm: %f \n ", Massterm[i]);
@@ -841,7 +812,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     for (int j = 0 ; j < layers_; j++)
     {
         // mass flow rate for reactant gas species
-        dmA_[j] =   dY[j]*partP_[i]*(1.0/(Runiv*T_[i]))*molMass_A_*1000.0*(4.0*M_PI*radius_[i]*radius_[i])*TimeStep*nevery;
+        dmA_[j] =   dY[j]*partP_[i]*(1.0/(Runiv*T_[i]))*molMass_A_*(4.0*M_PI*radius_[i]*radius_[i])*TimeStep*nevery;
     }
 
     if (screen)
