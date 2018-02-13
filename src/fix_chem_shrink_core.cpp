@@ -438,8 +438,6 @@ void FixChemShrinkCore::init()
         }
 
         calcMassLayer(i);
-        // molecular diffusion is the value of diffusion coefficient for multicomponent mixture
-        // we get it from CFDEM - diffusion coefficients
     }
 }
 
@@ -448,11 +446,11 @@ void FixChemShrinkCore::init()
 void FixChemShrinkCore::post_force(int)
 {
     updatePtrs();
-    int i;
+    int i = 0;
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
-    double x0_eq_[nmaxlayers_];          // molar fraction of reactant gas
-    double dmA_[nmaxlayers_];            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
+    double x0_eq_[nmaxlayers_] = {};          // molar fraction of reactant gas
+    double dmA_[nmaxlayers_] = {};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
     ts = update->ntimestep;
 
     // do chem/shrink/core calculations if communication between CFDEM and LIGGGHTS already happened
@@ -476,11 +474,11 @@ void FixChemShrinkCore::post_force(int)
 
             if (mask[i] & groupbit)
             {
-                for (int j = 0; j < nmaxlayers_; j++)
+                /* for (int j = 0; j < nmaxlayers_; j++)
                 {
                     dmA_[j] = 0.0;
                     x0_eq_[j] = 0.0;
-                }
+                } */
                 // 1st recalculate masses of layers if layer has reduced
                 // is ignored if there is no change in layers
                 active_layers(i);
@@ -554,7 +552,7 @@ int FixChemShrinkCore::active_layers(int i)
 // 0 = iron shell, 1 = wüstite layer, 2 = magnetite layer, 3 = hematite layer
 void FixChemShrinkCore::calcMassLayer(int i)
 {
-    double rad[nmaxlayers_+1];
+    double rad[nmaxlayers_+1] = {};
     for (int layer = 0; layer <= layers_ ; layer++)
         rad[layer] = radius_[i]*relRadii_[i][layer];
 
@@ -663,14 +661,14 @@ void FixChemShrinkCore::getA(int i)
     if (screen)
         fprintf(screen, "Aterm_1: %f, Aterm_2: %f, Aterm_3: %f \n",Aterm[i][0], Aterm[i][1], Aterm[i][2]);
 
-   /* // if hematite layer is reduced no chemical reaction is taking place at its surface
+    // if hematite layer is reduced no chemical reaction is taking place at its surface
     if (layers_ == 2)
         Aterm[i][layers_] = 0.0;
     // if magnetite is reduced no chemical reaction is taking place at its surface
     if (layers_ == 1)
         Aterm[i][layers_] = 0.0;
     if (layers_ == 0)
-        Aterm[i][layers_] = 0.0; */
+        Aterm[i][layers_] = 0.0;
 
 }
 
@@ -685,13 +683,14 @@ void FixChemShrinkCore::getB(int i)
     if (screen)
         fprintf(screen,"getB \n");
 
-    double fracRedThird_[nmaxlayers_];
-    double diffEff_[nmaxlayers_];
+    double fracRedThird_[nmaxlayers_] = {};
+    double diffEff_[nmaxlayers_] = {};
 
     for (int layer = 0; layer < layers_; layer++)
     {
         // calculate fractional reduction to the power of 1/3 for simpler use
         fracRedThird_[layer] = cbrt(1.0-fracRed_[i][layer]);
+        std::max(fracRedThird_[layer], SMALL);
 
         // Calculate the effective molecular diffusion
         effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_[i]) + SMALL;
@@ -724,12 +723,12 @@ void FixChemShrinkCore::getB(int i)
         fprintf(screen, "Bterm layer 3: %f \n",Bterm[i][2]);
     }
 
-    /* if (layers_ == 2)
+    if (layers_ == 2)
         Bterm[i][layers_] = 0.0;
     if (layers_ == 1)
         Bterm[i][layers_] = 0.0;
     if (layers_ == 0)
-        Bterm[i][layers_] = 0.0; */
+        Bterm[i][layers_] = 0.0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -737,8 +736,8 @@ void FixChemShrinkCore::getB(int i)
 void FixChemShrinkCore::getMassT(int i)
 {
     // initialize sherwood & schmidt numbers for every particle
-    double Sc_[atom->nlocal];
-    double Sh_[atom->nlocal];
+    double Sc_[atom->nlocal] = {};
+    double Sh_[atom->nlocal] = {};
 
     if (molecularDiffusion_[i] < SMALL)
         Sc_[i] = SMALL;
@@ -760,9 +759,9 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
 {
     if (screen)
         fprintf(screen,"reaction \n");
-    // updatePtrs();
-    double W;
-    double dY[nmaxlayers_];
+    updatePtrs();
+    double W = 0.;
+    double dY[nmaxlayers_] = {};
 
     if (layers_ == nmaxlayers_)
     {
@@ -830,11 +829,11 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     double nu_reac_[3] = {1, 1, 3};
     double nu_prod_[3] = {1, 3, 2};
     // particle stuff
-    double rad[nmaxlayers_+1];
+    double rad[nmaxlayers_+1] = {};
     // double V_[nmaxlayers_+1];       // Volume of particle layer
-    double dmL_[nmaxlayers_+1];     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
+    double dmL_[nmaxlayers_+1] = {};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
     // double dV_[nmaxlayers_+1];      // Volume change of particle layer
-    double sum_mass_new = 0;        // just for control case --- delete afterwards
+    double sum_mass_new = 0.0;        // just for control case --- delete afterwards
 
     // calculate initial Volume as function of mass and effective density instead of radius
     /* for (int layer = 0; layer <= layers_; layer++)
@@ -995,6 +994,7 @@ void FixChemShrinkCore::FractionalReduction(int i)
     {
         //fracRed_[i][layer] = f_[layer];
         fracRed_[i][layer] = 1.0 - relRadii_[i][layer+1]*relRadii_[i][layer+1]*relRadii_[i][layer+1];
+        std::max(fracRed_[i][layer], SMALL);
     }
 }
 
