@@ -1,0 +1,42 @@
+<HTML>
+<CENTER><A HREF = "http://www.cfdem.com">LIGGGHTS WWW Site</A> - <A HREF = "http://lammps.sandia.gov">LAMMPS WWW Site</A> - <A HREF = "Manual.html">LIGGGHTS Documentation</A> - <A HREF = "Section_commands.html#comm">LIGGGHTS Commands</A> 
+</CENTER>
+
+
+
+
+
+
+
+
+<HR>
+
+<H3>fix ID group-ID couple/cfd/chemistry n_species #N-value species_names names 
+</H3>
+<P><B>Syntax:</B>
+</P>
+<PRE>fix ID group-ID couple/cfd/chemistry keyword values 
+</PRE>
+<UL><LI>ID, group-ID are documented in <A HREF = "fix.html">fix</A> command 
+
+<LI>couple/cfd/chemistry = style name of this fix command 
+
+<LI>n_species, species_names are obligatory keywors 
+
+<LI>#N-value = number of gas species flowing in 
+
+names = names of the relative gases:pre
+
+</UL>
+<P><B>Examples:</B>
+</P>
+<PRE>fix     cfd3 all couple/cfd/chemistry n_species 5 species_names H2 H2O CO CO2 N2 
+</PRE>
+<P><B>Description:</B>
+</P>
+<P>This fix exchanges chemical reaction relevant data between LIGGGHTS and CFDEMcoupoling.
+Particle positions, velocities, radii and volumeweights are transferred from LIGGGHTS to CFDEMcoupling, the reacting gas species and product gas species from CFDEMcoupling to LIGGGHTS
+</P>
+<P>This fix needs a fix couple/cfd before it is defined.
+</P>
+</HTML>

@@ -62,6 +62,6 @@ minimization"_minimize.html.
 
 [Restrictions:] none
 
-[Related commands:] none
+[Related commands:] This fix needs a fix couple/cfd and couple/cfd/chemistry before it is defined.
 
 [Default:] none
