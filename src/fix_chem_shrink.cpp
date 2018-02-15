@@ -332,8 +332,8 @@ void FixChemShrink::reaction()
 {
     updatePtrs();
     int nlocal  =   atom -> nlocal;
-    double molarConc;
-    double molarFrac;
+    double molarConc = 0.0;
+    double molarFrac = 0.0;
 
     for (int i = 0 ; i < nlocal; i++)
     {
