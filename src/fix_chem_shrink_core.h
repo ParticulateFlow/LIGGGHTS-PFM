@@ -78,8 +78,8 @@ public:
    // material properties porosity, tortuosity, and pore diameter
    //    const double *porosity_;
    double **porosity_;
-   const double *pore_diameter_;
-   const double *tortuosity_;
+   double pore_diameter_;//*pore_diameter_;
+   double tortuosity_;//*tortuosity_;
 
    // maximum number of layers to be used for chemical reactions, currently 3
   const int nmaxlayers_;

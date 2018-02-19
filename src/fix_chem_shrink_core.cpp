@@ -105,7 +105,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     changeOfA_ = changeOfC_ = rhogas_ = T_ = reactionHeat_ = partP_ = NULL;
     molecularDiffusion_ = nuf_ = Rep_ = X0_ = NULL;
     // const double *
-    pore_diameter_ = tortuosity_ = layerDensities_ = layerMolMasses_ = k0_ = Ea_ = NULL;
+    pore_diameter_ = tortuosity_ = 0.0;
+    layerDensities_ = layerMolMasses_ = k0_ = Ea_ = NULL;
     speciesA    =   speciesC    =   NULL;
     comm_established = false;
     iarg_ = 3;
@@ -333,8 +334,10 @@ void FixChemShrinkCore::updatePtrs()
     k0_             =   fix_k0_             ->  get_values();
     Ea_             =   fix_Ea_             ->  get_values();
     porosity_       =   fix_porosity_       ->  array_atom;
-    tortuosity_     =   fix_tortuosity_     ->  get_values();
-    pore_diameter_  =   fix_pore_diameter_  ->  get_values();
+    //
+    tortuosity_     =   fix_tortuosity_     ->  compute_scalar();
+    pore_diameter_  =   fix_pore_diameter_  ->  compute_scalar();
+    //
     fracRed_        =   fix_fracRed         ->  array_atom;
     Aterm           =   fix_Aterm           ->  array_atom;
     Bterm           =   fix_Bterm           ->  array_atom;
@@ -424,8 +427,8 @@ void FixChemShrinkCore::init()
 
     fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, "FixChemShrinkCore"));
     // references for global properties - valid for every particle equally
-    fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
-    fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0, "FixChemShrinkCore"));
+    fix_tortuosity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, style));
+    fix_pore_diameter_ =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
 
     updatePtrs();
     // create rhoeff array for every particles every layer
@@ -655,14 +658,31 @@ void FixChemShrinkCore::getB(int i)
         fracRedThird_[layer] = cbrt(1.0-fracRed_[i][layer]);
         fracRedThird_[layer] = std::max(fracRedThird_[layer], SMALL);
 
+        if (screen)
+            fprintf(screen, "tortuosity: %f, pore diameter: %f, porosity_1: %f, porosity_2: %f, porosity_3: %f \n"
+                            "layer Mw_[0]: %f, layer Mw_[1]: %f, layer Mw_[2]: %f, layer Mw_[3]: %f \n"
+                            "layer Dens_[0]: %f, layer Dens_[1]: %f, layer Dens_[2]: %f, layer Dens_[3]: %f \n",
+                            tortuosity_,pore_diameter_,porosity_[i][0],porosity_[i][1],porosity_[i][2],
+                            layerMolMasses_[0],layerMolMasses_[1],layerMolMasses_[2],layerMolMasses_[3],
+                            layerDensities_[0],layerDensities_[1],layerDensities_[2],layerDensities_[3]);
+
         // Calculate the effective molecular diffusion
-        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_[i]) + SMALL;
+        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_) + SMALL;
+        // effDiffBinary[i][layer] = 1.0;
+
+        if (screen)
+            fprintf(screen, "Dij_eff[0]: %f, Dij_eff[1]: %f, Dij_eff[2]: %f \n", effDiffBinary[i][0],effDiffBinary[i][1],effDiffBinary[i][2]);
 
         // Calculate the knudsen diffusion
-        effDiffKnud[i][layer]  =  (pore_diameter_[i]/6.)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_[i]) + SMALL;
+        effDiffKnud[i][layer]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_) + SMALL;
+        // effDiffKnud[i][layer] = 1.0;
+
+        if (screen)
+            fprintf(screen, "Dik_eff[0]: %f, Dik_eff[1]: %f, Dik_eff[2]: %f \n", effDiffKnud[i][0],effDiffKnud[i][1],effDiffKnud[i][2]);
 
         // total effective diffusivity
         diffEff_[layer] =   effDiffKnud[i][layer]*effDiffBinary[i][layer]/(effDiffBinary[i][layer]+effDiffKnud[i][layer]) + SMALL;
+        // diffEff_[layer] = 1.0;
     }
 
     if (screen)
@@ -678,6 +698,15 @@ void FixChemShrinkCore::getB(int i)
     {
         Bterm[i][layer] = (fracRedThird_[layer-1]-fracRedThird_[layer])/(fracRedThird_[layer-1]*fracRedThird_[layer])*(radius_[i]/diffEff_[layer]);
     }
+
+ /*
+  *  // calculation of diffusion term
+    Bterm[i][0]   =   1.0;
+    for (int layer = 1; layer <layers_; layer++)
+    {
+        Bterm[i][layer] = 1.0;
+    }
+ */
 
     if (screen)
     {
