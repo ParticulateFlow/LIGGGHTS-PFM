@@ -82,7 +82,7 @@ class BoundingBox
         zLo = other.xLo; zHi = other.xHi;
       }
     }
-    
+
     void extendToParallel(MPI_Comm comm)
     {
       double limit[6];
@@ -119,6 +119,12 @@ class BoundingBox
       extent[0] = xHi - xLo;
       extent[1] = yHi - yLo;
       extent[2] = zHi - zLo;
+    }
+
+    void getCenter(double center[3]) const {
+      center[0] = 0.5 * (xHi + xLo);
+      center[1] = 0.5 * (yHi + yLo);
+      center[2] = 0.5 * (zHi + zLo);
     }
 
     void extendByDelta(double delta);

@@ -21,6 +21,7 @@
 /* ----------------------------------------------------------------------
    Contributing authors:
    Philippe Seil (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
    ---------------------------------------------------------------------- */
 
 
@@ -59,12 +60,12 @@ const double FixInsertPackDense::max_volfrac = 0.57;
 
 FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
-  x_init(0),
-  ins_region(0),
-  idregion(0),
-  fix_distribution(0),
+  x_init(NULL),
+  ins_region(NULL),
+  idregion(NULL),
+  fix_distribution(NULL),
   target_volfrac(max_volfrac),
-  random(0),
+  random(NULL),
   seed(-1),
   insertion_done(false),
   n_inserted(0),
@@ -164,9 +165,9 @@ void FixInsertPackDense::post_create()
 
   ins_bbox.shrinkToSubbox(sublo,subhi);
 
-  for(int i=0;i<3;i++){ x_init[i] = 0.5*(sublo[i]+subhi[i]); }
+  ins_bbox.getCenter(x_init);
 
-  if(!ins_region->inside(x_init[0],x_init[1],x_init[2])){
+  if(!ins_region->inside(x_init[0],x_init[1],x_init[2])) {
     bool const subdomain_flag(true);
     ins_region->generate_random_shrinkby_cut(x_init,2*maxrad,subdomain_flag);
   }
@@ -241,13 +242,16 @@ void FixInsertPackDense::pre_exchange()
   double const volfrac_inserted
     = target_volfrac*static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim);
   if(comm->me==0){
-    double percent = static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim)*100;
+    double percent = static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim)*100.;
     printf("inserted %d of %d particles (%4.2f%%)\n",n_inserted,n_insert_estim,percent);
     printf("volume fracton: %f\n",volfrac_inserted);
   }
 }
 
-void FixInsertPackDense::prepare_insertion(){
+/* ---------------------------------------------------------------------- */
+
+void FixInsertPackDense::prepare_insertion()
+{
   /*
    * would need type exclusion here
    * to properly work with multi-level coarse graining
@@ -310,6 +314,8 @@ void FixInsertPackDense::prepare_insertion(){
   distfield.build(ins_region,ins_bbox,fix_distribution->max_rad()*radius_factor);
 }
 
+/* ---------------------------------------------------------------------- */
+
 void FixInsertPackDense::insert_first_particles()
 {
   ParticleToInsert *pti1 = fix_distribution->get_random_particle(groupbit);
@@ -346,7 +352,7 @@ void FixInsertPackDense::handle_next_front_sphere()
 {
   Particle current = frontSpheres.front();
   RegionNeighborList::ParticleBin *particles(0);
-  Particle *newsphere = 0; // last inserted sphere
+  Particle *newsphere = NULL; // last inserted sphere
 
   int nValid = 1000;
   while(nValid > 1){
@@ -589,6 +595,8 @@ bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
     && ins_bbox.isInside(p.x)
     && ins_region->surface_interior(p.x,p.radius) == 0;
 }
+
+/* ---------------------------------------------------------------------- */
 
 bool FixInsertPackDense::candidate_point_is_valid(Particle &p)
 {
