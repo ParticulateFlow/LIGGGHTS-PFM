@@ -280,7 +280,7 @@ void FixInsertPackDense::prepare_insertion()
       volume_present_local += MathConst::MY_PI*pow(atom->radius[i],3)*4./3.;
     }
   }
-  double volume_present = 0.;
+  double volume_present = volume_present_local;
   MPI_Sum_Scalar(volume_present,world);
 
   // estimate # of particles to insert
