@@ -68,6 +68,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   random(NULL),
   seed(-1),
   insertion_done(false),
+  is_inserter(true),
   n_inserted(0),
   n_inserted_local(0)
 {
@@ -167,10 +168,14 @@ void FixInsertPackDense::post_create()
 
   ins_bbox.getCenter(x_init);
 
-  if(!ins_region->inside(x_init[0],x_init[1],x_init[2])) {
+  if (!ins_bbox.hasVolume()) {
+    // no insertion volume on this subdomain
+    is_inserter = false;
+  } else if (!ins_region->inside(x_init[0],x_init[1],x_init[2])) {
     bool const subdomain_flag(true);
-    ins_region->generate_random_shrinkby_cut(x_init,2*maxrad,subdomain_flag);
+    ins_region->generate_random_shrinkby_cut(x_init,3.*maxrad,subdomain_flag);
   }
+
   neighlist.reset();
   neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
 
@@ -198,6 +203,7 @@ void FixInsertPackDense::pre_exchange()
          comm->me,n_insert_estim_local);
 
   // insert first three particles to initialize the algorithm
+  if (is_inserter) {
   insert_first_particles();
 
   // insert_next_particle() returns false
@@ -217,6 +223,7 @@ void FixInsertPackDense::pre_exchange()
              comm->me,percent,n_inserted_local,n_insert_estim_local);
       n_next_write += n_write;
     }
+  }
   }
 
   // actual insertion
@@ -259,6 +266,9 @@ void FixInsertPackDense::prepare_insertion()
   // need to iterate twice: first time to find largest radius, second
   // time to compute volume and actually insert already present
   // particles into region neighbor list with now appropriate bin size
+  double volume_present_local = 0.;
+
+  if (is_inserter) {
   double rad_max_present = 0.;
   for(int i=0;i<atom->nlocal;i++){
     if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
@@ -272,7 +282,6 @@ void FixInsertPackDense::prepare_insertion()
     neighlist.setBoundingBox(ins_bbox,rad_max_present);
   }
 
-  double volume_present_local = 0.;
   for(int i=0;i<atom->nlocal;i++){
     if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
         || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0){
@@ -280,6 +289,8 @@ void FixInsertPackDense::prepare_insertion()
       volume_present_local += MathConst::MY_PI*pow(atom->radius[i],3)*4./3.;
     }
   }
+  }
+
   double volume_present = volume_present_local;
   MPI_Sum_Scalar(volume_present,world);
 
@@ -291,6 +302,12 @@ void FixInsertPackDense::prepare_insertion()
 
   double const v_part_ave = fix_distribution->vol_expect();
   n_insert_estim = floor((region_volume-volume_present)*target_volfrac/v_part_ave);
+
+  if (!is_inserter) {
+    n_insert_estim_local = 0;
+    return;
+  }
+
   n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/v_part_ave);
 
   // check if starting point does not conflict with any pre-existing particles
