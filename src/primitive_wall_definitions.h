@@ -22,6 +22,7 @@
 /* ----------------------------------------------------------------------
    Contributing authors:
    Philippe Seil (JKU Linz)
+   Paul Kieckhefen (TUHH)
 ------------------------------------------------------------------------- */
 
 #ifndef LMP_PRIMITIVE_WALL_DEFINITIONS
@@ -54,6 +55,9 @@ namespace LAMMPS_NS
         ZCYLINDER,
         GENERAL_PLANE,
         GENERAL_CYLINDER,
+        XCONE,
+        YCONE,
+        ZCONE,
         NUM_WTYPE
     };
 
@@ -66,7 +70,10 @@ namespace LAMMPS_NS
         "ycylinder",
         "zcylinder",
         "general_plane",
-        "general_cylinder"
+        "general_cylinder",
+        "xcone",
+        "ycone",
+        "zcone"
     };
 
     static int numArgs[] =
@@ -78,7 +85,10 @@ namespace LAMMPS_NS
         3,
         3,
         6,
-        7
+        7,
+        6,
+        6,
+        6
     };
 
     /*
@@ -206,6 +216,81 @@ namespace LAMMPS_NS
         double dMax = r + treshold;
         double dist = calcRadialDistance(pos,param,dy,dz) - *param;
         return (dMax < dist || -dMax < dist);
+      }
+
+    };
+
+/* ---------------------------------------------------------------------- */
+    /*
+     * same holds for x,y,z cones
+     * param[0] = radius 1
+     * param[1] = first coordinate of center
+     * param[2] = second coordinate of center
+     * param[3] = radius 2
+     * param[4] = minimum coord (where radius 1)
+     * param[5] = max coord (where radius 2)
+     */
+    template<int dim>
+    struct Cone : public Dim<dim>
+    {
+    public:
+
+      typedef Dim<dim> d;
+      static double radiusAtHeight(double *pos, double *param)
+      {
+         return   (pos[d::x] - param[4])
+                / (param[5]  - param[4])
+                * (param[3]  - param[0]) 
+                + param[0]; 
+      }
+      static double calcRadialDistance(double *pos, double *param, double &dy, double &dz)
+      {
+        dy = pos[d::y] - param[1];
+        dz = pos[d::z] - param[2];
+        return sqrt(dy*dy+dz*dz);
+      }
+      static double calcRadialDistanceSquared(double *pos, double *param, double &dy, double &dz)
+      {
+        dy = pos[d::y] - param[1];
+        dz = pos[d::z] - param[2];
+        return (dy*dy+dz*dz);
+      }
+
+      static double resolveContact(double *pos, const double r, double *delta, double *param)
+      {
+        const double rx = radiusAtHeight(pos, param);
+        double dx, dy,dz, fact;
+        const double dist = calcRadialDistance(pos,param,dy,dz);
+        if(dist > rx)
+        {
+          dx = dist - rx - r;
+          fact = (dist - rx) / dist;
+          delta[d::x] = 0.; delta[d::y] = -dy*fact; delta[d::z] = -dz*fact;
+
+        } else {
+          dx = rx - dist - r;
+          fact = (rx - dist) / dist;
+          delta[d::x] = 0.; delta[d::y] = +dy*fact; delta[d::z] = +dz*fact;
+        }
+        return dx;
+      }
+      static bool resolveSameSide(double *pos0, double *pos1, double *param)
+      {
+        double dy,dz;
+        const double distsq0 = calcRadialDistanceSquared(pos0,param,dy,dz);
+        const double distsq1 = calcRadialDistanceSquared(pos1,param,dy,dz);
+        double rsq0 = radiusAtHeight(pos0, param);
+        rsq0 *= rsq0;
+        double rsq1 = radiusAtHeight(pos1, param);
+        rsq1 *= rsq1;
+        return ((distsq0 > rsq0 && distsq1 > rsq1) || (distsq0 < rsq0 && distsq1 < rsq1));
+      }
+      static bool resolveNeighlist(double *pos, const double r, const double treshold, double *param)
+      {
+        double dy,dz;
+        const double dMax = r + treshold;
+        double dist = calcRadialDistance(pos,param,dy,dz) - radiusAtHeight(pos, param);
+        return (pos[d::x] > param[4] && pos[d::x] < param[5]) && (dMax < dist || -dMax < dist);
       }
 
     };
@@ -379,6 +464,12 @@ namespace LAMMPS_NS
         return GeneralPlane::resolveContact(x,r,delta,param);
       case GENERAL_CYLINDER:
         return GeneralCylinder::resolveContact(x,r,delta,param);
+      case XCONE:
+        return Cone<0>::resolveContact(x,r,delta,param);
+      case YCONE:
+        return Cone<1>::resolveContact(x,r,delta,param);
+      case ZCONE:
+        return Cone<2>::resolveContact(x,r,delta,param);
 
       default: // default: no contact
         return 1.;
@@ -405,6 +496,12 @@ namespace LAMMPS_NS
         return GeneralPlane::resolveSameSide(x0,x1,param);
       case GENERAL_CYLINDER:
         return GeneralCylinder::resolveSameSide(x0,x1,param);
+      case XCONE:
+        return Cone<0>::resolveSameSide(x0,x1,param);
+      case YCONE:
+        return Cone<1>::resolveSameSide(x0,x1,param);
+      case ZCONE:
+        return Cone<2>::resolveSameSide(x0,x1,param);
 
       default: // default: same side
         return true;
@@ -430,6 +527,12 @@ namespace LAMMPS_NS
         return GeneralPlane::resolveNeighlist(x,r,treshold,param);
       case GENERAL_CYLINDER:
         return GeneralCylinder::resolveNeighlist(x,r,treshold,param);
+      case XCONE:
+        return Cone<0>::resolveNeighlist(x,r,treshold,param);
+      case YCONE:
+        return Cone<1>::resolveNeighlist(x,r,treshold,param);
+      case ZCONE:
+        return Cone<2>::resolveNeighlist(x,r,treshold,param);
 
       default: // default value: every particle will be added to neighbor list
         return true;

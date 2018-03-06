@@ -30,7 +30,8 @@ wallstyle args for wallstyle {mesh} = {n_meshes} and {meshes} :l
   {meshes} values = meshlist
     meshlist =  id(s) of the mesh(es) (see "fix mesh/surface"_fix_mesh_surface.html) to be used. These must be defined before :pre
 
-wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zplane} or {xcylinder} or {ycylinder} or {zcylinder} or {general_plane} or {general_cylinder} :l
+wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zplane} or {xcylinder} or {ycylinder} or {zcylinder} 
+                                           or {general_plane} or {general_cylinder} or {xcone} or {ycone} or {zcone} :l
   {type} args = tp
     tp = atom_type (material type) of the wall
   {xplane} or {yplane} or {zplane} args = pos
@@ -44,7 +45,12 @@ wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zp
   {general_cylinder} args = radius px py pz axisx axisy axisz
     radius = cylinder radius (distance units)
     px,py,pz = coordinates of a point on cylinder axis
-    axisx,axisy,axisz = components of a vector parallel to cylinder axis :pre
+    axisx,axisy,axisz = components of a vector parallel to cylinder axis
+  {xcone} or {ycone} or {zcone} args = radius1 c1 c2 radius2 cmin cmax
+    radiusa,radiusb = radii corresponding to ca and cb (distance units)
+    c1,c2 = coordinates of center axis in other 2 dims (distance units)
+    ca,cb = coordinates of the start and end point of the cone on the center axis (distance units) :pre
+
 
 zero or more general_keyword/value pairs may be appended :l
 general_keyword =  {shear} or {store_force} or {store_force_contact} :l
@@ -104,7 +110,7 @@ in the "fix mesh/surface"_fix_mesh_surface.html command.
 
 For {wallstyle primitive}, the atom_type (material type) has to be provided via
 keyword {type}. Primitve walls can be {xplane} or {yplane} or {zplane} or {cylindrical} 
-or {general_plane}. 
+or {general_plane} or {x/y/zcone}. 
 The three axis-aligned planar options specify a single wall in a dimension.
 For an {xcylinder}, {ycylinder} or {zcylinder}, the radius and the cylinder axis
 in the other two dims are specified.
@@ -114,6 +120,9 @@ The vector does not need to be a unit vector.
 The {general_cylinder} is an arbitrarily oriented cylinder, where the radius, a point
 on and a direction vector parallel to the cylinder axis need to be specified.
 The direction vector does not need to be normalized.
+{xcone}, {ycone}, {zcone} are cone stumps along the selected coordinate axis
+and are defined by the coordinates of the axis in the other directions as well
+as start/end points and radii in the direction of the cone.
 
 :line
 

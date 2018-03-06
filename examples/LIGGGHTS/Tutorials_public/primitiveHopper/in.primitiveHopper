@@ -1,0 +1,66 @@
+# Cone example
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block -0.06 0.06 -0.06 0.06 0. 0.15 units box
+create_box  1 reg
+
+neighbor        0.002 bin
+neigh_modify    delay 0
+
+
+#Material properties required for granular pair styles
+fix     m1 all property/global youngsModulus peratomtype 5.e6
+fix     m2 all property/global poissonsRatio peratomtype 0.45
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 0.2
+fix     m4 all property/global coefficientFriction peratomtypepair 1 0.05
+
+#pair style
+pair_style  gran model hertz tangential history
+pair_coeff  * *
+
+timestep    0.00001
+
+fix         gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix zwalls1 all wall/gran model hertz tangential history primitive type 1 zplane 0.00
+fix zwalls2 all wall/gran model hertz tangential history primitive type 1 zplane 0.15
+fix cyl     all wall/gran model hertz tangential history primitive type 1 zcylinder .05 0. 0.
+fix cone    all wall/gran model hertz tangential history primitive type 1 zcone .025 0. 0. .06 .0 .06
+
+
+#region of insertion
+region      bc cylinder z 0. 0. 0.045 0.101 0.15 units box
+
+#particle distributions
+fix         pts1 all particletemplate/sphere 563461 atom_type 1 density constant 2500 radius constant 0.0025
+fix         pdd1 all particledistribution/discrete 65751 1 pts1 1.0
+
+fix         ins all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. 0. &
+                insert_every once overlapcheck yes all_in yes particles_in_region 1800 region bc
+
+#apply nve integration to all particles
+fix         integr all nve/sphere
+
+#output settings, include total thermal energy
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke vol
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run     1
+
+run 50000
+unfix zwalls1
+shell   mkdir post
+dump    dmp all custom/vtk 500 post/cylinder*.vtk id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+
+run     66000 upto
