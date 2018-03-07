@@ -73,7 +73,7 @@ public:
    char *diffA, *moleFrac;
 
    // effective densities
-   double **rhoeff_; //**porosity_init; // **rad_init,
+   double **rhoeff_;
 
    // material properties porosity, tortuosity, and pore diameter
    //    const double *porosity_;
@@ -133,6 +133,7 @@ public:
   // define porosity values for all particles
   // class FixPropertyGlobal *fix_porosity_;
   class FixPropertyAtom *fix_porosity_;
+  class FixPropertyAtom *fix_rhoeff_;
   class FixPropertyGlobal *fix_tortuosity_;
   // class FixPropertyAtom *fix_tortuosity_;
   class FixPropertyGlobal *fix_pore_diameter_;
