@@ -38,6 +38,8 @@
 
 namespace LAMMPS_NS
 {
+void mpi_create_custom_operations();
+void mpi_free_custom_operations();
 
 inline int mpi_tag_upper_bound(MPI_Comm comm)
 {

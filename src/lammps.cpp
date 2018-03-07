@@ -56,6 +56,7 @@
 #include "timer.h"
 #include "memory.h"
 #include "error.h"
+#include "mpi_liggghts.h"
 
 using namespace LAMMPS_NS;
 
@@ -444,6 +445,10 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
       error->all(FLERR,
                  "MPI_LMP_BIGINT and bigint in lmptype.h are not compatible");
 
+  // create custom MPI operations
+
+  mpi_create_custom_operations();
+
 #ifdef LAMMPS_SMALLBIG
   if (sizeof(smallint) != 4 || sizeof(tagint) != 4 || sizeof(bigint) != 8)
     error->all(FLERR,"Small, tag, big integers are not sized correctly");
@@ -549,6 +554,8 @@ LAMMPS::~LAMMPS()
   delete universe;
   delete error;
   delete memory;
+
+  mpi_free_custom_operations();
 }
 
 /* ----------------------------------------------------------------------
