@@ -60,10 +60,9 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     nmaxlayers_(3),
     layers_(nmaxlayers_),
-    rmin_(0.001),       //  [m]
+    rmin_(1e-8),       //  [m]
     fix_changeOfA_(0),
     fix_changeOfC_(0),
-    fix_rhogas_(0),
     fix_tgas_(0),
     fix_reactionHeat_(0),
     fix_diffcoeff_(0),
@@ -102,7 +101,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
     // double *
     radius_ = pmass_ = pdensity_ = Massterm = NULL;
-    changeOfA_ = changeOfC_ = rhogas_ = T_ = reactionHeat_ = partP_ = NULL;
+    changeOfA_ = changeOfC_ = T_ = reactionHeat_ = partP_ = NULL;
     molecularDiffusion_ = nuf_ = Rep_ = X0_ = NULL;
     // const double *
     pore_diameter_ = tortuosity_ = 0.0;
@@ -237,7 +236,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
     {
         if (fix_changeOfA_)     modify  ->  delete_fix(massA);
         if (fix_changeOfC_)     modify  ->  delete_fix(massC);
-        if (fix_rhogas_)        modify  ->  delete_fix("partRho");
         if (fix_tgas_)          modify  ->  delete_fix("partTemp");
         if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
         if (fix_diffcoeff_)     modify  ->  delete_fix(diffA);
@@ -320,7 +318,6 @@ void FixChemShrinkCore::updatePtrs()
 {
     changeOfA_      =   fix_changeOfA_      ->  vector_atom;
     changeOfC_      =   fix_changeOfC_      ->  vector_atom;
-    rhogas_         =   fix_rhogas_         ->  vector_atom;
     T_              =   fix_tgas_           ->  vector_atom;
     reactionHeat_   =   fix_reactionHeat_   ->  vector_atom;
     molecularDiffusion_  = fix_diffcoeff_   ->  vector_atom;
@@ -408,7 +405,6 @@ void FixChemShrinkCore::init()
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
-    fix_rhogas_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRho", "property/atom", "scalar", 0, 0, id));
     fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style));
     fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
     fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, id));
@@ -486,28 +482,33 @@ void FixChemShrinkCore::post_force(int)
                 // calculate values for fractional reduction f_i = (1-relRadii_i^3)
                 // or with mass ratio - is irrelevant gives same result
                 // provides simplicity for calculations of A & B terms.
-                FractionalReduction(i);
-                // get values for equilibrium molar fraction of reactant gas species,
-                // this value is calculated from the Equilibrium constants function Keq(layer,T).
-                // and used in the reaction rate determination.
-                getXi(i,x0_eq_);
-                // calculate the reaction resistance term
-                getA(i);
-                // calculate the diffusion resistance term
-                getB(i);
-                // calculate mass transfer resistance term
-                getMassT(i);
-                // do the reaction calculation with pre-calculated values of A, B and ß (massT)
-                // the USCM model chemical reaction rate with gaseous species model
-                // based on the works of Philbrook, Spitzer and Manning
-                reaction(i, dmA_, x0_eq_);
-                // the results of reaction gives us the mass change of reactant species gas
-                // in the usual case that means the CO gas mass species change is given
-                // this information is used then to calculate mass changes of particle layers
-                update_atom_properties(i, dmA_);
-                // also the results of reaction function is used to calculate
-                // the changes in gas species
-                update_gas_properties(i, dmA_);
+                if (active_layers(i) > 0)
+                {
+                    FractionalReduction(i);
+                    // get values for equilibrium molar fraction of reactant gas species,
+                    // this value is calculated from the Equilibrium constants function Keq(layer,T).
+                    // and used in the reaction rate determination.
+                    getXi(i,x0_eq_);
+                    // calculate the reaction resistance term
+                    getA(i);
+                    // calculate the diffusion resistance term
+                    getB(i);
+                    // calculate mass transfer resistance term
+                    getMassT(i);
+                    // do the reaction calculation with pre-calculated values of A, B and ß (massT)
+                    // the USCM model chemical reaction rate with gaseous species model
+                    // based on the works of Philbrook, Spitzer and Manning
+                    reaction(i, dmA_, x0_eq_);
+                    // the results of reaction gives us the mass change of reactant species gas
+                    // in the usual case that means the CO gas mass species change is given
+                    // this information is used then to calculate mass changes of particle layers
+                    update_atom_properties(i, dmA_);
+                    // also the results of reaction function is used to calculate
+                    // the changes in gas species
+                    update_gas_properties(i, dmA_);
+                }
+                else if (comm->me == 0 && screen)
+                    fprintf(screen, "No more layers left in particle(s)");
             }
         }
     }
