@@ -46,10 +46,10 @@ wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zp
     radius = cylinder radius (distance units)
     px,py,pz = coordinates of a point on cylinder axis
     axisx,axisy,axisz = components of a vector parallel to cylinder axis
-  {xcone} or {ycone} or {zcone} args = radius1 c1 c2 radius2 cmin cmax
-    radiusa,radiusb = radii corresponding to ca and cb (distance units)
-    c1,c2 = coordinates of center axis in other 2 dims (distance units)
-    ca,cb = coordinates of the start and end point of the cone on the center axis (distance units) :pre
+  {general_cone} args = radius1 x1 y1 z1 x2 y2 z2 radius2 
+    radius1,radius2 = radii corresponding to xyz1 and xyz2 (distance units)
+    x1,y1,z1 = coordinates of center of bounding circle w/ radius radius1 (distance units)
+    x2,y2,z2 = coordinates of center of bounding circle w/ radius radius2 (distance units) :pre
 
 
 zero or more general_keyword/value pairs may be appended :l
@@ -120,9 +120,8 @@ The vector does not need to be a unit vector.
 The {general_cylinder} is an arbitrarily oriented cylinder, where the radius, a point
 on and a direction vector parallel to the cylinder axis need to be specified.
 The direction vector does not need to be normalized.
-{xcone}, {ycone}, {zcone} are cone stumps along the selected coordinate axis
-and are defined by the coordinates of the axis in the other directions as well
-as start/end points and radii in the direction of the cone.
+{general_cone} defines an open cone stump/frustrum/mantle surface as described
+by two points and the radii at the points.
 
 :line
 

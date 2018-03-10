@@ -55,9 +55,7 @@ namespace LAMMPS_NS
         ZCYLINDER,
         GENERAL_PLANE,
         GENERAL_CYLINDER,
-        XCONE,
-        YCONE,
-        ZCONE,
+        GENERAL_CONE,
         NUM_WTYPE
     };
 
@@ -71,9 +69,7 @@ namespace LAMMPS_NS
         "zcylinder",
         "general_plane",
         "general_cylinder",
-        "xcone",
-        "ycone",
-        "zcone"
+        "general_cone"
     };
 
     static int numArgs[] =
@@ -86,9 +82,7 @@ namespace LAMMPS_NS
         3,
         6,
         7,
-        6,
-        6,
-        6
+        8
     };
 
     /*
@@ -222,75 +216,101 @@ namespace LAMMPS_NS
 
 /* ---------------------------------------------------------------------- */
     /*
-     * same holds for x,y,z cones
-     * param[0] = radius 1
-     * param[1] = first coordinate of center
-     * param[2] = second coordinate of center
-     * param[3] = radius 2
-     * param[4] = minimum coord (where radius 1)
-     * param[5] = max coord (where radius 2)
+     * a cone stump/frustrum / cone mantle without the bounding
+     * circular areas
+     * param[0] = radius 1 (= at base point)
+     * param[1,2,3] base point on cylinder axis
+     * param[4,5,6] end point on cylinder axis
+     * param[7] radius 2 (= at end point)
      */
-    template<int dim>
-    struct Cone : public Dim<dim>
+    struct GeneralCone
     {
-    public:
+      static double calcDistance(double *pos, double *param, double *dx, bool& inside)
+      {
+        const double small = 1e-20;
 
-      typedef Dim<dim> d;
-      static double radiusAtHeight(double *pos, double *param)
-      {
-         return   (pos[d::x] - param[4])
-                / (param[5]  - param[4])
-                * (param[3]  - param[0]) 
-                + param[0]; 
-      }
-      static double calcRadialDistance(double *pos, double *param, double &dy, double &dz)
-      {
-        dy = pos[d::y] - param[1];
-        dz = pos[d::z] - param[2];
-        return sqrt(dy*dy+dz*dz);
-      }
-      static double calcRadialDistanceSquared(double *pos, double *param, double &dy, double &dz)
-      {
-        dy = pos[d::y] - param[1];
-        dz = pos[d::z] - param[2];
-        return (dy*dy+dz*dz);
+        double p[3], tAxis[3], nAxis[3];
+        vectorSubtract3D(pos, &param[1], p);
+        vectorSubtract3D(&param[4], &param[1], tAxis);
+
+        // geometry
+        const double a = vectorMag3D(tAxis);  // frustrum length
+        const double b = param[7] - param[0]; // difference of radii
+        const double intercept[2] = {param[0], 0};
+        double slope[2] = {b, a};
+        vectorNormalize2D(slope);
+
+        // 2D plane spanned by cone axis and pos.
+        // project problem into this plane
+        double P[2];             // pos in 2D plane
+        vectorScalarDiv3D(tAxis, a + small);
+        P[1] = vectorDot3D(tAxis, p);
+        vectorAddMultiply3D(p, tAxis, -P[1], nAxis);
+        P[0] = vectorMag3D(nAxis);
+        vectorScalarDiv3D(nAxis, P[0] + small);
+
+        // project point onto the cone mantle
+        double closest[2] = {0., 0.};
+        vectorSubtract2D(P, intercept, closest);
+        vectorAddMultiply2D
+        (
+          intercept,
+          slope,
+          vectorDot2D
+          (
+            slope,
+            closest
+          ),
+          closest
+        );
+
+        // this is not an infinite cone, bound to rims
+        if (closest[1] > a) // "above"
+        {
+          closest[0] = param[7];
+          closest[1] = a;
+        }
+        else if (closest[1] <= 0) // below
+        {
+          closest[0] = param[0];
+          closest[1] = 0.;
+        }
+
+        // difference between point in plane and closest point on cone
+        vectorSubtract2D(closest, P, closest);
+        inside = closest[0] < 0.;
+
+        // transform back to 3D for dx
+        vectorCopy3D(tAxis, dx);
+        vectorScalarMult3D(dx, closest[1]);
+        vectorAddMultiply3D(dx, nAxis, closest[0], dx);
+
+        return vectorMag2D(closest);
       }
 
       static double resolveContact(double *pos, const double r, double *delta, double *param)
       {
-        const double rx = radiusAtHeight(pos, param);
-        double dx, dy,dz, fact;
-        const double dist = calcRadialDistance(pos,param,dy,dz);
-        if(dist > rx)
-        {
-          dx = dist - rx - r;
-          fact = (dist - rx) / dist;
-          delta[d::x] = 0.; delta[d::y] = -dy*fact; delta[d::z] = -dz*fact;
-
-        } else {
-          dx = rx - dist - r;
-          fact = (rx - dist) / dist;
-          delta[d::x] = 0.; delta[d::y] = +dy*fact; delta[d::z] = +dz*fact;
-        }
-        return dx;
+        bool inside;
+        return calcDistance(pos, param, delta, inside)- r;
       }
+
       static bool resolveSameSide(double *pos0, double *pos1, double *param)
       {
-        double dy,dz;
-        const double distsq0 = calcRadialDistanceSquared(pos0,param,dy,dz);
-        const double distsq1 = calcRadialDistanceSquared(pos1,param,dy,dz);
-        double rsq0 = radiusAtHeight(pos0, param);
-        rsq0 *= rsq0;
-        double rsq1 = radiusAtHeight(pos1, param);
-        rsq1 *= rsq1;
-        return ((distsq0 > rsq0 && distsq1 > rsq1) || (distsq0 < rsq0 && distsq1 < rsq1));
+        double dx[3];
+        bool inside0, inside1;
+        calcDistance(pos0, param, dx, inside0);
+        calcDistance(pos1, param, dx, inside1);
+
+        return inside0 == inside1;
       }
+
       static bool resolveNeighlist(double *pos, const double r, const double treshold, double *param)
       {
-        double dy,dz;
+        double dx[3];
+        bool inside;
         const double dMax = r + treshold;
-        double dist = calcRadialDistance(pos,param,dy,dz) - radiusAtHeight(pos, param);
-        return (pos[d::x] > param[4] && pos[d::x] < param[5]) && (dMax < dist || -dMax < dist);
+        const double dist = calcDistance(pos, param, dx, inside);
+        return dist <= dMax;
       }
 
     };
@@ -464,12 +484,8 @@ namespace LAMMPS_NS
         return GeneralPlane::resolveContact(x,r,delta,param);
       case GENERAL_CYLINDER:
         return GeneralCylinder::resolveContact(x,r,delta,param);
-      case XCONE:
-        return Cone<0>::resolveContact(x,r,delta,param);
-      case YCONE:
-        return Cone<1>::resolveContact(x,r,delta,param);
-      case ZCONE:
-        return Cone<2>::resolveContact(x,r,delta,param);
+      case GENERAL_CONE:
+        return GeneralCone::resolveContact(x,r,delta,param);
 
       default: // default: no contact
         return 1.;
@@ -496,12 +512,8 @@ namespace LAMMPS_NS
         return GeneralPlane::resolveSameSide(x0,x1,param);
       case GENERAL_CYLINDER:
         return GeneralCylinder::resolveSameSide(x0,x1,param);
-      case XCONE:
-        return Cone<0>::resolveSameSide(x0,x1,param);
-      case YCONE:
-        return Cone<1>::resolveSameSide(x0,x1,param);
-      case ZCONE:
-        return Cone<2>::resolveSameSide(x0,x1,param);
+      case GENERAL_CONE:
+        return GeneralCone::resolveSameSide(x0,x1,param);
 
       default: // default: same side
         return true;
@@ -527,12 +539,8 @@ namespace LAMMPS_NS
         return GeneralPlane::resolveNeighlist(x,r,treshold,param);
       case GENERAL_CYLINDER:
         return GeneralCylinder::resolveNeighlist(x,r,treshold,param);
-      case XCONE:
-        return Cone<0>::resolveNeighlist(x,r,treshold,param);
-      case YCONE:
-        return Cone<1>::resolveNeighlist(x,r,treshold,param);
-      case ZCONE:
-        return Cone<2>::resolveNeighlist(x,r,treshold,param);
+      case GENERAL_CONE:
+        return GeneralCone::resolveNeighlist(x,r,treshold,param);
 
       default: // default value: every particle will be added to neighbor list
         return true;
