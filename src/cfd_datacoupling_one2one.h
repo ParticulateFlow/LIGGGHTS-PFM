@@ -28,6 +28,8 @@
 #ifndef LMP_CFD_DATACOUPLING_ONE2ONE_H
 #define LMP_CFD_DATACOUPLING_ONE2ONE_H
 
+//#define O2O_DEBUG
+
 #include "cfd_datacoupling.h"
 #include "multisphere_parallel.h"
 #include "error.h"
@@ -84,34 +86,54 @@ void CfdDatacouplingOne2One::pull_mpi
     // return if no data to transmit
     if(len1*len2 < 1) return;
 
-    int m = 0;
-
     T *from_t = (T*) from;
     if(strcmp(type,"scalar-atom") == 0)
     {
+        #ifdef O2O_DEBUG
+        std::cout << "["<<comm->me << "] scl " << name
+                  << " ncollected: " << ncollected
+                  << " len1 " <<  len1
+                  << " len2 " <<  len2
+                  << std::endl;
+        #endif
+
         T *to_t = (T*) to;
         for (int i = 0; i < ncollected; i++)
         {
-            m = atom->map(ids[i]);
+            int m = atom->map(ids[i]);
             if (m >= 0)
                 to_t[m] = from_t[i];
         }
     }
     else if(strcmp(type,"vector-atom") == 0)
     {
+        #ifdef O2O_DEBUG
+        std::cout << "["<<comm->me << "] vec " << name
+                  << " ncollected: " << ncollected
+                  << " len1 " <<  len1
+                  << " len2 " <<  len2
+                  << std::endl;
+        #endif
         T **to_t = (T**) to;
         for (int i = 0; i < ncollected; i++)
         {
-            m = atom->map(ids[i]);
+            int m = atom->map(ids[i]);
             if (m >= 0)
             {
+        #ifdef O2O_DEBUG
+        std::cout << "["<<comm->me << "] vec " << name
+                  << " i: " << i
+                  << " id: " << ids[i]
+                  << " m: " << m
+                  << std::endl;
+        #endif
                 for (int j = 0; j < len2; j++)
                 {
+
                     to_t[m][j] = from_t[i*len2+j];
                 }
             }
         }
-
     }
 
 /*
