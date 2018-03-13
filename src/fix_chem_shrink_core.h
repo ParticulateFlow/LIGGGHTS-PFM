@@ -103,6 +103,9 @@ public:
   double **fracRed_;
   double **Aterm, **Bterm, *Massterm, **effDiffBinary, **effDiffKnud;
 
+  // coarse_graining factor
+  double cg_;
+
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
   class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
   class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
