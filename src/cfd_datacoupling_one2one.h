@@ -73,6 +73,7 @@ void CfdDatacouplingOne2One::pull_mpi
     const int ncollected
 )
 {
+    int nlocal = atom->nlocal;
     int len1 = -1, len2 = -1;
     // get reference where to write the data
     void * to = find_pull_property(name,type,len1,len2);
@@ -101,8 +102,19 @@ void CfdDatacouplingOne2One::pull_mpi
         for (int i = 0; i < ncollected; i++)
         {
             int m = atom->map(ids[i]);
-            if (m >= 0)
+        #ifdef O2O_DEBUG
+        std::cout << "["<<comm->me << "] scl " << name
+                  << " i: " << i
+                  << " id: " << ids[i]
+                  << " m: " << m
+                  << std::endl;
+        #endif
+
+            // atom found AND not a ghost (these have an id >= nlocal)
+            if ((m >= 0) && (m < nlocal))
+            {
                 to_t[m] = from_t[i];
+            }
         }
     }
     else if(strcmp(type,"vector-atom") == 0)
@@ -118,8 +130,6 @@ void CfdDatacouplingOne2One::pull_mpi
         for (int i = 0; i < ncollected; i++)
         {
             int m = atom->map(ids[i]);
-            if (m >= 0)
-            {
         #ifdef O2O_DEBUG
         std::cout << "["<<comm->me << "] vec " << name
                   << " i: " << i
@@ -127,6 +137,10 @@ void CfdDatacouplingOne2One::pull_mpi
                   << " m: " << m
                   << std::endl;
         #endif
+            // atom found AND not a ghost (these have an id >= nlocal)
+            if ((m >= 0) && (m < nlocal))
+            {
+
                 for (int j = 0; j < len2; j++)
                 {
 
@@ -135,68 +149,6 @@ void CfdDatacouplingOne2One::pull_mpi
             }
         }
     }
-
-/*
-    // check memory allocation
-    T* allred = check_grow<T>(len1*len2);
-
-    // perform allreduce on incoming data - well, let's not
-    T **from_t = (T**)from;
-    MPI_Allreduce
-    (
-        &(from_t[0][0]),
-        &(allred[0]),
-        len1*len2,
-        mpi_type_dc<T>(),
-        MPI_SUM,
-        comm
-    );
-
-    // copy data - loops over max # global atoms, bodies
-    if(strcmp(type,"scalar-atom") == 0)
-    {
-        T *to_t = (T*) to;
-        for (int i = 0; i < len1; i++)
-            if ((m = atom->map(i+1)) >= 0)
-                to_t[m] = allred[i];
-    }
-    else if(strcmp(type,"vector-atom") == 0)
-    {
-        T **to_t = (T**) to;
-        for (int i = 0; i < len1; i++)
-            if ((m = atom->map(i+1)) >= 0)
-                for (int j = 0; j < len2; j++)
-                    to_t[m][j] = allred[i*len2 + j];
-    }
-    else if(strcmp(type,"scalar-multisphere") == 0)
-    {
-        T *to_t = (T*) to;
-        MultisphereParallel *ms_data = properties_->ms_data();
-        if(!ms_data)
-            error->one(FLERR,"Transferring a multisphere property from/to LIGGGHTS requires a fix multisphere");
-        for (int i = 0; i < len1; i++)
-            if ((m = ms_data->map(i+1)) >= 0)
-                to_t[m] = allred[i];
-    }
-    else if(strcmp(type,"vector-multisphere") == 0)
-    {
-        T **to_t = (T**) to;
-        MultisphereParallel *ms_data = properties_->ms_data();
-        if(!ms_data)
-            error->one(FLERR,"Transferring a multisphere property from/to LIGGGHTS requires a fix multisphere");
-        for (int i = 0; i < len1; i++)
-            if ((m = ms_data->map(i+1)) >= 0)
-                for (int j = 0; j < len2; j++)
-                    to_t[m][j] = allred[i*len2 + j];
-    }
-    else if(strcmp(type,"scalar-global") == 0 || strcmp(type,"vector-global") == 0 || strcmp(type,"matrix-global") == 0)
-    {
-        T **to_t = (T**) to;
-        for (int i = 0; i < len1; i++)
-            for (int j = 0; j < len2; j++)
-                to_t[i][j] = allred[i*len2 + j];
-    }
-*/
     else error->one(FLERR,"Illegal data type in CfdDatacouplingOne2One::pull");
 }
 
@@ -213,7 +165,7 @@ void CfdDatacouplingOne2One::push_mpi
     void *&to
 )
 {
-    error->one(FLERR,"Do not use one2one with twoWayMPI. ");
+    error->one(FLERR,"Do not use one2one with twoWayMPI.");
 }
 
 /* ---------------------------------------------------------------------- */

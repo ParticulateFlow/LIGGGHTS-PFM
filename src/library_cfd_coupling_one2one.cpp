@@ -44,7 +44,6 @@
 using namespace LAMMPS_NS;
 
 #define LMP_GROW_DELTA 11000
-/*NL*/ #define LMP_OF_DEBUG true
 
 double** o2o_liggghts_get_boundingbox(void *ptr)
 {
