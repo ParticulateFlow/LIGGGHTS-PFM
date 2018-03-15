@@ -17,6 +17,9 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+   
+   Contributing authors:
+    Paul Kieckhefen (TUHH)      2018
 ------------------------------------------------------------------------- */
 
 #ifdef CFD_DATACOUPLING_CLASS
