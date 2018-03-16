@@ -272,11 +272,10 @@ int FixInsertPack::calc_ninsert_this()
   }
 
   //NP count bodies for multisphere
-  int nbody;
-  double x_bound_body[3], mass_body, density_body;
   if(multisphere)
   {
-      nbody = multisphere->n_body();
+      int nbody = multisphere->n_body();
+      double x_bound_body[3], mass_body, density_body;
 
       for(int ibody = 0; ibody < nbody; ibody++)
       {
