@@ -403,15 +403,14 @@ void FixInsertPackFaceUniverse::x_v_omega(int ninsert_this_local,int &ninserted_
       omega_insert[1] = average_omegay_face_out_[iface];
       omega_insert[2] = average_omegaz_face_out_[iface];
 
-      ntry = 0;
-
-      int maxtry = calc_maxtry(particle_this_face_local);
-      while (ntry < maxtry && ninserted_this_face_local < particle_this_face_local) {
+      while (ninserted_this_face_local < particle_this_face_local) {
         pti = fix_pddf->pti_list_face_local[iface][ninserted_this_face_local];
-        double rbound = pti->r_bound_ins;
+        const double rbound = pti->r_bound_ins;
+        ntry = 0;
 
         int nins = 0;
-        while (nins == 0 && ntry < maxattempt) {
+        // in contrast to insert/pack use maxattempt to avoid that a single particle consumes all tries
+        while (nins == 0) {
           do {
             // generate a point in my subdomain
             do {
@@ -421,6 +420,8 @@ void FixInsertPackFaceUniverse::x_v_omega(int ninsert_this_local,int &ninserted_
             } while (all_in_flag && ins_region_mesh_hex->match_hex_cut(iHex,pos,rbound));
             ++ntry;
           } while (ntry < maxattempt && domain->dist_subbox_borders(pos) < rbound);
+
+          if (ntry == maxattempt) break;
 
           // randomize vel, omega, quat here
           vectorCopy3D(v_insert,v_toInsert);
@@ -442,7 +443,7 @@ void FixInsertPackFaceUniverse::x_v_omega(int ninsert_this_local,int &ninserted_
         } else {
           fix_pddf->pti_list_face_local[iface].erase(fix_pddf->pti_list_face_local[iface].begin()+ninserted_this_face_local);
           --particle_this_face_local;
-          // failed to insert particle on this proc
+          // failed to insert particle on this proc, try next one in list
         }
       }
     }
