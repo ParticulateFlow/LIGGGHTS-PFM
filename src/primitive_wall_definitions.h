@@ -124,7 +124,7 @@ namespace LAMMPS_NS
         if(pos[d::x] > *param){
           delta[d::x] = *param - pos[d::x]; delta[d::y] = 0.; delta[d::z] = 0.;
           return pos[d::x] - *param - r;
-        } else{
+        } else {
           delta[d::x] = *param - pos[d::x]; delta[d::y] = 0.; delta[d::z] = 0.;
           return *param - pos[d::x] - r;
         }

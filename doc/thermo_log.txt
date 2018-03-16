@@ -1,0 +1,46 @@
+"LAMMPS WWW Site"_lws - "LAMMPS Documentation"_ld - "LAMMPS Commands"_lc :c
+
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+thermo_log command :h3
+
+[Syntax:]
+
+thermo_log file keyword :pre
+
+file = name of new thermo logfile
+keyword = {append} if output should be appended to thermo logfile (optional) :ul
+
+[Examples:]
+
+thermo_log log.equil
+thermo_log log.equil append :pre
+
+[Description:]
+
+This command closes any current LAMMPS thermo log file, opens a new file with
+the specified name, and begins logging thermo information to it.  If the
+specified file name is {none}, then no new thermo log file is opened.  If the
+optional keyword {append} is specified, then output will be appended
+to an existing thermo log file, instead of overwriting it.
+
+If multiple processor partitions are being used, the file name should
+be a variable, so that different processors do not attempt to write to
+the same thermo log file.
+
+The default setting for the thermo log file is {none}.  The
+name of the thermo log file can also be set by the command-line
+switch -thermo.  See "Section 2.7"_Section_start.html#start_7 for
+details.
+
+[Restrictions:] none
+
+[Related commands:] none
+
+[Default:]
+
+By default no separate thermo log file is created.
