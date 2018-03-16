@@ -497,22 +497,22 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
 
           if(bonded)
           {
-            if (!pti_list[i]->fix_property)
+            if (!pti->fix_property)
             {
-              pti_list[i]->fix_property = new FixPropertyAtom*[1];
-              if (pti_list[i]->fix_property_value)
+              pti->fix_property = new FixPropertyAtom*[1];
+              if (pti->fix_property_value)
                 error->one(FLERR, "Internal error (fix property pti list)");
-              pti_list[i]->fix_property_value = new double*[1];
-              pti_list[i]->fix_property_value[0] = new double[1];
-              if (pti_list[i]->fix_property_nentry)
+              pti->fix_property_value = new double*[1];
+              pti->fix_property_value[0] = new double[1];
+              if (pti->fix_property_nentry)
                 error->one(FLERR, "Internal error (fix property pti list)");
-              pti_list[i]->fix_property_nentry = new int[1];
+              pti->fix_property_nentry = new int[1];
             }
-            pti_list[i]->fix_property[0] = fix_bond_random_id;
+            pti->fix_property[0] = fix_bond_random_id;
 
-            pti_list[i]->fix_property_value[0][0] = static_cast<double>(update->ntimestep)+random->uniform();
-            pti_list[i]->n_fix_property = 1;
-            pti_list[i]->fix_property_nentry[0] = 1;
+            pti->fix_property_value[0][0] = static_cast<double>(update->ntimestep)+random->uniform();
+            pti->n_fix_property = 1;
+            pti->fix_property_nentry[0] = 1;
           }
     }
 }
