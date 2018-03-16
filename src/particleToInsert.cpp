@@ -28,6 +28,7 @@
 
 #include "particleToInsert.h"
 #include <math.h>
+#include <limits.h>
 #include "error.h"
 #include "update.h"
 #include "domain.h"
@@ -38,6 +39,7 @@
 #include "math_extra_liggghts.h"
 #include "math_const.h"
 #include "modify.h"
+#include "force.h"
 
 using namespace LAMMPS_NS;
 
@@ -46,6 +48,7 @@ ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) :
   nspheres(ns),
   groupbit(0),
   atom_type(0),
+  bond_type(0),
   density_ins(0.0),
   volume_ins(0.0),
   mass_ins(0.0),
@@ -54,7 +57,9 @@ ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) :
   fix_property(NULL),
   n_fix_property(0),
   fix_property_nentry(NULL),
-  fix_property_value(NULL)
+  fix_property_value(NULL),
+  local_start(-1),
+  needs_bonding(false)
 {
     memory->create(x_ins,nspheres,3,"x_ins");
     radius_ins = new double[nspheres]();
@@ -91,6 +96,7 @@ int ParticleToInsert::insert()
     int nfix = modify->nfix;
     Fix **fix = modify->fix;
 
+    local_start = atom->nlocal;
     for(int i = 0; i < nspheres; i++)
     {
         /*NL*/ //if (screen) fprintf(screen,"proc %d tyring to insert particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
@@ -122,7 +128,23 @@ int ParticleToInsert::insert()
                     for (int j = 0; j < n_fix_property; j++)
                     {
                         if (fix_property_nentry[j] == 1)
+                        {
                             fix_property[j]->vector_atom[m] = fix_property_value[j][0];
+                            if(strcmp(fix_property[j]->id,"bond_random_id") == 0)
+                            {
+                                if (atom->molecule_flag)
+                                {
+                                    needs_bonding = true;
+                                    // use random part as base for dummy molecule ID
+                                    // see FixTemplateMultiplespheres::randomize_ptilist
+                                    double dmol = (fix_property_value[j][0] - static_cast<double>(update->ntimestep));
+                                    if(dmol > 1.0 || dmol < 0.0)
+                                        error->one(FLERR, "Internal error (particle to insert: mol id)");
+                                    atom->molecule[m] = -static_cast<int>(dmol * INT_MAX);
+                                    // actual molecule value needs to be created afterwards via atom->mol_extend()
+                                }
+                            }
+                        }
                         else
                         {
                             for (int k = 0; k < fix_property_nentry[j]; k++)
@@ -134,6 +156,109 @@ int ParticleToInsert::insert()
     }
 
     return inserted;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int ParticleToInsert::create_bonds()
+{
+    if(nspheres == 1 || !needs_bonding || local_start < 0)
+        return 0;
+
+    needs_bonding = false; // reset in case pti gets reused
+
+    // find bond partners
+    int *npartner = new int[nspheres](); // convert to member variable to be set from fix template
+    int **partner = new int*[nspheres];  // convert to member variable to be set from fix template
+    for(int i = 0; i < nspheres; ++i)
+        partner[i] = new int[nspheres-1]();
+
+    int create_bonds = 0;
+
+    for(int i = 0; i < nspheres-1; ++i)
+    {
+        const double xtmp = x_ins[i][0];
+        const double ytmp = x_ins[i][1];
+        const double ztmp = x_ins[i][2];
+
+        for(int j = i+1; j < nspheres; ++j)
+        {
+            const double max_bonding_dist = radius_ins[i] + radius_ins[j] + neighbor->skin;
+            const double delx = xtmp - x_ins[j][0];
+            const double dely = ytmp - x_ins[j][1];
+            const double delz = ztmp - x_ins[j][2];
+            const double rsq = delx * delx + dely * dely + delz * delz;
+
+            if(rsq < max_bonding_dist*max_bonding_dist)
+            {
+                if(npartner[i] == nspheres-1 || npartner[j] == nspheres-1)
+                {
+                    // should not happen print warning
+                    continue;
+                }
+                partner[i][npartner[i]] = j;
+                partner[j][npartner[j]] = i;
+                npartner[i]++;
+                npartner[j]++;
+                create_bonds = 1;
+            }
+        }
+    }
+
+    int ncreate = 0;
+
+    if(create_bonds)
+    {
+        // create bonds
+        int **_bond_type = atom->bond_type;
+        int **_bond_atom = atom->bond_atom;
+        int *num_bond = atom->num_bond;
+        int newton_bond = force->newton_bond;
+        int n_bondhist = atom->n_bondhist;
+        double ***bond_hist = atom->bond_hist;
+
+        // Note: atoms are created with dummy tag = 0, but
+        //       actual tags must be available at this point,
+        //       i.e. atom->tag_extend() must have been called
+        for(int i = 0; i < nspheres; ++i)
+        {
+            if (npartner[i] == 0) continue;
+
+            for(int k = 0; k < npartner[i]; ++k)
+            {
+                const int j = partner[i][k];
+                if (!newton_bond || i < j)
+                {
+                    const int ilocal = local_start + i;
+
+                    if (num_bond[ilocal] == atom->bond_per_atom)
+                    {
+                        error->one(FLERR,"New bond exceeded bonds per atom in fix bond/create");
+                    }
+
+                    _bond_type[ilocal][num_bond[ilocal]] = bond_type;
+                    _bond_atom[ilocal][num_bond[ilocal]] = atom->tag[local_start+j];
+
+                    // reset history
+                    for (int ih = 0; ih < n_bondhist; ++ih)
+                    {
+                        bond_hist[ilocal][num_bond[ilocal]][ih] = 0.;
+                    }
+                    num_bond[ilocal]++;
+                }
+
+                if(i < j)
+                    ++ncreate;
+            }
+        }
+    }
+
+    for(int i = 0; i < nspheres; ++i)
+        delete [] partner[i];
+    delete [] partner;
+    delete [] npartner;
+
+    return ncreate;
 }
 
 /* ---------------------------------------------------------------------- */
