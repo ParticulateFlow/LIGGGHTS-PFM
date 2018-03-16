@@ -115,7 +115,7 @@ void FixBondPropagateGran::pre_exchange()
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
-            error->all(FLERR,"Failed to operate on granular bond history during copy i1");
+            error->one(FLERR,"Failed to operate on granular bond history during copy i1");
         }
 
         for(int k = 0; k < n_bondhist; k++)
@@ -136,7 +136,7 @@ void FixBondPropagateGran::pre_exchange()
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
-            error->all(FLERR,"Failed to operate on granular bond history during copy i2");
+            error->one(FLERR,"Failed to operate on granular bond history during copy i2");
         }
 
         /*NL*///error->one(FLERR,"bond op");
@@ -175,7 +175,7 @@ void FixBondPropagateGran::pre_exchange()
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
-            error->all(FLERR,"Failed to operate on granular bond history during deletion1");
+            error->one(FLERR,"Failed to operate on granular bond history during deletion1");
         }
 
         remove_bond(i1,ip);
@@ -195,7 +195,7 @@ void FixBondPropagateGran::pre_exchange()
         {
             /*NL*/ if(screen) fprintf(screen,"step " BIGINT_FORMAT ": tags %d %d \n",
             /*NL*/         update->ntimestep,atom->tag[i1],atom->tag[i2]);
-            error->all(FLERR,"Failed to operate on granular bond history during deletion2");
+            error->one(FLERR,"Failed to operate on granular bond history during deletion2");
         }
 
         remove_bond(i2,ip);
