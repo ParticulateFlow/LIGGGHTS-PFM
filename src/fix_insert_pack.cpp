@@ -485,7 +485,7 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
                 fprintf(screen,"insertion: proc %d at %d %%\n",comm->me,10*ninserted_this_local/(ninsert_this_local/10));
 
             int nins = 0;
-            while(nins == 0 && ntry < maxtry)
+            while(nins == 0)
             {
                 do
                 {
@@ -495,6 +495,8 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
                     ntry++;
                 }
                 while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
+
+                if(ntry == maxtry) break;
 
                 // randomize vel, omega, quat here
                 vectorCopy3D(v_insert,v_toInsert);
