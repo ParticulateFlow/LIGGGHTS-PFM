@@ -513,6 +513,32 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
             pti->fix_property_value[0][0] = static_cast<double>(update->ntimestep)+random->uniform();
             pti->n_fix_property = 1;
             pti->fix_property_nentry[0] = 1;
+            pti->bond_type = 1; // TODO get from input script
           }
+    }
+}
+
+/* ----------------------------------------------------------------------*/
+
+void FixTemplateMultiplespheres::finalize_insertion()
+{
+    if(bonded)
+    {
+        // check each pti since we don't know which of them have actually been inserted
+        for(int i = 0; i < n_pti_max; ++i)
+        {
+            ParticleToInsert *pti = pti_list[i];
+            // only need to create bonds if fix_property is fix_bond_random_id
+            if(pti->fix_property && pti->fix_property[0] == fix_bond_random_id)
+            {
+                // only need to create bonds for pti created this time step
+                // timestep is integer part of fix_property_value
+                // Note: it's possble that not each pti gets inserted, the pti itself
+                //       does the final check if bond creation is necessary
+                bigint insertionstep = static_cast<bigint>(pti->fix_property_value[0][0]);
+                if(insertionstep == update->ntimestep)
+                    pti->create_bonds();
+            }
+        }
     }
 }

@@ -54,7 +54,7 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   virtual void init_ptilist(int);
   void randomize_ptilist(int ,int );
 
-  virtual void finalize_insertion() {}
+  virtual void finalize_insertion();
 
   inline double get_bond_id(const int i) const
   { return fix_bond_random_id ? fix_bond_random_id->vector_atom[i] : 0.0; }
