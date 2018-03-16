@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <set>
 #include "fix_insert_pack.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -255,6 +256,24 @@ int FixInsertPack::calc_ninsert_this()
   int np_region = 0;
   double vol_region = 0., mass_region = 0.;
   double _4Pi3 = 4.*M_PI/3.;
+
+  if(atom->molecular && atom->molecule_flag)
+  {
+      std::set<int> uniquemol;
+      int *molecule = atom->molecule;
+      for(int i = 0; i < nlocal; i++)
+      {
+          if(ins_region->match(x[i][0],x[i][1],x[i][2]))
+          {
+              uniquemol.insert(molecule[i]);
+              vol_region += _4Pi3*radius[i]*radius[i]*radius[i];
+              mass_region += rmass[i];
+          }
+      }
+      np_region = uniquemol.size();
+  }
+  else
+  {
   for(int i = 0; i < nlocal; i++)
   {
       //NP only count single particles
@@ -295,6 +314,7 @@ int FixInsertPack::calc_ninsert_this()
               mass_region += mass_body;
           }
       }
+  }
   }
 
   // calculate and return number of particles that is missing
