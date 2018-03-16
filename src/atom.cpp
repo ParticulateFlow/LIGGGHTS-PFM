@@ -47,6 +47,8 @@
 #include "memory.h"
 #include "error.h"
 #include <vector>
+#include <set>
+#include <map>
 #include <algorithm>
 
 // defining NDEBUG disables assertions
@@ -568,6 +570,36 @@ void Atom::modify_params(int narg, char **arg)
       iarg += 3;
     } else error->all(FLERR,"Illegal atom_modify command");
   }
+}
+
+/* ----------------------------------------------------------------------
+   add unique mol ids to any atoms with mol <= 0
+   new mol ids are grouped by proc and start after max current mol id
+   called after creating new bonded atoms
+------------------------------------------------------------------------- */
+
+void Atom::mol_extend()
+{
+  int maxmol = 0;
+  for (int i = 0; i < nlocal; ++i) maxmol = MAX(maxmol,molecule[i]);
+  int maxmol_all;
+  MPI_Allreduce(&maxmol,&maxmol_all,1,MPI_INT,MPI_MAX,world);
+
+  // nomol = # of molecules I own with no mol id (molecule <= 0)
+  // nomol_sum = # of total molecules on procs <= me with no mol id
+
+  std::set<int> uniquemol;
+  for (int i = 0; i < nlocal; i++) if (molecule[i] <= 0) uniquemol.insert(molecule[i]);
+  int nomol = uniquemol.size();
+  int nomol_sum;
+  MPI_Scan(&nomol,&nomol_sum,1,MPI_INT,MPI_SUM,world);
+
+  // imol = 1st new mol id that my untagged molecules should use
+
+  int imol = maxmol_all + nomol_sum - nomol + 1;
+  std::map<int, int> dummy2mol;
+  for (std::set<int>::iterator it=uniquemol.begin(); it!=uniquemol.end(); ++it) dummy2mol[*it] = imol++;
+  for (int i = 0; i < nlocal; ++i) if (molecule[i] <= 0) molecule[i] = dummy2mol[molecule[i]];
 }
 
 /* ----------------------------------------------------------------------
