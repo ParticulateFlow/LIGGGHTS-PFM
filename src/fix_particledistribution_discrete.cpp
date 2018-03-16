@@ -39,6 +39,7 @@
 #include "random_park.h"
 #include "particleToInsert.h"
 #include "comm.h"
+#include "force.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -393,6 +394,107 @@ void FixParticledistributionDiscrete::pre_insert()
 
     for (int j = 0; j < nfix; j++)
         if (fix[j]->create_attribute) fix[j]->pre_set_arrays();
+
+    // save bond history of ghost particles from neighbor to atom and delete it in neighbor;
+    // this needs to be done prior to insertion of new particles since that will destroy the
+    // neighbor/ghost information;
+    // neighbor operates exclusively on local atom indices, while atom stores tags of bond partners
+    // bond history that does not involve ghost atoms is handled in FixBondPropagateGran::pre_exchange()
+    if (atom->molecular && atom->n_bondhist)
+    {
+        int i1,i2,ip,n;
+
+        int **bondlist = neighbor->bondlist;
+        double **bondhistlist = neighbor->bondhistlist;
+        int nbondlist = neighbor->nbondlist;
+
+        int **bond_atom = atom->bond_atom;
+        int *num_bond = atom->num_bond;
+        double ***bond_hist = atom->bond_hist;
+        int n_bondhist = atom->n_bondhist; // number of bond history values
+
+        int nlocal = atom->nlocal;
+        int *tag = atom->tag;
+
+        int newton_bond = force->newton_bond;
+
+        for (n = 0; n < nbondlist; n++) {
+
+          if(bondlist[n][3]) continue; //do not copy broken bonds
+
+          i1 = bondlist[n][0]; // local index
+          i2 = bondlist[n][1]; // local index
+
+          if ((newton_bond || i1 < nlocal) && i2 >= nlocal)
+          {
+              ip = -1;
+              for(int k = 0; k < num_bond[i1]; k++)
+              {
+                  if(bond_atom[i1][k] == tag[i2])
+                  {
+                      ip = k;
+                      break;
+                  }
+              }
+
+              if(ip == -1)
+              {
+                  /*NL*/ if(screen) fprintf(screen,"[%d] step " BIGINT_FORMAT ": nlocal %d ilocal %d %d tags %d %d mol %d %d\n",
+                  /*NL*/         comm->me,update->ntimestep,nlocal,i1,i2,atom->tag[i1],atom->tag[i2], atom->molecule[i1], atom->molecule[i2]);
+                  error->one(FLERR,"Failed to operate on granular bond history during copy i1");
+              }
+
+              for(int k = 0; k < n_bondhist; k++)
+                 bond_hist[i1][ip][k] = bondhistlist[n][k];
+          }
+
+          if ((newton_bond || i2 < nlocal) && i1 >= nlocal)
+          {
+              ip = -1;
+              for(int k = 0; k < num_bond[i2]; k++)
+              {
+                  if(bond_atom[i2][k] == tag[i1])
+                  {
+                      ip = k;
+                      break;
+                  }
+              }
+
+              if(ip == -1)
+              {
+                  /*NL*/ if(screen) fprintf(screen,"[%d] step " BIGINT_FORMAT ": nlocal %d ilocal %d %d tags %d %d mol %d %d\n",
+                  /*NL*/         comm->me,update->ntimestep,nlocal,i1,i2,atom->tag[i1],atom->tag[i2], atom->molecule[i1], atom->molecule[i2]);
+                  error->one(FLERR,"Failed to operate on granular bond history during copy i2");
+              }
+
+              for(int k = 0; k < n_bondhist; k++)
+                 bond_hist[i2][ip][k] = -bondhistlist[n][k];
+          }
+        }
+
+        // delete neighbor bondlist involving ghosts
+        for (n = nbondlist-1; n >=0; --n)
+        {
+            i1 = bondlist[n][0];
+            i2 = bondlist[n][1];
+
+            if(i1 < nlocal && i2 < nlocal) continue;
+
+            if(n < nbondlist-1)
+            {
+                bondlist[n][0] = bondlist[nbondlist-1][0];
+                bondlist[n][1] = bondlist[nbondlist-1][1];
+                bondlist[n][2] = bondlist[nbondlist-1][2];
+                bondlist[n][3] = bondlist[nbondlist-1][3];
+
+                for(int k = 0; k < n_bondhist; k++)
+                   bondhistlist[n][k] = bondhistlist[nbondlist-1][k];
+            }
+            --nbondlist;
+        }
+
+        neighbor->nbondlist = nbondlist;
+    }
 }
 
 /* ----------------------------------------------------------------------
