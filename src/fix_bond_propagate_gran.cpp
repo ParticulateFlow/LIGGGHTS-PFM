@@ -105,11 +105,13 @@ void FixBondPropagateGran::pre_exchange()
     {
         ip = -1;
         for(int k = 0; k < num_bond[i1]; k++)
+        {
             if(bond_atom[i1][k] == tag[i2])
             {
                 ip = k;
                 break;
             }
+        }
 
         if(ip == -1)
         {
@@ -126,11 +128,13 @@ void FixBondPropagateGran::pre_exchange()
     {
         ip = -1;
         for(int k = 0; k < num_bond[i2]; k++)
+        {
             if(bond_atom[i2][k] == tag[i1])
             {
                 ip = k;
                 break;
             }
+        }
 
         if(ip == -1)
         {
@@ -165,11 +169,13 @@ void FixBondPropagateGran::pre_exchange()
     {
         ip = -1;
         for(int k = 0; k < num_bond[i1]; k++)
+        {
             if(bond_atom[i1][k] == tag[i2])
             {
                 ip = k;
                 break;
             }
+        }
 
         if(ip == -1)
         {
