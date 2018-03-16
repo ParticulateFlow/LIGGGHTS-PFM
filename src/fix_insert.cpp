@@ -708,6 +708,11 @@ void FixInsert::pre_exchange()
   //NP also sets molecule id
   fix_distribution->finalize_insertion();
 
+  if (atom->molecule_flag)
+  {
+    atom->mol_extend();
+  }
+
   // give derived classes the chance to do some wrap-up
   //NP do this after distribution wrap up
   //NP since per-atom "body" is set for multisphere via particledistribution
