@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+Author: Philippe Seil, Daniel Queteschiner
+Syntax highlighting for the LIGGGHTS scripting language
+works with LIGGGHTS v3.x
+copy to /usr/share/gtksourceview-3.0/language-spec and restart all sessions 
+of gedit to use it
+date of writing: March 21, 2018
+-->
+<language id="liggghts" _name="LIGGGHTS" version="2.0" _section="Scripts">
+  <metadata>
+    <property name="mimetypes">text</property>
+    <property name="globs">in.*</property>
+    <property name="line-comment-start">#</property>
+  </metadata>
+
+  <styles>
+    <style id="comment" _name="Comment" map-to="def:comment"/>
+    <style id="floating-point" _name="Floating Point" map-to="def:floating-point"/>
+    <style id="command" _name="Command" map-to="def:keyword"/>
+    <style id="decimal" _name="Decimal" map-to="def:decimal"/>
+    <style id="variable" _name="Variable" map-to="def:preprocessor"/>
+    <style id="compute" _name="Compute" map-to="def:preprocessor"/>
+    <style id="fix-reference" _name="Fix reference" map-to="def:preprocessor"/>
+  </styles>
+
+  <definitions>
+
+    <context id="liggghts">
+        <include>
+
+            <context id="line-comment" style-ref="comment" end-at-line-end="true" class="comment" class-disabled="no-spell-check">
+              <start>#</start>
+              <include>
+                <context ref="def:in-comment"/>
+              </include>
+            </context>
+
+            <!-- extracts the fix id and highlights it differently -->
+            <context id="fix">
+                <!-- \w = [A-Za-z0-9_] -->
+                <match>(fix)[ \t]+([\w]+)[ \t]+([\w]+)[ \t]+([\w/]+)\s?</match>
+                <include>
+                    <context id="fix-command" 
+                            sub-pattern="1"
+                            style-ref="def:keyword"/>
+<!--
+                    <context id="fix-id" 
+                            sub-pattern="2"
+                            style-ref="def:preprocessor"/>
+-->
+                    <context id="fix-style" 
+                            sub-pattern="4"
+                            style-ref="def:type"/>
+                </include>
+            </context>
+
+            <context id="command" style-ref="command">
+                <keyword>angle_coeff</keyword>
+                <keyword>angle_style</keyword>
+                <keyword>atom_modify</keyword>
+                <keyword>atom_style</keyword>
+                <keyword>balance</keyword>
+                <keyword>bond_coeff</keyword>
+                <keyword>bond_style</keyword>
+                <keyword>boundary</keyword>
+                <keyword>change_box</keyword>
+                <keyword>clear</keyword>
+                <keyword>coarsegraining</keyword>
+                <keyword>communicate</keyword>
+                <keyword>compute</keyword>
+                <keyword>compute_modify</keyword>
+                <keyword>create_atoms</keyword>
+                <keyword>create_box</keyword>
+                <keyword>delete_atoms</keyword>
+                <keyword>delete_bonds</keyword>
+                <keyword>dielectric</keyword>
+                <keyword>dihedral_coeff</keyword>
+                <keyword>dihedral_style</keyword>
+                <keyword>dimension</keyword>
+                <keyword>displace_atoms</keyword>
+                <keyword>dump</keyword>
+                <keyword>dump_modify</keyword>
+                <keyword>echo</keyword>
+                <keyword>fix_modify</keyword>
+                <keyword>group</keyword>
+                <keyword>if</keyword>
+                <keyword>improper_coeff</keyword>
+                <keyword>improper_style</keyword>
+                <keyword>include</keyword>
+                <keyword>jump</keyword>
+                <keyword>kspace_modify</keyword>
+                <keyword>kspace_style</keyword>
+                <keyword>label</keyword>
+                <keyword>lattice</keyword>
+                <keyword>log</keyword>
+                <keyword>mass</keyword>
+                <keyword>minimize</keyword>
+                <keyword>min_modify</keyword>
+                <keyword>min_style</keyword>
+                <keyword>neigh_modify</keyword>
+                <keyword>neighbor</keyword>
+                <keyword>newton</keyword>
+                <keyword>next</keyword>
+                <keyword>pair_coeff</keyword>
+                <keyword>pair_modify</keyword>
+                <keyword>pair_style</keyword>
+                <keyword>pair_write</keyword>
+                <keyword>partition</keyword>
+                <keyword>prd</keyword>
+                <keyword>print</keyword>
+                <keyword>processors</keyword>
+                <keyword>quit</keyword>
+                <keyword>read_data</keyword>
+                <keyword>read_dump</keyword>
+                <keyword>read_restart</keyword>
+                <keyword>region</keyword>
+                <keyword>replicate</keyword>
+                <keyword>rerun</keyword>
+                <keyword>reset_timestep</keyword>
+                <keyword>restart</keyword>
+                <keyword>run</keyword>
+                <keyword>run_style</keyword>
+                <keyword>set</keyword>
+                <keyword>shell</keyword>
+                <keyword>special_bonds</keyword>
+                <keyword>suffix</keyword>
+                <keyword>tad</keyword>
+                <keyword>temper</keyword>
+                <keyword>thermo</keyword>
+                <keyword>thermo_modify</keyword>
+                <keyword>thermo_style</keyword>
+                <keyword>timestep</keyword>
+                <keyword>uncompute</keyword>
+                <keyword>undump</keyword>
+                <keyword>unfix</keyword>
+                <keyword>units</keyword>
+                <keyword>variable</keyword>
+                <keyword>velocity</keyword>
+                <keyword>write_data</keyword>
+                <keyword>write_dump</keyword>
+                <keyword>write_restart</keyword>
+            </context>
+            <context id="floating-point-number" style-ref="floating-point">
+              <match>\b([0-9]+[Ee][-]?[0-9]+|([0-9]*\.[0-9]+|[0-9]+\.)([Ee][-]?[0-9]+)?)[fFlL]?</match>
+            </context>
+
+            <context id="variable" style-ref="variable">
+              <match>\$([A-Za-z]|{[A-Za-z0-9]+})|v_[A-Za-z0-9]+</match>
+            </context>
+            <context id="compute" style-ref="compute">
+              <match>c_[A-Za-z0-9]+</match>
+            </context>
+            <context id="fix-reference" style-ref="fix-reference">
+              <match>f_[A-Za-z0-9]+</match>
+            </context>
+
+            <context id="decimal" style-ref="decimal">
+              <match>\b([1-9][0-9]*|0)([Uu]([Ll]|LL|ll)?|([Ll]|LL|ll)[Uu]?)?\b</match>
+            </context>
+
+
+            <context id="null" style-ref="floating-point">
+                <match>NULL</match>
+            </context>
+
+            
+        </include>
+    </context>
+  </definitions>
+</language>
