@@ -121,7 +121,7 @@ FixParScaleCouple::FixParScaleCouple(LAMMPS *lmp, int narg, char **arg) :
   MPI_Comm_split(MPI_COMM_WORLD,pascal,0,&comm_pascal);
 
   // Open ParScale input script and create ParScale Object
-  if(0 == me)
+  if(me == 0 && screen)
     fprintf(screen, "\n...creating PaScal object... \n");
   if(pascal == 1) pasc_ = new PASCAL_NS::ParScale(0, NULL, comm_pascal,lmp);
   pascal_setup_ = true;
@@ -161,7 +161,7 @@ FixParScaleCouple::FixParScaleCouple(LAMMPS *lmp, int narg, char **arg) :
   delete [] runDirectory;
 
   ts_create_ = update->ntimestep;
-  fprintf(screen, "...ParScale object initialized! \n\n");
+  if (screen) fprintf(screen, "...ParScale object initialized! \n\n");
 }
 
 /* ----------------------------------------------------------------------
@@ -183,7 +183,7 @@ void FixParScaleCouple::post_create()
     error->all(FLERR,"internal error");
 
 
-  if(verbose_) fprintf(screen, "ParScale::post_create()!\n");
+  if(verbose_ && screen) fprintf(screen, "ParScale::post_create()!\n");
   // register fixes for quantities to be saved to disk
   // see fix_property_atom.cpp for meaning of fixargs
 }
@@ -288,7 +288,7 @@ int* FixParScaleCouple::get_liggghts_map(int &length)
 //{
 //    couple_this_step_ = true;
 /*
-    if (next_reneighbor != update->ntimestep)
+    if (next_reneighbor != update->ntimestep && screen)
         fprintf(screen,"'premature' LIGGGHTS-ParScale coupling because of high flow dynamics\n");
 */
 //}
@@ -344,14 +344,14 @@ void FixParScaleCouple::end_of_step()
 
 
 #if 0
-   int currAtom=1;
-   fprintf(screen, "currAtom: %d xcm %g %g %g,vcm %g %g %g ,omega %g %g %g, torque  %g %g %g, fcm  %g %g %g\n",
+    int currAtom=1;
+    if (screen) fprintf(screen, "currAtom: %d xcm %g %g %g,vcm %g %g %g ,omega %g %g %g, torque  %g %g %g, fcm  %g %g %g\n",
             currAtom,
-             xcm[currAtom][0], xcm[currAtom][1], xcm[currAtom][2],
-             vcm[currAtom][0], vcm[currAtom][1], vcm[currAtom][2],
-             omega[currAtom][0], omega[currAtom][1], omega[currAtom][2],
-             torque[currAtom][0],torque[currAtom][1],torque[currAtom][2],
-             fcm[currAtom][0],fcm[currAtom][1],fcm[currAtom][2]);
+            xcm[currAtom][0], xcm[currAtom][1], xcm[currAtom][2],
+            vcm[currAtom][0], vcm[currAtom][1], vcm[currAtom][2],
+            omega[currAtom][0], omega[currAtom][1], omega[currAtom][2],
+            torque[currAtom][0],torque[currAtom][1],torque[currAtom][2],
+            fcm[currAtom][0],fcm[currAtom][1],fcm[currAtom][2]);
 #endif
 
 }

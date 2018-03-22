@@ -70,9 +70,6 @@ FixTemplateMultisphere::FixTemplateMultisphere(LAMMPS *lmp, int narg, char **arg
   moi_set_(false),
   use_density_(-1)
 {
-    delete pti;
-    pti = new ParticleToInsertMultisphere(lmp,nspheres);
-
     memory->create(displace_,nspheres,3,"FixTemplateMultiplespheres:moi_");
 
     volumeweight_ = new double[nspheres];
@@ -179,7 +176,7 @@ void FixTemplateMultisphere::post_create()
       mass_expect = mass;
       r_equiv = pow(3.*volume_expect/(4.*M_PI),1./3.);
       pdf_density->set_params<RANDOM_CONSTANT>(mass_expect/volume_expect);
-      /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"overwrote MC values; now: mass_expect %e, r_equiv %f\n",mass_expect,r_equiv);
+      /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"overwrote MC values; now: mass_expect %e, r_equiv %f\n",mass_expect,r_equiv);
 
       // calc rest of stuff
       calc_eigensystem();
@@ -196,7 +193,7 @@ void FixTemplateMultisphere::post_create()
       // calc expectancy values
       volume_expect = mass_expect / expectancy(pdf_density);
       r_equiv = pow(6.*mass_expect/(8.*expectancy(pdf_density)*M_PI),1./3.);
-      /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"overwrote MC values; now: volume_expect %e, r_equiv %f\n",volume_expect,r_equiv);
+      /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"overwrote MC values; now: volume_expect %e, r_equiv %f\n",volume_expect,r_equiv);
   }
 
 
@@ -307,7 +304,7 @@ void FixTemplateMultisphere::calc_inertia()
   double x_try[3],xcm[3],distSqr;
   bool alreadyChecked;
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"MC integration for inertia_ tensor\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"MC integration for inertia_ tensor\n");
   for(int i = 0; i < 3; i++)
     vectorZeroize3D(moi_[i]);
 
@@ -342,20 +339,20 @@ void FixTemplateMultisphere::calc_inertia()
       for(int j = 0; j < 3; j++)
           moi_[i][j] *= expectancy(pdf_density)/static_cast<double>(ntry)*(x_max[0]-x_min[0])*(x_max[1]-x_min[1])*(x_max[2]-x_min[2]);
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"MC integration done\n");
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen," moi_=%1.10f|%1.10f|%1.10f\n",moi_[0][0],moi_[0][1],moi_[0][2]);
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen," moi_=%1.10f|%1.10f|%1.10f\n",moi_[1][0],moi_[1][1],moi_[1][2]);
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen," moi_=%1.10f|%1.10f|%1.10f\n",moi_[2][0],moi_[2][1],moi_[2][2]);
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"MC integration done\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen," moi_=%1.10f|%1.10f|%1.10f\n",moi_[0][0],moi_[0][1],moi_[0][2]);
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen," moi_=%1.10f|%1.10f|%1.10f\n",moi_[1][0],moi_[1][1],moi_[1][2]);
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen," moi_=%1.10f|%1.10f|%1.10f\n",moi_[2][0],moi_[2][1],moi_[2][2]);
 
   // check if tensor is symmetric enough(numerical errors)
   // not sure if this check is sufficient
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"Checking tensor symmetry\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"Checking tensor symmetry\n");
   if(fabs(moi_[0][1]/moi_[1][0]-1.) > TOLERANCE) error->all(FLERR,"Fix particletemplate/multisphere:Error when calculating inertia_ tensor : Not enough accuracy. Boost ntry.");
   if(fabs(moi_[0][2]/moi_[2][0]-1.) > TOLERANCE) error->all(FLERR,"Fix particletemplate/multisphere:Error when calculating inertia_ tensor : Not enough accuracy. Boost ntry.");
   if(fabs(moi_[2][1]/moi_[1][2]-1.) > TOLERANCE) error->all(FLERR,"Fix particletemplate/multisphere:Error when calculating inertia_ tensor : Not enough accuracy. Boost ntry.");
 
   // make the tensor symmetric
-  /*NL*/if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"Check OK, forcing symmetry\n");
+  /*NL*/if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"Check OK, forcing symmetry\n");
   moi_[0][1] = (moi_[0][1]+moi_[1][0])/2.;
   moi_[1][0] = moi_[0][1];
   moi_[0][2] = (moi_[0][2]+moi_[2][0])/2.;
@@ -377,14 +374,14 @@ void FixTemplateMultisphere::calc_eigensystem()
   // calculate eigenvalues and eigenvectors
   //-----------------------------------------
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"Calculating eigenvalues and eigenvectors\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"Calculating eigenvalues and eigenvectors\n");
   double evectors[3][3];
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"Performing jacobi calc\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"Performing jacobi calc\n");
 
   int ierror = MathExtra::jacobi(moi_,static_cast<double*>(inertia_),evectors);
   if (ierror) error->fix_error(FLERR,this,"Insufficient Jacobi rotations for rigid body");
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"Jacobi calc finished\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"Jacobi calc finished\n");
   ex_space_[0] = evectors[0][0];
   ex_space_[1] = evectors[1][0];
   ex_space_[2] = evectors[2][0];
@@ -396,7 +393,7 @@ void FixTemplateMultisphere::calc_eigensystem()
   ez_space_[2] = evectors[2][2];
 
   // if any principal moment < scaled EPSILON, set to 0.0
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"Removing unnecessary intertia terms\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"Removing unnecessary intertia terms\n");
   double max;
   max = MAX(inertia_[0],inertia_[1]);
   max = MAX(max,inertia_[2]);
@@ -432,14 +429,14 @@ void FixTemplateMultisphere::calc_displace_xcm_x_body()
 
       // can do it like this because ex, ey, ez are orthogonal, using xcm = 0/0/0
       MathExtraLiggghts::cartesian_coosys_to_local_orthogonal(displace_[i],x_sphere[i], ex_space_, ey_space_, ez_space_,error);
-      /*NL*///fprintf(screen,"displace_ for particle %d: %f %f %f\n",i,displace_[i][0],displace_[i][1],displace_[i][2]);
+      /*NL*///if (screen) fprintf(screen,"displace_ for particle %d: %f %f %f\n",i,displace_[i][0],displace_[i][1],displace_[i][2]);
   }
 
   // transform in body coodinates, could do this with
   // solve Mt*xcm_to_xb_body = xcm_to_xb (where xcm_to_xb == x_bound because xcm is 0 0 0)
   MathExtraLiggghts::cartesian_coosys_to_local_orthogonal(xcm_to_xb_body_,x_bound,ex_space_,ey_space_,ez_space_,error);
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE) fprintf(screen,"Calculated eigenvectors and eigenvalues\n");
+  /*NL*/ if(LMP_DEBUGMODE_MULTISPHERE && screen) fprintf(screen,"Calculated eigenvectors and eigenvalues\n");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -468,56 +465,7 @@ FixTemplateMultisphere::~FixTemplateMultisphere()
     memory->destroy(displace_);
     delete []volumeweight_;
 
-    delete pti;
     if(pti_list) delete_ptilist();
-}
-
-/* ----------------------------------------------------------------------*/
-
-void FixTemplateMultisphere::randomize_single()
-{
-  //NP displace_, ex,ey,ez are for reference orientation
-
-  pti->nspheres = nspheres;
-  pti->density_ins = expectancy(pdf_density);;
-  pti->volume_ins = volume_expect;
-  pti->mass_ins = mass_expect;
-  pti->r_bound_ins = r_bound;
-  pti->atom_type = atom_type;
-
-  ParticleToInsertMultisphere *pti_m = static_cast<ParticleToInsertMultisphere*>(pti);
-
-  pti_m->type_ms = type_;
-
-  for(int j = 0; j < nspheres; j++)
-  {
-      pti_m->radius_ins[j] = r_sphere[j];
-      vectorCopy3D(x_sphere[j],pti_m->x_ins[j]);
-      vectorCopy3D(displace_[j],pti_m->displace[j]);
-  }
-
-  vectorCopy3D(inertia_,pti_m->inertia);
-  vectorCopy3D(ex_space_,pti_m->ex_space);
-  vectorCopy3D(ey_space_,pti_m->ey_space);
-  vectorCopy3D(ez_space_,pti_m->ez_space);
-  vectorCopy3D(xcm_to_xb_body_,pti_m->xcm_to_xbound);
-
-  vectorZeroize3D(pti_m->xcm_ins);
-  quatUnitize4D(pti_m->quat_ins);
-  vectorZeroize3D(pti_m->v_ins);
-  vectorZeroize3D(pti_m->omega_ins);
-
-  pti->groupbit = groupbit;
-
-  /*NL*///double test[3];
-  /*NL*///fprintf(screen,"transformed %e %e %e into %e %e %e\n",x_bound[0],x_bound[1],x_bound[2],xcm_to_xb_body[0],xcm_to_xb_body[1],xcm_to_xb_body[2]);
-  /*NL*///fprintf(screen,"ex ey ez is  %f %f %f , %f %f %f, %f %f %f\n",ex_space_[0],ex_space_[1],ex_space_[2],ey_space_[0],ey_space_[1],ey_space_[2],ez_space_[0],ez_space_[1],ez_space_[2]);
-
-   //NP nothing to do here
-   //NP variable density and diameter not implemented
-
-   //NP rotate ex_space_, ey_space_, ez_space_ done later
-   //pti->random_rotate(random->uniform(),random->uniform(),random->uniform());
 }
 
 /* ----------------------------------------------------------------------*/
@@ -530,14 +478,14 @@ void FixTemplateMultisphere::init_ptilist(int n_random_max)
     for(int i = 0; i < n_pti_max; i++)
        pti_list[i] = new ParticleToInsertMultisphere(lmp,nspheres);
 
-    /*NL*/ //fprintf(screen,"init_list called with n_pti_max %d\n",n_pti_max);
+    /*NL*/ //if (screen) fprintf(screen,"init_list called with n_pti_max %d\n",n_pti_max);
 }
 
 /* ----------------------------------------------------------------------*/
 
 void FixTemplateMultisphere::delete_ptilist()
 {
-    /*NL*/ //fprintf(screen,"delete_list called with n_pti_max %d\n",n_pti_max);
+    /*NL*/ //if (screen) fprintf(screen,"delete_list called with n_pti_max %d\n",n_pti_max);
     if(n_pti_max == 0) return;
 
     for(int i = 0; i < n_pti_max; i++)

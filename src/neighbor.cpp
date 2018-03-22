@@ -311,7 +311,7 @@ void Neighbor::init()
     cutneighmin = MIN(cutneighmin,2*minrd+skin);
   }
 
-  /*NL*/ //fprintf(screen,"cutneighmin/max %f %f\n",cutneighmin,cutneighmax);
+  /*NL*/ //if (screen) fprintf(screen,"cutneighmin/max %f %f\n",cutneighmin,cutneighmax);
   /*NL*/ //error->all(FLERR,"end"); //NP modified C.K.
 
   // check other classes that can induce reneighboring in decide()
@@ -484,29 +484,29 @@ void Neighbor::init()
 
   int same = 1;
   if (style != old_style) same = 0;
-  /*NL*/ //fprintf(screen,"same 1 %d, nrequest %d\n",same,nrequest);
+  /*NL*/ //if (screen) fprintf(screen,"same 1 %d, nrequest %d\n",same,nrequest);
   if (triclinic != old_triclinic) same = 0;
-  /*NL*/ //fprintf(screen,"same 2 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"same 2 %d\n",same);
   if (pgsize != old_pgsize) same = 0;
-  /*NL*/ //fprintf(screen,"same 3 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"same 3 %d\n",same);
   if (oneatom != old_oneatom) same = 0;
-  /*NL*/ //fprintf(screen,"same 4 %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"same 4 %d\n",same);
   if (nrequest != old_nrequest) {
     same = 0;
-    /*NL*/ //fprintf(screen,"same 5 %d, nrequest %d\n",same,nrequest);
+    /*NL*/ //if (screen) fprintf(screen,"same 5 %d, nrequest %d\n",same,nrequest);
   }
   else
     for (i = 0; i < nrequest; i++)
     {
       if (requests[i]->identical(old_requests[i]) == 0)  {
         same = 0;
-        /*NL*/ //fprintf(screen,"same after irequest %d: %d\n",i,same);
+        /*NL*/ //if (screen) fprintf(screen,"same after irequest %d: %d\n",i,same);
       }
       //NP now fixed by pair_gran_hashcode in neigh_request.h
       //if (requests[i]->gran || requests[i]->granhistory) same = 0; //NP modified C.K.
     }
 
-  /*NL*/ //fprintf(screen,"same final %d\n",same);
+  /*NL*/ //if (screen) fprintf(screen,"same final %d\n",same);
 
 #ifdef NEIGH_LIST_DEBUG
   if (comm->me == 0) printf("SAME flag %d\n",same);
@@ -528,7 +528,7 @@ void Neighbor::init()
     pair_build = new PairPtr[nlist];
     stencil_create = new StencilPtr[nlist];
 
-    /*NL*/ //fprintf(screen,"nlist %d nrequest %d\n",nlist,nrequest);
+    /*NL*/ //if (screen) fprintf(screen,"nlist %d nrequest %d\n",nlist,nrequest);
 
     // create individual lists, one per request
     // pass list ptr back to requestor (except for Command class)
@@ -537,7 +537,7 @@ void Neighbor::init()
     for (i = 0; i < nlist; i++) {
       lists[i] = new NeighList(lmp);
       lists[i]->index = i;
-      /*NL*/ //fprintf(screen,"processing neigh request %d comp %d pair %d\n",i,requests[i]->compute,requests[i]->pair);
+      /*NL*/ //if (screen) fprintf(screen,"processing neigh request %d comp %d pair %d\n",i,requests[i]->compute,requests[i]->pair);
 
       if (requests[i]->pair) {
         Pair *pair = (Pair *) requests[i]->requestor;
@@ -1341,7 +1341,7 @@ void Neighbor::print_lists_of_lists()
 int Neighbor::decide()
 {
   if (must_check) {
-    int n = update->ntimestep;
+    const bigint n = update->ntimestep;
     if (restart_check && n == output->next_restart) return 1;
     for (int i = 0; i < fix_check; i++)
       if (n == modify->fix[fixchecklist[i]]->next_reneighbor) return 1;
@@ -1417,9 +1417,9 @@ int Neighbor::check_distance()
         delz = x[i][2] - xhold[i][2];
         rsq = delx*delx + dely*dely + delz*delz;
         if (rsq > deltasq) flag = 1;
-        /*NL*///fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
+        /*NL*///if (screen) fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
         /*NL*///if(1==flag)
-        /*NL*///{fprintf(screen,"tag %d r %f rhold %f delr %f x %f %f %f, xhold %f %f %f rsq %f delta %f deltasq %f\n",
+        /*NL*///{if (screen) fprintf(screen,"tag %d r %f rhold %f delr %f x %f %f %f, xhold %f %f %f rsq %f delta %f deltasq %f\n",
         /*NL*///             atom->tag[i],radius[i],rhold[i],delr,x[i][0],x[i][1],x[i][2],xhold[i][0],xhold[i][1],xhold[i][2],rsq,delta,deltasq);
         /*NL*/// error->one(FLERR,"end");}
       }
@@ -1438,11 +1438,11 @@ int Neighbor::check_distance()
         if (delrsq > deltasq || rsq > deltasq - 2.*delr*delta + delrsq)
             flag = 1;
         /*NL*///if(1==flag)
-        /*NL*///{fprintf(screen,"r %f rhold %f delr %f x %f %f %f, xhold %f %f %f rsq %f delta %f deltasq %f\n",
+        /*NL*///{if (screen) fprintf(screen,"r %f rhold %f delr %f x %f %f %f, xhold %f %f %f rsq %f delta %f deltasq %f\n",
         /*NL*///             radius[i],rhold[i],delr,x[i][0],x[i][1],x[i][2],xhold[i][0],xhold[i][1],xhold[i][2],rsq,delta,deltasq);
         /*NL*/// error->one(FLERR,"end");}
       }
-      /*NL*///fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
+      /*NL*///if (screen) fprintf(screen,"checking at step %d, result %d\n",update->ntimestep,flag);
   }
 
   int flagall;
@@ -1697,7 +1697,7 @@ void Neighbor::setup_bins()
   if (nbiny == 0) nbiny = 1;
   if (nbinz == 0) nbinz = 1;
 
-  /*NL*/ //fprintf(screen,"nbinx %d nbiny %d, nbinz %d\n",nbinx,nbiny,nbinz);
+  /*NL*/ //if (screen) fprintf(screen,"nbinx %d nbiny %d, nbinz %d\n",nbinx,nbiny,nbinz);
 
   // compute actual bin size for nbins to fit into box exactly
   // error if actual bin size << cutoff, since will create a zillion bins
@@ -1723,7 +1723,7 @@ void Neighbor::setup_bins()
   // static_cast(-1.5) = -1, so subract additional -1
   // add in SMALL for round-off safety
 
-  int mbinxhi,mbinyhi,mbinzhi;
+  int mbinxhi=0,mbinyhi=0,mbinzhi=0;
   double coord;
 
   coord = bsubboxlo[0] - SMALL*bbox[0];
@@ -2129,7 +2129,7 @@ void Neighbor::bin_center(int ix, int iy, int iz, double * center)
 int Neighbor::exclusion(int i, int j, int itype, int jtype,
                         int *mask, int *molecule) const {
   int m;
-  /*NL*/// fprintf(screen,"step %d proc %d called for tags %d and %d (ghost %d %d) with mols %d and %d\n",
+  /*NL*/// if (screen) fprintf(screen,"step %d proc %d called for tags %d and %d (ghost %d %d) with mols %d and %d\n",
   /*NL*///        update->ntimestep,comm->me,atom->tag[i],atom->tag[j],i>=atom->nlocal?1:0,j>=atom->nlocal?1:0,molecule[i],molecule[j]);
   if (nex_type && ex_type[itype][jtype]) return 1;
 
@@ -2208,12 +2208,12 @@ int Neighbor::n_neighs()
 
     if (m < old_nrequest) {
       int inum = lists[m]->inum;
-      /*NL*///fprintf(screen,"inum %d\n",inum);
+      /*NL*///if (screen) fprintf(screen,"inum %d\n",inum);
       int *ilist = lists[m]->ilist;
       int *numneigh = lists[m]->numneigh;
       for (int ii = 0; ii < inum; ii++)
       {
-        /*NL*///fprintf(screen,"adding %d\n",numneigh[ilist[ii]]);
+        /*NL*///if (screen) fprintf(screen,"adding %d\n",numneigh[ilist[ii]]);
         nneigh += numneigh[ilist[ii]];
       }
     }

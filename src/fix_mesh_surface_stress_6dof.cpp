@@ -249,11 +249,13 @@ void FixMeshSurfaceStress6DOF::post_create_pre_restart()
 
 void FixMeshSurfaceStress6DOF::post_create()
 {
+    /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"after re pref %f %f %f\n",p_ref(0),p_ref(1),p_ref(2));
     /*NL*/ //fprintf(screen,"after re torque_total %f %f %f\n",torque_total(0),torque_total(1),torque_total(2));
     /*NL*/ //printVec3D(screen,"after re xcm",xcm_(0));
     /*NL*/ //printVec4D(screen,"after re quat",quat_(0));
     /*NL*/ //fprintf(screen,"sizes xcm %d mass %d moi %d\n",xcm_.size(),mass_.size(),moi_.size());
+    /*NL*/ //}
 
     FixMeshSurfaceStress::post_create();
 
@@ -288,7 +290,7 @@ void FixMeshSurfaceStress6DOF::init_defaults()
 
 void FixMeshSurfaceStress6DOF::error_checks()
 {
-    /*NL*/ //fprintf(screen,"sizes xcm %d mass %d moi %d\n",xcm_.size(),mass_.size(),moi_.size());
+    /*NL*/ //if (screen) fprintf(screen,"sizes xcm %d mass %d moi %d\n",xcm_.size(),mass_.size(),moi_.size());
 
     if(!xcm_.size())
         error->fix_error(FLERR,this,"please define 'com' for the 6dof mesh");
@@ -309,19 +311,19 @@ void FixMeshSurfaceStress6DOF::init_rotation_props()
 {
   double **evectors;
   memory->create(evectors,3,3,"FixMeshSurfaceStress6DOF:evectors");
-  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF) fprintf(screen,"Performing jacobi calc\n");
+  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF && screen) fprintf(screen,"Performing jacobi calc\n");
 
   int ierror = MathExtra::jacobi(moi_(0),inertia_(0),evectors);
   if (ierror) error->fix_error(FLERR,this,"Insufficient Jacobi rotations for rigid body");
 
-  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF) fprintf(screen,"Jacobi calc finished\n");
+  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF && screen) fprintf(screen,"Jacobi calc finished\n");
 
   ex_space_(0)[0] = evectors[0][0];  ex_space_(0)[1] = evectors[1][0];  ex_space_(0)[2] = evectors[2][0];
   ey_space_(0)[0] = evectors[0][1];  ey_space_(0)[1] = evectors[1][1];  ey_space_(0)[2] = evectors[2][1];
   ez_space_(0)[0] = evectors[0][2];  ez_space_(0)[1] = evectors[1][2];  ez_space_(0)[2] = evectors[2][2];
 
   // if any principal moment < scaled EPSILON, set to 0.0
-  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF) fprintf(screen,"Removing unnecessary intertia terms\n");
+  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF && screen) fprintf(screen,"Removing unnecessary intertia terms\n");
 
   double max;
   max = MathExtraLiggghts::max(inertia_(0)[0],inertia_(0)[1]);
@@ -344,12 +346,12 @@ void FixMeshSurfaceStress6DOF::init_rotation_props()
       ez_space_(0)[2] = -ez_space_(0)[2];
   }
 
-  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF) fprintf(screen,"Creating initial quat\n");
+  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF && screen) fprintf(screen,"Creating initial quat\n");
 
   // create initial quaternion
   MathExtra::exyz_to_q(ex_space_(0),ey_space_(0),ez_space_(0),quat_(0));
 
-  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF) fprintf(screen,"calculating dsplc\n");
+  /*NL*/ if(DEBUG_MESH_SURFACE_STRESS_6DOF && screen) fprintf(screen,"calculating dsplc\n");
 
   memory->destroy(evectors);
 
@@ -451,9 +453,11 @@ void FixMeshSurfaceStress6DOF::initial_integrate(int vflag)
 
     // update angular momentum by 1/2 step
 
+    /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"pref %f %f %f\n",p_ref(0),p_ref(1),p_ref(2));
     /*NL*/ //fprintf(screen,"torque_total %f %f %f\n",torque_total(0),torque_total(1),torque_total(2));
-    /*NL*/// printVec3D(screen,"xcm",xcm_(0));
+    /*NL*/ //printVec3D(screen,"xcm",xcm_(0));
+    /*NL*/ //}
 
     if(tflag_(0)[0]) angmom_(0)[0] += dtf_ * torque_total(0);
     if(tflag_(0)[1]) angmom_(0)[1] += dtf_ * torque_total(1);
@@ -478,10 +482,12 @@ void FixMeshSurfaceStress6DOF::initial_integrate(int vflag)
 
     // move and rotate mesh, set velocity
 
+    /*NL*/ //if (screen) {
     /*NL*/ //printVec3D(screen,"dX",dX);
     /*NL*/ //printVec3D(screen,"dx",dx);
     /*NL*/ //printVec4D(screen,"dQ",dQ);
     /*NL*/ //printVec4D(screen,"dq",dq);
+    /*NL*/ //}
 
     mesh()->move(dX,dx);
     mesh()->rotate(dQ,dq,xcm_(0));
@@ -493,8 +499,8 @@ void FixMeshSurfaceStress6DOF::initial_integrate(int vflag)
     //NP which could happen b/c move, rotate is done increnmentally
 
     set_p_ref(xcm_(0));
-    /*NL*/ //fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
-    /*NL*/ //printVec3D(screen,"xcm",xcm_(0));
+    /*NL*/ //if (screen) fprintf(screen,"p_ref %g %g %g\n",p_ref(0),p_ref(1),p_ref(2));
+    /*NL*/ //if (screen) printVec3D(screen,"xcm",xcm_(0));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -514,7 +520,7 @@ void FixMeshSurfaceStress6DOF::final_integrate()
     //NP update forces
     FixMeshSurfaceStress::final_integrate();
 
-    /*NL*/ //fprintf(screen,"Integration step " BIGINT_FORMAT ", added force %f %f %f\n",update->ntimestep, f_total(0), f_total(1), f_total(2));
+    /*NL*/ //if (screen) fprintf(screen,"Integration step " BIGINT_FORMAT ", added force %f %f %f\n",update->ntimestep, f_total(0), f_total(1), f_total(2));
 
     // update vcm by 1/2 step
 
@@ -546,7 +552,7 @@ void FixMeshSurfaceStress6DOF::add_gravity()
         static_cast<FixGravity*>(modify->find_fix_style_strict("gravity",0))->get_gravity(gravity);
 
     vectorScalarMult3D(gravity,mass_(0),f_grav);
-    /*NL*/ //printVec3D(screen,"f_grav",f_grav);
+    /*NL*/ //if (screen) printVec3D(screen,"f_grav",f_grav);
     add_global_external_contribution(f_grav);
 }
 
@@ -596,9 +602,9 @@ void FixMeshSurfaceStress6DOF::add_suspension_force()
 
     vectorAdd3D(force_spring,force_damper,force);
     vectorAdd3D(torque_spring,torque_damper,torque);
-    /*NL*/ //printVec3D(screen,"force",force);
-    /*NL*/ //printVec3D(screen,"torque",torque);
-    /*NL*/ //printVec4D(screen,"dQ",dQ);
+    /*NL*/ //if (screen) printVec3D(screen,"force",force);
+    /*NL*/ //if (screen) printVec3D(screen,"torque",torque);
+    /*NL*/ //if (screen) printVec4D(screen,"dQ",dQ);
     add_global_external_contribution(force,torque);
 }
 
@@ -613,11 +619,13 @@ void FixMeshSurfaceStress6DOF::set_vel()
 
     memory->create<double>(vNodes,nnodes,3,"6dof:vNodes");
 
+    /*NL*///if (screen) {
     /*NL*/// printVec3D(screen,"omega",omega_(0));
     /*NL*/// printVec3D(screen,"vcm",vcm_(0));
     /*NL*/// printVec3D(screen,"ex_space_",ex_space_(0));
     /*NL*/// printVec3D(screen,"ey_space_",ey_space_(0));
     /*NL*/// printVec3D(screen,"ez_space_",ez_space_(0));
+    /*NL*///}
 
     for(int i = 0; i < nall; i++)
     {

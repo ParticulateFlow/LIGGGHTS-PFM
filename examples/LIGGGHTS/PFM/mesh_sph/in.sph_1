@@ -88,7 +88,7 @@ thermo_style	custom step atoms ke vol cpu
 thermo          500
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
-dump			dmp all custom 500 post/dump*.sph id type type x y z ix iy iz vx vy vz fx fy fz vx vy vz p rho f_force_meshwall[1] f_force_meshwall[2] f_force_meshwall[3]
+dump			dmp all custom 500 post/dump*.sph id type x y z vx vy vz fx fy fz vx vy vz p rho f_force_meshwall[1] f_force_meshwall[2] f_force_meshwall[3]
 
 compute forceXave all reduce ave f_force_meshwall[1]
 compute forceYave all reduce ave f_force_meshwall[2]

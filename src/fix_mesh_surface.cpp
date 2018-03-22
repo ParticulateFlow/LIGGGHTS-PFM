@@ -56,7 +56,8 @@ FixMeshSurface::FixMeshSurface(LAMMPS *lmp, int narg, char **arg)
   velFlag_(false),
   angVelFlag_(false),
   n_dump_active_(0),
-  curvature_(0.)
+  curvature_(0.),
+  curvature_tolerant_(false)
 {
     // check if type has been read
     if(atom_type_mesh_ == -1)
@@ -98,12 +99,24 @@ FixMeshSurface::FixMeshSurface(LAMMPS *lmp, int narg, char **arg)
           omegaSurf_ = force->numeric(FLERR,arg[iarg_++]);
           hasargs = true;
       } else if (strcmp(arg[iarg_],"curvature") == 0) {
-          if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments");
+          if (narg < iarg_+2) error->fix_error(FLERR,this,"not enough arguments for 'curvature'");
           iarg_++;
           curvature_ = force->numeric(FLERR,arg[iarg_++]);
           if(curvature_ <= 0. || curvature_ > 60)
             error->fix_error(FLERR,this,"0° < curvature < 60° required");
           curvature_ = cos(curvature_*M_PI/180.);
+          hasargs = true;
+      } else if (strcmp(arg[iarg_],"curvature_tolerant") == 0) {
+          if (narg < iarg_+2)
+            error->fix_error(FLERR,this,"not enough arguments for 'curvature_tolerant'");
+          iarg_++;
+          if(0 == strcmp(arg[iarg_],"yes"))
+            curvature_tolerant_= true;
+          else if(0 == strcmp(arg[iarg_],"no"))
+            curvature_tolerant_= false;
+          else
+            error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'curvature_tolerant'");
+          iarg_++;
           hasargs = true;
       } else if(strcmp(style,"mesh/surface") == 0) {
           char *errmsg = new char[strlen(arg[iarg_])+50];
@@ -130,6 +143,9 @@ void FixMeshSurface::post_create()
     if(curvature_ > 0.)
         triMesh()->setCurvature(curvature_);
 
+    if(curvature_tolerant_)
+        triMesh()->setCurvatureTolerant(curvature_tolerant_);
+
     if(velFlag_ && angVelFlag_)
         error->fix_error(FLERR,this,"cannot use 'surface_vel' and 'surface_ang_vel' together");
 
@@ -146,6 +162,9 @@ void FixMeshSurface::pre_delete(bool unfixflag)
 {
     if(unfixflag && n_dump_active_ > 0)
         error->fix_error(FLERR,this,"can not unfix while dump command is active on mesh");
+
+    if(unfixflag && fix_contact_history_mesh_)
+        error->fix_error(FLERR,this,"can not unfix while fix wall/gran command is active on mesh; need to unfix fix wall/gran first, then mesh");
 
     FixMesh::pre_delete(unfixflag);
 
@@ -183,7 +202,7 @@ void FixMeshSurface::setup_pre_force(int vflag)
         meshNeighlist()->initializeNeighlist();
     }
 
-    /*NL*/ //fprintf(screen,"setup fix %s end\n",id);
+    /*NL*/ //if (screen) fprintf(screen,"setup fix %s end\n",id);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -243,13 +262,13 @@ void FixMeshSurface::createWallNeighList(int igrp)
 void FixMeshSurface::deleteWallNeighList()
 {
     if(fix_mesh_neighlist_) {
-      modify->delete_fix(fix_mesh_neighlist_->id);
+      modify->delete_fix(fix_mesh_neighlist_->id,true);
       fix_mesh_neighlist_ = NULL;
     }
 }
 
 /* ----------------------------------------------------------------------
-   called from fix messflow/mesh out of post_create()
+   called from fix massflow/mesh out of post_create()
 ------------------------------------------------------------------------- */
 
 class FixNeighlistMesh* FixMeshSurface::createOtherNeighList(int igrp,const char *nId)
@@ -316,7 +335,7 @@ void FixMeshSurface::deleteContactHistory()
 {
     // contact tracker and neighlist are created via fix wall/gran
     if(fix_contact_history_mesh_) {
-      modify->delete_fix(fix_contact_history_mesh_->id);
+      modify->delete_fix(fix_contact_history_mesh_->id,true);
       fix_contact_history_mesh_ = NULL;
     }
 }
@@ -361,7 +380,7 @@ void FixMeshSurface::deleteMeshforceContact()
 {
     // contact tracker and neighlist are created via fix wall/gran
     if(fix_meshforce_contact_) {
-      modify->delete_fix(fix_meshforce_contact_->id);
+      modify->delete_fix(fix_meshforce_contact_->id,true);
       fix_meshforce_contact_ = NULL;
     }
 }
@@ -400,7 +419,7 @@ void FixMeshSurface::setVel()
 
     // set mesh velocity
     TriMesh *trimesh = triMesh();
-    /*NL*/ //fprintf(screen,"size %d local %d ghost %d\n",size, trimesh->sizeLocal(), trimesh->sizeGhost());
+    /*NL*/ //if (screen) fprintf(screen,"size %d local %d ghost %d\n",size, trimesh->sizeLocal(), trimesh->sizeGhost());
     for (int i = 0; i < size; i++)
     {
         trimesh->surfaceNorm(i,facenormal);
@@ -413,7 +432,7 @@ void FixMeshSurface::setVel()
             {
                 vectorScalarDiv3D(v_node[i][j],vectorMag3D(v_node[i][j]));
                 vectorScalarMult3D(v_node[i][j],conv_vSurf_mag);
-                /*NL*/ //printVec3D(screen,"v_node[i][j]",v_node[i][j]);
+                /*NL*/ //if (screen) printVec3D(screen,"v_node[i][j]",v_node[i][j]);
             }
         }
     }

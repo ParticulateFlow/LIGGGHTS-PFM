@@ -112,38 +112,38 @@ void Verlet::setup()
   // setup domain, communication and neighboring
   // acquire ghosts
   // build neighbor lists
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: doing atom\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0  && screen)fprintf(screen,"Setting up run: doing atom\n");__debug__(lmp);}
   atom->setup();
   modify->setup_pre_exchange();
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: doing domain\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: doing domain\n");__debug__(lmp);}
   if (triclinic) domain->x2lamda(atom->nlocal);
   domain->pbc();
   domain->reset_box();
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: doing comm setup\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: doing comm setup\n");__debug__(lmp);}
   comm->setup();
   if (neighbor->style) neighbor->setup_bins();
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: doing exchange\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: doing exchange\n");__debug__(lmp);}
   comm->exchange();
   if (atom->sortfreq > 0) atom->sort();
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: doing borders\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: doing borders\n");__debug__(lmp);}
   comm->borders();
   if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting modify->setup_pre_neighbor\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: starting modify->setup_pre_neighbor\n");__debug__(lmp);}
   modify->setup_pre_neighbor(); //NP modified C.K.
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: doing neigh build\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: doing neigh build\n");__debug__(lmp);}
   neighbor->build();
   neighbor->ncalls = 0;
 
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: clearing forces\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: clearing forces\n");__debug__(lmp);}
 
   // compute all forces
 
   ev_set(update->ntimestep);
   force_clear();
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting modify->setup_pre_force\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: starting modify->setup_pre_force\n");__debug__(lmp);}
   modify->setup_pre_force(vflag);
 
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: computing forces\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: computing forces\n");__debug__(lmp);}
 
   if (pair_compute_flag) force->pair->compute(eflag,vflag);
   else if (force->pair) force->pair->compute_dummy(eflag,vflag);
@@ -163,12 +163,12 @@ void Verlet::setup()
 
   if (force->newton) comm->reverse_comm();
 
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting modify->setup\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: starting modify->setup\n");__debug__(lmp);}
 
   modify->setup(vflag);
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: starting output->setup\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: starting output->setup\n");__debug__(lmp);}
   output->setup();
-  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"Setting up run: finished\n");__debug__(lmp);}
+  /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"Setting up run: finished\n");__debug__(lmp);}
   update->setupflag = 0;
 }
 
@@ -253,19 +253,19 @@ void Verlet::run(int n)
   for (int i = 0; i < n; i++) {
 
     ntimestep = ++update->ntimestep;
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"starting time-step " BIGINT_FORMAT "\n",update->ntimestep);__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"starting time-step " BIGINT_FORMAT "\n",update->ntimestep);__debug__(lmp);}
     ev_set(ntimestep);
 
     // initial time integration
 
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing initial integrate\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing initial integrate\n");__debug__(lmp);}
     modify->initial_integrate(vflag);
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing post integrate\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing post integrate\n");__debug__(lmp);}
     if (n_post_integrate) modify->post_integrate();
 
     // regular communication vs neighbor list rebuild
 
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing neigh stuff\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing neigh stuff\n");__debug__(lmp);}
     nflag = neighbor->decide();
 
     if (nflag == 0) {
@@ -273,9 +273,9 @@ void Verlet::run(int n)
       comm->forward_comm();
       timer->stamp(TIME_COMM);
     } else {
-      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre_exchange\n");__debug__(lmp);}
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing pre_exchange\n");__debug__(lmp);}
       if (n_pre_exchange) modify->pre_exchange();
-      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pbc, reset_box, comm setup\n");__debug__(lmp);}
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing pbc, reset_box, comm setup\n");__debug__(lmp);}
       if (triclinic) domain->x2lamda(atom->nlocal);
       domain->pbc();
       if (domain->box_change) {
@@ -285,10 +285,10 @@ void Verlet::run(int n)
         if (neighbor->style) neighbor->setup_bins();
       }
       timer->stamp();
-      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing exchange\n");__debug__(lmp);}
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing exchange\n");__debug__(lmp);}
       comm->exchange();
 
-      /*NL*/ //fprintf(screen,"proc %d has %d owned particles\n",comm->me,atom->nlocal);
+      /*NL*/ //if(screen) fprintf(screen,"proc %d has %d owned particles\n",comm->me,atom->nlocal);
       // periodically sort particle data
       // if atoms have moved, we need to enforce sorting to update partitions
       if (sortflag && (atom->dirty || ntimestep >= atom->nextsort)) {
@@ -300,9 +300,9 @@ void Verlet::run(int n)
       comm->borders();
       if (triclinic) domain->lamda2x(atom->nlocal+atom->nghost);
       timer->stamp(TIME_COMM);
-      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre neigh\n");__debug__(lmp);}
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing pre neigh\n");__debug__(lmp);}
       if (n_pre_neighbor) modify->pre_neighbor();
-      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing neigh\n");__debug__(lmp);}
+      /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing neigh\n");__debug__(lmp);}
       neighbor->build();
       timer->stamp(TIME_NEIGHBOR);
     }
@@ -312,19 +312,19 @@ void Verlet::run(int n)
     // since some bonded potentials tally pairwise energy/virial
     // and Pair:ev_tally() needs to be called before any tallying
 
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pre force\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing pre force\n");__debug__(lmp);}
     force_clear();
     if (n_pre_force) modify->pre_force(vflag);
 
     timer->stamp();
 
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pair force\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing pair force\n");__debug__(lmp);}
     if (pair_compute_flag) {
       force->pair->compute(eflag,vflag);
       timer->stamp(TIME_PAIR);
     }
 
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing molecular, kspace\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing molecular, kspace\n");__debug__(lmp);}
     if (atom->molecular) {
       if (force->bond) force->bond->compute(eflag,vflag);
       if (force->angle) force->angle->compute(eflag,vflag);
@@ -339,28 +339,28 @@ void Verlet::run(int n)
     }
 
     // reverse communication of forces
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing reverse comm\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing reverse comm\n");__debug__(lmp);}
     if (force->newton) {
       comm->reverse_comm();
       timer->stamp(TIME_COMM);
     }
 
     // force modifications, final time integration, diagnostics
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing post force\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing post force\n");__debug__(lmp);}
     if (n_post_force) modify->post_force(vflag);
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing final integrate\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing final integrate\n");__debug__(lmp);}
     modify->final_integrate();
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing end of step\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing end of step\n");__debug__(lmp);}
     if (n_end_of_step) modify->end_of_step();
 
     // all output
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing output\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing output\n");__debug__(lmp);}
     if (ntimestep == output->next) {
       timer->stamp();
       output->write(ntimestep);
       timer->stamp(TIME_OUTPUT);
     }
-    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    ts finished\n");__debug__(lmp);}
+    /*NL*/if(DEBUG_VERLET) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    ts finished\n");__debug__(lmp);}
   }
 }
 

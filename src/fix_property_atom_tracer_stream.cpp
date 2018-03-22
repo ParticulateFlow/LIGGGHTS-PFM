@@ -36,6 +36,7 @@
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace std;
 
 /* ---------------------------------------------------------------------- */
 
@@ -86,7 +87,7 @@ FixPropertyAtomTracerStream::FixPropertyAtomTracerStream(LAMMPS *lmp, int narg, 
             hasargs = true;
         } else
         {
-            //fprintf(screen,"%s\n",arg[iarg_]);
+            //if (screen) fprintf(screen,"%s\n",arg[iarg_]);
             error->fix_error(FLERR,this,"unknown keyword");
         }
     }
@@ -182,7 +183,7 @@ void FixPropertyAtomTracerStream::add_remove_packets()
         {
             if(istep > ts)
             {
-                /*NL*/ //fprintf(screen,"pushing %d\n",istep);
+                /*NL*/ //if (screen) fprintf(screen,"pushing %d\n",istep);
                 n_to_mark_.push_back(n_marker_per_);
                 mark_steps_.push_back(istep);
             }
@@ -199,6 +200,7 @@ void FixPropertyAtomTracerStream::mark_tracers(int ilo, int ihi)
     FixPropertyAtom *fix_release = fix_ins_stream_->fix_prop_release();
     double **release_data = fix_release->array_atom;
     double *marker = this->vector_atom;
+    int *mask = atom->mask;
     int s, step0;
     int release_step_index = fix_ins_stream_->release_step_index();
 
@@ -210,6 +212,10 @@ void FixPropertyAtomTracerStream::mark_tracers(int ilo, int ihi)
 
     for(int i = ilo; i < ihi; i++)
     {
+        // skip particles of wrong group
+        if (!(mask[i] & groupbit))
+            continue;
+
         s = static_cast<int>(release_data[i][release_step_index]);
         if (s >= step0)
         {
@@ -248,7 +254,7 @@ void FixPropertyAtomTracerStream::mark_tracers(int ilo, int ihi)
     int nmarked_this = 0;
     int ipacket = 0, n_packet = n_to_mark_.size();
 
-    /*NL*/ //fprintf(screen,"particles size_all %d n_packet %d\n",size_all,n_packet);
+    /*NL*/ //if (screen) fprintf(screen,"particles size_all %d n_packet %d\n",size_all,n_packet);
 
     if(n_packet > 0)
     {
@@ -256,14 +262,14 @@ void FixPropertyAtomTracerStream::mark_tracers(int ilo, int ihi)
         {
             int step = releasedata_global[iall].step;
 
-            /*NL*/ //fprintf(screen,"eligible particle %d %d\n",step, step0);
+            /*NL*/ //if (screen) fprintf(screen,"eligible particle %d %d\n",step, step0);
 
             if(step >= mark_steps_[ipacket])
             {
                 nmarked_this++;
                 n_to_mark_[ipacket]--;
                 int ilocal = atom->map(releasedata_global[iall].id);
-                /*NL*/ //fprintf(screen,"tagging particles %d\n",ilocal);
+                /*NL*/ //if (screen) fprintf(screen,"tagging particles %d\n",ilocal);
                 if(ilocal >= 0)
                     marker[ilocal] = 1.;
             }
@@ -310,7 +316,7 @@ vector<Releasedata> FixPropertyAtomTracerStream::construct_releasedata_all(int *
         r.step = data[i*2+1];
         result.push_back(r);
     }
-    /*NL*/ //fprintf(screen,"ndata0 %d result.size() %d\n",ndata0,result.size());
+    /*NL*/ //if (screen) fprintf(screen,"ndata0 %d result.size() %d\n",ndata0,result.size());
     return result;
 }
 

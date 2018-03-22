@@ -174,7 +174,7 @@ void DumpEulerVTK::write_data_ascii(int n, double *mybuf)
 
   // n is the number of elements
 
-  /*NL*///fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
+  /*NL*///if (screen) fprintf(screen,"WRITING ITEM at step %d proc %d with n %d\n",update->ntimestep,comm->me,n);
   /*NL*///error->one(FLERR,"end");
 
   // write point data

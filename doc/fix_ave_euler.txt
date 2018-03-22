@@ -18,7 +18,9 @@ ave/euler = style name of this fix command :l
 nevery = obligatory keyword :l
 n = calculate average values every this many timesteps :l
 cell_size_relative = obligatory keyword :l
-c = cell size in multiples of max cutoff :l
+cx = cell size in x-direction in multiples of max cutoff :l
+cy = cell size in y-direction in multiples of max cutoff :l
+cz = cell size in z-direction in multiples of max cutoff :l
 parallel = obligatory keyword :l
 par = "yes" or "no :l
 zero or more keyword/value pairs may be appended :l
@@ -30,7 +32,7 @@ keyword = {basevolume_region} :l
 
 [Examples:]
 
-fix 1 all ave/euler nevery 100 cell_size_relative 4.5 :pre
+fix 1 all ave/euler nevery 100 cell_size_relative 4.5 3 3 parallel yes :pre
 
 [Description:]
 

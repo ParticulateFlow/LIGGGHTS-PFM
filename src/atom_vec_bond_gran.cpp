@@ -127,7 +127,7 @@ void AtomVecBondGran::grow(int n)
   bond_atom = memory->grow(atom->bond_atom,nmax,atom->bond_per_atom,
          "atom:bond_atom");
 
-  /*NL*/ //fprintf(screen,"grow nmax %d, atom->bond_per_atom %d, atom->n_bondhist %d\n",nmax,atom->bond_per_atom,atom->n_bondhist);
+  /*NL*/ //if(screen) fprintf(screen,"grow nmax %d, atom->bond_per_atom %d, atom->n_bondhist %d\n",nmax,atom->bond_per_atom,atom->n_bondhist);
 
   if(0 == atom->bond_per_atom)
     error->all(FLERR,"Bonded particles need bond_per_atom > 0");

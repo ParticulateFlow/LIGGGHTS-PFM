@@ -23,6 +23,7 @@
    Contributing authors:
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Richard Berger (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include "particleToInsert.h"
@@ -39,26 +40,29 @@
 
 using namespace LAMMPS_NS;
 
-ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) : Pointers(lmp)
+ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) :
+  Pointers(lmp),
+  nspheres(ns),
+  groupbit(0),
+  atom_type(0),
+  density_ins(0.0),
+  volume_ins(0.0),
+  mass_ins(0.0),
+  r_bound_ins(0.0),
+  atom_type_vector_flag(false)
 {
-        groupbit = 0;
-
-        nspheres = ns;
-
-        memory->create(x_ins,nspheres,3,"x_ins");
-        radius_ins = new double[nspheres];
-
-        atom_type_vector = new int[nspheres];
-        atom_type_vector_flag = false;
+    memory->create(x_ins,nspheres,3,"x_ins");
+    radius_ins = new double[nspheres]();
+    atom_type_vector = new int[nspheres]();
 }
 
 /* ---------------------------------------------------------------------- */
 
 ParticleToInsert::~ParticleToInsert()
 {
-        memory->destroy(x_ins);
-        delete []radius_ins;
-        delete []atom_type_vector;
+    memory->destroy(x_ins);
+    delete []radius_ins;
+    delete []atom_type_vector;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -75,11 +79,11 @@ int ParticleToInsert::insert()
 
     for(int i = 0; i < nspheres; i++)
     {
-        /*NL*/ //fprintf(screen,"proc %d tyring to insert particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+        /*NL*/ //if (screen) fprintf(screen,"proc %d tyring to insert particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
         //NP do not need subdomain check any longer since have processor-local lists anyway
         //if (domain->is_in_extended_subdomain(x_ins[i]))
         //{
-                /*NL*/ //fprintf(screen,"   proc %d inserting particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+                /*NL*/ //if (screen) fprintf(screen,"   proc %d inserting particle at pos %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
                 inserted++;
                 if(atom_type_vector_flag)
                     atom->avec->create_atom(atom_type_vector[i],x_ins[i]);
@@ -98,7 +102,7 @@ int ParticleToInsert::insert()
                    if (fix[j]->create_attribute) fix[j]->set_arrays(m);
         //}
     }
-    
+
     return inserted;
 }
 
@@ -122,8 +126,8 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
     {
         vectorSubtract3D(x_ins[0],xnear[i],del);
         rsq = vectorMag3DSquared(del);
-        /*NL*///printVec3D(screen,"x_ins[0]",x_ins[0]);
-        /*NL*///fprintf(screen,"radius_ins[0] %f xnear[i][3] %f \n",radius_ins[0],xnear[i][3]);
+        /*NL*///if (screen) printVec3D(screen,"x_ins[0]",x_ins[0]);
+        /*NL*///if (screen) fprintf(screen,"radius_ins[0] %f xnear[i][3] %f \n",radius_ins[0],xnear[i][3]);
         radsum = radius_ins[0] + xnear[i][3];
 
         // no success in overlap

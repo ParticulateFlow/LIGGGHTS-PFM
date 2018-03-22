@@ -1,0 +1,92 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix insert/pack/dense command :h3
+
+[Syntax:]
+
+fix ID group-ID insert/pack seed seed_value distributiontemplate dist-ID region region-id keywords :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+insert/pack/dense = style names of this fix command :l
+seed = obligatory keyword :l
+seed_value = random # seed (positive integer) :l
+distributiontemplate = obligatory keyword :l
+dist-ID = ID of a "fix_particledistribution_discrete"_fix_particledistribution_discrete.html to be used for particle insertion :l
+region = obligatory keyword :l
+region-id = id of the {region} to be used for insertion
+one or more keyword/value pairs can be appended :l
+keywords = {volumefraction_region} :l
+  {volumefraction_region} = the intended volume fraction in the region :pre
+:ule
+
+[Examples:]
+
+fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 volumefraction_region 0.53 :pre
+
+[Description:]
+
+This fix creates a dense packing of particles in a region defined by
+the {region} keyword. The algorithm by Lozano et al. (Comput Math Appl
+71 (2016), 1586-1601) is implemented.
+
+This command must use the distributiontemplate keyword to refer to a
+"fix_particledistribution_discrete"_fix_particledistribution_discrete.html
+(defined by dist-fix-ID) that defines the properties of the inserted
+particles.
+
+Insertion is always performed in the next timestep immediately after
+defining the fix. It is recommended to unfix the fix after insertion
+has happened, because it creates several data structures that might
+take up a lot of memory.
+
+In the published form, the algorithm creates a packing as dense as
+possible. This implementation allows to create a lower volume fraction
+by internally scaling the radius of the particles by the third root of
+the ratio volumefraction_region/volumefraction_max where
+volumefraction_max is defined as 0.57. Depending on the region and the
+particle distribution, volumefraction_max can not always be reached,
+however in the limit of tiny, monodisperse particles in a giant region
+without complex geometrical features, 0.57 is a good estimate. If a
+value > 0.57 is given, the fix will ignore it and output a warning.
+
+Inserted particles are assigned the atom type specified by the
+particledistribution defined via the
+"fix_particledistribution_discrete"_fix_particledistribution_discrete.html
+and are assigned to 4 groups: the default group "all" and the group
+specified in the fix insert command, as well as the groups specified
+in the
+"fix_particledistribution_discrete"_fix_particledistribution_discrete.html
+and "fix_particletemplate_sphere"_fix_particletemplate_sphere.html
+command (all of which can also be "all").
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+No information to restart files is written by this fix.
+
+[Restrictions:]
+
+The insertion region can span several processors, but must be a single
+continuous volume. Regions consisting of several disconnected volumes
+will be filled incorrectly or not at all.
+
+When running in parallel, the estimated number of particles is wrong
+when using a region of type mesh/tet.
+
+Dynamic regions are not supported as insertion region.
+
+[Related commands:]
+
+"fix_insert_stream"_fix_insert_stream.html, "fix_insert_rate_region"_fix_insert_rate_region.html,
+"fix_deposit"_fix_deposit.html, "region"_region.html, 
+"fix_pour"_fix_pour.html
+
+[Default:]
+
+The default values are volumefraction_region = 0.57 (=volumefraction_max)

@@ -120,6 +120,11 @@ void PairGranProxy::compute_force(int eflag, int vflag, int addflag)
   impl->compute_force(this, eflag, vflag, addflag);
 }
 
+void PairGranProxy::compute_single_pair_force(LCM::CollisionData &cdata, LCM::ForceData &i_forces, LCM::ForceData &j_forces)
+{
+  impl->compute_single_pair_force(cdata, i_forces, j_forces);
+}
+
 double PairGranProxy::stressStrainExponent()
 {
   return impl->stressStrainExponent();

@@ -755,7 +755,7 @@ void Set::set(int keyword)
         }
         if(varflag)
         {
-            /*NL*/ //fprintf(screen,"dvalue %f\n");
+            /*NL*/ //if (screen) fprintf(screen,"dvalue %f\n");
             if (updFix->data_style)
             {
                 updFix->array_atom[i][0] = xvalue;

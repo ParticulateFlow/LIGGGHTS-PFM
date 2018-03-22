@@ -644,8 +644,8 @@ int Balance::dynamic()
                 split[i] = split_old[i+1]-skin;
 
             //split[i] = split_old[i];
-            /*NL*/ //fprintf(screen,"proc %d - cut %f\n",me,cut);
-            /*NL*/ //fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
+            /*NL*/ //if (screen) fprintf(screen,"proc %d - cut %f\n",me,cut);
+            /*NL*/ //if (screen) fprintf(screen,"proc %d - dim %d i %d: old %f, new %f\n",me,idim,i,split_old[i],split[i]);
         }
     }
     //NP modified C.K. end
@@ -1085,7 +1085,7 @@ void Balance::debug_output(int idim, int m, int np, double *split)
 
 bool Balance::disallow_irregular()
 {
-    /*NL*/// fprintf(screen,"proc %d at step %d: result %d\n",me,update->ntimestep,modify->n_fixes_style("mesh"));
+    /*NL*///if (screen) fprintf(screen,"proc %d at step %d: result %d\n",me,update->ntimestep,modify->n_fixes_style("mesh"));
     //NP disallow if mesh is involved
     if(modify->n_fixes_style("mesh") > 0)
         return true;

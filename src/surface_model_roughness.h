@@ -180,7 +180,7 @@ namespace ContactModels
           // FIXME: Note to original implementor. Fix your code! Floating-point comparison?!?
           if(nLength!=1.0)
           {
-            fprintf(screen, "deltaGamma, psi: %e %e, contactP: %e %e %e n1: %e %e %e \n",
+            if (screen) fprintf(screen, "deltaGamma, psi: %e %e, contactP: %e %e %e n1: %e %e %e \n",
                           deltaGamma, psi,
                           contactP[0], contactP[1], contactP[2],
                           contactN1[0],  contactN1[1], contactN1[2]);

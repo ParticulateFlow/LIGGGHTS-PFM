@@ -163,10 +163,10 @@ void FixInsertStreamMoving::finalize_insertion(int ninserted_spheres_this_local)
 
         /*NL*/ //double xtest[3];
         /*NL*/ //ins_face_planar->constructPositionFromBary(tri_id,bary,xtest);
-        /*NL*/ //fprintf(screen,"dist_normal %f\n",dist_normal);
-        /*NL*/ //printVec3D(screen,"x[i]",x[i]);
-        /*NL*/ //printVec3D(screen,"bary",bary);
-        /*NL*/ //printVec3D(screen,"xtest",xtest);
+        /*NL*/ //if (screen) fprintf(screen,"dist_normal %f\n",dist_normal);
+        /*NL*/ //if (screen) printVec3D(screen,"x[i]",x[i]);
+        /*NL*/ //if (screen) printVec3D(screen,"bary",bary);
+        /*NL*/ //if (screen) printVec3D(screen,"xtest",xtest);
 
         n_steps = static_cast<int>((dist_normal+FIX_INSERT_STREAM_TINY)/(vectorMag3D(v_normal)*dt));
 

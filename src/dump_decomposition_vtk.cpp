@@ -201,7 +201,7 @@ void DumpDecompositionVTK::pack_item()
       if(comm->myloc[2] == i) zdata[i+1] = domain->subhi[2];
   }
 
-  /*NL*///fprintf(screen,"proc %d: xdata %f %f %f\n",comm->me,xdata[0],xdata[1],xdata[2]);
+  /*NL*///if (screen) fprintf(screen,"proc %d: xdata %f %f %f\n",comm->me,xdata[0],xdata[1],xdata[2]);
 
   //NP perform allreduce to get correct boundaries
 
@@ -209,7 +209,7 @@ void DumpDecompositionVTK::pack_item()
   MPI_Allreduce(ydata,ydata_all,len[1],MPI_DOUBLE,MPI_MAX,world);
   MPI_Allreduce(zdata,zdata_all,len[2],MPI_DOUBLE,MPI_MAX,world);
 
-  /*NL*///fprintf(screen,"proc %d: xdata_all %f %f %f\n",comm->me,xdata_all[0],xdata_all[1],xdata_all[2]);
+  /*NL*///if (screen) fprintf(screen,"proc %d: xdata_all %f %f %f\n",comm->me,xdata_all[0],xdata_all[1],xdata_all[2]);
 
   return;
 }

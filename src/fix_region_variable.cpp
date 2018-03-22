@@ -170,7 +170,7 @@ void FixRegionVariable::restart(char *buf)
   step_start = static_cast<int> (list[n++]);
   if(dt != update->dt)
   {
-      if(comm->me == 0) fprintf(screen,"Fix region/variable used a time-step of %f, you are now using %f\n",dt,update->dt);
+      if(comm->me == 0 && screen) fprintf(screen,"Fix region/variable used a time-step of %f, you are now using %f\n",dt,update->dt);
       error->all(FLERR,"This is fatal");
   }
 }

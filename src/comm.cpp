@@ -446,7 +446,7 @@ void Comm::setup()
     prd = domain->prd;
     sublo = domain->sublo;
     subhi = domain->subhi;
-    /*NL*/ //fprintf(screen,"comm proc %d: sublo %f %f %f subhi %f %f %f\n",me,sublo[0],sublo[1],sublo[2],subhi[0],subhi[1],subhi[2]);
+    /*NL*/ //if (screen) fprintf(screen,"comm proc %d: sublo %f %f %f subhi %f %f %f\n",me,sublo[0],sublo[1],sublo[2],subhi[0],subhi[1],subhi[2]);
     cutghost[0] = cutghost[1] = cutghost[2] = cut;
 
     if (style == MULTI) {
@@ -601,8 +601,8 @@ void Comm::setup()
       pleft[1]  = c[1] - nleft[1]  * (use_gran_opt() ? (cutghmax / 2. + neighbor->skin/2.) : cutghmax);
       pright[0] = c[0] - nright[0] * (use_gran_opt() ? (cutghmax / 2. + neighbor->skin/2.) : cutghmax);
       pright[1] = c[1] - nright[1] * (use_gran_opt() ? (cutghmax / 2. + neighbor->skin/2.) : cutghmax);
-      /*NL*/ //fprintf(screen,"pleft %f %f nleft %f %f \n",pleft[0],pleft[1],nleft[0],nleft[1]);
-      /*NL*/ //fprintf(screen,"pright %f %f nright %f %f \n",pright[0],pright[1],nright[0],nright[1]);
+      /*NL*/ //if (screen) fprintf(screen,"pleft %f %f nleft %f %f \n",pleft[0],pleft[1],nleft[0],nleft[1]);
+      /*NL*/ //if (screen) fprintf(screen,"pright %f %f nright %f %f \n",pright[0],pright[1],nright[0],nright[1]);
   }
   //NP modified C.K. end
 
@@ -634,7 +634,7 @@ void Comm::setup()
       //NP must also use same criterion in borders()
       if(dw_ && dim != ia && dim != iphi)
       {
-        /*NL*/ //fprintf(screen,"skipping dim %d\n",dim);
+        /*NL*/ //if (screen) fprintf(screen,"skipping dim %d\n",dim);
         nswap--;
         continue;
       }
@@ -1034,7 +1034,7 @@ void Comm::borders()
       //NP must use same criterion as in setup()
       if(dw_ && dim != ia && dim != iphi)
       {
-        /*NL*/ //fprintf(screen,"skipping dim %d\n",dim);
+        /*NL*/ //if (screen) fprintf(screen,"skipping dim %d\n",dim);
         continue;
       }
       //NP modified C.K. end
@@ -1696,8 +1696,8 @@ int Comm::read_lines_from_file(FILE *fp, int nlines, int maxline, char *buf)
     m = 0;
     for (int i = 0; i < nlines; i++) {
       if (!fgets(&buf[m],maxline,fp)) {
-	m = 0;
-	break;
+        m = 0;
+        break;
       }
       m += strlen(&buf[m]);
     }
@@ -1732,8 +1732,8 @@ int Comm::read_lines_from_file_universe(FILE *fp, int nlines, int maxline,
     m = 0;
     for (int i = 0; i < nlines; i++) {
       if (!fgets(&buf[m],maxline,fp)) {
-	m = 0;
-	break;
+        m = 0;
+        break;
       }
       m += strlen(&buf[m]);
     }

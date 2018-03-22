@@ -24,9 +24,9 @@
 ------------------------------------------------------------------------- */
 
 
-#include "math.h"
-#include "stdlib.h"
-#include "string.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "atom.h"
 #include "force.h"
 #include "update.h"
@@ -187,7 +187,7 @@ void FixPropertyAtomCumulativeTracer::end_of_step()
     if(t < begin_time_ || t > end_time_)
         return;
 
-    /*NL*/ //fprintf(screen,"FixPropertyAtomTracer::end_of_step(), proc %d, step " BIGINT_FORMAT "\n",comm->me,update->ntimestep);
+    /*NL*/ //if (screen) fprintf(screen,"FixPropertyAtomTracer::end_of_step(), proc %d, step " BIGINT_FORMAT "\n",comm->me,update->ntimestep);
 
     //NP mark all particles in region
     int nlocal = atom->nlocal;

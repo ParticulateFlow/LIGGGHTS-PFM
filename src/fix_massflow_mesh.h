@@ -31,8 +31,6 @@ FixStyle(massflow/mesh,FixMassflowMesh)
 #include "fix.h"
 #include <vector>
 
-using namespace std;
-
 namespace LAMMPS_NS {
 
 class FixMassflowMesh : public Fix {
@@ -65,7 +63,7 @@ class FixMassflowMesh : public Fix {
 
   // in case particles counted should be deleted or transferred
   bool delete_atoms_;
-  vector<int> atom_tags_delete_;
+  std::vector<int> atom_tags_delete_;
   double mass_deleted_;
   double nparticles_deleted_;
 

@@ -482,7 +482,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T, int NUM_VEC, int LEN_VEC>
-  int GeneralContainer<T,NUM_VEC,LEN_VEC>::bufSize(int operation,bool scale,bool translate,bool rotate)
+  int GeneralContainer<T,NUM_VEC,LEN_VEC>::bufSize(int operation,bool scale,bool translate,bool rotate) const
   {
       if(!this->decidePackUnpackOperation(operation,scale,translate,rotate))
             return 0;
@@ -734,7 +734,7 @@
   template<typename T, int NUM_VEC, int LEN_VEC>
   void GeneralContainer<T,NUM_VEC,LEN_VEC>::copy_n(GeneralContainer<T,NUM_VEC,LEN_VEC> const & other, const size_t n)
   {
-    std::copy(other._begin(), other._begin() + (n*NUM_VEC*LEN_VEC+1), _begin());
+    std::copy(other._begin(), other._begin() + (n*NUM_VEC*LEN_VEC), _begin());
   }
 
 #endif

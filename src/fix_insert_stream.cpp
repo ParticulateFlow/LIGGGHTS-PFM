@@ -252,7 +252,7 @@ void FixInsertStream::calc_insertion_properties()
         // get normal vector of face 0
         ins_face->surfaceNorm(0,normalvec);
 
-        //NP printVec3D(screen,"normalvec",normalvec);
+        //NP if (screen) printVec3D(screen,"normalvec",normalvec);
 
         // flip normal vector so dot product with v_insert is > 0
         dot = vectorDot3D(v_insert,normalvec);
@@ -295,7 +295,7 @@ void FixInsertStream::calc_insertion_properties()
             error->fix_error(FLERR,this,"'extrude_length' is too small");
         // add TINY for resolving round-off
         insert_every = static_cast<int>((extrude_length+FIX_INSERT_STREAM_TINY)/(dt*vectorMag3D(v_normal)));
-        /*NL*///fprintf(screen,"insert_every %d, extrude_length %f, dt %f, vectorMag3D(v_normal) %f\n",insert_every,extrude_length,dt,vectorMag3D(v_normal));
+        /*NL*///if (screen) fprintf(screen,"insert_every %d, extrude_length %f, dt %f, vectorMag3D(v_normal) %f\n",insert_every,extrude_length,dt,vectorMag3D(v_normal));
         if(insert_every == 0)
           error->fix_error(FLERR,this,"insertion velocity too high or extrude_length too low");
     }
@@ -310,12 +310,12 @@ void FixInsertStream::calc_insertion_properties()
         else if (duration > insert_every) error->fix_error(FLERR,this,"'duration' > 'insert_every' not allowed");
 
         extrude_length = static_cast<double>(duration) * dt * vectorMag3D(v_normal);
-        /*NL*/ //fprintf(screen,"extrude_length %f, max_r_bound() %f, duration %d\n",extrude_length,max_r_bound(),duration);
+        /*NL*/ //if (screen) fprintf(screen,"extrude_length %f, max_r_bound() %f, duration %d\n",extrude_length,max_r_bound(),duration);
         if(extrude_length < 3.*max_r_bound())
           error->fix_error(FLERR,this,"'insert_every' or 'vel' is too small, or radius of inserted particles too large");
     }
 
-    /*NL*///fprintf(screen,"insert_every %d, duration %d, v_normal %f, extrude_length %f dt %e\n",insert_every,duration,vectorMag3D(v_normal),extrude_length,dt);
+    /*NL*///if (screen) fprintf(screen,"insert_every %d, duration %d, v_normal %f, extrude_length %f dt %e\n",insert_every,duration,vectorMag3D(v_normal),extrude_length,dt);
 
     // ninsert - if ninsert not defined directly, calculate it
     if(ninsert == 0 && ninsert_exists)
@@ -351,8 +351,8 @@ void FixInsertStream::calc_insertion_properties()
         vectorComponentMin3D(ins_vol_xmin,t1,ins_vol_xmin);
         vectorComponentMax3D(ins_vol_xmax,t2,ins_vol_xmax);
 
-        /*NL*///printVec3D(screen,"ins_vol_xmin",ins_vol_xmin);
-        /*NL*///printVec3D(screen,"ins_vol_xmin",ins_vol_xmax);
+        /*NL*///if (screen) printVec3D(screen,"ins_vol_xmin",ins_vol_xmin);
+        /*NL*///if (screen) printVec3D(screen,"ins_vol_xmin",ins_vol_xmax);
     }
     else error->fix_error(FLERR,this,"Missing implementation in calc_insertion_properties()");
 
@@ -414,7 +414,7 @@ void FixInsertStream::setup_pre_exchange()
 
 double FixInsertStream::insertion_fraction()
 {
-    /*NL*/ if(0 == comm->me && ins_face->isMoving()) fprintf(screen,"Ins face MOVING\n");
+    /*NL*/ if(0 == comm->me && screen && ins_face->isMoving()) fprintf(screen,"Ins face MOVING\n");
     // have to re-calculate insertion fraction for my subbox
     // in case subdomains of simulation box are changing
     //NP ATTENTION domain->box_change_domain is false even if box is changing size, i.e.
@@ -471,7 +471,7 @@ void FixInsertStream::calc_ins_fraction()
                     );
 
                     dot = -vectorDot3D(boxedgevec,normalvec);
-                    /*NL*/ //fprintf(screen,"dot %f\n",dot);
+                    /*NL*/ //if (screen) fprintf(screen,"dot %f\n",dot);
                     if(dot > 0. && dot < extrude_length)
                     {
                         extrude_length_max = MathExtraLiggghts::max(extrude_length_max,dot);
@@ -488,7 +488,7 @@ void FixInsertStream::calc_ins_fraction()
             extrude_length_max = extrude_length;
     }
 
-    /*NL*/// fprintf(screen,"proc %d: fraction %f extrude_length_min %f extrude_length_max %f\n",
+    /*NL*/// if (screen) fprintf(screen,"proc %d: fraction %f extrude_length_min %f extrude_length_max %f\n",
     /*NL*///         comm->me,ins_fraction,extrude_length_min,extrude_length_max);
 
     double ins_fraction_all;
@@ -515,24 +515,24 @@ inline int FixInsertStream::is_nearby(int i)
     double pos_rel[3], pos_projected[3], t[3];
     double **x = atom->x;
 
-    /*NL*///if(atom->tag[i] == 230) fprintf(screen,"pref = %f %f %f\n",p_ref[0],p_ref[1],p_ref[2]);
+    /*NL*///if(screen && atom->tag[i] == 230) fprintf(screen,"pref = %f %f %f\n",p_ref[0],p_ref[1],p_ref[2]);
 
     vectorSubtract3D(x[i],p_ref,pos_rel);
     double dist_normal = vectorDot3D(pos_rel,normalvec);
 
-    /*NL*///if(atom->tag[i] == 230) fprintf(screen,"pos_rel %f %f %f\n",pos_rel[0],pos_rel[1],pos_rel[2]);
-    /*NL*///if(atom->tag[i] == 230) fprintf(screen,"dist_normal %f  extrude_length %f maxrad %f\n",dist_normal,extrude_length,maxrad);
+    /*NL*///if(screen && atom->tag[i] == 230) fprintf(screen,"pos_rel %f %f %f\n",pos_rel[0],pos_rel[1],pos_rel[2]);
+    /*NL*///if(screen && atom->tag[i] == 230) fprintf(screen,"dist_normal %f  extrude_length %f maxrad %f\n",dist_normal,extrude_length,maxrad);
 
     // on wrong side of extrusion
     if(dist_normal > maxrad) return 0;
 
-    /*NL*///fprintf(screen,"1\n");
+    /*NL*///if (screen) fprintf(screen,"1\n");
 
     // on right side of extrusion, but too far away
     // 3*maxrad b/c extrude_length+rad is max extrusion for overlapcheck yes
     if(dist_normal < -(extrude_length + 3.*maxrad)) return 0;
 
-    /*NL*///fprintf(screen,"2\n");
+    /*NL*///if (screen) fprintf(screen,"2\n");
 
     // on right side of extrusion, within extrude_length
     // check if projection is on face or not
@@ -548,12 +548,15 @@ inline int FixInsertStream::is_nearby(int i)
 BoundingBox FixInsertStream::getBoundingBox() const {
   BoundingBox bb = ins_face->getGlobalBoundingBox();
 
-  const double cut = 3*maxrad;
-  bb.extendByDelta(cut);
-
-  const double delta = -(extrude_length + 2*cut);
+  const double cut = 3.*maxrad;
+  const double delta = -(extrude_length + 2.*cut);
   bb.extrude(delta, normalvec);
   bb.shrinkToSubbox(domain->sublo, domain->subhi);
+
+  // extend to include ghost particles
+  const double extend = cut + extend_cut_ghost();
+  bb.extendByDelta(extend);
+
   return bb;
 }
 
@@ -610,14 +613,14 @@ inline void FixInsertStream::generate_random_global(double *pos)
     //NP position is not restricted to my subbox
     ins_face->generateRandomOwnedGhost(pos);
 
-    /*NL*/// printVec3D(screen,"pos bef",pos);
+    /*NL*/// if (screen) printVec3D(screen,"pos bef",pos);
 
     // extrude the position
     r = -1.*(random->uniform()*extrude_length);
     vectorScalarMult3D(normalvec,r,ext);
     vectorAdd3D(pos,ext,pos);
 
-    /*NL*/// printVec3D(screen,"pos aft",pos);
+    /*NL*/// if (screen) printVec3D(screen,"pos aft",pos);
     /*NL*/ //error->all(FLERR,"end");
 }
 
@@ -643,7 +646,7 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
 
     /*NL*/ if(LMP_DEBUGMODE_FIXINSERT_STREAM) fprintf(LMP_DEBUG_OUT_FIXINSERT_STREAM,"FixInsertStream::x_v_omega() start, maxtry %d\n",maxtry);
 
-    /*NL*/ //if(maxtry > 0) fprintf(screen,"proc %d: ninsert_this_local, maxtry %d sublo/hi %f %f, extrude_length_max %f extrude_length_min %f\n",
+    /*NL*/ //if(screen && maxtry > 0) fprintf(screen,"proc %d: ninsert_this_local, maxtry %d sublo/hi %f %f, extrude_length_max %f extrude_length_min %f\n",
     /*NL*/ //              comm->me,ninsert_this_local,maxtry,domain->sublo[2],domain->subhi[2],extrude_length_max,extrude_length_min);
 
     // no overlap check
@@ -703,12 +706,12 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
 
                 if(quat_random_)
                     MathExtraLiggghts::random_unit_quat(random,quat_insert);
-                /*NL*/ //fprintf(screen,"quat %f %f %f %f\n",quat_insert[0],quat_insert[1],quat_insert[2],quat_insert[3]);
+                /*NL*/ //if (screen) fprintf(screen,"quat %f %f %f %f\n",quat_insert[0],quat_insert[1],quat_insert[2],quat_insert[3]);
 
                 //NP only insert if could successfully randomize position
                 if(ntry < maxtry)
                 {
-                    /*NL*///fprintf(screen,"domain->dist_subbox_borders(pos) %f rad_to_insert %f\n",domain->dist_subbox_borders(pos),rad_to_insert);
+                    /*NL*///if (screen) fprintf(screen,"domain->dist_subbox_borders(pos) %f rad_to_insert %f\n",domain->dist_subbox_borders(pos),rad_to_insert);
                     nins = pti->check_near_set_x_v_omega(pos,v_normal,omega_tmp,quat_insert,neighList);
                 }
             }
@@ -928,7 +931,7 @@ void FixInsertStream::reset_releasedata(bigint newstep,bigint oldstep)
 
   for(int i = 0; i < nlocal; i++)
   {
-        /*NL*/ //fprintf(screen,"release_data[i][4]-release_data[i][3] %f\n",release_data[i][4]-release_data[i][3]);
+        /*NL*/ //if (screen) fprintf(screen,"release_data[i][4]-release_data[i][3] %f\n",release_data[i][4]-release_data[i][3]);
 
         // first 3 values is original position to integrate
         vectorCopy3D(x[i],release_data[i]);

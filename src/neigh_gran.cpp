@@ -357,7 +357,7 @@ void Neighbor::granular_bin_no_newton_ghost(NeighList *list)
     radi = radius[i];
 
 
-    /*NL*/ //fprintf(screen,"looping atom tag %d, x %f %f %f\n",atom->tag[i],x[i][0],x[i][1],x[i][2]);
+    /*NL*/ //if (screen) fprintf(screen,"looping atom tag %d, x %f %f %f\n",atom->tag[i],x[i][0],x[i][1],x[i][2]);
 
     // loop over all atoms in surrounding bins in stencil including self
     // only store pair if i < j
@@ -379,13 +379,13 @@ void Neighbor::granular_bin_no_newton_ghost(NeighList *list)
           rsq = delx*delx + dely*dely + delz*delz;
           radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
           cutsq = (radsum+skin) * (radsum+skin);
-          /*NL*/ //fprintf(screen,"checking local indices %d %d\n",i,j);
+          /*NL*/ //if (screen) fprintf(screen,"checking local indices %d %d\n",i,j);
 
           if (rsq <= cutsq) {
             neighptr[n] = j;
-            /*NL*/ //fprintf(screen,"  found local indices %d %d\n",i,j);
-            /*NL*/ //printVec3D(screen,"  xi",x[i]);
-            /*NL*/ //printVec3D(screen,"  xj",x[j]);
+            /*NL*/ //if (screen) fprintf(screen,"  found local indices %d %d\n",i,j);
+            /*NL*/ //if (screen) printVec3D(screen,"  xi",x[i]);
+            /*NL*/ //if (screen) printVec3D(screen,"  xj",x[j]);
             if (fix_history) {
               if (rsq < radsum*radsum)
               {
@@ -543,7 +543,7 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
     radi = radius[i];
     ibin = coord2bin(x[i]);
 
-    /*NL*/ //fprintf(screen,"step " BIGINT_FORMAT " looping atom tag %d, x %f %f %f\n",update->ntimestep,atom->tag[i],x[i][0],x[i][1],x[i][2]);
+    /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " looping atom tag %d, x %f %f %f\n",update->ntimestep,atom->tag[i],x[i][0],x[i][1],x[i][2]);
 
     // loop over all atoms in surrounding bins in stencil including self
     // only store pair if i < j
@@ -561,13 +561,13 @@ void Neighbor::granular_bin_no_newton(NeighList *list)
         rsq = delx*delx + dely*dely + delz*delz;
         radsum = (radi + radius[j]) * contactDistanceFactor; //NP modified C.K.
         cutsq = (radsum+skin) * (radsum+skin);
-        /*NL*/ //fprintf(screen,"checking local indices %d %d\n",i,j);
+        /*NL*/ //if (screen) fprintf(screen,"checking local indices %d %d\n",i,j);
 
         if (rsq <= cutsq) {
           neighptr[n] = j;
-          /*NL*/ //fprintf(screen,"  found local indices %d %d\n",i,j);
-          /*NL*/ //printVec3D(screen,"  xi",x[i]);
-          /*NL*/ //printVec3D(screen,"  xj",x[j]);
+          /*NL*/ //if (screen) fprintf(screen,"  found local indices %d %d\n",i,j);
+          /*NL*/ //if (screen) printVec3D(screen,"  xi",x[i]);
+          /*NL*/ //if (screen) printVec3D(screen,"  xj",x[j]);
           if (fix_history) {
             if (rsq < radsum*radsum)
                 {

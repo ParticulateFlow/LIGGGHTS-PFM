@@ -31,7 +31,7 @@ class Group : protected Pointers {
   Group(class LAMMPS *);
   ~Group();
   void assign(int, char **);         // assign atoms to a group
-  void create(char *, int *);        // add flagged atoms to a group
+  void create(const char *, int *);  // add flagged atoms to a group
   int find(const char *);            // lookup name in list of groups
   void write_restart(FILE *);
   void read_restart(FILE *);

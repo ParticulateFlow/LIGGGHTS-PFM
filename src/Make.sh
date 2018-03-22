@@ -10,14 +10,6 @@
 # else Make will not recreate them
 
 style () {
-  # modified C.K. create version_liggghts.h
-  builddate=`date +%Y-%m-%d-%H:%M:%S`
-  wai=`whoami`
-  vers=`cat version_liggghts.txt`
-  bra=`cat version_liggghts_branch.txt`
-  githash=`git log -1 --format="%H"`
-  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai, git commit $githash\"" > version_liggghts.h
-
   list=`grep -sl $1 $2*.h | sort`
   if (test -e style_$3.tmp) then
     rm -f style_$3.tmp
@@ -68,6 +60,18 @@ LANG=C
 # col 4 
 
 if (test $1 = "style") then
+  # create version_liggghts.h
+  builddate=`date +%Y-%m-%d-%H:%M:%S`
+  wai=`whoami`
+  vers=`cat version_liggghts.txt`
+  bra=`cat version_liggghts_branch.txt`
+  if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    githash=`git log -1 --format="%H"`
+  else
+    githash="unknown"
+  fi
+  echo $githash
+  echo "#define LIGGGHTS_VERSION \"$bra $vers, compiled $builddate by $wai, git commit $githash,\"" > version_liggghts.h
 
   style ANGLE_CLASS     angle_      angle      force
   style ATOM_CLASS      atom_vec_   atom       atom      atom_vec_hybrid

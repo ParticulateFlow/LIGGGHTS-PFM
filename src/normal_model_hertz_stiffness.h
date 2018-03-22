@@ -106,7 +106,7 @@ namespace ContactModels
 
         /*
         if(limitForce)
-            if(0 == comm->me) fprintf(screen," NormalModel<HERTZ_STIFFNESS>: will limit normal force.\n");
+            if(0 == comm->me && screen) fprintf(screen," NormalModel<HERTZ_STIFFNESS>: will limit normal force.\n");
         */
       }
       // convert Kn and Kt from pressure units to force/distance^2

@@ -75,10 +75,6 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
   r_sphere = new double[nspheres];
   atom_type_sphere = 0;
 
-  // re-create pti with correct nspheres
-  delete pti;
-  pti = new ParticleToInsert(lmp,nspheres);
-
   for (int i = 0; i < 3; i++) {
       x_min[i] = LARGE;
       x_max[i] = -LARGE;
@@ -173,13 +169,13 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
 
   if(comm->me == 0 && screen) fprintf(screen,"Calculating the properties of the given template.\n   Depending on ntry, this may take a while...\n");
 
-  /*NL*/if(LMP_DEBUGMODE_MULTIPLESPHERES) fprintf(screen,"seed=%d ntry=%d\n",seed,ntry);
+  /*NL*/if(LMP_DEBUGMODE_MULTIPLESPHERES && screen) fprintf(screen,"seed=%d ntry=%d\n",seed,ntry);
 
   if(ntry < 1e3) error->fix_error(FLERR,this,"ntry is too low");
   if(comm->me == 0 && ntry < 1e5) error->warning(FLERR,"fix particletemplate/multisphere: ntry is very low");
 
-  /*NL*/if(LMP_DEBUGMODE_MULTIPLESPHERES) fprintf(screen,"number of sphere in template %d\n",nspheres);
-  /*NL*/if(LMP_DEBUGMODE_MULTIPLESPHERES) for(int i=0;i<nspheres;i++) fprintf(screen,"   sphere %d: %f|%f|%f r=%f\n",i,x_sphere[i][0],x_sphere[i][1],x_sphere[i][2],r_sphere[i]);
+  /*NL*/if(LMP_DEBUGMODE_MULTIPLESPHERES && screen) fprintf(screen,"number of sphere in template %d\n",nspheres);
+  /*NL*/if(LMP_DEBUGMODE_MULTIPLESPHERES && screen) for(int i=0;i<nspheres;i++) fprintf(screen,"   sphere %d: %f|%f|%f r=%f\n",i,x_sphere[i][0],x_sphere[i][1],x_sphere[i][2],r_sphere[i]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -271,15 +267,15 @@ void FixTemplateMultiplespheres::calc_bounding_sphere()
               vectorAdd3D(x_bound_temp,d,x_bound_temp);
               rbound_temp += vectorMag3D(d);
           }
-          /*NL*/ //if(LMP_DEBUGMODE_MULTIPLESPHERES) fprintf(screen,"isphere =%d: x_bound_temp is now %f %f %f, r=%f\n",isphere,x_bound_temp[0],x_bound_temp[1],x_bound_temp[2],rbound_temp);
+          /*NL*/ //if(LMP_DEBUGMODE_MULTIPLESPHERES && screen) fprintf(screen,"isphere =%d: x_bound_temp is now %f %f %f, r=%f\n",isphere,x_bound_temp[0],x_bound_temp[1],x_bound_temp[2],rbound_temp);
       }
       if(rbound_temp < r_bound)
       {
           r_bound = rbound_temp;
           vectorCopy3D(x_bound_temp,x_bound);
       }
-      /*NL*/ //fprintf(screen,"ITERATION %d r=%f \n",shuffle,rbound_temp);
-      /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES) fprintf(screen,"ITERATION %d r=%f \n",shuffle,rbound_temp);
+      /*NL*/ //if (screen) fprintf(screen,"ITERATION %d r=%f \n",shuffle,rbound_temp);
+      /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES && screen) fprintf(screen,"ITERATION %d r=%f \n",shuffle,rbound_temp);
   }
   delete []visited;
 
@@ -291,7 +287,7 @@ void FixTemplateMultiplespheres::calc_bounding_sphere()
       if(vectorMag3D(temp) > r_bound) error->fix_error(FLERR,this,"Bounding sphere calculation for template failed");
   }
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES) fprintf(screen,"calculated bounding sphere: center %f|%f|%f, radius %f\n",x_bound[0],x_bound[1],x_bound[2],r_bound);
+  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES && screen) fprintf(screen,"calculated bounding sphere: center %f|%f|%f, radius %f\n",x_bound[0],x_bound[1],x_bound[2],r_bound);
 }
 
 /* ----------------------------------------------------------------------
@@ -329,7 +325,7 @@ void FixTemplateMultiplespheres::calc_center_of_mass()
 
   double x_try[3],xcm[3],dist_j_sqr;
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES) fprintf(screen,"performing MC integration, x_min=%f %f %f, x_max=%f %f %f\n",x_min[0],x_min[1],x_min[2],x_max[0],x_max[1],x_max[2]);
+  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES && screen) fprintf(screen,"performing MC integration, x_min=%f %f %f, x_max=%f %f %f\n",x_min[0],x_min[1],x_min[2],x_max[0],x_max[1],x_max[2]);
   vectorZeroize3D(xcm);
 
   bool alreadyChecked = false;
@@ -360,7 +356,7 @@ void FixTemplateMultiplespheres::calc_center_of_mass()
   mass_expect = volume_expect*expectancy(pdf_density);
   r_equiv = pow(6.*mass_expect/(8.*expectancy(pdf_density)*M_PI),1./3.);
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES)
+  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES && screen)
   /*NL*/    fprintf(screen,"MC integration done: mass=%e, volume=%e, xcm=%e|%e|%e, r_equiv=%e, nsuccess %d, ntry %d vol_box %f\n",
   /*NL*/            mass_expect,volume_expect,xcm[0],xcm[1],xcm[2],r_equiv,nsuccess,ntry,(x_max[0]-x_min[0])*(x_max[1]-x_min[1])*(x_max[2]-x_min[2]));
 
@@ -373,23 +369,23 @@ void FixTemplateMultiplespheres::calc_center_of_mass()
   vectorSubtract3D(x_max,xcm,x_max);
   vectorSubtract3D(x_bound,xcm,x_bound);
 
-  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES)
+  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES && screen)
   /*NL*/    fprintf(screen,"transforming spheres into coo system with xcm as center, x_bound is now %f %f %f\n",x_bound[0],x_bound[1],x_bound[2]);
-  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES)
+  /*NL*/ if(LMP_DEBUGMODE_MULTIPLESPHERES && screen)
   /*NL*/    for(int i=0;i<nspheres;i++)
   /*NL*/        fprintf(screen,"   sphere %d is now: %f|%f|%f r=%f\n",i,x_sphere[i][0],x_sphere[i][1],x_sphere[i][2],r_sphere[i]);
 }
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::max_r_bound()
+double FixTemplateMultiplespheres::max_r_bound() const
 {
     return r_bound;
 }
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::min_rad()
+double FixTemplateMultiplespheres::min_rad() const
 {
     double rmin = 0.;
 
@@ -401,7 +397,7 @@ double FixTemplateMultiplespheres::min_rad()
 
 /* ----------------------------------------------------------------------*/
 
-double FixTemplateMultiplespheres::max_rad()
+double FixTemplateMultiplespheres::max_rad() const
 {
     double rmax = 0.;
 
@@ -416,37 +412,6 @@ double FixTemplateMultiplespheres::max_rad()
 int FixTemplateMultiplespheres::number_spheres()
 {
     return nspheres;
-}
-
-/* ----------------------------------------------------------------------*/
-
-void FixTemplateMultiplespheres::randomize_single()
-{
-  //NP displace, ex,ey,ez are for reference orientation
-
-  pti->nspheres = nspheres;
-  pti->density_ins = expectancy(pdf_density);
-  pti->volume_ins = volume_expect;
-  pti->mass_ins = mass_expect;
-  pti->r_bound_ins = r_bound;
-  vectorCopy3D(x_bound,pti->x_bound_ins);
-  pti->atom_type = atom_type;
-  if(atom_type_sphere)
-  {
-    vectorCopy3D(atom_type_sphere,pti->atom_type_vector);
-    pti->atom_type_vector_flag = true;
-  }
-
-  for(int j = 0; j < nspheres; j++)
-  {
-      pti->radius_ins[j] = r_sphere[j];
-      vectorCopy3D(x_sphere[j],pti->x_ins[j]);
-  }
-
-  vectorZeroize3D(pti->v_ins);
-  vectorZeroize3D(pti->omega_ins);
-
-  pti->groupbit = groupbit;
 }
 
 /* ----------------------------------------------------------------------*/

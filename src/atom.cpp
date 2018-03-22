@@ -685,7 +685,7 @@ void Atom::data_atoms(int n, char *buf)
   int nwords = count_words(buf);
   *next = '\n';
 
-  /*NL*/ //fprintf(screen,"nwords %d avec->size_data_atom %d \n",nwords,avec->size_data_atom);
+  /*NL*/ //if (screen) fprintf(screen,"nwords %d avec->size_data_atom %d \n",nwords,avec->size_data_atom);
   if (nwords != avec->size_data_atom && nwords != avec->size_data_atom + 3)
     error->all(FLERR,"Incorrect atom format in data file");
 
@@ -772,7 +772,7 @@ void Atom::data_atoms(int n, char *buf)
       coord = lamda;
     } else coord = xdata;
 
-    /*NL*/ //printVec3D(screen,"coords",coord);
+    /*NL*/ //if (screen) printVec3D(screen,"coords",coord);
     if (coord[0] >= sublo[0] && coord[0] < subhi[0] &&
         coord[1] >= sublo[1] && coord[1] < subhi[1] &&
         coord[2] >= sublo[2] && coord[2] < subhi[2])
@@ -1516,7 +1516,7 @@ void Atom::partitioner_sort() {
   Partitioner::Result result = partitioner->generate_partitions(permute, thread_offsets);
   double deltaTime = MPI_Wtime() - startTime;
 #ifdef LIGGGHTS_DEBUG
-  if(comm->me == 0) fprintf(screen, "Partitioning time: %g seconds\n", deltaTime);
+  if(comm->me == 0 && screen) fprintf(screen, "Partitioning time: %g seconds\n", deltaTime);
 #endif
   startTime += deltaTime;
 
@@ -1585,7 +1585,7 @@ void Atom::partitioner_sort() {
 
   deltaTime = MPI_Wtime() - startTime;
 #ifdef LIGGGHTS_DEBUG
-  if(comm->me == 0) fprintf(screen, "Permute time: %g seconds\n", deltaTime);
+  if(comm->me == 0 && screen) fprintf(screen, "Permute time: %g seconds\n", deltaTime);
 #endif
 
   // upload data back to GPU if necessary

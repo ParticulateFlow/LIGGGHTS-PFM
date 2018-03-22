@@ -186,10 +186,11 @@ void FixPropertyAtomTracer::end_of_step()
     if(ts < step_ || marker_style_ == MARKER_NONE || (marker_style_ == MARKER_DIRAC && !first_mark_))
         return;
 
-    /*NL*/ //fprintf(screen,"FixPropertyAtomTracer::end_of_step(), proc %d, step " BIGINT_FORMAT "\n",comm->me,update->ntimestep);
+    /*NL*/ //if (screen) fprintf(screen,"FixPropertyAtomTracer::end_of_step(), proc %d, step " BIGINT_FORMAT "\n",comm->me,update->ntimestep);
 
     //NP mark all particles in region
     int nlocal = atom->nlocal;
+    int *mask = atom->mask;
     double **x = atom->x;
     double *marker = this->vector_atom;
     Region *region = domain->regions[iregion_];
@@ -198,6 +199,9 @@ void FixPropertyAtomTracer::end_of_step()
 
     for(int i = 0; i < nlocal; i++)
     {
+        if (!(mask[i] & groupbit))
+            continue;
+
         if (!MathExtraLiggghts::compDouble(marker[i],1.0,1e-5) && region->match(x[i][0],x[i][1],x[i][2]))
         {
             marker[i] = 1.0;

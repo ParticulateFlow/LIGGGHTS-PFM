@@ -65,6 +65,24 @@ class BoundingBox
         }
     }
 
+    void extendToContain(BoundingBox const &other)
+    {
+      if(initGiven){
+        if(other.xLo < xLo) xLo = other.xLo;
+        if(other.xHi > xHi) xHi = other.xHi;
+
+        if(other.yLo < yLo) yLo = other.yLo;
+        if(other.yHi > yHi) yHi = other.yHi;
+
+        if(other.zLo < zLo) zLo = other.zLo;
+        if(other.zHi > zHi) zHi = other.zHi;
+      } else{
+        xLo = other.xLo; xHi = other.xHi;
+        yLo = other.xLo; yHi = other.xHi;
+        zLo = other.xLo; zHi = other.xHi;
+      }
+    }
+
     void extendToParallel(MPI_Comm comm)
     {
       double limit[6];
@@ -101,6 +119,16 @@ class BoundingBox
       extent[0] = xHi - xLo;
       extent[1] = yHi - yLo;
       extent[2] = zHi - zLo;
+    }
+
+    void getCenter(double center[3]) const {
+      center[0] = 0.5 * (xHi + xLo);
+      center[1] = 0.5 * (yHi + yLo);
+      center[2] = 0.5 * (zHi + zLo);
+    }
+
+    bool hasVolume() const {
+      return (xHi > xLo && yHi > yLo && zHi > zLo);
     }
 
     void extendByDelta(double delta);

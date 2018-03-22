@@ -41,12 +41,14 @@
 
 <LI>zero or more keyword/value pairs may be appended 
 
-<LI>keywords = <I>region</I> or <I>atomtype</I> 
+<LI>keywords = <I>region</I> or <I>atomtype</I> or <I>verbose</I> or <I>compress</I> 
 
 <PRE>  <I>region</I> value = region-ID
     region-ID = ID of the region where the particles will be removed
   <I>atomtype</I> value = type
-    type = type of atoms to remove 
+    type = type of atoms to remove
+  <I>verbose</I> value = <I>yes</I> or <I>no</I>
+  <I>compress</I> value = <I>yes</I> or <I>no</I> 
 </PRE>
 
 </UL>
@@ -67,7 +69,17 @@ if their radius is smaller than the value set via <I>delete_below</I>.
 <P>The region from which particles are removed can be specified using the <I>region</I>
 keyword.
 </P>
-<P>The <I>atomtype</I> options allows to restrict deletion to a single type of atoms.
+<P>The <I>atomtype</I> option allows to restrict deletion to a single type of atoms.
+</P>
+<P>The <I>verbose</I> keyword controlls whether statistics about particle
+removal is output to the screen each time particles are removed.
+</P>
+<P>If the <I>compress</I> keyword is set to <I>yes</I>, then after atoms are
+removed, the atom IDs are re-assigned so that they run from 1 to the
+number of atoms in the system. This is not done for molecular systems
+(see the <A HREF = "atom_style.html">atom_style</A> command), regardless of the
+<I>compress</I> setting, since it would foul up the bond connectivity that
+has already been assigned.
 </P>
 <HR>
 
@@ -91,6 +103,6 @@ This fix is not invoked during <A HREF = "minimize.html">energy minimization</A>
 </P>
 <P><B>Default:</B>
 </P>
-<P>none
+<P>The option defaults are verbose = no and compress = yes
 </P>
 </HTML>

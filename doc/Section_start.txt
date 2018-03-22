@@ -570,7 +570,7 @@ necessary, and keep them compatible with future changes to LAMMPS.
 
 User packages have been contributed by users, and always begin with
 the user prefix.  If they are a single command (single file), they are
-typically in the user-misc package.  Otherwise, they are a a set of
+typically in the user-misc package.  Otherwise, they are a set of
 files grouped together which add a specific functionality to the code.
 
 User packages don't necessarily meet the requirements of the standard
@@ -1013,6 +1013,7 @@ letter abbreviation can be used:
 -ro or -reorder
 -sc or -screen
 -sf or -suffix
+-thermo
 -v or -var :ul
 
 For example, lmp_ibm might be launched as follows:
@@ -1261,6 +1262,17 @@ the "package omp"_package.html command in your script if desired.
 
 The "suffix"_suffix.html command can also set a suffix and it can also
 turn off/on any suffix setting made via the command line.
+
+-thermo file :pre
+
+Specify a thermo log file for LAMMPS to write thermo information to.
+If the switch is not used, LAMMPS does not write thermo data to a separate file.
+If this switch is used, LAMMPS writes to the specified file.
+If the switch is specified in multi-partition mode, the hi-level
+logfile is named "file" and each partition also logs information to a
+file.N.  For both one-partition and multi-partition mode, if the specified file
+is "none", then no log files are created.  Using a "thermo_log"_thermo_log.html
+command in the input script will override this setting.
 
 -var name value1 value2 ... :pre
 

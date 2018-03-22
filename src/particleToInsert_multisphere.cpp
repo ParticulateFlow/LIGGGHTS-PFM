@@ -69,8 +69,8 @@ int ParticleToInsertMultisphere::set_x_v_omega(double *x, double *v, double *ome
     double test[] = {1.,2.,3.},testr[3];
     double quatt[] = {1.,0.,0.,0.};
     MathExtraLiggghts::vec_quat_rotate(test,quatt,testr);
-    printVec3D(screen,"original vector",test);
-    printVec3D(screen,"rotated vector",testr);
+    if (screen) printVec3D(screen,"original vector",test);
+    if (screen) printVec3D(screen,"rotated vector",testr);
     */
 
     MathExtraLiggghts::vec_quat_rotate(ex_space,quat);
@@ -83,7 +83,7 @@ int ParticleToInsertMultisphere::set_x_v_omega(double *x, double *v, double *ome
         vectorAdd3D(x,disp_glob,x_ins[j]);
     }
 
-    /*NL*///printVec3D(screen,"xcm",xcm_ins);
+    /*NL*///if (screen) printVec3D(screen,"xcm",xcm_ins);
 
     return nspheres;
 }
@@ -128,9 +128,9 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
            rsq = vectorMag3DSquared(del);
            radsum = radius_ins[j] + xnear[i][3];
 
-           /*NL*/// printVec3D(screen,"x_ins[j]",x_ins[j]);
-           /*NL*/// fprintf(screen,"rsq %f\n",rsq);
-           /*NL*/// fprintf(screen,"radsum %f\n",radsum);
+           /*NL*/// if (screen) printVec3D(screen,"x_ins[j]",x_ins[j]);
+           /*NL*/// if (screen) fprintf(screen,"rsq %f\n",rsq);
+           /*NL*/// if (screen) fprintf(screen,"radsum %f\n",radsum);
            /*NL*/// kk++; if (kk > 100) error->all(FLERR,"end");
 
            // no success in overlap
@@ -234,13 +234,13 @@ int ParticleToInsertMultisphere::insert()
 
     for(int i = 0; i < nspheres; i++)
     {
-        /*NL*///fprintf(screen,"proc %d tyring to insert particle at position %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+        /*NL*///if (screen) fprintf(screen,"proc %d tyring to insert particle at position %f %f %f\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
         //NP do not need subdomain check any longer since have processor-local lists anyway
         //if (domain->is_in_extended_subdomain(xcm_ins))
         //{
             inserted++;
             atom->avec->create_atom(atom_type,x_ins[i]);
-            /*NL*///fprintf(screen,"proc %d inserting particle at position %f %f %f, mass %e\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2],mass_ins);
+            /*NL*///if (screen) fprintf(screen,"proc %d inserting particle at position %f %f %f, mass %e\n",comm->me,x_ins[i][0],x_ins[i][1],x_ins[i][2],mass_ins);
             int m = atom->nlocal - 1;
             atom->mask[m] = 1 | groupbit;
             atom->radius[m] = radius_ins[i];
@@ -273,7 +273,7 @@ int ParticleToInsertMultisphere::insert()
 
     FixMultisphere *fix_multisphere = static_cast<FixMultisphere*>(modify->find_fix_style("multisphere",0));
 
-    /*NL*///fprintf(screen,"inserting body at xcm position %f %f %f\n",xcm_ins[0],xcm_ins[1],xcm_ins[2]);
+    /*NL*///if (screen) fprintf(screen,"inserting body at xcm position %f %f %f\n",xcm_ins[0],xcm_ins[1],xcm_ins[2]);
     fix_multisphere->data().add_body(nspheres,xcm_ins,xcm_to_xbound,r_bound_ins, v_ins, omega_ins, mass_ins,
                                 density_ins,atom_type,type_ms,inertia,ex_space,ey_space,ez_space,displace);
 
@@ -298,8 +298,10 @@ void ParticleToInsertMultisphere::scale_pti(double r_scale)
 
 void ParticleToInsertMultisphere::random_rotate(double rn1,double rn2, double rn3)
 {
+    /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"will do rotate\n");
     /*NL*/ //for(int i=0;i<nspheres;i++) fprintf(screen,"particle %d: x %e %e %e\n",i,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+    /*NL*/ //}
 
     //NP only do something if I am a multisphere particle
     if(nspheres==1)return;
@@ -346,6 +348,8 @@ void ParticleToInsertMultisphere::random_rotate(double rn1,double rn2, double rn
         x_ins[i][2] = xcm_ins[2] + ex_space[2]*displace[i][0] +   ey_space[2]*displace[i][1] +   ez_space[2]*displace[i][2];
     }
 
+    /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"did rotate\n");
-    /*NL*/ //for(int i=0;i<nspheres;i++) fprintf(screen,"particle %d: x %e %e %e\n",i,x_ins[i][0],x_ins[i][1],x_ins[i][2]);
+    /*NL*/ //for(int i=0;i<nspheres;i++) fprintf(screen,"particle %d: x %e %e %e\n",i,x_ins[i][0],x_ins[i][1],x_ins[i][2])
+    /*NL*/ //}
 }

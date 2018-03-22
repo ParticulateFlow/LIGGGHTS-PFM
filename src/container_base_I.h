@@ -77,7 +77,7 @@
    decide if property is pushed or pulled at all
   ------------------------------------------------------------------------- */
 
-  inline bool ContainerBase::decidePackUnpackOperation(int operation,bool scale,bool translate, bool rotate)
+  inline bool ContainerBase::decidePackUnpackOperation(int operation,bool scale,bool translate, bool rotate) const
   {
       // return true for manual communication, such as for node_, node_orig_
       // etc in MultiNodeMeshParallel
@@ -130,7 +130,7 @@
    decide if operation performs data communication
   ------------------------------------------------------------------------- */
 
-  inline bool ContainerBase::decideCommOperation(int operation)
+  inline bool ContainerBase::decideCommOperation(int operation) const
   {
       //NP have to decide at unpack if data is initialized with 0
       //NP or pulled from buffer
@@ -171,7 +171,7 @@
    decide if unpack creates new element or overwrites existing data
   ------------------------------------------------------------------------- */
 
-  inline bool ContainerBase::decideCreateNewElements(int operation)
+  inline bool ContainerBase::decideCreateNewElements(int operation) const
   {
       //NP have to decide at unpack if new elements are created or
       //NP existing ones are over-written
@@ -199,13 +199,13 @@
    note that rotation is only carried out for LEN_VEC==3
   ------------------------------------------------------------------------- */
 
-    bool ContainerBase::isScaleInvariant()
+    bool ContainerBase::isScaleInvariant() const
     {
        return ( refFrame_ == REF_FRAME_INVARIANT ||
                 refFrame_ == REF_FRAME_SCALE_TRANS_INVARIANT);
     }
 
-    bool ContainerBase::isTranslationInvariant()
+    bool ContainerBase::isTranslationInvariant() const
     {
         return ( refFrame_ == REF_FRAME_INVARIANT ||
                  refFrame_ == REF_FRAME_TRANS_ROT_INVARIANT ||
@@ -213,7 +213,7 @@
                  refFrame_ == REF_FRAME_TRANS_INVARIANT);
     }
 
-    bool ContainerBase::isRotationInvariant()
+    bool ContainerBase::isRotationInvariant() const
     {
         return ( refFrame_ == REF_FRAME_INVARIANT ||
                  refFrame_ == REF_FRAME_TRANS_ROT_INVARIANT ||
