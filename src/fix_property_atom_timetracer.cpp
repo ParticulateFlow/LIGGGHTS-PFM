@@ -196,7 +196,7 @@ void FixPropertyAtomTimeTracer::end_of_step()
         this->set_all(0.0);
         if (screen)
         {
-            fprintf(screen,"resetting residence tim dist. at timestep %ld\n",update->ntimestep);
+            fprintf(screen,"resetting residence time dist. at timestep %ld\n",update->ntimestep);
         }
     }
 
