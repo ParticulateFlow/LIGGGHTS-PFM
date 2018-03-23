@@ -54,6 +54,9 @@ class FixForceControlRegion : public Fix {
   virtual int modify_param(int narg, char **arg);
   virtual void end_of_step();
 
+  virtual void write_restart(FILE *fp);
+  virtual void restart(char *buf);
+
  protected:
   double cg_target_, cg3_target_, cg_ratio_;
   double const_part_, sinesq_part_, used_part_;

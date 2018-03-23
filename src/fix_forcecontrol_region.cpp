@@ -81,6 +81,7 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
 {
   if (narg < 6) error->all(FLERR,"Illegal fix forcecontrol/region command");
 
+  restart_global = 1;
   virial_flag = 1;
   scalar_flag = 1;
   vector_flag = 1;
@@ -742,6 +743,23 @@ double FixForceControlRegion::compute_vector(int n)
     force_flag = 1;
   }
   return foriginal_all[n+1];
+}
+
+/* ----------------------------------------------------------------------
+   pack entire state of Fix into restart file
+------------------------------------------------------------------------- */
+
+void FixForceControlRegion::write_restart(FILE *fp)
+{
+}
+
+/* ----------------------------------------------------------------------
+   use state info from restart file to restart the Fix
+------------------------------------------------------------------------- */
+
+void FixForceControlRegion::restart(char *buf)
+{
+  double *list = (double *) buf;
 }
 
 /* ---------------------------------------------------------------------- */
