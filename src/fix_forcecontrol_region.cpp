@@ -58,6 +58,9 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   xvalue(NULL),
   yvalue(NULL),
   zvalue(NULL),
+  const_part_cell_(NULL),
+  used_part_cell_(NULL),
+  sinesq_part_cell_(NULL),
   kp_(1.),
   ki_(0.),
   kd_(0.),
@@ -175,6 +178,9 @@ FixForceControlRegion::~FixForceControlRegion()
   memory->destroy(xvalue);
   memory->destroy(yvalue);
   memory->destroy(zvalue);
+  memory->destroy(const_part_cell_);
+  memory->destroy(used_part_cell_);
+  memory->destroy(sinesq_part_cell_);
   memory->destroy(old_pv_vec_);
   memory->destroy(sum_err_);
 }
@@ -264,6 +270,9 @@ void FixForceControlRegion::post_force(int vflag)
     memory->grow(xvalue,ncells,"forcecontrol/region:xvalue");
     memory->grow(yvalue,ncells,"forcecontrol/region:yvalue");
     memory->grow(zvalue,ncells,"forcecontrol/region:zvalue");
+    memory->grow(const_part_cell_,ncells,"forcecontrol/region:const_part_cell_");
+    memory->grow(used_part_cell_,ncells,"forcecontrol/region:used_part_cell_");
+    memory->grow(sinesq_part_cell_,ncells,"forcecontrol/region:sinesq_part_cell_");
     memory->grow(old_pv_vec_,ncells,3,"forcecontrol/region:old_pv_mag_");
     memory->grow(sum_err_,ncells,3,"forcecontrol/region:sum_err_");
 
@@ -271,6 +280,9 @@ void FixForceControlRegion::post_force(int vflag)
       xvalue[ncells_max_] = 0.0;
       yvalue[ncells_max_] = 0.0;
       zvalue[ncells_max_] = 0.0;
+      const_part_cell_[ncells_max_] = const_part_;
+      used_part_cell_[ncells_max_] = used_part_;
+      sinesq_part_cell_[ncells_max_] = sinesq_part_;
 
       for (int i = 0; i < 3; ++i) {
           old_pv_vec_[ncells_max_][i] = 0.0;
@@ -429,41 +441,41 @@ void FixForceControlRegion::post_force(int vflag)
 
             fadex_ = fadey_ = fadez_ = rmass[i]*dtv_inverse_;
 
-          } else if (ctrl_style_ == STRESS  && sinesq_part_ > 0.0) {
+          } else if (ctrl_style_ == STRESS  && sinesq_part_cell_[*it_cell] > 0.0) {
 
             if (axis_[0] != 0.) {
               // leftward force and atom position to the left of const force part
-              if (axis_[0] < 0. && x[i][0] < bounds[1] - const_part_) {
-                if(x[i][0] < bounds[1] - used_part_) {
+              if (axis_[0] < 0. && x[i][0] < bounds[1] - const_part_cell_[*it_cell]) {
+                if(x[i][0] < bounds[1] - used_part_cell_[*it_cell]) {
                   fadex_ = 0.;
                 } else {
-                  fadex_ = sin(M_PI*0.5*(x[i][0] - (bounds[1]-used_part_))/sinesq_part_);
+                  fadex_ = sin(M_PI*0.5*(x[i][0] - (bounds[1]-used_part_cell_[*it_cell]))/sinesq_part_cell_[*it_cell]);
                   fadex_ *= fadex_;
                 }
               // rightward force and atom position to the right of const force part
-              } else if (axis_[0] > 0. && x[i][0] > bounds[0] + const_part_) {
-                if(x[i][0] > bounds[0] + used_part_) {
+              } else if (axis_[0] > 0. && x[i][0] > bounds[0] + const_part_cell_[*it_cell]) {
+                if(x[i][0] > bounds[0] + used_part_cell_[*it_cell]) {
                   fadex_ = 0.;
                 } else {
-                  fadex_ = sin(M_PI*0.5*(x[i][0] - (bounds[0]+used_part_))/sinesq_part_);
+                  fadex_ = sin(M_PI*0.5*(x[i][0] - (bounds[0]+used_part_cell_[*it_cell]))/sinesq_part_cell_[*it_cell]);
                   fadex_ *= fadex_;
                 }
               }
             }
 
             if (axis_[1] != 0.) {
-              if (axis_[1] < 0. && x[i][1] < bounds[3] - const_part_) {
-                if(x[i][1] < bounds[3] - used_part_) {
+              if (axis_[1] < 0. && x[i][1] < bounds[3] - const_part_cell_[*it_cell]) {
+                if(x[i][1] < bounds[3] - used_part_cell_[*it_cell]) {
                   fadey_ = 0.;
                 } else {
-                  fadey_ = sin(M_PI*0.5*(x[i][1] - (bounds[3]-used_part_))/sinesq_part_);
+                  fadey_ = sin(M_PI*0.5*(x[i][1] - (bounds[3]-used_part_cell_[*it_cell]))/sinesq_part_cell_[*it_cell]);
                   fadey_ *= fadey_;
                 }
-              } else if (axis_[1] > 0. && x[i][1] > bounds[2] + const_part_) {
-                if(x[i][1] > bounds[2] + used_part_) {
+              } else if (axis_[1] > 0. && x[i][1] > bounds[2] + const_part_cell_[*it_cell]) {
+                if(x[i][1] > bounds[2] + used_part_cell_[*it_cell]) {
                   fadey_ = 0.;
                 } else {
-                  fadey_ = sin(M_PI*0.5*(x[i][1] - (bounds[2]+used_part_))/sinesq_part_);
+                  fadey_ = sin(M_PI*0.5*(x[i][1] - (bounds[2]+used_part_cell_[*it_cell]))/sinesq_part_cell_[*it_cell]);
                   fadey_ *= fadey_;
                 }
               }
@@ -471,23 +483,23 @@ void FixForceControlRegion::post_force(int vflag)
 
             if (axis_[2] != 0.) {
               // downward force and atom position below const force part
-              if (axis_[2] < 0. && x[i][2] < bounds[5] - const_part_) {
+              if (axis_[2] < 0. && x[i][2] < bounds[5] - const_part_cell_[*it_cell]) {
                 // atom position below used part
-                if(x[i][2] < bounds[5] - used_part_) {
+                if(x[i][2] < bounds[5] - used_part_cell_[*it_cell]) {
                   fadez_ = 0.;
                 // atom position in sine squared part
                 } else {
-                  fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[5]-used_part_))/sinesq_part_);
+                  fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[5]-used_part_cell_[*it_cell]))/sinesq_part_cell_[*it_cell]);
                   fadez_ *= fadez_;
                 }
               // upward force and atom position above const force part
-              } else if (axis_[2] > 0. && x[i][2] > bounds[4] + const_part_) {
+              } else if (axis_[2] > 0. && x[i][2] > bounds[4] + const_part_cell_[*it_cell]) {
                 // atom position above used part
-                if(x[i][2] > bounds[4] + used_part_) {
+                if(x[i][2] > bounds[4] + used_part_cell_[*it_cell]) {
                   fadez_ = 0.;
                 // atom position in sine squared part
                 } else {
-                  fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[4]+used_part_))/sinesq_part_);
+                  fadez_ = sin(M_PI*0.5* (x[i][2] - (bounds[4]+used_part_cell_[*it_cell]))/sinesq_part_cell_[*it_cell]);
                   fadez_ *= fadez_;
                 }
               }

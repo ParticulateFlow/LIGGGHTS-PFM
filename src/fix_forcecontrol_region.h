@@ -62,6 +62,9 @@ class FixForceControlRegion : public Fix {
   double *xvalue;
   double *yvalue;
   double *zvalue;
+  double *const_part_cell_;
+  double *used_part_cell_;
+  double *sinesq_part_cell_;
   double foriginal[4],foriginal_all[4];
   int force_flag;
 
