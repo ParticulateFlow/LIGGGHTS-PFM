@@ -65,6 +65,7 @@ class FixForceControlRegion : public Fix {
   double *const_part_cell_;
   double *used_part_cell_;
   double *sinesq_part_cell_;
+  int *ncontrolled_cell_; // # of controlled particles in each cell
   double foriginal[4],foriginal_all[4];
   int force_flag;
 

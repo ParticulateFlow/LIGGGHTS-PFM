@@ -61,6 +61,7 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   const_part_cell_(NULL),
   used_part_cell_(NULL),
   sinesq_part_cell_(NULL),
+  ncontrolled_cell_(NULL),
   kp_(1.),
   ki_(0.),
   kd_(0.),
@@ -181,6 +182,7 @@ FixForceControlRegion::~FixForceControlRegion()
   memory->destroy(const_part_cell_);
   memory->destroy(used_part_cell_);
   memory->destroy(sinesq_part_cell_);
+  memory->destroy(ncontrolled_cell_);
   memory->destroy(old_pv_vec_);
   memory->destroy(sum_err_);
 }
@@ -273,6 +275,7 @@ void FixForceControlRegion::post_force(int vflag)
     memory->grow(const_part_cell_,ncells,"forcecontrol/region:const_part_cell_");
     memory->grow(used_part_cell_,ncells,"forcecontrol/region:used_part_cell_");
     memory->grow(sinesq_part_cell_,ncells,"forcecontrol/region:sinesq_part_cell_");
+    memory->grow(ncontrolled_cell_,ncells,"forcecontrol/region:ncontrolled_cell_");
     memory->grow(old_pv_vec_,ncells,3,"forcecontrol/region:old_pv_mag_");
     memory->grow(sum_err_,ncells,3,"forcecontrol/region:sum_err_");
 
@@ -283,6 +286,7 @@ void FixForceControlRegion::post_force(int vflag)
       const_part_cell_[ncells_max_] = const_part_;
       used_part_cell_[ncells_max_] = used_part_;
       sinesq_part_cell_[ncells_max_] = sinesq_part_;
+      ncontrolled_cell_[ncells_max_] = -1;
 
       for (int i = 0; i < 3; ++i) {
           old_pv_vec_[ncells_max_][i] = 0.0;
@@ -410,6 +414,7 @@ void FixForceControlRegion::post_force(int vflag)
     // TODO: remove
     foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
     force_flag = 0;
+    ncontrolled_cell_[*it_cell] = 0;
 
     if (xvalue[*it_cell]!=0. || yvalue[*it_cell]!=0. || zvalue[*it_cell]!=0.) {
       double bounds[6];
@@ -568,6 +573,10 @@ void FixForceControlRegion::post_force(int vflag)
             f[i][1] += a * fy;
             f[i][2] += a * fz;
 
+#define DEBUG_EPS 0.0
+            if (fabs(a*fx) > DEBUG_EPS || fabs(a*fy) > DEBUG_EPS || fabs(a*fz) > DEBUG_EPS ) {
+              ++ncontrolled_cell_[*it_cell];
+            }
             if (vflag) {
                 const double delta = 2.0*actual_->cell_radius(*it_cell);
                 const double pre = 0.5*a;
@@ -580,6 +589,11 @@ void FixForceControlRegion::post_force(int vflag)
             f[i][1] += fadey_ * yvalue[*it_cell];
             f[i][2] += fadez_ * zvalue[*it_cell];
 
+            if (   fabs(fadex_ * xvalue[*it_cell]) > DEBUG_EPS
+                || fabs(fadey_ * yvalue[*it_cell]) > DEBUG_EPS
+                || fabs(fadez_ * zvalue[*it_cell]) > DEBUG_EPS ) {
+              ++ncontrolled_cell_[*it_cell];
+            }
             if (vflag) {
                 const double delta = 2.0*actual_->cell_radius(*it_cell);
                 vatom[i][0] -= 0.5*fabs(fadex_ * xvalue[*it_cell])*delta;
