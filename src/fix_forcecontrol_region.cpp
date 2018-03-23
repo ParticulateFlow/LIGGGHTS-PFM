@@ -324,16 +324,20 @@ void FixForceControlRegion::post_force(int vflag)
     switch (ctrl_style_) {
     case STRESS:
       {
-        // get stress directions from region mesh/hex (vector properties stored in vtk file)
-        double rsq = actual_->cell_radius(*it_cell)*actual_->cell_radius(*it_cell); // fg radius squared
-        double pre = (2.*M_PI*rsq/3.);//*actual_->cell_volume(*it_cell);
+        const double vol_fr_mismatch_correction = actual_->cell_vol_fr(*it_cell)/target_cell_vol_fr(tcell);
+        actual_->set_cell_weight(*it_cell, vol_fr_mismatch_correction);
+        // calculate half average normal force per particle (half, because same force acting from 2 sides)
+        const double r_ave = actual_->cell_radius(*it_cell); // average fg radius (assume that in cg we get the same r_ave when scaled with 1/cg)
+        const double vol_cell = actual_->cell_volume(*it_cell); // equal for fg and cg
+        const double pre_t = 0.5 * vol_cell / r_ave; // (along positive and negative axis -> * 2)
+        const double pre_a = pre_t * vol_fr_mismatch_correction; // (along positive and negative axis -> * 2)
 
-        pv_vec_[0] = -(pre*actual_->cell_stress(*it_cell, 0)/actual_->cell_count(*it_cell)); // fg
-        pv_vec_[1] = -(pre*actual_->cell_stress(*it_cell, 1)/actual_->cell_count(*it_cell)); // fg
-        pv_vec_[2] = -(pre*actual_->cell_stress(*it_cell, 2)/actual_->cell_count(*it_cell)); // fg
-        sp_vec_[0] = -(pre*target_cell_stress_xx(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
-        sp_vec_[1] = -(pre*target_cell_stress_yy(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
-        sp_vec_[2] = -(pre*target_cell_stress_zz(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
+        pv_vec_[0] = -(pre_a*actual_->cell_stress(*it_cell, 0)/actual_->cell_count(*it_cell)); // fg
+        pv_vec_[1] = -(pre_a*actual_->cell_stress(*it_cell, 1)/actual_->cell_count(*it_cell)); // fg
+        pv_vec_[2] = -(pre_a*actual_->cell_stress(*it_cell, 2)/actual_->cell_count(*it_cell)); // fg
+        sp_vec_[0] = -(pre_t*target_cell_stress_xx(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
+        sp_vec_[1] = -(pre_t*target_cell_stress_yy(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
+        sp_vec_[2] = -(pre_t*target_cell_stress_zz(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
 
         // get stress directions from region mesh/hex (vector properties stored in vtk file)
         double *stress_ctrl_dir = actual_->cell_vector_property(*it_cell, "stress_ctrl_dir");

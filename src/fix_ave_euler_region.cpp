@@ -452,12 +452,11 @@ void FixAveEulerRegion::calculate_eu()
 
     cell_volume_ = region_grid_mesh_hex_->hex_vol(icell);
     double prefactor_stress = 1./(cell_volume_*weight_[icell]);
-    double prefactor_vol_fr = (4./3.)*M_PI*prefactor_stress;
 
     if (weight_[icell] < eps_ntry)
       vol_fr_[icell] = 0.;
     else
-      vol_fr_[icell] *= prefactor_vol_fr;
+      vol_fr_[icell] *= MY_4PI3/cell_volume_;
 
     // add contribution of particle - stress
     // need v before can calculate stress

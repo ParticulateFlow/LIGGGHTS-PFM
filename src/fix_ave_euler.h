@@ -97,6 +97,12 @@ class FixAveEuler : public Fix {
   inline int cell_ptr(int i) const
   { return cellptr_[i]; }
 
+  inline double cell_weight(int i) const
+  { return weight_[i]; }
+
+  inline void set_cell_weight(int i, double w)
+  { weight_[i] = w; }
+
  protected:
   inline int ntry_per_cell() const
   { return 50; }
