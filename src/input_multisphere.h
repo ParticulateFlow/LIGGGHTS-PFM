@@ -33,11 +33,12 @@ class InputMultisphere : protected Input {
   InputMultisphere(class LAMMPS *, int, char **);
   ~InputMultisphere();
 
-  int clmpfile(double **xclmp,double* rclmp,
-                int* atomtypeclmp,int nspheres);
   void clmpfile(const char *filename,double **xclmp,
                 double *rclmp,int *atomtypeclmp,int nspheres);
 
+ private:
+  int clmpfile(double **xclmp,double* rclmp,
+                int* atomtypeclmp,int nspheres);
 };
 }
 
