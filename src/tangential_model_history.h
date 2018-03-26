@@ -162,6 +162,7 @@ namespace ContactModels
       // unset non-touching neighbors
       // TODO even if shearupdate == false?
       if(cdata.touch) *cdata.touch &= ~TOUCH_TANGENTIAL_MODEL;
+      if(!cdata.contact_history) return;
       double * const shear = &cdata.contact_history[history_offset];
       shear[0] = 0.0;
       shear[1] = 0.0;
