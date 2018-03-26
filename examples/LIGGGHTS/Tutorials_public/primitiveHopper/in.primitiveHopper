@@ -8,7 +8,7 @@ communicate single vel yes
 
 units       si
 
-region      reg block -0.06 0.06 -0.06 0.06 -.1 0.15 units box
+region      reg block -0.06 0.06 -0.06 0.06 -0.1 0.15 units box
 create_box  1 reg
 
 neighbor        0.002 bin
@@ -31,9 +31,9 @@ fix         gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
 fix zwalls1 all wall/gran model hertz tangential history primitive type 1 zplane 0.00
 fix zwalls2 all wall/gran model hertz tangential history primitive type 1 zplane 0.15
-fix cyl     all wall/gran model hertz tangential history primitive type 1 zcylinder .05 0. 0.
-                                                                                     # R1   x1 y1 z1   R2 x2 y2 z2
-fix cone    all wall/gran model hertz tangential history primitive type 1 general_cone .025 0  0  0    0  0 .05 .05
+fix cyl     all wall/gran model hertz tangential history primitive type 1 zcylinder 0.05 0. 0.
+                                                                                     # R1    x1 y1 z1  x2 y2 z2   R2
+fix cone    all wall/gran model hertz tangential history primitive type 1 general_cone 0.025 0  0  0   0  0  0.05 0.05
 
 
 #region of insertion
@@ -58,9 +58,8 @@ compute_modify  thermo_temp dynamic yes
 
 run     1
 
-dump    dmp all custom/vtk 500 post/cylinder*.vtp id x y z vx vy vz fx fy fz omegax omegay omegaz radius
+dump    dmp all custom/vtk 500 post/cone*.vtk id x y z vx vy vz fx fy fz omegax omegay omegaz radius
 run 50000 upto
 unfix zwalls1
-shell   mkdir post
 
 run     50000
