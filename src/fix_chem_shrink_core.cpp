@@ -64,7 +64,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     fix_changeOfA_(0),
     fix_changeOfC_(0),
     fix_tgas_(0),
-    fix_reactionHeat_(0),
+    // fix_reactionHeat_(0),
     fix_diffcoeff_(0),
     fix_nuField_(0),
     fix_partRe_(0),
@@ -101,7 +101,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
     // double *
     radius_ = pmass_ = pdensity_ = Massterm = NULL;
-    changeOfA_ = changeOfC_ = T_ = reactionHeat_ = partP_ = NULL;
+    changeOfA_ = changeOfC_ = T_ = partP_ = NULL; //reactionHeat_
     molecularDiffusion_ = nuf_ = Rep_ = X0_ = NULL;
     // const double *
     pore_diameter_ = tortuosity_ = 0.0;
@@ -123,7 +123,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             if (narg < iarg_ + 2)
                 error->fix_error(FLERR, this, "not enough arguments for 'speciesA'");
-            speciesA = new char[strlen(arg[iarg_ + 1])];
+            speciesA = new char[strlen(arg[iarg_ + 1])+1];
             strcpy(speciesA, arg[iarg_ + 1]);
             hasargs = true;
             iarg_ += 2;
@@ -142,7 +142,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             if (iarg_ + 2 > narg)
                 error->fix_error(FLERR, this, "not enough arguments for 'speciesC'");
-            speciesC = new char[strlen(arg[iarg_ + 1])];
+            speciesC = new char[strlen(arg[iarg_ + 1])+1];
             strcpy(speciesC, arg[iarg_ + 1]);
             hasargs = true;
             iarg_ += 2;
@@ -239,7 +239,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_changeOfA_)     modify  ->  delete_fix(massA);
         if (fix_changeOfC_)     modify  ->  delete_fix(massC);
         if (fix_tgas_)          modify  ->  delete_fix("partTemp");
-        if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
+        // if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
         if (fix_diffcoeff_)     modify  ->  delete_fix(diffA);
         if (fix_nuField_)       modify  ->  delete_fix("partNu");
         if (fix_partRe_)        modify  ->  delete_fix("partRe");
@@ -299,7 +299,7 @@ void FixChemShrinkCore::updatePtrs()
     changeOfA_      =   fix_changeOfA_      ->  vector_atom;
     changeOfC_      =   fix_changeOfC_      ->  vector_atom;
     T_              =   fix_tgas_           ->  vector_atom;
-    reactionHeat_   =   fix_reactionHeat_   ->  vector_atom;
+    // reactionHeat_   =   fix_reactionHeat_   ->  vector_atom;
     molecularDiffusion_  = fix_diffcoeff_   ->  vector_atom;
     nuf_            =   fix_nuField_        ->  vector_atom;
     Rep_            =   fix_partRe_         ->  vector_atom;
@@ -323,6 +323,31 @@ void FixChemShrinkCore::updatePtrs()
     effDiffBinary   =   fix_effDiffBinary   ->  array_atom;
     effDiffKnud     =   fix_effDiffKnud     ->  array_atom;
     partP_          =   fix_partPressure_   ->  vector_atom;
+
+    if (screen)
+    {
+        fprintf(screen, "Values: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f \n",
+               changeOfA_[0], changeOfC_[0], T_[0], molecularDiffusion_[0], nuf_[0], Rep_[0], X0_[0], tortuosity_,
+                pore_diameter_, Massterm[0], partP_[0]);
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (screen)
+        {
+            fprintf(screen, "3vector values: %f, %f, %f, %f, %f, %f, %f \n",
+                    k0_[i], Ea_[i], fracRed_[0][i], Aterm[0][i], Bterm[0][i], effDiffBinary[0][i],effDiffKnud[0][i]);
+        }
+    }
+
+    for (int i = 0; i< 4; i++)
+    {
+        if (screen)
+        {
+            fprintf(screen, "4vector values: %f, %f, %f, %f , %f \n",
+                    porosity_[0][i],layerDensities_[i],layerMolMasses_[i],massLayer_[0][i],rhoeff_[0][i]);
+        }
+    }
 
     TimeStep        =   update  -> dt;
     radius_         =   atom    -> radius;
@@ -349,15 +374,17 @@ void FixChemShrinkCore::init()
     // look up pre-exponential factor k0
     // differs for every ore id
     int ntype = atom -> ntypes;
-    char* fixname = new char[strlen(id)+1];
+    char* fixname = new char[strlen("k0_")+strlen(id)+1];
     strcpy (fixname,"k0_");
     strcat(fixname,id);
     if (screenflag_ && screen)
         fprintf(screen,"fixname k0_: %s \n", fixname);
     fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    delete []fixname;
 
     // look up activation energies Ea
     // differs for every ore id
+    fixname = new char [strlen("Ea_")+strlen(id)+1];
     strcpy(fixname, "Ea_");
     strcat(fixname, id);
     if (screenflag_ && screen)
@@ -366,7 +393,7 @@ void FixChemShrinkCore::init()
     delete[]fixname;
 
     // Layer Molar Mass
-    fixname = new char [strlen("molMass_")+strlen(group->names[igroup])];
+    fixname = new char [strlen("molMass_")+strlen(group->names[igroup])+1];
     strcpy(fixname,"molMass_");
     strcat(fixname,group->names[igroup]);
     if (screenflag_ && screen)
@@ -375,7 +402,7 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     // Layer Density
-    fixname = new char [strlen("density_")+strlen(group->names[igroup])];
+    fixname = new char [strlen("density_")+strlen(group->names[igroup])+1];
     strcpy(fixname,"density_");
     strcat(fixname,group->names[igroup]);
     if (screenflag_ && screen)
@@ -384,26 +411,26 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     // references for per atom properties.
-    fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, id));
-    fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, id));
-    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style));
-    fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, id));
-    fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, id));
-    fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style));
-    fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style));
-    fix_molefraction_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFrac, "property/atom", "scalar", 0, 0, id));
-    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
-    fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Aterm", "property/atom", "vector", 0, 0, style));
-    fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Bterm", "property/atom", "vector", 0, 0, style));
-    fix_Massterm        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Massterm", "property/atom", "scalar", 0, 0, style));
-    fix_effDiffBinary   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffBinary", "property/atom", "vector", 0, 0, style));
-    fix_effDiffKnud     =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffKnud", "property/atom", "vector", 0, 0, style));
-    fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, id));
+    fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    //fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_molefraction_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFrac, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+    fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Aterm", "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+    fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Bterm", "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+    fix_Massterm        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Massterm", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_effDiffBinary   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffBinary", "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+    fix_effDiffKnud     =   static_cast<FixPropertyAtom*>(modify->find_fix_property("effDiffKnud", "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+    fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
 
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style,"FixChemShrinkCore"));
 
-    fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, "FixChemShrinkCore"));
-    fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff_", "property/atom", "vector", 0, 0, "FixChemShrinkCore"));
+    fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
+    fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff_", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
     // references for global properties - valid for every particle equally
     fix_tortuosity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, style));
     fix_pore_diameter_ =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
@@ -462,11 +489,10 @@ void FixChemShrinkCore::post_force(int)
                 // 1st recalculate masses of layers if layer has reduced
                 // is ignored if there is no change in layers
                 active_layers(i);
-                // calculate values for fractional reduction f_i = (1-relRadii_i^3)
-                // or with mass ratio - is irrelevant gives same result
-                // provides simplicity for calculations of A & B terms.
                 if (active_layers(i) > 0)
                 {
+                    // calculate values for fractional reduction f_i = (1-relRadii_i^3)
+                    // or with mass ratio provides simplicity for calculations of A & B terms.
                     FractionalReduction(i);
                     // get values for equilibrium molar fraction of reactant gas species,
                     // this value is calculated from the Equilibrium constants function Keq(layer,T).
@@ -517,7 +543,7 @@ void FixChemShrinkCore::post_force(int)
 
 int FixChemShrinkCore::active_layers(int i)
 {
-    for(int j  = layers_; j >= 1; j--)
+    for(int j  = layers_; j > 0; j--)
     {
         if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
         {
@@ -525,6 +551,7 @@ int FixChemShrinkCore::active_layers(int i)
             calcMassLayer(i);
         }
     }
+
     if (screenflag_ && screen)
         fprintf(screen, "active layers: %i \n", layers_);
     return layers_;
@@ -538,6 +565,7 @@ void FixChemShrinkCore::calcMassLayer(int i)
     double rad[nmaxlayers_+1] = {};
     for (int layer = 0; layer <= layers_ ; layer++)
         rad[layer] = (radius_[i]/cg_)*relRadii_[i][layer];
+
     if (screenflag_ && screen)
     {
         fprintf(screen, "rad[0]: %f, rad[1]: %f, rad[2]: %f, rad[3]: %f \n",
@@ -696,7 +724,8 @@ void FixChemShrinkCore::getB(int i)
     // if magnetite is reduced; no more diffusion in wustite
     if (layers_ == 1)
         Bterm[i][layers_] = 0.0;
-   /* for (int layer = 0; layer <= layers_; layer++)
+
+    /* for (int layer = 0; layer <= layers_; layer++)
     {
         Bterm[i][layer] = 0.0;
     } */
@@ -723,7 +752,8 @@ void FixChemShrinkCore::getMassT(int i)
 
     if (screenflag_ && screen)
         fprintf(screen, "Schmidt number: %f, molecularDiffusion: %6.15f, NuField: %6.15f \n",Sc_[i],molecularDiffusion_[i],nuf_[i]);
-   // Massterm[i] = 0.0;
+
+    // Massterm[i] = 0.0;
 }
 
 /* ---------------------------------------------------------------------- */

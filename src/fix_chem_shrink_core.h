@@ -99,7 +99,7 @@ public:
   const double *k0_, *Ea_;
 
   // handle names
-  double *changeOfA_, *changeOfC_, *T_, *reactionHeat_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_;
+  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_; //*reactionHeat_,
   double **fracRed_;
   double **Aterm, **Bterm, *Massterm, **effDiffBinary, **effDiffKnud;
 
@@ -108,7 +108,7 @@ public:
 
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
   class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
-  class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
+  // class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
   class FixPropertyAtom *fix_diffcoeff_;
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
