@@ -278,7 +278,7 @@ namespace LAMMPS_NS
 
         // difference between point in plane and closest point on cone
         vectorSubtract2D(closest, P, closest);
-        inside = closest[0] < 0.;
+        inside = closest[0] >= 0.;
 
         // transform back to 3D for dx
         vectorCopy3D(tAxis, dx);
