@@ -48,7 +48,7 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   int maxtype();
   int mintype();
   int number_spheres();
-  bool is_bonded() const { return bonded; }
+  bool is_bonded() const { return bonded_implicit || bonded_explicit; }
 
   // multi insertion
   virtual void init_ptilist(int);
@@ -60,6 +60,10 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   { return fix_bond_random_id ? fix_bond_random_id->vector_atom[i] : 0.0; }
 
  protected:
+
+  // number of partners and partner array
+  int *np;
+  int **p;
 
   // template calculations
   virtual void calc_bounding_sphere();
@@ -99,7 +103,9 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   // number of tries for mc
   int ntry;
 
-  bool bonded;
+  bool bonded_implicit;
+  bool bonded_explicit;
+
   class FixPropertyAtom *fix_bond_random_id;
 };
 
