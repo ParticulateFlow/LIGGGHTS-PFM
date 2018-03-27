@@ -40,7 +40,8 @@
   <I>meshes</I> values = meshlist
     meshlist =  id(s) of the mesh(es) (see <A HREF = "fix_mesh_surface.html">fix mesh/surface</A>) to be used. These must be defined before 
 </PRE>
-<LI>wallstyle args for wallstyle <I>primitive</I> = <I>type</I> or <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or <I>xcylinder</I> or <I>ycylinder</I> or <I>zcylinder</I> or <I>general_plane</I> or <I>general_cylinder</I> 
+<LI>wallstyle args for wallstyle <I>primitive</I> = <I>type</I> or <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or <I>xcylinder</I> or <I>ycylinder</I> or <I>zcylinder</I> 
+                                           or <I>general_plane</I> or <I>general_cylinder</I> or <I>xcone</I> or <I>ycone</I> or <I>zcone</I> 
 
 <PRE>  <I>type</I> args = tp
     tp = atom_type (material type) of the wall
@@ -55,7 +56,11 @@
   <I>general_cylinder</I> args = radius px py pz axisx axisy axisz
     radius = cylinder radius (distance units)
     px,py,pz = coordinates of a point on cylinder axis
-    axisx,axisy,axisz = components of a vector parallel to cylinder axis 
+    axisx,axisy,axisz = components of a vector parallel to cylinder axis
+  <I>general_cone</I> args = radius1 x1 y1 z1 x2 y2 z2 radius2 
+    radius1,radius2 = radii corresponding to xyz1 and xyz2 (distance units)
+    x1,y1,z1 = coordinates of center of bounding circle w/ radius radius1 (distance units)
+    x2,y2,z2 = coordinates of center of bounding circle w/ radius radius2 (distance units) 
 </PRE>
 <LI>zero or more general_keyword/value pairs may be appended 
 
@@ -118,7 +123,7 @@ in the <A HREF = "fix_mesh_surface.html">fix mesh/surface</A> command.
 </P>
 <P>For <I>wallstyle primitive</I>, the atom_type (material type) has to be provided via
 keyword <I>type</I>. Primitve walls can be <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or <I>cylindrical</I> 
-or <I>general_plane</I>. 
+or <I>general_plane</I> or <I>x/y/zcone</I>. 
 The three axis-aligned planar options specify a single wall in a dimension.
 For an <I>xcylinder</I>, <I>ycylinder</I> or <I>zcylinder</I>, the radius and the cylinder axis
 in the other two dims are specified.
@@ -128,6 +133,8 @@ The vector does not need to be a unit vector.
 The <I>general_cylinder</I> is an arbitrarily oriented cylinder, where the radius, a point
 on and a direction vector parallel to the cylinder axis need to be specified.
 The direction vector does not need to be normalized.
+<I>general_cone</I> defines an open cone stump/frustrum/mantle surface as described
+by two points and the radii at the points.
 </P>
 <HR>
 
