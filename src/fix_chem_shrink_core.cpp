@@ -60,61 +60,21 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     nmaxlayers_(3),
     layers_(nmaxlayers_),
-    rmin_(1e-8),       //  [m]
-    fix_changeOfA_(0),
-    fix_changeOfC_(0),
-    fix_tgas_(0),
-    // fix_reactionHeat_(0),
-    fix_diffcoeff_(0),
-    fix_nuField_(0),
-    fix_partRe_(0),
-    fix_molefraction_(0),
-    fix_fracRed(0),
-    // for debug purposes, should be deleted afterwards
-    fix_Aterm(0),
-    fix_Bterm(0),
-    fix_Massterm(0),
-    fix_effDiffBinary(0),
-    fix_effDiffKnud(0),
-    fix_partPressure_(0),
-    //
-    fix_layerRelRad_(0),
-    fix_layerMass_(0),      //  [kg]
-    fix_dens_(0),           //  [kg/m^3]
-    fix_molMass_(0),        //  [kg/mole]
-    fix_k0_(0),             //  [m/s]
-    fix_Ea_(0),             //  [J/mol] - [kg*m^2/s^2*mol]
-    fix_porosity_(0),       //  [%]
-    fix_rhoeff_(0),
-    fix_tortuosity_(0),
-    fix_pore_diameter_(0)   //  [m]
+    rmin_(1e-8)       //  [m]
 {
     if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
-    // defaults
+    // set defaults
+    init_defaults();
     screenflag_ =   0;
-    molMass_A_  =   molMass_C_  =  kch2_ = 0.;
+    massA = massC = NULL;
     diffA = moleFrac = NULL;
-    // double **
-    porosity_ = relRadii_ = massLayer_ = fracRed_ = rhoeff_ = NULL;
-    Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
-    // double *
-    radius_ = pmass_ = pdensity_ = Massterm = NULL;
-    changeOfA_ = changeOfC_ = T_ = partP_ = NULL; //reactionHeat_
-    molecularDiffusion_ = nuf_ = Rep_ = X0_ = NULL;
-    // const double *
-    pore_diameter_ = tortuosity_ = 0.0;
-    layerDensities_ = layerMolMasses_ = k0_ = Ea_ = NULL;
-    speciesA    =   speciesC    =   NULL;
+    speciesA = speciesC = NULL;
 
     cg_ = 0.0;
     comm_established = false;
-    iarg_ = 3;
-
-    if (narg < 11)
-        error->all(FLERR, "not enough arguments");
-
+    int iarg_ = 3;
     bool hasargs = true;
 
     while (iarg_ < narg && hasargs)
@@ -213,6 +173,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     force_reneighbor = 1;
     next_reneighbor = update -> ntimestep + nevery;
     ts_create_  =   update->ntimestep;
+    couple = ts = 0;
 
     cg_ = force->cg();
 }
@@ -236,25 +197,27 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 {
     if (unfixflag)
     {
-        if (fix_changeOfA_)     modify  ->  delete_fix(massA);
-        if (fix_changeOfC_)     modify  ->  delete_fix(massC);
-        if (fix_tgas_)          modify  ->  delete_fix("partTemp");
+        if (fix_changeOfA_)     { modify  ->  delete_fix(massA); delete [] changeOfA_;}
+        if (fix_changeOfC_)     { modify  ->  delete_fix(massC); delete [] changeOfC_;}
+        if (fix_tgas_)          { modify  ->  delete_fix("partTemp"); delete [] T_;}
+
         // if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
-        if (fix_diffcoeff_)     modify  ->  delete_fix(diffA);
-        if (fix_nuField_)       modify  ->  delete_fix("partNu");
-        if (fix_partRe_)        modify  ->  delete_fix("partRe");
-        if (fix_molefraction_)  modify  ->  delete_fix(moleFrac);
-        if (fix_fracRed)        modify  ->  delete_fix("fracRed");
-        if (fix_Aterm)          modify  ->  delete_fix("Aterm");
-        if (fix_Bterm)          modify  ->  delete_fix("Bterm");
-        if (fix_Massterm)       modify  ->  delete_fix("Massterm");
-        if (fix_effDiffBinary)  modify  ->  delete_fix("effDiffBinary");
-        if (fix_effDiffKnud)    modify  ->  delete_fix("effDiffKnud");
-        if (fix_partPressure_)  modify  ->  delete_fix("partP");
-        if (fix_layerRelRad_)   modify  ->  delete_fix("relRadii");
-        if (fix_layerMass_)     modify  ->  delete_fix("massLayer");
-        if (fix_porosity_)      modify  ->  delete_fix("porosity_");
-        if (fix_rhoeff_)        modify  ->  delete_fix("rhoeff_");
+        if (fix_diffcoeff_)     { modify  ->  delete_fix(diffA); delete [] molecularDiffusion_; }
+
+        if (fix_nuField_)       { modify  ->  delete_fix("partNu"); delete [] nuf_; }
+        if (fix_partRe_)        { modify  ->  delete_fix("partRe"); delete [] Rep_; }
+        if (fix_molefraction_)  { modify  ->  delete_fix(moleFrac); delete [] X0_; }
+        if (fix_fracRed)        { modify  ->  delete_fix("fracRed"); delete [] fracRed_;}
+        if (fix_Aterm)          { modify  ->  delete_fix("Aterm"); delete [] Aterm; }
+        if (fix_Bterm)          { modify  ->  delete_fix("Bterm"); delete [] Bterm; }
+        if (fix_Massterm)       { modify  ->  delete_fix("Massterm"); delete [] Massterm; }
+        if (fix_effDiffBinary)  { modify  ->  delete_fix("effDiffBinary"); delete [] effDiffBinary;}
+        if (fix_effDiffKnud)    { modify  ->  delete_fix("effDiffKnud"); delete [] effDiffKnud;}
+        if (fix_partPressure_)  { modify  ->  delete_fix("partP"); delete [] partP_;}
+        if (fix_layerRelRad_)   { modify  ->  delete_fix("relRadii"); delete [] relRadii_; }
+        if (fix_layerMass_)     { modify  ->  delete_fix("massLayer"); delete [] massLayer_; }
+        if (fix_porosity_)      { modify  ->  delete_fix("porosity_"); delete [] porosity_;}
+        if (fix_rhoeff_)        { modify  ->  delete_fix("rhoeff_"); delete [] rhoeff_;}
     }
 }
 
@@ -306,8 +269,8 @@ void FixChemShrinkCore::updatePtrs()
     X0_             =   fix_molefraction_   ->  vector_atom;
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
-    layerDensities_ =   fix_dens_           ->  get_values();
-    layerMolMasses_ =   fix_molMass_        ->  get_values();
+    layerDensities_ =   fix_layerDens_           ->  get_values();
+    layerMolMasses_ =   fix_layerMolMass_        ->  get_values();
     k0_             =   fix_k0_             ->  get_values();
     Ea_             =   fix_Ea_             ->  get_values();
     porosity_       =   fix_porosity_       ->  array_atom;
@@ -323,31 +286,6 @@ void FixChemShrinkCore::updatePtrs()
     effDiffBinary   =   fix_effDiffBinary   ->  array_atom;
     effDiffKnud     =   fix_effDiffKnud     ->  array_atom;
     partP_          =   fix_partPressure_   ->  vector_atom;
-
-    if (screen)
-    {
-        fprintf(screen, "Values: %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f \n",
-               changeOfA_[0], changeOfC_[0], T_[0], molecularDiffusion_[0], nuf_[0], Rep_[0], X0_[0], tortuosity_,
-                pore_diameter_, Massterm[0], partP_[0]);
-    }
-
-    for (int i = 0; i < 3; i++)
-    {
-        if (screen)
-        {
-            fprintf(screen, "3vector values: %f, %f, %f, %f, %f, %f, %f \n",
-                    k0_[i], Ea_[i], fracRed_[0][i], Aterm[0][i], Bterm[0][i], effDiffBinary[0][i],effDiffKnud[0][i]);
-        }
-    }
-
-    for (int i = 0; i< 4; i++)
-    {
-        if (screen)
-        {
-            fprintf(screen, "4vector values: %f, %f, %f, %f , %f \n",
-                    porosity_[0][i],layerDensities_[i],layerMolMasses_[i],massLayer_[0][i],rhoeff_[0][i]);
-        }
-    }
 
     TimeStep        =   update  -> dt;
     radius_         =   atom    -> radius;
@@ -398,7 +336,7 @@ void FixChemShrinkCore::init()
     strcat(fixname,group->names[igroup]);
     if (screenflag_ && screen)
         fprintf(screen,"fixname molMass_: %s \n", fixname);
-    fix_molMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    fix_layerMolMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
     delete []fixname;
 
     // Layer Density
@@ -407,7 +345,7 @@ void FixChemShrinkCore::init()
     strcat(fixname,group->names[igroup]);
     if (screenflag_ && screen)
         fprintf(screen,"fixname density_: %s \n", fixname);
-    fix_dens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
     delete []fixname;
 
     // references for per atom properties.
@@ -949,3 +887,47 @@ void FixChemShrinkCore::FractionalReduction(int i)
 }
 
 /* ---------------------------------------------------------------------- */
+void FixChemShrinkCore::init_defaults()
+{
+    molMass_A_  =   molMass_C_  =  kch2_ = 0.0;
+    rhoeff_ = NULL;
+    porosity_ = NULL;
+    pore_diameter_ = tortuosity_ = 0.0;
+    relRadii_ = massLayer_ = NULL;
+    layerDensities_ = layerMolMasses_ = k0_ = Ea_ = NULL;
+
+    // particle properties total
+    radius_ = pmass_ = pdensity_ = NULL;
+
+    // initialise fix handles
+    changeOfA_ = changeOfC_ = T_ =  molecularDiffusion_ = nuf_ = Rep_ = X0_ = partP_ = Massterm = NULL;
+    Aterm = Bterm = effDiffBinary = effDiffKnud = fracRed_ =   NULL;
+
+    TimeStep = 0.0;
+
+    fix_changeOfA_  = NULL;
+    fix_changeOfC_ = NULL;
+    fix_tgas_ = NULL;       // [K]
+    // fix_reactionHeat_= NULL;
+    fix_diffcoeff_ = NULL;  // [m^2/s]
+    fix_nuField_ = NULL;    // [m^2/s]
+    fix_partRe_ = NULL;
+    fix_molefraction_ = NULL;
+    fix_fracRed = NULL;
+    fix_Aterm = NULL;
+    fix_Bterm = NULL;
+    fix_Massterm = NULL;
+    fix_effDiffBinary = NULL;
+    fix_effDiffKnud = NULL;
+    fix_partPressure_ = NULL;   // Pascal
+    fix_layerRelRad_ = NULL;
+    fix_layerMass_ = NULL;      //  [kg]
+    fix_layerDens_ = NULL;           //  [kg/m^3]
+    fix_layerMolMass_ = NULL;        //  [kg/mole]
+    fix_k0_ = NULL;             //  [m/s]
+    fix_Ea_ = NULL;             //  [J/mol] - [kg*m^2/s^2*mol]
+    fix_porosity_ = NULL;       //  [%]
+    fix_rhoeff_ = NULL;
+    fix_tortuosity_ = NULL;
+    fix_pore_diameter_ = NULL;   //  [m]
+}

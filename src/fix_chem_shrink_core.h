@@ -38,83 +38,72 @@ public:
   FixChemShrinkCore(class LAMMPS *, int, char **);
   ~FixChemShrinkCore();
 
+  void post_create();
   void pre_delete(bool unfixflag);
   int setmask();
-  void post_create();
+
   virtual void updatePtrs();
   virtual void init();
+  void init_defaults();
   virtual void post_force(int);
 
-  int active_layers(int);
-  void calcMassLayer(int);
-  double K_eq(int, double);
-  // diff & reaction & massT
-  void reaction(int, double *, double *);   //, double *, double *
-  void getA(int);
-  void diffcoeff(int, double *);
-  void getB(int);
-  void getMassT(int);
-  void getXi(int, double *);
-  void update_atom_properties(int, double *);
-  void update_gas_properties(int, double *);
-  void FractionalReduction(int);
-
  protected:
-   int iarg_;
-   int ts_create_, couple, ts;
-   bool comm_established, screenflag_;
-   // timestep
-   double TimeStep;
-   // modified strings of species concentrations
-   char* massA, *massC;
-   // molar masses of gas species
-   double molMass_A_, molMass_C_, kch2_;
-   // name of diffusant species and diffusant species mole fraction
-   char *diffA, *moleFrac;
 
-   // effective densities
-   double **rhoeff_;
+  // functions declared in this class
+  int active_layers(int);   // calculate number of active layers per-particle
+  void calcMassLayer(int);  // calculate mass of layers per-particle
+  void FractionalReduction(int); // calculate fractional reduction per-layer depending on layer radius
+  void getXi(int, double *);    // calculate molar equilibrium constant of reacting gas
+  double K_eq(int, double); // calculate equilibrium constant based on the work of Valipour 2009
+  void getA(int);   // calculate chemical reaction resistance term
+  void getB(int);   // calculate diffusion resistance term
+  void getMassT(int);   // calculate gas film mass transfer resistance term
+  void reaction(int, double *, double *);   // calculate chemical reaction rate
+  void update_atom_properties(int, double *);   // update particle layers with depending on chemical reaction rate - per-particle
+  void update_gas_properties(int, double *);    // update reactant and product gas masses depending on chemical reaction rate
 
-   // material properties porosity, tortuosity, and pore diameter
-   //    const double *porosity_;
-   double **porosity_;
-   double pore_diameter_;//*pore_diameter_;
-   double tortuosity_;//*tortuosity_;
-
-   // maximum number of layers to be used for chemical reactions, currently 3
-  const int nmaxlayers_;
-  // number of active layers starts with 3, and reduces if a layer is depleted
-  int layers_;
-  // relative radius below which layers are neglected
-  const double rmin_;
-  // gas-phase properties
+  // variables
+  int ts_create_, couple, ts;
+  bool comm_established, screenflag_;
+  double TimeStep;
+  char* massA, *massC;
+  double molMass_A_, molMass_C_, kch2_;
+  char *diffA, *moleFrac;
+  const int nmaxlayers_;    // maximum available layers - 3
+  int layers_;          // current active layers
+  const double rmin_;   // relative radius below which layers are neglected
   char *speciesA, *speciesC;
 
-  double *radius_;                                  // radius of particle
-  double **relRadii_;                               // relative radii
+  // particle-layer variable values
+  double **rhoeff_;
+  double **porosity_;
+  double pore_diameter_;
+  double tortuosity_;
+  double **relRadii_;
   double **massLayer_;
-  double *pmass_;                                   // particle mass
-  double *pdensity_;
   const double *layerDensities_, *layerMolMasses_;
   const double *k0_, *Ea_;
 
-  // handle names
-  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_; //*reactionHeat_,
-  double **fracRed_;
-  double **Aterm, **Bterm, *Massterm, **effDiffBinary, **effDiffKnud;
+  // particle propertis
+  double *radius_;
+  double *pmass_;
+  double *pdensity_;
+
+  // handles of fixes
+  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_, *Massterm; //*reactionHeat_,
+  double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
 
   // coarse_graining factor
   double cg_;
 
-  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C [as mass per volume and time]
-  class FixPropertyAtom *fix_tgas_;                             //  temperature of gas
-  // class FixPropertyAtom *fix_reactionHeat_;                     //  DeltaQ
+  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;
+  class FixPropertyAtom *fix_tgas_;
+  // class FixPropertyAtom *fix_reactionHeat_;
   class FixPropertyAtom *fix_diffcoeff_;
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
   class FixPropertyAtom *fix_molefraction_;
   class FixPropertyAtom *fix_fracRed;
-  // for printing out values
   class FixPropertyAtom *fix_Aterm;
   class FixPropertyAtom *fix_Bterm;
   class FixPropertyAtom *fix_Massterm;
@@ -123,25 +112,18 @@ public:
   class FixPropertyAtom *fix_partPressure_;
 
   // particle properties
-  // these are defined as vectors with the number of components corresponding to the number of active layers
   class FixPropertyAtom *fix_layerRelRad_;
   class FixPropertyAtom *fix_layerMass_;
-  // molar masses and densities do not differ from particle to particle within a species, hence they are global properties
-  class FixPropertyGlobal *fix_dens_, *fix_molMass_;
-  // reaction properties
-  // for each reaction type (e.g. CO + ore particle), global vectors containing reaction parameters have to be defined
+  class FixPropertyGlobal *fix_layerDens_;
+  class FixPropertyGlobal *fix_layerMolMass_;
   class FixPropertyGlobal *fix_k0_;
   class FixPropertyGlobal *fix_Ea_;
-
-  // define porosity values for all particles
-  // class FixPropertyGlobal *fix_porosity_;
   class FixPropertyAtom *fix_porosity_;
   class FixPropertyAtom *fix_rhoeff_;
   class FixPropertyGlobal *fix_tortuosity_;
-  // class FixPropertyAtom *fix_tortuosity_;
   class FixPropertyGlobal *fix_pore_diameter_;
-
   class FixCfdCoupling* fc_;
+
 };
 }
 
