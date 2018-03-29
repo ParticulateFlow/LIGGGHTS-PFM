@@ -63,8 +63,7 @@ public:
   void update_gas_properties(int, double *);    // update reactant and product gas masses depending on chemical reaction rate
 
   // variables
-  int ts_create_, couple, ts;
-  bool comm_established, screenflag_;
+  bool screenflag_;
   double TimeStep;
   char* massA, *massC;
   double molMass_A_, molMass_C_, kch2_;
@@ -122,7 +121,6 @@ public:
   class FixPropertyAtom *fix_rhoeff_;
   class FixPropertyGlobal *fix_tortuosity_;
   class FixPropertyGlobal *fix_pore_diameter_;
-  class FixCfdCoupling* fc_;
 
 };
 }

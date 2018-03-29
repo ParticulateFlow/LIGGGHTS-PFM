@@ -73,7 +73,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     speciesA = speciesC = NULL;
 
     cg_ = 0.0;
-    comm_established = false;
     int iarg_ = 3;
     bool hasargs = true;
 
@@ -83,8 +82,9 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             if (narg < iarg_ + 2)
                 error->fix_error(FLERR, this, "not enough arguments for 'speciesA'");
-            speciesA = new char[strlen(arg[iarg_ + 1])+1];
-            strcpy(speciesA, arg[iarg_ + 1]);
+            speciesA = new char[strlen(arg[iarg_+1])+1];
+            strcpy(speciesA, arg[iarg_+1]);
+            if (screenflag_ && screen) fprintf(screen, "spreciesA: %s", speciesA);
             hasargs = true;
             iarg_ += 2;
         }
@@ -102,8 +102,9 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             if (iarg_ + 2 > narg)
                 error->fix_error(FLERR, this, "not enough arguments for 'speciesC'");
-            speciesC = new char[strlen(arg[iarg_ + 1])+1];
-            strcpy(speciesC, arg[iarg_ + 1]);
+            speciesC = new char[strlen(arg[iarg_+1])+1];
+            strcpy(speciesC, arg[iarg_+1]);
+            if (screenflag_ && screen) fprintf(screen, "spreciesC: %s", speciesC);
             hasargs = true;
             iarg_ += 2;
         }
@@ -170,11 +171,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     strcat(moleFrac,speciesA);
 
     time_depend = 1;
-    force_reneighbor = 1;
-    next_reneighbor = update -> ntimestep + nevery;
-    ts_create_  =   update->ntimestep;
-    couple = ts = 0;
-
     cg_ = force->cg();
 }
 
@@ -200,10 +196,8 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_changeOfA_)     { modify  ->  delete_fix(massA); delete [] changeOfA_;}
         if (fix_changeOfC_)     { modify  ->  delete_fix(massC); delete [] changeOfC_;}
         if (fix_tgas_)          { modify  ->  delete_fix("partTemp"); delete [] T_;}
-
         // if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
         if (fix_diffcoeff_)     { modify  ->  delete_fix(diffA); delete [] molecularDiffusion_; }
-
         if (fix_nuField_)       { modify  ->  delete_fix("partNu"); delete [] nuf_; }
         if (fix_partRe_)        { modify  ->  delete_fix("partRe"); delete [] Rep_; }
         if (fix_molefraction_)  { modify  ->  delete_fix(moleFrac); delete [] X0_; }
@@ -234,7 +228,6 @@ int FixChemShrinkCore::setmask()
 
 void FixChemShrinkCore::post_create()
 {
-    fix_layerRelRad_ =  static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii","property/atom","vector",0,0,this->style,false));
     if (!fix_layerRelRad_)
     {
         const char* fixarg[12];
@@ -304,10 +297,6 @@ void FixChemShrinkCore::init()
       error->fix_error(FLERR,this,"requires atom attribute mass (per-particle)");
     if (!atom->tag_enable || 0 == atom->map_style)
       error->fix_error(FLERR,this,"requires atom tags and an atom map");
-
-    // find coupling fix & get coupling interval value
-    fc_ = static_cast<FixCfdCoupling*>(modify->find_fix_style_strict("couple/cfd",0));
-    couple = fc_ -> couple_nevery_ + 1;
 
     // look up pre-exponential factor k0
     // differs for every ore id
@@ -401,61 +390,50 @@ void FixChemShrinkCore::post_force(int)
     int *mask   =   atom->mask;
     double x0_eq_[nmaxlayers_] = {};          // molar fraction of reactant gas
     double dmA_[nmaxlayers_] = {};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
-    ts = update->ntimestep;
 
-    // do chem/shrink/core calculations if communication between CFDEM and LIGGGHTS already happened
-    // need initial values from CFDEM side
-    if (!comm_established)
+    for (i = 0; i < nlocal; i++)
     {
-        if (ts > ts_create_ + couple)
+        if (screenflag_ && screen)
         {
-            comm_established = true;
+            fprintf(screen, "dCoeff value is : %.10f \n", molecularDiffusion_[i]);
+        }
+
+    if (X0_[i] > 0.0)
+    {
+        if (mask[i] & groupbit)
+        {
+            // 1st recalculate masses of layers if layer has reduced
+            // is ignored if there is no change in layers
+            active_layers(i);
+            if (active_layers(i) > 0)
+            {
+                // calculate values for fractional reduction f_i = (1-relRadii_i^3)
+                // or with mass ratio provides simplicity for calculations of A & B terms.
+                FractionalReduction(i);
+                // get values for equilibrium molar fraction of reactant gas species,
+                // this value is calculated from the Equilibrium constants function Keq(layer,T).
+                // and used in the reaction rate determination.
+                getXi(i,x0_eq_);
+                // calculate the reaction resistance term
+                getA(i);
+                // calculate the diffusion resistance term
+                getB(i);
+                // calculate mass transfer resistance term
+                getMassT(i);
+                // do the reaction calculation with pre-calculated values of A, B and ß (massT)
+                // the USCM model chemical reaction rate with gaseous species model
+                // based on the works of Philbrook, Spitzer and Manning
+                reaction(i, dmA_, x0_eq_);
+                // the results of reaction gives us the mass change of reactant species gas
+                // in the usual case that means the CO gas mass species change is given
+                // this information is used then to calculate mass changes of particle layers
+                update_atom_properties(i, dmA_);
+                // also the results of reaction function is used to calculate
+                // the changes in gas species
+                update_gas_properties(i, dmA_);
+            }
         }
     }
-
-    if (comm_established)
-    {
-        for (i = 0; i < nlocal; i++)
-        {
-            if (screenflag_ && screen)
-            {
-                fprintf(screen, "dCoeff value is : %.10f \n", molecularDiffusion_[i]);
-            }
-
-            if (mask[i] & groupbit)
-            {
-                // 1st recalculate masses of layers if layer has reduced
-                // is ignored if there is no change in layers
-                active_layers(i);
-                if (active_layers(i) > 0)
-                {
-                    // calculate values for fractional reduction f_i = (1-relRadii_i^3)
-                    // or with mass ratio provides simplicity for calculations of A & B terms.
-                    FractionalReduction(i);
-                    // get values for equilibrium molar fraction of reactant gas species,
-                    // this value is calculated from the Equilibrium constants function Keq(layer,T).
-                    // and used in the reaction rate determination.
-                    getXi(i,x0_eq_);
-                    // calculate the reaction resistance term
-                    getA(i);
-                    // calculate the diffusion resistance term
-                    getB(i);
-                    // calculate mass transfer resistance term
-                    getMassT(i);
-                    // do the reaction calculation with pre-calculated values of A, B and ß (massT)
-                    // the USCM model chemical reaction rate with gaseous species model
-                    // based on the works of Philbrook, Spitzer and Manning
-                    reaction(i, dmA_, x0_eq_);
-                    // the results of reaction gives us the mass change of reactant species gas
-                    // in the usual case that means the CO gas mass species change is given
-                    // this information is used then to calculate mass changes of particle layers
-                    update_atom_properties(i, dmA_);
-                    // also the results of reaction function is used to calculate
-                    // the changes in gas species
-                    update_gas_properties(i, dmA_);
-                }
-            }
-        }
     }
 
     bigint nblocal = atom->nlocal;
@@ -921,7 +899,7 @@ void FixChemShrinkCore::init_defaults()
     fix_effDiffKnud = NULL;
     fix_partPressure_ = NULL;   // Pascal
     fix_layerRelRad_ = NULL;
-    fix_layerMass_ = NULL;      //  [kg]
+    fix_layerMass_ = NULL;           //  [kg]
     fix_layerDens_ = NULL;           //  [kg/m^3]
     fix_layerMolMass_ = NULL;        //  [kg/mole]
     fix_k0_ = NULL;             //  [m/s]
