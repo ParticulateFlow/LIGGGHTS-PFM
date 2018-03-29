@@ -1022,6 +1022,7 @@ letter abbreviation can be used:
 <LI>-ro or -reorder
 <LI>-sc or -screen
 <LI>-sf or -suffix
+<LI>-thermo
 <LI>-v or -var 
 </UL>
 <P>For example, lmp_ibm might be launched as follows:
@@ -1270,6 +1271,17 @@ the <A HREF = "package.html">package omp</A> command in your script if desired.
 </P>
 <P>The <A HREF = "suffix.html">suffix</A> command can also set a suffix and it can also
 turn off/on any suffix setting made via the command line.
+</P>
+<PRE>-thermo file 
+</PRE>
+<P>Specify a thermo log file for LAMMPS to write thermo information to.
+If the switch is not used, LAMMPS does not write thermo data to a separate file.
+If this switch is used, LAMMPS writes to the specified file.
+If the switch is specified in multi-partition mode, the hi-level
+logfile is named "file" and each partition also logs information to a
+file.N.  For both one-partition and multi-partition mode, if the specified file
+is "none", then no log files are created.  Using a <A HREF = "thermo_log.html">thermo_log</A>
+command in the input script will override this setting.
 </P>
 <PRE>-var name value1 value2 ... 
 </PRE>

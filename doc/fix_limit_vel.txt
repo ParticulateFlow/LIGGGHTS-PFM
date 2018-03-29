@@ -1,0 +1,29 @@
+"LAMMPS WWW Site"_lws - "LAMMPS Documentation"_ld - "LAMMPS Commands"_lc :c
+
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix limit/vel command :h3
+
+[Syntax:]
+
+fix ID group-ID limit/vel vmax :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+limit/vel = style name of this fix command :l
+vmax = maximum velocity :l
+:ule
+
+[Examples:]
+
+fix lim all limit/vel 1.0 :pre
+
+[Description:]
+
+If the velocity of a particle is larger than vmax, it is scaled down to vmax while keeping the direction of the velocity vector. This can be used to stabilize simulations by preventing artificially high velocities.
+
+
+:line
