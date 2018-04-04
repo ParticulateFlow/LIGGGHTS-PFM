@@ -77,7 +77,6 @@ void FixLimitVel::setup(int vflag)
     ((Respa *) update->integrate)->copy_f_flevel(nlevels_respa-1);
   }
 
-  //NP modified C.K.
   // error checks on coarsegraining
   if(force->cg_active())
     error->cg(FLERR,this->style);

@@ -41,7 +41,7 @@
     meshlist =  id(s) of the mesh(es) (see <A HREF = "fix_mesh_surface.html">fix mesh/surface</A>) to be used. These must be defined before 
 </PRE>
 <LI>wallstyle args for wallstyle <I>primitive</I> = <I>type</I> or <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or <I>xcylinder</I> or <I>ycylinder</I> or <I>zcylinder</I> 
-                                           or <I>general_plane</I> or <I>general_cylinder</I> or <I>xcone</I> or <I>ycone</I> or <I>zcone</I> 
+                                           or <I>general_plane</I> or <I>general_cylinder</I> or <I>general_cone</I> 
 
 <PRE>  <I>type</I> args = tp
     tp = atom_type (material type) of the wall
@@ -122,8 +122,9 @@ For style <I>mesh</I>, the atom_type (material type) is inherited from the atom 
 in the <A HREF = "fix_mesh_surface.html">fix mesh/surface</A> command. 
 </P>
 <P>For <I>wallstyle primitive</I>, the atom_type (material type) has to be provided via
-keyword <I>type</I>. Primitve walls can be <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or <I>cylindrical</I> 
-or <I>general_plane</I> or <I>x/y/zcone</I>. 
+keyword <I>type</I>. Primitve walls can be <I>xplane</I> or <I>yplane</I> or <I>zplane</I> or
+or <I>xcylinder</I> or <I>ycylinder</I> or <I>zcylinder</I> or <I>general_plane</I> or
+<I>general_cylinder</I> or <I>general_cone</I>. 
 The three axis-aligned planar options specify a single wall in a dimension.
 For an <I>xcylinder</I>, <I>ycylinder</I> or <I>zcylinder</I>, the radius and the cylinder axis
 in the other two dims are specified.
@@ -133,8 +134,8 @@ The vector does not need to be a unit vector.
 The <I>general_cylinder</I> is an arbitrarily oriented cylinder, where the radius, a point
 on and a direction vector parallel to the cylinder axis need to be specified.
 The direction vector does not need to be normalized.
-<I>general_cone</I> defines an open cone stump/frustrum/mantle surface as described
-by two points and the radii at the points.
+<I>general_cone</I> defines an open (frustum of a) cone described by the two endpoints of
+the cone (frustum) axis and the radii at these points.
 </P>
 <HR>
 
