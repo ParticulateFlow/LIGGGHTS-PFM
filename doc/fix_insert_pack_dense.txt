@@ -72,6 +72,10 @@ No information to restart files is written by this fix.
 
 [Restrictions:]
 
+The insertion region can span several processors, but must be a single
+continuous volume. Regions consisting of several disconnected volumes
+will be filled incorrectly or not at all.
+
 When running in parallel, the estimated number of particles is wrong
 when using a region of type mesh/tet.
 

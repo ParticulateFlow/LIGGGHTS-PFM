@@ -336,12 +336,18 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
     {
       if (mask[i] & groupbit)
       {
-        // this assumes that fluctuations do not put particles outside domain in two opposite directions at the same time
         for(int j=0; j<3; j++)
         {
           x_new[j] = x[i][j] + vfluc[i][j] * dt;
           if (x_new[j] <= domain->boxlo[j] || x_new[j] >= domain->boxhi[j])
-            x_new[j] = x[i][j] - vfluc[i][j] * dt;
+          {
+            // if outside domain either a) reflect fluctuations or b) ignore them
+            // if a), this assumes that fluctuations do not put particles outside domain
+            // in two opposite directions at the same time
+
+            //x_new[j] = x[i][j] - vfluc[i][j] * dt;
+            x_new[j] = x[i][j];
+          }
         }
 
         vectorCopy3D(x_new,x[i]);

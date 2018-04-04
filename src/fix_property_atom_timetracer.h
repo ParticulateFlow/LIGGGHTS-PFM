@@ -74,6 +74,7 @@ class FixPropertyAtomTimeTracer : public FixPropertyAtom {
   std::vector<char*> idregion_;
 
   double check_every_;
+  int reset_every_;
 }; //end class
 
 }
