@@ -54,6 +54,19 @@ inline void vectorNormalize3D(double *v)
     v[2] *= invnorm;
 }
 
+inline void vectorNormalize2D(double *v)
+{
+    double norm = sqrt(v[0]*v[0]+v[1]*v[1]);
+    double invnorm = (norm == 0.) ? 0. : 1./norm;
+    v[0] *= invnorm;
+    v[1] *= invnorm;
+}
+
+inline double vectorMag2D(const double *v)
+{
+  return (  sqrt(v[0]*v[0]+v[1]*v[1])  );
+}
+
 inline double vectorMag3D(const double *v)
 {
   return (  sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])  );
@@ -306,6 +319,12 @@ inline void vectorScalarSubtract3D(double *v, double s)
 inline void vectorAddMultiply3D(double *v1, double *v2, double s, double *res)
 {
   for(int i=0;i<3;i++)
+    res[i] = v1[i]+v2[i]*s;
+}
+
+inline void vectorAddMultiply2D(const double *v1, const double *v2, const double s, double *res)
+{
+  for(int i=0;i<2;i++)
     res[i] = v1[i]+v2[i]*s;
 }
 
