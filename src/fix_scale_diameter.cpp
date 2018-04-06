@@ -133,6 +133,8 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
     }
   }
 
+  rad_mass_vary_flag = 1;
+
   scale_width_ *= radius_;
   radius_inner_ = radius_ - scale_width_;
 
