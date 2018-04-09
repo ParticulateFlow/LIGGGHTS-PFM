@@ -9,7 +9,7 @@ export OMPI_CXX:=clang++
 
 CC =		mpic++
 CCFLAGS =	-O2 \
-		-funroll-loops -fstrict-aliasing -Wall -Wno-unused-result
+		-funroll-loops -fstrict-aliasing -Wall -Wno-unused-result -std=c++11
 SHFLAGS =	
 DEPFLAGS =	-M
 

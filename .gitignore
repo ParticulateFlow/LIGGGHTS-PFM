@@ -13,3 +13,4 @@ src/version_liggghts.h
 src/Obj_*
 src/lmp_*
 src/liblmp*
+src-build/
