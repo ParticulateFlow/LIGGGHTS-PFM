@@ -83,9 +83,8 @@ FixCfdCouplingForceImplicit::FixCfdCouplingForceImplicit(LAMMPS *lmp, int narg, 
             onePlusCAddRhoFluid_ = 1.0 + CAddRhoFluid_;
             if (screen) fprintf(screen,"cfd_coupling_force_implicit will consider added mass with CAddRhoFluid = %f\n", CAddRhoFluid_);
             iarg++;
+            hasargs = true;
         }
-        else
-           iarg++;
 // superquadric end
     }
 
