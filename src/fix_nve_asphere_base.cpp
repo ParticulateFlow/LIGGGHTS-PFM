@@ -269,17 +269,6 @@ void FixNVEAsphereBase::rotationUpdate(bool updateQuaternion)
       MathExtra::transpose_matvec(rot,angmom[i],angMomPrime);
       MathExtra::transpose_matvec(rot,torque[i],torquePrime);
 
-/*      printf("\n***rotationUpdate(): angmom/prime: %g %g %g/%g %g %g, torque/prime: %g %g %g/%g %g %g \n\n",
-             angmom[i][0],angmom[i][1],angmom[i][2],
-             angMomPrime[0],angMomPrime[1],angMomPrime[2],
-             torque[i][0],torque[i][1],torque[i][2],
-             torquePrime[0],torquePrime[1],torquePrime[2]
-             );
-
-      printf("\n***rotationUpdate(): KslRotation: %g %g %g\n\n",
-             KslRotation[i][0],KslRotation[i][1],KslRotation[i][2]
-             );
-*/
       //Implicit angmom and omegaNew update in the 'prime' coordinate system
       implicitRotationUpdate
       (
