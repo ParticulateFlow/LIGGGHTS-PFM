@@ -49,11 +49,17 @@ double point_wall_projection(const double *normal_vector, const double *point_on
   const double B = normal_vector[1];
   const double C = normal_vector[2];
 
-  const double alpha = -(A*(x - x0) + B*(y - y0) + C*(z - z0)) / (A*A + B*B + C*C);
+  const double deltax = x - x0;
+  const double deltay = y - y0;
+  const double deltaz = z - z0;
+
+  const double length_sq = A*A + B*B + C*C;
+
+  const double alpha = -(A*deltax + B*deltay + C*deltaz) / length_sq;
   output_point[0] = x + alpha * A;
   output_point[1] = y + alpha * B;
   output_point[2] = z + alpha * C;
-  return fabs((A*(x - x0) + B*(y - y0) + C*(z - z0)) / sqrt(A*A + B*B + C*C));
+  return fabs((A*deltax + B*deltay + C*deltaz) / sqrt(length_sq));
 }
 
 //calculate right hand side term in dynamic euler equation: dw/dt = f(w), w - angular velocity
@@ -102,10 +108,11 @@ double point_line_distance(double *pointA, double *pointB, double *inputPoint, d
   const double yA = pointA[1];
   const double zA = pointA[2];
 
+  // note: potential division by zero if A = B!!
   double alpha = ((x0 - xA)*nx + (y0 - yA)*ny + (z0 - zA)*nz) / (nx*nx + ny*ny + nz*nz);
   if(alpha > 1.0)
     alpha = 1.0;
-  if(alpha < 0.0)
+  else if(alpha < 0.0)
     alpha = 0.0;
   closestPoint[0] = xA + alpha*nx;
   closestPoint[1] = yA + alpha*ny;
@@ -121,10 +128,12 @@ void integrate_quat(double *quat, double *omega, double dt)
   const double omega_mag = LAMMPS_NS::vectorMag3D(omega);
   double deltaq[4];
   if(omega_mag > 1e-8) {
-    deltaq[0] = cos(0.5*omega_mag*dt);
-    deltaq[1] = sin(0.5*omega_mag*dt) * omega[0]/omega_mag;
-    deltaq[2] = sin(0.5*omega_mag*dt) * omega[1]/omega_mag,
-    deltaq[3] = sin(0.5*omega_mag*dt) * omega[2]/omega_mag;
+    const double omega_mag_dt_half = 0.5*omega_mag*dt;
+    const double sin_omega_mag_dt_half_over_omega_mag = sin(omega_mag_dt_half)/omega_mag;
+    deltaq[0] = cos(omega_mag_dt_half);
+    deltaq[1] = sin_omega_mag_dt_half_over_omega_mag * omega[0];
+    deltaq[2] = sin_omega_mag_dt_half_over_omega_mag * omega[1];
+    deltaq[3] = sin_omega_mag_dt_half_over_omega_mag * omega[2];
   } else {
     deltaq[0] = 1.0;
     deltaq[1] = 0.5 * dt * omega[0];

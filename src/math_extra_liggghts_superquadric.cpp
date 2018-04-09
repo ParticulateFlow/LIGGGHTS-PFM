@@ -265,12 +265,19 @@ void inertia_superquadric(const double *shape, const double *blockiness, const d
   const double a1 = shape[0];
   const double a2 = shape[1];
   const double a3 = shape[2];
-  const double I_xx = 0.5*a1*a2*a3*eps1*eps2*(a2*a2*BETA_NAMESPACE::beta(1.5*eps2, 0.5*eps2)*BETA_NAMESPACE::beta(0.5*eps1, 2.0*eps1+1.0)+
-      4.0*a3*a3*BETA_NAMESPACE::beta(0.5*eps2, 0.5*eps2+1.0)*BETA_NAMESPACE::beta(1.5*eps1, eps1+1.0)) * dens;
-  const double I_yy = 0.5*a1*a2*a3*eps1*eps2*(a1*a1*BETA_NAMESPACE::beta(1.5*eps2, 0.5*eps2)*BETA_NAMESPACE::beta(0.5*eps1, 2.0*eps1+1.0)+
-      4.0*a3*a3*BETA_NAMESPACE::beta(0.5*eps2, 0.5*eps2+1.0)*BETA_NAMESPACE::beta(1.5*eps1, eps1+1.0)) * dens;
-  const double I_zz = 0.5*a1*a2*a3*eps1*eps2*(a1*a1 + a2*a2)*
-      BETA_NAMESPACE::beta(1.5*eps2, 0.5*eps2)*BETA_NAMESPACE::beta(0.5*eps1, 2.0*eps1+1.0) * dens;
+  const double a1_sq = a1*a1;
+  const double a2_sq = a2*a2;
+  const double a3_sq = a3*a3;
+  const double pre = 0.5*a1*a2*a3*eps1*eps2*dens;
+  const double beta1 = BETA_NAMESPACE::beta(1.5*eps2, 0.5*eps2);
+  const double beta2 = BETA_NAMESPACE::beta(0.5*eps1, 2.0*eps1+1.0);
+  const double beta3 = BETA_NAMESPACE::beta(0.5*eps2, 0.5*eps2+1.0);
+  const double beta4 = BETA_NAMESPACE::beta(1.5*eps1, eps1+1.0);
+
+  const double I_xx = pre*(a2_sq*beta1*beta2 + 4.0*a3_sq*beta3*beta4);
+  const double I_yy = pre*(a1_sq*beta1*beta2 + 4.0*a3_sq*beta3*beta4);
+  const double I_zz = pre*(a1_sq + a2_sq)*beta1*beta2;
+
   ans[0] = I_xx;
   ans[1] = I_yy;
   ans[2] = I_zz;
