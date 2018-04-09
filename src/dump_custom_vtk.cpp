@@ -1192,13 +1192,22 @@ void DumpCustomVTK::buf2arrays(int n, double *mybuf)
                              static_cast<int>(mybuf[iatom*size_one+j+1]),
                              static_cast<int>(mybuf[iatom*size_one+j+2]) };
               vtkIntArray *pia = static_cast<vtkIntArray*>(paa);
+
+#if (VTK_MAJOR_VERSION > 7) || (VTK_MAJOR_VERSION == 7 && VTK_MINOR_VERSION     >= 1)
+              pia->InsertNextTypedTuple(iv3);
+#else
               pia->InsertNextTupleValue(iv3);
+#endif
               break;
             }
           case DOUBLE:
             {
               vtkDoubleArray *pda = static_cast<vtkDoubleArray*>(paa);
+#if (VTK_MAJOR_VERSION > 7) || (VTK_MAJOR_VERSION == 7 && VTK_MINOR_VERSION     >= 1)
+              pda->InsertNextTypedTuple(&mybuf[iatom*size_one+j]);
+#else
               pda->InsertNextTupleValue(&mybuf[iatom*size_one+j]);
+#endif
               break;
             }
         }

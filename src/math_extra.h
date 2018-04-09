@@ -89,11 +89,11 @@ namespace MathExtra {
   // quaternion operations
 
   inline void qnormalize(double *q);
-  inline void qconjugate(double *q, double *qc);
-  inline void vecquat(double *a, double *b, double *c);
-  inline void quatvec(double *a, double *b, double *c);
+  inline void qconjugate(const double *q, double *qc);
+  inline void vecquat(const double *a, const double *b, double *c);
+  inline void quatvec(const double *a, const double *b, double *c);
   inline void quatquat(const double *a, const double *b, double *c);
-  inline void invquatvec(double *a, double *b, double *c);
+  inline void invquatvec(const double *a, const double *b, double *c);
   inline void axisangle_to_quat(const double *v, const double angle,
                                 double *quat);
 
@@ -525,7 +525,7 @@ void MathExtra::qnormalize(double *q)
    assume q is of unit length
 ------------------------------------------------------------------------- */
 
-void MathExtra::qconjugate(double *q, double *qc)
+void MathExtra::qconjugate(const double *q, double *qc)
 {
   qc[0] = q[0];
   qc[1] = -q[1];
@@ -537,7 +537,7 @@ void MathExtra::qconjugate(double *q, double *qc)
    vector-quaternion multiply: c = a*b, where a = (0,a)
 ------------------------------------------------------------------------- */
 
-void MathExtra::vecquat(double *a, double *b, double *c)
+void MathExtra::vecquat(const double *a, const double *b, double *c)
 {
   c[0] = -a[0]*b[1] - a[1]*b[2] - a[2]*b[3];
   c[1] = b[0]*a[0] + a[1]*b[3] - a[2]*b[2];
@@ -549,7 +549,7 @@ void MathExtra::vecquat(double *a, double *b, double *c)
    quaternion-vector multiply: c = a*b, where b = (0,b)
 ------------------------------------------------------------------------- */
 
-void MathExtra::quatvec(double *a, double *b, double *c)
+void MathExtra::quatvec(const double *a, const double *b, double *c)
 {
   c[0] = -a[1]*b[0] - a[2]*b[1] - a[3]*b[2];
   c[1] = a[0]*b[0] + a[2]*b[2] - a[3]*b[1];
@@ -576,7 +576,7 @@ void MathExtra::quatquat(const double *a, const double *b, double *c)
    c is a three component vector
 ------------------------------------------------------------------------- */
 
-void MathExtra::invquatvec(double *a, double *b, double *c)
+void MathExtra::invquatvec(const double *a, const double *b, double *c)
 {
   c[0] = -a[1]*b[0] + a[0]*b[1] + a[3]*b[2] - a[2]*b[3];
   c[1] = -a[2]*b[0] - a[3]*b[1] + a[0]*b[2] + a[1]*b[3];
