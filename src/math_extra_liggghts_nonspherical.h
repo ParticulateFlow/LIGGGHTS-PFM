@@ -502,7 +502,8 @@ inline void MathExtraLiggghtsNonspherical::times3_transpose(const double *m, con
   ans[2*3+2] = m[2*3+0]*m2[2*3+0] + m[2*3+1]*m2[2*3+1] + m[2*3+2]*m2[2*3+2];
 }
 
-inline void MathExtraLiggghtsNonspherical::quat_to_mat(const double *quat, double *rotation_matrix) {
+inline void MathExtraLiggghtsNonspherical::quat_to_mat(const double *quat, double *rotation_matrix)
+{
   double w2 = quat[0]*quat[0];
   double i2 = quat[1]*quat[1];
   double j2 = quat[2]*quat[2];
