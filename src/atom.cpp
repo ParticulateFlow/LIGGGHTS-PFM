@@ -111,7 +111,8 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   shape = NULL; //half axes and blockiness parameters
   inertia = NULL; //components Ix, Iy, Iz
   blockiness = NULL;
-  volume = NULL; area = NULL;
+  volume = NULL;
+  area = NULL;
   quaternion = NULL; //quaternion of current orientation and angular moment
 //------------------------------------------------------
 

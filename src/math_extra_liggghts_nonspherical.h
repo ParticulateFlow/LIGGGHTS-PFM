@@ -528,7 +528,7 @@ inline void MathExtraLiggghtsNonspherical::quat_to_mat(const double *quat, doubl
 
 inline void MathExtraLiggghtsNonspherical::surfacesIntersectNonSpherical(CollisionData & sidata, double **x)
 {
-  #ifdef NONSPHERICAL_ACTIVE_FLAG
+#ifdef NONSPHERICAL_ACTIVE_FLAG
   double xci[3], xcj[3];
   double v_rot_i[3], v_rot_j[3];
   double omega_relative[3], v_relative[3], v_rot_relative[3];
@@ -565,7 +565,7 @@ inline void MathExtraLiggghtsNonspherical::surfacesIntersectNonSpherical(Collisi
   sidata.wr3 = omega_relative[2];
 
   sidata.vn = vn;
-  #endif
+#endif
 }
 
 inline bool MathExtraLiggghtsNonspherical::isInteger(double x)

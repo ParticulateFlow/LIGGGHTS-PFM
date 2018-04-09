@@ -58,7 +58,6 @@ void FixNVESuperquadric::init()
   FixNVEAsphereBase::init();
 
   // error checks
-
   if (!atom->superquadric_flag )
     error->all(FLERR,"Fix nve/superquadric requires atom style superquadric");
 }

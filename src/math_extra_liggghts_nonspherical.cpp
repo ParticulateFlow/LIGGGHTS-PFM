@@ -296,7 +296,7 @@ void line_segments_distance(double *P1, double *Q1, double *P2, double *Q2, doub
 //effective curvature radius of a pair of particles at the contact point
 double get_effective_radius(CollisionData & sidata, double *blockiness_i, double *blockiness_j, double koefi, double koefj, double curvatureLimitFactor, LAMMPS_NS::Error *error)
 {
-  #ifdef SUPERQUADRIC_ACTIVE_FLAG
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
   if(blockiness_i == NULL)
     error->one(FLERR,"blockiness_i array in get_effective_radius() is NULL");
   if(blockiness_j == NULL)
@@ -307,14 +307,14 @@ double get_effective_radius(CollisionData & sidata, double *blockiness_i, double
   //  return 1.0 / keff;
   double rmax = sidata.reff * curvatureLimitFactor;
   return (keff < 1.0/rmax)? rmax: 1.0/keff;
-  #else
+#else
   return 0.;
-  #endif
+#endif
 }
 
 double get_effective_radius_wall(CollisionData & sidata, double *blockiness_i, double koefi, double curvatureLimitFactor, LAMMPS_NS::Error *error)
 {
-  #ifdef SUPERQUADRIC_ACTIVE_FLAG
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
 
   double keff = koefi;
   if(blockiness_i == NULL)
@@ -323,9 +323,9 @@ double get_effective_radius_wall(CollisionData & sidata, double *blockiness_i, d
   //  return 1.0 / keff;
   double rmax = sidata.radi * curvatureLimitFactor;
   return (keff < 1.0/rmax)? rmax: 1.0/keff;
-  #else
+#else
   return 0.;
-  #endif
+#endif
 }
 
 //distance between two points in N-dimensional space

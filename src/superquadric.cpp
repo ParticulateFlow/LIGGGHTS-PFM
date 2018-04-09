@@ -637,17 +637,17 @@ double Superquadric::calc_curvature_coefficient(int curvature_radius, const doub
   return fabs(MathExtra::dot3(n, temp) - (hessian[0] + hessian[4] + hessian[8])) / fabs(2.0 * F_mag);
   else { //gaussian curvature
     double fx = F[0];
-  double fy = F[1];
-  double fz = F[2];
+    double fy = F[1];
+    double fz = F[2];
 
-  double fxx = hessian[0];
-  double fxy = hessian[1];
-  double fxz = hessian[2];
+    double fxx = hessian[0];
+    double fxy = hessian[1];
+    double fxz = hessian[2];
 
-  double fyy = hessian[4];
-  double fyz = hessian[5];
+    double fyy = hessian[4];
+    double fyz = hessian[5];
 
-  double fzz = hessian[8];
+    double fzz = hessian[8];
 
     double mat[] = {
         fxx, fxy, fxz, fx,
@@ -689,7 +689,8 @@ void Superquadric::set_blockiness(double n1, double n2)
   }
 }
 
-void Superquadric::calc_koef() {
+void Superquadric::calc_koef()
+{
   koef = MathExtraLiggghtsNonspherical::pow_abs(0.5, std::max(blockiness[0], blockiness[1])-2.0);
 }
 
@@ -918,7 +919,7 @@ double Superquadric::point_surface_projection(const int max_num_iters, bool use_
             LAMMPS_NS::vectorCopy4D(Fb, F);
             l = lb;
             LAMMPS_NS::vectorCopy3D(pointb, p);
-  }
+          }
           eps = 0.0;
         } else  {
           if(res2a > res2b)

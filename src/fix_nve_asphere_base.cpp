@@ -116,6 +116,7 @@ void FixNVEAsphereBase::integrate_dynamic_euler(double dt, double *wbody, double
 
   double omega_half_prev[3], delta[3];
   double omega_half[] = {0.0, 0.0, 0.0};
+
   while(1) {
     LAMMPS_NS::vectorCopy3D(omega_half, omega_half_prev);
     omega_half[0] = wbody[0] + 0.5*dt*omega_der[0];
@@ -234,26 +235,26 @@ void FixNVEAsphereBase::rotationUpdate(bool updateQuaternion)
   // This is okey only for SPHERICAL particles
   // update 1/2 step for omega
 
-  double **angmom  = atom->angmom;
+  double **angmom = atom->angmom;
   double **quat = atom->quaternion;
   double **inertia = atom->inertia;
-  double **omega   = atom->omega;
-  double **torque  = atom->torque;
-  int    *mask     = atom->mask;
+  double **omega = atom->omega;
+  double **torque = atom->torque;
+  int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
-  double dtq = 0.50 * dtv;
+  double dtq = 0.5 * dtv;
 
   //save rotation rate to array if necessary
-  orientation    = NULL;
-  ksl_rotation    = NULL;
-  hdtorque       = NULL;
+  orientation = NULL;
+  ksl_rotation = NULL;
+  hdtorque = NULL;
 
   if(couple_fix_id > -1) {
       ksl_rotation = ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_KslRotation_->array_atom;
-      hdtorque =     ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_hdtorque_->array_atom;
-      orientation =  ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_ex_->array_atom;
-    }
+      hdtorque     = ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_hdtorque_->array_atom;
+      orientation  = ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_ex_->array_atom;
+  }
 
   for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit)
@@ -307,7 +308,7 @@ void FixNVEAsphereBase::rotationUpdate(bool updateQuaternion)
           orientation[i][0] = exone[0];
           orientation[i][1] = exone[1];
           orientation[i][2] = exone[2];
-       }
+      }
     } //end of particle
   }
 }
@@ -329,14 +330,14 @@ void FixNVEAsphereBase::initial_integrate(int vflag)
   int nlocal = atom->nlocal;
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
 
-  orientation    = NULL;
-  ksl_rotation    = NULL;
-  hdtorque       = NULL;
+  orientation = NULL;
+  ksl_rotation = NULL;
+  hdtorque = NULL;
 
   if(couple_fix_id > -1) {
     ksl_rotation = ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_KslRotation_->array_atom;
-    hdtorque =     ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_hdtorque_->array_atom;
-    orientation =  ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_ex_->array_atom;
+    hdtorque     = ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_hdtorque_->array_atom;
+    orientation  = ((FixCfdCouplingForceImplicit*)modify->fix[couple_fix_id])->fix_ex_->array_atom;
   }
 
   double tbody[3], rotation_matrix[9];

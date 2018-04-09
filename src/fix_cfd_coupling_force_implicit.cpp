@@ -165,7 +165,7 @@ void FixCfdCouplingForceImplicit::post_create()
       fixarg[9]= "0.";
       fixarg[10]="0.";
       fix_KslRotation_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
-     }
+    }
     if(!fix_ex_)
     {
        const char* fixarg[11];
