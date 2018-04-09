@@ -125,9 +125,10 @@ void FixNVEAsphereBase::integrate_dynamic_euler(double dt, double *wbody, double
     omega_half[1] = wbody[1] + 0.5*dt*alpha[1];
     omega_half[2] = wbody[2] + 0.5*dt*alpha[2];
     LAMMPS_NS::vectorSubtract3D(omega_half_prev, omega_half, delta);
-    double omega_half_mag = LAMMPS_NS::vectorMag3D(omega_half);
-    if(omega_half_mag > 0.0) {
-      double eps = LAMMPS_NS::vectorMag3D(delta) / omega_half_mag;
+    const double omega_half_mag_sqr = LAMMPS_NS::vectorMag3DSquared(omega_half);
+
+    if(omega_half_mag_sqr > 0.0) {
+      double eps = LAMMPS_NS::vectorMag3D(delta) / sqrt(omega_half_mag_sqr);
       if(eps < tol)
         break;
       dynamic_euler(omega_half, tbody, inertia, alpha);
