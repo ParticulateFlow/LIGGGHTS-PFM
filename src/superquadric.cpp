@@ -87,13 +87,10 @@ void Superquadric::set(double *center_, double *quat_, double *shape_, double *b
   isEllipsoid = MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
   isCylinder = !MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
 
-  if(isEllipsoid)
+  if(isEllipsoid) {
     useIntBlockiness = true;
-  else {
-    if(MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) && MathExtraLiggghtsNonspherical::isInteger(blockiness[1]))
-      useIntBlockiness = true;
-    else
-      useIntBlockiness = false;
+  } else {
+    useIntBlockiness = MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) && MathExtraLiggghtsNonspherical::isInteger(blockiness[1]);
   }
 }
 
@@ -679,13 +676,10 @@ void Superquadric::set_blockiness(double n1, double n2)
   calc_koef();
   isEllipsoid = MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
   isCylinder = !MathExtraLiggghts::compDouble(blockiness[0], 2.0, 1e-2) && MathExtraLiggghts::compDouble(blockiness[1], 2.0, 1e-2);
-  if(isEllipsoid)
+  if(isEllipsoid) {
     useIntBlockiness = true;
-  else {
-    if(MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) && MathExtraLiggghtsNonspherical::isInteger(blockiness[1]))
-      useIntBlockiness = true;
-    else
-      useIntBlockiness = false;
+  } else {
+    useIntBlockiness = MathExtraLiggghtsNonspherical::isInteger(blockiness[0]) && MathExtraLiggghtsNonspherical::isInteger(blockiness[1]);
   }
 }
 
