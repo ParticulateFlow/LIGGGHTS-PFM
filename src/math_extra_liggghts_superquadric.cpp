@@ -1379,7 +1379,7 @@ bool capsules_intersect(Superquadric *particleA, Superquadric *particleB, double
 }
 
 //calculate the contact point if no information about from the previous step available
-bool calc_contact_point_if_no_previous_point_avaialable(CollisionData & sidata, Superquadric *particleA,
+bool calc_contact_point_if_no_previous_point_avaialable(CollisionData & cdata, Superquadric *particleA,
     Superquadric *particleB, double *contact_point, double &fi, double &fj, LAMMPS_NS::Error *error)
 {
   bool fail_flag = false;
@@ -1428,7 +1428,7 @@ bool calc_contact_point_if_no_previous_point_avaialable(CollisionData & sidata, 
 }
 
 //calculate the contact point using information from previous step
-bool calc_contact_point_using_prev_step(CollisionData & sidata, Superquadric *particleA, Superquadric *particleB,
+bool calc_contact_point_using_prev_step(CollisionData & cdata, Superquadric *particleA, Superquadric *particleB,
     double ratio, double dt, double *prev_step_point, double *contact_point, double &fi, double &fj, LAMMPS_NS::Error *error)
 {
   bool fail_flag = false;
@@ -1439,16 +1439,16 @@ bool calc_contact_point_using_prev_step(CollisionData & sidata, Superquadric *pa
   double xci[3], xcj[3], v_rot_i[3], v_rot_j[3], vi[3], vj[3];
   LAMMPS_NS::vectorSubtract3D(prev_step_point, particleA->center, xci);
   LAMMPS_NS::vectorSubtract3D(prev_step_point, particleB->center, xcj);
-  LAMMPS_NS::vectorCross3D(sidata.omega_i, xci, v_rot_i);
-  LAMMPS_NS::vectorCross3D(sidata.omega_j, xcj, v_rot_j);
+  LAMMPS_NS::vectorCross3D(cdata.omega_i, xci, v_rot_i);
+  LAMMPS_NS::vectorCross3D(cdata.omega_j, xcj, v_rot_j);
 
   for(int k = 0; k < 3; k++) {
-    vi[k] = sidata.v_i[k] + v_rot_i[k]; //velocity of the contact point with respect to particle i
-    vj[k] = sidata.v_j[k] + v_rot_j[k]; //velocity of the contact point with respect to particle j
+    vi[k] = cdata.v_i[k] + v_rot_i[k]; //velocity of the contact point with respect to particle i
+    vj[k] = cdata.v_j[k] + v_rot_j[k]; //velocity of the contact point with respect to particle j
   }
   double v_eff[3];
   for(int k = 0; k < 3; k++)
-    v_eff[k] = (vi[k]*sidata.mi + vj[k]*sidata.mj) / (sidata.mi+sidata.mj); //average velocity of the contact point
+    v_eff[k] = (vi[k]*cdata.mi + vj[k]*cdata.mj) / (cdata.mi+cdata.mj); //average velocity of the contact point
 
   for(int k = 0; k < 3; k++)
     estimation[k] = prev_step_point[k] + v_eff[k]*dt; //contact point estimation
@@ -1460,7 +1460,7 @@ bool calc_contact_point_using_prev_step(CollisionData & sidata, Superquadric *pa
 }
 
 //basic estimation of the overlap magnitude
-void basic_overlap_algorithm(CollisionData & sidata, Superquadric *particleA, Superquadric *particleB,
+void basic_overlap_algorithm(CollisionData & cdata, Superquadric *particleA, Superquadric *particleB,
     double &alphaA, double &alphaB, const double *contact_point, double *contact_pointA, double *contact_pointB)
 {
   particleA->map_point(contact_point, contact_pointA);
@@ -1468,12 +1468,12 @@ void basic_overlap_algorithm(CollisionData & sidata, Superquadric *particleA, Su
   double deltaA[3], deltaB[3];
   LAMMPS_NS::vectorSubtract3D(contact_pointA, contact_point, deltaA);
   LAMMPS_NS::vectorSubtract3D(contact_pointB, contact_point, deltaB);
-  alphaA = LAMMPS_NS::vectorDot3D(deltaA, sidata.en);
-  alphaB = LAMMPS_NS::vectorDot3D(deltaB, sidata.en);
+  alphaA = LAMMPS_NS::vectorDot3D(deltaA, cdata.en);
+  alphaB = LAMMPS_NS::vectorDot3D(deltaB, cdata.en);
 
-  sidata.deltan = fabs(alphaA) + fabs(alphaB);
+  cdata.deltan = fabs(alphaA) + fabs(alphaB);
 
-  LAMMPS_NS::vectorScalarMult3D(sidata.en, sidata.deltan, sidata.delta);
+  LAMMPS_NS::vectorScalarMult3D(cdata.en, cdata.deltan, cdata.delta);
 }
 
 //more sophisticated overlap algorithm, uses the same overlap direction
@@ -1496,7 +1496,7 @@ double extended_overlap_algorithm(Superquadric *particleA, Superquadric *particl
 }
 
 //common normal algorithm
-double common_normal(CollisionData & sidata, Superquadric *particleA, Superquadric *particleB, bool particles_were_in_contact_flag,
+double common_normal(CollisionData & cdata, Superquadric *particleA, Superquadric *particleB, bool particles_were_in_contact_flag,
     double *const contact_point_A_history, double *const contact_point_B_history, //from previous timestep
     double *contact_point_A, double *contact_point_B) //from line-surface intersection algorithm
 {
@@ -1541,18 +1541,18 @@ double common_normal(CollisionData & sidata, Superquadric *particleA, Superquadr
     res = res1;
 }
 
-  LAMMPS_NS::vectorSubtract3D(contact_point_B, contact_point_A, sidata.delta);
-  LAMMPS_NS::vectorCopy3D(sidata.delta, sidata.en);  // overlap direction
-  LAMMPS_NS::vectorNormalize3D(sidata.en);
+  LAMMPS_NS::vectorSubtract3D(contact_point_B, contact_point_A, cdata.delta);
+  LAMMPS_NS::vectorCopy3D(cdata.delta, cdata.en);  // overlap direction
+  LAMMPS_NS::vectorNormalize3D(cdata.en);
 
   LAMMPS_NS::vectorCopy3D(contact_point_A, contact_point_A_history); //store pair of contact points in local coordinates for each particles
   LAMMPS_NS::vectorCopy3D(contact_point_B, contact_point_B_history);
 
-  sidata.contact_point[0] = 0.5*(contact_point_A[0] + contact_point_B[0]);
-  sidata.contact_point[1] = 0.5*(contact_point_A[1] + contact_point_B[1]);
-  sidata.contact_point[2] = 0.5*(contact_point_A[2] + contact_point_B[2]);
+  cdata.contact_point[0] = 0.5*(contact_point_A[0] + contact_point_B[0]);
+  cdata.contact_point[1] = 0.5*(contact_point_A[1] + contact_point_B[1]);
+  cdata.contact_point[2] = 0.5*(contact_point_A[2] + contact_point_B[2]);
 
-  return LAMMPS_NS::vectorMag3D(sidata.delta); //overlap magnitude
+  return LAMMPS_NS::vectorMag3D(cdata.delta); //overlap magnitude
   }
 
 #ifdef LIGGGHTS_DEBUG

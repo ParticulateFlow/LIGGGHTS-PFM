@@ -118,7 +118,7 @@ double point_line_distance(double *pointA, double *pointB, double *inputPoint, d
 // integrate quaternion
 void integrate_quat(double *quat, double *omega, double dt)
 {
-  double omega_mag = LAMMPS_NS::vectorMag3D(omega);
+  const double omega_mag = LAMMPS_NS::vectorMag3D(omega);
   double deltaq[4];
   if(omega_mag > 1e-8) {
     deltaq[0] = cos(0.5*omega_mag*dt);
@@ -294,7 +294,7 @@ void line_segments_distance(double *P1, double *Q1, double *P2, double *Q2, doub
 }
 
 //effective curvature radius of a pair of particles at the contact point
-double get_effective_radius(CollisionData & sidata, double *blockiness_i, double *blockiness_j, double koefi, double koefj, double curvatureLimitFactor, LAMMPS_NS::Error *error)
+double get_effective_radius(CollisionData & cdata, double *blockiness_i, double *blockiness_j, double koefi, double koefj, double curvatureLimitFactor, LAMMPS_NS::Error *error)
 {
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
   if(blockiness_i == NULL)
@@ -302,26 +302,22 @@ double get_effective_radius(CollisionData & sidata, double *blockiness_i, double
   if(blockiness_j == NULL)
     error->one(FLERR,"blockiness_j array in get_effective_radius() is NULL");
 
-  double keff = koefi + koefj;
-  //if(blockiness_i[0] == 2.0 and blockiness_i[1] == 2.0 and blockiness_j[0] == 2.0 and blockiness_j[1] == 2.0)
-  //  return 1.0 / keff;
-  double rmax = sidata.reff * curvatureLimitFactor;
+  const double keff = koefi + koefj;
+  const double rmax = cdata.reff * curvatureLimitFactor;
   return (keff < 1.0/rmax)? rmax: 1.0/keff;
 #else
   return 0.;
 #endif
 }
 
-double get_effective_radius_wall(CollisionData & sidata, double *blockiness_i, double koefi, double curvatureLimitFactor, LAMMPS_NS::Error *error)
+double get_effective_radius_wall(CollisionData & cdata, double *blockiness_i, double koefi, double curvatureLimitFactor, LAMMPS_NS::Error *error)
 {
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
 
-  double keff = koefi;
+  const double keff = koefi;
   if(blockiness_i == NULL)
     error->one(FLERR,"blockiness_i array in get_effective_radius_wall() is NULL");
-  //if(blockiness_i[0] == 2.0 and blockiness_i[1] == 2.0)
-  //  return 1.0 / keff;
-  double rmax = sidata.radi * curvatureLimitFactor;
+  const double rmax = cdata.radi * curvatureLimitFactor;
   return (keff < 1.0/rmax)? rmax: 1.0/keff;
 #else
   return 0.;

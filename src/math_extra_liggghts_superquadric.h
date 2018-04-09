@@ -57,16 +57,16 @@ namespace MathExtraLiggghtsNonspherical {
 
   bool capsules_intersect(Superquadric *particle_i, Superquadric *particle_j, double *capsule_contact_point);
 
-  bool calc_contact_point_if_no_previous_point_avaialable(CollisionData & sidata, Superquadric *particle_i, Superquadric *particle_j,
+  bool calc_contact_point_if_no_previous_point_avaialable(CollisionData & cdata, Superquadric *particle_i, Superquadric *particle_j,
       double *contact_point, double &fi, double &fj,LAMMPS_NS::Error *error);
-  bool calc_contact_point_using_prev_step(CollisionData & sidata, Superquadric *particle_i, Superquadric *particle_j,
+  bool calc_contact_point_using_prev_step(CollisionData & cdata, Superquadric *particle_i, Superquadric *particle_j,
       double ratio, double dt, double *prev_step_point, double *contact_point, double &fi, double &fj, LAMMPS_NS::Error *error);
-  void basic_overlap_algorithm(CollisionData & sidata, Superquadric *particle_i, Superquadric *particle_j,
+  void basic_overlap_algorithm(CollisionData & cdata, Superquadric *particle_i, Superquadric *particle_j,
       double &alphai, double &alphaj, const double *contact_point, double *contact_point_i, double *contact_point_j);
   double extended_overlap_algorithm(Superquadric *particleA, Superquadric *particleB,
       double *en, double *const alpha_i, double *const alpha_j,
       const double *contact_point, double *contact_pointA, double *contact_pointB, double *delta);
-  double common_normal(CollisionData & sidata, Superquadric *particle_i, Superquadric *particle_j, bool particles_were_in_contact_flag,
+  double common_normal(CollisionData & cdata, Superquadric *particle_i, Superquadric *particle_j, bool particles_were_in_contact_flag,
       double *const contact_point_i_local, double *contact_point_j_local, double *contact_point_i, double *contact_point_j);
   double inverseMatrix4x4(const double *m, double *out);
   double determinant_4x4(double *mat);

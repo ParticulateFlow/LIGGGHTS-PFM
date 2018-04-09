@@ -527,45 +527,45 @@ inline void MathExtraLiggghtsNonspherical::quat_to_mat(const double *quat, doubl
   rotation_matrix[8] = w2-i2-j2+k2;
 }
 
-inline void MathExtraLiggghtsNonspherical::surfacesIntersectNonSpherical(CollisionData & sidata, double **x)
+inline void MathExtraLiggghtsNonspherical::surfacesIntersectNonSpherical(CollisionData & cdata, double **x)
 {
 #ifdef NONSPHERICAL_ACTIVE_FLAG
   double xci[3], xcj[3];
   double v_rot_i[3], v_rot_j[3];
   double omega_relative[3], v_relative[3], v_rot_relative[3];
-  if(sidata.is_wall) {
-    LAMMPS_NS::vectorSubtract3D(sidata.contact_point, x[sidata.i], xci);
-    LAMMPS_NS::vectorCross3D(sidata.omega_i, xci, v_rot_i);
+  if(cdata.is_wall) {
+    LAMMPS_NS::vectorSubtract3D(cdata.contact_point, x[cdata.i], xci);
+    LAMMPS_NS::vectorCross3D(cdata.omega_i, xci, v_rot_i);
     LAMMPS_NS::vectorCopy3D(v_rot_i, v_rot_relative);
-    LAMMPS_NS::vectorCopy3D(sidata.omega_i, omega_relative);
-    sidata.cri = LAMMPS_NS::vectorMag3D(xci);
+    LAMMPS_NS::vectorCopy3D(cdata.omega_i, omega_relative);
+    cdata.cri = LAMMPS_NS::vectorMag3D(xci);
   } else {
-    LAMMPS_NS::vectorSubtract3D(sidata.contact_point, x[sidata.i], xci);
-    LAMMPS_NS::vectorSubtract3D(sidata.contact_point, x[sidata.j], xcj);
-    LAMMPS_NS::vectorCross3D(sidata.omega_i, xci, v_rot_i);
-    LAMMPS_NS::vectorCross3D(sidata.omega_j, xcj, v_rot_j);
+    LAMMPS_NS::vectorSubtract3D(cdata.contact_point, x[cdata.i], xci);
+    LAMMPS_NS::vectorSubtract3D(cdata.contact_point, x[cdata.j], xcj);
+    LAMMPS_NS::vectorCross3D(cdata.omega_i, xci, v_rot_i);
+    LAMMPS_NS::vectorCross3D(cdata.omega_j, xcj, v_rot_j);
     LAMMPS_NS::vectorSubtract3D(v_rot_i, v_rot_j, v_rot_relative);
-    LAMMPS_NS::vectorSubtract3D(sidata.omega_i, sidata.omega_j, omega_relative);
-    sidata.cri = LAMMPS_NS::vectorMag3D(xci);
-    sidata.crj = LAMMPS_NS::vectorMag3D(xcj);
+    LAMMPS_NS::vectorSubtract3D(cdata.omega_i, cdata.omega_j, omega_relative);
+    cdata.cri = LAMMPS_NS::vectorMag3D(xci);
+    cdata.crj = LAMMPS_NS::vectorMag3D(xcj);
   }
       // relative velocity
-  v_relative[0] = sidata.v_i[0] - sidata.v_j[0] + v_rot_relative[0];
-  v_relative[1] = sidata.v_i[1] - sidata.v_j[1] + v_rot_relative[1];
-  v_relative[2] = sidata.v_i[2] - sidata.v_j[2] + v_rot_relative[2];
+  v_relative[0] = cdata.v_i[0] - cdata.v_j[0] + v_rot_relative[0];
+  v_relative[1] = cdata.v_i[1] - cdata.v_j[1] + v_rot_relative[1];
+  v_relative[2] = cdata.v_i[2] - cdata.v_j[2] + v_rot_relative[2];
 
   // normal component
-  const double vn = LAMMPS_NS::vectorDot3D(v_relative, sidata.en);
+  const double vn = LAMMPS_NS::vectorDot3D(v_relative, cdata.en);
   // tangential components
-  sidata.vtr1 = v_relative[0] - vn * sidata.en[0];
-  sidata.vtr2 = v_relative[1] - vn * sidata.en[1];
-  sidata.vtr3 = v_relative[2] - vn * sidata.en[2];
+  cdata.vtr1 = v_relative[0] - vn * cdata.en[0];
+  cdata.vtr2 = v_relative[1] - vn * cdata.en[1];
+  cdata.vtr3 = v_relative[2] - vn * cdata.en[2];
 
-  sidata.wr1 = omega_relative[0];
-  sidata.wr2 = omega_relative[1];
-  sidata.wr3 = omega_relative[2];
+  cdata.wr1 = omega_relative[0];
+  cdata.wr2 = omega_relative[1];
+  cdata.wr3 = omega_relative[2];
 
-  sidata.vn = vn;
+  cdata.vn = vn;
 #endif
 }
 
