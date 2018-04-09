@@ -73,7 +73,7 @@ namespace MathExtraLiggghtsNonspherical {
 #ifdef LIGGGHTS_DEBUG
   void printf_debug_data(Superquadric *particle_i, Superquadric *particle_j, double *initial_guess, LAMMPS_NS::Error *error);
 #endif
-};
+}
 
 #endif
 

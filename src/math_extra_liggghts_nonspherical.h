@@ -107,7 +107,7 @@ namespace MathExtraLiggghtsNonspherical {
 
   inline bool isInteger(double x);
   inline void surfacesIntersectNonSpherical(CollisionData & sidata, double **x);
-};
+}
 
 //rotate tensor by quaternion
 inline void MathExtraLiggghtsNonspherical::tensor_quat_rotate(const double *tensor, const double *quat, double *result)
@@ -384,6 +384,7 @@ inline void MathExtraLiggghtsNonspherical::matvecN(const double *A, const double
     }
   }
 }
+
 //matrix-matrix multiplication: C = A*B, A(NxK), B(KxM), C(NxM)
 inline void MathExtraLiggghtsNonspherical::matmat(const double *A, double *B, const int N, const int K, const int M, double *C)
 {
