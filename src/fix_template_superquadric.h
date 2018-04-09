@@ -72,21 +72,27 @@ public:
 
     double get_shape(int i) const
     {
-        if(i == 0)
+        switch(i)
+        {
+        case 0:
             return a;
-        if(i == 1)
+        case 1:
             return b;
-        if(i == 2)
+        case 2:
             return c;
+        }
         return -1;
     }
 
     double get_blockiness(int i) const
     {
-        if(i == 0)
+        switch(i)
+        {
+        case 0:
             return n1;
-        if(i == 1)
+        case 1:
             return n2;
+        }
         return -1;
     }
   protected:
