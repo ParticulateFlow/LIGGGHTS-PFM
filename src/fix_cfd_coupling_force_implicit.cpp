@@ -81,8 +81,7 @@ FixCfdCouplingForceImplicit::FixCfdCouplingForceImplicit(LAMMPS *lmp, int narg, 
             useAM_ = true;
             CAddRhoFluid_        = atof(arg[iarg]);
             onePlusCAddRhoFluid_ = 1.0 + CAddRhoFluid_;
-            fprintf(screen,"cfd_coupling_force_implicit will consider added mass with CAddRhoFluid = %f\n",
-                    CAddRhoFluid_);
+            if (screen) fprintf(screen,"cfd_coupling_force_implicit will consider added mass with CAddRhoFluid = %f\n", CAddRhoFluid_);
             iarg++;
         }
         else
