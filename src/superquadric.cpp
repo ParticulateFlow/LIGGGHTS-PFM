@@ -633,9 +633,9 @@ double Superquadric::calc_curvature_coefficient(int curvature_radius, const doub
   LAMMPS_NS::vectorScalarMult3D(F, 1.0/F_mag, n);
   double temp[3];
   MathExtraLiggghtsNonspherical::matvec(hessian, n, temp);
-  if(curvature_radius == 0) //mean curvature
-  return fabs(MathExtra::dot3(n, temp) - (hessian[0] + hessian[4] + hessian[8])) / fabs(2.0 * F_mag);
-  else { //gaussian curvature
+  if(curvature_radius == 0) { //mean curvature
+    return fabs(MathExtra::dot3(n, temp) - (hessian[0] + hessian[4] + hessian[8])) / (2.0 * F_mag);
+  } else { //gaussian curvature
     double fx = F[0];
     double fy = F[1];
     double fz = F[2];
