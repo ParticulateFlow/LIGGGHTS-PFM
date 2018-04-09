@@ -108,33 +108,36 @@ void FixNVEAsphereBase::dynamic_euler(double *wbody, double *tbody, double *iner
 
 void FixNVEAsphereBase::integrate_dynamic_euler(double dt, double *wbody, double *tbody, double *inertia)
 {
-  double omega_der[3];
-  double tol = 1e-12;
+  double alpha[3];
+  const double tol = 1e-12;
+
   if(LAMMPS_NS::vectorMag3D(wbody)*dt > 1.0)
     error->one(FLERR, "Timestep is too big for rotation integration!");
-  dynamic_euler(wbody, tbody, inertia, omega_der);
+
+  dynamic_euler(wbody, tbody, inertia, alpha);
 
   double omega_half_prev[3], delta[3];
   double omega_half[] = {0.0, 0.0, 0.0};
 
   while(1) {
     LAMMPS_NS::vectorCopy3D(omega_half, omega_half_prev);
-    omega_half[0] = wbody[0] + 0.5*dt*omega_der[0];
-    omega_half[1] = wbody[1] + 0.5*dt*omega_der[1];
-    omega_half[2] = wbody[2] + 0.5*dt*omega_der[2];
+    omega_half[0] = wbody[0] + 0.5*dt*alpha[0];
+    omega_half[1] = wbody[1] + 0.5*dt*alpha[1];
+    omega_half[2] = wbody[2] + 0.5*dt*alpha[2];
     LAMMPS_NS::vectorSubtract3D(omega_half_prev, omega_half, delta);
     double omega_half_mag = LAMMPS_NS::vectorMag3D(omega_half);
     if(omega_half_mag > 0.0) {
       double eps = LAMMPS_NS::vectorMag3D(delta) / omega_half_mag;
       if(eps < tol)
         break;
-      dynamic_euler(omega_half, tbody, inertia, omega_der);
+      dynamic_euler(omega_half, tbody, inertia, alpha);
     } else
       break;
   }
-  wbody[0] += dt*omega_der[0];
-  wbody[1] += dt*omega_der[1];
-  wbody[2] += dt*omega_der[2];
+
+  wbody[0] += dt*alpha[0];
+  wbody[1] += dt*alpha[1];
+  wbody[2] += dt*alpha[2];
 }
 
 /* ---------------------------------------------------------------------- */
