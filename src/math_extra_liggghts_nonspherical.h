@@ -95,7 +95,7 @@ namespace MathExtraLiggghtsNonspherical {
   void line_segments_distance(double *P1, double *Q1, double *P2, double *Q2, double *C1, double *C2);
   double get_effective_radius(CollisionData & sidata, double *blockiness_i, double *blockiness_j,double koefi, double koefj, double curvatureLimitFactor,LAMMPS_NS::Error *error);
   double get_effective_radius_wall(CollisionData & sidata, double *blockiness_i, double koefi, double curvatureLimitFactor,LAMMPS_NS::Error *error);
-  inline void yabx3D(double *a, double b, double *x, double *y);
+  inline void yabx3D(const double *a, double b, const double *x, double *y);
   inline double pow_abs_int(double a, int b);
   inline int round_int(double x);
   inline void matvec(const double *m, const double *v, double *ans);
@@ -437,7 +437,7 @@ inline void MathExtraLiggghtsNonspherical::invquat(double *quat)
   quat[3] *= -norm_sq_inv;
 }
 
-inline void MathExtraLiggghtsNonspherical::yabx3D(double *a, double b, double *x, double *y)
+inline void MathExtraLiggghtsNonspherical::yabx3D(const double *a, double b, const double *x, double *y)
 {
   y[0] = a[0] + b*x[0];
   y[1] = a[1] + b*x[1];
