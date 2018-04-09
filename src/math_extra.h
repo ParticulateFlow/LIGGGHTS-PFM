@@ -92,7 +92,7 @@ namespace MathExtra {
   inline void qconjugate(double *q, double *qc);
   inline void vecquat(double *a, double *b, double *c);
   inline void quatvec(double *a, double *b, double *c);
-  inline void quatquat(double *a, double *b, double *c);
+  inline void quatquat(const double *a, const double *b, double *c);
   inline void invquatvec(double *a, double *b, double *c);
   inline void axisangle_to_quat(const double *v, const double angle,
                                 double *quat);
@@ -561,7 +561,7 @@ void MathExtra::quatvec(double *a, double *b, double *c)
    quaternion-quaternion multiply: c = a*b
 ------------------------------------------------------------------------- */
 
-void MathExtra::quatquat(double *a, double *b, double *c)
+void MathExtra::quatquat(const double *a, const double *b, double *c)
 {
   c[0] = a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3];
   c[1] = a[0]*b[1] + b[0]*a[1] + a[2]*b[3] - a[3]*b[2];
