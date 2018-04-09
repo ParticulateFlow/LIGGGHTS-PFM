@@ -814,6 +814,8 @@ double Superquadric::calc_F(double *p, double *p0, double l, double *F)
   return LAMMPS_NS::vectorMag4D(F);
 }
 
+// UNUSED
+/*
 double Superquadric::point_surface_projection(const int max_num_iters, bool use_alpha_ellipsoid, const double *start_point, double alpha_prev, double *result)
 {
   const double tol = 1e-15;
@@ -956,7 +958,7 @@ double Superquadric::point_surface_projection(const int max_num_iters, bool use_
   else
   local2global(p, result);
   return LAMMPS_NS::pointDistance(result, start_point);
-}
+}*/
 
 //TODO: reduce code duplication
 double Superquadric::surface_line_intersection1(const double *start_point, const double *direction_vector, double *result)

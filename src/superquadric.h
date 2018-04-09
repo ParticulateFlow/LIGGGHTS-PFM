@@ -84,7 +84,7 @@ struct Superquadric
   double surface_line_intersection1(const double *start_point, const double *direction_vector, double *result);
   void ellipsoid_line_intersection(const double *start_point, const double *direction, double& alpha1, double& alpha2);
   void ellipsoid_line_intersection_local(const double *start_point_local, const double *direction_vector_local, double& alpha1, double& alpha2);
-  double point_surface_projection(const int max_num_iters, bool use_alpha_ellipsoid, const double *start_point, double alpha1, double *result);
+  ///double point_surface_projection(const int max_num_iters, bool use_alpha_ellipsoid, const double *start_point, double alpha1, double *result);
   double calc_F(double *p, double *p0, double l, double *F);
 
   Superquadric():
