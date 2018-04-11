@@ -306,10 +306,10 @@ void FixChemShrinkCore::post_create()
     if (!fix_rhoeff_)
     {
         const char* fixarg[12];
-        fixarg[0]="rhoeff_";            // fixid
+        fixarg[0]="rhoeff";            // fixid
         fixarg[1]="all";
         fixarg[2]="property/atom";
-        fixarg[3]="rhoeff_";           // propertyid
+        fixarg[3]="rhoeff";           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
         fixarg[6]="no";
@@ -346,7 +346,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_layerRelRad_)   { modify  ->  delete_fix("relRadii"); delete [] relRadii_; }
         if (fix_layerMass_)     { modify  ->  delete_fix("massLayer"); delete [] massLayer_; }
         if (fix_porosity_)      { modify  ->  delete_fix("porosity_"); delete [] porosity_;}
-        if (fix_rhoeff_)        { modify  ->  delete_fix("rhoeff_"); delete [] rhoeff_;}
+        if (fix_rhoeff_)        { modify  ->  delete_fix("rhoeff"); delete [] rhoeff_;}
     }
 }
 
@@ -479,7 +479,7 @@ void FixChemShrinkCore::init()
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style,"FixChemShrinkCore"));
     fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
-    fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff_", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
+    fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
     // references for global properties - valid for every particle equally
     fix_tortuosity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, style));
     fix_pore_diameter_ =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
@@ -953,8 +953,17 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
    // based on material change: update gas-phase source terms for mass and heat
     for (int j = 0; j < nmaxlayers_;j++)
     {
-        changeOfA_[i]   -=  dmA_[j];
-        changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
+        if (changeOfA_[i]+changeOfC_[i] == kch2_)
+        {
+            changeOfA_[i]   -=  dmA_[j];
+            changeOfA_[i]   = std::max(changeOfA_[i],0.0);
+            changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
+            changeOfC_[i]   =   std::min(kch2_, changeOfC_[i]);
+        }
+        else {
+            // do nothing
+            //
+        }
     }
 }
 
