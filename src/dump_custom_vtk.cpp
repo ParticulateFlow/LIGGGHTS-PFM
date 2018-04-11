@@ -2116,7 +2116,7 @@ void DumpCustomVTK::identify_vectors()
   // detect vectors
   vector_set.insert(X); // required
 
-  int vector3_starts[] = {XS, XU, XSU, IX, VX, FX, MUX, OMEGAX, ANGMOMX, TQX};
+  int vector3_starts[] = {XS, XU, XSU, IX, VX, FX, MUX, OMEGAX, ANGMOMX, TQX, SHAPEX, INERTIAX};
   int num_vector3_starts = sizeof(vector3_starts) / sizeof(int);
 
   for (int v3s = 0; v3s < num_vector3_starts; v3s++) {
