@@ -105,13 +105,13 @@ namespace ContactModels
         i_forces.delta_F[1] += Ft2 * area_ratio;
         i_forces.delta_F[2] += Ft3 * area_ratio;
 #ifdef NONSPHERICAL_ACTIVE_FLAG
-        i_forces.delta_torque[0] = torque_i[0] * area_ratio;
-        i_forces.delta_torque[1] = torque_i[1] * area_ratio;
-        i_forces.delta_torque[2] = torque_i[2] * area_ratio;
+        i_forces.delta_torque[0] += torque_i[0] * area_ratio;
+        i_forces.delta_torque[1] += torque_i[1] * area_ratio;
+        i_forces.delta_torque[2] += torque_i[2] * area_ratio;
 #else
-        i_forces.delta_torque[0] = -cdata.cri * tor1 * area_ratio;
-        i_forces.delta_torque[1] = -cdata.cri * tor2 * area_ratio;
-        i_forces.delta_torque[2] = -cdata.cri * tor3 * area_ratio;
+        i_forces.delta_torque[0] += -cdata.cri * tor1 * area_ratio;
+        i_forces.delta_torque[1] += -cdata.cri * tor2 * area_ratio;
+        i_forces.delta_torque[2] += -cdata.cri * tor3 * area_ratio;
 #endif
       } else {
         i_forces.delta_F[0] += Ft1;
@@ -132,21 +132,21 @@ namespace ContactModels
           torque_j[1] = -cdata.crj * tor2;
           torque_j[2] = -cdata.crj * tor3;
         }
-        i_forces.delta_torque[0] = torque_i[0];
-        i_forces.delta_torque[1] = torque_i[1];
-        i_forces.delta_torque[2] = torque_i[2];
+        i_forces.delta_torque[0] += torque_i[0];
+        i_forces.delta_torque[1] += torque_i[1];
+        i_forces.delta_torque[2] += torque_i[2];
 
-        j_forces.delta_torque[0] = torque_j[0];
-        j_forces.delta_torque[1] = torque_j[1];
-        j_forces.delta_torque[2] = torque_j[2];
+        j_forces.delta_torque[0] += torque_j[0];
+        j_forces.delta_torque[1] += torque_j[1];
+        j_forces.delta_torque[2] += torque_j[2];
 #else
-        i_forces.delta_torque[0] = -cdata.cri * tor1;
-        i_forces.delta_torque[1] = -cdata.cri * tor2;
-        i_forces.delta_torque[2] = -cdata.cri * tor3;
+        i_forces.delta_torque[0] += -cdata.cri * tor1;
+        i_forces.delta_torque[1] += -cdata.cri * tor2;
+        i_forces.delta_torque[2] += -cdata.cri * tor3;
 
-        j_forces.delta_torque[0] = -cdata.crj * tor1;
-        j_forces.delta_torque[1] = -cdata.crj * tor2;
-        j_forces.delta_torque[2] = -cdata.crj * tor3;
+        j_forces.delta_torque[0] += -cdata.crj * tor1;
+        j_forces.delta_torque[1] += -cdata.crj * tor2;
+        j_forces.delta_torque[2] += -cdata.crj * tor3;
 #endif
       }
     }

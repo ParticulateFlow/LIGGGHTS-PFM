@@ -167,23 +167,23 @@ namespace ContactModels
         i_forces.delta_F[0] += Ft1 * area_ratio;
         i_forces.delta_F[1] += Ft2 * area_ratio;
         i_forces.delta_F[2] += Ft3 * area_ratio;
-        i_forces.delta_torque[0] = torque_i[0] * area_ratio;
-        i_forces.delta_torque[1] = torque_i[1] * area_ratio;
-        i_forces.delta_torque[2] = torque_i[2] * area_ratio;
+        i_forces.delta_torque[0] += torque_i[0] * area_ratio;
+        i_forces.delta_torque[1] += torque_i[1] * area_ratio;
+        i_forces.delta_torque[2] += torque_i[2] * area_ratio;
       } else {
         i_forces.delta_F[0] += Ft1;
         i_forces.delta_F[1] += Ft2;
         i_forces.delta_F[2] += Ft3;
-        i_forces.delta_torque[0] = torque_i[0];
-        i_forces.delta_torque[1] = torque_i[1];
-        i_forces.delta_torque[2] = torque_i[2];
+        i_forces.delta_torque[0] += torque_i[0];
+        i_forces.delta_torque[1] += torque_i[1];
+        i_forces.delta_torque[2] += torque_i[2];
 
         j_forces.delta_F[0] += -Ft1;
         j_forces.delta_F[1] += -Ft2;
         j_forces.delta_F[2] += -Ft3;
-        j_forces.delta_torque[0] = torque_j[0];
-        j_forces.delta_torque[1] = torque_j[1];
-        j_forces.delta_torque[2] = torque_j[2];
+        j_forces.delta_torque[0] += torque_j[0];
+        j_forces.delta_torque[1] += torque_j[1];
+        j_forces.delta_torque[2] += torque_j[2];
       }
     }
 
