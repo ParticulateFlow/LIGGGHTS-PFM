@@ -43,7 +43,7 @@ using namespace FixConst;
 FixCfdCouplingPartTempField::FixCfdCouplingPartTempField(LAMMPS *lmp, int narg, char **arg) :  Fix(lmp, narg, arg)
 {
     fix_coupling = NULL;
-    fix_temp  = fix_rho = NULL;
+    fix_temp = NULL;
 
     int iarg = 3;
 
@@ -66,7 +66,6 @@ FixCfdCouplingPartTempField::~FixCfdCouplingPartTempField()
 void FixCfdCouplingPartTempField::pre_delete(bool unfixflag)
 {
     if(fix_temp) modify->delete_fix("Temp");
-    if(fix_rho) modify->delete_fix("rho");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -120,7 +119,6 @@ void FixCfdCouplingPartTempField::init()
 
     //values to send to OF
     fix_coupling->add_push_property("Temp","scalar-atom");
-    fix_coupling->add_push_property("density","scalar-atom");
 
     //values to come from OF
     fix_coupling->add_pull_property("Temp","scalar-atom");
