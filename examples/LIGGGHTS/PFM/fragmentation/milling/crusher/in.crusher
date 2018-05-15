@@ -63,7 +63,7 @@ thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic yes
 
 run     1
-dump    dmpmesh all mesh/gran/VTK 2000 post/cyl*.vtk id cyl wall
+dump    dmpmesh all mesh/vtk 2000 post/cyl*.vtk id cyl wall
 dump    dmp all custom 2000 post/dump*.crush id type x y z vx vy vz fx fy fz omegax omegay omegaz radius density
 run     400000 upto
 
