@@ -331,7 +331,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_changeOfA_)     { modify  ->  delete_fix(massA); delete [] changeOfA_;}
         if (fix_changeOfC_)     { modify  ->  delete_fix(massC); delete [] changeOfC_;}
         if (fix_tgas_)          { modify  ->  delete_fix("partTemp"); delete [] T_;}
-        // if (fix_reactionHeat_)  modify  ->  delete_fix("reactionHeat");
+        if (fix_reactionHeat_)  { modify    ->  delete_fix("reactionHeat"); delete [] reactionHeat_;}
         if (fix_diffcoeff_)     { modify  ->  delete_fix(diffA); delete [] molecularDiffusion_; }
         if (fix_nuField_)       { modify  ->  delete_fix("partNu"); delete [] nuf_; }
         if (fix_partRe_)        { modify  ->  delete_fix("partRe"); delete [] Rep_; }
@@ -379,7 +379,7 @@ void FixChemShrinkCore::updatePtrs()
     changeOfA_      =   fix_changeOfA_      ->  vector_atom;
     changeOfC_      =   fix_changeOfC_      ->  vector_atom;
     T_              =   fix_tgas_           ->  vector_atom;
-    // reactionHeat_   =   fix_reactionHeat_   ->  vector_atom;
+    reactionHeat_   =   fix_reactionHeat_   ->  vector_atom;
     molecularDiffusion_  = fix_diffcoeff_   ->  vector_atom;
     nuf_            =   fix_nuField_        ->  vector_atom;
     Rep_            =   fix_partRe_         ->  vector_atom;
@@ -465,7 +465,7 @@ void FixChemShrinkCore::init()
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
     fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    //fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
     fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
     fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
     fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
@@ -953,17 +953,15 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
    // based on material change: update gas-phase source terms for mass and heat
     for (int j = 0; j < nmaxlayers_;j++)
     {
-        if (changeOfA_[i]+changeOfC_[i] == kch2_)
-        {
-            changeOfA_[i]   -=  dmA_[j];
-            changeOfA_[i]   = std::max(changeOfA_[i],0.0);
-            changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
-            changeOfC_[i]   =   std::min(kch2_, changeOfC_[i]);
-        }
-        else {
-            // do nothing
-            //
-        }
+        // Reactant gas mass change
+        changeOfA_[i]   -=  dmA_[j];
+        // Limit minimum reactant gas to 0.0
+        changeOfA_[i]   = std::max(changeOfA_[i],0.0);
+
+        // Product gas mass change
+        changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
+        // Limit product gas to the total amount of carbon or hydrogen content
+        changeOfC_[i]   =   std::min(kch2_, changeOfC_[i]);
     }
 }
 
@@ -974,21 +972,23 @@ void FixChemShrinkCore::FractionalReduction(int i)
     // calculate the fractional reduction as defined in Tang et al. (2012)
     // "Simulation study on performance of Z-path Moving-fluidized Bed for Gaseous Reduction
     // of Iron Ore Fines" ISIJ International, Vol. 52, No. 7, pp. 1241 - 1249
-    /* double f_[nmaxlayers_];
-    for (int layer=0; layer<layers_; layer++)
-         f_[layer] = 0.0; */
+    double f_HM, f_MW, f_WF;
 
-    /* f_[0] = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
-    f_[1] = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
-    f_[2] = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0])); */
+    f_WF = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
+    f_MW = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
+    f_HM = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
 
+    fracRed_[i][0] = f_WF;
+    fracRed_[i][1] = f_MW;
+    fracRed_[i][2] = f_HM;
+    
     // for testing purposes if radius changes with fix type
-    for (int layer=0; layer<layers_; layer++)
+    /*for (int layer=0; layer<layers_; layer++)
     {
         //fracRed_[i][layer] = f_[layer];
         fracRed_[i][layer] = 1.0 - relRadii_[i][layer+1]*relRadii_[i][layer+1]*relRadii_[i][layer+1];
         fracRed_[i][layer] = std::max(fracRed_[i][layer], SMALL);
-    }
+    } */
 
     if (screenflag_ && screen)
             fprintf(screen, "Fn before update fracRed[0]: %f, fracRed[1]: %f, fracRed[2] : %f \n"
@@ -1010,7 +1010,7 @@ void FixChemShrinkCore::init_defaults()
     radius_ = pmass_ = pdensity_ = NULL;
 
     // initialise fix handles
-    changeOfA_ = changeOfC_ = T_ =  molecularDiffusion_ = nuf_ = Rep_ = X0_ = partP_ = Massterm = NULL;
+    changeOfA_ = changeOfC_ = T_ =  molecularDiffusion_ = nuf_ = Rep_ = X0_ = partP_ = Massterm = reactionHeat_ = NULL;
     Aterm = Bterm = effDiffBinary = effDiffKnud = fracRed_ =   NULL;
 
     TimeStep = 0.0;
@@ -1018,7 +1018,7 @@ void FixChemShrinkCore::init_defaults()
     fix_changeOfA_  = NULL;
     fix_changeOfC_ = NULL;
     fix_tgas_ = NULL;       // [K]
-    // fix_reactionHeat_= NULL;
+    fix_reactionHeat_= NULL;
     fix_diffcoeff_ = NULL;  // [m^2/s]
     fix_nuField_ = NULL;    // [m^2/s]
     fix_partRe_ = NULL;

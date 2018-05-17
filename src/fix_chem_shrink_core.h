@@ -89,7 +89,7 @@ public:
   double *pdensity_;
 
   // handles of fixes
-  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_, *Massterm; //*reactionHeat_,
+  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_, *Massterm, *reactionHeat_;
   double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
 
   // coarse_graining factor
@@ -97,7 +97,7 @@ public:
 
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;
   class FixPropertyAtom *fix_tgas_;
-  // class FixPropertyAtom *fix_reactionHeat_;
+  class FixPropertyAtom *fix_reactionHeat_;
   class FixPropertyAtom *fix_diffcoeff_;
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
