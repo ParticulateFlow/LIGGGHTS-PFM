@@ -109,10 +109,10 @@ int Properties::max_type()
 
 void* Properties::find_property(const char *name, const char *type, int &len1, int &len2)
 {
-    
+
     void *ptr = NULL;
 
-    // possiblility 1
+    // possibility 1
     // may be atom property - look up in atom class
 
     ptr = atom->extract(name,len2);
@@ -126,7 +126,7 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
         return ptr;
     }
 
-    // possiblility 2
+    // possibility 2
     // may come from a fix multisphere
     // also handles scalar-multisphere and vector-multisphere
 
@@ -143,7 +143,7 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
         return ptr;
     }
 
-    // possiblility 3
+    // possibility 3
     // may be fix property per atom - look up in modify class
 
     Fix *fix = NULL;
@@ -194,7 +194,7 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
            return (void*) static_cast<FixPropertyGlobal*>(fix)->array;
        }
     }
-    else if(strcmp(name,"ex") == 0) 
+    else if(strcmp(name,"ex") == 0)
     {
         // possiblility 4A - Dipole is specified as atom property (requires DIPOLE package)
         ptr = atom->extract("mu",len2);

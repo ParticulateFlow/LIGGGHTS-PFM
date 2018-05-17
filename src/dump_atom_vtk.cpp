@@ -277,13 +277,25 @@ void DumpATOMVTK::vtkExportData::writeSER() {
     radii->InsertNextValue(vtkData[i]._Rad);
 
     double vv[3] = {vtkData[i]._VelL[0], vtkData[i]._VelL[1], vtkData[i]._VelL[2]};
+#if (VTK_MAJOR_VERSION > 7) || (VTK_MAJOR_VERSION == 7 && VTK_MINOR_VERSION     >= 1)
+    spheresVelL->InsertNextTypedTuple(vv);
+#else
     spheresVelL->InsertNextTupleValue(vv);
+#endif
 
     double oo[3] = {vtkData[i]._VelA[0], vtkData[i]._VelA[1], vtkData[i]._VelA[2]};
+#if (VTK_MAJOR_VERSION > 7) || (VTK_MAJOR_VERSION == 7 && VTK_MINOR_VERSION     >= 1)
+    spheresVelA->InsertNextTypedTuple(oo);
+#else
     spheresVelA->InsertNextTupleValue(oo);
+#endif
 
     double ff[3] = {vtkData[i]._Force[0], vtkData[i]._Force[1], vtkData[i]._Force[2]};
+#if (VTK_MAJOR_VERSION > 7) || (VTK_MAJOR_VERSION == 7 && VTK_MINOR_VERSION     >= 1)
+    spheresForce->InsertNextTypedTuple(ff);
+#else
     spheresForce->InsertNextTupleValue(ff);
+#endif
 
     spheresMass->InsertNextValue(vtkData[i]._Mass);
 
