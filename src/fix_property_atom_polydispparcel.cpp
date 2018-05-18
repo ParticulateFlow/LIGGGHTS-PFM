@@ -75,8 +75,6 @@ void FixPropertyAtomPolydispParcel::parse_args(int narg, char **arg)
     ndefaultvalues = narg - 4;
     nvalues = 1;
 
-    int ntypes = atom->ntypes;
-
     defaultvalues = new double[ndefaultvalues];
 
     // fix handles properties that need to be initialized at particle creation
@@ -137,8 +135,6 @@ FixPropertyAtomPolydispParcel::~FixPropertyAtomPolydispParcel()
 
 Fix* FixPropertyAtomPolydispParcel::check_fix(const char *varname,const char *svmstyle,int len1,int len2,const char *caller,bool errflag)
 {
-    char errmsg[400];
-
     if(strcmp(varname,variablename) == 0)
     {
         // success
