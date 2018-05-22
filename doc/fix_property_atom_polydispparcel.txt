@@ -1,0 +1,34 @@
+"LIGGGHTS(R)-PUBLIC WWW Site"_liws - "LIGGGHTS(R)-PUBLIC Documentation"_ld - "LIGGGHTS(R)-PUBLIC Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix property/atom/polydispparcel command :h3
+
+[Syntax:]
+
+fix id group property/atom/polydispparcel keyword value(s) :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+property/atom/polydispparcel = style name of this fix command   :l
+one keyword/value(s) pair needs to be appended to args :l
+keyword = {effvolfactor} :l
+  {effvolfactor} value(s) = evf1 evf2 ...
+    evfi = effective volume enhancement due to polydispersity of atom type i (the same number of values as atom types present has to be specified) :pre
+
+:ule
+
+[Examples:]
+
+fix fp all property/atom/polydispparcel effvolfactor 1.5 1.0 :pre
+
+[Description:]
+
+Fix property/atom/polydispparcel assigns an effective volume factor to each particle according to its atom type. Using the set command, values can be changed individually, e.g. for groups. Upon insertion of particles with a given density, their mass is scaled with the effective volume factor. The same mechanism is triggered by setting an effective volume factor with the set command.
+
+[Restart, fix_modify, output, run start/stop, minimize info:]
+
+Information about this fix is written to "binary restart files"_restart.html .

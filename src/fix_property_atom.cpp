@@ -400,6 +400,24 @@ void FixPropertyAtom::set_all(double value)
 }
 
 /* ----------------------------------------------------------------------
+   set array value m of atom i to value
+------------------------------------------------------------------------- */
+
+void FixPropertyAtom::set_array(int i, int m, double value)
+{
+    array_atom[i][m] = value;
+}
+
+/* ----------------------------------------------------------------------
+   set value of atom i to value
+------------------------------------------------------------------------- */
+
+void FixPropertyAtom::set_vector(int i, double value)
+{
+    vector_atom[i] = value;
+}
+
+/* ----------------------------------------------------------------------
    pack values in local atom-based arrays for exchange with another proc
 ------------------------------------------------------------------------- */
 
