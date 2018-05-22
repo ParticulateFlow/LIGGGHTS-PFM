@@ -62,7 +62,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     layers_(nmaxlayers_),
     rmin_(1e-8)       //  [m]
 {
-    if ((strncmp(style, "chem/shrink/core", 16) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
+    if ((strncmp(style, "chem/shrink/core", 17) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
     // set defaults
@@ -75,9 +75,11 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     cg_ = 0.0;
     int iarg_ = 3;
     bool hasargs = true;
+    if (screen) fprintf(screen, "narg: %i",narg);
 
     while (iarg_ < narg && hasargs)
     {
+        hasargs = false;
         if (strcmp(arg[iarg_], "speciesA") == 0)
         {
             if (narg < iarg_ + 2)
@@ -85,8 +87,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             speciesA = new char[strlen(arg[iarg_+1])+1];
             strcpy(speciesA, arg[iarg_+1]);
             if (screenflag_ && screen) fprintf(screen, "spreciesA: %s", speciesA);
+            iarg_ += 2; // iarg  = 5
             hasargs = true;
-            iarg_ += 2;
         }
         else if (strcmp(arg[iarg_], "molMassA") == 0)
         {
@@ -95,8 +97,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             molMass_A_ = atof(arg[iarg_ + 1]);
             if (molMass_A_ < 0.0)
                 error->fix_error(FLERR, this, "molar mass of A is not defined");
+            iarg_ += 2; // iarg = 7
             hasargs = true;
-            iarg_ += 2;
         }
         else if (strcmp(arg[iarg_], "speciesC") == 0)
         {
@@ -105,8 +107,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             speciesC = new char[strlen(arg[iarg_+1])+1];
             strcpy(speciesC, arg[iarg_+1]);
             if (screenflag_ && screen) fprintf(screen, "spreciesC: %s", speciesC);
+            iarg_ += 2; // iarg = 9
             hasargs = true;
-            iarg_ += 2;
         }
         else if (strcmp(arg[iarg_], "molMassC") == 0)
         {
@@ -115,8 +117,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             molMass_C_ = atof(arg[iarg_ + 1]);
             if (molMass_C_ < 0.0)
                 error->fix_error(FLERR, this, "molar mass of C is not defined");
+            iarg_ += 2; // iarg = 11
             hasargs = true;
-            iarg_ += 2;
         }
         else if (strcmp(arg[iarg_],"kch2") == 0)
         {
@@ -125,8 +127,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             kch2_ = atof(arg[iarg_ + 1]);
             if (kch2_ < 0.0)
                 error->fix_error(FLERR, this, "carbon or hydrogen content is not defined");
+            iarg_ += 2; // iarg = 13
             hasargs = true;
-            iarg_ += 2;
         }
         else if (strcmp(arg[iarg_],"screen") == 0)
         {
@@ -134,13 +136,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (strcmp(arg[iarg_+1],"yes") == 0) screenflag_ = 1;
             else if (strcmp(arg[iarg_+1],"no") == 0) screenflag_ = 0;
             else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2; // iarg = 15
             hasargs = true;
-            iarg_ += 2;
         }
         else if (strcmp(arg[iarg_],"nevery") == 0)
         {
             nevery = atoi(arg[iarg_+1]);
-            if (nevery <= 0) error->fix_error(FLERR,this,"");
+            if (nevery <= 0) error->fix_error(FLERR,this,"nevery must be larger than 0");
             iarg_+=2;
             hasargs = true;
         }
@@ -521,13 +523,11 @@ void FixChemShrinkCore::post_force(int)
             fprintf(screen, "dCoeff value is : %.10f \n", molecularDiffusion_[i]);
         }
 
+    /* if there is gas at particle location (will not work if there is no reactant */
     if (X0_[i] > 0.0)
     {
         if (mask[i] & groupbit)
         {
-            // 1st recalculate masses of layers if layer has reduced
-            // is ignored if there is no change in layers
-            active_layers(i);
             if (active_layers(i) > 0)
             {
                 // calculate values for fractional reduction f_i = (1-relRadii_i^3)
@@ -855,7 +855,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     }
 
     if (screenflag_ && screen)
-        fprintf(screen,"dm_gas[0]: %6.15f, dm_gas[1]: %6.15f, dm_gas[2]: %6.15f \n", dmA_[0], dmA_[1], dmA_[2]);
+        fprintf(screen,"dm_CO[w-Fe]: %6.15f, dm_CO[m-w]: %6.15f, dm_CO[h-m]: %6.15f \n", dmA_[0], dmA_[1], dmA_[2]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -866,8 +866,8 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen,"run update atom props \n");
     // based on material change: update relative radii, average density and mass of atom i
     // stoichiometric coefficients of reactions
-    double nu_reac_[3] = {1, 1, 3};
-    double nu_prod_[3] = {1, 3, 2};
+    double v_reac_[3] = {1, 1, 3};
+    double v_prod_[3] = {1, 3, 2};
     // particle stuff
     double rad[nmaxlayers_+1] = {};
     double dmL_[nmaxlayers_+1] = {};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
@@ -881,12 +881,16 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen, "massLayer_fe = %6.15f \n", massLayer_[i][0]);
     }
 
-    // calculate mass flow rate of dmL[layer]
-    // Keep in mind the stoichiometric coefficients of reaction prod - reactants
-    dmL_[0] = -dmA_[0]*nu_prod_[0]*(layerMolMasses_[0]/molMass_A_);
+    /* Mass Change of Layers */
+    /* negated due to subtraction when calculating new layer masses, [Cf. line 911 - 920] */
+    // Fe
+     dmL_[0] = -dmA_[0]*v_prod_[0]*(layerMolMasses_[0]/molMass_A_);
+    // Initial FeO & Fe3O4 layers
+    // changes with active layers
     for (int layer = 1; layer < layers_; layer++)
-        dmL_[layer] = -dmA_[layer]*nu_prod_[layer]*(layerMolMasses_[layer]/molMass_A_) + dmA_[layer-1]*nu_reac_[layer-1]*(layerMolMasses_[layer]/molMass_A_);
-    dmL_[layers_] = dmA_[layers_-1]*nu_reac_[layers_-1]*(layerMolMasses_[layers_]/molMass_A_);
+        dmL_[layer] = -dmA_[layer]*v_prod_[layer]*(layerMolMasses_[layer]/molMass_A_) + dmA_[layer-1]*v_reac_[layer-1]*(layerMolMasses_[layer]/molMass_A_);
+    // Fe2O3 (iniital)
+    dmL_[layers_] = dmA_[layers_-1]*v_reac_[layers_-1]*(layerMolMasses_[layers_]/molMass_A_);
 
     if (layers_ == 2)
         dmL_[layers_+1] = 0.0;
