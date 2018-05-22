@@ -48,7 +48,7 @@ fix     breakid break break/particle seed 321 distributiontemplate pdd3 every 1 
 
 fix     move all move/mesh mesh mill rotate origin 0.0 0.0 0.0 axis  0.0 1.0 0.0 period 2.0
 
-dump    dmpmesh all mesh/gran/VTK 5000 post/mill*.vtk id mill
+dump    dmpmesh all mesh/vtk 5000 post/mill*.vtk id mill
 dump    dmp all custom 5000 post/dump*.run id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 run     2700000 upto

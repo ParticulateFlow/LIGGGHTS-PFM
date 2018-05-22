@@ -50,7 +50,7 @@ region		bc cylinder z 0.0 0.0 0.015 0.05 0.12 units box
 #particle insertion
 fix			ins nve_group insert/stream seed 5330 distributiontemplate pdd1 &
 				nparticles 6000 massrate 0.1 insert_every 1000 overlapcheck yes all_in no vel constant 0.0 0.0 -1.0 &
-				insertion_face inface 
+				insertion_face inface
 
 #apply nve integration to all particles that are inserted as single particles
 fix		integr nve_group nve/sphere
@@ -64,11 +64,11 @@ compute_modify	thermo_temp dynamic yes
 
 #insert the first particles so that dump is not empty
 run		1
-dump		dmp all custom 200 post/dump*.chute id type x y z vx vy vz fx fy fz omegax omegay omegaz radius 
-dump		dumpstress all mesh/gran/VTK 200 post/dump*.vtk stress wear cad
+dump		dmp all custom 200 post/dump*.chute id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+dump		dumpstress all mesh/vtk 200 post/dump*.vtk stress wear cad
 
 #insert particles
 run		100000 upto
 unfix		ins
 
- 
+
