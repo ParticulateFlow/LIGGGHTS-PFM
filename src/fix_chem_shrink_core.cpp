@@ -868,10 +868,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     // stoichiometric coefficients of reactions
     double v_reac_[3] = {1, 1, 3};
     double v_prod_[3] = {1, 3, 2};
-    // particle stuff
+    // initialize radius, mass change of layer and sum of particle
     double rad[nmaxlayers_+1] = {};
     double dmL_[nmaxlayers_+1] = {};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
-    double sum_mass_new = 0.0;           // just for control case --- delete afterwards
+    double sum_mass_new = 0.0;
 
      if(screenflag_ && screen)
     {
@@ -908,11 +908,12 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         fprintf(screen, "dmL Iron: %6.15f \n", dmL_[0]);
     }
 
-    // get new layer masses and Volumes
+    // New layer masses
     for (int j = 0; j <= layers_; j++)
     {
         massLayer_[i][j] -= dmL_[j];
-        massLayer_[i][j] = std::max(massLayer_[i][j], SMALL);
+        // Limit minimum mass layer to 1e-20
+        massLayer_[i][j] = std::max(massLayer_[i][j], 1e-20);
 
         // calculate total mass of particle
         sum_mass_new    +=  massLayer_[i][j];
