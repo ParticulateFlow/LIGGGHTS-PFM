@@ -24,15 +24,18 @@ compute ID group-ID wall/gran/local keywords ...
 
 <LI>zero or more keywords may be appended 
 
-<LI>keyword = <I>pos</I> or <I>vel</I> or <I>id</I> or <I>force</I> or <I>torque</I> or <I>history</I> or <I>contactArea</I> 
+<LI>keyword = <I>pos</I> or <I>vel</I> or <I>id</I> or <I>force</I> or <I>force_normal</I> or <I>force_tangential</I> or <I>torque</I> or <I>history</I> or <I>contactArea</I> or <I>delta</I> 
 
 <PRE>  <I>pos</I> = positions of particles in contact (6 values)
   <I>vel</I> = velocities of particles in contact (6 values)
   <I>id</I> = IDs of particles in contact and a periodicity flag (3 values) or IDs of the mesh, the triangle and the particle (3 values)
   <I>force</I> = contact force (3 values)
+  <I>force_normal</I> = normal component of contact force (3 values)
+  <I>force_tangential</I> = tangential component of contact force (3 values)
   <I>torque</I> = torque divided by particle diameter (3 values)
   <I>history</I> = contact history (# depends on pair style, e.g. 3 shear history values)
   <I>contactArea</I> = area of the contact (1 value)
+  <I>delta</I> = overlap of the contact (1 value)
   <I>heatFlux</I> = conductive heat flux of the contact (1 value) 
 </PRE>
 
@@ -75,15 +78,35 @@ be the two particle IDs (using this option requires to use an atom
 map) and a flag that is 1 for interaction over a periodic boundary
 and 0 otherwise. For computing particle-wall data, the output <I>id</I>
 will be the mesh id, the triangle id and the particle id. The output
-<I>force</I> and <I>torque</I> are the contact force and the torque divided by the
-particle radius, both in force <A HREF = "units.html">units</A>. Note that the torque
+<I>force</I>, <I>force_normal</I>, <I>force_tangential</I> and <I>torque</I> are the total
+contact force, the normal and tangential components of the contact
+force, and the torque divided by the particle radius, both in force
+<A HREF = "units.html">units</A>. Note that the normal and tangential components
+are not necessarily exactly equal to the forces added by
+<A HREF = "Section_gran_models.html">the normal and tangential model used</A>, but
+are geometrically composed, using the connection line between the
+particle centers as normal direction. Note also that the torque
 does NOT contain any rolling friction torque. The output <I>history</I>
 will depend on what this history represents, according to the granular
 pair style used. The output <I>contactArea</I> will output the contact area,
-in distance^2 <A HREF = "units.html">units</A>. The output <I>heatFlux</I> (available only
+in distance^2 <A HREF = "units.html">units</A>. Note that <I>contactArea</I> is based on
+an analytic geometric calculation of sphere-sphere or sphere-plane intersection
+rather than a calculation based on mechanics. This is to ensure that
+<I>contactArea</I> works with all types of contact models.
+</P>
+<P>The output <I>delta</I> will output the
+overlap (sum of radii - distance between particle centers) in distance
+<A HREF = "units.html">units</A> .The output <I>heatFlux</I> (available only
 if a <A HREF = "fix_heat_gran.html">fix heat/gran</A> is used to compute  heat
 fluxes) will output the per-contact conductive heat flux area, in
 energy/time <A HREF = "units.html">units</A>.
+</P>
+<P>IMPORTANT NOTE:
+The data associated to the different keywords is output in the
+following order: <I>pos</I>, <I>vel</I>, <I>id</I>, <I>force</I>, <I>force_normal</I>,
+<I>force_tangential</I>, <I>torque</I>, <I>history</I>, <I>contactArea</I>, <I>delta</I>, <I>heatFlux</I>.
+This is independant of the order in which the keywords are
+specified.
 </P>
 <P>Note that as atoms migrate from processor to processor, there will be
 no consistent ordering of the entries within the local vector or array
@@ -94,6 +117,13 @@ For example, pair output from the <A HREF = "compute_property_local.html">comput
 property/local</A> command can be combined
 with data from this command and output by the <A HREF = "dump.html">dump local</A>
 command in a consistent way.
+</P>
+<P>IMPORTANT NOTE: This compute will, when invoked, issue a call to
+the pair or wall contact models to calculate what would be the contact
+forces given the current positions, velocities etc.
+Since this compute is typically executed when output is created (at the end of
+the time-step), this is not necessarily exactly equal to (with machine precision)
+the p-p or p-w forces which were calculated within one time-step.
 </P>
 <P><B>Output info:</B>
 </P>
@@ -121,7 +151,8 @@ For accessing particle-wall contact data, only mesh walls can be used.
 </P>
 <P><B>Default:</B>
 </P>
-<P>By default, all of the outputs keywords (except the heat flux) are activated,
+<P>By default, all of the outputs keywords (except force_normal, force_tangential,
+heat flux and delta) are activated,
 i.e. when no keyword is used, positions velocities, ids, forces, torques, history
 and contact area are output.
 </P>
