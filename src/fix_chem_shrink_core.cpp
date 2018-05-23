@@ -528,6 +528,9 @@ void FixChemShrinkCore::post_force(int)
     {
         if (mask[i] & groupbit)
         {
+            // 1st recalculate masses of layers if layer has reduced
+            // is ignored if there is no change in layers
+            active_layers(i);
             if (active_layers(i) > 0)
             {
                 // calculate values for fractional reduction f_i = (1-relRadii_i^3)
@@ -617,6 +620,12 @@ void FixChemShrinkCore::calcMassLayer(int i)
         massLayer_[i][layer]   =   1.33333*M_PI*(rad[layer]*rad[layer]*rad[layer]-rad[layer+1]*rad[layer+1]*rad[layer+1])*rhoeff_[i][layer];
     }
 
+/*    if (layers_ == 2)
+        massLayer_[i][layers_+1] = 0.0;
+    if (layers_ == 1) {
+        massLayer_[i][layers_+1] = 0.0;
+        massLayer_[i][layers_+2] = 0.0; }*/
+
     if (screenflag_ && screen)
     {
         fprintf(screen, "CALC MASS: mass layer h: %6.15f ", massLayer_[i][3]);
@@ -693,6 +702,7 @@ void FixChemShrinkCore::getA(int i)
     // if magnetite is reduced no chemical reaction is taking place at its surface
     if (layers_ == 1)
         Aterm[i][layers_] = 0.0;
+        Aterm[i][layers_+1] = 0.0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -763,11 +773,7 @@ void FixChemShrinkCore::getB(int i)
     // if magnetite is reduced; no more diffusion in wustite
     if (layers_ == 1)
         Bterm[i][layers_] = 0.0;
-
-    /* for (int layer = 0; layer <= layers_; layer++)
-    {
-        Bterm[i][layer] = 0.0;
-    } */
+        Bterm[i][layers_+1] = 0.0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -791,8 +797,6 @@ void FixChemShrinkCore::getMassT(int i)
 
     if (screenflag_ && screen)
         fprintf(screen, "Schmidt number: %f, molecularDiffusion: %6.15f, NuField: %6.15f \n",Sc_[i],molecularDiffusion_[i],nuf_[i]);
-
-    // Massterm[i] = 0.0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -852,6 +856,11 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         dmA_[j] =   dY[j]*partP_[i]*(1.0/(Runiv*T_[i]))*molMass_A_*(4.0*M_PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+
+        /* For Test Purposes - Limit mass change of layers for only positive gas mass change
+         * Thereby only shrinking the particles and not swelling */
+        if (dmA_[j] < 0.0)
+            dmA_[j] = 0.0;
     }
 
     if (screenflag_ && screen)
@@ -883,6 +892,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 
     /* Mass Change of Layers */
     /* negated due to subtraction when calculating new layer masses, [Cf. line 911 - 920] */
+
     // Fe
      dmL_[0] = -dmA_[0]*v_prod_[0]*(layerMolMasses_[0]/molMass_A_);
     // Initial FeO & Fe3O4 layers
@@ -919,28 +929,25 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         sum_mass_new    +=  massLayer_[i][j];
     }
 
-    // update the layer radius with the new massLayer
-    if (screenflag_ && screen)
-            fprintf(screen, "rhoeff_h: %f, rhoeff_m: %f, rhoeff_w: %f, rhoeff_Fe: %f \n",rhoeff_[0][3],rhoeff_[0][2],rhoeff_[0][1],rhoeff_[0][0]);
-
+    // Core layer radius (initial Fe2O3)
     rad[layers_] = cbrt((0.75*massLayer_[i][layers_])/(rhoeff_[i][layers_]*M_PI));
-
+    // Outer layer radii (Fe3O4, FeO, Fe)
     for (int layer = layers_ - 1; layer >= 0; layer--)
         rad[layer]   =   cbrt((0.75*massLayer_[i][layer]/(rhoeff_[i][layer]*M_PI))+rad[layer+1]*rad[layer+1]*rad[layer+1]);
 
-    //detemine the new relative layer radii and store them in relRadii_
+    // Determine new relative radii after reduction
     for (int j = 0; j <= layers_; j++)
     {
         relRadii_[i][j] = rad[j]/rad[0];
     }
-
+    // Apply coarsegraining factor
     radius_[i] = rad[0]*cg_;
 
     if (screenflag_ && screen)
             fprintf(screen, "UPDATE ATOM: radi[3]: %f, radi[2]: %f, radi[1]; %f, radi[0]: %f \n relRadii[3]: %f, relRadii[2]: %f, relRadii[1]: %f, relRadii[0]: %f \n",
                     rad[3], rad[2], rad[1], rad[0], relRadii_[0][3],relRadii_[0][2],relRadii_[0][1],relRadii_[0][0]);
 
-    // new total mass
+    // Total mass of particle with coarse-graining
     pmass_[i]   =   sum_mass_new*cg_*cg_*cg_;
 
     // total particle effective density
@@ -948,7 +955,6 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 
     if(screenflag_ && screen)
         fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[i], pmass_[i], pdensity_[i]);
-
 }
 
 /* ---------------------------------------------------------------------- */
