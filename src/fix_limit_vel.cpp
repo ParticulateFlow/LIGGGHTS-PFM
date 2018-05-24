@@ -78,8 +78,8 @@ void FixLimitVel::setup(int vflag)
   }
 
   // error checks on coarsegraining
-  if(force->cg_active())
-    error->cg(FLERR,this->style);
+  /*if(force->cg_active())
+    error->cg(FLERR,this->style); */
 }
 
 /* ---------------------------------------------------------------------- */
