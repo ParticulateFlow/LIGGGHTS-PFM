@@ -957,7 +957,8 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
             rad[1] = r_w;
             rad[2] = r_m;
             rad[3] = r_h;
-            // massLayer_[i][j] = massLayerOld_[j]
+            for (int j = 0; j <= layers_; j++)
+                massLayer_[i][j] = massLayerOld_[j];
     }
 
     // Determine new relative radii after reduction
@@ -967,9 +968,6 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     }
     // Apply coarsegraining factor
     radius_[i] = rad[0]*cg_;
-
-    /* For Test Purposes - Limit mass change of layers for only positive gas mass change
-     * Thereby only shrinking the particles and not swelling */
 
     if (screenflag_ && screen)
             fprintf(screen, "UPDATE ATOM: radi[3]: %f, radi[2]: %f, radi[1]; %f, radi[0]: %f \n relRadii[3]: %f, relRadii[2]: %f, relRadii[1]: %f, relRadii[0]: %f \n",
