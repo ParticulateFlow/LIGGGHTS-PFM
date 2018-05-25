@@ -856,11 +856,6 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         dmA_[j] =   dY[j]*partP_[i]*(1.0/(Runiv*T_[i]))*molMass_A_*(4.0*M_PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
-
-        /* For Test Purposes - Limit mass change of layers for only positive gas mass change
-         * Thereby only shrinking the particles and not swelling */
-        if (dmA_[j] < 0.0)
-            dmA_[j] = 0.0;
     }
 
     if (screenflag_ && screen)
@@ -882,7 +877,25 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     double dmL_[nmaxlayers_+1] = {};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
     double sum_mass_new = 0.0;
 
-     if(screenflag_ && screen)
+    // save old particle mass and particle radius values to compare with the reduction changed values
+    // if the new values are bigger than old particle radius/mass
+    // don't follow through the reaction.
+    double massLayerOld_[nmaxlayers_ + 1] = {};
+    double radius_old = 0.0;
+    double r_h, r_m, r_w = 0.0;
+    // write the unchanged massLayers to array
+    for (int j = 0; j <= layers_; j++)
+        massLayerOld_[j] = massLayer_[i][j];
+    // write the unchanged radius variable
+    radius_old = radius_[i];
+    r_w = relRadii_[i][1]*radius_[i];
+    r_m = relRadii_[i][2]*radius_[i];
+    r_h = relRadii_[i][3]*radius_[i];
+
+    /*if (screen)
+        fprintf(screen, "radius_old : %f, r_w: %f, r_m: %f, r_h: %f \n", radius_old, r_w, r_m, r_h);*/
+
+    if(screenflag_ && screen)
     {
         fprintf(screen, "massLayer_h = %6.15f ,", massLayer_[i][3]);
         fprintf(screen, "massLayer_m = %6.15f ,", massLayer_[i][2]);
@@ -891,8 +904,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     }
 
     /* Mass Change of Layers */
-    /* negated due to subtraction when calculating new layer masses, [Cf. line 911 - 920] */
-
+    /* negated due to subtraction when calculating new layer masses */
     // Fe
      dmL_[0] = -dmA_[0]*v_prod_[0]*(layerMolMasses_[0]/molMass_A_);
     // Initial FeO & Fe3O4 layers
@@ -929,11 +941,24 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         sum_mass_new    +=  massLayer_[i][j];
     }
 
+    /*if (screen)
+        fprintf(screen,"p1 rho_h: %f, rho_m: %f, rho_w: %f, rho_fe: %f \n", rhoeff_[i][3],rhoeff_[i][2],rhoeff_[i][1],rhoeff_[i][0]);*/
+
     // Core layer radius (initial Fe2O3)
     rad[layers_] = cbrt((0.75*massLayer_[i][layers_])/(rhoeff_[i][layers_]*M_PI));
     // Outer layer radii (Fe3O4, FeO, Fe)
     for (int layer = layers_ - 1; layer >= 0; layer--)
         rad[layer]   =   cbrt((0.75*massLayer_[i][layer]/(rhoeff_[i][layer]*M_PI))+rad[layer+1]*rad[layer+1]*rad[layer+1]);
+
+    // now check if radius is getting bigger, if so than don't do the reduction.
+    if (rad[0] > (radius_old + 1e-6))
+    {
+            rad[0] = radius_old;
+            rad[1] = r_w;
+            rad[2] = r_m;
+            rad[3] = r_h;
+            // massLayer_[i][j] = massLayerOld_[j]
+    }
 
     // Determine new relative radii after reduction
     for (int j = 0; j <= layers_; j++)
@@ -942,6 +967,9 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
     }
     // Apply coarsegraining factor
     radius_[i] = rad[0]*cg_;
+
+    /* For Test Purposes - Limit mass change of layers for only positive gas mass change
+     * Thereby only shrinking the particles and not swelling */
 
     if (screenflag_ && screen)
             fprintf(screen, "UPDATE ATOM: radi[3]: %f, radi[2]: %f, radi[1]; %f, radi[0]: %f \n relRadii[3]: %f, relRadii[2]: %f, relRadii[1]: %f, relRadii[0]: %f \n",
@@ -961,7 +989,8 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 
 void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
 {
-   // based on material change: update gas-phase source terms for mass and heat
+
+    // based on material change: update gas-phase source terms for mass and heat
     for (int j = 0; j < nmaxlayers_;j++)
     {
         // Reactant gas mass change
