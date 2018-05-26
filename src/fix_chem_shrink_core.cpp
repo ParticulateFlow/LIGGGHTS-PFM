@@ -614,10 +614,10 @@ void FixChemShrinkCore::calcMassLayer(int i)
                 rad[0],rad[1],rad[2],rad[3]);
     }
 
-    massLayer_[i][layers_]   =   1.33333*M_PI*rad[layers_]*rad[layers_]*rad[layers_]*rhoeff_[i][layers_];
+    massLayer_[i][layers_]   =   MY_4PI3*rad[layers_]*rad[layers_]*rad[layers_]*rhoeff_[i][layers_];
     for (int layer = 0 ; layer < layers_; layer++)
     {
-        massLayer_[i][layer]   =   1.33333*M_PI*(rad[layer]*rad[layer]*rad[layer]-rad[layer+1]*rad[layer+1]*rad[layer+1])*rhoeff_[i][layer];
+        massLayer_[i][layer]   =   MY_4PI3*(rad[layer]*rad[layer]*rad[layer]-rad[layer+1]*rad[layer+1]*rad[layer+1])*rhoeff_[i][layer];
     }
 
 /*    if (layers_ == 2)
@@ -700,9 +700,10 @@ void FixChemShrinkCore::getA(int i)
     if (layers_ == 2)
         Aterm[i][layers_] = 0.0;
     // if magnetite is reduced no chemical reaction is taking place at its surface
-    if (layers_ == 1)
+    if (layers_ == 1) {
         Aterm[i][layers_] = 0.0;
         Aterm[i][layers_+1] = 0.0;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -771,9 +772,10 @@ void FixChemShrinkCore::getB(int i)
     if (layers_ == 2)
         Bterm[i][layers_] = 0.0;
     // if magnetite is reduced; no more diffusion in wustite
-    if (layers_ == 1)
+    if (layers_ == 1) {
         Bterm[i][layers_] = 0.0;
-        Bterm[i][layers_+1] = 0.0;
+        Bterm[i][layers_+1] = 0.0;       
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -855,7 +857,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     for (int j = 0 ; j < layers_; j++)
     {
         // mass flow rate for reactant gas species
-        dmA_[j] =   dY[j]*partP_[i]*(1.0/(Runiv*T_[i]))*molMass_A_*(4.0*M_PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+        dmA_[j] =   dY[j]*partP_[i]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
     }
 
     if (screenflag_ && screen)
