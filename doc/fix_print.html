@@ -68,13 +68,14 @@ exists, or created if it does not exist.
 <P>If the <I>screen</I> keyword is used, output by this fix to the screen and
 logfile can be turned on or off as desired.
 </P>
-<P>The <I>title</I> keyword allow specification of the string that will be
-printed as the first line of the output file, assuming the <I>file</I>
-keyword was used.  By default, the title line is as follows:
+<P>The <I>title</I> keyword allows specification of the string that will be
+printed as the first line of the output file, assuming the <I>file</I> or
+<I>append</I> keyword was used. By default, the title line is as follows:
 </P>
 <PRE># Fix print output for fix ID 
 </PRE>
-<P>where ID is replaced with the fix-ID.
+<P>where ID is replaced with the fix-ID. If the specified string equals
+<I>none</I>, no title line is printed
 </P>
 <P><B>Restart, fix_modify, output, run start/stop, minimize info:</B>
 </P>
