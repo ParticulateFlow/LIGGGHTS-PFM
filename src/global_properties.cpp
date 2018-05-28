@@ -96,10 +96,10 @@ namespace MODEL_PARAMS
   {
     LAMMPS * lmp = registry.getLAMMPS();
     ScalarProperty* charVelScalar = createScalarProperty(registry, CHARACTERISTIC_VELOCITY, caller);
-    double charVel = charVelScalar->data;
 
     if(sanity_checks)
     {
+      const double charVel = charVelScalar->data;
       if(strcmp(lmp->update->unit_style,"si") == 0  && charVel < 1e-2)
         lmp->error->all(FLERR,"characteristicVelocity >= 1e-2 required for SI units");
     }
