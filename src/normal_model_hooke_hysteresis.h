@@ -114,7 +114,8 @@ namespace ContactModels
       }
 
       const double sqrtval = sqrt(reff);
-      double kn = 16./15.*sqrtval*(Yeff[itype][jtype])*pow(15.*meff*charVel*charVel/(16.*sqrtval*Yeff[itype][jtype]),0.2);
+      const double k = (16./15.)*sqrtval*(Yeff[itype][jtype]);
+      double kn = k*pow(meff*charVel*charVel/k,0.2);
       double kt = kn;
       const double coeffRestLogChosenSq = coeffRestLogChosen*coeffRestLogChosen;
       const double gamman = sqrt(4.*meff*kn*coeffRestLogChosenSq/(coeffRestLogChosenSq+M_PI*M_PI));

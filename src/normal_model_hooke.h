@@ -143,7 +143,8 @@ namespace ContactModels
          coeffRestLogChosen=coeffRestLog[itype][jtype];
       }
 
-      double kn = 16./15.*sqrtval*(Yeff[itype][jtype])*pow(15.*meff*charVel*charVel/(16.*sqrtval*Yeff[itype][jtype]),0.2);
+      const double k = (16./15.)*sqrtval*(Yeff[itype][jtype]);
+      double kn = k*pow(meff*charVel*charVel/k,0.2);
       double kt = kn;
       if(ktToKn) kt *= 0.285714286; //2/7
       const double coeffRestLogChosenSq = coeffRestLogChosen*coeffRestLogChosen;
