@@ -116,7 +116,8 @@ namespace ContactModels
       const double sqrtval = sqrt(reff);
       double kn = 16./15.*sqrtval*(Yeff[itype][jtype])*pow(15.*meff*charVel*charVel/(16.*sqrtval*Yeff[itype][jtype]),0.2);
       double kt = kn;
-      const double gamman = sqrt(4.*meff*kn/(1.+(M_PI/coeffRestLogChosen)*(M_PI/coeffRestLogChosen)));
+      const double coeffRestLogChosenSq = coeffRestLogChosen*coeffRestLogChosen;
+      const double gamman = sqrt(4.*meff*kn*coeffRestLogChosenSq/(coeffRestLogChosenSq+M_PI*M_PI));
       const double gammat = tangential_damping ? gamman : 0.0;
 
       // convert Kn and Kt from pressure units to force/distance^2
