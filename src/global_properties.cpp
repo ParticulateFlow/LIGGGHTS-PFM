@@ -193,7 +193,7 @@ namespace MODEL_PARAMS
         const double Yj=Y[j];
         const double vi=v[i];
         const double vj=v[j];
-        matrix->data[i][j] = 1./((1.-pow(vi,2.))/Yi+(1.-pow(vj,2.))/Yj);
+        matrix->data[i][j] = 1./((1.-vi*vi)/Yi+(1.-vj*vj)/Yj);
       }
     }
 
@@ -300,7 +300,7 @@ namespace MODEL_PARAMS
     {
       for(int j=1;j<max_type+1;j++)
       {
-        matrix->data[i][j] = coeffRestLog[i][j] / sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
+        matrix->data[i][j] = coeffRestLog[i][j] / sqrt(coeffRestLog[i][j]*coeffRestLog[i][j] + M_PI*M_PI);
       }
     }
 
