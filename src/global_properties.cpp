@@ -39,6 +39,7 @@ namespace MODEL_PARAMS
 {
   static const char * COHESION_ENERGY_DENSITY = "cohesionEnergyDensity";
   static const char * CHARACTERISTIC_VELOCITY = "characteristicVelocity";
+  static const char * STIFFFNESS_RATIO = "stiffnessRatio";
   static const char * YOUNGS_MODULUS = "youngsModulus";
   static const char * POISSONS_RATIO = "poissonsRatio";
   static const char * COEFFICIENT_RESTITUTION = "coefficientRestitution";
@@ -67,6 +68,14 @@ namespace MODEL_PARAMS
     ScalarProperty * scalar = new ScalarProperty();
     FixPropertyGlobal * property = registry.getGlobalProperty(name,"property/global","scalar",0,0,caller);
     scalar->data = property->compute_scalar();
+    return scalar;
+  }
+
+  ScalarProperty* createScalarPropertyOrDefault(PropertyRegistry & registry, const char* name, const char * caller, double defaultValue)
+  {
+    ScalarProperty * scalar = new ScalarProperty();
+    FixPropertyGlobal * property = registry.getGlobalProperty(name,"property/global","scalar",0,0,caller,false);
+    scalar->data = property ? property->compute_scalar() : defaultValue;
     return scalar;
   }
 
@@ -105,6 +114,24 @@ namespace MODEL_PARAMS
     }
 
     return charVelScalar;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  ScalarProperty* createStiffnessRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks)
+  {
+    LAMMPS * lmp = registry.getLAMMPS();
+    ScalarProperty* kappaScalar = createScalarPropertyOrDefault(registry, STIFFFNESS_RATIO, caller, 2./7.);
+
+    if(sanity_checks)
+    {
+      const double kappa = kappaScalar->data;
+      // Note: actually kappa should be >= 2/3, but some published works use lower values
+      if(kappa > 1.0 || kappa < 0.28)
+        lmp->error->all(FLERR,"2/7 <= stiffnessRatio <= 1 required");
+    }
+
+    return kappaScalar;
   }
 
   /* ---------------------------------------------------------------------- */
