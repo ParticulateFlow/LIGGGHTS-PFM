@@ -15,7 +15,8 @@
 # The script expects:                                                          #
 # the normal model in the input variable NORMALMODEL,                          #
 # the tangential model in                TANGENTIALMODEL,                      #
-# further model options in               MODELOPTIONS,                         #
+# an optional model option in            MODELOPTION,                          #
+# with model option setting in           MODELOPTIONSETTING,                   #
 # the coefficient of restitution in      RESTITUTION                           #
 #                                                                              #
 # authors: Daniel Queteschiner                                                 #
@@ -91,7 +92,7 @@ fix     m5 all property/global characteristicVelocity scalar ${vel}
 fix     m6 all property/global stiffnessRatio scalar ${kappa}
 
 # specify contact model to use
-pair_style gran model ${normalModel} tangential ${tangentialModel} ${MODELOPTIONS}
+pair_style gran model ${normalModel} tangential ${tangentialModel} ${MODELOPTION} ${MODELOPTIONSETTING}
 pair_coeff * *
 
 # set the time step
@@ -105,17 +106,17 @@ create_atoms    1 single -0.025 -0.025 0.0255 units box
 set             atom 1 diameter ${dia} density ${dens} vy ${vely} vz ${velz}
 
 # define the meshes used for walls
-# a quad with the same size as the domain, note that meshes must not exceed the 
-# domain boundaries 
+# a quad with the same size as the domain, note that meshes must not exceed the
+# domain boundaries
 fix mesh_bottom all mesh/surface file meshes/zplane.stl type 1
 
 # use the mesh defined above as wall; note that specifying the wall contact
 # model is analogous to the pair_style command; there can only be a single fix
 # of style 'wall/gran' for mesh based walls
 fix mesh_walls all wall/gran model ${normalModel} tangential ${tangentialModel} &
-    mesh n_meshes 1 meshes mesh_bottom ${MODELOPTIONS}
+    mesh n_meshes 1 meshes mesh_bottom ${MODELOPTION} ${MODELOPTIONSETTING}
 
-# use constant NVE integration to update position, velocity and angular velocity 
+# use constant NVE integration to update position, velocity and angular velocity
 fix integr all nve/sphere
 
 # check time step size
