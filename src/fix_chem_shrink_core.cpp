@@ -852,12 +852,12 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
         // wustite to iron
         if (dY[1] == 0.0 || K_eq(0,T_[i]) < Q)
             dY[0] = 0.0;
-        if (screen)
-            fprintf(screen,"dY1 - layer2: %f \n", dY[0]);
         else
             dY[0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(X0_[i]-x0_eq_[0])-(Bterm[i][0]+Massterm[i])*(X0_[i]-x0_eq_[1]))/W;
+
+
         if (screen)
-            fprintf(screen,"dY0 - layer2: %f \n", dY[0]);
+            fprintf(screen,"dY1 - layer: %f, dY0 - layer2: %f \n", dY[1], dY[0]);
     }
     else if (layers_ == 1)
     {
