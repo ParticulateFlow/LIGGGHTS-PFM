@@ -122,6 +122,9 @@ public:
   class FixPropertyGlobal *fix_tortuosity_;
   class FixPropertyGlobal *fix_pore_diameter_;
 
+  class FixPropertyAtom *fix_totalMole_;
+  double *molarConc_;
+
 };
 }
 

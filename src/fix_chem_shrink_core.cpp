@@ -71,6 +71,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     massA = massC = NULL;
     diffA = moleFrac = NULL;
     speciesA = speciesC = NULL;
+    fix_totalMole_      =   NULL;
+    molarConc_  =   NULL;
 
     cg_ = 0.0;
     int iarg_ = 3;
@@ -171,6 +173,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     moleFrac = new char [strlen("X_")+strlen(speciesA)+1];
     strcpy(moleFrac,"X_");
     strcat(moleFrac,speciesA);
+    if (screen)
+        fprintf(screen,"moleFrac: %s \n",moleFrac);
 
     time_depend = 1;
     cg_ = force->cg();
@@ -349,6 +353,8 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_layerMass_)     { modify  ->  delete_fix("massLayer"); delete [] massLayer_; }
         if (fix_porosity_)      { modify  ->  delete_fix("porosity_"); delete [] porosity_;}
         if (fix_rhoeff_)        { modify  ->  delete_fix("rhoeff"); delete [] rhoeff_;}
+
+        if(fix_totalMole_)           modify  ->  delete_fix("partMolarConc");
     }
 }
 
@@ -410,6 +416,7 @@ void FixChemShrinkCore::updatePtrs()
     radius_         =   atom    -> radius;
     pmass_          =   atom    -> rmass;
     pdensity_       =   atom    -> density;
+    molarConc_  =   fix_totalMole_  ->  vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -487,6 +494,8 @@ void FixChemShrinkCore::init()
     fix_pore_diameter_ =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
     fix_layerRelRad_    = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
 
+    fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
+
     updatePtrs();
 
     // get initial values for rhoeff, and use them to calculate mass of layers
@@ -518,6 +527,10 @@ void FixChemShrinkCore::post_force(int)
 
     for (i = 0; i < nlocal; i++)
     {
+
+        if (screen)
+            fprintf(screen,"total number of moles %f \n",molarConc_[i]);
+
         /* if there is gas at particle location (will not work if there is no reactant */
         if (X0_[i] > 0.0)
         {
@@ -839,8 +852,12 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
         // wustite to iron
         if (dY[1] == 0.0 || K_eq(0,T_[i]) < Q)
             dY[0] = 0.0;
+        if (screen)
+            fprintf(screen,"dY1 - layer2: %f \n", dY[0]);
         else
             dY[0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(X0_[i]-x0_eq_[0])-(Bterm[i][0]+Massterm[i])*(X0_[i]-x0_eq_[1]))/W;
+        if (screen)
+            fprintf(screen,"dY0 - layer2: %f \n", dY[0]);
     }
     else if (layers_ == 1)
     {
@@ -859,7 +876,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
         else
             dY[0]   =   (X0_[i] - x0_eq_[0])/W;
         if (screen)
-            fprintf(screen,"dY0 - layer2: %f \n", dY[0]);
+            fprintf(screen,"dY0 - layer1: %f \n", dY[0]);
     }
 
     if (screenflag_ && screen)
