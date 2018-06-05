@@ -60,6 +60,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     nmaxlayers_(3),
     layers_(nmaxlayers_),
+    minMolarFrac_(1e-3),
     rmin_(1e-5)       //  [m]
 {
     if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
@@ -526,15 +527,12 @@ void FixChemShrinkCore::post_force(int)
 
     for (i = 0; i < nlocal; i++)
     {
-
-        /*if (screen)
-            fprintf(screen,"total number of moles %f \n",molarConc_[i]);*/
-
-        /* if there is gas at particle location (will not work if there is no reactant */
-        if (xA_[i] > 0.0)
+        if (mask[i] & groupbit)
         {
-            if (mask[i] & groupbit)
+            if (xA_[i] < minMolarFrac_)
             {
+                continue;
+            }
                 // 1st recalculate masses of layers if layer has reduced
                 // is ignored if there is no change in layers
                 active_layers(i);
@@ -565,7 +563,6 @@ void FixChemShrinkCore::post_force(int)
                     // the changes in gas species
                     update_gas_properties(i, dmA_);
                 }
-            }
         }
     }
 

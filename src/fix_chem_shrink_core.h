@@ -77,6 +77,7 @@ public:
   int layers_;          // current active layers
   const double rmin_;   // relative radius below which layers are neglected
   char *speciesA, *speciesC;
+  double minMolarFrac_;
 
   // particle-layer variable values
   double **rhoeff_;
