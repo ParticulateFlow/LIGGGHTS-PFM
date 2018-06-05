@@ -77,7 +77,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     cg_ = 0.0;
     int iarg_ = 3;
     bool hasargs = true;
-    if (screen) fprintf(screen, "narg: %i",narg);
+    /*if (screen) fprintf(screen, "narg: %i",narg);*/
 
     while (iarg_ < narg && hasargs)
     {
@@ -173,8 +173,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     moleFrac = new char [strlen("X_")+strlen(speciesA)+1];
     strcpy(moleFrac,"X_");
     strcat(moleFrac,speciesA);
-    if (screen)
-        fprintf(screen,"moleFrac: %s \n",moleFrac);
+    /*if (screen)
+        fprintf(screen,"moleFrac: %s \n",moleFrac);*/
 
     time_depend = 1;
     cg_ = force->cg();
@@ -528,8 +528,8 @@ void FixChemShrinkCore::post_force(int)
     for (i = 0; i < nlocal; i++)
     {
 
-        if (screen)
-            fprintf(screen,"total number of moles %f \n",molarConc_[i]);
+        /*if (screen)
+            fprintf(screen,"total number of moles %f \n",molarConc_[i]);*/
 
         /* if there is gas at particle location (will not work if there is no reactant */
         if (X0_[i] > 0.0)
@@ -673,8 +673,8 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
         x0_eq_[j]  =   kch2_/(1.0+K_eq(j,T_[i]));
     }
 
-    if (screen)
-        fprintf(screen,"Keq0: %f; Keq1: %f, Keq2: %f\n",K_eq(0,T_[i]),K_eq(1,T_[i]),K_eq(2,T_[i]));
+    /*if (screen)
+        fprintf(screen,"Keq0: %f; Keq1: %f, Keq2: %f\n",K_eq(0,T_[i]),K_eq(1,T_[i]),K_eq(2,T_[i]));*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -807,8 +807,8 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     double dY[nmaxlayers_] = {0.};
     double Q = 0.;
     Q = (kch2_ - X0_[i])/X0_[i];
-    if (screen)
-        fprintf(screen,"x0_eq_0:%f , x0_eq_1:%f, x0_: %f, Q: %f \n",x0_eq_[0],x0_eq_[1],X0_[i], Q);
+    /*if (screen)
+        fprintf(screen,"x0_eq_0:%f , x0_eq_1:%f, x0_: %f, Q: %f \n",x0_eq_[0],x0_eq_[1],X0_[i], Q);*/
 
     if (layers_ == nmaxlayers_)
     {
@@ -856,8 +856,8 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
             dY[0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(X0_[i]-x0_eq_[0])-(Bterm[i][0]+Massterm[i])*(X0_[i]-x0_eq_[1]))/W;
 
 
-        if (screen)
-            fprintf(screen,"dY1 - layer: %f, dY0 - layer2: %f \n", dY[1], dY[0]);
+        /*if (screen)
+            fprintf(screen,"dY1 - layer: %f, dY0 - layer2: %f \n", dY[1], dY[0]);*/
     }
     else if (layers_ == 1)
     {
@@ -876,12 +876,12 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
         else
             dY[0]   =   (X0_[i] - x0_eq_[0])/W;
 
-        if (screen)
-            fprintf(screen,"dY0 - layer1: %f \n", dY[0]);
+        /*if (screen)
+            fprintf(screen,"dY0 - layer1: %f \n", dY[0]);*/
     }
 
-    if (screenflag_ && screen)
-        fprintf(screen, "pressure: %f , T_[i]: %f, Runiv: %f, molMass_A_: %f \n", partP_[i],T_[i],Runiv,molMass_A_);
+    /*if (screenflag_ && screen)
+        fprintf(screen, "pressure: %f , T_[i]: %f, Runiv: %f, molMass_A_: %f \n", partP_[i],T_[i],Runiv,molMass_A_); */
 
     for (int j = 0 ; j < layers_; j++)
     {
