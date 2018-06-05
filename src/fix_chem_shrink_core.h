@@ -66,8 +66,13 @@ public:
   bool screenflag_;
   double TimeStep;
   char* massA, *massC;
-  double molMass_A_, molMass_C_, kch2_;
-  char *diffA, *moleFrac;
+
+  double molMass_A_, molMass_C_;
+
+  char *diffA;
+  char *moleFracA, *moleFracC;
+
+
   const int nmaxlayers_;    // maximum available layers - 3
   int layers_;          // current active layers
   const double rmin_;   // relative radius below which layers are neglected
@@ -89,8 +94,9 @@ public:
   double *pdensity_;
 
   // handles of fixes
-  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_, *Massterm, *reactionHeat_;
+  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *partP_, *Massterm, *reactionHeat_;
   double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
+
 
   // coarse_graining factor
   double cg_;
@@ -101,7 +107,10 @@ public:
   class FixPropertyAtom *fix_diffcoeff_;
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
-  class FixPropertyAtom *fix_molefraction_;
+
+  class FixPropertyAtom *fix_moleFractionA_, *fix_moleFractionC_;
+  double *xA_, *xC_;
+
   class FixPropertyAtom *fix_fracRed;
   class FixPropertyAtom *fix_Aterm;
   class FixPropertyAtom *fix_Bterm;
@@ -124,6 +133,8 @@ public:
 
   class FixPropertyAtom *fix_totalMole_;
   double *molarConc_;
+
+
 
 };
 }
