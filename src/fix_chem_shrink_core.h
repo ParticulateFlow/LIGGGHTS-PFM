@@ -54,7 +54,7 @@ public:
   void calcMassLayer(int);  // calculate mass of layers per-particle
   void FractionalReduction(int); // calculate fractional reduction per-layer depending on layer radius
   void getXi(int, double *);    // calculate molar equilibrium constant of reacting gas
-  double K_eq(int, double); // calculate equilibrium constant based on the work of Valipour 2009
+  double K_eq(int, int); // calculate equilibrium constant based on the work of Valipour 2009
   void getA(int);   // calculate chemical reaction resistance term
   void getB(int);   // calculate diffusion resistance term
   void getMassT(int);   // calculate gas film mass transfer resistance term
@@ -66,12 +66,19 @@ public:
   bool screenflag_;
   double TimeStep;
   char* massA, *massC;
-  double molMass_A_, molMass_C_, kch2_;
-  char *diffA, *moleFrac;
+
+  double molMass_A_, molMass_C_;
+
+  char *diffA;
+  char *moleFracA, *moleFracC;
+
+
   const int nmaxlayers_;    // maximum available layers - 3
   int layers_;          // current active layers
+  double minMolarFrac_;
   const double rmin_;   // relative radius below which layers are neglected
   char *speciesA, *speciesC;
+
 
   // particle-layer variable values
   double **rhoeff_;
@@ -89,8 +96,9 @@ public:
   double *pdensity_;
 
   // handles of fixes
-  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *X0_, *partP_, *Massterm, *reactionHeat_;
+  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *partP_, *Massterm, *reactionHeat_;
   double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
+
 
   // coarse_graining factor
   double cg_;
@@ -101,7 +109,10 @@ public:
   class FixPropertyAtom *fix_diffcoeff_;
   class FixPropertyAtom *fix_nuField_;
   class FixPropertyAtom *fix_partRe_;
-  class FixPropertyAtom *fix_molefraction_;
+
+  class FixPropertyAtom *fix_moleFractionA_, *fix_moleFractionC_;
+  double *xA_, *xC_;
+
   class FixPropertyAtom *fix_fracRed;
   class FixPropertyAtom *fix_Aterm;
   class FixPropertyAtom *fix_Bterm;
@@ -124,6 +135,9 @@ public:
 
   class FixPropertyAtom *fix_totalMole_;
   double *molarConc_;
+
+  bool dY_previous3, dY_previous2;
+
 
 };
 }
