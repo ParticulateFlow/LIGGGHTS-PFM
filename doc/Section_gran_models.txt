@@ -43,5 +43,6 @@ tangential commands :h4
 Click on the style itself for a full description:
 
 "history"_gran_tangential_history.html,
+"incremental_history"_gran_tangential_incremental_history.html,
 "no_history"_gran_tangential_no_history.html :tb(c=4,ea=c)
 
