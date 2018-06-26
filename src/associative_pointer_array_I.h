@@ -302,7 +302,7 @@
   ------------------------------------------------------------------------- */
 
   template<typename T>
-  void AssociativePointerArray<T>::rotate(double *dQ)
+  void AssociativePointerArray<T>::rotate(const double *dQ)
   {
     for(content_iterator it = content_.begin(); it != content_.end(); ++it)
       it->second->rotate(dQ);
@@ -316,14 +316,14 @@
   }
 
   template<typename T>
-  void AssociativePointerArray<T>::move(double *delta)
+  void AssociativePointerArray<T>::move(const double *delta)
   {
     for(content_iterator it = content_.begin(); it != content_.end(); ++it)
       it->second->move(delta);
   }
 
   template<typename T>
-  void AssociativePointerArray<T>::moveElement(int n,double *delta)
+  void AssociativePointerArray<T>::moveElement(int n, const double *delta)
   {
     for(content_iterator it = content_.begin(); it != content_.end(); ++it)
       it->second->moveElement(n,delta);

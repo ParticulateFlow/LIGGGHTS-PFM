@@ -82,9 +82,9 @@ class AssociativePointerArray
         inline bool reset(const char *_id,class AssociativePointerArray &orig);
         inline void setToDefault(int n);
 
-        void rotate(double *dQ);
-        void move(double *delta);
-        void moveElement(int i,double *delta);
+        void rotate(const double *dQ);
+        void move(const double *delta);
+        void moveElement(int i,const double *delta);
         void scale(double factor);
 
         inline int bufSize(int operation,bool scale,bool translate,bool rotate) const;

@@ -93,11 +93,11 @@ namespace LAMMPS_NS
         inline void storeGlobalPropOrig(const char *_id);
         inline void resetGlobalPropToOrig(const char *_id);
 
-        inline void moveElement(int i, double *delta);
-        void move(double *vecTotal, double *vecIncremental);
-        void move(double *vecIncremental);
-        void rotate(double *totalQ, double *dQ);
-        void rotate(double *dQ);
+        inline void moveElement(int i, const double *delta);
+        void move(const double *vecTotal, const double *vecIncremental);
+        void move(const double *vecIncremental);
+        void rotate(const double *totalQ, const double *dQ);
+        void rotate(const double *dQ);
         void scale(double factor);
 
         // buffer operations
