@@ -38,7 +38,7 @@ class VolumeMesh : public TrackingMesh<NUM_NODES>
     void move(const double *vecIncremental);
     void scale(double factor);
 
-    bool isInside(double *p);
+    bool isInside(const double *p);
 
     //NP generateRandomSubbox (used by fix insert/pack): return random pos in my subbox
     //NP generateRandomSubboxWithin: return random pos in my subbox delta away from proc boundaries
@@ -86,7 +86,7 @@ class VolumeMesh : public TrackingMesh<NUM_NODES>
 
     virtual bool shareFace(int i, int j, int &iFace, int &jFace) = 0;
 
-    virtual bool isInside(int nElem, double *p) = 0;
+    virtual bool isInside(int nElem, const double *p) = 0;
     virtual double calcVol(int nElem) = 0;
 
     int randomOwnedGhostElement();

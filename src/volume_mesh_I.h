@@ -396,7 +396,7 @@ void VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::buildNeighbours()
 ------------------------------------------------------------------------- */
 
 template<int NUM_NODES,int NUM_FACES,int NUM_NODES_PER_FACE>
-bool VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::isInside(double *p)
+bool VolumeMesh<NUM_NODES,NUM_FACES,NUM_NODES_PER_FACE>::isInside(const double *p)
 {
     // check subdomain
     if(!this->domain->is_in_subdomain(p)) return false;
