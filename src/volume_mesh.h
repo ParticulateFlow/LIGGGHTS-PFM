@@ -34,8 +34,8 @@ class VolumeMesh : public TrackingMesh<NUM_NODES>
 
     bool addElement(double **nodeToAdd);
 
-    void move(double *vecTotal, double *vecIncremental);
-    void move(double *vecIncremental);
+    void move(const double *vecTotal, const double *vecIncremental);
+    void move(const double *vecIncremental);
     void scale(double factor);
 
     bool isInside(double *p);
@@ -91,8 +91,8 @@ class VolumeMesh : public TrackingMesh<NUM_NODES>
 
     int randomOwnedGhostElement();
 
-    void rotate(double *totalQ, double *dQ,double *totalDispl,double *dDispl);
-    void rotate(double *dQ,double *dDispl);
+    void rotate(const double *totalQ, const double *dQ, const double *totalDispl, const double *dDispl);
+    void rotate(const double *dQ, const double *dDispl);
 
     // inline access
 

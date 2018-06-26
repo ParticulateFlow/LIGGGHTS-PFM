@@ -328,7 +328,7 @@ inline void vectorAddMultiply2D(const double *v1, const double *v2, const double
     res[i] = v1[i]+v2[i]*s;
 }
 
-inline void vectorNegate3D(double *v, double *result)
+inline void vectorNegate3D(const double *v, double *result)
 {
   result[0]=-v[0];
   result[1]=-v[1];
