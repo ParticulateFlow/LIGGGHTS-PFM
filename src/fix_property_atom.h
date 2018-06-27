@@ -51,15 +51,18 @@ class FixPropertyAtom : public Fix {
   void do_forward_comm();
   void do_reverse_comm();
 
-  Fix* check_fix(const char *varname,const char *svmstyle,int len1,int len2,const char *caller,bool errflag);
+  virtual Fix* check_fix(const char *varname,const char *svmstyle,int len1,int len2,const char *caller,bool errflag);
 
   double memory_usage();
   void grow_arrays(int);
   void copy_arrays(int, int,int);
-  void pre_set_arrays();
+  virtual void pre_set_arrays();
   virtual void set_arrays(int);
 
-  void set_all(double value);
+  virtual void set_all(double value);
+  
+  virtual void set_array(int, int, double);
+  virtual void set_vector(int, double);
 
   void write_restart(FILE *);
   virtual void restart(char *);
@@ -79,9 +82,8 @@ class FixPropertyAtom : public Fix {
   virtual void mark_tracers(int ilo, int ihi) { UNUSED(ilo); UNUSED(ihi); }
 
  protected:
-  void parse_args(int narg, char **arg);
+  virtual void parse_args(int narg, char **arg);
 
- private:
   char *variablename;   // name of the variable (used for identification by other fixes)
   int data_style;            // 0 if a scalar is registered, 1 if vector
   int commGhost;        // 1 if communicated to ghost particles (via pack_comm/unpack_comm), 0 if not

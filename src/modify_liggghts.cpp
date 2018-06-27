@@ -297,11 +297,6 @@ int Modify::index_first_fix_with_function(const int FUNCTION, bool integrate)
    return the index in the fix array
 ------------------------------------------------------------------------- */
 
-Fix* Modify::find_fix_property(const char *varname,const char *style,const char *svmstyle,int len1,int len2,const char *caller)
-{
-    return find_fix_property(varname,style,svmstyle,len1,len2,caller,true);
-}
-
 Fix* Modify::find_fix_property(const char *varname,const char *style,const char *svmstyle,int len1,int len2,const char *caller,bool errflag)
 {
   int ifix;
