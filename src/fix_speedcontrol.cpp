@@ -118,7 +118,7 @@ FixSpeedControl::FixSpeedControl(LAMMPS *lmp, int narg, char **arg) :
   }
 
   maxatom = 0;
-  sforce = NULL;
+  setvelocity = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -129,7 +129,7 @@ FixSpeedControl::~FixSpeedControl()
   delete [] ystr;
   delete [] zstr;
   delete [] idregion;
-  memory->destroy(sforce);
+  memory->destroy(setvelocity);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -228,12 +228,12 @@ void FixSpeedControl::post_force(int vflag)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
-  // reallocate sforce array if necessary
+  // reallocate setvelocity array if necessary
 
   if (varflag == ATOM && nlocal > maxatom) {
     maxatom = atom->nmax;
-    memory->destroy(sforce);
-    memory->create(sforce,maxatom,4,"speedcontrol:sforce");
+    memory->destroy(setvelocity);
+    memory->create(setvelocity,maxatom,3,"speedcontrol:setvelocity");
   }
 
   double *rmass = atom->rmass;
@@ -262,14 +262,14 @@ void FixSpeedControl::post_force(int vflag)
     modify->clearstep_compute();
 
     if (xstyle == EQUAL) xvalue = input->variable->compute_equal(xvar);
-    else if (xstyle == ATOM && sforce)
-      input->variable->compute_atom(xvar,igroup,&sforce[0][0],4,0);
+    else if (xstyle == ATOM && setvelocity)
+      input->variable->compute_atom(xvar,igroup,&setvelocity[0][0],3,0);
     if (ystyle == EQUAL) yvalue = input->variable->compute_equal(yvar);
-    else if (ystyle == ATOM && sforce)
-      input->variable->compute_atom(yvar,igroup,&sforce[0][1],4,0);
+    else if (ystyle == ATOM && setvelocity)
+      input->variable->compute_atom(yvar,igroup,&setvelocity[0][1],3,0);
     if (zstyle == EQUAL) zvalue = input->variable->compute_equal(zvar);
-    else if (zstyle == ATOM && sforce)
-      input->variable->compute_atom(zvar,igroup,&sforce[0][2],4,0);
+    else if (zstyle == ATOM && setvelocity)
+      input->variable->compute_atom(zvar,igroup,&setvelocity[0][2],3,0);
 
     modify->addstep_compute(update->ntimestep + 1);
 
@@ -280,11 +280,11 @@ void FixSpeedControl::post_force(int vflag)
           continue;
 
 
-        if (xstyle == ATOM) f[i][0] += sforce[i][0];
+        if (xstyle == ATOM) f[i][0] += K*rmass[i]*dtv_inverse_*(setvelocity[i][0] - v[i][0]);
         else if (xstyle) f[i][0] -= K*rmass[i]*dtv_inverse_*(v[i][0] - xvalue);
-        if (ystyle == ATOM) f[i][1] += sforce[i][1];
+        if (ystyle == ATOM) f[i][1] += K*rmass[i]*dtv_inverse_*(setvelocity[i][1] - v[i][1]);
         else if (ystyle) f[i][1] -= K*rmass[i]*dtv_inverse_*(v[i][1] - yvalue);
-        if (zstyle == ATOM) f[i][2] += sforce[i][2];
+        if (zstyle == ATOM) f[i][2] += K*rmass[i]*dtv_inverse_*(setvelocity[i][2] - v[i][2]);
         else if (zstyle) f[i][2] -= K*rmass[i]*dtv_inverse_*(v[i][2] - zvalue);
       }
   }
@@ -311,6 +311,6 @@ void FixSpeedControl::min_post_force(int vflag)
 double FixSpeedControl::memory_usage()
 {
   double bytes = 0.0;
-  if (varflag == ATOM) bytes = atom->nmax*4 * sizeof(double);
+  if (varflag == ATOM) bytes = atom->nmax*3 * sizeof(double);
   return bytes;
 }
