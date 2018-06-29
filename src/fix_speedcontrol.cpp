@@ -236,6 +236,9 @@ void FixSpeedControl::post_force(int vflag)
     memory->create(sforce,maxatom,4,"speedcontrol:sforce");
   }
 
+  double *rmass = atom->rmass;
+  double dtv_inverse_ = 1.0/update->dt;
+
 
   // constant force
 
@@ -246,9 +249,9 @@ void FixSpeedControl::post_force(int vflag)
             !domain->regions[iregion]->match(x[i][0],x[i][1],x[i][2]))
           continue;
 
-        if (xstyle) f[i][0] -= K*(v[i][0] - xvalue);
-        if (ystyle) f[i][1] -= K*(v[i][1] - yvalue);
-        if (zstyle) f[i][2] -= K*(v[i][2] - zvalue);
+        if (xstyle) f[i][0] -= K*rmass[i]*dtv_inverse_*(v[i][0] - xvalue);
+        if (ystyle) f[i][1] -= K*rmass[i]*dtv_inverse_*(v[i][1] - yvalue);
+        if (zstyle) f[i][2] -= K*rmass[i]*dtv_inverse_*(v[i][2] - zvalue);
       }
 
   // variable force, wrap with clear/add
@@ -278,11 +281,11 @@ void FixSpeedControl::post_force(int vflag)
 
 
         if (xstyle == ATOM) f[i][0] += sforce[i][0];
-        else if (xstyle) f[i][0] -= K*(v[i][0] - xvalue);
+        else if (xstyle) f[i][0] -= K*rmass[i]*dtv_inverse_*(v[i][0] - xvalue);
         if (ystyle == ATOM) f[i][1] += sforce[i][1];
-        else if (ystyle) f[i][1] -= K*(v[i][1] - yvalue);
+        else if (ystyle) f[i][1] -= K*rmass[i]*dtv_inverse_*(v[i][1] - yvalue);
         if (zstyle == ATOM) f[i][2] += sforce[i][2];
-        else if (zstyle) f[i][2] -= K*(v[i][2] - zvalue);
+        else if (zstyle) f[i][2] -= K*rmass[i]*dtv_inverse_*(v[i][2] - zvalue);
       }
   }
 }
