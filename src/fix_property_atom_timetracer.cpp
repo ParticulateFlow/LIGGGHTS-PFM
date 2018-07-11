@@ -62,7 +62,8 @@ using namespace FixConst;
 FixPropertyAtomTimeTracer::FixPropertyAtomTimeTracer(LAMMPS *lmp, int narg, char **arg,bool parse) :
   FixPropertyAtom(lmp, narg, arg, false),
   iarg_(3),
-  check_every_(10)
+  check_every_(10),
+  reset_every_(-1)
 {
     // do the derived class stuff
 
@@ -95,6 +96,11 @@ FixPropertyAtomTimeTracer::FixPropertyAtomTimeTracer(LAMMPS *lmp, int narg, char
                 error->fix_error(FLERR,this,"check_region_every > 0 required");
             iarg_++;
             hasargs = true;
+        }  else if(strcmp(arg[iarg_],"reset_every") == 0) {
+            if(narg < iarg_+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'reset_every'");
+            iarg_++;
+            reset_every_ = atoi(arg[iarg_]);
         } else if(strcmp(style,"property/atom/timetracer") == 0 )
             error->fix_error(FLERR,this,"unknown keyword");
     }
@@ -128,7 +134,7 @@ FixPropertyAtomTimeTracer::FixPropertyAtomTimeTracer(LAMMPS *lmp, int narg, char
     // settings
     nevery = check_every_;
 
-    vector_flag = 1;
+    //vector_flag = 1;
     size_vector = 1+n_reg;
     global_freq = check_every_;
     extvector = 1;
@@ -184,6 +190,15 @@ void FixPropertyAtomTimeTracer::end_of_step()
     double dt_this = static_cast<double>(check_every_)*update->dt;
     int n_reg = iregion_.size();
     bool has_regions = n_reg > 0;
+
+    if(reset_every_ > 0 && (update->ntimestep - 1)%reset_every_ < check_every_)
+    {
+        this->set_all(0.0);
+        if (screen)
+        {
+            fprintf(screen,"resetting residence time dist. at timestep %ld\n",update->ntimestep);
+        }
+    }
 
     if(!has_regions)
     {

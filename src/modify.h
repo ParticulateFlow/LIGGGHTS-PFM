@@ -106,8 +106,7 @@ class Modify : protected Pointers {
 
   class FixPropertyGlobal* add_fix_property_global(int narg,char **arg,const char *);//NP modified C.K.
   class FixPropertyAtom* add_fix_property_atom(int narg,char **arg,const char *);//NP modified C.K.
-  class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char * );//NP modified C.K.
-  class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char *,bool );//NP modified C.K.
+  class Fix* find_fix_property(const char *,const char *,const char *,int ,int,const char *,bool=true);
   class Fix* find_fix_id(const char *id);//NP modified C.K.
   class Compute* find_compute_id(const char *id);//NP modified C.K.
   class Fix* find_fix_id_style(const char *id,const char *style);//NP modified C.K.

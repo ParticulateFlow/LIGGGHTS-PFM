@@ -21,6 +21,7 @@
 /* ----------------------------------------------------------------------
    Contributing authors:
    Philippe Seil (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
    ---------------------------------------------------------------------- */
 
 
@@ -59,14 +60,15 @@ const double FixInsertPackDense::max_volfrac = 0.57;
 
 FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
-  x_init(0),
-  ins_region(0),
-  idregion(0),
-  fix_distribution(0),
+  x_init(NULL),
+  ins_region(NULL),
+  idregion(NULL),
+  fix_distribution(NULL),
   target_volfrac(max_volfrac),
-  random(0),
+  random(NULL),
   seed(-1),
   insertion_done(false),
+  is_inserter(true),
   n_inserted(0),
   n_inserted_local(0)
 {
@@ -80,20 +82,20 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   random = new RanPark(lmp,seed);
 
   bool hasargs = true;
-  while(iarg < narg && hasargs)
+  while (iarg < narg && hasargs)
   {
     hasargs = false;
-    if(strcmp(arg[iarg],"distributiontemplate") == 0) {
+    if (strcmp(arg[iarg],"distributiontemplate") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       int ifix = modify->find_fix(arg[iarg+1]);
-      if(ifix < 0 || strcmp(modify->fix[ifix]->style,"particledistribution/discrete"))
+      if (ifix < 0 || strcmp(modify->fix[ifix]->style,"particledistribution/discrete"))
         error->fix_error(FLERR,this,"Fix insert requires you to define a valid ID for a fix of type particledistribution/discrete");
       fix_distribution = static_cast<FixParticledistributionDiscrete*>(modify->fix[ifix]);
-      if(fix_distribution->has_multisphere())
+      if (fix_distribution->has_multisphere())
         error->fix_error(FLERR,this,"no multisphere templates allowed for this insertion fix");
       iarg += 2;
       hasargs = true;
-    } else  if(strcmp(arg[iarg],"region") == 0) {
+    } else if (strcmp(arg[iarg],"region") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       int iregion = domain->find_region(arg[iarg+1]);
       if (iregion == -1) error->fix_error(FLERR,this,"region ID does not exist");
@@ -103,13 +105,13 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
       ins_region = domain->regions[iregion];
       iarg += 2;
       hasargs = true;
-    } else if(strcmp(arg[iarg],"volumefraction_region") == 0){
-      if(iarg+2>narg) error->fix_error(FLERR,this,"");
+    } else if(strcmp(arg[iarg],"volumefraction_region") == 0) {
+      if (iarg+2>narg) error->fix_error(FLERR,this,"");
       target_volfrac = atof(arg[iarg+1]);
     }
   }
 
-  if(target_volfrac > max_volfrac){
+  if (target_volfrac > max_volfrac) {
     char errmsg[500];
     sprintf(errmsg,"target_volfrac higher than %f - might not be achieved. Reseting to maximum value.",max_volfrac);
     error->warning(FLERR,errmsg);
@@ -117,12 +119,13 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   }
 
   radius_factor = pow(max_volfrac/target_volfrac,MathConst::THIRD);
-  if(comm->me==0)
-    printf("radius scaling factor: %f\n",radius_factor);
+  if (comm->me == 0 && screen)
+    fprintf(screen, "radius scaling factor: %f\n",radius_factor);
 
-  if(!ins_region)
+  if (!ins_region)
     error->fix_error(FLERR,this,"no insertion region provided");
-  if(!fix_distribution)
+
+  if (!fix_distribution)
     error->fix_error(FLERR,this,"no particle distribution provided");
 
   // force reneighboring in next timestep
@@ -156,23 +159,41 @@ void FixInsertPackDense::post_create()
   x_init = new double[3];
 
   double sublo[3],subhi[3];
-  double const insreg_cutoff = maxrad;//+neighbor->skin;
-  for(int i=0;i<3;i++){
+  double const insreg_cutoff = maxrad;
+  for (int i=0; i<3; ++i) {
     sublo[i] = domain->sublo[i]+insreg_cutoff;
     subhi[i] = domain->subhi[i]-insreg_cutoff;
   }
 
   ins_bbox.shrinkToSubbox(sublo,subhi);
 
-  for(int i=0;i<3;i++){ x_init[i] = 0.5*(sublo[i]+subhi[i]); }
-
-  if(!ins_region->inside(x_init[0],x_init[1],x_init[2])){
-    bool const subdomain_flag(true);
-    ins_region->generate_random_shrinkby_cut(x_init,2*maxrad,subdomain_flag);
+  // for insertion of inital config we need an insertion box with larger cutoff:
+  // circumscribed sphere (of 3 spheres with maxrad radius placed on the corners
+  // of an equilateral triangle) has a radius of (1. + 2./sqrt(3.))*maxrad ~ 2.155*maxrad
+  // where 2./sqrt(3.)*maxrad is the circumscribed circle of the triangle
+  double const init_cutoff = 2.155*maxrad;
+  for (int i=0; i<3; ++i) {
+    sublo[i] = domain->sublo[i]+init_cutoff;
+    subhi[i] = domain->subhi[i]-init_cutoff;
   }
+
+  BoundingBox init_config_bbox(ins_region->extent_xlo+init_cutoff,ins_region->extent_xhi-init_cutoff,
+                               ins_region->extent_ylo+init_cutoff,ins_region->extent_yhi-init_cutoff,
+                               ins_region->extent_zlo+init_cutoff,ins_region->extent_zhi-init_cutoff);
+  init_config_bbox.shrinkToSubbox(sublo,subhi);
+  init_config_bbox.getCenter(x_init);
+
+  if (!init_config_bbox.hasVolume()) {
+    // no insertion volume on this subdomain
+    is_inserter = false;
+  } else if (!init_config_bbox.isInside(x_init) ||
+             !ins_region->match_shrinkby_cut(x_init, init_cutoff)) {
+    bool const subdomain_flag(true);
+    ins_region->generate_random_shrinkby_cut(x_init,init_cutoff,subdomain_flag);
+  }
+
   neighlist.reset();
   neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -180,41 +201,45 @@ void FixInsertPackDense::post_create()
 void FixInsertPackDense::pre_exchange()
 {
   // this fix should only run exactly once
-  if(insertion_done) return;
+  if (insertion_done) return;
   insertion_done = true;
 
   prepare_insertion();
 
-  // only proc 0 writes general output
-  if(comm->me==0){
-    printf("fix insert/pack/dense will attempt to insert approximately %d particles in region %s\n",
-           n_insert_estim,idregion);
-    printf("maximum volume fraction: %f\n",max_volfrac);
-    printf("target volume fraction:  %f\n",target_volfrac);
+  if (screen) {
+    // only proc 0 writes general output
+    if (comm->me == 0) {
+      fprintf(screen,"fix insert/pack/dense will attempt to insert approximately %d particles in region %s\n",
+              n_insert_estim,idregion);
+      fprintf(screen,"maximum volume fraction: %f\n",max_volfrac);
+      fprintf(screen,"target volume fraction:  %f\n",target_volfrac);
+    }
+
+    fprintf(screen,"process %d : attempting to insert approximately %d particles\n",
+         comm->me,n_insert_estim_local);
   }
 
-  printf("process %d : attempting to insert approximately %d particles\n",
-         comm->me,n_insert_estim_local);
-
   // insert first three particles to initialize the algorithm
-  insert_first_particles();
+  if (is_inserter) {
+    insert_first_particles();
 
-  // insert_next_particle() returns false
-  // if algorithm terminates
-  while(!frontSpheres.empty()) {
-    if(!(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local))){
-      printf("pti_list.size() %lu | n_inserted_local %d\n",fix_distribution->pti_list.size(),n_inserted_local);
-    }
-    assert(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local));
-    handle_next_front_sphere();
+    // insert_next_particle() returns false
+    // if algorithm terminates
+    while(!frontSpheres.empty()) {
+      if (screen && !(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local))) {
+        fprintf(screen, "pti_list.size() %lu | n_inserted_local %d\n",fix_distribution->pti_list.size(),n_inserted_local);
+      }
+      assert(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local));
+      handle_next_front_sphere();
 
-    int const n_write = n_insert_estim_local/10;
-    int static n_next_write = n_write;
-    if(n_inserted_local > n_next_write){
-      double percent = static_cast<double>(n_inserted_local)/static_cast<double>(n_insert_estim_local)*100;
-      printf("process %d : %2.0f%% done, inserted %d/%d particles\n",
-             comm->me,percent,n_inserted_local,n_insert_estim_local);
-      n_next_write += n_write;
+      int const n_write = n_insert_estim_local/10;
+      int static n_next_write = n_write;
+      if (n_inserted_local > n_next_write) {
+        double percent = static_cast<double>(n_inserted_local)/static_cast<double>(n_insert_estim_local)*100;
+        if (screen) fprintf(screen,"process %d : %2.0f%% done, inserted %d/%d particles\n",
+                            comm->me,percent,n_inserted_local,n_insert_estim_local);
+        n_next_write += n_write;
+      }
     }
   }
 
@@ -222,11 +247,9 @@ void FixInsertPackDense::pre_exchange()
   fix_distribution->pre_insert();
   fix_distribution->insert(n_inserted_local);
 
-  if (atom->tag_enable)
-  {
+  if (atom->tag_enable) {
     atom->tag_extend();
-    if (atom->map_style)
-    {
+    if (atom->map_style) {
       atom->nghost = 0;
       atom->map_init();
       atom->map_set();
@@ -238,16 +261,19 @@ void FixInsertPackDense::pre_exchange()
   n_inserted = n_inserted_local;
   MPI_Sum_Scalar(n_inserted,world);
 
-  double const volfrac_inserted
-    = target_volfrac*static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim);
-  if(comm->me==0){
-    double percent = static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim)*100;
-    printf("inserted %d of %d particles (%4.2f%%)\n",n_inserted,n_insert_estim,percent);
-    printf("volume fracton: %f\n",volfrac_inserted);
+  if (comm->me == 0 && screen) {
+    double percent = static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim)*100.;
+    fprintf(screen,"inserted %d of %d particles (%4.2f%%)\n",n_inserted,n_insert_estim,percent);
+    double const volfrac_inserted
+        = target_volfrac*static_cast<double>(n_inserted)/static_cast<double>(n_insert_estim);
+    fprintf(screen,"volume fracton: %f\n",volfrac_inserted);
   }
 }
 
-void FixInsertPackDense::prepare_insertion(){
+/* ---------------------------------------------------------------------- */
+
+void FixInsertPackDense::prepare_insertion()
+{
   /*
    * would need type exclusion here
    * to properly work with multi-level coarse graining
@@ -255,28 +281,31 @@ void FixInsertPackDense::prepare_insertion(){
   // need to iterate twice: first time to find largest radius, second
   // time to compute volume and actually insert already present
   // particles into region neighbor list with now appropriate bin size
-  double rad_max_present = 0.;
-  for(int i=0;i<atom->nlocal;i++){
-    if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
-        || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0){
-      if(atom->radius[i] > rad_max_present) rad_max_present = atom->radius[i];
+  double volume_present_local = 0.;
+
+  if (is_inserter) {
+    double rad_max_present = 0.;
+    for(int i=0;i<atom->nlocal;i++){
+      if (ins_region->match_expandby_cut(atom->x[i],atom->radius[i])) {
+        if(atom->radius[i] > rad_max_present) rad_max_present = atom->radius[i];
+      }
     }
-  }
-  rad_max_present *= radius_factor;
-  if(rad_max_present > fix_distribution->max_rad()){
-    neighlist.reset();
-    neighlist.setBoundingBox(ins_bbox,rad_max_present);
+    rad_max_present *= radius_factor;
+
+    if (rad_max_present > fix_distribution->max_rad()) {
+      neighlist.reset();
+      neighlist.setBoundingBox(ins_bbox,rad_max_present);
+    }
+
+    for (int i=0;i<atom->nlocal;i++) {
+      if (ins_region->match_expandby_cut(atom->x[i],atom->radius[i])) {
+        neighlist.insert(atom->x[i],atom->radius[i]);
+        volume_present_local += MathConst::MY_4PI3*atom->radius[i]*atom->radius[i]*atom->radius[i];
+      }
+    }
   }
 
-  double volume_present_local = 0.;
-  for(int i=0;i<atom->nlocal;i++){
-    if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
-        || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0){
-      neighlist.insert(atom->x[i],atom->radius[i]);
-      volume_present_local += MathConst::MY_PI*pow(atom->radius[i],3)*4./3.;
-    }
-  }
-  double volume_present = 0.;
+  double volume_present = volume_present_local;
   MPI_Sum_Scalar(volume_present,world);
 
   // estimate # of particles to insert
@@ -287,19 +316,25 @@ void FixInsertPackDense::prepare_insertion(){
 
   double const v_part_ave = fix_distribution->vol_expect();
   n_insert_estim = floor((region_volume-volume_present)*target_volfrac/v_part_ave);
+
+  if (!is_inserter) {
+    n_insert_estim_local = 0;
+    return;
+  }
+
   n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/v_part_ave);
 
   // check if starting point does not conflict with any pre-existing particles
-  double const maxrad_init = 3.*maxrad;
-  if(neighlist.hasOverlap(x_init,maxrad_init)){
+  double const maxrad_init = 2.155*maxrad;
+  if (neighlist.hasOverlap(x_init,maxrad_init)) {
     int const nAttemptMax = 100;
     int nAttempt = 0;
-    for(nAttempt=0;nAttempt<nAttemptMax;nAttempt++){
+    for (nAttempt=0;nAttempt<nAttemptMax;nAttempt++) {
       ins_region->generate_random_shrinkby_cut(x_init,maxrad_init,true);
-      if(!neighlist.hasOverlap(x_init,maxrad_init))
+      if (!neighlist.hasOverlap(x_init,maxrad_init))
         break;
     }
-    if(nAttempt == nAttemptMax){
+    if (nAttempt == nAttemptMax) {
       char errmsg[500];
       sprintf(errmsg,"could not find suitable point to start insertion on processor %d",comm->me);
       error->one(FLERR,errmsg);
@@ -309,6 +344,8 @@ void FixInsertPackDense::prepare_insertion(){
   // calculate distance field
   distfield.build(ins_region,ins_bbox,fix_distribution->max_rad()*radius_factor);
 }
+
+/* ---------------------------------------------------------------------- */
 
 void FixInsertPackDense::insert_first_particles()
 {
@@ -346,7 +383,7 @@ void FixInsertPackDense::handle_next_front_sphere()
 {
   Particle current = frontSpheres.front();
   RegionNeighborList::ParticleBin *particles(0);
-  Particle *newsphere = 0; // last inserted sphere
+  Particle *newsphere = NULL; // last inserted sphere
 
   int nValid = 1000;
   while(nValid > 1){
@@ -440,7 +477,7 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   MathExtraLiggghts::random_unit_quat(random,rotquat);
   MathExtraLiggghts::vec_quat_rotate(x2,rotquat);
   MathExtraLiggghts::vec_quat_rotate(x3,rotquat);
-  
+
   // then, compute COM & move COM to origin
   double com[3];
   for(int i=0;i<3;i++)
@@ -449,9 +486,6 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   MathExtra::sub3(x1,com,x1);
   MathExtra::sub3(x2,com,x2);
   MathExtra::sub3(x3,com,x3);
-
-  // maybe, at some point in the future, implement random orientation
-  // of initial packing
 
   // then, move to starting point & write to PTI
   MathExtra::add3(x1,x_init,p1->x_ins[0]);
@@ -585,10 +619,10 @@ bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
   if(distfield.isInside(p.x) && !distfield.isInBoundary(p.x))
     return true;
 
-  return ins_region->inside(p.x[0],p.x[1],p.x[2])
-    && ins_bbox.isInside(p.x)
-    && ins_region->surface_interior(p.x,p.radius) == 0;
+  return ins_bbox.isInside(p.x) && ins_region->match_shrinkby_cut(p.x,p.radius);
 }
+
+/* ---------------------------------------------------------------------- */
 
 bool FixInsertPackDense::candidate_point_is_valid(Particle &p)
 {
