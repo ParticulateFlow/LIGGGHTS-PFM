@@ -7,7 +7,7 @@
 
 :line
 
-3. Commands :h3
+4. Contact models :h3
 
 This section describes what granular models can be used along with
 "pair gran"_pair_gran.html and "fix wall/gran"_fix_wall_gran.html :
