@@ -58,8 +58,8 @@ source_suffix = '.rst'
 master_doc = 'Manual'
 
 # General information about the project.
-project = 'LIGGGHTS'
-copyright = ''
+project = 'LIGGGHTS Academic'
+copyright = '2018 JKU Linz, DCS Computing GmbH and Sandia Corporation'
 
 def get_liggghts_version():
     import os
