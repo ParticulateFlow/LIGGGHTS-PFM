@@ -175,72 +175,72 @@ END_RST -->
   4.3. "rolling_friction commands"_con_3 :b
   4.4. "tangential commands"_con_4 :ule,b
 "Packages"_Section_packages.html :l
-  4.1 "Standard packages"_pkg_1 :ulb,b
-  4.2 "User packages"_pkg_2 :ule,b
+  5.1 "Standard packages"_pkg_1 :ulb,b
+  5.2 "User packages"_pkg_2 :ule,b
 "Accelerating LAMMPS performance"_Section_accelerate.html :l
-  5.1 "Measuring performance"_acc_1 :ulb,b
-  5.2 "General strategies"_acc_2 :b
-  5.3 "Packages with optimized styles"_acc_3 :b
-  5.4 "OPT package"_acc_4 :b
-  5.5 "USER-OMP package"_acc_5 :b
-  5.6 "GPU package"_acc_6 :b
-  5.7 "USER-CUDA package"_acc_7 :b
-  5.8 "Comparison of GPU and USER-CUDA packages"_acc_8 :ule,b
+  6.1 "Measuring performance"_acc_1 :ulb,b
+  6.2 "General strategies"_acc_2 :b
+  6.3 "Packages with optimized styles"_acc_3 :b
+  6.4 "OPT package"_acc_4 :b
+  6.5 "USER-OMP package"_acc_5 :b
+  6.6 "GPU package"_acc_6 :b
+  6.7 "USER-CUDA package"_acc_7 :b
+  6.8 "Comparison of GPU and USER-CUDA packages"_acc_8 :ule,b
 "How-to discussions"_Section_howto.html :l
-  6.1 "Restarting a simulation"_howto_1 :ulb,b
-  6.2 "2d simulations"_howto_2 :b
-  6.3 "CHARMM and AMBER force fields"_howto_3 :b
-  6.4 "Running multiple simulations from one input script"_howto_4 :b
-  6.5 "Multi-replica simulations"_howto_5 :b
-  6.6 "Granular models"_howto_6 :b
-  6.7 "TIP3P water model"_howto_7 :b
-  6.8 "TIP4P water model"_howto_8 :b
-  6.9 "SPC water model"_howto_9 :b
-  6.10 "Coupling LAMMPS to other codes"_howto_10 :b
-  6.11 "Visualizing LAMMPS snapshots"_howto_11 :b
-  6.12 "Triclinic (non-orthogonal) simulation boxes"_howto_12 :b
-  6.13 "NEMD simulations"_howto_13 :b
-  6.14 "Finite-size spherical and aspherical particles"_howto_14 :b
-  6.15 "Output from LAMMPS (thermo, dumps, computes, fixes, variables)"_howto_15 :b
-  6.16 "Thermostatting, barostatting, and compute temperature"_howto_16 :b
-  6.17 "Walls"_howto_17 :b
-  6.18 "Elastic constants"_howto_18 :b
-  6.19 "Library interface to LAMMPS"_howto_19 :b
-  6.20 "Calculating thermal conductivity"_howto_20 :b
-  6.21 "Calculating viscosity"_howto_21 :ule,b
+  7.1 "Restarting a simulation"_howto_1 :ulb,b
+  7.2 "2d simulations"_howto_2 :b
+  7.3 "CHARMM and AMBER force fields"_howto_3 :b
+  7.4 "Running multiple simulations from one input script"_howto_4 :b
+  7.5 "Multi-replica simulations"_howto_5 :b
+  7.6 "Granular models"_howto_6 :b
+  7.7 "TIP3P water model"_howto_7 :b
+  7.8 "TIP4P water model"_howto_8 :b
+  7.9 "SPC water model"_howto_9 :b
+  7.10 "Coupling LAMMPS to other codes"_howto_10 :b
+  7.11 "Visualizing LAMMPS snapshots"_howto_11 :b
+  7.12 "Triclinic (non-orthogonal) simulation boxes"_howto_12 :b
+  7.13 "NEMD simulations"_howto_13 :b
+  7.14 "Finite-size spherical and aspherical particles"_howto_14 :b
+  7.15 "Output from LAMMPS (thermo, dumps, computes, fixes, variables)"_howto_15 :b
+  7.16 "Thermostatting, barostatting, and compute temperature"_howto_16 :b
+  7.17 "Walls"_howto_17 :b
+  7.18 "Elastic constants"_howto_18 :b
+  7.19 "Library interface to LAMMPS"_howto_19 :b
+  7.20 "Calculating thermal conductivity"_howto_20 :b
+  7.21 "Calculating viscosity"_howto_21 :ule,b
 "Example problems"_Section_example.html :l
 "Performance & scalability"_Section_perf.html :l
 "Additional tools"_Section_tools.html :l
 "Modifying & extending LAMMPS"_Section_modify.html :l
-  10.1 "Atom styles"_mod_1 :ulb,b
-  10.2 "Bond, angle, dihedral, improper potentials"_mod_2 :b
-  10.3 "Compute styles"_mod_3 :b
-  10.4 "Dump styles"_mod_4 :b
-  10.5 "Dump custom output options"_mod_5 :b
-  10.6 "Fix styles"_mod_6 :b
-  10.7 "Input script commands"_mod_7 :b
-  10.8 "Kspace computations"_mod_8 :b
-  10.9 "Minimization styles"_mod_9 :b
-  10.10 "Pairwise potentials"_mod_10 :b
-  10.11 "Region styles"_mod_11 :b
-  10.12 "Body styles"_mod_12 :b
-  10.13 "Thermodynamic output options"_mod_13 :b
-  10.14 "Variable options"_mod_14 :b
-  10.15 "Submitting new features for inclusion in LAMMPS"_mod_15 :ule,b
+  11.1 "Atom styles"_mod_1 :ulb,b
+  11.2 "Bond, angle, dihedral, improper potentials"_mod_2 :b
+  11.3 "Compute styles"_mod_3 :b
+  11.4 "Dump styles"_mod_4 :b
+  11.5 "Dump custom output options"_mod_5 :b
+  11.6 "Fix styles"_mod_6 :b
+  11.7 "Input script commands"_mod_7 :b
+  11.8 "Kspace computations"_mod_8 :b
+  11.9 "Minimization styles"_mod_9 :b
+  11.10 "Pairwise potentials"_mod_10 :b
+  11.11 "Region styles"_mod_11 :b
+  11.12 "Body styles"_mod_12 :b
+  11.13 "Thermodynamic output options"_mod_13 :b
+  11.14 "Variable options"_mod_14 :b
+  11.15 "Submitting new features for inclusion in LAMMPS"_mod_15 :ule,b
 "Python interface"_Section_python.html :l
-  11.1 "Building LAMMPS as a shared library"_py_1 :ulb,b
-  11.2 "Installing the Python wrapper into Python"_py_2 :b
-  11.3 "Extending Python with MPI to run in parallel"_py_3 :b
-  11.4 "Testing the Python-LAMMPS interface"_py_4 :b
-  11.5 "Using LAMMPS from Python"_py_5 :b
-  11.6 "Example Python scripts that use LAMMPS"_py_6 :ule,b
+  12.1 "Building LAMMPS as a shared library"_py_1 :ulb,b
+  12.2 "Installing the Python wrapper into Python"_py_2 :b
+  12.3 "Extending Python with MPI to run in parallel"_py_3 :b
+  12.4 "Testing the Python-LAMMPS interface"_py_4 :b
+  12.5 "Using LAMMPS from Python"_py_5 :b
+  12.6 "Example Python scripts that use LAMMPS"_py_6 :ule,b
 "Errors"_Section_errors.html :l
-  12.1 "Common problems"_err_1 :ulb,b
-  12.2 "Reporting bugs"_err_2 :b
-  12.3 "Error & warning messages"_err_3 :ule,b
+  13.1 "Common problems"_err_1 :ulb,b
+  13.2 "Reporting bugs"_err_2 :b
+  13.3 "Error & warning messages"_err_3 :ule,b
 "Future and history"_Section_history.html :l
-  13.1 "Coming attractions"_hist_1 :ulb,b
-  13.2 "Past versions"_hist_2 :ule,b
+  14.1 "Coming attractions"_hist_1 :ulb,b
+  14.2 "Past versions"_hist_2 :ule,b
 :ole
 
 :link(intro_1,Section_intro.html#intro_1)

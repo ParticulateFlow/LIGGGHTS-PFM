@@ -8,13 +8,13 @@ Section"_Section_accelerate.html :c
 
 :line
 
-4. Packages :h3
+5. Packages :h3
 
 This section gives a quick overview of the add-on packages that extend
 LAMMPS functionality.
 
-4.1 "Standard packages"_#pkg_1
-4.2 "User packages"_#pkg_2 :all(b)
+5.1 "Standard packages"_#pkg_1
+5.2 "User packages"_#pkg_2 :all(b)
 
 LAMMPS includes many optional packages, which are groups of files that
 enable a specific set of features.  For example, force fields for
@@ -34,7 +34,7 @@ packages, more details are provided.
 :line
 :line
 
-4.1 Standard packages :h4,link(pkg_1)
+5.1 Standard packages :h4,link(pkg_1)
 
 The current list of standard packages is as follows:
 
@@ -99,7 +99,7 @@ on how to build LAMMPS with both kinds of auxiliary libraries.
 :line
 :line
 
-4.2 User packages :h4,link(pkg_2)
+5.2 User packages :h4,link(pkg_2)
 
 The current list of user-contributed packages is as follows:
 

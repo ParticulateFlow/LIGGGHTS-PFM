@@ -14,14 +14,14 @@ This section describes what granular models can be used along with
 
 
 
-cohesion commands :link(con_1),h4
+4.1 cohesion commands :link(con_1),h4
 
 Click on the style itself for a full description:
 
 "sjkr"_gran_cohesion_sjkr.html,
 "sjkr2"_gran_cohesion_sjkr2.html :tb(c=4,ea=c)
 
-model commands :link(con_2),h4
+4.2 model commands :link(con_2),h4
 
 Click on the style itself for a full description:
 
@@ -30,7 +30,7 @@ Click on the style itself for a full description:
 "hooke"_gran_model_hooke.html,
 "hooke/stiffness"_gran_model_hooke_stiffness.html :tb(c=4,ea=c)
 
-rolling_friction commands :link(con_3),h4
+4.3 rolling_friction commands :link(con_3),h4
 
 Click on the style itself for a full description:
 
@@ -38,7 +38,7 @@ Click on the style itself for a full description:
 "epsd"_gran_rolling_friction_epsd.html,
 "epsd2"_gran_rolling_friction_epsd2.html :tb(c=4,ea=c)
 
-tangential commands :link(con_4),h4
+4.4 tangential commands :link(con_4),h4
 
 Click on the style itself for a full description:
 

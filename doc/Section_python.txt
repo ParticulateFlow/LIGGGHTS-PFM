@@ -6,17 +6,17 @@
 
 :line
 
-11. Python interface to LAMMPS :h3
+12. Python interface to LAMMPS :h3
 
 This section describes how to build and use LAMMPS via a Python
 interface.
 
-11.1 "Building LAMMPS as a shared library"_#py_1
-11.2 "Installing the Python wrapper into Python"_#py_2
-11.3 "Extending Python with MPI to run in parallel"_#py_3
-11.4 "Testing the Python-LAMMPS interface"_#py_4
-11.5 "Using LAMMPS from Python"_#py_5
-11.6 "Example Python scripts that use LAMMPS"_#py_6 :ul
+12.1 "Building LAMMPS as a shared library"_#py_1
+12.2 "Installing the Python wrapper into Python"_#py_2
+12.3 "Extending Python with MPI to run in parallel"_#py_3
+12.4 "Testing the Python-LAMMPS interface"_#py_4
+12.5 "Using LAMMPS from Python"_#py_5
+12.6 "Example Python scripts that use LAMMPS"_#py_6 :ul
 
 The LAMMPS distribution includes the file python/lammps.py which wraps
 the library interface to LAMMPS.  This file makes it is possible to
@@ -73,7 +73,7 @@ check which version of Python you have installed, by simply typing
 :line
 :line
 
-11.1 Building LAMMPS as a shared library :link(py_1),h4
+12.1 Building LAMMPS as a shared library :link(py_1),h4
 
 Instructions on how to build LAMMPS as a shared library are given in
 "Section_start 5"_Section_start.html#start_5.  A shared library is one
@@ -99,7 +99,7 @@ system.
 
 :line
 
-11.2 Installing the Python wrapper into Python :link(py_2),h4
+12.2 Installing the Python wrapper into Python :link(py_2),h4
 
 For Python to invoke LAMMPS, there are 2 files it needs to know about:
 
@@ -167,7 +167,7 @@ environment variable as described above.
 
 :line
 
-11.3 Extending Python with MPI to run in parallel :link(py_3),h4
+12.3 Extending Python with MPI to run in parallel :link(py_3),h4
 
 If you wish to run LAMMPS in parallel from Python, you need to extend
 your Python with an interface to MPI.  This also allows you to
@@ -258,7 +258,7 @@ the right one.
 
 :line
 
-11.4 Testing the Python-LAMMPS interface :link(py_4),h4
+12.4 Testing the Python-LAMMPS interface :link(py_4),h4
 
 To test if LAMMPS is callable from Python, launch Python interactively
 and type:
@@ -371,7 +371,7 @@ Python on a single processor, not in parallel.
 :line
 :line
 
-11.5 Using LAMMPS from Python :link(py_5),h4
+12.5 Using LAMMPS from Python :link(py_5),h4
 
 The Python interface to LAMMPS consists of a Python "lammps" module,
 the source code for which is in python/lammps.py, which creates a
@@ -572,7 +572,7 @@ Python script.  Isn't ctypes amazing? :l,ule
 :line
 :line
 
-11.6 Example Python scripts that use LAMMPS :link(py_6),h4
+12.6 Example Python scripts that use LAMMPS :link(py_6),h4
 
 These are the Python scripts included as demos in the python/examples
 directory of the LAMMPS distribution, to illustrate the kinds of

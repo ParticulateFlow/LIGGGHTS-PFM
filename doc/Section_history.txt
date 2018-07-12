@@ -8,19 +8,19 @@ Section"_Manual.html :c
 
 :line
 
-13. Future and history :h3
+14. Future and history :h3
 
 This section lists features we plan to add to LAMMPS, features of
 previous versions of LAMMPS, and features of other parallel molecular
 dynamics codes our group has distributed.
 
-13.1 "Coming attractions"_#hist_1
-13.2 "Past versions"_#hist_2 :all(b)
+14.1 "Coming attractions"_#hist_1
+14.2 "Past versions"_#hist_2 :all(b)
 
 :line
 :line
 
-13.1 Coming attractions :h4,link(hist_1)
+14.1 Coming attractions :h4,link(hist_1)
 
 The "Wish list link"_http://lammps.sandia.gov/future.html on the
 LAMMPS WWW page gives a list of features we are hoping to add to
@@ -34,7 +34,7 @@ your wish to the list.
 
 :line
 
-13.2 Past versions :h4,link(hist_2)
+14.2 Past versions :h4,link(hist_2)
 
 LAMMPS development began in the mid 1990s under a cooperative research
 & development agreement (CRADA) between two DOE labs (Sandia and LLNL)
