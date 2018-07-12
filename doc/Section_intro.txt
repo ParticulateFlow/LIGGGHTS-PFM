@@ -38,7 +38,7 @@ parallel machine that compiles C++ and supports the "MPI"_mpi
 message-passing library.  This includes distributed- or shared-memory
 parallel machines and Beowulf-style clusters.
 
-:link(mpi,http://www-unix.mcs.anl.gov/mpi)
+:link(mpi,http://www.mcs.anl.gov/research/projects/mpi)
 
 LAMMPS can model systems with only a few particles up to millions or
 billions.  See "Section_perf"_Section_perf.html for information on
