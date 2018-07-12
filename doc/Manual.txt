@@ -169,6 +169,11 @@ END_RST -->
   3.3 "Input script structure"_cmd_3 :b
   3.4 "Commands listed by category"_cmd_4 :b
   3.5 "Commands listed alphabetically"_cmd_5 :ule,b
+"Contact models"_Section_gran_models.html :l
+  4.1. "cohesion commands"_con_1 :ulb,b
+  4.2. "model commands"_con_2 :b
+  4.3. "rolling_friction commands"_con_3 :b
+  4.4. "tangential commands"_con_4 :ule,b
 "Packages"_Section_packages.html :l
   4.1 "Standard packages"_pkg_1 :ulb,b
   4.2 "User packages"_pkg_2 :ule,b
@@ -259,6 +264,11 @@ END_RST -->
 :link(cmd_3,Section_commands.html#cmd_3)
 :link(cmd_4,Section_commands.html#cmd_4)
 :link(cmd_5,Section_commands.html#cmd_5)
+
+:link(con_1,Section_gran_models.html#con_1)
+:link(con_2,Section_gran_models.html#con_2)
+:link(con_3,Section_gran_models.html#con_3)
+:link(con_4,Section_gran_models.html#con_4)
 
 :link(pkg_1,Section_packages.html#pkg_1)
 :link(pkg_2,Section_packages.html#pkg_2)
