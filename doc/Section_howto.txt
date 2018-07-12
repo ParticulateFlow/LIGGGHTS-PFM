@@ -1294,7 +1294,7 @@ to output and the kind of data they operate on and produce:
 "Dump file output"_#dump
 "Fixes that write output files"_#fixoutput
 "Computes that process output quantities"_#computeoutput
-"Fixes that process output quantities"_#fixoutput
+"Fixes that process output quantities"_#fixprocoutput
 "Computes that generate values to output"_#compute
 "Fixes that generate values to output"_#fix
 "Variables that generate values to output"_#variable
@@ -1468,7 +1468,7 @@ variable) and sums the quantities on a per-molecule basis.  It
 produces a global vector or array as output values which can be used
 as input to other output commands.
 
-Fixes that process output quantities :h5,link(fixoutput)
+Fixes that process output quantities :h5,link(fixprocoutput)
 
 The "fix ave/atom"_fix_ave_atom.html command performs time-averaging
 of per-atom vectors.  The per-atom quantities can be atom attributes
