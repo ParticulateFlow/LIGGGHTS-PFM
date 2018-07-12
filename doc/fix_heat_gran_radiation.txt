@@ -50,9 +50,9 @@ reflected in a random direction (see assumption: diffuse surface of particles).
 
 It is assumed that:
 
-the temperature within the particles is uniform. :l
+the temperature within the particles is uniform. :ulb,l
 emissivity is not wavelength-dependent :l
-particles have perfectly diffuse sufaces :l
+particles have perfectly diffuse sufaces :l,ule
 
 To make particles adiabatic (so they do not change the temperature due to this fix),
 set their thermal emissivity to 0.0.

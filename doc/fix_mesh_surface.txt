@@ -105,9 +105,9 @@ by removing duplicate elements.
 If the optional {element_exclusion_list} keyword is used in mode 'write', LIGGGHTS 
 will write a list of elements which 
 
-have more than the allowed 5 face neighbors per surface :l
+have more than the allowed 5 face neighbors per surface :ulb,l
 have an angle below 0.0181185 degrees :l
-are duplicate elements :l
+are duplicate elements :l,ule
 
 to a file. The 'read' mode can then use this file and will skip the elements in 
 the list. However, you can also manually write such a file to exclude certain elements.
@@ -136,19 +136,19 @@ to give you as much information about the issue as possible.
 
 Warning messages:
 
-There should be no angle < 0.5&deg; in any element :l
+There should be no angle < 0.5&deg; in any element :ulb,l
 The number of neighbor elements should be <= 5 for any element :l
-All nodes should be within the simlation box :l
+All nodes should be within the simlation box :l,ule
 
 If any of the obove rules is not fulfilled, a warning is generated. Keyword
 {verbose} controls if details about the warning are written to the screen.
 
 Error messages:
 
-The {curvature} must not be larger than any angle in any mesh element :l
+The {curvature} must not be larger than any angle in any mesh element :ulb,l
 Mesh elements must not be duplicate :l
 Coplanar mesh elements that share an edge must not overlap :l
-Mesh elements must not leave the simulation domain :l
+Mesh elements must not leave the simulation domain :l,ule
 
 If any of the obove rules is not fulfilled, an error is generated and 
 LIGGGHTS halts. Error messages are always {verbose}. 
