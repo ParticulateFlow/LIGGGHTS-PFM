@@ -92,7 +92,7 @@ contributing to the average bond-order cannot overlap, i.e. Nfreq >
 
 For example, if Nevery=2, Nrepeat=6, and Nfreq=100, then bond-order values on
 timesteps 90,92,94,96,98,100 will be used to compute the average bond-order
- for the species analysis output on timestep 100.  
+for the species analysis output on timestep 100.  
 
 :line
 
