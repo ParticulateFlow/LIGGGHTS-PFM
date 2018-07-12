@@ -18,7 +18,15 @@
 :line
 
 LIGGGHTS Documentation :c,h1
-Academic version 18.03 :c
+<!-- HTML_ONLY -->
+Academic version :c
+<!-- END_HTML_ONLY -->
+
+<!-- RST
+
+|ProjectVersion|
+
+END_RST -->
 
 :line
 :c,image(Portfolio_LIGGGHTS.png)
