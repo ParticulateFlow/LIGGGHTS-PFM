@@ -33,7 +33,7 @@ m (integer >=1)
 K1 (energy)
 n1 (integer >= 0)
 d1 (degrees)
-....
+\[...\]
 Km (energy)
 nm (integer >= 0)
 dm (degrees) :ul
