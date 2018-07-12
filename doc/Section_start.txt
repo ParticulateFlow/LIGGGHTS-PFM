@@ -599,7 +599,7 @@ or
 make no-manybody
 make g++ :pre
 
-IMPORTANT NOTE: You should NOT include/exclude packages and build
+NOTE: You should NOT include/exclude packages and build
 LAMMPS in a single make command by using multiple targets, e.g. make
 yes-colloid g++.  This is because the make procedure creates a list of
 source files that will be out-of-date for the build if the package
@@ -629,7 +629,7 @@ no-standard", "make yes-user", "make no-user", "make yes-all" or "make
 no-all" to include/exclude various sets of packages.  Type "make
 package" to see the all of the package-related make options.
 
-IMPORTANT NOTE: Inclusion/exclusion of a package works by simply
+NOTE: Inclusion/exclusion of a package works by simply
 moving files back and forth between the main src directory and
 sub-directories with the package name (e.g. src/KSPACE, src/USER-ATC),
 so that the files are seen or not seen when LAMMPS is built.  After
