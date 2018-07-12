@@ -99,7 +99,6 @@ public:
   double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *partP_, *Massterm, *reactionHeat_;
   double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
 
-
   // coarse_graining factor
   double cg_;
 
@@ -136,7 +135,9 @@ public:
   class FixPropertyAtom *fix_totalMole_;
   double *molarConc_;
 
+  class FixPropertyAtom *fix_dY_;
   bool dY_previous3, dY_previous2;
+  double **dY;
 
 
 };
