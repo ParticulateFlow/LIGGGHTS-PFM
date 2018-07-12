@@ -371,10 +371,10 @@ hardware. :l,ule
 
 NOTE:
   discuss 3 precisions
-    if change, also have to re-link with LAMMPS
-  always use newton off
-  expt with differing numbers of CPUs vs GPU - can't tell what is fastest
-  give command line switches in examples
+    if change, also have to re-link with LAMMPS;
+    always use newton off;
+    expt with differing numbers of CPUs vs GPU - can't tell what is fastest;
+    give command line switches in examples;
 
 
 I am not very clear to the meaning of  "Max Mem / Proc"
