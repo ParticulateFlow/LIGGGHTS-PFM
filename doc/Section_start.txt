@@ -22,7 +22,6 @@ experienced users.
 2.9 "Tips for users of previous versions"_#start_9 :all(b)
 
 :line
-:line
 
 2.1 What's in the LAMMPS distribution :h4,link(start_1)
 
@@ -861,7 +860,7 @@ setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/home/sjplimp/lammps/src :pre
 
 Calling the LAMMPS library :h5
 
-Either flavor of library (static or shared0 allows one or more LAMMPS
+Either flavor of library (static or shared) allows one or more LAMMPS
 objects to be instantiated from the calling program.
 
 When used from a C++ program, all of LAMMPS is wrapped in a LAMMPS_NS
@@ -1102,7 +1101,7 @@ replica runs on on one or a few processors.  Note that with MPI
 installed on a machine (e.g. your desktop), you can run on more
 (virtual) processors than you have physical processors.
 
-To run multiple independent simulatoins from one input script, using
+To run multiple independent simulations from one input script, using
 multiple partitions, see "Section_howto 4"_Section_howto.html#howto_4
 of the manual.  World- and universe-style "variables"_variable.html
 are useful in this context.
@@ -1131,7 +1130,7 @@ sub-directory (-pscreen replica_files/screen).  If this option is not
 used the screen file for partition N is screen.N or whatever is
 specified by the -screen command-line option.
 
--restart restartfile datafile :pre 
+-restart restartfile datafile :pre
 
 Convert the restart file into a data file and immediately exit.  This
 is the same operation as if the following 2-line input script were
