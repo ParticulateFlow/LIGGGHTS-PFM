@@ -6,7 +6,7 @@ This document describes how to build the [Sphinx-based](http://www.sphinx-doc.or
 
 ### Python 3
 
-The [LAMMPS Documentation Utilities](https://github.com/rbberger/lammps-doc-utils), which are discussed below, require Python 3. Thus, the LIGGGHTS documentation requires [Python 3](https://docs.python.org/3/). Apart from Python 3 itself, [pip](https://pypi.python.org/pypi/pip) is required to install some of the prerequisites.
+The [LAMMPS Documentation Utilities](https://github.com/ParticulateFlow/lammps-doc-utils), which are discussed below, require Python 3. Thus, the LIGGGHTS documentation requires [Python 3](https://docs.python.org/3/). Apart from Python 3 itself, [pip](https://pypi.python.org/pypi/pip) is required to install some of the prerequisites.
 
 On an Ubuntu system run the following command to install *pip* and all its dependencies.
 
@@ -25,12 +25,12 @@ Note that `pip` defaults on most systems to *pip* of Python 2, thus `pip3` is ex
 
 ### LAMMPS Documentation Utilities
 
-The [Sphinx-based](http://www.sphinx-doc.org) documentation of LIGGGHTS is based on the [LAMMPS Documentation Utilities](https://github.com/rbberger/lammps-doc-utils).
+The [Sphinx-based](http://www.sphinx-doc.org) documentation of LIGGGHTS is based on the [LAMMPS Documentation Utilities](https://github.com/ParticulateFlow/lammps-doc-utils).
 These contain the tool *txt2rst*, which converts the files in the plain-text, LAMMPS documentation format to Sphinx ReStructured Text.
 
-First clone the [repository](https://github.com/rbberger/lammps-doc-utils), and then run the installer
+First clone the [repository](https://github.com/ParticulateFlow/lammps-doc-utils), and then run the installer
 
-    git clone https://github.com/rbberger/lammps-doc-utils
+    git clone https://github.com/ParticulateFlow/lammps-doc-utils
     cd lammps-doc-utils
     python3 setup.py install
 
