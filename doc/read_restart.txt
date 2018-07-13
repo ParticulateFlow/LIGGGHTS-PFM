@@ -20,8 +20,6 @@ read_restart save.10000
 read_restart restart.*
 read_restart poly.*.% :pre
 
-:pre
-
 [Description:]
 
 Read in a previously saved simulation from a restart file.  This
