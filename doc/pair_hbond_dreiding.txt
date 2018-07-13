@@ -103,12 +103,12 @@ pairs for atoms which act as joint donors/acceptors need to be
 specified; all other type pairs are assumed to be inactive.
  
 IMPORTANT NOTE: A "pair_coeff"_pair_coeff.html command can be
-speficied multiple times for the same donor/acceptor type pair.  This
+specified multiple times for the same donor/acceptor type pair.  This
 enables multiple hydrogen types to be assigned to the same
 donor/acceptor type pair.  For other pair_styles, if the pair_coeff
 command is re-used for the same I.J type pair, the settings for that
 type pair are overwritten.  For the hydrogen bond potentials this is
-not the case; the settings are cummulative.  This means the only way
+not the case; the settings are cumulative.  This means the only way
 to turn off a previous setting, is to re-use the pair_style command
 and start over.
 
@@ -140,8 +140,8 @@ angle cutoff (degrees) :ul
 A single hydrogen atom type K can be specified, or a wild-card
 asterisk can be used in place of or in conjunction with the K
 arguments to select multiple types as hydrogens.  This takes the form
-"*" or "*n" or "n*" or "m*n".  See the "pair_coeff"_pair_coeff command
-doc page for details.
+"*" or "*n" or "n*" or "m*n".  See the "pair_coeff"_pair_coeff.html
+command doc page for details.
 
 If the donor flag is {i}, then the atom of type I in the pair_coeff
 command is treated as the donor, and J is the acceptor.  If the donor

@@ -46,7 +46,7 @@ The BOP potential consists of three terms:
 
 where phi_ij(r_ij) is a short-range two-body function representing the
 repulsion between a pair of ion cores, beta_(sigma,ij)(r_ij) and
-beta_(sigma,ij)(r_ij) are respectively sigma and pi bond ingtegrals,
+beta_(sigma,ij)(r_ij) are respectively sigma and pi bond integrals,
 THETA_(sigma,ij) and THETA_(pi,ij) are sigma and pi bond-orders, and
 U_prom is the promotion energy for sp-valent systems.
 
