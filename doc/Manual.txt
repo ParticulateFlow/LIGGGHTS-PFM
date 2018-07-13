@@ -32,6 +32,31 @@ END_RST -->
 :c,image(Portfolio_LIGGGHTS.png)
 :line
 
+<!-- HTML_ONLY -->
+NOTE:
+
+This is an academic adaptation of the LIGGGHTS software package, released by the
+Department of Particulate Flow Modelling at "Johannes Kepler University
+Linz"_http://www.jku.at, Austria.
+This offering is not approved or endorsed by DCS Computing GmbH, the producer of
+the LIGGGHTS&reg; and CFDEM&reg;coupling software and owner of the LIGGGHTS
+and CFDEM&reg; trade marks.
+<!-- END_HTML_ONLY -->
+
+<!-- RST
+
+.. note::
+
+   This is an academic adaptation of the LIGGGHTS software package, released by
+   the Department of Particulate Flow Modelling at `Johannes Kepler University
+   Linz <http://www.jku.at>`_, Austria.
+   This offering is not approved or endorsed by DCS Computing GmbH, the producer
+   of the LIGGGHTS\ |reg| and CFDEM\ |reg|\ coupling software and owner of the
+   LIGGGHTS and CFDEM\ |reg| trade marks.
+
+.. |reg|    unicode:: U+000AE .. REGISTERED SIGN
+
+END_RST -->
 
 LIGGGHTS stands for LAMMPS Improved for General Granular and Granular 
 Heat Transfer Simulations. It is part of the "CFDEMproject"_liws.
