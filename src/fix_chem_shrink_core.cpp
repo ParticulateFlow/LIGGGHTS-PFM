@@ -734,7 +734,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 {
     double kch2_ = 0.0;
     kch2_ = xA_[i] + xC_[i];
-    if (screen)
+    if (screenflag_ && screen)
         fprintf(screen, "xA_: %f, xC_: %f, kch2_: %f\n", xA_[1000],xC_[1000],kch2_);
 
     for (int j = 0; j < layers_; j++)
@@ -812,7 +812,7 @@ void FixChemShrinkCore::getB(int i)
     }
 
     // calculation of diffusion term
-    if (molecularDiffusion_[i] == 0.0)
+    if (molecularDiffusion_[i] < SMALL)
     {
         for (int layer = 0; layer > layers_; layer++)
             Bterm[i][layer] = 0.0;
@@ -828,9 +828,9 @@ void FixChemShrinkCore::getB(int i)
 
     if (screenflag_ && screen)
     {
-        fprintf(screen, "Bterm layer 1: %f ,",Bterm[i][0]);
-        fprintf(screen, "Bterm layer 2: %f ,",Bterm[i][1]);
-        fprintf(screen, "Bterm layer 3: %f \n",Bterm[i][2]);
+        fprintf(screen, "Bterm layer 1: %f ,",Bterm[1000][0]);
+        fprintf(screen, "Bterm layer 2: %f ,",Bterm[1000][1]);
+        fprintf(screen, "Bterm layer 3: %f \n",Bterm[1000][2]);
     }
 }
 
@@ -850,8 +850,13 @@ void FixChemShrinkCore::getMassT(int i)
 
     Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
 
-    Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)) + SMALL;
-    Massterm[i] = 1.0/Massterm[i];
+    if (molecularDiffusion_[i] < SMALL)
+        Massterm[i] = 0.0;
+    else
+    {
+        Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)) + SMALL;
+        Massterm[i] = 1.0/Massterm[i];
+    }
 
     if (screenflag_ && screen)
         fprintf(screen, "Schmidt number: %f, molecularDiffusion: %6.15f, NuField: %6.15f \n",Sc_[0],molecularDiffusion_[0],nuf_[0]);
@@ -865,6 +870,9 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     double W = 0.;
     //double dY[nmaxlayers_] = {0.};
 
+    if (partP_[i] < SMALL)
+        partP_[i] = 1.0;
+
     if (layers_ == nmaxlayers_)
     {
         // including reaction resistance and diffusion coeff terms
@@ -876,7 +884,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
                 -   (Aterm[i][1]*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[0]))/W;
 
         if (dY[i][2] < 1e-10)
-            fprintf(screen, "Aterm: %f %f %f, Bterm: %f %f %f, Massterm: %f %f %f, x0: %f , x0_eq: %f %f %f",Aterm[i][0],Aterm[i][1],Aterm[i][2],Bterm[i][0],Bterm[i][1],Bterm[i][2]
+            fprintf(screen, "Aterm: %f %f %f, Bterm: %f %f %f, Massterm: %f, x0: %f , x0_eq: %f %f %f",Aterm[i][0],Aterm[i][1],Aterm[i][2],Bterm[i][0],Bterm[i][1],Bterm[i][2]
                     ,Massterm[i],xA_[i],x0_eq_[0],x0_eq_[1],x0_eq_[2]);
 
         if (dY[i][2] < 0.0)
