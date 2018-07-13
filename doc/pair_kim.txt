@@ -104,16 +104,16 @@ specified in the Makefile.KIM_Config file.  :olb,l
 Set up the Makefile.KIM_Config file :l
 
    (a) Copy the file Makefile.KIM_Config.example to Makefile.KIM_Config
-       For example, if you untarred the `openkim-api-vX.X.X.tgz' tarball in
+       For example, if you untarred the 'openkim-api-vX.X.X.tgz' tarball in
        your home directory, you would do: :pre
 
        % cd $HOME/openkim-api-vX.X.X
        % cp Makefile.KIM_Config.example Makefile.KIM_Config :pre
 
-       The `%' symbol represents the bash sell prompt and should not be typed.
+       The '%' symbol represents the bash sell prompt and should not be typed.
        :pre
 
-       (Above `vX.X.X' represents the current release number.) :pre
+       (Above 'vX.X.X' represents the current release number.) :pre
 
    (b) Edit the file Makefile.KIM_Config and set the appropriate value for the
        KIM_DIR variable.  This must expand to an absolute path.  Using the same
@@ -131,32 +131,32 @@ Set up the Makefile.KIM_Config file :l
        If these lines are commented out, defaults will be provided by the
        openkim-api make system. :pre
 
-   (d) Set the value of KIM_COMPILERSUITE.  Possible values are `GCC' and
-       `INTEL'. :pre
+   (d) Set the value of KIM_COMPILERSUITE.  Possible values are 'GCC' and
+       'INTEL'. :pre
 
        KIM_COMPILERSUITE = GCC :pre
 
-   (e) Set the value of KIM_SYSTEMLINKER. Possible values are `linux',
-       `freebsd', and `darwin'. :pre
+   (e) Set the value of KIM_SYSTEMLINKER. Possible values are 'linux',
+       'freebsd', and 'darwin'. :pre
 
        KIM_SYSTEMLINKER = linux :pre
 
-   (f) Set the value of KIM_SYSTEMARCH.  Possible values are `32bit' and
-       `64bit'. :pre
+   (f) Set the value of KIM_SYSTEMARCH.  Possible values are '32bit' and
+       '64bit'. :pre
 
        KIM_SYSTEMARCH = 64bit :pre
 
-   (g) Set the value of KIM_LINK.  Possible values are `dynamic-load',
-       `dynamic-link', and `static-link'. :pre
+   (g) Set the value of KIM_LINK.  Possible values are 'dynamic-load',
+       'dynamic-link', and 'static-link'. :pre
 
        KIM_LINK = dynamic-load :pre
 
-       `dynamic-load' is the preferred option. (Unless performance or
+       'dynamic-load' is the preferred option. (Unless performance or
        other issues require it, you should use dynamic-load.)
-       `dynamic-link' is like `dynamic-load' but does not use the dl.h
+       'dynamic-link' is like 'dynamic-load' but does not use the dl.h
        library.  This option requires a more complicated Makefile
        process, but may improve computation time in some instances.
-       `static-link' only works with ONE Model and AT MOST ONE Model
+       'static-link' only works with ONE Model and AT MOST ONE Model
        Driver (in order to avoid the possibility of symbol
        clashes). :pre
 
@@ -199,7 +199,7 @@ appropriate value: :l
    % export KD=$HOME/openkim-api-vX.X.X :pre
 
 To compile the package, including the provided examples, change to the
-$KD directory and execute `make examples' and then `make': :l
+$KD directory and execute 'make examples' and then 'make': :l
 
    % cd $KD
    % make examples
@@ -209,25 +209,25 @@ $KD directory and execute `make examples' and then `make': :l
      routine library.  The targets defined by the Makefile in this directory
      include: :pre
 
-       `make'                -- compiles the API and all Models and Tests
-       `make all'            -- same as `make'
-       `make clean'          -- will remove appropriate .o, .mod, .a, .so and
+       'make'                -- compiles the API and all Models and Tests
+       'make all'            -- same as 'make'
+       'make clean'          -- will remove appropriate .o, .mod, .a, .so and
                                 executable files
-       `make install'        -- install files to `/usr/local/lib' by default
-       `make uninstall'      -- delete files installed by `make install'
-       `make openkim-api'    -- compiles only the API
-       `make examples'       -- copies examples into the appropriate
+       'make install'        -- install files to '/usr/local/lib' by default
+       'make uninstall'      -- delete files installed by 'make install'
+       'make openkim-api'    -- compiles only the API
+       'make examples'       -- copies examples into the appropriate
                                 directories (no overwrite)
-       `make examples-force' -- copies examples into the appropriate
+       'make examples-force' -- copies examples into the appropriate
                                 directories (overwrite)
-       `make examples-clean' -- remove all examples from the MODEL_DRIVERS,
+       'make examples-clean' -- remove all examples from the MODEL_DRIVERS,
                                 MODELS, and TESTS directories. :pre
 
 Verify that the compilation was successful by running a Test. :l
 
    The provided example Tests read in the name of a Model (or Models)
    which they use to perform their calculations.  For most Tests the
-   name of the Model can be piped in using an `echo' command.  For
+   name of the Model can be piped in using an 'echo' command.  For
    example, the following Fortran 90 Test reads in one Model: :pre
 
    % cd $KD/TESTs/test_Ar_free_cluster_CLUSTER_F90
