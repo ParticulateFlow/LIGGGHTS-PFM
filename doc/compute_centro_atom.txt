@@ -38,7 +38,7 @@ This parameter is computed using the following formula from
 
 :c,image(Eqs/centro_symmetry.jpg)
 
-where the {N} nearest neighbors or each atom are identified and Ri and
+where the {N} nearest neighbors of each atom are identified and Ri and
 Ri+N/2 are vectors from the central atom to a particular pair of
 nearest neighbors.  There are N*(N-1)/2 possible neighbor pairs that
 can contribute to this formula.  The quantity in the sum is computed
