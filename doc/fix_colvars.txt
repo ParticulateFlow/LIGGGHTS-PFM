@@ -32,7 +32,7 @@ fix abf all colvars colvars.inp tstat 1 :pre
 [Description:]
 
 This fix interfaces LAMMPS to a "collective variables" or "colvars"
-module library which allows to calculate potentials of mean force
+library which allows to calculate potentials of mean force
 (PMFs) for any set of colvars, using different sampling methods:
 currently implemented are the Adaptive Biasing Force (ABF) method,
 metadynamics, Steered Molecular Dynamics (SMD) and Umbrella Sampling
@@ -61,7 +61,7 @@ always apply to the entire system and there can only be one instance
 of the colvars fix at a time. The colvars fix will only communicate
 the minimum information necessary and the colvars library supports
 multiple, completely independent collective variables, so there is
-no restriction to functionaliry by limiting the number of colvars fixes.
+no restriction to functionality by limiting the number of colvars fixes.
 
 The {input} keyword allows to specify a state file that would contain
 the restart information required in order to continue a calculation from
@@ -102,7 +102,7 @@ output"_thermo_style.html.
 
 This fix computes a global scalar which can be accessed by various
 "output commands"_Section_howto.html#howto_15.  The scalar is the
-cummulative energy change due to this fix.  The scalar value
+cumulative energy change due to this fix.  The scalar value
 calculated by this fix is "extensive".
 
 [Restrictions:]

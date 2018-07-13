@@ -122,20 +122,20 @@ adjusted independently.  This is similar to a recursive bisectioning
 bisectioning take advantage of information from neighboring cuts if
 possible, as well as counts of particles at the bounds on either side
 of each cuts, which themselves were cuts in previous iterations.  The
-latter is used to infer a density of pariticles near each of the
+latter is used to infer a density of particles near each of the
 current cuts.  At each iteration, the count of particles on either
 side of each plane is tallied.  If the counts do not match the target
 value for the plane, the position of the cut is adjusted based on the
 local density.  The low and high bounds are adjusted on each
 iteration, using new count information, so that they become closer
-together over time.  Thus as the recustion progresses, the count of
+together over time.  Thus as the recursion progresses, the count of
 particles on either side of the plane gets closer to the target value.
 
 The density-dependent part of this algorithm is often an advantage
 when you rebalance a system that is already nearly balanced.  It
 typically converges more quickly than the geometric bisectioning
 algorithm used by the "balance"_balance.html command.  However, if can
-be a disadvants if you attempt to rebalance a system that is far from
+be a disadvantage if you attempt to rebalance a system that is far from
 balanced, and converge more slowly.  In this case you probably want to
 use the "balance"_balance.html command before starting a run, so that
 you begin the run with a balanced system.
@@ -145,7 +145,7 @@ assigned, particles migrate to their new owning processor as part of
 the normal reneighboring procedure.
 
 IMPORTANT NOTE: At each rebalance operation, the RCB operation for
-each cutting plane (line in 2d) typcially starts with low and high
+each cutting plane (line in 2d) typically starts with low and high
 bounds separated by the extent of a processor's sub-domain in one
 dimension.  The size of this bracketing region shrinks based on the
 local density, as described above, which should typically be 1/2 or

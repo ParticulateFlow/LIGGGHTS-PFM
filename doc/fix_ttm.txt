@@ -12,21 +12,23 @@ fix ttm command :h3
 
 fix ID group-ID ttm seed C_e rho_e kappa_e gamma_p gamma_s v_0 Nx Ny Nz T_infile N T_outfile :pre
 
-ID, group-ID are documented in "fix"_fix.html command
-ttm = style name of this fix command
-seed = random number seed to use for white noise (positive integer)
-C_e  = electronic specific heat (energy/(electron*temperature) units)
-rho_e = electronic density (electrons/volume units)
-kappa_e = electronic thermal conductivity (energy/(time*distance*temperature) units)
-gamma_p = friction coefficient due to electron-ion interactions (mass/time units)
-gamma_s = friction coefficient due to electronic stopping (mass/time units)
-v_0 = electronic stopping critical velocity (velocity units)
-Nx = number of thermal solve grid points in the x-direction (positive integer)
-Ny = number of thermal solve grid points in the y-direction (positive integer)
-Nz = number of thermal solve grid points in the z-direction (positive integer)
-T_infile = filename to read initial electronic temperature from
-N = dump TTM temperatures every this many timesteps, 0 = no dump
-T_outfile = filename to write TTM temperatures to (only needed if N > 0) :ul
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+ttm = style name of this fix command :l
+seed = random number seed to use for white noise (positive integer) :l
+remaining arguments for fix ttm: :l
+  C_e  = electronic specific heat (energy/(electron*temperature) units)
+  rho_e = electronic density (electrons/volume units)
+  kappa_e = electronic thermal conductivity (energy/(time*distance*temperature) units)
+  gamma_p = friction coefficient due to electron-ion interactions (mass/time units)
+  gamma_s = friction coefficient due to electronic stopping (mass/time units)
+  v_0 = electronic stopping critical velocity (velocity units)
+  Nx = number of thermal solve grid points in the x-direction (positive integer)
+  Ny = number of thermal solve grid points in the y-direction (positive integer)
+  Nz = number of thermal solve grid points in the z-direction (positive integer)
+  T_infile = filename to read initial electronic temperature from
+  N = dump TTM temperatures every this many timesteps, 0 = no dump
+  T_outfile = filename to write TTM temperatures to (only needed if N > 0) :pre
+:ule
 
 [Examples:]
 
@@ -85,7 +87,7 @@ electron stopping coupling parameter.  C_e, rho_e, and kappa_e are
 specified as parameters to the fix.  The other quantities are derived.
 The form of the heat diffusion equation used here is almost the same
 as that in equation 6 of "(Duffy)"_#Duffy, with the exception that the
-electronic density is explicitly reprensented, rather than being part
+electronic density is explicitly represented, rather than being part
 of the specific heat parameter.
 
 Currently, this fix assumes that none of the user-supplied parameters
@@ -193,7 +195,7 @@ was built with that package.  See the "Making
 LAMMPS"_Section_start.html#start_3 section for more info.
 
 This fix can only be used for 3d simulations and orthogonal
-simlulation boxes.  You must use periodic "boundary"_boundary.html
+simulation boxes.  You must use periodic "boundary"_boundary.html
 conditions with this fix.
 
 [Related commands:]

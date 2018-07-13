@@ -56,7 +56,7 @@ very large for overlapped configurations.
 
 IMPORTANT NOTE: You should not use "fix shake"_fix_shake.html in
 conjunction with this fix.  That is because fix shake applies
-contraint forces based on the predicted postitions of atoms after the
+constraint forces based on the predicted positions of atoms after the
 next timestep.  It has no way of knowing the timestep may change due
 to this fix, which will cause the constraint forces to be invalid.  A
 better strategy is to turn off fix shake when performing initial

@@ -55,7 +55,7 @@ The external pressure tensor is specified using one or more of the
 keywords.  These keywords give you the ability to specify all 6
 components of an external stress tensor, and to couple various of
 these components together so that the dimensions they represent are
-varied together during the mimimization.
+varied together during the minimization.
 
 Orthogonal simulation boxes have 3 adjustable dimensions (x,y,z).
 Triclinic (non-orthogonal) simulation boxes have 6 adjustable
