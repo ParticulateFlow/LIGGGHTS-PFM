@@ -241,7 +241,7 @@ are estimated using equations 33 and 46 of "(Wang)"_#Wang.
 
 See the "kspace_modify"_kspace_modify.html command for additional
 options of the K-space solvers that can be set, including a {force}
-option for setting an absoulte RMS error in forces, as opposed to a
+option for setting an absolute RMS error in forces, as opposed to a
 relative RMS error.
 
 :line
@@ -320,7 +320,7 @@ kspace_style none :pre
 Adam Hilger, NY (1989).
 
 :link(Kolafa)
-[(Kolafa)] Kolafa and Perram, Molecular Simualtion, 9, 351 (1992).
+[(Kolafa)] Kolafa and Perram, Molecular Simulation, 9, 351 (1992).
 
 :link(Petersen)
 [(Petersen)] Petersen, J Chem Phys, 103, 3668 (1995).

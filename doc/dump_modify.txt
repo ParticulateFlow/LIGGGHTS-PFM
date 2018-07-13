@@ -336,7 +336,7 @@ regions.
 
 The {scale} keyword applies only to the dump {atom} style.  A scale
 value of {yes} means atom coords are written in normalized units from
-0.0 to 1.0 in each box dimension.  If the simluation box is triclinic
+0.0 to 1.0 in each box dimension.  If the simulation box is triclinic
 (tilted), then all atom coords will still be between 0.0 and 1.0.  A
 value of {no} means they are written in absolute distance units
 (e.g. Angstroms or sigma).
@@ -368,7 +368,7 @@ cost, as well as memory, versus unsorted output.
 
 The {thresh} keyword only applies to the dump {custom}, {cfg},
 {image}, and {movie} styles.  Multiple thresholds can be specified.
-Specifying "none" turns off all threshold criteria.  If thresholds are
+Specifying {none} turns off all threshold criteria.  If thresholds are
 specified, only atoms whose attributes meet all the threshold criteria
 are written to the dump file or included in the image.  The possible
 attributes that can be tested for are the same as those that can be

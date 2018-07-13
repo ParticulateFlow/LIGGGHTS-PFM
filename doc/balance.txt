@@ -156,7 +156,7 @@ counts do not match the target value for the plane, the position of
 the cut is adjusted to be halfway between a low and high bound.  The
 low and high bounds are adjusted on each iteration, using new count
 information, so that they become closer together over time.  Thus as
-the recustion progresses, the count of particles on either side of the
+the recursion progresses, the count of particles on either side of the
 plane gets closer to the target value.
 
 Once the rebalancing is complete and final processor sub-domains
@@ -164,13 +164,13 @@ assigned, particles are migrated to their new owning processor, and
 the balance procedure ends.
 
 IMPORTANT NOTE: At each rebalance operation, the RCB for each cutting
-plane (line in 2d) typcially starts with low and high bounds separated
+plane (line in 2d) typically starts with low and high bounds separated
 by the extent of a processor's sub-domain in one dimension.  The size
 of this bracketing region shrinks by 1/2 every iteration.  Thus if
 {Niter} is specified as 10, the cutting plane will typically be
 positioned to 1 part in 1000 accuracy (relative to the perfect target
 position).  For {Niter} = 20, it will be accurate to 1 part in a
-million.  Tus there is no need ot set {Niter} to a large value.
+million.  Thus there is no need ot set {Niter} to a large value.
 LAMMPS will check if the threshold accuracy is reached (in a
 dimension) is less iterations than {Niter} and exit early.  However,
 {Niter} should also not be set too small, since it will take roughly

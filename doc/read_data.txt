@@ -77,6 +77,8 @@ the 2 words in "Bond Coeffs", is not valid.
 
 :line
 
+[Format of the header of a data file]
+
 These are the recognized header keywords.  Header lines can come in
 any order.  The value(s) are read from the beginning of the line.
 Thus the keyword {atoms} should be in a line like "1000 atoms"; the

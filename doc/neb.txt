@@ -376,7 +376,7 @@ parameters.
 There are 2 Python scripts provided in the tools/python directory,
 neb_combine.py and neb_final.py, which are useful in analyzing output
 from a NEB calculation.  Assume a NEB simulation with M replicas, and
-the NEB atoms labelled with a specific atom type.
+the NEB atoms labeled with a specific atom type.
 
 The neb_combine.py script extracts atom coords for the NEB atoms from
 all M dump files and creates a single dump file where each snapshot
@@ -406,12 +406,16 @@ This command can only be used if LAMMPS was built with the REPLICA
 package.  See the "Making LAMMPS"_Section_start.html#start_3 section
 for more info on packages.
 
+:line
+
 [Related commands:]
 
-"prd"_prd.html, "temper"_temper.html, "fix
-langevin"_fix_langevin.html, "fix viscous"_fix_viscous.html
+"prd"_prd.html, "temper"_temper.html, "fix langevin"_fix_langevin.html,
+"fix viscous"_fix_viscous.html
 
-[Default:] none
+[Default:]
+
+none
 
 :line
 

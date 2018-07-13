@@ -158,17 +158,17 @@ pack_comm_vel: add velocity info to communication buffer (required)
 pack_comm_hybrid: store extra info unique to this atom style (optional)
 unpack_comm: retrieve an atom's info from the buffer (required)
 unpack_comm_vel: also retrieve velocity info (required)
-unpack_comm_hybrid: retreive extra info unique to this atom style (optional)
+unpack_comm_hybrid: retrieve extra info unique to this atom style (optional)
 pack_reverse: store an atom's info in a buffer communicating partial forces  (required)
 pack_reverse_hybrid: store extra info unique to this atom style (optional)
 unpack_reverse: retrieve an atom's info from the buffer (required)
-unpack_reverse_hybrid: retreive extra info unique to this atom style (optional)
+unpack_reverse_hybrid: retrieve extra info unique to this atom style (optional)
 pack_border: store an atom's info in a buffer communicated on neighbor re-builds (required)
 pack_border_vel: add velocity info to buffer (required)
 pack_border_hybrid: store extra info unique to this atom style (optional)
 unpack_border: retrieve an atom's info from the buffer (required)
 unpack_border_vel: also retrieve velocity info (required)
-unpack_border_hybrid: retreive extra info unique to this atom style (optional)
+unpack_border_hybrid: retrieve extra info unique to this atom style (optional)
 pack_exchange: store all an atom's info to migrate to another processor (required)
 unpack_exchange: retrieve an atom's info from the buffer (required)
 size_restart: number of restart quantities associated with proc's atoms (required)
@@ -187,7 +187,7 @@ in atom_vec.h.  New atom arrays are defined in atom.cpp.  Search for
 the word "customize" and you will find locations you will need to
 modify.
 
-IMPORTANT NOTE: It is possible to add some attributes, such as a
+NOTE: It is possible to add some attributes, such as a
 molecule ID, to atom styles that do not have them via the "fix
 property/atom"_fix_property.html command.  This command also
 allows new custom attributes consisting of extra integer or
@@ -338,7 +338,7 @@ min_setup: like setup, but for minimizations instead of MD runs (optional)
 initial_integrate: called at very beginning of each timestep (optional)
 pre_exchange: called before atom exchange on re-neighboring steps (optional)
 pre_neighbor: called before neighbor list build (optional)
-pre_force: called after pair & molecular forces are computed (optional)
+pre_force: called before pair & molecular forces are computed (optional)
 post_force: called after pair & molecular forces are computed and communicated (optional)
 final_integrate: called at end of each timestep (optional)
 end_of_step: called at very end of timestep (optional)
@@ -359,7 +359,7 @@ pre_force_respa: same as pre_force, but for rRESPA (optional)
 post_force_respa: same as post_force, but for rRESPA (optional)
 final_integrate_respa: same as final_integrate, but for rRESPA (optional)
 min_pre_force: called after pair & molecular forces are computed in minimizer (optional)
-min_post_force: called after pair & molecular forces are computed and communicated in minmizer (optional)
+min_post_force: called after pair & molecular forces are computed and communicated in minimizer (optional)
 min_store: store extra data for linesearch based minimization on a LIFO stack (optional)
 min_pushstore: push the minimization LIFO stack one element down (optional)
 min_popstore: pop the minimization LIFO stack one element up (optional)
@@ -504,7 +504,10 @@ Region_sphere.cpp is an example of a spherical region.
 Here is a brief description of methods you define in your new derived
 class.  See region.h for details.
 
-match: determine whether a point is in the region :tb(s=:)
+inside: determine whether a point is in the region
+surface_interior: determine if a point is within a cutoff distance inside of surc
+surface_exterior: determine if a point is within a cutoff distance outside of surf
+shape_update : change region shape if set by time-dependent variable :tb(s=:)
 
 :line
 
@@ -580,24 +583,24 @@ thermo keywords = ke, vol, atoms, ...
 other variables = v_a, v_myvar, ...
 math functions = div(x,y), mult(x,y), add(x,y), ...
 group functions = mass(group), xcm(group,x), ...
-atom values = x[123], y[3], vx[34], ...
-compute values = c_mytemp[0], c_thermo_press[3], ...
+atom values = x\[123\], y\[3\], vx\[34\], ...
+compute values = c_mytemp\[0\], c_thermo_press\[3\], ... :pre
 
 Adding keywords for the "thermo_style custom"_thermo_style.html command
 (which can then be accessed by variables) was discussed
 "here"_Section_modify.html#thermo on this page.
 
 Adding a new math function of one or two arguments can be done by
-editing one section of the Variable::evaulate() method.  Search for
+editing one section of the Variable::evaluate() method.  Search for
 the word "customize" to find the appropriate location.
 
 Adding a new group function can be done by editing one section of the
-Variable::evaulate() method.  Search for the word "customize" to find
+Variable::evaluate() method.  Search for the word "customize" to find
 the appropriate location.  You may need to add a new method to the
 Group class as well (see the group.cpp file).
 
 Accessing a new atom-based vector can be done by editing one section
-of the Variable::evaulate() method.  Search for the word "customize"
+of the Variable::evaluate() method.  Search for the word "customize"
 to find the appropriate location.
 
 Adding new "compute styles"_compute.html (whose calculated values can
@@ -682,10 +685,11 @@ picky about the coding style (see above).  I.e. they do not need to be
 in the same stylistic format and syntax as other LAMMPS files, though
 that would be nice. :l
 
-Finally, you must also send a documentation file for each new command
+Finally, you [must] also create a [documentation] file for each new command
 or style you are adding to LAMMPS.  This will be one file for a
 single-file feature.  For a package, it might be several files.  These
-are simple text files which we will convert to HTML.  They must be in
+are simple text files with a specific markup language, that can be
+auto-converted to HTML.  The documentation source files must be in
 the same format as other *.txt files in the lammps/doc directory for
 similar commands and styles.  The "Restrictions" section of the doc
 page should indicate that your command is only available if LAMMPS is

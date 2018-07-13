@@ -14,7 +14,7 @@ atom_style style args :pre
 
 style = {angle} or {atomic} or {body} or {bond} or {charge} or {dipole} or \
         {electron} or {ellipsoid} or {full} or {line} or {meso} or \
-	{molecular} or {peri} or {sphere} or {granular} or {bond/gran} or {tri} or {hybrid} or {sph} :ul
+        {molecular} or {peri} or {sphere} or {granular} or {bond/gran} or {tri} or {hybrid} or {sph} :ul
   args = none for any style except {body} and {hybrid}
   {body} args = bstyle bstyle-args
     bstyle = style of body particles
@@ -119,7 +119,7 @@ atom_style bond/gran n_bondtypes 1 bonds_per_atom 6 :pre
 For the {ellipsoid} style, the particles are ellipsoids and each
 stores a flag which indicates whether it is a finite-size ellipsoid or
 a point particle.  If it is an ellipsoid, it also stores a shape
-vector with the 3 diamters of the ellipsoid and a quaternion 4-vector
+vector with the 3 diameters of the ellipsoid and a quaternion 4-vector
 with its orientation.
 
 For the {electron} style, the particles representing electrons are 3d
@@ -153,7 +153,7 @@ the {bstyle} argument.  Body particles can represent complex entities,
 such as surface meshes of discrete points, collections of
 sub-particles, deformable objects, etc.  
 
-The "body"_body.html doc page descibes the body styles LAMMPS
+The "body"_body.html doc page describes the body styles LAMMPS
 currently supports, and provides more details as to the kind of body
 particles they represent.  For all styles, each body particle stores
 moments of inertia and a quaternion 4-vector, so that its orientation
@@ -175,7 +175,7 @@ If some atoms have bonds, but others do not, use the {bond} style.
 The only scenario where the {hybrid} style is needed is if there is no
 single style which defines all needed properties of all atoms.  For
 example, if you want dipolar particles which will rotate due to
-torque, you would need to use "atom_style hybrid sphere dipole".  When
+torque, you need to use "atom_style hybrid sphere dipole".  When
 a hybrid style is used, atoms store and communicate the union of all
 quantities implied by the individual styles.
 
@@ -187,18 +187,28 @@ styles; see "this section"_Section_modify.html.
 This command cannot be used after the simulation box is defined by a
 "read_data"_read_data.html or "create_box"_create_box.html command.
 
-The {angle}, {bond}, {full}, and {molecular} styles are part of the
-MOLECULAR package.  The {line} and {tri} styles are part of the
-ASPHERE pacakge.  The {body} style is part of the BODY package.  The
-{dipole} style is part of the DIPOLE package.  The {peri} style is
-part of the PERI package for Peridynamics.  The {electron} style is
-part of the USER-EFF package for "electronic force
-fields"_pair_eff.html.  The {meso} style is part of the USER-SPH
-package for smoothed particle hydrodyanmics (SPH).  See "this PDF
-guide"_USER/sph/SPH_LAMMPS_userguide.pdf to using SPH in LAMMPS.  The
-{wavepacket} style is part of the USER-AWPMD package for the
-"antisymmetrized wave packet MD method"_pair_awpmd.html.  They are
-only enabled if LAMMPS was built with that package.  See the "Making
+The {angle}, {bond}, {full}, and {molecular} styles are
+part of the MOLECULE package.
+
+The {line} and {tri} styles are part of the ASPHERE package.
+
+The {body} style is part of the BODY package.
+
+The {dipole} style is part of the DIPOLE package.
+
+The {peri} style is part of the PERI package for Peridynamics.
+
+The {electron} style is part of the USER-EFF package for "electronic
+force fields"_pair_eff.html.
+
+The {meso} style is part of the USER-SPH package for smoothed particle
+hydrodynamics (SPH).  See "this PDF
+guide"_USER/sph/SPH_LAMMPS_userguide.pdf to using SPH in LAMMPS.
+
+The {wavepacket} style is part of the USER-AWPMD package for the
+"antisymmetrized wave packet MD method"_pair_awpmd.html.
+
+They are only enabled if LAMMPS was built with that package.  See the "Making
 LAMMPS"_Section_start.html#start_3 section for more info.
 
 [Related commands:]

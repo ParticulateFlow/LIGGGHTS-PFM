@@ -558,7 +558,7 @@ LJ epsilon of O-O = 0.16275
 LJ sigma of O-O = 3.16435
 LJ epsilon, sigma of OH, HH = 0.0 :all(b),p
 
-Note that the when using the TIP4P pair style, the neighobr list
+Note that the when using the TIP4P pair style, the neighbor list
 cutoff for Coulomb interactions is effectively extended by a distance
 2 * (OM distance), to account for the offset distance of the
 fictitious charges on O atoms in water molecules.  Thus it is
@@ -603,7 +603,7 @@ any of the parameters above, though it becomes a different model in
 that mode of usage.
 
 The SPC/E (extended) water model is the same, except
-the partial charge assignemnts change:
+the partial charge assignments change:
 
 O charge = -0.8476
 H charge = 0.4238 :all(b),p
@@ -635,7 +635,7 @@ the fix is invoked, and can make library calls to the other code,
 which has been linked to LAMMPS as a library.  This is the way the
 "POEMS"_poems package that performs constrained rigid-body motion on
 groups of atoms is hooked to LAMMPS.  See the
-"fix_poems"_fix_poems.html command for more details.  See "this
+"fix poems"_fix_poems.html command for more details.  See "this
 section"_Section_modify.html of the documentation for info on how to add
 a new fix to LAMMPS.
 
@@ -847,7 +847,7 @@ boundary conditions in specific dimensions.  See the command doc pages
 for details.
 
 The 9 parameters (xlo,xhi,ylo,yhi,zlo,zhi,xy,xz,yz) are defined at the
-time the simluation box is created.  This happens in one of 3 ways.
+time the simulation box is created.  This happens in one of 3 ways.
 If the "create_box"_create_box.html command is used with a region of
 style {prism}, then a triclinic box is setup.  See the
 "region"_region.html command for details.  If the
@@ -966,10 +966,10 @@ used with non-orthogonal basis vectors to define a lattice that will
 tile a triclinic simulation box via the
 "create_atoms"_create_atoms.html command.
 
-A second use is to run Parinello-Rahman dyanamics via the "fix
+A second use is to run Parinello-Rahman dynamics via the "fix
 npt"_fix_nh.html command, which will adjust the xy, xz, yz tilt
 factors to compensate for off-diagonal components of the pressure
-tensor.  The analalog for an "energy minimization"_minimize.html is
+tensor.  The analog for an "energy minimization"_minimize.html is
 the "fix box/relax"_fix_box_relax.html command.
 
 A third use is to shear a bulk solid to study the response of the
@@ -1375,7 +1375,7 @@ custom"_dump.html command.
 
 There is also a "dump local"_dump.html format where the user specifies
 what local values to output.  A pre-defined index keyword can be
-specified to enumuerate the local values.  Two additional kinds of
+specified to enumerate the local values.  Two additional kinds of
 keywords can also be specified (c_ID, f_ID), where a
 "compute"_compute.html or "fix"_fix.html or "variable"_variable.html
 provides the values to be output.  In each case, the compute or fix
@@ -1507,7 +1507,7 @@ describes them.
 
 Variables that generate values to output :h5,link(variable)
 
-Every "variables"_variable.html defined in an input script generates
+Every "variable"_variable.html defined in an input script generates
 either a global scalar value or a per-atom vector (only atom-style
 variables) when it is accessed.  The formulas used to define equal-
 and atom-style variables can contain references to the thermodynamic
@@ -1569,7 +1569,7 @@ Temperature is computed as kinetic energy divided by some number of
 degrees of freedom (and the Boltzmann constant).  Since kinetic energy
 is a function of particle velocity, there is often a need to
 distinguish between a particle's advection velocity (due to some
-aggregate motiion of particles) and its thermal velocity.  The sum of
+aggregate motion of particles) and its thermal velocity.  The sum of
 the two is the particle's total velocity, but the latter is often what
 is wanted to compute a temperature.
 
@@ -1588,7 +1588,7 @@ pressure"_compute_pressure.html command calculates pressure.
 "compute temp/ramp"_compute_temp_ramp.html
 "compute temp/region"_compute_temp_region.html :ul
 
-All but the first 3 calculate velocity biases (i.e. advection
+All but the first 3 calculate velocity biases (e.g. advection
 velocities) that are removed when computing the thermal temperature.
 "Compute temp/sphere"_compute_temp_sphere.html and "compute
 temp/asphere"_compute_temp_asphere.html compute kinetic energy for
@@ -1662,7 +1662,7 @@ nph) and Berendsen:
 The "fix npt"_fix_nh.html commands include a Nose-Hoover thermostat
 and barostat.  "Fix nph"_fix_nh.html is just a Nose/Hoover barostat;
 it does no thermostatting.  Both "fix nph"_fix_nh.html and "fix
-press/bernendsen"_fix_press_berendsen.html can be used in conjunction
+press/berendsen"_fix_press_berendsen.html can be used in conjunction
 with any of the thermostatting fixes.
 
 As with the thermostats, "fix npt"_fix_nh.html and "fix
@@ -1678,9 +1678,9 @@ pressure"_compute_pressure.html compute to calculate a current
 pressure.  By default, this compute is created with a simple "compute
 temp"_compute_temp.html (see the last argument of the "compute
 pressure"_compute_pressure.html command), which is used to calculated
-the kinetic componenet of the pressure.  The barostatting fixes can
+the kinetic component of the pressure.  The barostatting fixes can
 also use temperature computes that remove bias for the purpose of
-computing the kinetic componenet which contributes to the current
+computing the kinetic component which contributes to the current
 pressure.  See the doc pages for the individual fixes and for the
 "fix_modify"_fix_modify.html command for instructions on how to assign
 a temperature or pressure compute to a barostatting fix.
@@ -1907,7 +1907,7 @@ a simple Lennard-Jones fluid model.  Also, see "this
 section"_Section_howto.html#howto_21 of the manual for an analogous
 discussion for viscosity.
 
-The thermal conducitivity tensor kappa is a measure of the propensity
+The thermal conductivity tensor kappa is a measure of the propensity
 of a material to transmit heat energy in a diffusive manner as given
 by Fourier's law
 
@@ -1992,7 +1992,7 @@ and grad(Vstream) is the spatial gradient of the velocity of the fluid
 moving in another direction, normal to the area through which the
 momentum flows.  Viscosity thus has units of pressure-time.
 
-The first method is to perform a non-equlibrium MD (NEMD) simulation
+The first method is to perform a non-equilibrium MD (NEMD) simulation
 by shearing the simulation box via the "fix deform"_fix_deform.html
 command, and using the "fix nvt/sllod"_fix_nvt_sllod.html command to
 thermostat the fluid via the SLLOD equations of motion.
@@ -2018,7 +2018,7 @@ the rNEMD algorithm of Muller-Plathe.  Momentum in one dimension is
 swapped between atoms in two different layers of the simulation box in
 a different dimension.  This induces a velocity gradient which can be
 monitored with the "fix ave/spatial"_fix_ave_spatial.html command.
-The fix tallies the cummulative momentum transfer that it performs.
+The fix tallies the cumulative momentum transfer that it performs.
 See the "fix viscosity"_fix_viscosity.html command for details.
 
 The fourth method is based on the Green-Kubo (GK) formula which
@@ -2057,11 +2057,11 @@ lattice      fcc 5.376 orient x 1 0 0 orient y 0 1 0 orient z 0 0 1
 region       box block 0 4 0 4 0 4
 create_box   1 box
 create_atoms 1 box
-mass	     1 39.948
+mass         1 39.948
 pair_style   lj/cut 13.0
 pair_coeff   * * 0.2381 3.405
 timestep     $\{dt\}
-thermo	     $d :pre
+thermo       $d :pre
 
 # equilibration and thermalization :pre
 

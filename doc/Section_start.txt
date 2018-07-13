@@ -92,7 +92,7 @@ libraries, etc.  Such questions are better answered by a local expert.
 
 If you have a build problem that you are convinced is a LAMMPS issue
 (e.g. the compiler complains about a line of LAMMPS source code), then
-please post a question to the "LAMMPS mail
+please post the issue to the "LAMMPS mail
 list"_http://lammps.sandia.gov/mail.html.
 
 If you succeed in building LAMMPS on a new kind of machine, for which
@@ -146,11 +146,11 @@ line you will see if you just type "make".
 The "compiler/linker settings" section lists compiler and linker
 settings for your C++ compiler, including optimization flags.  You can
 use g++, the open-source GNU compiler, which is available on all Unix
-systems.  You can also use mpicc which will typically be available if
+systems.  You can also use mpicxx which will typically be available if
 MPI is installed on your system, though you should check which actual
 compiler it wraps.  Vendor compilers often produce faster code.  On
-boxes with Intel CPUs, we suggest using the commercial Intel icc
-compiler, which can be downloaded from "Intel's compiler site"_intel.
+boxes with Intel CPUs, we suggest using the Intel icc compiler, which
+can be downloaded from "Intel's compiler site"_intel.
 
 :link(intel,http://www.intel.com/software/products/noncom)
 
@@ -161,7 +161,7 @@ The DEPFLAGS setting is what triggers the C++ compiler to create a
 dependency list for a source file.  This speeds re-compilation when
 source (*.cpp) or header (*.h) files are edited.  Some compilers do
 not support dependency file creation, or may use a different switch
-than -D.  GNU g++ works with -D.  If your compiler can't create
+than -D.  GNU g++ and Intel icc work with -D.  If your compiler can't create
 dependency files, then you'll need to create a Makefile.foo patterned
 after Makefile.storm, which uses different rules that do not involve
 dependency files.  Note that when you build LAMMPS for the first time
@@ -195,7 +195,7 @@ within the LAMMPS code.  The options that are currently recogized are:
 
 The read_data and dump commands will read/write gzipped files if you
 compile with -DLAMMPS_GZIP.  It requires that your machine supports
-the "popen" function in the standard runtime library and that a gzip
+the "popen()" function in the standard runtime library and that a gzip
 executable can be found by LAMMPS during a run.
 
 If you use -DLAMMPS_JPEG, the "dump image"_dump_image.html command
@@ -345,7 +345,7 @@ you must also manually specify the correct library, namely -lsfftw or
 
 The FFT_INC variable also allows for a -DFFT_SINGLE setting that will
 use single-precision FFTs with PPPM, which can speed-up long-range
-calulations, particularly in parallel or on GPUs.  Fourier transform
+calculations, particularly in parallel or on GPUs.  Fourier transform
 and related PPPM operations are somewhat insensitive to floating point
 truncation errors and thus do not always need to be performed in
 double precision.  Using the -DFFT_SINGLE setting trades off a little
@@ -391,8 +391,13 @@ libraries), all you need to do from the src directory is type
 something like this:
 
 make foo
-or
-gmake foo :pre
+make -j N foo
+gmake foo
+gmake -j N foo :pre
+
+The -j or -j N switches perform a parallel build which can be much
+faster, depending on how many cores your compilation machine has.  N
+is the number of cores the build runs on.
 
 You should get the executable lmp_foo when the build is complete.
 
@@ -585,9 +590,8 @@ See more details below.
 
 Including/excluding packages :h5,link(start_3_2)
 
-To use or not use a package you must include or exclude it before
-building LAMMPS.  From the src directory, this is typically as simple
-as:
+To use (or not use) a package you must install it (or un-install it)
+before building LAMMPS.  From the src directory, this is as simple as:
 
 make yes-colloid
 make g++ :pre
@@ -597,11 +601,11 @@ or
 make no-manybody
 make g++ :pre
 
-NOTE: You should NOT include/exclude packages and build
-LAMMPS in a single make command by using multiple targets, e.g. make
-yes-colloid g++.  This is because the make procedure creates a list of
-source files that will be out-of-date for the build if the package
-configuration changes during the same command.
+NOTE: You should NOT install/un-install packages and build LAMMPS in a
+single make command using multiple targets, e.g. make yes-colloid g++.
+This is because the make procedure creates a list of source files that
+will be out-of-date for the build if the package configuration changes
+within the same command.
 
 Some packages have individual files that depend on other packages
 being included.  LAMMPS checks for this and does the right thing.
@@ -905,7 +909,7 @@ cd src
 make linux
 cp lmp_linux ../bench
 cd ../bench
-mpirun -np 4 lmp_linux < in.lj :pre
+mpirun -np 4 lmp_linux -in in.lj :pre
 
 See "this page"_bench for timings for this and the other benchmarks
 on various platforms.
@@ -1016,8 +1020,8 @@ letter abbreviation can be used:
 
 For example, lmp_ibm might be launched as follows:
 
-mpirun -np 16 lmp_ibm -v f tmp.out -l my.log -sc none < in.alloy
-mpirun -np 16 lmp_ibm -var f tmp.out -log my.log -screen none < in.alloy :pre
+mpirun -np 16 lmp_ibm -v f tmp.out -l my.log -sc none -in in.alloy
+mpirun -np 16 lmp_ibm -var f tmp.out -log my.log -screen none -in in.alloy :pre
 
 Here are the details on the options:
 
