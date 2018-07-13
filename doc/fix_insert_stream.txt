@@ -220,7 +220,7 @@ insertion operation.
 
 None of the "fix_modify"_fix_modify.html options are relevant to this
 fix. A global vector is stored by this fix for access by various "output
-commands"_Section_howto.html#4_15. The first component of the vector is the
+commands"_Section_howto.html#howto_15. The first component of the vector is the
 number of particles already inserted, the second component is the mass
 of particles already inserted. No parameter of this fix can be
 used with the {start/stop} keywords of the "run"_run.html command.
@@ -233,8 +233,8 @@ The insertion face cannot move.
 
 [Related commands:]
 
-"fix_insert_pack"_fix_insert_pack.html, "fix_insert_rate_region"_fix_insert_rate_region.html,
-"fix_deposit"_fix_deposit.html, "fix_pour_dev"_fix_pour_dev.html, "fix_pour"_fix_pour.html
+"fix insert/pack"_fix_insert_pack.html, "fix insert/rate/region"_fix_insert_rate_region.html,
+"fix deposit"_fix_deposit.html, "fix pour/legacy"_fix_pour.html
 
 [Default:]
 

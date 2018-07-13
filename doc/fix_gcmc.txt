@@ -68,7 +68,7 @@ This fix cannot be used to perform MC insertions of gas atoms or
 molecules other than the exchanged type, but MC deletions, translations,
 and rotations can be performed on any atom/molecule in the fix group. 
 All atoms in the simulation domain can be moved using regular time 
-integration displacements, e.g. via "fix_nvt"_fix_nvt.html, resulting
+integration displacements, e.g. via "fix_nvt"_fix_nh.html, resulting
 in a hybrid GCMC+MD simulation. A smaller-than-usual timestep size 
 may be needed when running such a hybrid simulation, especially if 
 the inserted molecules are not well equilibrated.
@@ -84,9 +84,9 @@ found within the specified region after randomly selecting candidates
 must start within the specified region, but may move the atom or molecule
 slightly outside of the region.
 
-If used with "fix_nvt"_fix_nvt.html, the temperature of the imaginary
+If used with "fix_nvt"_fix_nh.html, the temperature of the imaginary
 reservoir, T, should be set to be equivalent to the target temperature
-used in "fix_nvt"_fix_nvt.html. Otherwise, the imaginary reservoir
+used in "fix_nvt"_fix_nh.html. Otherwise, the imaginary reservoir
 will not be in thermal equilibrium with the simulation domain.
 
 Note that neighbor lists are re-built every timestep that this fix is
@@ -225,7 +225,7 @@ referenced by the user for each subsequent fix gcmc command.
 
 [Related commands:]
 
-"fix_nvt"_fix_nvt.html, "neighbor"_neighbor.html, 
+"fix_nvt"_fix_nh.html, "neighbor"_neighbor.html, 
 "fix_deposit"_fix_deposit.html, "fix_evaporate"_fix_evaporate.html,
 "delete_atoms"_delete_atoms.html
 

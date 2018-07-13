@@ -531,8 +531,7 @@ This section has the following sub-sections:
 
 "Package basics"_#start_3_1
 "Including/excluding packages"_#start_3_2
-"Packages that require extra libraries"_#start_3_3
-"Additional Makefile settings for extra libraries"_#start_3_4 :ul
+"Packages that require extra libraries"_#start_3_3 :ul
 
 :line
 

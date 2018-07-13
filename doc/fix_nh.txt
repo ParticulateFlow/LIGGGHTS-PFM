@@ -277,7 +277,7 @@ The keyword {tloop} can be used to improve the accuracy of integration
 scheme at little extra cost.  The initial and final updates of the
 thermostat variables are broken up into {tloop} substeps, each of
 length {dt}/{tloop}. This corresponds to using a first-order
-Suzuki-Yoshida scheme "(Tuckerman2006)"_#Tuckerman2006.  The keyword
+Suzuki-Yoshida scheme "(Tuckerman)"_#Tuckerman.  The keyword
 {ploop} does the same thing for the barostat thermostat.
 
 The keyword {nreset} controls how often the reference dimensions used

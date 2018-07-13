@@ -94,7 +94,7 @@ is not used, but will be used to implement orientation-dependant drag
 for CFD-DEM simulations in the future.
 
 IMPORTANT NOTE: As opposed to the number-based distributions used by 
-"fix_pour_legacy"_fix_pour_legacy.html, this fix uses the more common 
+"fix pour/legacy"_fix_pour.html, this fix uses the more common 
 distribution based on mass-% for the radius distribution (as does 
 "fix_particledistribution_discrete"_fix_particledistribution_discrete.html).
 
@@ -105,7 +105,7 @@ Information about the random state in this fix is written to
 the same particles being chosen for insertion. None of the 
 "fix_modify"_fix_modify.html options are relevant to this fix. No global 
 scalar or vector or per-atom quantities are stored by this fix for access 
-by various "output commands"_Section_howto.html#4_15. No parameter of this 
+by various "output commands"_Section_howto.html#howto_15. No parameter of this 
 fix can be used with the {start}/{stop} keywords of the "run"_run.html 
 command. This fix is not invoked during "energy minimization"_minimize.html. 
 
@@ -113,6 +113,7 @@ command. This fix is not invoked during "energy minimization"_minimize.html.
 
 [Related commands:]
 
-"fix_particletemplate_sphere"_fix_particletemplate_sphere.html
+"fix particletemplate/sphere"_fix_particletemplate_sphere.html
 
-[Default:] radius = 1.0, density = 1.0, atom_type = 1 
+[Default:] radius = 1.0, density = 1.0, atom_type = 1
+ 

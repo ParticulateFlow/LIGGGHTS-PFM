@@ -33,8 +33,11 @@ This command is not available in LAMMPS.
 
 [Description:]
 
-Define a discrete particle distribution that defines a discrete particle
-distribution to be inserted by the "fix_pour_dev"_fix_pour_dev.html command.
+Define a discrete particle distribution to be inserted by the
+"fix insert/pack"_fix_insert_pack.html, "fix insert/pack/dense"_fix_insert_pack_dense.html,
+"fix insert/rate/region"_fix_insert_rate_region.html,
+"fix insert/stream"_fix_insert_stream.html or
+"fix insert/stream/moving"_fix_insert_stream_moving.html command.
 It takes several templates of type "fix_particletemplate_sphere"_fix_particletemplate_sphere.html
 as inputs, which define the properties of the single particles that are part of
 the distribution.
@@ -47,9 +50,8 @@ volume fraction can be achieved. If not all desired insertions could be
 performed, it is likely that the distribution is not accurately reproduced.
 
 IMPORTANT NOTE: As opposed to the number-based distributions used by \
-"fix_pour"_fix_pour.html and "fix_pour_legacy"_fix_pour_legacy.html, this fix \
-uses the more common distribution based on mass-% as input (as does \
-"fix_particletemplate_sphere"_fix_particletemplate_sphere.html).
+"fix pour/legacy"_fix_pour.html, this fix uses the more common distribution \
+based on mass-% as input (as does "fix particletemplate/sphere"_fix_particletemplate_sphere.html).
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
@@ -57,7 +59,7 @@ Information about the random state in this fix is written to "binary restart fil
 so you can restart a simulation with the same particles being chosen for
 insertion. None of the "fix_modify"_fix_modify.html options are relevant to this
 fix. No global scalar or vector or per-atom quantities are stored by this fix
-for access by various "output commands"_Section_howto.html#4_15. No parameter of
+for access by various "output commands"_Section_howto.html#howto_15. No parameter of
 this fix can be used with the {start}/{stop} keywords of the "run"_run.html
 command. This fix is not invoked during "energy minimization"_minimize.html. 
 
@@ -65,6 +67,8 @@ command. This fix is not invoked during "energy minimization"_minimize.html.
 
 [Related commands:]
 
-"fix_pour_dev"_fix_pour_dev.html
+"fix insert/pack"_fix_insert_pack.html, "fix insert/pack/dense"_fix_insert_pack_dense.html,
+"fix insert/rate/region"_fix_insert_rate_region.html, "fix insert/stream"_fix_insert_stream.html,
+"fix insert/stream/moving"_fix_insert_stream_moving.htm
 
 [Default:] none

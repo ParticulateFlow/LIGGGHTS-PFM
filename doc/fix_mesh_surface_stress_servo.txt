@@ -77,7 +77,7 @@ By using the keyword {mode} = auto an alternative controller approach is applied
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
-This fix stores a global vector with 9 components for access by various "output commands"_Section_howto.html#4_15. 
+This fix stores a global vector with 9 components for access by various "output commands"_Section_howto.html#howto_15. 
 The first 3 components are equal to the total force on the mesh, the next 3 components store the total torque 
 on the mesh. The last 3 components output the wall position.
 Furthermore, this fix writes the state of the servo wall to binary restart files so 

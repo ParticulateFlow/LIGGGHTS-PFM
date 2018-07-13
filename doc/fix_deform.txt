@@ -486,10 +486,10 @@ IMPORTANT NOTE: For non-equilibrium MD (NEMD) simulations using "remap
 v" it is usually desirable that the fluid (or flowing material,
 e.g. granular particles) stream with a velocity profile consistent
 with the deforming box.  As mentioned above, using a thermostat such
-as "fix nvt/sllod"_fix_nvt_sllod.html or "fix
-lavgevin"_doc/fix_langevin.html (with a bias provided by "compute
-temp/deform"_compute_temp_deform.html), will typically accomplish
-that.  If you do not use a thermostat, then there is no driving force
+as "fix nvt/sllod"_fix_nvt_sllod.html or "fix lavgevin"_fix_langevin.html
+(with a bias provided by "compute temp/deform"_compute_temp_deform.html),
+will typically accomplish that.
+If you do not use a thermostat, then there is no driving force
 pushing the atoms to flow in a manner consistent with the deforming
 box.  E.g. for a shearing system the box deformation velocity may vary
 from 0 at the bottom to 10 at the top of the box.  But the stream

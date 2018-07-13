@@ -53,9 +53,9 @@ fix id all property/global k_finnie peratomtypepair n_atomtypes value_11 value_1
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
 This fix stores a global vector with 6 components for access by various 
-"output commands"_Section_howto.html#4_15. The first 3 components are equal to the 
+"output commands"_Section_howto.html#howto_15. The first 3 components are equal to the 
 total force on the mesh, the last 3 components store the total torque on the body 
-exerted by the particles. Other info see "fix mesh"_fix_mesh.html.
+exerted by the particles. Other info see "fix mesh/surface"_fix_mesh_surface.html.
 
 [Related commands:]
 

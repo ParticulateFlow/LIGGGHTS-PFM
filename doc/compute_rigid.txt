@@ -52,7 +52,7 @@ This compute calculates a local vector or local array depending on the
 length of the data (see above). 
 The vector or array can be accessed by any command that
 uses local values from a compute as input.  See "this
-section"_Section_howto.html#4_15 for an overview of LAMMPS output
+section"_Section_howto.html#howto_15 for an overview of LAMMPS output
 options.
 
 [Restrictions:]
@@ -63,6 +63,6 @@ For accessing particle-wall contact data, only mesh walls can be used.
 [Related commands:]
 
 "dump local"_dump.html, "compute property/local"_compute_property_local.html,
-"compute pair/local"_compute/pair/local.html
+"compute pair/local"_compute_pair_local.html
 
 [Default:] none

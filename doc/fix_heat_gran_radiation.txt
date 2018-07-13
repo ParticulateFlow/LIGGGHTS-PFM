@@ -93,7 +93,7 @@ The particle temperature and heat source is written to
 None of the "fix_modify"_fix_modify.html options are relevant to this fix.
 
 This fix computes a scalar which can be accessed by various "output
-commands"_Section_howto.html#4_15.  This scalar is the total thermal energy
+commands"_Section_howto.html#howto_15.  This scalar is the total thermal energy
 of the fix group
 
 No parameter of this fix can be used with the {start/stop} keywords of

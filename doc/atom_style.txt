@@ -77,10 +77,10 @@ quantities.
 
 IMPORTANT NOTE: It is possible to add some attributes, such as a
 molecule ID, to atom styles that do not have them via the "fix
-property/atom"_fix_property_atom.html command.  This command also
+property/atom"_fix_property.html command.  This command also
 allows new custom attributes consisting of extra integer or
 floating-point values to be added to atoms.  See the "fix
-property/atom"_fix_property_atom.html doc page for examples of cases
+property/atom"_fix_property.html doc page for examples of cases
 where this is useful and details on how to initialize, access, and
 output the custom values.
 

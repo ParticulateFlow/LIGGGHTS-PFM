@@ -84,7 +84,7 @@ via keyword {type}. If multiple meshes with different materials are desired, the
 meshes must be imported with different fix mesh/surface commands.
 
 With the {temperature} keyword, you can define a constant temperature for a mesh in 
-conjunction with heat conduction via "fix heat/gran"_fix_heat_gran.html. Note that the 
+conjunction with heat conduction via "fix heat/gran"_fix_heat_gran_conduction.html. Note that the 
 actual calculation of the heat transfer happens only if you use the mesh in conjunction 
 with a granular wall, see "fix wall/gran"_fix_wall_gran.html.
 
@@ -187,7 +187,7 @@ This fix writes the STL data to binary "restart files"_restart.html to be able t
 correctly resume the simulation in case the mesh is moved. None of the 
 "fix_modify"_fix_modify.html options are relevant to this fix. No global 
 scalar or vector or per-atom quantities are stored by this fix for access by 
-various "output commands"_Section_howto.html#4_15. No parameter of this fix 
+various "output commands"_Section_howto.html#howto_15. No parameter of this fix 
 can be used with the {start/stop} keywords of the "run"_run.html command. 
 This fix is not invoked during "energy minimization"_minimize.html.
 

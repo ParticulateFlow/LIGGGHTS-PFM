@@ -60,7 +60,7 @@ The keyword {fix} can be used one or more times.  Each usage specifies
 a fix that will be used to process a specific portion of the data
 file.  Any header line containing {header-string} and any section with
 a name containing {section-string} will be passed to the specified
-fix.  See the "fix property/atom"_fix_property_atom.html command for
+fix.  See the "fix property/atom"_fix_property.html command for
 an example of a fix that operates in this manner.  The doc page for
 the fix defines the syntax of the header line(s) and section(s) that
 it reads from the data file.  Note that the {header-string} can be

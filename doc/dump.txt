@@ -316,7 +316,7 @@ tools/lmp2vmd/README.txt file for more information about support in
 VMD for reading and visualizing LAMMPS dump files.
 
 The {mesh/stl} style dumps active STL geometries defined via 
-"fix mesh"_fix_mesh.html commands into the specified file. 
+"fix mesh/surface"_fix_mesh_surface.html commands into the specified file. 
 If you do not supply the optional list of mesh IDs, all meshes are dumped, 
 irrespective of whether they are used in a "fix wall/gran"_fix_wall_gran.html
 command or not. By specifying a list of mesh IDs you can explicitly 
@@ -360,7 +360,7 @@ commands, you can specify which meshes to dump. If no meshes are specified,
 all meshes used in the simulation are dumped.
 
 The {mesh/vtk} style can be used to dump active mesh geometries 
-defined via "fix mesh"_fix_mesh.html commands to a series of VTK files. 
+defined via "fix mesh/surface"_fix_mesh_surface.html commands to a series of VTK files. 
 Different keywords can be used to dump the per-triangle stress (force 
 magnitude / element area), id, velocity, wear, stress components 
 (fx / element area, fy / element area, fz / element area), area (area

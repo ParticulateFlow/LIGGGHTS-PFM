@@ -105,7 +105,7 @@ triangular particles and define the corner points of each triangle.
 
 The {i_name} and {d_name} attributes refer to custom integer and
 floating-point properties that have been added to each atom via the
-"fix property/atom"_fix_property_atom.html command.  When that command
+"fix property/atom"_fix_property.html command.  When that command
 is used specific names are given to each attribute which are what is
 specified as the "name" portion of {i_name} or {d_name}.
 
@@ -130,6 +130,6 @@ units for q, etc.
 
 "dump custom"_dump.html, "compute reduce"_compute_reduce.html, "fix
 ave/atom"_fix_ave_atom.html, "fix ave/spatial"_fix_ave_spatial.html,
-"fix property/atom"_fix_property_atom.html
+"fix property/atom"_fix_property.html
 
 [Default:] none
