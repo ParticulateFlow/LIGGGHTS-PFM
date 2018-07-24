@@ -65,8 +65,10 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
 {
     num_species = 0;
     n_species = 0;
+    n_diff = 0;
     iarg_ = 3;
     mod_spec_names_ = diffusant_names_ = molarfraction_names = NULL;
+    num_diffusant = 0;
 
    if (narg < iarg_ + 3)
         error -> all (FLERR,"Fix couple/cfd/chemistry: Wrong number of arguments");
@@ -102,6 +104,45 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 species_names_[i] = new char [strlen(arg[iarg_])+1];
                 strcpy(species_names_[i], arg[iarg_]);
                 iarg_ += 1;
+
+                /*if(screen)
+                {
+                    fprintf(screen,"species_names in cfd/coupling/chemistry: %s \n",species_names_[i]);
+                }*/
+            }
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"n_diff") == 0)
+        {
+            n_diff = 1;
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR,this,"Wrong number of arguments");
+            iarg_++;
+            num_diffusant = atoi(arg[iarg_]);
+            if (num_diffusant < 1)
+                error -> fix_error(FLERR,this,"num_diffusant > 0 is required");
+            hasargs = true;
+            iarg_ ++;
+        }
+        else if (strcmp(arg[iarg_],"diffusant_names") == 0)
+        {
+            if (n_diff != 1)
+                error -> fix_error (FLERR,this, "have to define n_diff before 'diffusant_names'");
+            if (iarg_ + num_diffusant > narg)
+                error -> fix_error(FLERR,this, "Wrong number of arguments");
+            diffusant_names_ = new char*[num_diffusant];
+            iarg_++;
+            for (int i = 0; i < num_diffusant; ++i)
+            {
+                diffusant_names_[i] = new char [strlen(arg[iarg_])+strlen("_diffCoeff")+1];
+                strcpy(diffusant_names_[i], arg[iarg_]);
+                strcat(diffusant_names_[i],"_diffCoeff");
+                iarg_ += 1;
+
+                /* if(screen)
+                {
+                    fprintf(screen, "diffusant_names in cfd/coupling/chemistry: %s \n",diffusant_names_[i]);
+                }*/
             }
             hasargs = true;
         }
@@ -126,17 +167,12 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
    }
 
    mod_spec_names_ = new char*[num_species];
-   diffusant_names_ = new char *[num_species];
    molarfraction_names = new char *[num_species];
    for (int i = 0; i < num_species; ++i)
    {
        mod_spec_names_[i] = new char [strlen("Modified_")+strlen(species_names_[i])+1];
        strcpy(mod_spec_names_[i],"Modified_");
        strcat(mod_spec_names_[i],species_names_[i]);
-
-       diffusant_names_[i] = new char [strlen(species_names_[i])+strlen("_diffCoeff")+1];
-       strcpy(diffusant_names_[i],species_names_[i]);
-       strcat(diffusant_names_[i],"_diffCoeff");
 
        molarfraction_names[i] = new char [strlen("X_")+strlen(species_names_[i])+1];
        strcpy(molarfraction_names[i],"X_");
@@ -158,9 +194,11 @@ FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
     {
         if (species_names_[i]) delete [] species_names_[i];
         if (mod_spec_names_[i]) delete [] mod_spec_names_[i];
-        if (diffusant_names_[i]) delete [] diffusant_names_[i];
         if (molarfraction_names[i]) delete [] molarfraction_names[i];
     }
+
+    for (int j=0; j<num_diffusant;++j)
+        if (diffusant_names_[j]) delete [] diffusant_names_[j];
 
     delete [] species_names_;
     delete [] mod_spec_names_;
@@ -186,9 +224,11 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
     for (int i = 0; i < num_species; ++i)
     {
         if (unfixflag && fix_masschange_[i])        modify -> delete_fix(mod_spec_names_[i]);
-        if (unfixflag && fix_diffusionCoeff_[i])    modify -> delete_fix(diffusant_names_[i]);
         if (unfixflag && fix_molarfraction_[i])     modify -> delete_fix(molarfraction_names[i]);
     }
+
+    for (int j = 0; j < num_diffusant; ++j)
+        if (unfixflag && fix_diffusionCoeff_[j])    modify -> delete_fix(diffusant_names_[j]);
     
     if(unfixflag && fix_reactantPerParticle_) modify->delete_fix("reactantPerParticle");
 }
@@ -217,7 +257,7 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[3]="partTemp";
         fixarg[4]="scalar";             // 1 vector per particle to be registered
         fixarg[5]="yes";                // restart yes
-        fixarg[6]="no";                 // communicate ghost no
+        fixarg[6]="yes";                // communicate ghost no
         fixarg[7]="no";                 // communicate rev
         fixarg[8]="0.";
         fix_tgas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
@@ -249,7 +289,7 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[3]="reactionHeat";
         fixarg[4]="scalar";     // 1 vector per particle to be registered
         fixarg[5]="yes";        // restart
-        fixarg[6]="no";         // communicate ghost
+        fixarg[6]="yes";         // communicate ghost
         fixarg[7]="no";         // communicate rev
         fixarg[8]="0.";
         fix_reactionheat_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
@@ -264,9 +304,9 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[2]="property/atom";
         fixarg[3]="partMolarConc";
         fixarg[4]="scalar";     // 1 vector per particle to be registered
-        fixarg[5]="yes";        // restart
+        fixarg[5]="no";        // restart
         fixarg[6]="yes";         // communicate ghost
-        fixarg[7]="yes";         // communicate rev
+        fixarg[7]="no";         // communicate rev
         fixarg[8]="0.";
         fix_totalmole_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
@@ -304,10 +344,11 @@ void FixCfdCouplingChemistry::post_create()
     }
 
     fix_masschange_ = new FixPropertyAtom*[num_species];
-    fix_diffusionCoeff_ = new FixPropertyAtom*[num_species];
     fix_molarfraction_  =   new FixPropertyAtom*[num_species];
     for (int i=0; i<num_species;++i)
     {
+        fix_masschange_[i]      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style,false));
+        if (fix_masschange_[i] == NULL)
         // register masschange/changeOfSpeciesMass
         {
             const char* fixarg[9];
@@ -317,27 +358,14 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[3]=mod_spec_names_[i];
             fixarg[4]="scalar";      // 1 vector per particle to be registered
             fixarg[5]="yes";         // restart
-            fixarg[6]="no";          // communicate ghost
+            fixarg[6]="yes";          // communicate ghost
             fixarg[7]="no";          // communicate rev
             fixarg[8]="0.";
             fix_masschange_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
         }
 
-        // register diffusion coefficient variables
-        {
-            const char* fixarg[9];
-            fixarg[0]=diffusant_names_[i];
-            fixarg[1]="all";
-            fixarg[2]="property/atom";
-            fixarg[3]=diffusant_names_[i];
-            fixarg[4]="scalar";        // 1 vector per particle to be registered
-            fixarg[5]="no";           // restart
-            fixarg[6]="no";            // communicate ghost
-            fixarg[7]="no";            // communicate rev
-            fixarg[8]="0.";
-            fix_diffusionCoeff_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
-        }
-
+        fix_molarfraction_[i]   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,style,false));
+        if (fix_molarfraction_[i] == NULL)
         // register fix for molar fraction
         {
             const char* fixarg[9];
@@ -346,14 +374,36 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[2]="property/atom";
             fixarg[3]=molarfraction_names[i];
             fixarg[4]="scalar";        // 1 vector per particle to be registered
-            fixarg[5]="no";           // restart
-            fixarg[6]="no";            // communicate ghost
+            fixarg[5]="yes";           // restart
+            fixarg[6]="yes";            // communicate ghost
             fixarg[7]="no";            // communicate rev
             fixarg[8]="0.";
             fix_molarfraction_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
         }
     }
-    
+
+    fix_diffusionCoeff_ = new FixPropertyAtom*[num_diffusant];
+    for (int j=0; j<num_diffusant;++j)
+    {
+
+        fix_diffusionCoeff_[j]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[j],"property/atom","scalar",0,0,style,false));
+        // register diffusion coefficient variables
+        if(fix_diffusionCoeff_[j] == NULL)
+        {
+            const char* fixarg[9];
+            fixarg[0]=diffusant_names_[j];
+            fixarg[1]="all";
+            fixarg[2]="property/atom";
+            fixarg[3]=diffusant_names_[j];
+            fixarg[4]="scalar";        // 1 vector per particle to be registered
+            fixarg[5]="no";           // restart
+            fixarg[6]="yes";            // communicate ghost
+            fixarg[7]="yes";            // communicate rev
+            fixarg[8]="0.";
+            fix_diffusionCoeff_[j] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        }
+    }
+
     fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style,false));
     if(!fix_reactantPerParticle_ && use_reactant_)
     {
@@ -363,8 +413,8 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[2]="property/atom";
         fixarg[3]="reactantPerParticle";
         fixarg[4]="scalar"; // 1 vector per particle to be registered
-        fixarg[5]="no";    // restart
-        fixarg[6]="no";     // communicate ghost
+        fixarg[5]="yes";    // restart
+        fixarg[6]="yes";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="0.";
         fix_reactantPerParticle_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
@@ -409,12 +459,12 @@ void FixCfdCouplingChemistry::init()
     fix_partReynolds_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style));
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partP","property/atom","scalar",0,0,style));
 
-    for (int i = 0; i < num_species; ++i)
+    /*for (int i = 0; i < num_species; ++i)
     {
-        fix_masschange_[i]      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
-        fix_diffusionCoeff_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[i],"property/atom","scalar",0,0,style));
-        fix_molarfraction_[i]   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,style));
-    }
+        //fix_masschange_[i]      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
+        //fix_diffusionCoeff_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[i],"property/atom","scalar",0,0,style));
+        //fix_molarfraction_[i]   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,style));
+    }*/
 
     // values to come from OF
     fix_coupling_->add_pull_property("partTemp","scalar-atom");
@@ -425,10 +475,11 @@ void FixCfdCouplingChemistry::init()
     fix_coupling_->add_pull_property("partP","scalar-atom");
 
     for (int i=0; i<num_species; ++i)
-    {
-        fix_coupling_->add_pull_property(diffusant_names_[i],"scalar-atom");
         fix_coupling_->add_pull_property(molarfraction_names[i],"scalar-atom");
-    }
+
+    for (int j=0; j < num_diffusant; ++j)
+        fix_coupling_ -> add_pull_property(diffusant_names_[j],"scalar-atom");
+
     
     if(use_reactant_) fix_coupling_->add_pull_property("reactantPerParticle","scalar-atom");
 
@@ -439,7 +490,15 @@ void FixCfdCouplingChemistry::init()
     {
         fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
     }
-}
+
+     /*for (int j=0; j < num_diffusant; ++j)
+        {
+            double *diff_Coeff = fix_diffusionCoeff_[j] -> vector_atom;
+            for (int i =0; i < atom->nlocal; i++)
+                if (screen)
+                    fprintf(screen,"diffCoeff from cfd/coupling/chemistry: %6.15f \n", diff_Coeff[i]);
+        }*/
+    }
 
 /* ---------------------------------------------------------------------- */
 

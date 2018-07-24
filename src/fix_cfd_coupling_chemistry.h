@@ -57,6 +57,8 @@ class FixCfdCouplingChemistry : public Fix  {
   char **mod_spec_names_;
   char **diffusant_names_, **molarfraction_names;
   int n_species;
+  int n_diff;
+  int num_diffusant;
 
   class FixCfdCoupling*     fix_coupling_;
   class FixPropertyAtom*    fix_tgas_;                 // data pulled from cfdemCoupling - partTemp_
@@ -74,11 +76,6 @@ class FixCfdCouplingChemistry : public Fix  {
 
  private:
   bool use_Re_, use_reactant_;
-
-  double **concentrations;
-  double **changeOfSpeciesMass;
-  double *diffCoeff_;
-
 };
 
 }
