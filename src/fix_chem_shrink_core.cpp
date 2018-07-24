@@ -74,7 +74,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     speciesA = speciesC = NULL;
     molarConc_  =   NULL;
     dY_previous3 = dY_previous2 = false;
-
     cg_ = 0.0;
     int iarg_ = 3;
     bool hasargs = true;
@@ -155,9 +154,9 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     strcat(massC,speciesC);
 
     // define diffusant species
-   diffA = new char [strlen(speciesA)+strlen("_diffCoeff")+1];
-   strcpy(diffA,speciesA);
-   strcat(diffA,"_diffCoeff");
+    diffA = new char [strlen(speciesA)+strlen("_diffCoeff")+1];
+    strcpy(diffA,speciesA);
+    strcat(diffA,"_diffCoeff");
 
     // reacting species bulk molar fraction
     moleFracA = new char [strlen("X_")+strlen(speciesA)+1];
@@ -171,120 +170,83 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 
     time_depend = 1;
     cg_ = force->cg();
+    peratom_flag = 1;
+    peratom_freq = 1;
+    global_freq = 1;
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrinkCore::post_create()
 {
-    char *fixname = NULL;
+    if (fix_Aterm==NULL) {
+        char *fixname = new char [strlen("Aterm_")+strlen(id)+1];
+        strcpy (fixname,"Aterm_");
+        strcat(fixname,id);
 
-    if (!fix_layerRelRad_)
-    {
-        const char* fixarg[12];
-        fixarg[0]="layerRelRad";        // fixid
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="relRadii";           // propertyid
-        fixarg[4]="vector";
-        fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
-        fixarg[8]="0.0";
-        fixarg[9]="0.0";
-        fixarg[10]="0.0";
-        fixarg[11]="0.0";
-        modify->add_fix(12,const_cast<char**>(fixarg));
-        //fix_layerRelRad_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
-    }
-
-    if (!fix_fracRed)
-    {
         const char* fixarg[11];
-        fixarg[0]="fracRed";            // fixid
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="fracRed";           // propertyid
-        fixarg[4]="vector";
-        fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
-        fixarg[8]="0.0";
-        fixarg[9]="0.0";
-        fixarg[10]="0.0";
-        modify->add_fix(11,const_cast<char**>(fixarg));
-    }
-
-    fixname = new char[strlen("Aterm_")+strlen(id)+1];
-    strcpy (fixname,"Aterm_");
-    strcat(fixname,id);
-    if (!fix_Aterm)
-    {
-        const char* fixarg[11];
+        // register property/atom for chemical reaction resistance
         fixarg[0]=fixname;            // fixid
         fixarg[1]="all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
-        fixarg[4]="vector";
-        fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
-        fixarg[8]="0.0";
+        fixarg[4]="vector";          // vector with 3 values (for the different layers)
+        fixarg[5]="yes";             // restart yes
+        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[7]="no";              // communicate rev no
+        fixarg[8]="0.0";             // tale 0 as default value
         fixarg[9]="0.0";
         fixarg[10]="0.0";
-        modify->add_fix(11,const_cast<char**>(fixarg));
-        fix_Aterm = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+        fix_Aterm = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+        delete [] fixname;
     }
-    delete [] fixname;
 
+    if (fix_Bterm==NULL) {
+        char *fixname = new char[strlen("Bterm_")+strlen(id)+1];
+        strcpy (fixname,"Bterm_");
+        strcat(fixname,id);
 
-    fixname = new char[strlen("Bterm_")+strlen(id)+1];
-    strcpy (fixname,"Bterm_");
-    strcat(fixname,id);
-    if (!fix_Bterm)
-    {
         const char* fixarg[11];
+        // register property/atom for diffusion resistance term
         fixarg[0]=fixname;            // fixid
         fixarg[1]="all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
-        fixarg[4]="vector";
-        fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
+        fixarg[4]="vector";          // vector with 3 values (for the different layers)
+        fixarg[5]="yes";             // restart yes
+        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[7]="no";              // communicate rev no
         fixarg[8]="0.0";
         fixarg[9]="0.0";
         fixarg[10]="0.0";
-        modify->add_fix(11,const_cast<char**>(fixarg));
-        fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+        fix_Bterm = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+        delete []fixname;
     }
-    delete []fixname;
 
-    fixname = new char[strlen("Massterm_")+strlen(id)+1];
-    strcpy (fixname,"Massterm_");
-    strcat(fixname,id);
-    if (!fix_Massterm)
-    {
+    if (fix_Massterm==NULL) {
+        char *fixname = new char[strlen("Massterm_")+strlen(id)+1];
+        strcpy (fixname,"Massterm_");
+        strcat(fixname,id);
+
         const char* fixarg[9];
         fixarg[0]=fixname;            // fixid
         fixarg[1]="all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="scalar";
-        fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
+        fixarg[5]="yes";             // restart yes
+        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[7]="no";              // communicate rev no
         fixarg[8]="0.0";
-        modify->add_fix(9,const_cast<char**>(fixarg));
-        fix_Massterm        =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+        fix_Massterm = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        delete []fixname;
     }
-    delete []fixname;
 
-    fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
-    strcpy (fixname,"effDiffBinary_");
-    strcat(fixname,id);
-    if (!fix_effDiffBinary)
-    {
+    if (fix_effDiffBinary==NULL) {
+        char *fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
+        strcpy (fixname,"effDiffBinary_");
+        strcat(fixname,id);
+
         const char* fixarg[11];
         fixarg[0]=fixname;            // fixid
         fixarg[1]="all";
@@ -292,21 +254,20 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
+        fixarg[6]="yes";
+        fixarg[7]="yes";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
         fixarg[10]="0.0";
-        modify->add_fix(11,const_cast<char**>(fixarg));
-        fix_effDiffBinary   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
+        fix_effDiffBinary = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+        delete [] fixname;
     }
-    delete []fixname;
 
-    fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
-    strcpy (fixname,"effDiffKnud_");
-    strcat(fixname,id);
-    if (!fix_effDiffKnud)
-    {
+    if (fix_effDiffKnud==NULL)    {
+        char *fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
+        strcpy (fixname,"effDiffKnud_");
+        strcat(fixname,id);
+
         const char* fixarg[11];
         fixarg[0]=fixname;            // fixid
         fixarg[1]="all";
@@ -314,39 +275,20 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
+        fixarg[6]="yes";
+        fixarg[7]="yes";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
         fixarg[10]="0.0";
-        modify->add_fix(11,const_cast<char**>(fixarg));
-        fix_effDiffKnud     =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
-    }
-    delete []fixname;
-
-    if (!fix_rhoeff_)
-    {
-        const char* fixarg[12];
-        fixarg[0]="rhoeff";            // fixid
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="rhoeff";           // propertyid
-        fixarg[4]="vector";
-        fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
-        fixarg[8]="0.0";
-        fixarg[9]="0.0";
-        fixarg[10]="0.0";
-        fixarg[11]="0.0";
-        modify->add_fix(12,const_cast<char**>(fixarg));
+        fix_effDiffKnud = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+        delete []fixname;
     }
 
-    fixname = new char[strlen("dY_")+strlen(id)+1];
-    strcpy (fixname,"dY_");
-    strcat(fixname,id);
-    if (!fix_dY_)
-    {
+    if (fix_dY_==NULL)     {
+        char* fixname = new char[strlen("dY_")+strlen(id)+1];
+        strcpy (fixname,"dY_");
+        strcat(fixname,id);
+
         const char* fixarg[12];
         fixarg[0]=fixname;            // fixid
         fixarg[1]="all";
@@ -354,15 +296,14 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
-        fixarg[6]="no";
+        fixarg[6]="yes";
         fixarg[7]="no";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
         fixarg[10]="0.0";
-        modify->add_fix(11,const_cast<char**>(fixarg));
-        fix_dY_             =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
+        fix_dY_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+        delete []fixname;
     }
-    delete []fixname;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -376,7 +317,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_changeOfA_)     { modify  ->  delete_fix(massA); delete [] changeOfA_;}
         if (fix_changeOfC_)     { modify  ->  delete_fix(massC); delete [] changeOfC_;}
         if (fix_tgas_)          { modify  ->  delete_fix("partTemp"); delete [] T_;}
-        if (fix_reactionHeat_)  { modify    ->  delete_fix("reactionHeat"); delete [] reactionHeat_;}
+        if (fix_reactionHeat_)  { modify  ->  delete_fix("reactionHeat"); delete [] reactionHeat_;}
         if (fix_diffcoeff_)     { modify  ->  delete_fix(diffA); delete [] molecularDiffusion_; }
         if (fix_nuField_)       { modify  ->  delete_fix("partNu"); delete [] nuf_; }
         if (fix_partRe_)        { modify  ->  delete_fix("partRe"); delete [] Rep_; }
@@ -512,7 +453,7 @@ void FixChemShrinkCore::init()
     strcat(fixname,id);
     if (screenflag_ && screen)
         fprintf(screen,"fixname k0_: %s \n", fixname);
-    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
     delete []fixname;
 
     // look up activation energies Ea
@@ -522,7 +463,7 @@ void FixChemShrinkCore::init()
     strcat(fixname, id);
     if (screenflag_ && screen)
         fprintf(screen,"fixname Ea_: %s \n", fixname);
-    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, "FixChemShrinkCore"));
+    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, style));
     delete[]fixname;
 
     // Layer Molar Mass
@@ -531,7 +472,7 @@ void FixChemShrinkCore::init()
     strcat(fixname,group->names[igroup]);
     if (screenflag_ && screen)
         fprintf(screen,"fixname molMass_: %s \n", fixname);
-    fix_layerMolMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    fix_layerMolMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
     delete []fixname;
 
     // Layer Density
@@ -540,29 +481,65 @@ void FixChemShrinkCore::init()
     strcat(fixname,group->names[igroup]);
     if (screenflag_ && screen)
         fprintf(screen,"fixname density_: %s \n", fixname);
-    fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,"FixChemShrinkCore"));
+    fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
     delete []fixname;
 
     // references for per atom properties.
-    fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
+    fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
+    fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style));
+    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style));
+    fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
+    fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, style));
+    fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style));
+    fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style));
     fix_moleFractionA_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracA, "property/atom", "scalar", 0, 0, style));
     fix_moleFractionC_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracC, "property/atom", "scalar", 0, 0, style));
-    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style,"FixChemShrinkCore"));
-    fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style,"FixChemShrinkCore"));
-    fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style,"FixChemShrinkCore"));
-    fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
-    fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
+    fix_fracRed = static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
+    fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style));
+    fix_layerRelRad_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
+    fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
+    fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, style));
+    fix_rhoeff_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
     // references for global properties - valid for every particle equally
     fix_tortuosity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, style));
     fix_pore_diameter_ =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
-    fix_layerRelRad_    = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style, "FixChemShrinkCore"));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
+
+    fixname = new char [strlen("Aterm_")+strlen(id)+1];
+    strcpy (fixname,"Aterm_");
+    strcat(fixname,id);
+    fix_Aterm = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
+
+
+    fixname = new char[strlen("Bterm_")+strlen(id)+1];
+    strcpy (fixname,"Bterm_");
+    strcat(fixname,id);
+    fix_Bterm = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    delete [] fixname;
+
+    fixname = new char[strlen("Massterm_")+strlen(id)+1];
+    strcpy (fixname,"Massterm_");
+    strcat(fixname,id);
+    fix_Massterm = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "scalar", 0, 0, style));
+    delete [] fixname;
+
+    fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
+    strcpy (fixname,"effDiffBinary_");
+    strcat(fixname,id);
+    fix_effDiffBinary = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    delete [] fixname;
+
+    fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
+    strcpy (fixname,"effDiffKnud_");
+    strcat(fixname,id);
+    fix_effDiffKnud = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    delete [] fixname;
+
+    fixname = new char[strlen("dY_")+strlen(id)+1];
+    strcpy (fixname,"dY_");
+    strcat(fixname,id);
+    fix_dY_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
+    delete [] fixname;
 
     updatePtrs();
 
@@ -579,6 +556,9 @@ void FixChemShrinkCore::init()
         }
 
         calcMassLayer(i);
+
+        /*if (screen)
+            fprintf(screen,"diffCoeff fix/chem/shrink/core: %6.15f \n",molecularDiffusion_[i]);*/
     }
 }
 
@@ -700,11 +680,9 @@ double FixChemShrinkCore::K_eq(int layer, int i)
         else if (layer == 1)
             //Keq_ = pow(10.0,(-1834.0/T_[i]+2.17));
             Keq_ = exp(-3585.64/T_[i]+4.58);
-            //Keq_ = exp(5.289-4711.0/T_[i]);
         else if (layer == 0)
             //Keq_ = pow(10.0,(914.0/T_[i]-1.097));
             Keq_ = exp(2744.63/T_[i]-2.946);
-            //Keq_ = exp(-2.642+2164.0/T_[i]);
      }
      else if(strcmp(speciesA,"H2")==0)
      {
@@ -714,7 +692,7 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             //Keq_    =   pow(10.0,(-3577.0/T_[i]+3.74));
             Keq_   =   exp(-7916.6/T_[i] + 8.46);
         else if (layer == 0)
-             Keq_   =   exp(-1586.9/T_[i] + 0.9317);
+            Keq_   =   exp(-1586.9/T_[i] + 0.9317);
             //Keq_    =   pow(10.0,(-827.0/T_[i]+0.468));
      }
      else
@@ -753,6 +731,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 // 0 = wüstite interface, 1 = magnetite interface, 2 = hematite interface
 void FixChemShrinkCore::getA(int i)
 {
+    updatePtrs();
     for (int j = 0; j < layers_ ; j++)
     {
         Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
@@ -771,6 +750,7 @@ void FixChemShrinkCore::getA(int i)
 // there is no diffusion through the hematite layer
 void FixChemShrinkCore::getB(int i)
 {
+    updatePtrs();
     double fracRedThird_[nmaxlayers_] = {0.};
     double diffEff_[nmaxlayers_] = {0.};
 
@@ -838,6 +818,7 @@ void FixChemShrinkCore::getB(int i)
 
 void FixChemShrinkCore::getMassT(int i)
 {
+    updatePtrs();
     // initialize sherwood & schmidt numbers for every particle
     double Sc_[atom->nlocal] = {0.};
     double Sh_[atom->nlocal] = {0.};
@@ -982,6 +963,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
 
 void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 {
+    updatePtrs();
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
     // based on material change: update relative radii, average density and mass of atom i
@@ -1081,6 +1063,7 @@ void FixChemShrinkCore::FractionalReduction(int i)
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
     fracRed_[i][2] = f_HM; */
+    updatePtrs();
 
     double f_HM = 0.;
     double f_MW = 0.;
