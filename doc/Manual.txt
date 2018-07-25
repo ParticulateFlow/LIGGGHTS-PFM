@@ -78,7 +78,7 @@ LIGGGHTS Version info: :h4
 
 All LIGGGHTS versions are based on a specific version of LAMMPS, as printed in
 the file src/version.h. LIGGGHTS versions are identified by a version number
-(in src/version_ligggts.txt, e.g. '18.03'),
+(in src/version_liggghts.txt, e.g. '18.03'),
 a branch name (e.g. 'LIGGGHTS-PFM' for the PFM release of LIGGGHTS),
 compilation info (date / time stamp and user name), and a LAMMPS version
 number (which is the LAMMPS version that the LIGGGHTS release is based on).
