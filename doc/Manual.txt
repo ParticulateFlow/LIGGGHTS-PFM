@@ -163,6 +163,22 @@ it gives quick access to documentation for all LAMMPS commands.
    Section_errors
    Section_history
 
+.. toctree::
+   :caption: Index
+   :name: index
+   :hidden:
+
+   tutorials
+   commands
+   computes
+   fixes
+   pairs
+   granular
+   bonds
+   angles
+   dihedrals
+   impropers
+
 Indices and tables
 ==================
 
