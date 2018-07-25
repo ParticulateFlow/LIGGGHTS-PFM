@@ -36,7 +36,7 @@ END_RST -->
 NOTE:
 
 This is an academic adaptation of the LIGGGHTS software package, released by the
-Department of Particulate Flow Modelling at "Johannes Kepler University
+Department of Particulate Flow Modelling (PFM) at "Johannes Kepler University
 Linz"_http://www.jku.at, Austria.
 This offering is not approved or endorsed by DCS Computing GmbH, the producer of
 the LIGGGHTS&reg; and CFDEM&reg;coupling software and owner of the LIGGGHTS
@@ -48,7 +48,7 @@ and CFDEM&reg; trade marks.
 .. note::
 
    This is an academic adaptation of the LIGGGHTS software package, released by
-   the Department of Particulate Flow Modelling at `Johannes Kepler University
+   the Department of Particulate Flow Modelling (PFM) at `Johannes Kepler University
    Linz <http://www.jku.at>`_, Austria.
    This offering is not approved or endorsed by DCS Computing GmbH, the producer
    of the LIGGGHTS\ |reg| and CFDEM\ |reg|\ coupling software and owner of the
@@ -76,10 +76,11 @@ parts of the code and framework stem from the LAMMPS base.
 
 LIGGGHTS Version info: :h4
 
-All LIGGGHTS versions are based on a specific version of LAMMPS, as printed in 
-the file src/version.h LIGGGHTS version are identidied by a version number (e.g. '3.0'),
-a branch name (e.g. 'LIGGGHTS-PUBLIC' for the public release of LIGGGHTS),
-compilation info (date / time stamp and user name), and a LAMMPS version 
+All LIGGGHTS versions are based on a specific version of LAMMPS, as printed in
+the file src/version.h. LIGGGHTS versions are identified by a version number
+(in src/version_ligggts.txt, e.g. '18.03'),
+a branch name (e.g. 'LIGGGHTS-PFM' for the PFM release of LIGGGHTS),
+compilation info (date / time stamp and user name), and a LAMMPS version
 number (which is the LAMMPS version that the LIGGGHTS release is based on).
 For info on the LAMMPS version, see below.
 
