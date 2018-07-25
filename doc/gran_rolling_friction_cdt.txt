@@ -27,7 +27,7 @@ This model can be used as part of "pair gran"_pair_gran.html and
 The constant directional torque (CDT) model adds an additional torque 
 contribution, equal to
 
-torque_rf = rmu*k_n*delta_n*w_r_shear/mag(w_r_shear)*(R*).
+:c,image(Eqs/pair_gran_roll_cdt_eq1.png)
 
 w_r_shear is the projection of w_r into the shear plane, where w_r = w1-w2
 
