@@ -28,7 +28,7 @@ The alternative elastic-plastic spring-dashpot (EPSD2) model (see Iwashita and O
 torque contribution. It is similar to the "EPSD model"_gran_rolling_friction_epsd.html, but in contrast
 to the original model the rolling stiffness k_r is defined as
 
-:c,image(Eqs/pair_gran_hooke_eqEpsd5.gif)
+:c,image(Eqs/pair_gran_hooke_eqEpsd5.png)
 
 where k_t is the abovementioned tangential stiffness. Furthermore, the viscous damping torque M_rd is disabled at all.
 

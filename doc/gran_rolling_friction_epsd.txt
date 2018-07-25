@@ -27,11 +27,11 @@ This model can be used as part of "pair gran"_pair_gran.html and
 The elastic-plastic spring-dashpot (EPSD) model (see Ai et al.) adds an additional 
 torque contribution, equal to
 
-:c,image(Eqs/pair_gran_hooke_eqEpsd1.gif)
+:c,image(Eqs/pair_gran_hooke_eqEpsd1.png)
 
 where the torque due to the spring M_rk is calculated as
 
-:c,image(Eqs/pair_gran_hooke_eqEpsd2.gif)
+:c,image(Eqs/pair_gran_hooke_eqEpsd2.png)
 
 Here k_r denotes the rolling stiffness and dtheta_r is the incremental relative 
 rotation between the particles. The spring torque is limited by the full mobilisation 
@@ -40,12 +40,12 @@ friction (rmu) (compare the "CDT model"_gran_rolling_friction_cdt.html).
 
 The viscous damping torque M_rd is implemented as
 
-:c,image(Eqs/pair_gran_hooke_eqEpsd3.gif)
+:c,image(Eqs/pair_gran_hooke_eqEpsd3.png)
 
 where in the current implementation the damping is disabled in case of full mobilisation 
 (f = 0). The damping coefficient C_r may be expressed as:
 
-:c,image(Eqs/pair_gran_hooke_eqEpsd4.gif)
+:c,image(Eqs/pair_gran_hooke_eqEpsd4.png)
 
 Here I_i/j is the moment of inertia and m_i/j is the mass of the particles i and j, 
 respectively. 
