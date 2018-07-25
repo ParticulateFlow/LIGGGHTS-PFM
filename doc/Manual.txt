@@ -58,6 +58,8 @@ and CFDEM&reg; trade marks.
 
 END_RST -->
 
+The LIGGGHTS open-source simulation software :h3
+
 LIGGGHTS stands for LAMMPS Improved for General Granular and Granular 
 Heat Transfer Simulations. It is part of the "CFDEMproject"_liws.
 
@@ -126,6 +128,8 @@ uses.
 :link(sjp,http://www.sandia.gov/~sjplimp)
 
 :line
+
+Structure of the LAMMPS documentation :h3
 
 The LAMMPS documentation is organized into the following sections.  If
 you find errors or omissions in this manual or have suggestions for
