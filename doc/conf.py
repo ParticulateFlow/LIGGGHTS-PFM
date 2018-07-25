@@ -223,8 +223,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('Manual', 'LIGGGHTS.tex', 'LIGGGHTS Documentation',
-   'Steve Plimpton', 'manual'),
+  ('Manual', 'Manual.tex', 'LIGGGHTS Documentation',
+   'Department of Particulate Flow Modelling', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -253,8 +253,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('Manual', 'liggghts', 'LAMMPS Documentation',
-     ['Steve Plimpton'], 1)
+    ('Manual', 'liggghts', 'LIGGGHTS Documentation',
+     ['Department of Particulate Flow Modelling'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -267,8 +267,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('Manual', 'LAMMPS', 'LAMMPS Documentation',
-   'LAMMPS', 'One line description of project.',
+  ('Manual', 'LIGGGHTS', 'LIGGGHTS Documentation',
+   'LIGGGHTS', 'One line description of project.',
    'Miscellaneous'),
 ]
 

@@ -184,11 +184,13 @@ it gives quick access to documentation for all LAMMPS commands.
    dihedrals
    impropers
 
-Indices and tables
-==================
+.. only:: html
 
-* :ref:`genindex`
-* :ref:`search`
+   Indices and tables
+   ==================
+
+   * :ref:`genindex`
+   * :ref:`search`
 
 END_RST -->
 
