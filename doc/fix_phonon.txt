@@ -43,11 +43,11 @@ fix 1 all phonon 10 5000 500000 GAMMA EAM0D nasr 100 :pre
 Calculate the dynamical matrix from molecular dynamics simulations
 based on fluctuation-dissipation theory for a group of atoms.
 
-Consider a crystal with {N} unit cells in three dimensions labelled {l
+Consider a crystal with {N} unit cells in three dimensions labeled {l
 = (l<sub>1</sub>,l<sub>2</sub>,l<sub>3</sub>)} where {l<sub>i</sub>}
 are integers.  Each unit cell is defined by three linearly independent
 vectors [a]<sub>1</sub>, [a]<sub>2</sub>, [a]<sub>3</sub> forming a
-parallelipiped, containing {K} basis atoms labelled {k}.
+parallelipiped, containing {K} basis atoms labeled {k}.
 
 Based on fluctuation-dissipation theory, the force constant
 coefficients of the system in reciprocal space are given by

@@ -109,7 +109,7 @@ For style {mesh}, the atom_type (material type) is inherited from the atom style
 in the "fix mesh/surface"_fix_mesh_surface.html command. 
 
 For {wallstyle primitive}, the atom_type (material type) has to be provided via
-keyword {type}. Primitve walls can be {xplane} or {yplane} or {zplane} or
+keyword {type}. Primitive walls can be {xplane} or {yplane} or {zplane} or
 or {xcylinder} or {ycylinder} or {zcylinder} or {general_plane} or
 {general_cylinder} or {general_cone}. 
 The three axis-aligned planar options specify a single wall in a dimension.
@@ -157,7 +157,7 @@ store the wall force exerted on the particles in a
 is the id of the fix wall/gran command.
 
 The effect of keyword {rolling_friction}, {cohesion}, {tangential_damping},
-{viscous} and {absolute_damping} is explanted in "pair gran"_pair_gran.html
+{viscous} and {absolute_damping} is explained in "pair gran"_pair_gran.html
 
 :line
 

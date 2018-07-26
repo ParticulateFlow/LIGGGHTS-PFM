@@ -82,10 +82,10 @@ This function has zero slope as lambda approaches its extreme values
 smaller fluctuations on the integral to be computed on the
 thermodynamic integration.
 
-IMPORTANT NOTE: It is importante to keep the center of mass fixed
+IMPORTANT NOTE: It is important to keep the center of mass fixed
 during the thermodynamic integration, a non-zero total velocity will
-result in divergencies during the integration due to the fact that the
-atoms are 'attatched' to its equilibrium positions by the Einstein
+result in divergences during the integration due to the fact that the
+atoms are 'attached' to its equilibrium positions by the Einstein
 crystal. Check the option {zero} of "fix langevin"_fix_langevin.html
 and "velocity"_velocity.html. The use of the Nose-Hoover thermostat
 ("fix nvt"_fix_nh.html) is NOT recommended due to its well documented

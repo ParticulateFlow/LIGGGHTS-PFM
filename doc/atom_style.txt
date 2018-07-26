@@ -112,7 +112,7 @@ of bond types, and the maximum number of bonds that each atom can
 have. For each bond type, the parameters have to be specified via the
 "bond_coeff"_bond_coeff.html command (see example "here"_bond_gran.html )
 Note that {bond/gran} is an experimental code which is may not be 
-available in your release of LIGGGHTS. An example for the sytnax is given below:
+available in your release of LIGGGHTS. An example for the syntax is given below:
 
 atom_style bond/gran n_bondtypes 1 bonds_per_atom 6 :pre
 

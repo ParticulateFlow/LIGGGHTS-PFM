@@ -177,7 +177,7 @@ re-compile, after typing "make clean" (which will describe different
 clean options).
 
 The LMP_INC variable is used to include options that turn on ifdefs
-within the LAMMPS code.  The options that are currently recogized are:
+within the LAMMPS code.  The options that are currently recognized are:
 
 -DLAMMPS_GZIP
 -DLAMMPS_JPEG
@@ -260,7 +260,7 @@ variables blank; the MPI wrapper knows where to find the needed files.
 If not, and MPI is installed on your system in the usual place (under
 /usr/local), you also may not need to specify these 3 variables.  On
 some large parallel machines which use "modules" for their
-compile/link environements, you may simply need to include the correct
+compile/link environments, you may simply need to include the correct
 module in your build environment.  Or the parallel machine may have a
 vendor-provided MPI which the compiler has no trouble finding.
 
@@ -318,14 +318,14 @@ package in your build, you can also leave the 3 variables blank.
 Otherwise, select which kinds of FFTs to use as part of the FFT_INC
 setting by a switch of the form -DFFT_XXX.  Recommended values for XXX
 are: MKL, SCSL, FFTW2, and FFTW3.  Legacy options are: INTEL, SGI,
-ACML, and T3E.  For backward compatability, using -DFFT_FFTW will use
+ACML, and T3E.  For backward compatibility, using -DFFT_FFTW will use
 the FFTW2 library.  Using -DFFT_NONE will use the KISS library
 described above.
 
 You may also need to set the FFT_INC, FFT_PATH, and FFT_LIB variables,
 so the compiler and linker can find the needed FFT header and library
 files.  Note that on some large parallel machines which use "modules"
-for their compile/link environements, you may simply need to include
+for their compile/link environments, you may simply need to include
 the correct module in your build environment.  Or the parallel machine
 may have a vendor-provided FFT library which the compiler has no
 trouble finding.
@@ -511,12 +511,12 @@ src/MAKE/Makefile.mac file.
 Building for Windows :h5,link(start_2_6)
 
 The LAMMPS download page has an option to download both a serial and
-parallel pre-built Windows exeutable.  See the "Running
+parallel pre-built Windows executable.  See the "Running
 LAMMPS"_#start_6 section for instructions for running these
 executables on a Windows box.
 
 The pre-built executables are built with a subset of the available
-pacakges; see the download page for the list.  If you want
+packages; see the download page for the list.  If you want
 a Windows version with specific packages included and excluded,
 you can build it yourself.
 
@@ -526,7 +526,7 @@ src/MAKE/Makefile.cygwin.
 
 The other way to do this is using Visual Studio and project files.
 See the src/WINDOWS directory and its README.txt file for instructions
-on both a basic build and a customized build with pacakges you select.
+on both a basic build and a customized build with packages you select.
 
 :line
 
@@ -552,7 +552,7 @@ the src directory of the LAMMPS distribution.
 If you use a command in a LAMMPS input script that is specific to a
 particular package, you must have built LAMMPS with that package, else
 you will get an error that the style is invalid or the command is
-unknown.  Every command's doc page specfies if it is part of a
+unknown.  Every command's doc page specifies if it is part of a
 package.  You can also type
 
 lmp_machine -h :pre
@@ -816,7 +816,7 @@ first "make" command will create a current Makefile.shlib with all the
 file names in your src dir.  The second "make" command will use it to
 build LAMMPS as a shared library, using the SHFLAGS and SHLIBFLAGS
 settings in src/MAKE/Makefile.foo.  The build will create the file
-liblammps_foo.so which another application can link to dyamically.  It
+liblammps_foo.so which another application can link to dynamically.  It
 will also create a soft link liblammps.so, which the Python wrapper uses
 by default.
 
@@ -824,7 +824,7 @@ Note that for a shared library to be usable by a calling program, all
 the auxiliary libraries it depends on must also exist as shared
 libraries.  This will be the case for libraries included with LAMMPS,
 such as the dummy MPI library in src/STUBS or any package libraries in
-lib/packges, since they are always built as shared libraries with the
+lib/packages, since they are always built as shared libraries with the
 -fPIC switch.  However, if a library like MPI or FFTW does not exist
 as a shared library, the second make command will generate an error.
 This means you will need to install a shared library version of the
@@ -875,7 +875,7 @@ Python, the library has a simple function-style interface, provided in
 src/library.cpp and src/library.h.
 
 See the sample codes in examples/COUPLE/simple for examples of C++ and
-C and Fortran codes that invoke LAMMPS thru its library interface.
+C and Fortran codes that invoke LAMMPS through its library interface.
 There are other examples as well in the COUPLE directory which are
 discussed in "Section_howto 10"_Section_howto.html#howto_10 of the
 manual.  See "Section_python"_Section_python.html of the manual for a
@@ -1236,7 +1236,7 @@ partition screen files file.N.
 Use variants of various styles if they exist.  The specified style can
 be {opt}, {omp}, {gpu}, or {cuda}.  These refer to optional packages that
 LAMMPS can be built with, as described above in "Section
-2.3"_#start_3.  The "opt" style corrsponds to the OPT package, the
+2.3"_#start_3.  The "opt" style corresponds to the OPT package, the
 "omp" style to the USER-OMP package, the "gpu" style to the GPU 
 package, and the "cuda" style to the USER-CUDA package.
 

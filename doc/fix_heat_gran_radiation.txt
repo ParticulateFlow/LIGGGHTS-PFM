@@ -36,12 +36,12 @@ This command is not available in LAMMPS.
 [Description:]
 
 Calculates heat radiation between particles and temperature update according to
-Stefan Bolzmann's Law:
+Stefan Boltzmann's Law:
 
-:c,image(Eqs/heat_gran_radiation_bolzmann.png)
+:c,image(Eqs/heat_gran_radiation_boltzmann.png)
 
 where P is the radiative power, A the surface area of the particle, epsilon the
-thermal emissivity of the particle, sigma  Stefan Bolzmann's constant and T the
+thermal emissivity of the particle, sigma  Stefan Boltzmann's constant and T the
 temperature of the particle in Kelvin.
 
 Every timestep every particle radiates one ray.
@@ -52,7 +52,7 @@ It is assumed that:
 
 the temperature within the particles is uniform. :ulb,l
 emissivity is not wavelength-dependent :l
-particles have perfectly diffuse sufaces :l,ule
+particles have perfectly diffuse surfaces :l,ule
 
 To make particles adiabatic (so they do not change the temperature due to this fix),
 set their thermal emissivity to 0.0.

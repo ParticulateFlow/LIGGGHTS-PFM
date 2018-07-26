@@ -38,7 +38,7 @@ subtracted to a group of atoms.
 The compute takes three arguments which are IDs of other
 "computes"_compute.html.  One calculates per-atom kinetic energy
 ({ke-ID}), one calculates per-atom potential energy ({pe-ID)}, and the
-third calcualtes per-atom stress ({stress-ID}).  These should be
+third calculates per-atom stress ({stress-ID}).  These should be
 defined for the same group used by compute heat/flux, though LAMMPS
 does not check for this.
 

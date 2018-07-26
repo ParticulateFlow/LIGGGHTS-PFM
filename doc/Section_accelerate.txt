@@ -82,7 +82,7 @@ NOTE: this sub-section is still a work in progress
 Here is a list of general ideas for improving simulation performance.
 Most of them are only applicable to certain models and certain
 bottlenecks in the current performance, so let the timing data you
-intially generate be your guide.  It is hard, if not impossible, to
+initially generate be your guide.  It is hard, if not impossible, to
 predict how much difference these options will make, since it is a
 function of your problem and your machine.  There is no substitute for
 simply trying them out.
@@ -157,7 +157,7 @@ script.  Or you can use the "-suffix command-line
 switch"_Section_start.html#start_7 to invoke the accelerated versions
 automatically, without changing your input script.  The
 "suffix"_suffix.html command allows you to set a suffix explicitly and
-to turn off/on the comand-line switch setting, both from within your
+to turn off/on the command-line switch setting, both from within your
 input script.
 
 Styles with an "opt" suffix are part of the OPT package and typically
@@ -266,7 +266,7 @@ to pass the OMP_NUM_THREADS environment variable to all processes is
 different.  Two different variants, one for MPICH and OpenMPI, respectively
 are shown above.  Please check the documentation of your MPI installation
 for additional details.  Alternatively, the value provided by OMP_NUM_THREADS
-can be overridded with the "package omp"_package.html command.
+can be overridden with the "package omp"_package.html command.
 Depending on which styles are accelerated in your input, you should
 see a reduction in the "Pair time" and/or "Bond time" and "Loop time"
 printed out at the end of the run. The optimal ratio of MPI to OpenMP
@@ -354,7 +354,7 @@ between the CPU(s) and GPU every timestep. :l
 
 Neighbor lists can be constructed on the CPU or on the GPU :l
 
-The charge assignement and force interpolation portions of PPPM can be
+The charge assignment and force interpolation portions of PPPM can be
 run on the GPU.  The FFT portion, which requires MPI communication
 between processors, runs on the CPU. :l
 
@@ -546,7 +546,7 @@ for your system:
 
 Go to the lammps/lib/cuda directory :ulb,l
 
-If your {CUDA} toolkit is not installed in the default system directoy
+If your {CUDA} toolkit is not installed in the default system directory
 {/usr/local/cuda} edit the file {lib/cuda/Makefile.common}
 accordingly. :l
 

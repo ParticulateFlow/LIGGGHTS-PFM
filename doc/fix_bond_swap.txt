@@ -79,7 +79,7 @@ by this processor on this timestep.
 The criterion for matching molecule IDs is how bond swaps performed by
 this fix conserve chain length.  To use this features you must setup
 the molecule IDs for your polymer chains in a certain way, typically
-in the data file, read by the "read_data"_read_data.html comand.
+in the data file, read by the "read_data"_read_data.html command.
 Consider a system of 6-mer chains.  You have 2 choices.  If the
 molecule IDs for monomers on each chain are set to 1,2,3,4,5,6 then
 swaps will conserve chain length.  For a particular momoner there will

@@ -18,7 +18,7 @@ balance = style name of this fix command :l
 Nfreq = perform dynamic load balancing every this many steps :l
 dimstr = sequence of letters containing "x" or "y" or "z", each not more than once :l
 Niter = # of times to iterate within each dimension of dimstr sequence :l
-thresh = stop balancing when this imbalance threshhold is reached :l
+thresh = stop balancing when this imbalance threshold is reached :l
 zero or more keyword/arg pairs may be appended :ule,l
 keyword = {out} :l
  {out} arg = filename
@@ -45,7 +45,7 @@ have a spatially-varying density distribution.  E.g. a model of a
 vapor/liquid interface, or a solid with an irregular-shaped geometry
 containing void regions. In this case, the LAMMPS default of dividing
 the simulation box volume into a regular-spaced grid of processor
-sub-domain, with one equal-volume sub-domain per procesor, may assign
+sub-domain, with one equal-volume sub-domain per processor, may assign
 very different numbers of particles per processor. This can lead to
 poor performance in a scalability sense, when the simulation is run in
 parallel.
@@ -73,7 +73,7 @@ IMPORTANT NOTE: This command attempts to minimize the imbalance
 factor, as defined above.  But because of the topology constraint that
 only the cutting planes (lines) between processors are moved, there
 are many irregular distributions of particles, where this factor
-cannot be shrunk to 1.0, particuarly in 3d.  Also, computational cost
+cannot be shrunk to 1.0, particularly in 3d.  Also, computational cost
 is not strictly proportional to particle count, and changing the
 relative size and shape of processor sub-domains may lead to
 additional computational and communication overheads, e.g. in the PPPM
@@ -155,7 +155,7 @@ accuracy (relative to the perfect target position).  For {Niter} = 20,
 it will be accurate to better than 1 part in a million.  Thus there is
 no need to set {Niter} to a large value.  This is especially true if
 you are rebalancing often enough that each time you expect only an
-incremental adjustement in the cutting planes is necessary.  LAMMPS
+incremental adjustment in the cutting planes is necessary.  LAMMPS
 will check if the threshold accuracy is reached (in a dimension) is
 less iterations than {Niter} and exit early.
 

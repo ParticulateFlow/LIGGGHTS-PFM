@@ -84,7 +84,7 @@ inter-replica springs and the forces they feel and their motion is
 computed in the usual way due only to other atoms within their
 replica.  Conceptually, the non-NEB atoms provide a background force
 field for the NEB atoms.  They can be allowed to move during the NEB
-minimiation procedure (which will typically induce different
+minimization procedure (which will typically induce different
 coordinates for non-NEB atoms in different replicas), or held fixed
 using other LAMMPS commands such as "fix setforce"_fix_setforce.  Note
 that the "partition"_partition.html command can be used to invoke a
@@ -100,7 +100,7 @@ Conceptually, the initial configuration for the first replica should
 be a state with all the atoms (NEB and non-NEB) having coordinates on
 one side of the energy barrier.  A perfect energy minimum is not
 required, since atoms in the first replica experience no spring forces
-from the 2nd replica.  Thus the damped dynamics minimizaiton will
+from the 2nd replica.  Thus the damped dynamics minimization will
 drive the first replica to an energy minimum if it is not already
 there.  However, you will typically get better convergence if the
 initial state is already at a minimum.  For example, for a system with

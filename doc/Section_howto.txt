@@ -655,7 +655,7 @@ In this scenario, the other code can be called as a library, as in
 (1), or it could be a stand-alone code, invoked by a system() call
 made by the command (assuming your parallel machine allows one or more
 processors to start up another program).  In the latter case the
-stand-alone code could communicate with LAMMPS thru files that the
+stand-alone code could communicate with LAMMPS through files that the
 command writes and reads.
 
 See "Section_modify"_Section_modify.html of the documentation for how
@@ -1623,7 +1623,7 @@ nvt/asphere"_fix_nvt_asphere.html thermostat not only translation
 velocities but also rotational velocities for spherical and aspherical
 particles.
 
-DPD thermostatting alters pairwise interactions in a manner analagous
+DPD thermostatting alters pairwise interactions in a manner analogous
 to the per-particle thermostatting of "fix
 langevin"_fix_langevin.html.
 
@@ -1864,7 +1864,7 @@ The lammps_file() and lammps_command() functions are used to pass a
 file or string to LAMMPS as if it were an input script or single
 command in an input script.  Thus the calling code can read or
 generate a series of LAMMPS commands one line at a time and pass it
-thru the library interface to setup a problem and then run it,
+through the library interface to setup a problem and then run it,
 interleaving the lammps_command() calls with other calls to extract
 information from LAMMPS, perform its own operations, or call another
 code's library.

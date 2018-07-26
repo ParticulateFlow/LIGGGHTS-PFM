@@ -80,11 +80,11 @@ IMPORTANT NOTE: For all of the styles, you must insure that r is always > 0 for
 all particles in the group, or LIGGGHTS will generate an error. This means you
 cannot start your simulation with particles on the region surface (r = 0) or
 with particles on the wrong side of the region surface (r < 0). The force on the
-partice blows up as r -> 0. This means the initial particle distance from the
+particle blows up as r -> 0. This means the initial particle distance from the
 region surface must be larger than r0.
 
 An additional force is acting on particles within the cutoff distance of the
-interpolating kernel. They can "see" a clone of theirself at the wall. This
+interpolating kernel. They can "see" a clone of themselves at the wall. This
 leads to a small disturbance which prevents particle stacking. 
 
 :line

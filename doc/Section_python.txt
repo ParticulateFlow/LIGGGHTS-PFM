@@ -40,12 +40,12 @@ how to build LAMMPS as a library, and "Section_howto
 interface provided in src/library.cpp and src/library.h and how to
 extend it for your needs.  As described below, that interface is what
 is exposed to Python.  It is designed to be easy to add functions to.
-This can easily extend the Python inteface as well.  See details
+This can easily extend the Python interface as well.  See details
 below.
 
 By using the Python interface, LAMMPS can also be coupled with a GUI
 or other visualization tools that display graphs or animations in real
-time as LAMMPS runs.  Examples of such scripts are inlcluded in the
+time as LAMMPS runs.  Examples of such scripts are included in the
 python directory.
 
 Two advantages of using Python are how concise the language is, and
@@ -53,7 +53,7 @@ that it can be run interactively, enabling rapid development and
 debugging of programs.  If you use it to mostly invoke costly
 operations within LAMMPS, such as running a simulation for a
 reasonable number of timesteps, then the overhead cost of invoking
-LAMMPS thru Python will be negligible.
+LAMMPS through Python will be negligible.
 
 Before using LAMMPS from a Python script, you need to do two things.
 You need to build LAMMPS as a dynamic shared library, so it can be
@@ -283,7 +283,7 @@ first importing from the lammps.py file:
 >>> from ctypes import CDLL
 >>> CDLL("liblammps.so") :pre
 
-If an error occurs, carefully go thru the steps in "Section_start
+If an error occurs, carefully go through the steps in "Section_start
 5"_Section_start.html#start_5 and above about building a shared
 library and about insuring Python can find the necessary two files
 it needs.
@@ -580,7 +580,7 @@ things that are possible when Python wraps LAMMPS.  If you create your
 own scripts, send them to us and we can include them in the LAMMPS
 distribution.
 
-trivial.py, read/run a LAMMPS input script thru Python,
+trivial.py, read/run a LAMMPS input script through Python,
 demo.py, invoke various LAMMPS library interface routines,
 simple.py, mimic operation of couple/simple/simple.cpp in Python,
 gui.py, GUI go/stop/temperature-slider to control LAMMPS,

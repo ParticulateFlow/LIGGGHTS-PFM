@@ -134,7 +134,7 @@ output timestep.  The timestep itself is given in the first column.
 The next Nx*Ny*Nz columns contain the temperatures for the atomic
 subsystem, and the final Nx*Ny*Nz columns contain the temperatures for
 the electronic subsystem.  The ordering of the Nx*Ny*Nz columns is
-with the z index varing fastest, y the next fastest, and x the
+with the z index varying fastest, y the next fastest, and x the
 slowest.
 
 This fix does not change the coordinates of its atoms; it only scales

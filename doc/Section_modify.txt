@@ -667,7 +667,7 @@ one-line entry to add to the USER-MISC/README file in that dir, along
 with the 2 source files.  You can do this multiple times if you wish
 to contribute several individual features.  :l
 
-If your contribution is several related featues, it is probably best
+If your contribution is several related features, it is probably best
 to make it a user package directory with a name like USER-FOO.  In
 addition to your new files, the directory should contain a README, and
 Install.csh file.  The README text file should contain your name and

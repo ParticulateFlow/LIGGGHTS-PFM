@@ -36,7 +36,7 @@ if "$\{eng\} > $\{eng_previous\}" then "jump file1" else "jump file2" :pre
 [Description:]
 
 This command provides an if-then-else capability within an input
-script.  A Boolean expression is evaluted and the result is TRUE or
+script.  A Boolean expression is evaluated and the result is TRUE or
 FALSE.  Note that as in the examples above, the expression can contain
 variables, as defined by the "variable"_variable.html command, which
 will be evaluated as part of the expression.  Thus a user-defined
@@ -89,7 +89,7 @@ loop variable, so that it can be re-used later in the input script.
 
 Here is an example of a double loop which uses the if and
 "jump"_jump.html commands to break out of the inner loop when a
-condition is met, then continues iterating thru the outer loop.
+condition is met, then continues iterating through the outer loop.
 
 label	    loopa
 variable    a loop 5

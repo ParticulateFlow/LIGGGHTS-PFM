@@ -129,7 +129,7 @@ reduce force aliasing errors and increase the accuracy of the method
 for a given mesh size.  Or a coarser mesh can be used for the same
 target accuracy, which saves CPU time.  However, there is a trade-off
 since FFTs on two meshes are now performed which increases the
-compuation required.  See "(Cerutti)"_#Cerutti, "(Neelov)"_#Neelov,
+computation required.  See "(Cerutti)"_#Cerutti, "(Neelov)"_#Neelov,
 and "(Hockney)"_#Hockney for details of the method.
 
 For high relative accuracy, using staggered PPPM allows the mesh size
@@ -173,7 +173,7 @@ single-precision FFTs by using the compiler switch -DFFT_SINGLE for
 the FFT_INC setting in your lo-level Makefile.  This setting also
 changes some of the PPPM operations (e.g. mapping charge to mesh and
 interpolating electric fields to particles) to be performed in single
-precision.  This option can speed-up long-range calulations,
+precision.  This option can speed-up long-range calculations,
 particularly in parallel or on GPUs.  The use of the -DFFT_SINGLE flag
 is discussed in "this section"_Section_start.html#start_2_4 of the
 manual. MSM does not currently support the -DFFT_SINGLE compiler switch.

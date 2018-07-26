@@ -60,7 +60,7 @@ turns off the {first} option.
 
 It is OK to use the {first} keyword with a group that has not yet been
 defined, e.g. to use the atom_modify first command at the beginning of
-your input script.  LAMMPS does not use the group until a simullation
+your input script.  LAMMPS does not use the group until a simulation
 is run.
 
 The {sort} keyword turns on a spatial sorting or reordering of atoms

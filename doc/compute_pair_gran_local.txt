@@ -59,7 +59,7 @@ automatically look for a "fix wall/gran"_fix_wall_gran.html command
 that uses mesh walls. The order of the meshes in the fix wall/gran
 command is called the mesh id (starting with 0), and the triangle id
 reflects the order of the triangles in the STL/VTK file read via the
-dedicated fix mesh command. For how to output the trangle id,
+dedicated fix mesh command. For how to output the triangle id,
 see "dump mesh/gran/VTK command"dump.html.
 
 The output {pos} is the particle positions (6 values) in distance
@@ -96,7 +96,7 @@ IMPORTANT NOTE:
 The data associated to the different keywords is output in the
 following order: {pos}, {vel}, {id}, {force}, {force_normal},
 {force_tangential}, {torque}, {history}, {contactArea}, {delta}, {heatFlux}.
-This is independant of the order in which the keywords are
+This is independent of the order in which the keywords are
 specified.
 
 Note that as atoms migrate from processor to processor, there will be

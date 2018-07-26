@@ -36,7 +36,7 @@ compute nparticles all nparticles/tracer/region region_count count tracer tr per
 [Description:]
 
 Define a computation that calculates the number and mass of marked and un-marked particles
-that are in the region speficied via the {region_count} keyword. Particles have
+that are in the region specified via the {region_count} keyword. Particles have
 to be in the group "group-ID" to be counted.
 
 Note that only particles marked by a "fix property/atom/tracer"_fix_property_atom_tracer.html

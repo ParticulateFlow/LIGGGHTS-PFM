@@ -43,7 +43,7 @@ missed on successive timesteps as atoms move.  See the
 for details.
 
 If limitstyle {absolute} is used, {xmax} is applied directly.
-If limitstyle {radius_ratio} is used, a maxmimum distance per step 
+If limitstyle {radius_ratio} is used, a maximum distance per step 
 of {xmax}*radius is applied for each atom. This can be useful for
 the simulation of poly-disperse systems. Note that this option requires
 the atom radius to be stored by using an appropriate atom style.

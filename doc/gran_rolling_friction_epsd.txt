@@ -17,7 +17,7 @@ rolling_friction epsd :pre
 
 This part of "pair gran"_pair_gran.html and 
 "fix wall/gran"_fix_wall_gran.html
-is not availabe in LAMMPS.
+is not available in LAMMPS.
 
 [Description:]
 
@@ -34,7 +34,7 @@ where the torque due to the spring M_rk is calculated as
 :c,image(Eqs/pair_gran_hooke_eqEpsd2.png)
 
 Here k_r denotes the rolling stiffness and dtheta_r is the incremental relative 
-rotation between the particles. The spring torque is limited by the full mobilisation 
+rotation between the particles. The spring torque is limited by the full mobilization 
 torque M_rm that is determined by the normal force F_n and the coefficient of rolling 
 friction (rmu) (compare the "CDT model"_gran_rolling_friction_cdt.html).
 
@@ -42,7 +42,7 @@ The viscous damping torque M_rd is implemented as
 
 :c,image(Eqs/pair_gran_hooke_eqEpsd3.png)
 
-where in the current implementation the damping is disabled in case of full mobilisation 
+where in the current implementation the damping is disabled in case of full mobilization 
 (f = 0). The damping coefficient C_r may be expressed as:
 
 :c,image(Eqs/pair_gran_hooke_eqEpsd4.png)

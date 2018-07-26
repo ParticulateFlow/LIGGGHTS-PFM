@@ -96,7 +96,7 @@ examples/USER/misc/ti directory.
 No information about this fix is written to "binary restart
 files"_restart.html.
 
-This fix computes a global vector quantitie which can be accessed by
+This fix computes a global vector quantity which can be accessed by
 various "output commands"_Section_howto.html#howto_15. The vector has
 2 positions, the first one is the coupling parameter lambda and the
 second one is the time derivative of lambda. The scalar and vector

@@ -59,7 +59,7 @@ This command is not available in LAMMPS.
 Apply the discrete fragmentation method (DFM) to simulate the breakage of
 brittle granular particles (see "Bruchmüller"_#Bruchmueller2011 and "Esnault"_#Esnault2013).
 
-The {verbose} keyword controlls whether statistics about particle
+The {verbose} keyword controls whether statistics about particle
 breakage is output to the screen each time particles are broken.
 
 This command must use the {distributiontemplate} keyword to refer to a 
@@ -121,7 +121,7 @@ of breakage is calculated as
 The Weibull modulus {m} in the probability functions is set to one in the current
 implementation.
 
-The material parameter {fMat} characterises the resistance against fracture.
+The material parameter {fMat} characterizes the resistance against fracture.
 In case of the impact energy based criterion, it is related to the Julius Kruttschnitt
 standard "slope" parameter determined experimentally in drop weight tests and is
 specified in kg/Jm. For the the maximum force and the von Mises stress criterion

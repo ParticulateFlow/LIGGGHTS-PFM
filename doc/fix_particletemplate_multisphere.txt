@@ -32,7 +32,7 @@ mt = multisphere type of the template :l
 opt_keyword = {mass} or {inertia_tensor} or {use_volume} or {use_density} :l
 {mass} value = mass assigned to this particle template
 {inertia_tensor} values = Ixx Ixy Ixz Iyy Iyz Izz
-  Ixx Ixy Ixz Iyy Iyz Izz = 6 independant components of the inertia tensor 
+  Ixx Ixy Ixz Iyy Iyz Izz = 6 independent components of the inertia tensor 
 {use_volume} = particle density calculated from mass and volume (only if keyword 'mass' is used')
 {use_density} = particle volume calculated from mass and density (only if keyword 'mass' is used') :pre
 
@@ -73,7 +73,7 @@ As an alternative, the body's mass and inertia tensor can be specified
 directly via keywords {mass} and {inertia_tensor}. Note that you can
 use these keywords only together, i.e. defining only {mass} but not
 {inertia_tensor} will throw an error. Also note that only 2 out of the
-3 variables density, mass and volume are independant. Thus, you are 
+3 variables density, mass and volume are independent. Thus, you are 
 offered two options when {mass} and {inertia_tensor} are used:
 (a) if keyword {use_volume} is specified, LIGGGHTS will use the 
 specified {mass} and volume_mc (the volume of the particle template 
@@ -90,7 +90,7 @@ The multisphere type or shape type as defined via the {type} keyword must
 be unique integer given to each fix particletemplate/multisphere 
 command by the user (starting with 1), the list of all multisphere types
 in the simulation must be consecutive. At the moment, the multisphere type
-is not used, but will be used to implement orientation-dependant drag
+is not used, but will be used to implement orientation-dependent drag
 for CFD-DEM simulations in the future.
 
 IMPORTANT NOTE: As opposed to the number-based distributions used by 

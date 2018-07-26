@@ -70,12 +70,12 @@ This command is not available in LAMMPS.
 
 [Description:]
 
-This fix allows the import of triangual surfeace mesh wall geometry for granular simulations from 
+This fix allows the import of triangular surface mesh wall geometry for granular simulations from 
 ASCII STL files or legacy ASCII VTK files. Style {mesh/surface} is a general surface mesh, and
 {mesh/surface/planar} represents a planar mesh. {mesh/surface/planar} requires the mesh to 
 consist of only 1 planar face. 
 
-Generall, you can apply scaling, offset and rotation to the imported mesh via keywords {scale}, 
+Generally, you can apply scaling, offset and rotation to the imported mesh via keywords {scale}, 
 {move}, {rotate}. Operations are applied in the order as they are specified. The group-ID defines
 which particles will "see" the mesh, in case it is used as a granular wall.
 
@@ -138,9 +138,9 @@ Warning messages:
 
 There should be no angle < 0.5&deg; in any element :ulb,l
 The number of neighbor elements should be <= 5 for any element :l
-All nodes should be within the simlation box :l,ule
+All nodes should be within the simulation box :l,ule
 
-If any of the obove rules is not fulfilled, a warning is generated. Keyword
+If any of the above rules is not fulfilled, a warning is generated. Keyword
 {verbose} controls if details about the warning are written to the screen.
 
 Error messages:
@@ -150,7 +150,7 @@ Mesh elements must not be duplicate :l
 Coplanar mesh elements that share an edge must not overlap :l
 Mesh elements must not leave the simulation domain :l,ule
 
-If any of the obove rules is not fulfilled, an error is generated and 
+If any of the above rules is not fulfilled, an error is generated and 
 LIGGGHTS halts. Error messages are always {verbose}. 
 If LIGGGHTS halts due to the last error, you might think about (a) 
 changing the mesh import parameters ({scale}, {move}, {rotate}), (b) 

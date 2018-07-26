@@ -88,7 +88,7 @@ Insert particles into a granular run either once or every few timesteps
 within a specified region until either np particles have been inserted
 or the desired particle mass (mp) has been reached.
 
-The {verbose} keyword controlls whether statistics about particle
+The {verbose} keyword controls whether statistics about particle
 insertion is output to the screen each time particles are inserted.
 
 Each timestep particles are inserted, they are placed randomly inside

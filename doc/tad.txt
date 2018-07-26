@@ -251,7 +251,7 @@ number of replicas or processors.
 
 Note that within a single state, the dynamics will typically
 temporarily continue beyond the event that is ultimately chosen, until
-the stopping criterionis satisfied.  When the event is eventually
+the stopping criterion is satisfied.  When the event is eventually
 executed, the timestep counter is reset to the value when the event
 was detected. Similarly, after each quench and NEB minimization, the
 timestep counter is reset to the value at the start of the

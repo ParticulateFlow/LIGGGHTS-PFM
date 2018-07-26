@@ -292,7 +292,7 @@ so that any machine which supports XDR should be able to read them.
 The number of atoms per snapshot cannot change with the {xtc} style.
 The {unwrap} option of the "dump_modify"_dump_modify.html command allows
 XTC coordinates to be written "unwrapped" by the image flags for each
-atom.  Unwrapped means that if the atom has passed thru a periodic
+atom.  Unwrapped means that if the atom has passed through a periodic
 boundary one or more times, the value is printed for what the
 coordinate would be if it had not been wrapped back into the periodic
 box.  Note that these coordinates may thus be far outside the box size
@@ -365,14 +365,14 @@ Different keywords can be used to dump the per-triangle stress (force
 magnitude / element area), id, velocity, wear, stress components 
 (fx / element area, fy / element area, fz / element area), area (area
 of each element) or the process which owns the element
-(visulatisation of the parallel decomposition) into the specified file using a 
+(visualization of the parallel decomposition) into the specified file using a 
 VTK file format. The list of mesh IDs is optional. As with the stl style, 
 all active meshes are dumped if you do not supply the optional list of 
 mesh IDs. By specifying list of mesh IDs you can explicitly choose 
 which meshes to dump. The group-ID is ignored. Again, a series of files 
 can be post-processed in Paraview , www.paraview.org
 Most keywords as used for the {mesh/vtk} style are self-explanatory. 
-Keyword {output} controlls if the data is written in a per-face manner
+Keyword {output} controls if the data is written in a per-face manner
 or as interpolated values to VTK. Keywords {aedges} and {acorners} dump
 the number of active edges/corners per face. Keyword {nneighs} dumps the 
 number of face neighbors LIGGGHTS has recognized for each face.
@@ -527,7 +527,7 @@ appropriate distance "units"_units.html (Angstroms, sigma, etc).  Use
 so that each value is 0.0 to 1.0.  If the simulation box is triclinic
 (tilted), then all atom coords will still be between 0.0 and 1.0.  Use
 {xu}, {yu}, {zu} if you want the coordinates "unwrapped" by the image
-flags for each atom.  Unwrapped means that if the atom has passed thru
+flags for each atom.  Unwrapped means that if the atom has passed through
 a periodic boundary one or more times, the value is printed for what
 the coordinate would be if it had not been wrapped back into the
 periodic box.  Note that using {xu}, {yu}, {zu} means that the

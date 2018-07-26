@@ -69,7 +69,7 @@ set region srcreg property/peratom heatSource 0.5 :pre
 
 Contact area calculation:
 
-Using keyword {contact_area}, you can choose from 3 modes of calulating
+Using keyword {contact_area}, you can choose from 3 modes of calculating
 the contact area for particle-particle heat transfer: If {overlap} is used,
 the contact area is calculated from the area of the sphere-sphere intersection
 If {constant} is used, a constant user-defined overlap area is assumed.

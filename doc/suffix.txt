@@ -30,7 +30,7 @@ to turn off/on any suffix setting made via the command line.
 The specified style can be {opt}, {omp}, {gpu}, or {cuda}.  These refer to
 optional packages that LAMMPS can be built with, as described in "this
 section of the manual"_Section_start.html#start_3.  The "opt" style
-corrsponds to the OPT package, the "omp" style to the USER-OMP package, 
+corresponds to the OPT package, the "omp" style to the USER-OMP package, 
 the "gpu" style to the GPU package, and the "cuda" style to the
 USER-CUDA package.
 
@@ -46,7 +46,7 @@ multi-threading :l
 GPU = a handful of pair styles and the PPPM kspace_style, optimized to
 run on one or more GPUs or multicore CPU/GPU nodes :l
 
-USER-CUDA = a collection of atom, pair, fix, compute, and intergrate
+USER-CUDA = a collection of atom, pair, fix, compute, and integrate
 styles, optimized to run on one or more NVIDIA GPUs :l,ule
 
 As an example, all of the packages provide a "pair_style

@@ -87,7 +87,7 @@ fix ins all insert/rate/region seed 1001 distributiontemplate pdd1 nparticles 10
 Insert particles into a granular run every few timesteps 
 within a specified region at a specified rate.
 
-The {verbose} keyword controlls whether statistics about particle
+The {verbose} keyword controls whether statistics about particle
 insertion is output to the screen each time particles are inserted.
 
 This command must use the {region} keyword to define an insertion
@@ -123,7 +123,7 @@ in the "fix_particledistribution_discrete"_fix_particledistribution_discrete.htm
 command (all of which can also be "all").
 
 The keyword {overlapcheck} controls if overlap is checked for at insertion,
-both within the inserted particle package and with other existig particles. 
+both within the inserted particle package and with other existing particles. 
 If this option is turned off, insertion will scale very well in parallel, 
 otherwise not. Be aware that in case of no overlap check, highly overlapping
 configurations will be produced, so you will have to relax these configurations.

@@ -381,7 +381,7 @@ per-atom vector.  Atom-style variables are evaluated by other commands
 that define a "group"_group.html on which they operate, e.g. a
 "dump"_dump.html or "compute"_compute.html or "fix"_fix.html command.
 When they invoke the atom-style variable, only atoms in the group are
-inlcuded in the formula evaluation.  The variable evaluates to 0.0 for
+included in the formula evaluation.  The variable evaluates to 0.0 for
 atoms not in the group.
 
 The thermo keywords allowed in a formula are those defined by the
@@ -484,7 +484,7 @@ Floor() if the largest integer not greater than its argument.  Round()
 is the nearest integer to its argument.
 
 The ramp(x,y) function uses the current timestep to generate a value
-linearly intepolated between the specified x,y values over the course
+linearly interpolated between the specified x,y values over the course
 of a run, according to this formula:
 
 value = x + (y-x) * (timestep-startstep) / (stopstep-startstep) :pre
@@ -518,7 +518,7 @@ output timesteps:
 The stride(x,y,z) function uses the current timestep to generate a new
 timestep.  X,y >= 0 and z > 0 and x <= y are required.  The generated
 timesteps increase in increments of z, from x to y, i.e. it generates
-the sequece x,x+z,x+2z,...,y.  If y-x is not a multiple of z, then
+the sequence x,x+z,x+2z,...,y.  If y-x is not a multiple of z, then
 similar to the way a for loop operates, the last value will be one
 that does not exceed y.  For any current timestep, the next timestep
 in the sequence is returned.  Thus if stagger(1000,2000,100) is used
@@ -621,7 +621,7 @@ respectively.  The ave() function is the same as sum() except that it
 divides the result by the length of the vector.  The trap() function
 is the same as sum() except the first and last elements are multiplied
 by a weighting factor of 1/2 when performing the sum.  This
-effectively implements an integratiion via the trapezoidal rule on the
+effectively implements an integration via the trapezoidal rule on the
 global vector of data.  I.e. consider a set of points, equally spaced
 by 1 in their x coordinate: (1,V1), (2,V2), ..., (N,VN), where the Vi
 are the values in the global vector of length N.  The integral from 1
@@ -876,7 +876,7 @@ not be current.  This leads to one of three kinds of behavior:
 
 (1) The variable may be evaluated accurately.  If it contains
 references to a compute or fix, and these values were calculated on
-the last timestep of a preceeding run, then they will be accessed and
+the last timestep of a preceding run, then they will be accessed and
 used by the variable and the result will be accurate.
 
 (2) LAMMPS may not be able to evaluate the variable and will generate

@@ -25,7 +25,7 @@ dynamics codes our group has distributed.
 The "Wish list link"_http://lammps.sandia.gov/future.html on the
 LAMMPS WWW page gives a list of features we are hoping to add to
 LAMMPS in the future, including contact names of individuals you can
-email if you are interested in contributing to the developement or
+email if you are interested in contributing to the development or
 would be a future user of that feature.
 
 You can also send "email to the
