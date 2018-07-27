@@ -251,6 +251,7 @@ int FixCfdCouplingChemistry::setmask()
 void FixCfdCouplingChemistry::post_create()
 {
     // register tgas (partTemp)
+    fix_tgas_  = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style, false));
     if (!fix_tgas_)
     {
         const char* fixarg[9];
@@ -260,13 +261,14 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[3]="partTemp";
         fixarg[4]="scalar";             // 1 vector per particle to be registered
         fixarg[5]="yes";                // restart yes
-        fixarg[6]="yes";                // communicate ghost no
+        fixarg[6]="no";                // communicate ghost no
         fixarg[7]="no";                 // communicate rev
         fixarg[8]="0.";
         fix_tgas_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     // register rhogas (partRho)
+    fix_rhogas_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style, false));
     if (!fix_rhogas_)
     {
         const char* fixarg[9];
@@ -283,6 +285,7 @@ void FixCfdCouplingChemistry::post_create()
     }
 
     // register reactionheat
+    fix_reactionheat_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style, false));
     if (!fix_reactionheat_)
     {
         const char* fixarg[9];
@@ -292,13 +295,14 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[3]="reactionHeat";
         fixarg[4]="scalar";     // 1 vector per particle to be registered
         fixarg[5]="yes";        // restart
-        fixarg[6]="yes";         // communicate ghost
+        fixarg[6]="no";         // communicate ghost
         fixarg[7]="no";         // communicate rev
         fixarg[8]="0.";
         fix_reactionheat_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     // register partMolarConc
+    fix_totalmole_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style, false));
     if (!fix_totalmole_)
     {
         const char* fixarg[9];
@@ -307,15 +311,15 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[2]="property/atom";
         fixarg[3]="partMolarConc";
         fixarg[4]="scalar";     // 1 vector per particle to be registered
-        fixarg[5]="no";        // restart
-        fixarg[6]="yes";         // communicate ghost
+        fixarg[5]="yes";        // restart
+        fixarg[6]="no";         // communicate ghost
         fixarg[7]="no";         // communicate rev
         fixarg[8]="0.";
         fix_totalmole_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 
     // register nu field
-    fix_nufField_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style,false));
+    fix_nufField_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style,false));
     if (!fix_nufField_)
     {
         const char* fixarg[9];
@@ -332,6 +336,7 @@ void FixCfdCouplingChemistry::post_create()
     }
 
     // register part Reynolds number
+    fix_partReynolds_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style,false));
     if (!fix_partReynolds_)
     {
         const char* fixarg[9];
@@ -361,8 +366,8 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[2]="property/atom";
             fixarg[3]=molarfraction_names[i];
             fixarg[4]="scalar";        // 1 vector per particle to be registered
-            fixarg[5]="no";           // restart
-            fixarg[6]="yes";            // communicate ghost
+            fixarg[5]="yes";           // restart
+            fixarg[6]="no";            // communicate ghost
             fixarg[7]="no";            // communicate rev
             fixarg[8]="0.";
             fix_molarfraction_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
@@ -378,8 +383,8 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[2]="property/atom";
             fixarg[3]=mod_spec_names_[i];
             fixarg[4]="scalar";      // 1 vector per particle to be registered
-            fixarg[5]="no";         // restart
-            fixarg[6]="yes";          // communicate ghost
+            fixarg[5]="yes";         // restart
+            fixarg[6]="no";          // communicate ghost
             fixarg[7]="no";          // communicate rev
             fixarg[8]="0.";
             fix_masschange_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
@@ -424,6 +429,7 @@ void FixCfdCouplingChemistry::post_create()
     }
 
     // register pressure (partP)
+    fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partP","property/atom","scalar",0,0,style,false));
     if (!fix_partPressure_)
     {
         const char* fixarg[9];
@@ -453,26 +459,6 @@ void FixCfdCouplingChemistry::init()
     if(!fix_coupling_)
       error->fix_error(FLERR,this,"Fix couple/cfd/chemistry needs a fix of type couple/cfd");
 
-    // reference to partTemp, partRho and reactionheat
-    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
-    fix_rhogas_         =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
-    fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
-    fix_totalmole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
-
-    fix_partReynolds_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style));
-    fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partP","property/atom","scalar",0,0,style));
-
-
-    /*for (int i = 0; i < num_species; ++i)
-    {
-        fix_molarfraction_[i]   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,style));
-    } */
-
-    /*for (int j=0; j<num_diffusant;++j)
-    {
-        fix_diffusionCoeff_[j]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[j],"property/atom","scalar",0,0,style));
-    }*/
-
     // values to come from OF
     fix_coupling_->add_pull_property("partTemp","scalar-atom");
     fix_coupling_->add_pull_property("partRho","scalar-atom");
@@ -498,14 +484,7 @@ void FixCfdCouplingChemistry::init()
         fix_coupling_->add_push_property(mod_spec_names_[i],"scalar-atom");
     }
 
-     /*for (int j=0; j < num_diffusant; ++j)
-        {
-            double *diff_Coeff = fix_diffusionCoeff_[j] -> vector_atom;
-            for (int i =0; i < atom->nlocal; i++)
-                if (screen)
-                    fprintf(screen,"diffCoeff from cfd/coupling/chemistry: %6.15f \n", diff_Coeff[i]);
-        }*/
-    }
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -533,12 +512,3 @@ void FixCfdCouplingChemistry::initial_integrate(int)
         }
     }
 }
-
-void FixCfdCouplingChemistry::post_force(int)
-{
-    // for all species names i and reaction heat
-    // if dc_->pushednow(i)
-    // clear masschange(i),reactionheat
-    // pushednow(i)=false
-}
-
