@@ -192,7 +192,7 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";          // vector with 3 values (for the different layers)
         fixarg[5]="yes";             // restart yes
-        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[6]="no";             // communicate ghost - yes
         fixarg[7]="no";              // communicate rev no
         fixarg[8]="0.0";             // tale 0 as default value
         fixarg[9]="0.0";
@@ -214,7 +214,7 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";          // vector with 3 values (for the different layers)
         fixarg[5]="yes";             // restart yes
-        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[6]="no";             // communicate ghost - yes
         fixarg[7]="no";              // communicate rev no
         fixarg[8]="0.0";
         fixarg[9]="0.0";
@@ -235,7 +235,7 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="scalar";
         fixarg[5]="yes";             // restart yes
-        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[6]="no";             // communicate ghost - yes
         fixarg[7]="no";              // communicate rev no
         fixarg[8]="0.0";
         fix_Massterm = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
@@ -254,7 +254,7 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
-        fixarg[6]="yes";
+        fixarg[6]="no";
         fixarg[7]="no";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
@@ -275,7 +275,7 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
-        fixarg[6]="yes";
+        fixarg[6]="no";
         fixarg[7]="no";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
@@ -296,7 +296,7 @@ void FixChemShrinkCore::post_create()
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
-        fixarg[6]="yes";
+        fixarg[6]="no";
         fixarg[7]="no";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
@@ -557,9 +557,6 @@ void FixChemShrinkCore::init()
         }
 
         calcMassLayer(i);
-
-        /*if (screen)
-            fprintf(screen,"diffCoeff fix/chem/shrink/core: %6.15f \n",molecularDiffusion_[i]);*/
     }
 }
 
