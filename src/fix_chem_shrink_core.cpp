@@ -255,7 +255,7 @@ void FixChemShrinkCore::post_create()
         fixarg[4]="vector";
         fixarg[5]="yes";
         fixarg[6]="yes";
-        fixarg[7]="yes";
+        fixarg[7]="no";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
         fixarg[10]="0.0";
@@ -276,7 +276,7 @@ void FixChemShrinkCore::post_create()
         fixarg[4]="vector";
         fixarg[5]="yes";
         fixarg[6]="yes";
-        fixarg[7]="yes";
+        fixarg[7]="no";
         fixarg[8]="0.0";
         fixarg[9]="0.0";
         fixarg[10]="0.0";
@@ -509,6 +509,7 @@ void FixChemShrinkCore::init()
     strcpy (fixname,"Aterm_");
     strcat(fixname,id);
     fix_Aterm = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
+    delete []fixname;
 
 
     fixname = new char[strlen("Bterm_")+strlen(id)+1];
@@ -612,24 +613,6 @@ void FixChemShrinkCore::post_force(int)
                     update_gas_properties(i, dmA_);
                 }
         }
-    }
-
-    bigint nblocal = atom->nlocal;
-    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
-
-    //NP tags and maps
-    if (atom->molecular == 0) {
-    int *tag = atom->tag;
-    for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
-    atom->tag_extend();
-    }
-
-    if (atom->tag_enable) {
-      if (atom->map_style) {
-        atom->nghost = 0;
-        atom->map_init();
-        atom->map_set();
-      }
     }
 }
 
