@@ -104,11 +104,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 species_names_[i] = new char [strlen(arg[iarg_])+1];
                 strcpy(species_names_[i], arg[iarg_]);
                 iarg_ += 1;
-
-                /*if(screen)
-                {
-                    fprintf(screen,"species_names in cfd/coupling/chemistry: %s \n",species_names_[i]);
-                }*/
             }
             hasargs = true;
         }
@@ -138,11 +133,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 strcpy(diffusant_names_[i], arg[iarg_]);
                 strcat(diffusant_names_[i],"_diffCoeff");
                 iarg_ += 1;
-
-                if(screen)
-                {
-                    fprintf(screen, "diffusant_names in cfd/coupling/chemistry: %s \n",diffusant_names_[i]);
-                }
             }
             hasargs = true;
         }
@@ -177,9 +167,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
        molarfraction_names[i] = new char [strlen("X_")+strlen(species_names_[i])+1];
        strcpy(molarfraction_names[i],"X_");
        strcat(molarfraction_names[i],species_names_[i]);
-
-       if (screen)
-           fprintf(screen, "molar fraction manes :%s \n",molarfraction_names[i]);
    }
 
    // flags for vector output
