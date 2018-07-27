@@ -139,10 +139,10 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 strcat(diffusant_names_[i],"_diffCoeff");
                 iarg_ += 1;
 
-                /* if(screen)
+                if(screen)
                 {
                     fprintf(screen, "diffusant_names in cfd/coupling/chemistry: %s \n",diffusant_names_[i]);
-                }*/
+                }
             }
             hasargs = true;
         }
@@ -177,6 +177,9 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
        molarfraction_names[i] = new char [strlen("X_")+strlen(species_names_[i])+1];
        strcpy(molarfraction_names[i],"X_");
        strcat(molarfraction_names[i],species_names_[i]);
+
+       if (screen)
+           fprintf(screen, "molar fraction manes :%s \n",molarfraction_names[i]);
    }
 
    // flags for vector output
@@ -312,6 +315,7 @@ void FixCfdCouplingChemistry::post_create()
     }
 
     // register nu field
+    fix_nufField_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style,false));
     if (!fix_nufField_)
     {
         const char* fixarg[9];
@@ -347,24 +351,7 @@ void FixCfdCouplingChemistry::post_create()
     fix_molarfraction_  =   new FixPropertyAtom*[num_species];
     for (int i=0; i<num_species;++i)
     {
-        fix_masschange_[i]      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style,false));
-        if (fix_masschange_[i] == NULL)
-        // register masschange/changeOfSpeciesMass
-        {
-            const char* fixarg[9];
-            fixarg[0]=mod_spec_names_[i];
-            fixarg[1]="all";
-            fixarg[2]="property/atom";
-            fixarg[3]=mod_spec_names_[i];
-            fixarg[4]="scalar";      // 1 vector per particle to be registered
-            fixarg[5]="yes";         // restart
-            fixarg[6]="yes";          // communicate ghost
-            fixarg[7]="no";          // communicate rev
-            fixarg[8]="0.";
-            fix_masschange_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
-        }
-
-        fix_molarfraction_[i]   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,style,false));
+        fix_molarfraction_[i] = static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,id,false));
         if (fix_molarfraction_[i] == NULL)
         // register fix for molar fraction
         {
@@ -374,18 +361,34 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[2]="property/atom";
             fixarg[3]=molarfraction_names[i];
             fixarg[4]="scalar";        // 1 vector per particle to be registered
-            fixarg[5]="yes";           // restart
+            fixarg[5]="no";           // restart
             fixarg[6]="yes";            // communicate ghost
             fixarg[7]="no";            // communicate rev
             fixarg[8]="0.";
             fix_molarfraction_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        }
+
+        fix_masschange_[i]      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style,false));
+        if (fix_masschange_[i]==NULL)
+        // register masschange/changeOfSpeciesMass
+        {
+            const char* fixarg[9];
+            fixarg[0]=mod_spec_names_[i];
+            fixarg[1]="all";
+            fixarg[2]="property/atom";
+            fixarg[3]=mod_spec_names_[i];
+            fixarg[4]="scalar";      // 1 vector per particle to be registered
+            fixarg[5]="no";         // restart
+            fixarg[6]="yes";          // communicate ghost
+            fixarg[7]="no";          // communicate rev
+            fixarg[8]="0.";
+            fix_masschange_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
         }
     }
 
     fix_diffusionCoeff_ = new FixPropertyAtom*[num_diffusant];
     for (int j=0; j<num_diffusant;++j)
     {
-
         fix_diffusionCoeff_[j]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[j],"property/atom","scalar",0,0,style,false));
         // register diffusion coefficient variables
         if(fix_diffusionCoeff_[j] == NULL)
@@ -396,9 +399,9 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[2]="property/atom";
             fixarg[3]=diffusant_names_[j];
             fixarg[4]="scalar";        // 1 vector per particle to be registered
-            fixarg[5]="no";           // restart
-            fixarg[6]="yes";            // communicate ghost
-            fixarg[7]="yes";            // communicate rev
+            fixarg[5]="yes";           // restart
+            fixarg[6]="no";            // communicate ghost
+            fixarg[7]="no";            // communicate rev
             fixarg[8]="0.";
             fix_diffusionCoeff_[j] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
         }
@@ -455,15 +458,19 @@ void FixCfdCouplingChemistry::init()
     fix_rhogas_         =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalmole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
-    fix_nufField_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partNu","property/atom","scalar",0,0,style));
+
     fix_partReynolds_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRe","property/atom","scalar",0,0,style));
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partP","property/atom","scalar",0,0,style));
 
+
     /*for (int i = 0; i < num_species; ++i)
     {
-        //fix_masschange_[i]      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(mod_spec_names_[i],"property/atom","scalar",0,0,style));
-        //fix_diffusionCoeff_[i]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[i],"property/atom","scalar",0,0,style));
-        //fix_molarfraction_[i]   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,style));
+        fix_molarfraction_[i]   =   static_cast<FixPropertyAtom*>(modify->find_fix_property(molarfraction_names[i],"property/atom","scalar",0,0,style));
+    } */
+
+    /*for (int j=0; j<num_diffusant;++j)
+    {
+        fix_diffusionCoeff_[j]  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffusant_names_[j],"property/atom","scalar",0,0,style));
     }*/
 
     // values to come from OF
