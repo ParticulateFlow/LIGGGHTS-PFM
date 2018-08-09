@@ -154,7 +154,7 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
           if(different_type)
             error->fix_error(FLERR,this,"have to use keyword 'file' with option 'spheres_different_type'");
 
-          //read sphere r and coos, determine min and max
+          //read sphere r and coords, determine min and max
           for(int i = 0; i < nspheres; i++)
           {
               r_sphere[i] = atof(arg[iarg+3])*force->cg();
