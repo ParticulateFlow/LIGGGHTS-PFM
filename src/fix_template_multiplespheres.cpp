@@ -79,11 +79,8 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
   bonded_implicit = false;
   bonded_explicit = false;
   // number of partners and partner array
-  np = new int[nspheres]();
-  p = new int*[nspheres];
-  for (int i=0; i<nspheres; ++i)
-      p[i] = new int[nspheres-1]();
-
+  np = NULL;
+  p = NULL;
   fix_bond_random_id = NULL;
 
   for (int i = 0; i < 3; i++) {
@@ -195,6 +192,11 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
                 else
                 {
                     int counter = 0;
+                    // number of partners and partner array
+                    np = new int[nspheres]();
+                    p = new int*[nspheres];
+                    for(int i=0; i<nspheres; ++i)
+                        p[i] = new int[nspheres-1]();
 
                     for(int i = 0; i < nbond_pairs; ++i)
                     {
@@ -247,10 +249,14 @@ FixTemplateMultiplespheres::~FixTemplateMultiplespheres()
     memory->destroy(x_sphere);
     delete []r_sphere;
     delete []atom_type_sphere;
-    for(int i = 0; i < nspheres; ++i)
-        delete [] p[i];
-    delete [] p;
-    delete []np;
+
+    if (p)
+    {
+        for(int i = 0; i < nspheres; ++i)
+            delete [] p[i];
+        delete [] p;
+    }
+    delete [] np;
 
 }
 
