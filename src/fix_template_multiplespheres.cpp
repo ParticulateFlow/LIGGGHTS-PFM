@@ -77,6 +77,7 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
   atom_type_sphere = 0;
 
   bonded = false;
+  bond_type = 1;
   // number of partners and partner array
   np = NULL;
   p = NULL;
@@ -235,8 +236,20 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
         }
         hasargs = true;
     }
+    else if(strcmp(arg[iarg],"bond_type") == 0)
+    {
+        if (narg < iarg+2)
+            error->fix_error(FLERR,this,"not enough arguments for option 'bond_type'");
+        bond_type = atoi(arg[iarg+1]);
+        if (bond_type < 1 || bond_type > atom->nbondtypes)
+            error->fix_error(FLERR,this,"'bond_type' value must be > 0 and <= number of bond types");
+        iarg += 2;
+        hasargs = true;
+    }
     else if(strcmp(style,"particletemplate/multiplespheres") == 0)
+    {
         error->fix_error(FLERR,this,"unknown keyword");
+    }
   }
 
   if(!spheres_read) error->fix_error(FLERR,this,"need to define spheres for the template");
@@ -580,7 +593,7 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
             pti->fix_property_value[0][0] = static_cast<double>(update->ntimestep)+random->uniform();
             pti->n_fix_property = 1;
             pti->fix_property_nentry[0] = 1;
-            pti->bond_type = 1; // TODO get from input script
+            pti->bond_type = bond_type;
           }
     }
 }

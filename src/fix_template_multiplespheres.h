@@ -104,6 +104,7 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   int ntry;
 
   bool bonded;
+  int bond_type;
 
   class FixPropertyAtom *fix_bond_random_id;
 };
