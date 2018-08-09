@@ -48,7 +48,7 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   int maxtype();
   int mintype();
   int number_spheres();
-  bool is_bonded() const { return bonded_implicit || bonded_explicit; }
+  bool is_bonded() const { return bonded; }
 
   // multi insertion
   virtual void init_ptilist(int);
@@ -103,8 +103,7 @@ class FixTemplateMultiplespheres : public FixTemplateSphere {
   // number of tries for mc
   int ntry;
 
-  bool bonded_implicit;
-  bool bonded_explicit;
+  bool bonded;
 
   class FixPropertyAtom *fix_bond_random_id;
 };

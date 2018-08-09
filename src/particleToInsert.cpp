@@ -160,16 +160,10 @@ int ParticleToInsert::insert()
 
 /* ---------------------------------------------------------------------- */
 
-int ParticleToInsert::create_bonds_implicit()
+int ParticleToInsert::create_bond_partners(int*& npartner, int**&partner)
 {
-    if(nspheres == 1 || !needs_bonding || local_start < 0)
-        return 0;
-
-    needs_bonding = false; // reset in case pti gets reused
-
-    // find bond partners
-    int *npartner = new int[nspheres](); // convert to member variable to be set from fix template
-    int **partner = new int*[nspheres];  // convert to member variable to be set from fix template
+    npartner = new int[nspheres]();
+    partner = new int*[nspheres];
 
     for(int i = 0; i < nspheres; ++i)
         partner[i] = new int[nspheres-1]();
@@ -201,70 +195,27 @@ int ParticleToInsert::create_bonds_implicit()
                 partner[j][npartner[j]] = i;
                 npartner[i]++;
                 npartner[j]++;
-                create_bonds = 1;
+                create_bonds = 2;
             }
         }
     }
 
-    int ncreate = 0;
-
-    if(create_bonds)
-    {
-        // create bonds
-        int **_bond_type = atom->bond_type;
-        int **_bond_atom = atom->bond_atom;
-        int *num_bond = atom->num_bond;
-        int newton_bond = force->newton_bond;
-        int n_bondhist = atom->n_bondhist;
-        double ***bond_hist = atom->bond_hist;
-
-        // Note: atoms are created with dummy tag = 0, but
-        //       actual tags must be available at this point,
-        //       i.e. atom->tag_extend() must have been called
-        for(int i = 0; i < nspheres; ++i)
-        {
-            if (npartner[i] == 0) continue;
-
-            for(int k = 0; k < npartner[i]; ++k)
-            {
-                const int j = partner[i][k];
-                if (!newton_bond || i < j)
-                {
-                    const int ilocal = local_start + i;
-
-                    if (num_bond[ilocal] == atom->bond_per_atom)
-                    {
-                        error->one(FLERR,"New bond exceeded bonds per atom in fix bond/create");
-                    }
-
-                    _bond_type[ilocal][num_bond[ilocal]] = bond_type;
-                    _bond_atom[ilocal][num_bond[ilocal]] = atom->tag[local_start+j];
-
-                    // reset history
-                    for (int ih = 0; ih < n_bondhist; ++ih)
-                    {
-                        bond_hist[ilocal][num_bond[ilocal]][ih] = 0.;
-                    }
-                    num_bond[ilocal]++;
-                }
-
-                if(i < j)
-                    ++ncreate;
-            }
-        }
-    }
-
-    for(int i = 0; i < nspheres; ++i)
-        delete [] partner[i];
-    delete [] partner;
-    delete [] npartner;
-
-    return ncreate;
+    return create_bonds;
 }
 
 /* ---------------------------------------------------------------------- */
 
-int ParticleToInsert::create_bonds_explicit(int *npartner, int **partner)
+void ParticleToInsert::destroy_bond_partners(int* npartner, int** partner)
+{
+    for(int i = 0; i < nspheres; ++i)
+        delete [] partner[i];
+    delete [] partner;
+    delete [] npartner;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int ParticleToInsert::create_bonds(int *npartner, int **partner)
 {
     if(nspheres == 1 || !needs_bonding || local_start < 0)
         return 0;
@@ -273,7 +224,12 @@ int ParticleToInsert::create_bonds_explicit(int *npartner, int **partner)
 
     int create_bonds = 1;
 
-    int ncreate = 0;
+    if(!npartner && !partner)
+    {
+        create_bonds = create_bond_partners(npartner, partner);
+    }
+
+    int ncreated = 0;
 
     if(create_bonds)
     {
@@ -316,12 +272,17 @@ int ParticleToInsert::create_bonds_explicit(int *npartner, int **partner)
                 }
 
                 if(i < j)
-                    ++ncreate;
+                    ++ncreated;
             }
         }
     }
 
-    return ncreate;
+    if(create_bonds != 1) // create_bond_partners allocated memory
+    {
+        destroy_bond_partners(npartner, partner);
+    }
+
+    return ncreated;
 }
 
 /* ---------------------------------------------------------------------- */

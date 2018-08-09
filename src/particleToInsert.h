@@ -89,11 +89,12 @@ namespace LAMMPS_NS {
         virtual int set_x_v_omega(double *,double *,double *,double *);
 
         virtual void scale_pti(double r_scale);
-        int create_bonds_implicit();
-        int create_bonds_explicit(int *npartner, int **partner);
+        int create_bonds(int *npartner=NULL, int **partner=NULL);
       private:
         int local_start;
         bool needs_bonding;
+        int create_bond_partners(int *&npartner, int **&partner);
+        void destroy_bond_partners(int *npartner, int **partner);
     };
 
 }
