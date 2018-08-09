@@ -161,6 +161,7 @@ void FixInsertPack::init_defaults()
       insertion_ratio = 0.;
 
       warn_region = true;
+      insert_at = false;
 }
 
 /* ---------------------------------------------------------------------- */
