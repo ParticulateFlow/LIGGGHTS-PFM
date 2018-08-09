@@ -145,6 +145,9 @@ public:
 
   double relaxFac_;
 
+  class FixPropertyAtom *fix_dmA_;
+  double **dmA_f_;
+
 };
 }
 
