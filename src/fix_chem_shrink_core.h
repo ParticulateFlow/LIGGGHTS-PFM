@@ -139,12 +139,6 @@ public:
   bool dY_previous3, dY_previous2;
   double **dY;
 
-  class FixPropertyAtom *fix_reactantPerParticle_;
-  double *reactantPerParticle_;
-  bool use_reactant_;
-
-  double relaxFac_;
-
   class FixPropertyAtom *fix_dmA_;
   double **dmA_f_;
 

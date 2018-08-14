@@ -63,7 +63,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     minMolarFrac_(1e-3),
     rmin_(1e-5)       //  [m]
 {
-    if ((strncmp(style, "chem/shrink/core", 17) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
+    if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
     // set defaults
@@ -76,7 +76,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     dY_previous3 = dY_previous2 = false;
     cg_ = 0.0;
     int iarg_ = 3;
-    relaxFac_ = 0.5;
     bool hasargs = true;
 
     while (iarg_ < narg && hasargs)
@@ -137,20 +136,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             if (nevery <= 0) error->fix_error(FLERR,this,"nevery must be larger than 0");
             iarg_+=2;
             hasargs = true; //iarg = 15
-        }
-        else if(strcmp(arg[iarg_],"use_reactant") == 0)
-        {
-            if(narg < iarg_+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'use_reactant'");
-            iarg_++;
-            if(strcmp(arg[iarg_],"yes") == 0)
-                use_reactant_ = true;
-            else if(strcmp(arg[iarg_],"no") == 0)
-                use_reactant_ = false;
-            else
-                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_reactant'");
-            iarg_++;
-            hasargs = true; //iarg = 17
         }
         else if (strcmp(this->style,"chem/shrink") == 0)
         {
@@ -402,8 +387,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if(fix_dY_)      { modify  ->  delete_fix(fixname); delete [] dY;}
         delete []fixname;
 
-        if(fix_reactantPerParticle_) { modify  ->  delete_fix("reactantPerParticle"); delete [] reactantPerParticle_; }
-
         fixname = new char[strlen("dmA_")+strlen(id)+1];
         strcpy (fixname,"dmA_");
         strcat(fixname,id);
@@ -476,13 +459,6 @@ void FixChemShrinkCore::updatePtrs()
     molarConc_  =   fix_totalMole_  ->  vector_atom;
     dY          =   fix_dY_         ->  array_atom;
     dmA_f_    =   fix_dmA_ -> array_atom;
-
-    if(use_reactant_)
-    {
-        reactantPerParticle_ = fix_reactantPerParticle_ -> vector_atom;
-    }
-
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -594,11 +570,6 @@ void FixChemShrinkCore::init()
     if (screen) fprintf(screen, "dY fixname: %s \n", fixname);
     fix_dY_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete [] fixname;
-
-    if(use_reactant_)
-    {
-        fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
-    }
 
     fixname = new char[strlen("dmA_")+strlen(id)+1];
     strcpy (fixname,"dmA_");
@@ -1081,43 +1052,21 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
 {
     double kch2_ = 0.0;
-    // double dmA_total = 0.0;
     kch2_ = xA_[i] + xC_[i];
 
-    // limit mass change - can't remove more than present in cell
-    // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.5)
-  /*  if(use_reactant_)
+    // based on material change: update gas-phase source terms for mass and heat
+    for (int j = 0; j < nmaxlayers_;j++)
     {
-        for (int j = 0; j < nmaxlayers_; j++)
-        {
-
-            if (screenflag_ && screen) fprintf(screen, "dmA_[%i] : %6.18f, molacConc_: %f, reactantPerParticle: %6.18f, relaxFac: %f \n",j,dmA_[j], molarConc_[i], reactantPerParticle_[i], relaxFac_);
-
-            if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
-            double dAmax = xA_[i] * molarConc_[i] * molMass_A_ * reactantPerParticle_[i] * relaxFac_;
-            dmA_total += dmA_[j];
-            if(dmA_total > dAmax) {dmA_total = dAmax; if (screen)  fprintf(screen, "MASS TRANSFER OF REACTANT GAS TOO MUCH MUST BE LIMITED!!!\n "
-                                                                                   "dmA_total: %6.18f, dAmax: %6.18f, reactantPerParticle: %6.18f \n",dmA_total, dAmax, reactantPerParticle_[i]);}
-        }
         // Reactant gas mass change
-        changeOfA_[i] -= dmA_total;
+        changeOfA_[i]   -=  dmA_[j];
         // Product gas mass change
-        changeOfC_[i]   +=  dmA_total*molMass_C_/molMass_A_;
-    } else { */
-        // based on material change: update gas-phase source terms for mass and heat
-        for (int j = 0; j < nmaxlayers_;j++)
-        {
-            // Reactant gas mass change
-            changeOfA_[i]   -=  dmA_[j];
-            // Product gas mass change
-            changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
-        }
-    //}
+        changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
+    }
 
     // Limit minimum reactant gas to 0.0
-    // changeOfA_[i]   = std::max(changeOfA_[i],0.0);
+    changeOfA_[i]   = std::min(changeOfA_[i],0.0);
     // Limit product gas to the total amount of carbon or hydrogen content
-    // changeOfC_[i]   =   std::min(kch2_, changeOfC_[i]);
+    changeOfC_[i]   = std::max(kch2_, changeOfC_[i]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1150,13 +1099,6 @@ void FixChemShrinkCore::FractionalReduction(int i)
     fracRed_[i][1] = f_MW;
     fracRed_[i][2] = f_HM;
     
-    // for testing purposes if radius changes with fix type
-    /*for (int layer=0; layer<layers_; layer++)
-    {
-        fracRed_[i][layer] = 1.0 - relRadii_[i][layer+1]*relRadii_[i][layer+1]*relRadii_[i][layer+1];
-        fracRed_[i][layer] = std::max(fracRed_[i][layer], SMALL);
-    }*/
-
     if (screenflag_ && screen)
             fprintf(screen, "Fn before update fracRed[0]: %f, fracRed[1]: %f, fracRed[2] : %f \n"
                             "Fn before update relRadii[0]: %f, relRadii[1]: %f, relRadii[2]: %f, relRadii: [3]:%f \n",
@@ -1173,7 +1115,6 @@ void FixChemShrinkCore::init_defaults()
     relRadii_ = massLayer_ = NULL;
     layerDensities_ = layerMolMasses_ = k0_ = Ea_ = NULL;
     xA_ = xC_ = NULL;
-    use_reactant_ = false;
 
     // particle properties total
     radius_ = pmass_ = pdensity_ = NULL;
@@ -1183,7 +1124,6 @@ void FixChemShrinkCore::init_defaults()
     Aterm = Bterm = effDiffBinary = effDiffKnud = fracRed_ =   NULL;
 
     dY = dmA_f_ = NULL;
-    reactantPerParticle_ = NULL;
 
     TimeStep = 0.0;
 
@@ -1217,6 +1157,5 @@ void FixChemShrinkCore::init_defaults()
     fix_pore_diameter_ = NULL;   //  [m]
     fix_dY_ = NULL;
     fix_totalMole_      =   NULL;
-    fix_reactantPerParticle_ = NULL;
     fix_dmA_ = NULL;
 }
