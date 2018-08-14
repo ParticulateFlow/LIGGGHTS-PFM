@@ -897,10 +897,24 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
 {
     updatePtrs();
     double W = 0.;
-    double dmA_total = 0.0;
+    double p_eq_[nmaxlayers_] = {0.};
+    double p_A = 0.;
+    //double p_C = 0.;
 
     if (partP_[i] < SMALL)
         partP_[i] = 1.0;
+
+    for (int layer = 0; layer < layers_; layer++)
+    {
+        p_eq_[layer] = x0_eq_[layer]*partP_[i];
+    }
+    p_A = xA_[i]*partP_[i];
+    if (screenflag_ && screen)
+            fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_eq_III: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_eq_[2],p_A);
+    if (screenflag_ && screen)
+        fprintf(screen,"x0_eq_I: %f, x0_eq_II: %f, x0_eq_III: %f \n",x0_eq_[0],x0_eq_[1],x0_eq_[2]);
+
+    //p_C = xC_[i]*partP_[i];
 
     if (layers_ == nmaxlayers_)
     {
@@ -908,24 +922,24 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
         W = (Aterm[i][2]+Bterm[i][2])*(Aterm[i][0]*(Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])+(Aterm[i][1]+Bterm[i][1])*(Bterm[i][0]+Massterm[i]))
                 +Aterm[i][1]*(Aterm[i][0]*(Bterm[i][1]+Bterm[i][0]+Massterm[i])+Bterm[i][1]*(Bterm[i][0]+Massterm[i]));
         // hematite to magnetite
-        dY[i][2]   =   ((Aterm[i][0]*(Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])+(Bterm[i][0]+Massterm[i])*(Aterm[i][1]+Bterm[i][1]))*(xA_[i]-x0_eq_[2])
-                -   (Aterm[i][0]*(Bterm[i][1]+Bterm[i][0]+Massterm[i])+Bterm[i][1]*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[1])
-                -   (Aterm[i][1]*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[0]))/W;
+        dY[i][2]   =   ((Aterm[i][0]*(Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])+(Bterm[i][0]+Massterm[i])*(Aterm[i][1]+Bterm[i][1]))*(p_A-p_eq_[2])
+                -   (Aterm[i][0]*(Bterm[i][1]+Bterm[i][0]+Massterm[i])+Bterm[i][1]*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[1])
+                -   (Aterm[i][1]*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[0]))/W;
         if (dY[i][2] < 0.0) dY[i][2] = 0.0;
 
         // magnetite to wustite
-        dY[i][1]   =   (((Aterm[i][2]+Bterm[i][2]+Bterm[i][1])*(Aterm[i][0]+Bterm[i][0]+Massterm[i])+Aterm[i][0]*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[1])
-                -   (Bterm[i][1]*(Aterm[i][0]+Bterm[i][0]+Massterm[i])+Aterm[i][0]*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[2])
-                -   ((Aterm[i][2]+Bterm[i][2])*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[0]))/W;
+        dY[i][1]   =   (((Aterm[i][2]+Bterm[i][2]+Bterm[i][1])*(Aterm[i][0]+Bterm[i][0]+Massterm[i])+Aterm[i][0]*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[1])
+                -   (Bterm[i][1]*(Aterm[i][0]+Bterm[i][0]+Massterm[i])+Aterm[i][0]*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[2])
+                -   ((Aterm[i][2]+Bterm[i][2])*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[0]))/W;
         if (dY[i][1] < 0.0) dY[i][1] = 0.0;
 
         // wustite to iron
         if ((dY[i][1] == 0.0))
             dY[i][0] = 0.0;
         else
-            dY[i][0]   =   (((Aterm[i][2]+Bterm[i][2])*(Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])+Aterm[i][1]*(Bterm[i][1]+Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[0])
-                -   (Aterm[i][1]*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[2])
-                -   ((Aterm[i][2]+Bterm[i][2])*(Bterm[i][0]+Massterm[i]))*(xA_[i]-x0_eq_[1]))/W;
+            dY[i][0]   =   (((Aterm[i][2]+Bterm[i][2])*(Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])+Aterm[i][1]*(Bterm[i][1]+Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[0])
+                -   (Aterm[i][1]*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[2])
+                -   ((Aterm[i][2]+Bterm[i][2])*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[1]))/W;
         if (dY[i][0] < 0.0) dY[i][0] = 0.0;
 
         dY_previous3 = true;
@@ -940,10 +954,10 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
             if (dY[i][1] == 0.0)
                 dY[i][1] = 0.0;
             else
-                dY[i][1]   =   ((Aterm[i][0]+Bterm[i][0]+Massterm[i])*(xA_[i]-x0_eq_[1])-(Bterm[i][0]+Massterm[i])*(xA_[i]-x0_eq_[0]))/W;
+                dY[i][1]   =   ((Aterm[i][0]+Bterm[i][0]+Massterm[i])*(p_A-p_eq_[1])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[0]))/W;
 
         } else
-            dY[i][1]   =   ((Aterm[i][0]+Bterm[i][0]+Massterm[i])*(xA_[i]-x0_eq_[1])-(Bterm[i][0]+Massterm[i])*(xA_[i]-x0_eq_[0]))/W;
+            dY[i][1]   =   ((Aterm[i][0]+Bterm[i][0]+Massterm[i])*(p_A - p_eq_[1])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[0]))/W;
 
         if (dY[i][1] < 0.0) dY[i][1] = 0.0;
 
@@ -951,7 +965,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
         if ((dY[i][1] == 0.0))
             dY[i][0] = 0.0;
         else
-            dY[i][0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(xA_[i]-x0_eq_[0])-(Bterm[i][0]+Massterm[i])*(xA_[i]-x0_eq_[1]))/W;
+            dY[i][0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(p_A - p_eq_[0])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[1]))/W;
         if (dY[i][0] < 0.0) dY[i][0] = 0.0;
 
         dY_previous2 = true;
@@ -973,10 +987,10 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
             if (dY[i][0] == 0.0)
                 dY[i][0] = 0.0;
             else
-                dY[i][0] = (xA_[i] - x0_eq_[0])/W;
+                dY[i][0] = (p_A - p_eq_[0])/W;
         }
         else
-            dY[i][0]   =   (xA_[i] - x0_eq_[0])/W;
+            dY[i][0]   =   (p_A - p_eq_[0])/W;
 
         if (dY[i][0] < 0.0) dY[i][0] = 0.0;
     }
@@ -988,20 +1002,8 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     for (int j = 0 ; j < layers_; j++)
     {
         // mass flow rate for reactant gas species
-        dmA_[j] =   dY[i][j]*partP_[i]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
         dmA_f_[i][j] = dmA_[j];
-
-        // limit mass change - can't remove more than present in cell
-        // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.5)
-        if(use_reactant_)
-	    {
-            if (screenflag_ && screen) fprintf(screen, "dmA_[%i] : %6.18f, molacConc_: %f, reactantPerParticle: %6.18f, relaxFac: %f \n",j,dmA_[j], molarConc_[i], reactantPerParticle_[i], relaxFac_);
-
-            if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
-            double dAmax = xA_[i] * molarConc_[i] * molMass_A_ * reactantPerParticle_[i] * relaxFac_;
-            dmA_total += dmA_[j];
-            if(dmA_total > dAmax) {dmA_total = dAmax; if (screen)  fprintf(screen, "MASS TRANSFER OF REACTANT GAS TOO MUCH MUST BE LIMITED!!!\n");}
-        }
     }
 
     if (screenflag_ && screen)
@@ -1079,21 +1081,43 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
 void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
 {
     double kch2_ = 0.0;
+    // double dmA_total = 0.0;
     kch2_ = xA_[i] + xC_[i];
 
-    // based on material change: update gas-phase source terms for mass and heat
-    for (int j = 0; j < nmaxlayers_;j++)
+    // limit mass change - can't remove more than present in cell
+    // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.5)
+  /*  if(use_reactant_)
     {
-        // Reactant gas mass change
-        changeOfA_[i]   -=  dmA_[j];
-        // Limit minimum reactant gas to 0.0
-        changeOfA_[i]   = std::max(changeOfA_[i],0.0);
+        for (int j = 0; j < nmaxlayers_; j++)
+        {
 
+            if (screenflag_ && screen) fprintf(screen, "dmA_[%i] : %6.18f, molacConc_: %f, reactantPerParticle: %6.18f, relaxFac: %f \n",j,dmA_[j], molarConc_[i], reactantPerParticle_[i], relaxFac_);
+
+            if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+            double dAmax = xA_[i] * molarConc_[i] * molMass_A_ * reactantPerParticle_[i] * relaxFac_;
+            dmA_total += dmA_[j];
+            if(dmA_total > dAmax) {dmA_total = dAmax; if (screen)  fprintf(screen, "MASS TRANSFER OF REACTANT GAS TOO MUCH MUST BE LIMITED!!!\n "
+                                                                                   "dmA_total: %6.18f, dAmax: %6.18f, reactantPerParticle: %6.18f \n",dmA_total, dAmax, reactantPerParticle_[i]);}
+        }
+        // Reactant gas mass change
+        changeOfA_[i] -= dmA_total;
         // Product gas mass change
-        changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
-        // Limit product gas to the total amount of carbon or hydrogen content
-        changeOfC_[i]   =   std::min(kch2_, changeOfC_[i]);
-    }
+        changeOfC_[i]   +=  dmA_total*molMass_C_/molMass_A_;
+    } else { */
+        // based on material change: update gas-phase source terms for mass and heat
+        for (int j = 0; j < nmaxlayers_;j++)
+        {
+            // Reactant gas mass change
+            changeOfA_[i]   -=  dmA_[j];
+            // Product gas mass change
+            changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
+        }
+    //}
+
+    // Limit minimum reactant gas to 0.0
+    // changeOfA_[i]   = std::max(changeOfA_[i],0.0);
+    // Limit product gas to the total amount of carbon or hydrogen content
+    // changeOfC_[i]   =   std::min(kch2_, changeOfC_[i]);
 }
 
 /* ---------------------------------------------------------------------- */

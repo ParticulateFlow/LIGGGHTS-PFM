@@ -371,7 +371,7 @@ void FixCfdCouplingChemistry::post_create()
             fixarg[3]=mod_spec_names_[i];
             fixarg[4]="scalar";      // 1 vector per particle to be registered
             fixarg[5]="yes";         // restart
-            fixarg[6]="no";          // communicate ghost
+            fixarg[6]="yes";          // communicate ghost
             fixarg[7]="no";          // communicate rev
             fixarg[8]="0.";
             fix_masschange_[i] = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
