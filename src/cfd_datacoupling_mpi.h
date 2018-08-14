@@ -28,10 +28,13 @@
 #ifndef LMP_CFD_DATACOUPLING_MPI_H
 #define LMP_CFD_DATACOUPLING_MPI_H
 
+#define MULTI_PARTITION_CFD
+
 #include "cfd_datacoupling.h"
 #include "multisphere_parallel.h"
 #include "error.h"
 #include "properties.h"
+#include "universe.h"
 #include <mpi.h>
 
 namespace LAMMPS_NS {
@@ -77,26 +80,54 @@ template <typename T>
 void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from,int iworld)
 {
     int len1 = -1, len2 = -1, m;
+    // len1 = atom->tag_max(); except for scalar-global, vector-global, matrix-global
 
     // get reference where to write the data
     void * to = find_pull_property(name,type,len1,len2);
 
+#ifdef MULTI_PARTITION_CFD
+    if (universe->existflag == 0 || iworld == universe->iworld)
+#endif
+    {
     if (atom->nlocal && (!to || len1 < 0 || len2 < 0))
     {
         if(screen) fprintf(screen,"LIGGGHTS could not find property %s to write data from calling program to.\n",name);
         lmp->error->one(FLERR,"This is fatal");
     }
+    }
+
+    int total_len = len1*len2;
+#ifdef MULTI_PARTITION_CFD
+    if (universe->existflag == 1) // enforce size of requested world
+        MPI_Bcast(&total_len, 1, MPI_INT, universe->root_proc[iworld], universe->uworld);
+#endif
 
     // return if no data to transmit
-    if(len1*len2 < 1) return;
+    if(total_len < 1) return;
 
     // check memory allocation
-    T* allred = check_grow<T>(len1*len2);
+    T* allred = check_grow<T>(total_len);
 
     // perform allreduce on incoming data
     T **from_t = (T**)from;
-    MPI_Allreduce(&(from_t[0][0]),&(allred[0]),len1*len2,mpi_type_dc<T>(),MPI_SUM,world);
+#ifndef MULTI_PARTITION_CFD
+    MPI_Allreduce(&(from_t[0][0]), &(allred[0]), total_len, mpi_type_dc<T>(), MPI_SUM, world);
+#else
+    //MPI_Reduce + MPI_Bcast
+    // int MPI_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
+    // int MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+    //reduce from all procs in universe onto root proc of iworld
+    MPI_Reduce   (&(from_t[0][0]), &(allred[0]), total_len, mpi_type_dc<T>(), MPI_SUM, universe->root_proc[iworld], universe->uworld);
+    //bcast to iworld
+    if (iworld == universe->iworld) {
+        MPI_Bcast    (&(allred[0]), total_len, mpi_type_dc<T>(), 0, world);
+    }
+#endif
 
+#ifdef MULTI_PARTITION_CFD
+    if(iworld == universe->iworld) // only copy to requested world
+#endif
+    {
     // copy data - loops over max # global atoms, bodies
     if(strcmp(type,"scalar-atom") == 0)
     {
@@ -142,6 +173,7 @@ void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from,
                 to_t[i][j] = allred[i*len2 + j];
     }
     else error->one(FLERR,"Illegal data type in CfdDatacouplingMPI::pull");
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -164,6 +196,9 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to,in
     // get reference where to write the data
     void * from = find_push_property(name,type,len1,len2);
 
+#ifdef MULTI_PARTITION_CFD
+    if (universe->existflag == 0 || iworld == universe->iworld)
+#endif
     if (atom->nlocal && (!from || len1 < 0 || len2 < 0))
     {
         /*NL*/ //if(screen) fprintf(screen,"nlocal %d, len1 %d lens2 %d\n",atom->nlocal,len1,len2);
@@ -171,15 +206,24 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to,in
         lmp->error->one(FLERR,"This is fatal");
     }
 
+    int total_len = len1*len2;
+#ifdef MULTI_PARTITION_CFD
+    if (universe->existflag == 1) // enforce size of requested world
+        MPI_Bcast(&total_len, 1, MPI_INT, universe->root_proc[iworld], universe->uworld);
+#endif
     // return if no data to transmit
-    if(len1*len2 < 1) return;
+    if(total_len < 1) return;
 
     // check memory allocation
-    T * allred = check_grow<T>(len1*len2);
+    T * allred = check_grow<T>(total_len);
 
     // zeroize before using allreduce
-    vectorZeroizeN(allred,len1*len2);
+    vectorZeroizeN(allred,total_len);
 
+#ifdef MULTI_PARTITION_CFD
+    if(iworld == universe->iworld) // only copy from requested world
+#endif
+    {
     // copy data - loop local # atoms, bodies
     if(strcmp(type,"scalar-atom") == 0)
     {
@@ -225,7 +269,7 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to,in
                 /*NL*/ //if(screen) fprintf(screen,"id  %d from %d %d: %f\n",id ,i,j,from_t[i][j]);
             }
         }
-        /*NL*/ //if (screen) printVecN(screen,"allred",allred,len1*len2);
+        /*NL*/ //if (screen) printVecN(screen,"allred",allred,total_len);
     }
     else if(strcmp(type,"scalar-global") == 0 || strcmp(type,"vector-global") == 0 || strcmp(type,"matrix-global") == 0)
     {
@@ -235,10 +279,24 @@ void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to,in
                 allred[i*len2 + j] = from_t[i][j];
     }
     else error->one(FLERR,"Illegal data type in CfdDatacouplingMPI::pull");
+    }
 
     // perform allreduce on outgoing data
     T **to_t = (T**)to;
-    MPI_Allreduce(&(allred[0]),&(to_t[0][0]),len1*len2,mpi_type_dc<T>(),MPI_SUM,world);
+#ifndef MULTI_PARTITION_CFD
+    MPI_Allreduce(&(allred[0]),&(to_t[0][0]),total_len,mpi_type_dc<T>(),MPI_SUM,world);
+#else
+    //MPI_Reduce + MPI_Bcast
+    // int MPI_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
+    // int MPI_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)
+    // reduce from request world onto root of requested world
+    if (iworld == universe->iworld) {
+        MPI_Reduce(&(allred[0]), &(to_t[0][0]), total_len, mpi_type_dc<T>(), MPI_SUM, 0, world);
+    }
+    // bcast from root of requested world to all procs in universe
+    MPI_Bcast(&(to_t[0][0]), total_len, mpi_type_dc<T>(), universe->root_proc[iworld], universe->uworld);
+#endif
+
 }
 
 /* ---------------------------------------------------------------------- */

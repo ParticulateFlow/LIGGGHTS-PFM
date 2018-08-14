@@ -39,6 +39,7 @@
 #include "error.h"
 #include "comm.h"
 #include "cfd_datacoupling.h"
+#include "universe.h"
 
 using namespace LAMMPS_NS;
 
@@ -50,7 +51,11 @@ using namespace LAMMPS_NS;
 int liggghts_get_maxtag(void *ptr, int iworld)
 {
   LAMMPS *lmp = (LAMMPS *) ptr;
-  return lmp->atom->tag_max();
+  int tag_max = lmp->atom->tag_max();
+  // bcast from root of iworld to all procs in universe
+  if (lmp->universe->existflag == 1)
+    MPI_Bcast(&tag_max, 1, MPI_INT, lmp->universe->root_proc[iworld], lmp->universe->uworld);
+  return tag_max;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -63,7 +68,12 @@ int liggghts_get_maxtag_ms(void *ptr, int iworld)
   LAMMPS *lmp = (LAMMPS *) ptr;
   FixMultisphere *fix_ms = static_cast<FixMultisphere*>(lmp->modify->find_fix_style_strict("multisphere",0));
   if(!fix_ms) return 0;
-  return fix_ms->tag_max_body();
+
+  int tag_max_body = fix_ms->tag_max_body();
+  // bcast from root of iworld to all procs in universe
+  if (lmp->universe->existflag == 1)
+    MPI_Bcast(&tag_max_body, 1, MPI_INT, lmp->universe->root_proc[iworld], lmp->universe->uworld);
+  return tag_max_body;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -76,7 +86,12 @@ int liggghts_get_ntypes_ms(void *ptr, int iworld)
   LAMMPS *lmp = (LAMMPS *) ptr;
   FixMultisphere *fix_ms = static_cast<FixMultisphere*>(lmp->modify->find_fix_style_strict("multisphere",0));
   if(!fix_ms) return 0;
-  return fix_ms->ntypes();
+
+  int ntypes_ms = fix_ms->ntypes();
+  // bcast from root of iworld to all procs in universe
+  if (lmp->universe->existflag == 1)
+    MPI_Bcast(&ntypes_ms, 1, MPI_INT, lmp->universe->root_proc[iworld], lmp->universe->uworld);
+  return ntypes_ms;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -89,6 +104,7 @@ double* liggghts_get_vclump_ms(void *ptr, int iworld)
   LAMMPS *lmp = (LAMMPS *) ptr;
   FixMultisphere *fix_ms = static_cast<FixMultisphere*>(lmp->modify->find_fix_style_strict("multisphere",0));
   if(!fix_ms) return 0;
+  if (lmp->universe->existflag == 1) lmp->error->all(FLERR,"Not implemented for universe");
   return fix_ms->vclump();
 }
 
@@ -132,7 +148,7 @@ void update_region_model(void *ptr, int iworld)
 {
     LAMMPS *lmp = (LAMMPS *) ptr;
     //FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
-    locate_coupling_fix(ptr);
+    //locate_coupling_fix(ptr);
     //CfdRegionmodel *rm = fcfd->rm;
 
     //NP call region model
