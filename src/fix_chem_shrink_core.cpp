@@ -1064,9 +1064,9 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
     }
 
     // Limit minimum reactant gas to 0.0
-    changeOfA_[i]   = std::min(changeOfA_[i],0.0);
+    //changeOfA_[i]   = std::min(changeOfA_[i],0.0);
     // Limit product gas to the total amount of carbon or hydrogen content
-    changeOfC_[i]   = std::max(kch2_, changeOfC_[i]);
+    //changeOfC_[i]   = std::max(kch2_, changeOfC_[i]);
 }
 
 /* ---------------------------------------------------------------------- */
