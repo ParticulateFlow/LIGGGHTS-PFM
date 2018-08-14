@@ -128,6 +128,10 @@ class BoundingBox
       center[2] = 0.5 * (zHi + zLo);
     }
 
+    bool hasVolume() const {
+      return (xHi > xLo && yHi > yLo && zHi > zLo);
+    }
+
     void extendByDelta(double delta);
 
     void getBoxBoundsExtendedByDelta(double *lo,double *hi,double delta)
@@ -161,7 +165,7 @@ class BoundingBox
     bool isInitialized()
     { return initGiven; }
 
-    bool isInside(double *p)
+    bool isInside(const double *p)
     {
        // check bbox
        // test for >= and < as in Domain class

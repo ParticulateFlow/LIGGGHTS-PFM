@@ -260,7 +260,7 @@
    move element i
   ------------------------------------------------------------------------- */
 
-  void CustomValueTracker::moveElement(int i, double *delta)
+  void CustomValueTracker::moveElement(int i, const double *delta)
   {
       elementProperties_.moveElement(i,delta);
   }

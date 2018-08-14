@@ -78,9 +78,9 @@ namespace LAMMPS_NS
           virtual void* begin_slow_dirty();
 
           inline void scale(double factor);
-          inline void move(double *dx);
-          inline void moveElement(int i,double *dx);
-          inline void rotate(double *dQ);
+          inline void move(const double *dx);
+          inline void moveElement(int i,const double *dx);
+          inline void rotate(const double *dQ);
 
           // all push and pop functions return number of bytes taken from / added to buf
           // all push and pop functions expect buf to point to first element with usable data

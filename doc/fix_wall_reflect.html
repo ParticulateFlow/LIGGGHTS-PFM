@@ -38,7 +38,8 @@
 
 <PRE>  <I>units</I> value = <I>lattice</I> or <I>box</I>
     <I>lattice</I> = the wall position is defined in lattice units
-    <I>box</I> = the wall position is defined in simulation box units 
+    <I>box</I> = the wall position is defined in simulation box units
+  <I>e</I> value = coefficient of restitution (value between 0 and 1) 
 </PRE>
 
 </UL>
@@ -98,6 +99,9 @@ produce a value compatible with the <I>units</I> setting you specify.
 A <I>lattice</I> value means the distance units are in lattice spacings.
 The <A HREF = "lattice.html">lattice</A> command must have been previously used to
 define the lattice spacings.
+</P>
+<P>Specifying the coefficient of restitution results in scaling the 
+post-impact velocity by this factor.
 </P>
 <HR>
 

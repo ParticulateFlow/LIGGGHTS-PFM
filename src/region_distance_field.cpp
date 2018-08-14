@@ -51,7 +51,7 @@ namespace LIGGGHTS {
 
     dx = 2.*rmax;
     test_rad = sqrt(3.01)*rmax;
-    
+
     nx = bbox_extent[0]/dx;
     ny = bbox_extent[1]/dx;
     nz = bbox_extent[2]/dx;
@@ -74,10 +74,10 @@ namespace LIGGGHTS {
           int const index = index3ToIndex1(i,j,k);
           indexToPos(index,pos_tmp);
 
-          if(!region->inside(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
+          if(!region->match(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
             continue;
 
-          if(region->surface_interior(pos_tmp,test_rad))
+          if(region->surface(pos_tmp[0],pos_tmp[1],pos_tmp[2],test_rad))
             data[index] = BOUNDARY;
           else
             data[index] = INSIDE;
@@ -86,7 +86,7 @@ namespace LIGGGHTS {
     }
   }
 
-  bool RegionDistanceField::isInside(double *x)
+  bool RegionDistanceField::isInside(const double *x)
   {
     int const index = posToIndex(x);
 
@@ -95,8 +95,8 @@ namespace LIGGGHTS {
 
     return data[index] != OUTSIDE;
   }
-  
-  bool RegionDistanceField::isInBoundary(double *x)
+
+  bool RegionDistanceField::isInBoundary(const double *x)
   {
     int const index = posToIndex(x);
 
@@ -105,14 +105,14 @@ namespace LIGGGHTS {
 
     return data[index] == BOUNDARY;
   }
-  
-  
+
+
   int RegionDistanceField::index3ToIndex1(int const ix, int const iy, int const iz)
   {
     return (ix + nx*iy + nx*ny*iz);
   }
 
-  int RegionDistanceField::posToIndex(double *x)
+  int RegionDistanceField::posToIndex(const double *x)
   {
     if(!bbox.isInside(x)) return -1;
 
@@ -131,7 +131,7 @@ namespace LIGGGHTS {
   void RegionDistanceField::indexToPos(int index, double *x)
   {
     if(!bbox.isInside(x)) return;
-    
+
     LAMMPS_NS::vectorCopy3D(x0,x);
 
     int const iz = index / (nx*ny);

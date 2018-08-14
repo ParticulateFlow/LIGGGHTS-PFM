@@ -54,6 +54,9 @@ class FixForceControlRegion : public Fix {
   virtual int modify_param(int narg, char **arg);
   virtual void end_of_step();
 
+  virtual void write_restart(FILE *fp);
+  virtual void restart(char *buf);
+
  protected:
   double cg_target_, cg3_target_, cg_ratio_;
   double const_part_, sinesq_part_, used_part_;
@@ -62,6 +65,10 @@ class FixForceControlRegion : public Fix {
   double *xvalue;
   double *yvalue;
   double *zvalue;
+  double *const_part_cell_;
+  double *used_part_cell_;
+  double *sinesq_part_cell_;
+  int *ncontrolled_cell_; // # of controlled particles in each cell
   double foriginal[4],foriginal_all[4];
   int force_flag;
 

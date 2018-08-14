@@ -83,17 +83,17 @@ namespace MathExtraLiggghts {
 
   // quaternion operations
   inline void quat_normalize(double *q);
-  inline void qconjugate(double *q, double *qc);
+  inline void qconjugate(const double *q, double *qc);
   inline void quat_from_vec(const double *v, double *q);
   inline void vec_from_quat(const double *q, double *v);
-  inline void vec_quat_rotate(double *vec, double *quat, double *result);
-  inline void vec_quat_rotate(double *vec, double *quat);
-  inline void vec_quat_rotate(int *vec, double *quat) { UNUSED(vec); UNUSED(quat); }
-  inline void vec_quat_rotate(bool *vec, double *quat) { UNUSED(vec); UNUSED(quat); }
-  inline void quat_diff(double *q_new, double *q_old, double *q_diff);
-  inline void angmom_from_omega(double *w,
-                                  double *ex, double *ey, double *ez,
-                                  double *idiag, double *m);
+  inline void vec_quat_rotate(const double *vec, const double *quat, double *result);
+  inline void vec_quat_rotate(double *vec, const double *quat);
+  inline void vec_quat_rotate(int *vec, const double *quat) { UNUSED(vec); UNUSED(quat); }
+  inline void vec_quat_rotate(bool *vec, const double *quat) { UNUSED(vec); UNUSED(quat); }
+  inline void quat_diff(const double *q_new, const double *q_old, double *q_diff);
+  inline void angmom_from_omega(const double *w,
+                                  const double *ex, const double *ey, const double *ez,
+                                  const double *idiag, double *m);
 
   // double comparison, added by P.S.
   inline bool compDouble(double const a, double const b, double const prec = 1e-13);
@@ -383,7 +383,7 @@ void MathExtraLiggghts::cartesian_coosys_to_local_orthogonal(double *local,doubl
    assume q is of unit length
 ------------------------------------------------------------------------- */
 
-void MathExtraLiggghts::qconjugate(double *q, double *qc)
+void MathExtraLiggghts::qconjugate(const double *q, double *qc)
 {
   qc[0] = q[0];
   qc[1] = -q[1];
@@ -418,7 +418,7 @@ void MathExtraLiggghts::vec_from_quat(const double *q, double *v)
    rotoate vector by quaternion
 ------------------------------------------------------------------------- */
 
-void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat, double *result)
+void MathExtraLiggghts::vec_quat_rotate(const double *vec, const double *quat, double *result)
 {
     double vecQ[4], resultQ[4], quatC[4], temp[4];
 
@@ -440,7 +440,7 @@ void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat, double *resul
    rotoate vector by quaternion
 ------------------------------------------------------------------------- */
 
-void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat)
+void MathExtraLiggghts::vec_quat_rotate(double *vec, const double *quat)
 {
     double vecQ[4], resultQ[4], quatC[4], temp[4], result[3];
 
@@ -468,9 +468,9 @@ void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat)
    Mspace = P Mbody
 ------------------------------------------------------------------------- */
 
-inline void MathExtraLiggghts::angmom_from_omega(double *w,
-                                  double *ex, double *ey, double *ez,
-                                  double *idiag, double *m)
+inline void MathExtraLiggghts::angmom_from_omega(const double *w,
+                                  const double *ex, const double *ey, const double *ez,
+                                  const double *idiag, double *m)
 {
   double mbody[3];
 
@@ -500,7 +500,7 @@ inline void MathExtraLiggghts::quat_normalize(double *q)
    calculate the quaternion that would rotate q_old into q_new
 ------------------------------------------------------------------------- */
 
-inline void MathExtraLiggghts::quat_diff(double *q_new, double *q_old, double *q_diff)
+inline void MathExtraLiggghts::quat_diff(const double *q_new, const double *q_old, double *q_diff)
 {
     double q_old_c[4];
 

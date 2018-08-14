@@ -174,7 +174,7 @@ void Universe::reorder(char *style, char *arg)
 
 void Universe::add_world(char *str)
 {
-  int n,nper;
+  int n,nper; //number of worlds, number of procs per world
   char *ptr;
 
   if (str == NULL) {
@@ -194,9 +194,11 @@ void Universe::add_world(char *str)
 
   for (int i = 0; i < n; i++) {
     procs_per_world[nworlds] = nper;
-    if (nworlds == 0) root_proc[nworlds] = 0;
-    else
+    if (nworlds == 0) {
+      root_proc[nworlds] = 0;
+    } else {
       root_proc[nworlds] = root_proc[nworlds-1] + procs_per_world[nworlds-1];
+    }
     if (me >= root_proc[nworlds]) iworld = nworlds;
     nworlds++;
   }

@@ -157,7 +157,7 @@ public:
   int max_type();
   LAMMPS * getLAMMPS();
 
-  FixPropertyGlobal* getGlobalProperty(const char *varname, const char *style, const char *svmstyle, int len1, int len2, const char *caller);
+  FixPropertyGlobal* getGlobalProperty(const char *varname, const char *style, const char *svmstyle, int len1, int len2, const char *caller, bool errflag=true);
 
   ScalarProperty * getScalarProperty(std::string varname,const char *caller);
   VectorProperty * getVectorProperty(std::string varname,const char *caller);

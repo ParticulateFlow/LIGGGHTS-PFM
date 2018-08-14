@@ -39,7 +39,7 @@ FixWallReflect::FixWallReflect(LAMMPS *lmp, int narg, char **arg) :
   if (narg < 4) error->all(FLERR,"Illegal fix wall/reflect command");
 
   // parse args
-
+  e = 1;
   nwall = 0;
   int scaleflag = 1;
 
@@ -87,6 +87,13 @@ FixWallReflect::FixWallReflect(LAMMPS *lmp, int narg, char **arg) :
       if (strcmp(arg[iarg+1],"box") == 0) scaleflag = 0;
       else if (strcmp(arg[iarg+1],"lattice") == 0) scaleflag = 1;
       else error->all(FLERR,"Illegal fix wall/reflect command");
+      iarg += 2;
+    } 
+    else if (strcmp(arg[iarg],"e") == 0){
+      if(iarg+2 > narg) error->all(FLERR,"Illegal wall/reflect command");
+      e = atof(arg[iarg+1]);
+      if (e > 1.) error->all(FLERR,"Please choose a coefficient of restitution smaller than 1.");
+      if (e < 0.) error->all(FLERR,"Please choose a coefficient of restitution larger than 0.");
       iarg += 2;
     } else error->all(FLERR,"Illegal fix wall/reflect command");
   }
@@ -211,12 +218,12 @@ void FixWallReflect::post_integrate()
         if (side == 0) {
           if (x[i][dim] < coord) {
             x[i][dim] = coord + (coord - x[i][dim]);
-            v[i][dim] = -v[i][dim];
+            v[i][dim] = -v[i][dim] * e;
           }
         } else {
           if (x[i][dim] > coord) {
             x[i][dim] = coord - (x[i][dim] - coord);
-            v[i][dim] = -v[i][dim];
+            v[i][dim] = -v[i][dim] * e;
           }
         }
       }

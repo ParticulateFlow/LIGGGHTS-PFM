@@ -1,0 +1,43 @@
+<HTML>
+<CENTER><A HREF = "http://www.cfdem.com">LIGGGHTS(R)-PUBLIC WWW Site</A> - <A HREF = "Manual.html">LIGGGHTS(R)-PUBLIC Documentation</A> - <A HREF = "Section_commands.html#comm">LIGGGHTS(R)-PUBLIC Commands</A> 
+</CENTER>
+
+
+
+
+
+
+<HR>
+
+<H3>fix property/atom/polydispparcel command 
+</H3>
+<P><B>Syntax:</B>
+</P>
+<PRE>fix id group property/atom/polydispparcel keyword value(s) 
+</PRE>
+<UL><LI>ID, group-ID are documented in <A HREF = "fix.html">fix</A> command 
+
+<LI>property/atom/polydispparcel = style name of this fix command   
+
+<LI>one keyword/value(s) pair needs to be appended to args 
+
+<LI>keyword = <I>effvolfactor</I> 
+
+<PRE>  <I>effvolfactor</I> value(s) = evf1 evf2 ...
+    evfi = effective volume enhancement due to polydispersity of atom type i (the same number of values as atom types present has to be specified) 
+</PRE>
+
+</UL>
+<P><B>Examples:</B>
+</P>
+<PRE>fix fp all property/atom/polydispparcel effvolfactor 1.5 1.0 
+</PRE>
+<P><B>Description:</B>
+</P>
+<P>Fix property/atom/polydispparcel assigns an effective volume factor to each particle according to its atom type. Using the set command, values can be changed individually, e.g. for groups. Upon insertion of particles with a given density, their mass is scaled with the effective volume factor. The same mechanism is triggered by setting an effective volume factor with the set command.
+</P>
+<P><B>Restart, fix_modify, output, run start/stop, minimize info:</B>
+</P>
+<P>Information about this fix is written to <A HREF = "restart.html">binary restart files</A> .
+</P>
+</HTML>

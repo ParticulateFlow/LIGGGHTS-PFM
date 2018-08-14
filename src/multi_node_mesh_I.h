@@ -445,7 +445,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::move(double *vecTotal, double *vecIncremental)
+  void MultiNodeMesh<NUM_NODES>::move(const double *vecTotal, const double *vecIncremental)
   {
     if(!isTranslating())
         this->error->all(FLERR,"Illegal call, need to register movement first");
@@ -478,7 +478,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::move(double *vecIncremental)
+  void MultiNodeMesh<NUM_NODES>::move(const double *vecIncremental)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
     int n = sizeLocal() + sizeGhost();
@@ -498,7 +498,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::moveElement(int i,double *vecIncremental)
+  void MultiNodeMesh<NUM_NODES>::moveElement(int i, const double *vecIncremental)
   {
     for(int j = 0; j < NUM_NODES; j++)
             vectorAdd3D(node_(i)[j],vecIncremental,node_(i)[j]);
@@ -513,8 +513,9 @@
    assumes axis stays the same over time
   ------------------------------------------------------------------------- */
 
+  //public
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double totalAngle, double dAngle, double *axis, double *p)
+  void MultiNodeMesh<NUM_NODES>::rotate(double totalAngle, double dAngle, const double *axis, const double *p)
   {
     double totalQ[4],dQ[4], axisNorm[3], origin[3];
 
@@ -541,8 +542,9 @@
     rotate(totalQ,dQ,origin);
   }
 
+  // protected
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double *totalQ, double *dQ,double *origin)
+  void MultiNodeMesh<NUM_NODES>::rotate(const double *totalQ, const double *dQ, const double *origin)
   {
     if(!isRotating())
         this->error->all(FLERR,"Illegal call, need to register movement first");
@@ -647,8 +649,9 @@
    rotate mesh interface, takes only dAngle
   ------------------------------------------------------------------------- */
 
+  // public
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double dAngle, double *axis, double *p)
+  void MultiNodeMesh<NUM_NODES>::rotate(double dAngle, const double *axis, const double *p)
   {
     double dQ[4], axisNorm[3], origin[3];
 
@@ -672,8 +675,9 @@
     rotate(dQ,origin);
   }
 
+  // protected
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double *dQ, double *origin)
+  void MultiNodeMesh<NUM_NODES>::rotate(const double *dQ, const double *origin)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
     const int n = sizeLocal() + sizeGhost();

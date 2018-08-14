@@ -51,7 +51,7 @@
      return calcTetVol(node_(n)[0],node_(n)[1],node_(n)[2],node_(n)[3]);
   }
 
-  inline double TetMesh::calcTetVol(double* v0, double* v1, double* v2, double* v3)
+  inline double TetMesh::calcTetVol(const double* v0, const double* v1, const double* v2, const double* v3)
   {
      double A[3];
      A[0] = v3[0] - v1[0];
@@ -85,7 +85,7 @@
    check if point if inside tet
   ------------------------------------------------------------------------- */
 
-  inline bool TetMesh::isInside(int iTet,double *pos)
+  inline bool TetMesh::isInside(int iTet, const double *pos)
   {
       double ***node = node_.begin();
       double vol1,vol2,vol3,vol4;
@@ -182,7 +182,7 @@
     return chosen;
   }
 
-  inline void TetMesh::baryToCart(int iTet,double *bary_coo,double *pos)
+  inline void TetMesh::baryToCart(int iTet, const double *bary_coo,double *pos)
   {
     double ***node = node_.begin();
     for(int i=0;i<3;i++)

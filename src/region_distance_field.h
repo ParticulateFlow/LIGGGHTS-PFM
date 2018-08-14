@@ -33,27 +33,27 @@
 
 namespace LIGGGHTS {
 
-  
+
   class RegionDistanceField {
   public:
     RegionDistanceField();
     void build(LAMMPS_NS::Region *region, LAMMPS_NS::BoundingBox &bbox, double const rmax);
-    bool isInside(double *x);
-    bool isInBoundary(double *x);
+    bool isInside(const double *x);
+    bool isInBoundary(const double *x);
   private:
     enum PointStatus {INSIDE,BOUNDARY,OUTSIDE};
 
     int index3ToIndex1(int const ix, int const iy, int const iz);
-    int posToIndex(double *x);
+    int posToIndex(const double *x);
     void indexToPos(int index, double *x);
-    
+
     std::vector<PointStatus> data;
     LAMMPS_NS::BoundingBox bbox;
     int nx,ny,nz;
     double dx, test_rad;
     double xlo[3], xhi[3], x0[3];
   };
-  
+
 } // namespace LIGGGHTS
 
 #endif

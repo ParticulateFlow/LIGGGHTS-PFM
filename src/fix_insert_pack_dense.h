@@ -87,6 +87,7 @@ protected:
   BoundingBox ins_bbox;
 
   bool insertion_done;
+  bool is_inserter; // indicates if proc inserts
   double region_volume, region_volume_local;
   int n_insert_estim, n_insert_estim_local;
   double radius_factor;

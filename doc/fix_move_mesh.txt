@@ -35,7 +35,7 @@ style = {linear} or {linear/variable} or {wiggle} or {riggle} or {rotate} or {ro
     period = obligatory keyword
     per = period of rotation (time units)#
     amplitude = obligatory keyword
-    ampl = amplitude of riggle movement (grad)
+    ampl = amplitude of riggle movement (degree)
   {rotate} args = origin Px Py Pz axis ax ay az period per
     origin = obligatory keyword
     Px,Py,Pz = origin point of axis of rotation (distance units)
@@ -141,7 +141,7 @@ as input, {rotate/variable} takes angular velocity as input.
 The {riggle} style imposes an oscillatory rotation around a rotation
 axis {R} = (Rx,Ry,Rz) that goes thru a point {P} = (Px,Py,Pz). 
 The {period} of the oscillation is specified as well as the {amplitude}
-in grad (°). This style also sets the velocity of
+in degrees (&deg;). This style also sets the velocity of
 each element accordingly.
 
 The {viblin} style moves meshes in an oscillatory fashion with an vibration 
