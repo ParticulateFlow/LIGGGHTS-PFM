@@ -38,8 +38,8 @@ class CfdDatacouplingFile : public CfdDatacoupling {
   ~CfdDatacouplingFile();
   friend class FixTempFromFile;
 
-  void pull(const char *, const char *, void *&, const char *);
-  void push(const char *, const char *, void *&, const char *);
+  void pull(const char *, const char *, void *&, const char *, int iworld = 0);
+  void push(const char *, const char *, void *&, const char *, int iworld = 0);
   virtual void post_create();
 
   void exchange();

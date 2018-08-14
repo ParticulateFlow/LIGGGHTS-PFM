@@ -113,7 +113,7 @@ void CfdDatacouplingFile::exchange()
 
 //NP called with from = NULL
 
-void CfdDatacouplingFile::pull(const char *name, const char *type, void *&from, const char *datatype)
+void CfdDatacouplingFile::pull(const char *name, const char *type, void *&from, const char *datatype, int iworld)
 {
     CfdDatacoupling::pull(name,type,from,datatype);
 
@@ -152,7 +152,7 @@ void CfdDatacouplingFile::pull(const char *name, const char *type, void *&from, 
 
 //NP called with to = NULL
 
-void CfdDatacouplingFile::push(const char *name, const char *type, void *&to, const char *datatype)
+void CfdDatacouplingFile::push(const char *name, const char *type, void *&to, const char *datatype, int iworld)
 {
     CfdDatacoupling::push(name,type,to,datatype);
 

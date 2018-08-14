@@ -47,7 +47,7 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-int liggghts_get_maxtag(void *ptr)
+int liggghts_get_maxtag(void *ptr, int iworld)
 {
   LAMMPS *lmp = (LAMMPS *) ptr;
   return lmp->atom->tag_max();
@@ -55,7 +55,7 @@ int liggghts_get_maxtag(void *ptr)
 
 /* ---------------------------------------------------------------------- */
 
-int liggghts_get_maxtag_ms(void *ptr)
+int liggghts_get_maxtag_ms(void *ptr, int iworld)
 {
   // currently no possibility to delete multisphere bodies
   // so just return # of bodies
@@ -68,7 +68,7 @@ int liggghts_get_maxtag_ms(void *ptr)
 
 /* ---------------------------------------------------------------------- */
 
-int liggghts_get_ntypes_ms(void *ptr)
+int liggghts_get_ntypes_ms(void *ptr, int iworld)
 {
   // currently no possibility to delete multisphere bodies
   // so just return # of bodies
@@ -81,7 +81,7 @@ int liggghts_get_ntypes_ms(void *ptr)
 
 /* ---------------------------------------------------------------------- */
 
-double* liggghts_get_vclump_ms(void *ptr)
+double* liggghts_get_vclump_ms(void *ptr, int iworld)
 {
   // currently no possibility to delete multisphere bodies
   // so just return # of bodies
@@ -109,26 +109,26 @@ void* locate_coupling_fix(void *ptr)
 
 /* ---------------------------------------------------------------------- */
 
-void data_liggghts_to_of(const char *name, const char *type, void *ptr, void *&data, const char *datatype)
+void data_liggghts_to_of(const char *name, const char *type, void *ptr, void *&data, const char *datatype, int iworld)
 {
     //LAMMPS *lmp = (LAMMPS *) ptr;
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
-    fcfd->get_dc()->push(name,type,data,datatype);
+    fcfd->get_dc()->push(name,type,data,datatype,iworld);
 }
 
 /* ---------------------------------------------------------------------- */
 
-void data_of_to_liggghts(const char *name,const char *type,void *ptr,void *data,const char* datatype)
+void data_of_to_liggghts(const char *name,const char *type,void *ptr,void *data,const char* datatype, int iworld)
 {
     //LAMMPS *lmp = (LAMMPS *) ptr;
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
-    fcfd->get_dc()->pull(name,type,data,datatype);
+    fcfd->get_dc()->pull(name,type,data,datatype,iworld);
 }
 
 /* ---------------------------------------------------------------------- */
 
 //NP update region model
-void update_rm(void *ptr)
+void update_region_model(void *ptr, int iworld)
 {
     LAMMPS *lmp = (LAMMPS *) ptr;
     //FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
@@ -179,7 +179,7 @@ void allocate_external_double(double **&data, int len2,const char* keyword,doubl
 
 //NP check if all requested quantities have been communicated
 //NP    since last call of this function
-void check_datatransfer(void *ptr)
+void check_datatransfer(void *ptr, int iworld)
 {
     //LAMMPS *lmp = (LAMMPS *) ptr;
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);

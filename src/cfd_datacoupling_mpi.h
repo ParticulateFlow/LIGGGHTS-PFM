@@ -43,11 +43,11 @@ class CfdDatacouplingMPI : public CfdDatacoupling {
 
   void exchange();
 
-  virtual void pull(const char *name, const char *type, void *&ptr, const char *datatype);
-  virtual void push(const char *name, const char *type, void *&ptr, const char *datatype);
+  virtual void pull(const char *name, const char *type, void *&ptr, const char *datatype,int iworld=0);
+  virtual void push(const char *name, const char *type, void *&ptr, const char *datatype,int iworld=0);
 
-  template <typename T> void pull_mpi(const char *,const char *,void *&);
-  template <typename T> void push_mpi(const char *,const char *,void *&);
+  template <typename T> void pull_mpi(const char *,const char *,void *&,int iworld=0);
+  template <typename T> void push_mpi(const char *,const char *,void *&,int iworld=0);
 
   virtual bool error_push()
   { return false;}
@@ -74,7 +74,7 @@ class CfdDatacouplingMPI : public CfdDatacoupling {
 //NP ptr to is local, ptr from is global
 
 template <typename T>
-void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from)
+void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from,int iworld)
 {
     int len1 = -1, len2 = -1, m;
 
@@ -150,7 +150,7 @@ void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from)
 //NP len1 is global # of datums (max tag)
 
 template <typename T>
-void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to)
+void CfdDatacouplingMPI::push_mpi(const char *name,const char *type,void *&to,int iworld)
 {
     int len1 = -1, len2 = -1, id;
 

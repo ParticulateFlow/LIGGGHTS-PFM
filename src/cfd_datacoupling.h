@@ -37,8 +37,8 @@ class CfdDatacoupling : protected Pointers {
   void add_pull_property(const char*, const char*);
   void add_push_property(const char*, const char*);
 
-  virtual void pull(const char *name, const char *type, void *&ptr, const char *datatype);
-  virtual void push(const char *name, const char *type, void *&ptr, const char *datatype);
+  virtual void pull(const char *name, const char *type, void *&ptr, const char *datatype, int iworld = 0);
+  virtual void push(const char *name, const char *type, void *&ptr, const char *datatype, int iworld = 0);
 
   virtual void allocate_external(int    **&data, int len2,int len1,int    initvalue);
   virtual void allocate_external(double **&data, int len2,int len1,double initvalue);

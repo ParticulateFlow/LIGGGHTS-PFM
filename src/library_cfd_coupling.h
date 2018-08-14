@@ -32,15 +32,14 @@
 //extern "C" {
 #endif
 
-int liggghts_get_maxtag(void *ptr);
-/*NL*/ int liggghts_get_maxtag_ms(void *ptr);
-/*NL*/ int liggghts_get_ntypes_ms(void *ptr);
-/*NL*/ double* liggghts_get_vclump_ms(void *ptr);
-void* locate_coupling_fix(void *ptr);
-void data_liggghts_to_of(const char *name, const char *type, void *ptr, void *&data, const char *datatype);
-void data_of_to_liggghts(const char *name, const char *type, void *ptr, void *data,  const char *datatype);
-void update_rm(void *ptr);
-void check_datatransfer(void *ptr);
+int liggghts_get_maxtag(void *ptr, int iworld = 0);
+/*NL*/ int liggghts_get_maxtag_ms(void *ptr, int iworld = 0);
+/*NL*/ int liggghts_get_ntypes_ms(void *ptr, int iworld = 0);
+/*NL*/ double* liggghts_get_vclump_ms(void *ptr, int iworld = 0);
+void data_liggghts_to_of(const char *name, const char *type, void *ptr, void *&data, const char *datatype, int iworld = 0);
+void data_of_to_liggghts(const char *name, const char *type, void *ptr, void *data,  const char *datatype, int iworld = 0);
+void update_region_model(void *ptr, int iworld = 0);
+void check_datatransfer(void *ptr, int iworld = 0);
 
 void allocate_external_int(int    **&data, int len2, int len1, int initvalue, void *ptr);
 void allocate_external_int(int    **&data, int len2, const char *,   int initvalue, void *ptr);
