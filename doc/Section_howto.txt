@@ -6,31 +6,31 @@
 
 :line 
 
-6. How-to discussions :h3
+7. How-to discussions :h3
 
 This section describes how to perform common tasks using LAMMPS.
 
-6.1 "Restarting a simulation"_#howto_1
-6.2 "2d simulations"_#howto_2
-6.3 "CHARMM, AMBER, and DREIDING force fields"_#howto_3
-6.4 "Running multiple simulations from one input script"_#howto_4
-6.5 "Multi-replica simulations"_#howto_5
-6.6 "Granular models"_#howto_6
-6.7 "TIP3P water model"_#howto_7
-6.8 "TIP4P water model"_#howto_8
-6.9 "SPC water model"_#howto_9
-6.10 "Coupling LAMMPS to other codes"_#howto_10
-6.11 "Visualizing LAMMPS snapshots"_#howto_11
-6.12 "Triclinic (non-orthogonal) simulation boxes"_#howto_12
-6.13 "NEMD simulations"_#howto_13
-6.14 "Finite-size spherical and aspherical particles"_#howto_14
-6.15 "Output from LAMMPS (thermo, dumps, computes, fixes, variables)"_#howto_15
-6.16 "Thermostatting, barostatting and computing temperature"_#howto_16
-6.17 "Walls"_#howto_17
-6.18 "Elastic constants"_#howto_18
-6.19 "Library interface to LAMMPS"_#howto_19
-6.20 "Calculating thermal conductivity"_#howto_20
-6.21 "Calculating viscosity"_#howto_21 :all(b)
+7.1 "Restarting a simulation"_#howto_1
+7.2 "2d simulations"_#howto_2
+7.3 "CHARMM, AMBER, and DREIDING force fields"_#howto_3
+7.4 "Running multiple simulations from one input script"_#howto_4
+7.5 "Multi-replica simulations"_#howto_5
+7.6 "Granular models"_#howto_6
+7.7 "TIP3P water model"_#howto_7
+7.8 "TIP4P water model"_#howto_8
+7.9 "SPC water model"_#howto_9
+7.10 "Coupling LAMMPS to other codes"_#howto_10
+7.11 "Visualizing LAMMPS snapshots"_#howto_11
+7.12 "Triclinic (non-orthogonal) simulation boxes"_#howto_12
+7.13 "NEMD simulations"_#howto_13
+7.14 "Finite-size spherical and aspherical particles"_#howto_14
+7.15 "Output from LAMMPS (thermo, dumps, computes, fixes, variables)"_#howto_15
+7.16 "Thermostatting, barostatting and computing temperature"_#howto_16
+7.17 "Walls"_#howto_17
+7.18 "Elastic constants"_#howto_18
+7.19 "Library interface to LAMMPS"_#howto_19
+7.20 "Calculating thermal conductivity"_#howto_20
+7.21 "Calculating viscosity"_#howto_21 :all(b)
 
 The example input scripts included in the LAMMPS distribution and
 highlighted in "Section_example"_Section_example.html also show how to
@@ -39,7 +39,7 @@ setup and run various kinds of simulations.
 :line
 :line
 
-6.1 Restarting a simulation :link(howto_1),h4
+7.1 Restarting a simulation :link(howto_1),h4
 
 There are 3 ways to continue a long LAMMPS simulation.  Multiple
 "run"_run.html commands can be used in the same input script.  Each
@@ -130,7 +130,7 @@ but not in data files.
 
 :line
 
-6.2 2d simulations :link(howto_2),h4
+7.2 2d simulations :link(howto_2),h4
 
 Use the "dimension"_dimension.html command to specify a 2d simulation.
 
@@ -165,7 +165,7 @@ the same as in 3d.
 
 :line
 
-6.3 CHARMM, AMBER, and DREIDING force fields :link(howto_3),h4
+7.3 CHARMM, AMBER, and DREIDING force fields :link(howto_3),h4
 
 A force field has 2 parts: the formulas that define it and the
 coefficients used for a particular system.  Here we only discuss
@@ -241,7 +241,7 @@ documentation for the formula it computes.
 
 :line
 
-6.4 Running multiple simulations from one input script :link(howto_4),h4
+7.4 Running multiple simulations from one input script :link(howto_4),h4
 
 This can be done in several ways.  See the documentation for
 individual commands for more details on how these examples work.
@@ -329,7 +329,7 @@ the 4th simulation, and so forth, until all 8 were completed.
 
 :line
 
-6.5 Multi-replica simulations :link(howto_5),h4
+7.5 Multi-replica simulations :link(howto_5),h4
 
 Several commands in LAMMPS run mutli-replica simulations, meaning
 that multiple instances (replicas) of your simulation are run
@@ -376,7 +376,7 @@ physical processors.
 
 :line
 
-6.6 Granular models :link(howto_6),h4
+7.6 Granular models :link(howto_6),h4
 
 Granular system are composed of spherical particles with a diameter,
 as opposed to point particles.  This means they have an angular
@@ -421,7 +421,7 @@ computations between frozen atoms by using this command:
 
 :line
 
-6.7 TIP3P water model :link(howto_7),h4
+7.7 TIP3P water model :link(howto_7),h4
 
 The TIP3P water model as implemented in CHARMM
 "(MacKerell)"_#MacKerell specifies a 3-site rigid water molecule with
@@ -474,7 +474,7 @@ models"_http://en.wikipedia.org/wiki/Water_model.
 
 :line
 
-6.8 TIP4P water model :link(howto_8),h4
+7.8 TIP4P water model :link(howto_8),h4
 
 The four-point TIP4P rigid water model extends the traditional
 three-point TIP3P model by adding an additional site, usually
@@ -558,7 +558,7 @@ LJ epsilon of O-O = 0.16275
 LJ sigma of O-O = 3.16435
 LJ epsilon, sigma of OH, HH = 0.0 :all(b),p
 
-Note that the when using the TIP4P pair style, the neighobr list
+Note that the when using the TIP4P pair style, the neighbor list
 cutoff for Coulomb interactions is effectively extended by a distance
 2 * (OM distance), to account for the offset distance of the
 fictitious charges on O atoms in water molecules.  Thus it is
@@ -574,7 +574,7 @@ models"_http://en.wikipedia.org/wiki/Water_model.
 
 :line
 
-6.9 SPC water model :link(howto_9),h4
+7.9 SPC water model :link(howto_9),h4
 
 The SPC water model specifies a 3-site rigid water molecule with
 charges and Lennard-Jones parameters assigned to each of the 3 atoms.
@@ -603,7 +603,7 @@ any of the parameters above, though it becomes a different model in
 that mode of usage.
 
 The SPC/E (extended) water model is the same, except
-the partial charge assignemnts change:
+the partial charge assignments change:
 
 O charge = -0.8476
 H charge = 0.4238 :all(b),p
@@ -616,7 +616,7 @@ models"_http://en.wikipedia.org/wiki/Water_model.
 
 :line 
 
-6.10 Coupling LAMMPS to other codes :link(howto_10),h4
+7.10 Coupling LAMMPS to other codes :link(howto_10),h4
 
 LAMMPS is designed to allow it to be coupled to other codes.  For
 example, a quantum mechanics code might compute forces on a subset of
@@ -635,7 +635,7 @@ the fix is invoked, and can make library calls to the other code,
 which has been linked to LAMMPS as a library.  This is the way the
 "POEMS"_poems package that performs constrained rigid-body motion on
 groups of atoms is hooked to LAMMPS.  See the
-"fix_poems"_fix_poems.html command for more details.  See "this
+"fix poems"_fix_poems.html command for more details.  See "this
 section"_Section_modify.html of the documentation for info on how to add
 a new fix to LAMMPS.
 
@@ -655,7 +655,7 @@ In this scenario, the other code can be called as a library, as in
 (1), or it could be a stand-alone code, invoked by a system() call
 made by the command (assuming your parallel machine allows one or more
 processors to start up another program).  In the latter case the
-stand-alone code could communicate with LAMMPS thru files that the
+stand-alone code could communicate with LAMMPS through files that the
 command writes and reads.
 
 See "Section_modify"_Section_modify.html of the documentation for how
@@ -715,7 +715,7 @@ instances of LAMMPS to perform different calculations.
 
 :line 
 
-6.11 Visualizing LAMMPS snapshots :link(howto_11),h4
+7.11 Visualizing LAMMPS snapshots :link(howto_11),h4
 
 LAMMPS itself does not do visualization, but snapshots from LAMMPS
 simulations can be visualized (and analyzed) in a variety of ways.
@@ -771,7 +771,7 @@ See the "dump"_dump.html command for more information on XTC files.
 
 :line
 
-6.12 Triclinic (non-orthogonal) simulation boxes :link(howto_12),h4
+7.12 Triclinic (non-orthogonal) simulation boxes :link(howto_12),h4
 
 By default, LAMMPS uses an orthogonal simulation box to encompass the
 particles.  The "boundary"_boundary.html command sets the boundary
@@ -847,7 +847,7 @@ boundary conditions in specific dimensions.  See the command doc pages
 for details.
 
 The 9 parameters (xlo,xhi,ylo,yhi,zlo,zhi,xy,xz,yz) are defined at the
-time the simluation box is created.  This happens in one of 3 ways.
+time the simulation box is created.  This happens in one of 3 ways.
 If the "create_box"_create_box.html command is used with a region of
 style {prism}, then a triclinic box is setup.  See the
 "region"_region.html command for details.  If the
@@ -966,10 +966,10 @@ used with non-orthogonal basis vectors to define a lattice that will
 tile a triclinic simulation box via the
 "create_atoms"_create_atoms.html command.
 
-A second use is to run Parinello-Rahman dyanamics via the "fix
+A second use is to run Parinello-Rahman dynamics via the "fix
 npt"_fix_nh.html command, which will adjust the xy, xz, yz tilt
 factors to compensate for off-diagonal components of the pressure
-tensor.  The analalog for an "energy minimization"_minimize.html is
+tensor.  The analog for an "energy minimization"_minimize.html is
 the "fix box/relax"_fix_box_relax.html command.
 
 A third use is to shear a bulk solid to study the response of the
@@ -980,7 +980,7 @@ on non-equilibrium MD (NEMD) simulations.
 
 :line
 
-6.13 NEMD simulations :link(howto_13),h4
+7.13 NEMD simulations :link(howto_13),h4
 
 Non-equilibrium molecular dynamics or NEMD simulations are typically
 used to measure a fluid's rheological properties such as viscosity.
@@ -1018,7 +1018,7 @@ An alternative method for calculating viscosities is provided via the
 
 :line
 
-6.14 Finite-size spherical and aspherical particles :link(howto_14),h4
+7.14 Finite-size spherical and aspherical particles :link(howto_14),h4
 
 Typical MD models treat atoms or particles as point masses.  Sometimes
 it is desirable to have a model with finite-size particles such as
@@ -1254,7 +1254,7 @@ body"_pair_body.html.
 
 :line
 
-6.15 Output from LAMMPS (thermo, dumps, computes, fixes, variables) :link(howto_15),h4
+7.15 Output from LAMMPS (thermo, dumps, computes, fixes, variables) :link(howto_15),h4
 
 There are four basic kinds of LAMMPS output:
 
@@ -1294,7 +1294,7 @@ to output and the kind of data they operate on and produce:
 "Dump file output"_#dump
 "Fixes that write output files"_#fixoutput
 "Computes that process output quantities"_#computeoutput
-"Fixes that process output quantities"_#fixoutput
+"Fixes that process output quantities"_#fixprocoutput
 "Computes that generate values to output"_#compute
 "Fixes that generate values to output"_#fix
 "Variables that generate values to output"_#variable
@@ -1375,7 +1375,7 @@ custom"_dump.html command.
 
 There is also a "dump local"_dump.html format where the user specifies
 what local values to output.  A pre-defined index keyword can be
-specified to enumuerate the local values.  Two additional kinds of
+specified to enumerate the local values.  Two additional kinds of
 keywords can also be specified (c_ID, f_ID), where a
 "compute"_compute.html or "fix"_fix.html or "variable"_variable.html
 provides the values to be output.  In each case, the compute or fix
@@ -1468,7 +1468,7 @@ variable) and sums the quantities on a per-molecule basis.  It
 produces a global vector or array as output values which can be used
 as input to other output commands.
 
-Fixes that process output quantities :h5,link(fixoutput)
+Fixes that process output quantities :h5,link(fixprocoutput)
 
 The "fix ave/atom"_fix_ave_atom.html command performs time-averaging
 of per-atom vectors.  The per-atom quantities can be atom attributes
@@ -1507,7 +1507,7 @@ describes them.
 
 Variables that generate values to output :h5,link(variable)
 
-Every "variables"_variable.html defined in an input script generates
+Every "variable"_variable.html defined in an input script generates
 either a global scalar value or a per-atom vector (only atom-style
 variables) when it is accessed.  The formulas used to define equal-
 and atom-style variables can contain references to the thermodynamic
@@ -1555,7 +1555,7 @@ Command: Input: Output:
 
 :line
 
-6.16 Thermostatting, barostatting, and computing temperature :link(howto_16),h4
+7.16 Thermostatting, barostatting, and computing temperature :link(howto_16),h4
 
 Thermostatting means controlling the temperature of particles in an MD
 simulation.  Barostatting means controlling the pressure.  Since the
@@ -1569,7 +1569,7 @@ Temperature is computed as kinetic energy divided by some number of
 degrees of freedom (and the Boltzmann constant).  Since kinetic energy
 is a function of particle velocity, there is often a need to
 distinguish between a particle's advection velocity (due to some
-aggregate motiion of particles) and its thermal velocity.  The sum of
+aggregate motion of particles) and its thermal velocity.  The sum of
 the two is the particle's total velocity, but the latter is often what
 is wanted to compute a temperature.
 
@@ -1588,7 +1588,7 @@ pressure"_compute_pressure.html command calculates pressure.
 "compute temp/ramp"_compute_temp_ramp.html
 "compute temp/region"_compute_temp_region.html :ul
 
-All but the first 3 calculate velocity biases (i.e. advection
+All but the first 3 calculate velocity biases (e.g. advection
 velocities) that are removed when computing the thermal temperature.
 "Compute temp/sphere"_compute_temp_sphere.html and "compute
 temp/asphere"_compute_temp_asphere.html compute kinetic energy for
@@ -1623,7 +1623,7 @@ nvt/asphere"_fix_nvt_asphere.html thermostat not only translation
 velocities but also rotational velocities for spherical and aspherical
 particles.
 
-DPD thermostatting alters pairwise interactions in a manner analagous
+DPD thermostatting alters pairwise interactions in a manner analogous
 to the per-particle thermostatting of "fix
 langevin"_fix_langevin.html.
 
@@ -1662,7 +1662,7 @@ nph) and Berendsen:
 The "fix npt"_fix_nh.html commands include a Nose-Hoover thermostat
 and barostat.  "Fix nph"_fix_nh.html is just a Nose/Hoover barostat;
 it does no thermostatting.  Both "fix nph"_fix_nh.html and "fix
-press/bernendsen"_fix_press_berendsen.html can be used in conjunction
+press/berendsen"_fix_press_berendsen.html can be used in conjunction
 with any of the thermostatting fixes.
 
 As with the thermostats, "fix npt"_fix_nh.html and "fix
@@ -1678,9 +1678,9 @@ pressure"_compute_pressure.html compute to calculate a current
 pressure.  By default, this compute is created with a simple "compute
 temp"_compute_temp.html (see the last argument of the "compute
 pressure"_compute_pressure.html command), which is used to calculated
-the kinetic componenet of the pressure.  The barostatting fixes can
+the kinetic component of the pressure.  The barostatting fixes can
 also use temperature computes that remove bias for the purpose of
-computing the kinetic componenet which contributes to the current
+computing the kinetic component which contributes to the current
 pressure.  See the doc pages for the individual fixes and for the
 "fix_modify"_fix_modify.html command for instructions on how to assign
 a temperature or pressure compute to a barostatting fix.
@@ -1706,7 +1706,7 @@ thermodynamic output.
 
 :line
 
-6.17 Walls :link(howto_17),h4
+7.17 Walls :link(howto_17),h4
 
 Walls in an MD simulation are typically used to bound particle motion,
 i.e. to serve as a boundary condition.
@@ -1780,7 +1780,7 @@ frictional walls, as well as triangulated surfaces.
 
 :line
 
-6.18 Elastic constants :link(howto_18),h4
+7.18 Elastic constants :link(howto_18),h4
 
 Elastic constants characterize the stiffness of a material. The formal
 definition is provided by the linear relation that holds between the
@@ -1816,7 +1816,7 @@ converge and requires careful post-processing "(Shinoda)"_#Shinoda
 
 :line
 
-6.19 Library interface to LAMMPS :link(howto_19),h4
+7.19 Library interface to LAMMPS :link(howto_19),h4
 
 As described in "Section_start 5"_Section_start.html#start_5, LAMMPS
 can be built as a library, so that it can be called by another code,
@@ -1864,7 +1864,7 @@ The lammps_file() and lammps_command() functions are used to pass a
 file or string to LAMMPS as if it were an input script or single
 command in an input script.  Thus the calling code can read or
 generate a series of LAMMPS commands one line at a time and pass it
-thru the library interface to setup a problem and then run it,
+through the library interface to setup a problem and then run it,
 interleaving the lammps_command() calls with other calls to extract
 information from LAMMPS, perform its own operations, or call another
 code's library.
@@ -1898,7 +1898,7 @@ LAMMPS.
 
 :line
 
-6.20 Calculating thermal conductivity :link(howto_20),h4
+7.20 Calculating thermal conductivity :link(howto_20),h4
 
 The thermal conductivity kappa of a material can be measured in at
 least 4 ways using various options in LAMMPS.  See the examples/KAPPA
@@ -1907,7 +1907,7 @@ a simple Lennard-Jones fluid model.  Also, see "this
 section"_Section_howto.html#howto_21 of the manual for an analogous
 discussion for viscosity.
 
-The thermal conducitivity tensor kappa is a measure of the propensity
+The thermal conductivity tensor kappa is a measure of the propensity
 of a material to transmit heat energy in a diffusive manner as given
 by Fourier's law
 
@@ -1971,7 +1971,7 @@ formalism.
 
 :line
 
-6.21 Calculating viscosity :link(howto_21),h4
+7.21 Calculating viscosity :link(howto_21),h4
 
 The shear viscosity eta of a fluid can be measured in at least 4 ways
 using various options in LAMMPS.  See the examples/VISCOSITY directory
@@ -1992,7 +1992,7 @@ and grad(Vstream) is the spatial gradient of the velocity of the fluid
 moving in another direction, normal to the area through which the
 momentum flows.  Viscosity thus has units of pressure-time.
 
-The first method is to perform a non-equlibrium MD (NEMD) simulation
+The first method is to perform a non-equilibrium MD (NEMD) simulation
 by shearing the simulation box via the "fix deform"_fix_deform.html
 command, and using the "fix nvt/sllod"_fix_nvt_sllod.html command to
 thermostat the fluid via the SLLOD equations of motion.
@@ -2018,7 +2018,7 @@ the rNEMD algorithm of Muller-Plathe.  Momentum in one dimension is
 swapped between atoms in two different layers of the simulation box in
 a different dimension.  This induces a velocity gradient which can be
 monitored with the "fix ave/spatial"_fix_ave_spatial.html command.
-The fix tallies the cummulative momentum transfer that it performs.
+The fix tallies the cumulative momentum transfer that it performs.
 See the "fix viscosity"_fix_viscosity.html command for details.
 
 The fourth method is based on the Green-Kubo (GK) formula which
@@ -2057,11 +2057,11 @@ lattice      fcc 5.376 orient x 1 0 0 orient y 0 1 0 orient z 0 0 1
 region       box block 0 4 0 4 0 4
 create_box   1 box
 create_atoms 1 box
-mass	     1 39.948
+mass         1 39.948
 pair_style   lj/cut 13.0
 pair_coeff   * * 0.2381 3.405
 timestep     $\{dt\}
-thermo	     $d :pre
+thermo       $d :pre
 
 # equilibration and thermalization :pre
 

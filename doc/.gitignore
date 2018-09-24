@@ -1,0 +1,11 @@
+# ignore generated files and folders
+*.html
+*.rst
+*.inv
+searchindex.js
+
+_build
+_sources
+_static
+_images
+

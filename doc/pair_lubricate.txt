@@ -95,7 +95,7 @@ Style {lubricate} requires monodisperse spherical particles; style
 {lubricate/poly} allows for polydisperse spherical particles.
 
 The viscosity {mu} can be varied in a time-dependent manner over the
-course of a simluation, in which case in which case the pair_style
+course of a simulation, in which case in which case the pair_style
 setting for {mu} will be overridden.  See the "fix adapt"_fix_adapt.html
 command for details.
 
@@ -192,8 +192,8 @@ This pair style can only be used via the {pair} keyword of the
 [Restrictions:]
 
 These styles are part of the FLD package.  They are only enabled if
-LAMMPS was built with that package.  See the "Making
-LAMMPS"_Section_start.html#2_3 section for more info.
+LAMMPS was built with that package.  See the "Making LAMMPS with optional
+packages"_Section_start.html#start_3 section for more info.
 
 Only spherical monodisperse particles are allowed for pair_style
 lubricate.

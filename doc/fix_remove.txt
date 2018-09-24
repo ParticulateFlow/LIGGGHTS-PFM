@@ -54,7 +54,7 @@ keyword.
 
 The {atomtype} option allows to restrict deletion to a single type of atoms.
 
-The {verbose} keyword controlls whether statistics about particle
+The {verbose} keyword controls whether statistics about particle
 removal is output to the screen each time particles are removed.
 
 If the {compress} keyword is set to {yes}, then after atoms are

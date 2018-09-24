@@ -57,9 +57,9 @@ This command is not available in LAMMPS.
 [Description:]
 
 Apply the discrete fragmentation method (DFM) to simulate the breakage of
-brittle granular particles (see "Bruchmüller"_#Bruchmueller2011 and "Esnault"_#Esnault2013).
+brittle granular particles (see "BruchmÃ¼ller"_#Bruchmueller2011 and "Esnault"_#Esnault2013).
 
-The {verbose} keyword controlls whether statistics about particle
+The {verbose} keyword controls whether statistics about particle
 breakage is output to the screen each time particles are broken.
 
 This command must use the {distributiontemplate} keyword to refer to a 
@@ -121,7 +121,7 @@ of breakage is calculated as
 The Weibull modulus {m} in the probability functions is set to one in the current
 implementation.
 
-The material parameter {fMat} characterises the resistance against fracture.
+The material parameter {fMat} characterizes the resistance against fracture.
 In case of the impact energy based criterion, it is related to the Julius Kruttschnitt
 standard "slope" parameter determined experimentally in drop weight tests and is
 specified in kg/Jm. For the the maximum force and the von Mises stress criterion
@@ -157,7 +157,7 @@ breakage operation.
 
 None of the "fix_modify"_fix_modify.html options are relevant to this
 fix. A global vector is stored by this fix for access by various "output
-commands"_Section_howto.html#4_15. The first component of the vector is the
+commands"_Section_howto.html#howto_15. The first component of the vector is the
 number of particle templates already inserted, the second component is the mass
 of particles already inserted. No parameter of this fix can be
 used with the {start/stop} keywords of the "run"_run.html command.
@@ -180,7 +180,7 @@ The defaults are verbose = yes, start = next time-step, breakability = uniform, 
 :line
 
 :link(Bruchmueller2011)
-[(Bruchmüller, 2011)] "Modelling discrete fragmentation of brittle particles", J. Bruchmüller, B. G. M. van Wachem, S. Gu, K. H. Luo, Powder Technology, 208, p. 731 (2011).
+[(BruchmÃ¼ller, 2011)] "Modelling discrete fragmentation of brittle particles", J. BruchmÃ¼ller, B. G. M. van Wachem, S. Gu, K. H. Luo, Powder Technology, 208, p. 731 (2011).
 :link(Esnault2013)
 [(Esnault, 2013)] "3D numerical simulation study of quasistatic grinding process on a model granular material", V. P. B. Esnault, J.-N. Roux, Mechanics of Materials, 66, p. 88 (2013).
 

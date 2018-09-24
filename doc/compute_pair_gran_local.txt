@@ -53,13 +53,13 @@ force cutoff distance for that interaction, as defined by the
 commands.
 
 IMPORTANT NOTE: For accessing particle-wall contact data, only mesh
-walls (see "fix mesh"_fix_mesh.html) can be used.
+walls (see "fix mesh/surface"_fix_mesh_surface.html) can be used.
 For computing particle-wall (compute wall/gran/local), the code will
 automatically look for a "fix wall/gran"_fix_wall_gran.html command
 that uses mesh walls. The order of the meshes in the fix wall/gran
 command is called the mesh id (starting with 0), and the triangle id
 reflects the order of the triangles in the STL/VTK file read via the
-dedicated fix mesh command. For how to output the trangle id,
+dedicated fix mesh command. For how to output the triangle id,
 see "dump mesh/gran/VTK command"dump.html.
 
 The output {pos} is the particle positions (6 values) in distance
@@ -88,7 +88,7 @@ rather than a calculation based on mechanics. This is to ensure that
 The output {delta} will output the
 overlap (sum of radii - distance between particle centers) in distance
 "units"_units.html .The output {heatFlux} (available only
-if a "fix heat/gran"_fix_heat_gran.html is used to compute  heat
+if a "fix heat/gran"_fix_heat_gran_conduction.html is used to compute  heat
 fluxes) will output the per-contact conductive heat flux area, in
 energy/time "units"_units.html.
 
@@ -96,7 +96,7 @@ IMPORTANT NOTE:
 The data associated to the different keywords is output in the
 following order: {pos}, {vel}, {id}, {force}, {force_normal},
 {force_tangential}, {torque}, {history}, {contactArea}, {delta}, {heatFlux}.
-This is independant of the order in which the keywords are
+This is independent of the order in which the keywords are
 specified.
 
 Note that as atoms migrate from processor to processor, there will be
@@ -125,7 +125,7 @@ local vector is produced.  If two or more keywords are specified, a
 local array is produced where the number of columns = the number of
 keywords.  The vector or array can be accessed by any command that
 uses local values from a compute as input.  See "this
-section"_Section_howto.html#4_15 for an overview of LAMMPS output
+section"_Section_howto.html#howto_15 for an overview of LAMMPS output
 options.
 
 For information on the "units"_units.html of the output, see above.
@@ -138,7 +138,7 @@ For accessing particle-wall contact data, only mesh walls can be used.
 [Related commands:]
 
 "dump local"_dump.html, "compute property/local"_compute_property_local.html,
-"compute pair/local"_compute/pair/local.html
+"compute pair/local"_compute_pair_local.html
 
 [Default:]
 

@@ -168,7 +168,7 @@ to {reduced} when using a triclinic simulation box, as noted below.
 :line
 
 The atom attribute values (vx,vy,vz,fx,fy,fz) are self-explanatory.
-Note that other atom attributes (including atom postitions x,y,z) can
+Note that other atom attributes (including atom positions x,y,z) can
 be used as inputs to this fix by using the "compute
 property/atom"_compute_property_atom.html command and then specifying
 an input value from that compute.

@@ -253,8 +253,8 @@ units.
 of Ions in Matter' Vol 1, 1985, Pergamon Press.
 
 :link(Albe)
-[(Albe)] J. Nord, K. Albe, P. Erhartand K. Nordlund, J. Phys.:
-Condens. Matter, 15, 5649(2003).
+[(Albe)] J. Nord, K. Albe, P. Erhart and K. Nordlund, J. Phys.:
+Condens. Matter, 15, 5649 (2003).
 
 :link(Tersoff_2)
 [(Tersoff_2)] J. Tersoff, Phys Rev B, 39, 5566 (1989)

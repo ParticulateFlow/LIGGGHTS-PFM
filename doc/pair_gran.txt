@@ -19,7 +19,7 @@ zero or more model_type/model_name pairs may be appended. They must be appended 
   {cohesion} values = described "here"_Section_gran_models.html
   {rolling_friction} values = described "here"_Section_gran_models.html
   {surface} values = described "here"_Section_gran_models.html :pre
-following the model_type/model_name pairs, zero or more model_keyword/model_valuezero pairs may be appended in arbitrary order :l
+following the model_type/model_name pairs, zero or more model_keyword/model_value pairs may be appended in arbitrary order :l
   model_type/model_name pairs = described for each model separately "here"_Section_gran_models.html  :pre
 :ule
 

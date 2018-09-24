@@ -136,17 +136,17 @@ invoked.  If only a single command is specified as NULL, then no
 command is invoked.  Thus these lines:
 
 variable q equal x\[100\]
-run 6000 every 2000 "print Coord = $q" :pre
+run 6000 every 2000 "print 'Coord = $q'" :pre
 
 are the equivalent of:
 
 variable q equal x\[100\]
 run 2000
-print Coord = $q
+print "Coord = $q"
 run 2000
-print Coord = $q
+print "Coord = $q"
 run 2000
-print Coord = $q :pre
+print "Coord = $q" :pre
 
 which does 3 runs of 2000 steps and prints the x-coordinate of a
 particular atom between runs.  Note that the variable "$q" will
@@ -167,15 +167,16 @@ If the {pre} and {post} options are set to "no" when used with the
 run will print the full timing summary, but these operations will be
 skipped for intermediate runs.
 
-IMPORTANT NOTE: You might hope to specify a command that exits the run
+IMPORTANT NOTE: You might wish to specify a command that exits the run
 by jumping out of the loop, e.g.
 
 variable t equal temp
 run 10000 every 100 "if '$t < 300.0' then 'jump SELF afterrun'" :pre
 
-Unfortunately this will not currently work.  The run command simply
-executes each command one at a time each time it pauses, then
-continues the run.  You can replace the jump command with a simple
+However, this will not work.  The run command simply executes each
+command one at a time each time it pauses, then continues the run.
+
+You can replace the jump command with a simple
 "quit"_quit.html command and cause LAMMPS to exit during the
 middle of a run when the condition is met.
 
