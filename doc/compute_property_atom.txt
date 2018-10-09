@@ -16,18 +16,18 @@ ID, group-ID are documented in "compute"_compute.html command :ulb,l
 property/atom = style name of this compute command :l
 input = one or more atom attributes :l
   possible attributes = id, mol, type, mass,
- 	                x, y, z, xs, ys, zs, xu, yu, zu, ix, iy, iz,
-		        vx, vy, vz, fx, fy, fz,
+                        x, y, z, xs, ys, zs, xu, yu, zu, ix, iy, iz,
+                        vx, vy, vz, fx, fy, fz,
                         q, mux, muy, muz, mu,
                         radius, diameter, omegax, omegay, omegaz,
-			angmomx, angmomy, angmomz,
-			shapex,shapey, shapez,
-		        quatw, quati, quatj, quatk, tqx, tqy, tqz,
-			spin, eradius, ervel, erforce
-			end1x, end1y, end1z, end2x, end2y, end2z,
-			corner1x, corner1y, corner1z,
-			corner2x, corner2y, corner2z,
-			corner3x, corner3y, corner3z,
+                        angmomx, angmomy, angmomz,
+                        shapex,shapey, shapez,
+                        quatw, quati, quatj, quatk, tqx, tqy, tqz,
+                        spin, eradius, ervel, erforce
+                        end1x, end1y, end1z, end2x, end2y, end2z,
+                        corner1x, corner1y, corner1z,
+                        corner2x, corner2y, corner2z,
+        corner3x, corner3y, corner3z,
                         i_name, d_name :pre
       id = atom ID
       mol = molecule ID
@@ -77,7 +77,7 @@ variable"_variable.html commands.
 The list of possible attributes is the same as that used by the "dump
 custom"_dump.html command, which describes their meaning, with some
 additional quantities that are only defined for certain "atom
-styles"_atom_style.html.  Basically, this list gives your input script
+styles"_atom_style.html.  Basically, this list gives an input script
 access to any per-atom quantity stored by LAMMPS.
 
 The values are stored in a per-atom vector or array as discussed
@@ -105,7 +105,7 @@ triangular particles and define the corner points of each triangle.
 
 The {i_name} and {d_name} attributes refer to custom integer and
 floating-point properties that have been added to each atom via the
-"fix property/atom"_fix_property_atom.html command.  When that command
+"fix property/atom"_fix_property.html command.  When that command
 is used specific names are given to each attribute which are what is
 specified as the "name" portion of {i_name} or {d_name}.
 
@@ -130,6 +130,6 @@ units for q, etc.
 
 "dump custom"_dump.html, "compute reduce"_compute_reduce.html, "fix
 ave/atom"_fix_ave_atom.html, "fix ave/spatial"_fix_ave_spatial.html,
-"fix property/atom"_fix_property_atom.html
+"fix property/atom"_fix_property.html
 
 [Default:] none

@@ -33,7 +33,7 @@ Fix property/atom/timetracer computes the residence time of particles
 in the simulation domain and (optionally) a list of regions. 
 
 Since the look-up if a particle is in a specific region can be
-compuationally costly, keyword {check_region_every} can be used to 
+computationally costly, keyword {check_region_every} can be used to 
 control how often the region is checked. Every {check_region_every}
 time-steps, the lookup is performed and the residence time contribution
 for each lookup is dt*{check_region_every}, where dt is the time-step 

@@ -74,10 +74,10 @@ namespace LIGGGHTS {
           int const index = index3ToIndex1(i,j,k);
           indexToPos(index,pos_tmp);
 
-          if(!region->inside(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
+          if(!region->match(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
             continue;
 
-          if(region->surface_interior(pos_tmp,test_rad))
+          if(region->surface(pos_tmp[0],pos_tmp[1],pos_tmp[2],test_rad))
             data[index] = BOUNDARY;
           else
             data[index] = INSIDE;

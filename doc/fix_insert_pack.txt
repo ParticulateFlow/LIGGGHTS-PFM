@@ -83,7 +83,7 @@ fix ins all insert/pack seed 1001 distributiontemplate pdd1 insert_every once ov
 Insert particles into a granular run either once or every few timesteps 
 within the specified region, as defined via the {region} keyword.
 
-The {verbose} keyword controlls whether statistics about particle
+The {verbose} keyword controls whether statistics about particle
 insertion is output to the screen each time particles are inserted.
 
 This command must use the distributiontemplate keyword to refer to a 
@@ -114,7 +114,7 @@ in the "fix_particledistribution_discrete"_fix_particledistribution_discrete.htm
 command (all of which can also be "all").
 
 The keyword {overlapcheck} controls if overlap is checked for at insertion,
-both within the inserted particle package and with other existig particles. 
+both within the inserted particle package and with other existing particles. 
 If this option is turned off, insertion will scale very well in parallel, 
 otherwise not. Be aware that in case of no overlap check, highly overlapping
 configurations will be produced, so you will have to relax these configurations.
@@ -183,7 +183,7 @@ insertion operation.
 
 None of the "fix_modify"_fix_modify.html options are relevant to this
 fix. A global vector is stored by this fix for access by various "output
-commands"_Section_howto.html#4_15. The first component of the vector is the
+commands"_Section_howto.html#howto_15. The first component of the vector is the
 number of particles already inserted, the second component is the mass
 of particles already inserted. No parameter of this fix can be
 used with the {start/stop} keywords of the "run"_run.html command.

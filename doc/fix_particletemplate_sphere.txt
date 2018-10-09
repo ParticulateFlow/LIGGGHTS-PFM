@@ -51,7 +51,7 @@ If you are sure you know what you are doing you can override the default limit o
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
-Information about the random state in this fix is written to "binary restart files"_restart.html so you can restart a simulation with the same particles being chosen for insertion. None of the "fix_modify"_fix_modify.html options are relevant to this fix. No global scalar or vector or per-atom quantities are stored by this fix for access by various "output commands"_Section_howto.html#4_15. No parameter of this fix can be used with the {start}/{stop} keywords of the "run"_run.html command. This fix is not invoked during "energy minimization"_minimize.html. 
+Information about the random state in this fix is written to "binary restart files"_restart.html so you can restart a simulation with the same particles being chosen for insertion. None of the "fix_modify"_fix_modify.html options are relevant to this fix. No global scalar or vector or per-atom quantities are stored by this fix for access by various "output commands"_Section_howto.html#howto_15. No parameter of this fix can be used with the {start}/{stop} keywords of the "run"_run.html command. This fix is not invoked during "energy minimization"_minimize.html. 
 
 [Restrictions:] none
 

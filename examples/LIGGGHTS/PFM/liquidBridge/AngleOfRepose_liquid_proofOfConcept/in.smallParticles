@@ -46,7 +46,7 @@ neigh_modify    delay 0
 
 fix 		m1 all property/global youngsModulus peratomtype ${ym} ${ym}
 fix 		m2 all property/global poissonsRatio peratomtype ${pr} ${pr}
-fix 		m3 all property/global coefficientRestitution peratomtypepair 2 ${rest} ${rest} ${rest} ${rest} 
+fix 		m3 all property/global coefficientRestitution peratomtypepair 2 ${rest} ${rest} ${rest} ${rest}
 fix 		m4 all property/global coefficientFriction peratomtypepair 2 ${fric} ${fric} ${fric} ${fric}
 #fix 		m5 all property/global characteristicVelocity scalar 2.
 fix 		m5 all property/global coefficientRollingFriction peratomtypepair 2 ${rf} ${rf} ${rf} ${rf}
@@ -68,7 +68,7 @@ fix		pt3 all mesh/surface/stress file meshes/cylinder.stl type 2 scale ${scale}
 fix		granwalls all wall/gran model hertz tangential history mesh n_meshes 3 meshes pt1 pt2 pt3 store_force yes
 
 #region for insertion
-fix		inface all mesh/surface file meshes/entry.stl type 2 scale ${scale} move 0. 0. 0 
+fix		inface all mesh/surface file meshes/entry.stl type 2 scale ${scale} move 0. 0. 0.
 
 
 #distributions for insertion
@@ -98,8 +98,8 @@ compute_modify	thermo_temp dynamic yes
 #insert the first particles so that dump is not empty
 run		1
 dump		dmp all custom 1000 post/dump*.cohesion id type x y z vx vy vz fx fy fz omegax omegay omegaz radius f_force_granwalls[1] f_force_granwalls[2] f_force_granwalls[3]
-dump 		dumpstress all mesh/gran/VTK 1000 post/dump*.vtk stress pt1 pt2 pt3 inface
-dump 		inface all mesh/gran/VTK 1000 post/dump_inface*.vtk stress inface
+dump 		dumpstress all mesh/vtk 1000 post/dump*.vtk stress pt1 pt2 pt3 inface
+dump 		inface all mesh/vtk 1000 post/dump_inface*.vtk stress inface
 
 #insert particles
 run		5000
@@ -115,7 +115,7 @@ fix			dmpTH all print 100 "${time} ${vave}" screen no title "t vave" file post/v
 label loop
   print "-----> Checking Velocity..."
   if "${vave}<${vthre}" then "jump in.smallParticles endloop"
-  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
+  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"
   set group all vx 0. vy 0. vz 0.
   run 1000
 jump in.smallParticles loop
@@ -139,7 +139,7 @@ variable vave equal sqrt(v_vcmx*v_vcmx+v_vcmy*v_vcmy+v_vcmz*v_vcmz)
 label loop2
   print "-----> Checking Velocity..."
   if "${vave}<${vthre}" then "jump in.smallParticles endloop2"
-  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"  
+  print "-----> v ave ${vave}, v threshold ${vthre}, continuing run"
   set group all vx 0. vy 0. vz 0.
   run 1000
 jump in.smallParticles loop2

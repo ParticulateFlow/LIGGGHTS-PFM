@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -31,13 +32,13 @@ using namespace std;
 
 // function prototypes
 
-int next_paragraph(FILE *fp, string &paragraph);
-int index_of_first_char_of_last_word(string &paragraph);
-void process_commands(int flag, string &s, string &pre, string &post);
-void substitute(string &s);
-string td_tag(int currentc);
-int find_n(string &s, int nend, int &n1);
-void file_open(int npair, string &infile, FILE **in, FILE **out);
+static int next_paragraph(FILE *fp, string &paragraph);
+static int index_of_first_char_of_last_word(string &paragraph);
+static void process_commands(int flag, string &s, string &pre, string &post);
+static void substitute(string &s);
+static string td_tag(int currentc);
+static long find_n(string &s, int nend, int &n1);
+static void file_open(int npair, string &infile, FILE **in, FILE **out);
 
 // global variables for links, tables, lists, all command
 
@@ -72,7 +73,8 @@ string allflag;
 
 int main(int narg, char **arg)
 {
-  int i,n,npair;
+  int npair;
+  size_t n;
   string *infile;
   FILE *in,*out;
   int style,ifirst,ilast;
@@ -150,12 +152,12 @@ int main(int narg, char **arg)
     // read file one paragraph at a time
     // process commands, looking only for link definitions
 
-    while (style = next_paragraph(in,raw)) {
+    while ((style = next_paragraph(in,raw))) {
 
       if (style == 2) {
-	int n = index_of_first_char_of_last_word(raw);
-	commands = raw.substr(n+1);
-	process_commands(0,commands,pre,post);
+        int n = index_of_first_char_of_last_word(raw);
+        commands = raw.substr(n+1);
+        process_commands(0,commands,pre,post);
       }
 
       raw.erase();
@@ -177,12 +179,27 @@ int main(int narg, char **arg)
     // substitute text for each paragraph
     // write HTML to output file
 
-    while (style = next_paragraph(in,raw)) {
+    int rstflag = 0;
+
+    while ((style = next_paragraph(in,raw))) {
+
+      if (rstflag && raw.find("END_RST -->") != string::npos) {
+        rstflag = 0;
+        raw.erase();
+        continue;
+      } else if (rstflag == 0 && raw.find("<!-- RST") != string::npos) {
+        rstflag = 1;
+        raw.erase();
+        continue;
+      } else if (rstflag) {
+        raw.erase();
+        continue;
+      }
 
       n = raw.find("\\\n");
-      while (n != string::npos) {
-	raw.erase(n,2);
-	n = raw.find("\\\n");
+      while (n < string::npos) {
+        raw.erase(n,2);
+        n = raw.find("\\\n");
       }
 
       ifirst = raw.find_first_not_of(" \t\n");
@@ -192,20 +209,20 @@ int main(int narg, char **arg)
       post.erase();
 
       if (raw[ifirst] == '<' && raw[ilast] == '>') {
-	body = raw;
+        body = raw;
       } else if (style == 1) {
-	body = raw;
-	commands = "p\n";
-	process_commands(1,commands,pre,post);
-	substitute(body);
+        body = raw;
+        commands = "p\n";
+        process_commands(1,commands,pre,post);
+        substitute(body);
       } else {
-	int n = index_of_first_char_of_last_word(raw);
-	body = raw.substr(0,n) + "\n";
-	commands = raw.substr(n+1);
-	process_commands(1,commands,pre,post);
-	substitute(body);
+        int n = index_of_first_char_of_last_word(raw);
+        body = raw.substr(0,n) + "\n";
+        commands = raw.substr(n+1);
+        process_commands(1,commands,pre,post);
+        substitute(body);
       }
-      
+
       final = pre + body + post;
       fprintf(out,"%s\n",final.c_str());
 
@@ -222,10 +239,10 @@ int main(int narg, char **arg)
     fclose(in);
     if (out != stdout) fclose(out);
   }
-  
+
   // clean up memory
-  
-  for (i = 0; i < nskip; i++) delete [] skipfiles[i];
+
+  for (int i = 0; i < nskip; i++) delete [] skipfiles[i];
   if (skipfiles) free(skipfiles);
   delete [] infile;
 }
@@ -243,18 +260,32 @@ int next_paragraph(FILE *fp, string &paragraph)
   char *ptr;
   char str[MAXLINE];
   int first = 1;
+  int len = 0;
 
   while (1) {
     ptr = fgets(str,MAXLINE,fp);
     if (ptr == NULL && first) return 0;
     if (ptr == NULL) return 1;
-    if (strlen(str) == MAXLINE-1) {
+    len = strlen(str);
+    if (len == MAXLINE-1) {
       fprintf(stderr,"ERROR: File has too-long a string - increase MAXLINE\n");
       exit(1);
     }
+
+    // check for valid 7-bit ascii characters
+    bool nonascii = false;
+    for (int i=0; i < len; ++i) {
+      char c = str[i];
+      if (c != '\n' && c != '\t' && (c < ' ' || c > '~'))
+        nonascii = true;
+    }
+    if (nonascii)
+      fprintf(stderr,"WARNING: Non-portable characters in line: %s",ptr);
+
     if (strspn(str," \t\n") == strlen(str) && first) continue;
     if (strspn(str," \t\n") == strlen(str)) return 1;
     first = 0;
+
     paragraph += str;
     if (paragraph[index_of_first_char_of_last_word(paragraph)] == ':')
       return 2;
@@ -265,8 +296,8 @@ int next_paragraph(FILE *fp, string &paragraph)
 
 int index_of_first_char_of_last_word(string &paragraph)
 {
-  int n = paragraph.find_last_not_of(" \t\n");
-  int m = paragraph.find_last_of(" \t\n",n);
+  size_t n = paragraph.find_last_not_of(" \t\n");
+  size_t m = paragraph.find_last_of(" \t\n",n);
   if (m == string::npos) return 0;
   else return m+1;
 }
@@ -275,12 +306,14 @@ int index_of_first_char_of_last_word(string &paragraph)
 
 void process_commands(int flag, string &s, string &pre, string &post)
 {
-  int start,stop,last,narg;
+  size_t start,stop,last;
+  int narg;
   string command;
   vector<string> arg;
 
   start = 0;
   last = s.find_last_not_of(" \t\n");
+  if (last == string::npos) return;
 
   while (start <= last) {
 
@@ -295,19 +328,19 @@ void process_commands(int flag, string &s, string &pre, string &post)
       start = stop+1;
       narg = 0;
       while (1) {
-	stop = s.find_first_of(",)",start);
-	if (stop == string::npos) {
-	  fprintf(stderr,"ERROR: No trailing parenthesis in %s\n",s.c_str());
-	  exit(1);
-	}
-	arg.resize(narg+1);
-	arg[narg] = s.substr(start,stop-start);
-	narg++;
-	start = stop+1;
-	if (s[stop] == ')') {
-	  start++;
-	  break;
-	}
+        stop = s.find_first_of(",)",start);
+        if (stop == string::npos) {
+          fprintf(stderr,"ERROR: No trailing parenthesis in %s\n",s.c_str());
+          exit(1);
+        }
+        arg.resize(narg+1);
+        arg[narg] = s.substr(start,stop-start);
+        narg++;
+        start = stop+1;
+        if (s[stop] == ')') {
+          start++;
+          break;
+        }
       }
     } else {
       command = s.substr(start,stop-start);
@@ -319,18 +352,18 @@ void process_commands(int flag, string &s, string &pre, string &post)
 
     if (flag == 0) {
       if (command == "link" && narg == 2) {
-	//	s.erase(s.length()-1,1);
-	for (int i = 0; i < nlink; i++)
-	  if (alias1[i] == arg[0]) {
-	    fprintf(stderr,"ERROR: Link %s appears more than once\n",
-		    arg[0].c_str());
-	    exit(1);
-	  }
-	alias1.resize(nlink+1);
-	alias2.resize(nlink+1);
-	alias1[nlink] = arg[0];
-	alias2[nlink] = arg[1];
-	nlink++;
+        //      s.erase(s.length()-1,1);
+        for (int i = 0; i < nlink; i++)
+          if (alias1[i] == arg[0]) {
+            fprintf(stderr,"ERROR: Link %s appears more than once\n",
+                    arg[0].c_str());
+            exit(1);
+          }
+        alias1.resize(nlink+1);
+        alias2.resize(nlink+1);
+        alias1[nlink] = arg[0];
+        alias2[nlink] = arg[1];
+        nlink++;
       } else continue;
     }
 
@@ -399,19 +432,19 @@ void process_commands(int flag, string &s, string &pre, string &post)
       post.insert(0,"</DL>");
     } else if (command == "link") {
       if (narg == 1) {
-	string aname = "<A NAME = \"" + arg[0] + "\"></A>";
-	pre.append(aname);
+        string aname = "<A NAME = \"" + arg[0] + "\"></A>";
+        pre.append(aname);
       }
     } else if (command == "image") {
       if (narg == 1) {
-	string img = "<IMG SRC = \"" + arg[0] + "\">";
-	pre.append(img);
+        string img = "<IMG SRC = \"" + arg[0] + "\">";
+        pre.append(img);
       } else if (narg == 2) {
-	string img = "<A HREF = \"" + arg[1] + "\">" +
-	  "<IMG SRC = \"" + arg[0] + "\">" + "</A>";
-	pre.append(img);
+        string img = "<A HREF = \"" + arg[1] + "\">" +
+          "<IMG SRC = \"" + arg[0] + "\">" + "</A>";
+        pre.append(img);
       }
-    }else if (command == "tb") {   // read the table command and set settings
+    } else if (command == "tb") {   // read the table command and set settings
       tableflag = 1;
 
       string tableborder = "1";    // these are the table defaults
@@ -437,64 +470,64 @@ void process_commands(int flag, string &s, string &pre, string &post)
       dwidth = "0";
 
       for (int i = 0; i < narg; i++) {     // loop through each tb() arg
-	int tbstop;
-	string tbcommand;
-	tbstop = 0;
-	tbstop = arg[i].find("=");
-	tbcommand = arg[i].substr(0,tbstop);
-	int n = arg[i].length();
-	if (tbstop == -1) {
-	  continue;
-	} else if (tbcommand == "c") {
-	  string collumn= arg[i].substr (tbstop+1,n-(tbstop+1));
-	  rowquit = atoi(collumn.c_str());
-	} else if (tbcommand == "s") {
-	  tabledelim= arg[i].substr (tbstop+1,n-(tbstop+1));
-	} else if (tbcommand == "b") {
-	  tableborder= arg[i].substr (tbstop+1,n-(tbstop+1));
-	} else if (tbcommand == "w") {
-	  string width = "0";       
-	  if (arg[i].substr (n-1,1) == "%") {
-	    string width = arg[i].substr (tbstop+1,n-(tbstop+1));
-	    tw = " WIDTH=\"" + width + "\"";
-	  } else
-	    dwidth = arg[i].substr (tbstop+1,n-(tbstop+1));
-	} else if (tbcommand == "ea") {
-	  dataalign= arg[i].substr (tbstop+1,n-(tbstop+1));
-	} else if (tbcommand == "eva") {
-	  rowvalign= arg[i].substr (tbstop+1,n-(tbstop+1));
-	} else if (tbcommand == "a") {
-	  tablealign= arg[i].substr (tbstop+1,n-(tbstop+1));
-	} else if (tbcommand.substr(0,2) == "cw") {
-	  string cwnum= tbcommand.substr(2,tbstop-1);
-	  cnum.resize(ncnum+1);
-	  cnum[ncnum] = atoi(cwnum.c_str());
-	  cwidth.resize(ncnum+1);
-	  cwidth[ncnum]= arg[i].substr(tbstop+1,n-(tbstop+1));
-	  ncnum++;
-	} else if (tbcommand.substr(0,2) ==  "ca") {
-	  string canum= tbcommand.substr(2,tbstop-1);
-	  acolnum.resize(ncalign+1);
-	  acolnum[ncalign] = atoi(canum.c_str());
-	  colalign.resize(ncalign+1);
-	  colalign[ncalign]= arg[i].substr(tbstop+1,n-(tbstop+1));
-	  ncalign++;
-	} else if (tbcommand.substr(0,3) ==  "cva") {
-	  string cvanum= tbcommand.substr(2,tbstop-1);
-	  vacolnum.resize(ncvalign+1);
-	  vacolnum[ncvalign] = atoi(cvanum.c_str());
-	  colvalign.resize(ncvalign+1);
-	  colvalign[ncvalign]= arg[i].substr(tbstop+1,n-(tbstop+1));
-	  ncvalign++;
-	} else {
-	  fprintf(stderr,
-		  "ERROR: Unrecognized table command %s\n",tbcommand.c_str());
-	  exit(1);
-	}
-	
-	tbstop = s.find("=");
+        int tbstop;
+        string tbcommand;
+        tbstop = 0;
+        tbstop = arg[i].find("=");
+        tbcommand = arg[i].substr(0,tbstop);
+        int n = arg[i].length();
+        if (tbstop == -1) {
+          continue;
+        } else if (tbcommand == "c") {
+          string collumn= arg[i].substr (tbstop+1,n-(tbstop+1));
+          rowquit = atoi(collumn.c_str());
+        } else if (tbcommand == "s") {
+          tabledelim= arg[i].substr (tbstop+1,n-(tbstop+1));
+        } else if (tbcommand == "b") {
+          tableborder= arg[i].substr (tbstop+1,n-(tbstop+1));
+        } else if (tbcommand == "w") {
+          string width = "0";
+          if (arg[i].substr (n-1,1) == "%") {
+            string width = arg[i].substr (tbstop+1,n-(tbstop+1));
+            tw = " WIDTH=\"" + width + "\"";
+          } else
+            dwidth = arg[i].substr (tbstop+1,n-(tbstop+1));
+        } else if (tbcommand == "ea") {
+          dataalign= arg[i].substr (tbstop+1,n-(tbstop+1));
+        } else if (tbcommand == "eva") {
+          rowvalign= arg[i].substr (tbstop+1,n-(tbstop+1));
+        } else if (tbcommand == "a") {
+          tablealign= arg[i].substr (tbstop+1,n-(tbstop+1));
+        } else if (tbcommand.substr(0,2) == "cw") {
+          string cwnum= tbcommand.substr(2,tbstop-1);
+          cnum.resize(ncnum+1);
+          cnum[ncnum] = atoi(cwnum.c_str());
+          cwidth.resize(ncnum+1);
+          cwidth[ncnum]= arg[i].substr(tbstop+1,n-(tbstop+1));
+          ncnum++;
+        } else if (tbcommand.substr(0,2) ==  "ca") {
+          string canum= tbcommand.substr(2,tbstop-1);
+          acolnum.resize(ncalign+1);
+          acolnum[ncalign] = atoi(canum.c_str());
+          colalign.resize(ncalign+1);
+          colalign[ncalign]= arg[i].substr(tbstop+1,n-(tbstop+1));
+          ncalign++;
+        } else if (tbcommand.substr(0,3) ==  "cva") {
+          string cvanum= tbcommand.substr(2,tbstop-1);
+          vacolnum.resize(ncvalign+1);
+          vacolnum[ncvalign] = atoi(cvanum.c_str());
+          colvalign.resize(ncvalign+1);
+          colvalign[ncvalign]= arg[i].substr(tbstop+1,n-(tbstop+1));
+          ncvalign++;
+        } else {
+          fprintf(stderr,
+                  "ERROR: Unrecognized table command %s\n",tbcommand.c_str());
+          exit(1);
+        }
+
+        tbstop = s.find("=");
       }
-      
+
       string align;
       if (tablealign=="c") align="center";
       else if (tablealign=="r") align="right ";
@@ -506,29 +539,29 @@ void process_commands(int flag, string &s, string &pre, string &post)
       pre.append(tw);
       string border=" BORDER=" + tableborder + " >\n";
       pre.append(border);
-      post.insert(0,"</TD></TR></TABLE></DIV>\n"); 
-      
+      post.insert(0,"</TD></TR></TABLE></DIV>\n");
+
     } else if (command == "all") {
       if (narg == 1) allflag = arg[0];
-      
+
     } else {
-      fprintf(stderr,"ERROR: Unrecognized command: %s\n",command.c_str());
+      fprintf(stderr,"ERROR: Unrecognized command %s\n",command.c_str());
       exit(1);
     }
   }
 }
-  
+
 // perform substitutions within text of paragraph
 
 void substitute(string &s)
 {
-  int n,m,p;
+  size_t n,m,p;
   char c;
   string text,link,href;
   string punctuation = ".,?!;:()";
 
   // substitute for bold & italic markers
-  // if preceeded by \ char, then leave markers in text
+  // if preceded by \ char, then leave markers in text
 
   n = s.find_first_of("[]{}");
   while (n != string::npos) {
@@ -551,7 +584,7 @@ void substitute(string &s)
     m = s.rfind("\"",n-1);
     if (m == string::npos) {
       fprintf(stderr,"ERROR: Could not find matching \" for \"_ in %s\n",
-	      s.c_str());
+              s.c_str());
       exit(1);
     }
 
@@ -566,8 +599,8 @@ void substitute(string &s)
     link = s.substr(n+2,p-n-1);
     for (int i = 0; i < nlink; i++)
       if (alias1[i] == link) {
-	link = alias2[i];
-	break;
+        link = alias2[i];
+        break;
       }
 
     s.erase(m,p-m+1);
@@ -577,7 +610,7 @@ void substitute(string &s)
   }
 
   // format the paragraph as a table
-  
+
   if (tableflag) {
     tableflag = 0;
 
@@ -588,19 +621,19 @@ void substitute(string &s)
 
     string tbalign;
     if (dataalign != "0"){
-      string align;                                
+      string align;
       if (dataalign=="c") align="\"center\"";
       else if (dataalign=="r") align="\"right\"";
       else if (dataalign=="l") align="\"left\"";
       else {
-	fprintf(stderr,
-		"ERROR: Unrecognized table alignment argument %s for ea=X\n",
-		dataalign.c_str());
-	exit(1);
+        fprintf(stderr,
+                "ERROR: Unrecognized table alignment argument %s for ea=X\n",
+                dataalign.c_str());
+        exit(1);
       }
       tbalign = " ALIGN=" + align;
     } else tbalign="";
-    
+
     // set up vertical  alignment for particular columns
 
     string va;
@@ -611,10 +644,10 @@ void substitute(string &s)
       else if (rowvalign == "ba") valign= "baseline";
       else if (rowvalign == "bo") valign= "bottom";
       else {
-	fprintf(stderr,
-		"ERROR: Unrecognized table alignment argument %s for eva=X\n",
-		rowvalign.c_str());
-	exit(1);
+        fprintf(stderr,
+                "ERROR: Unrecognized table alignment argument %s for eva=X\n",
+                rowvalign.c_str());
+        exit(1);
       }
       va = " VALIGN =\"" + valign + "\"";
     } else va="";
@@ -624,19 +657,19 @@ void substitute(string &s)
     string tr_tag= "<TR" + tbalign + va + ">";
 
     //declare integers to help with counting and finding position
-    
+
     int currentc=0; // current column
     int nend = 0;
     int n1=0;
-    int n = find_n(s,nend,n1);    
-    
-    // if there are no separators, go to the end of the stringx
+    long n = find_n(s,nend,n1);
+
+    // if there are no separators, go to the end of the string
 
     if (n < 0) n = s.length();
 
     // while n exists:
 
-    while (n != string::npos) {
+    while (n != static_cast<long>(string::npos)) {
 
       // ignore = 0 when pass by \n because looking for delimiters only
       // when ignore==0 do not put in a <tr>
@@ -644,74 +677,74 @@ void substitute(string &s)
 
       // For each loop starts nend at n
       nend=n;
-      
+
       // current column is 0, (very first loop), insert first <TR>
-      if (currentc == 0){    
-	currentc++;
-	DT=td_tag(currentc);
-	s.insert(0,tr_tag);
-	s.insert(tr_tag.length(),DT);
-	nend=nend+tr_tag.length()+DT.length();
-	n = find_n(s,nend,n1);
-	if (n==n1) currentc++;  
-	else { 
-	  // currentc will remain one if rowquit==0
-	  if (rowquit>0){
-	    s.erase(n,1);
-	    n = find_n(s,nend,n1);
-	    currentc++;
-	  }
-	}
+      if (currentc == 0){
+        currentc++;
+        DT=td_tag(currentc);
+        s.insert(0,tr_tag);
+        s.insert(tr_tag.length(),DT);
+        nend=nend+tr_tag.length()+DT.length();
+        n = find_n(s,nend,n1);
+        if (n==n1) currentc++;
+        else {
+          // currentc will remain one if rowquit==0
+          if (rowquit>0){
+            s.erase(n,1);
+            n = find_n(s,nend,n1);
+            currentc++;
+          }
+        }
       } else {
-      
-	// if n is separator
-	if (n == n1){
-	  s.erase(n,tabledelim.length());
-	  if(currentc==(rowquit+1)&& rowquit!=0){
-	    s.insert(nend,"</TD></TR>\n");
-	    nend=nend+11;
-	    // set current column back to one to start new line
-	    currentc=1;
-	  }else{
-	    DT= td_tag(currentc);
-    	    s.insert (nend,"</TD>");
-	    nend=nend+5;
-	    s.insert (nend,DT);
-	    nend=nend+DT.length();
-	    // add one so current column is updated
-	    currentc++;   
-	    n = find_n(s,nend,n1);
-	  }
 
-	}
-	//if n is newline character
-	else{
-	  s.erase(n,1);
-	  // if columns == 0 means ARE searching for newlines
-	  // else erase and ignore insert <tr> later and
-	  // search for next separator
+        // if n is separator
+        if (n == n1){
+          s.erase(n,tabledelim.length());
+          if(currentc==(rowquit+1)&& rowquit!=0){
+            s.insert(nend,"</TD></TR>\n");
+            nend=nend+11;
+            // set current column back to one to start new line
+            currentc=1;
+          }else{
+            DT= td_tag(currentc);
+            s.insert (nend,"</TD>");
+            nend=nend+5;
+            s.insert (nend,DT);
+            nend=nend+DT.length();
+            // add one so current column is updated
+            currentc++;
+            n = find_n(s,nend,n1);
+          }
 
-	  if (rowquit==0){
-	    s.insert(nend,"</TD></TR>\n");
-	    nend=nend+11;
-	    // set current column back to one to start new line
-	    currentc=1;
-	  }else{
-	    ignore=0;
-	    n = find_n(s,nend,n1);
-	  }
-	}
+        }
+        //if n is newline character
+        else{
+          s.erase(n,1);
+          // if columns == 0 means ARE searching for newlines
+          // else erase and ignore insert <tr> later and
+          // search for next separator
 
-	// if we are at the beginning of the row then insert <TR>
+          if (rowquit==0){
+            s.insert(nend,"</TD></TR>\n");
+            nend=nend+11;
+            // set current column back to one to start new line
+            currentc=1;
+          }else{
+            ignore=0;
+            n = find_n(s,nend,n1);
+          }
+        }
 
-	if (currentc==1&&ignore) {
-	  DT = td_tag(currentc); // find DT for currentc=1
-	  s.insert(nend,tr_tag);
-	  nend=nend+tr_tag.length();
-	  s.insert(nend,DT);
-	  n = find_n(s,nend,n1); // search for next separator
-	  currentc++;
-	}
+        // if we are at the beginning of the row then insert <TR>
+
+        if (currentc==1&&ignore) {
+          DT = td_tag(currentc); // find DT for currentc=1
+          s.insert(nend,tr_tag);
+          nend=nend+tr_tag.length();
+          s.insert(nend,DT);
+          n = find_n(s,nend,n1); // search for next separator
+          currentc++;
+        }
       } // end to else statement
     } // end to while loop
   } // end to if tableflag
@@ -787,7 +820,7 @@ void file_open(int npair, string &infile, FILE **in, FILE **out)
     *in = fopen(infile.c_str(),"r");
     if (*in == NULL) {
       fprintf(stderr,"ERROR: Could not open %s or %s\n",
-	      root.c_str(),infile.c_str());
+              root.c_str(),infile.c_str());
       exit(1);
     }
   }
@@ -796,7 +829,7 @@ void file_open(int npair, string &infile, FILE **in, FILE **out)
   else if (npair == 1) *out = stdout;
   else {
     string outfile;
-    int pos = infile.rfind(".txt");
+    size_t pos = infile.rfind(".txt");
     if (pos == infile.length()-4) outfile = infile.substr(0,pos) + ".html";
     else outfile = infile + ".html";
     *out = fopen(outfile.c_str(),"w");
@@ -817,10 +850,10 @@ string td_tag(int currentc) {
   // va gives vertical alignment to a specific column
   string va;
   // DT is the complete <td> tag, with width and align
-  string DT; 
+  string DT;
   // dw is the width for tables.  It is also the <dt> tag beginning
   string dw;
-  
+
   // set up alignment for particular columns
 
   for (int counter=0; counter < ncalign; counter++){
@@ -830,10 +863,10 @@ string td_tag(int currentc) {
       else if (colalign[counter] == "r") align= "right";
       else if (colalign[counter] == "c") align= "center";
       else {
-	fprintf(stderr,
-		"ERROR: Unrecognized table alignment argument %s for caM=X\n",
-		colalign[counter].c_str());
-	exit(1);
+        fprintf(stderr,
+                "ERROR: Unrecognized table alignment argument %s for caM=X\n",
+                colalign[counter].c_str());
+        exit(1);
       }
       eacolumn= " ALIGN =\"" + align +"\"";
     }else eacolumn= "";
@@ -849,10 +882,10 @@ string td_tag(int currentc) {
       else if (colvalign[counter] == "ba") valign= "baseline";
       else if (colvalign[counter] == "bo") valign= "bottom";
       else {
-	fprintf(stderr,
-		"ERROR: Unrecognized table alignment argument %s for cvaM=X\n",
-		colvalign[counter].c_str());
-	exit(1);
+        fprintf(stderr,
+                "ERROR: Unrecognized table alignment argument %s for cvaM=X\n",
+                colvalign[counter].c_str());
+        exit(1);
       }
       va = " VALIGN =\"" + valign + "\"";
     } else va = " ";
@@ -863,34 +896,35 @@ string td_tag(int currentc) {
   // if dwidth has not been set, dw is blank
   // if dwidth has been set, dw has that... unless
 
-  if (dwidth=="0") dw = " ";       
+  if (dwidth=="0") dw = " ";
   else dw =" WIDTH=\""+ dwidth + "\"";
 
-  for (int counter = 0; counter < ncnum; counter++){ 
+  for (int counter = 0; counter < ncnum; counter++){
     // if it is the right column, dw = cwidth property
     if (cnum[counter] == currentc) dw= " WIDTH=\"" + cwidth[counter] + "\"";
   }
-  
+
   // DT is set for all of this particular separator : reset next separator
 
-  DT = "<TD" + dw + eacolumn + va + ">"; 
-  
+  DT = "<TD" + dw + eacolumn + va + ">";
+
   return DT;
 }
 
 // for tables:
 // find the next separator starting at nend(the end of the last .insert)
-// if there is either a delim or newline 
+// if there is either a delim or newline
 // decide which is first
 // set n = to that position
 // nsep is position of the next separator. changes in here.
 
-int find_n(string &s, int nend, int &nsep)
+long find_n(string &s, int nend, int &nsep)
+  // nsep is position of the next separator. changes in here.
 {
-  int n;
+  long n;
   nsep = s.find(tabledelim,nend);
-  int n2 = s.find('\n',nend);
-  int m = s.length() - 1;
+  long n2 = s.find('\n',nend);
+  long m = s.length() - 1;
   if (nsep >= 0 && n2 >= 0) {
     if (nsep <= n2) n = nsep;
     else n = n2;
@@ -901,6 +935,6 @@ int find_n(string &s, int nend, int &nsep)
       else n = string::npos;
     }
   }
-      
+
   return n;
 }

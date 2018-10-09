@@ -43,8 +43,8 @@ can be dumped into VTK format using "dump mesh/vtk"_dump.html.
 With the optional {stress} keyword, stress tracking can be turned off is desired. The 
 reference point for calculating the body torque can be controlled via the {referece_point}
 keyword. The optional {wear} keyword can activates a simple qualitative wear model 
-({finnie}) - for details on the model, see the seperate /doc/finnie-wear.pdf. The 
-finnie constant k in Eqn. (4.23) has to be specified as follows:
+({finnie}) - for details on the model, see the separate /doc/finnie-wear.pdf. The 
+finnie constant k in Eq. (4.23) has to be specified as follows:
 
 fix id all property/global k_finnie peratomtypepair n_atomtypes value_11 value_12 .. value_21 value_22 .. . :pre
 
@@ -53,9 +53,9 @@ fix id all property/global k_finnie peratomtypepair n_atomtypes value_11 value_1
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
 This fix stores a global vector with 6 components for access by various 
-"output commands"_Section_howto.html#4_15. The first 3 components are equal to the 
+"output commands"_Section_howto.html#howto_15. The first 3 components are equal to the 
 total force on the mesh, the last 3 components store the total torque on the body 
-exerted by the particles. Other info see "fix mesh"_fix_mesh.html.
+exerted by the particles. Other info see "fix mesh/surface"_fix_mesh_surface.html.
 
 [Related commands:]
 

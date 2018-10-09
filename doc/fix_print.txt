@@ -58,13 +58,14 @@ exists, or created if it does not exist.
 If the {screen} keyword is used, output by this fix to the screen and
 logfile can be turned on or off as desired.
 
-The {title} keyword allow specification of the string that will be
-printed as the first line of the output file, assuming the {file}
-keyword was used.  By default, the title line is as follows:
+The {title} keyword allows specification of the string that will be
+printed as the first line of the output file, assuming the {file} or
+{append} keyword was used. By default, the title line is as follows:
 
 # Fix print output for fix ID :pre
 
-where ID is replaced with the fix-ID.
+where ID is replaced with the fix-ID. If the specified string equals
+{none}, no title line is printed
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
