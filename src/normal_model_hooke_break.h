@@ -53,6 +53,7 @@ namespace ContactModels
       coeffMu(NULL),
       coeffStc(NULL),
       charVel(0.0),
+      kappa(2./7.), // Landry et al., Phys. Rev. E 67 (041303), 1-9 (2003)
       viscous(false),
       tangential_damping(false),
       limitForce(false),
@@ -103,6 +104,10 @@ namespace ContactModels
         registry.connect("coeffRestLog", coeffRestLog,"model hooke/break viscous");
       }
 
+      if(ktToKn) {
+        registry.registerProperty("stiffnessRatio", &MODEL_PARAMS::createStiffnessRatio);
+        registry.connect("stiffnessRatio", kappa,"model hooke/break");
+      }
       //NP modified C.K.
       // error checks on coarsegraining
       if(force->cg_active())
@@ -193,10 +198,12 @@ namespace ContactModels
         coeffRestLogChosen=coeffRestLog[itype][jtype];
       }
 
-      double kn = 16./15.*sqrtval*(Yeff[itype][jtype])*pow(15.*meff*charVel*charVel/(16.*sqrtval*Yeff[itype][jtype]),0.2);
+      const double k = (16./15.)*sqrtval*(Yeff[itype][jtype]);
+      double kn = k*pow(meff*charVel*charVel/k,0.2);
       double kt = kn;
-      if(ktToKn) kt *= 0.285714286; //2/7
-      const double gamman=sqrt(4.*meff*kn/(1.+(M_PI/coeffRestLogChosen)*(M_PI/coeffRestLogChosen)));
+      if(ktToKn) kt *= kappa;
+      const double coeffRestLogChosenSq = coeffRestLogChosen*coeffRestLogChosen;
+      const double gamman = sqrt(4.*meff*kn*coeffRestLogChosenSq/(coeffRestLogChosenSq+M_PI*M_PI));
       const double gammat = tangential_damping ? gamman : 0.0;
 
       // convert Kn and Kt from pressure units to force/distance^2
@@ -205,7 +212,7 @@ namespace ContactModels
 
       const double Fn_damping = -gamman*cdata.vn;
       const double Fn_contact = kn*deltan;
-      double Fn               = Fn_damping + Fn_contact;
+      double Fn = Fn_damping + Fn_contact;
 
       //limit force to avoid the artefact of negative repulsion force
       if (limitForce && (Fn<0.0) ) {
@@ -257,6 +264,7 @@ namespace ContactModels
     double ** coeffMu;
     double ** coeffStc;
     double charVel;
+    double kappa;
 
     bool viscous;
     bool tangential_damping;
