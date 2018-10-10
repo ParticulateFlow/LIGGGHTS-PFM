@@ -118,7 +118,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
     target_volfrac = max_volfrac;
   }
 
-  radius_factor = pow(max_volfrac/target_volfrac,MathConst::THIRD);
+  radius_factor = std::cbrt(max_volfrac/target_volfrac);
   if (comm->me == 0 && screen)
     fprintf(screen, "radius scaling factor: %f\n",radius_factor);
 
