@@ -35,6 +35,7 @@ Commands :h1
    dump_molfile
    dump_custom_vtk
    echo
+   extract_surface
    fix
    fix_modify
    group

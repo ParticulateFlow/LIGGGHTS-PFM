@@ -13,6 +13,7 @@ Fixes :h1
    fix_ave_atom
    fix_ave_correlate
    fix_ave_euler
+   fix_ave_euler_region
    fix_ave_histo
    fix_ave_spatial
    fix_ave_time
@@ -35,6 +36,7 @@ Fixes :h1
    fix_enforce2d
    fix_evaporate
    fix_external
+   fix_forcecontrol_region
    fix_freeze
    fix_gcmc
    fix_gld
@@ -46,6 +48,7 @@ Fixes :h1
    fix_indent
    fix_insert_pack
    fix_insert_pack_dense
+   fix_insert_pack_face
    fix_insert_rate_region
    fix_insert_stream
    fix_insert_stream_moving
@@ -59,6 +62,7 @@ Fixes :h1
    fix_limit_vel
    fix_lineforce
    fix_massflow_mesh
+   fix_massflow_mesh_face
    fix_mesh_surface
    fix_mesh_surface_stress
    fix_mesh_surface_stress_6dof
