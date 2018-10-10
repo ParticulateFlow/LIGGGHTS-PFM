@@ -102,6 +102,7 @@ class FixForceControlRegion : public Fix {
  private:
   class FixAveEulerRegion *target_;
 
+  virtual int target_couple_every();
   virtual int target_has_cell_id(int cell_id);
   virtual int target_cell_index(int cell_id);
   virtual int target_cell_count(int cell_index);

@@ -57,6 +57,8 @@ class FixForceControlRegionUniverse : public FixForceControlRegion {
   double **target_v_min_;
   double **target_v_max_;
 
+  virtual int target_couple_every() { return couple_every_; }
+
   virtual int target_has_cell_id(int cell_id)
   { return (target_cellid2index_.find(cell_id) != target_cellid2index_.end()); }
 

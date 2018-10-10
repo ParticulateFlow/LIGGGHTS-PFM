@@ -764,6 +764,13 @@ void FixForceControlRegion::restart(char *buf)
 
 /* ---------------------------------------------------------------------- */
 
+int FixForceControlRegion::target_couple_every()
+{
+  return target_->nevery;
+}
+
+/* ---------------------------------------------------------------------- */
+
 int FixForceControlRegion::target_has_cell_id(int cell_id)
 {
   return target_->has_cell_id(cell_id);
