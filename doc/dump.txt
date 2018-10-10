@@ -200,7 +200,7 @@ This bounding box is convenient for many visualization programs.  The
 meaning of the 6 character flags for "xx yy zz" is the same as above.
 
 Note that the first two numbers on each line are now xlo_bound instead
-of xlo, etc, since they repesent a bounding box.  See "this
+of xlo, etc, since they represent a bounding box.  See "this
 section"_Section_howto.html#howto_12 of the doc pages for a geometric
 description of triclinic boxes, as defined by LAMMPS, simple formulas
 for how the 6 bounding box extents (xlo_bound,xhi_bound,etc) are
@@ -293,7 +293,7 @@ so that any machine which supports XDR should be able to read them.
 The number of atoms per snapshot cannot change with the {xtc} style.
 The {unwrap} option of the "dump_modify"_dump_modify.html command allows
 XTC coordinates to be written "unwrapped" by the image flags for each
-atom.  Unwrapped means that if the atom has passed thru a periodic
+atom.  Unwrapped means that if the atom has passed through a periodic
 boundary one or more times, the value is printed for what the
 coordinate would be if it had not been wrapped back into the periodic
 box.  Note that these coordinates may thus be far outside the box size
@@ -317,7 +317,7 @@ tools/lmp2vmd/README.txt file for more information about support in
 VMD for reading and visualizing LAMMPS dump files.
 
 The {mesh/stl} style dumps active STL geometries defined via 
-"fix mesh"_fix_mesh.html commands into the specified file. 
+"fix mesh/surface"_fix_mesh_surface.html commands into the specified file. 
 If you do not supply the optional list of mesh IDs, all meshes are dumped, 
 irrespective of whether they are used in a "fix wall/gran"_fix_wall_gran.html
 command or not. By specifying a list of mesh IDs you can explicitly 
@@ -361,19 +361,19 @@ commands, you can specify which meshes to dump. If no meshes are specified,
 all meshes used in the simulation are dumped.
 
 The {mesh/vtk} style can be used to dump active mesh geometries 
-defined via "fix mesh"_fix_mesh.html commands to a series of VTK files. 
+defined via "fix mesh/surface"_fix_mesh_surface.html commands to a series of VTK files. 
 Different keywords can be used to dump the per-triangle stress (force 
 magnitude / element area), id, velocity, wear, stress components 
 (fx / element area, fy / element area, fz / element area), area (area
 of each element) or the process which owns the element
-(visulatisation of the parallel decomposition) into the specified file using a 
+(visualization of the parallel decomposition) into the specified file using a 
 VTK file format. The list of mesh IDs is optional. As with the stl style, 
 all active meshes are dumped if you do not supply the optional list of 
 mesh IDs. By specifying list of mesh IDs you can explicitly choose 
 which meshes to dump. The group-ID is ignored. Again, a series of files 
 can be post-processed in Paraview , www.paraview.org
 Most keywords as used for the {mesh/vtk} style are self-explanatory. 
-Keyword {output} controlls if the data is written in a per-face manner
+Keyword {output} controls if the data is written in a per-face manner
 or as interpolated values to VTK. Keywords {aedges} and {acorners} dump
 the number of active edges/corners per face. Keyword {nneighs} dumps the 
 number of face neighbors LIGGGHTS has recognized for each face.
@@ -530,7 +530,7 @@ appropriate distance "units"_units.html (Angstroms, sigma, etc).  Use
 so that each value is 0.0 to 1.0.  If the simulation box is triclinic
 (tilted), then all atom coords will still be between 0.0 and 1.0.  Use
 {xu}, {yu}, {zu} if you want the coordinates "unwrapped" by the image
-flags for each atom.  Unwrapped means that if the atom has passed thru
+flags for each atom.  Unwrapped means that if the atom has passed through
 a periodic boundary one or more times, the value is printed for what
 the coordinate would be if it had not been wrapped back into the
 periodic box.  Note that using {xu}, {yu}, {zu} means that the
@@ -538,7 +538,7 @@ coordinate values may be far outside the box bounds printed with the
 snapshot.  Using {xsu}, {ysu}, {zsu} is similar to using {xu}, {yu}, {zu},
 except that the unwrapped coordinates are scaled by the box size. Atoms
 that have passed through a periodic boundary will have the corresponding
-cooordinate increased or decreased by 1.0.
+coordinate increased or decreased by 1.0.
 
 The image flags can be printed directly using the {ix}, {iy}, {iz}
 attributes.  For periodic dimensions, they specify which image of the

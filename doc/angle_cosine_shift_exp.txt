@@ -81,7 +81,7 @@ section for more info on packages.
 [Related commands:]
 
 "angle_coeff"_angle_coeff.html,
-"angle_cosineshift"_angle_cosineshift.html,
-"dihedral_cosineshift"_dihedral_cosineshift.html
+"angle_style cosine/shift"_angle_cosine_shift.html,
+"dihedral_style cosine/shift/exp"_dihedral_cosine_shift_exp.html
 
 [Default:] none

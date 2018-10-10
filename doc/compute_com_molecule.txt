@@ -23,7 +23,7 @@ compute 1 fluid com/molecule :pre
 
 Define a computation that calculates the center-of-mass of individual
 molecules.  The calculation includes all effects due to atoms passing
-thru periodic boundaries.
+through periodic boundaries.
 
 The x,y,z coordinates of the center-of-mass for a particular molecule
 are only computed if one or more of its atoms are in the specified

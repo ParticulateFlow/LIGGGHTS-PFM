@@ -43,7 +43,7 @@ triangle, for purposes of this pair style, are generated in the
 following manner.  Assume the triangle is of type I, and sigma_II has
 been specified.  We want a set of spheres with centers in the plane of
 the triangle, none of them larger in diameter than sigma_II, which
-completely cover the triangle's area, but with minimial overlap and a
+completely cover the triangle's area, but with minimal overlap and a
 minimal total number of spheres.  This is done in a recursive manner.
 Place a sphere at the centroid of the original triangle.  Calculate
 what diameter it must have to just cover all 3 corner points of the
@@ -124,8 +124,8 @@ This pair style can only be used via the {pair} keyword of the
 [Restrictions:]
 
 This style is part of the ASPHERE package.  It is only enabled if
-LAMMPS was built with that package.  See the "Making
-LAMMPS"_Section_start.html#2_3 section for more info.
+LAMMPS was built with that package.  See the "Making LAMMPS with optional
+packages"_Section_start.html#start_3 section for more info.
 
 Defining particles to be triangles so they participate in tri/tri or
 tri/particle interactions requires the use the "atom_style

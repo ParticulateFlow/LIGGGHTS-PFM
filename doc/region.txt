@@ -250,7 +250,7 @@ consisting of the volume that is common to all the listed regions.
 
 IMPORTANT NOTE: The {union} and {intersect} regions operate by
 invoking methods from their list of sub-regions.  Thus you cannot
-delete the sub-regions after defining the {union} or {intersection}
+delete the sub-regions after defining a {union} or {intersection}
 region.
 
 :line
@@ -266,7 +266,7 @@ both of the spheres.
 
 The {units} keyword determines the meaning of the distance units used
 to define the region for any argument above listed as having distance
-units.  It also affects the scaling of the velocity vector specfied
+units.  It also affects the scaling of the velocity vector specified
 with the {vel} keyword, the amplitude vector specified with the
 {wiggle} keyword, and the rotation point specified with the {rotate}
 keyword, since they each involve a distance metric.
@@ -337,9 +337,9 @@ velocity:
 variable dx equal ramp(0,10)
 region 2 sphere 10.0 10.0 0.0 5 move v_dx NULL NULL :pre
 
-Note that the initial displacemet is 0.0, though that is not required.
+Note that the initial displacement is 0.0, though that is not required.
 
-Either of these varaibles would "wiggle" the region back and forth in
+Either of these variables would "wiggle" the region back and forth in
 the y direction:
 
 variable dy equal swiggle(0,5,100)
@@ -347,7 +347,7 @@ variable dysame equal 5*sin(2*PI*elaplong*dt/100)
 region 2 sphere 10.0 10.0 0.0 5 move NULL v_dy NULL :pre
 
 The {rotate} keyword rotates the region around a rotation axis {R} =
-(Rx,Ry,Rz) that goes thru a point {P} = (Px,Py,Pz).  The rotation
+(Rx,Ry,Rz) that goes through a point {P} = (Px,Py,Pz).  The rotation
 angle is calculated, presumably as a function of time, by a variable
 specified as v_theta, where theta is the variable name.  The variable
 should generate its result in radians.  The direction of rotation for

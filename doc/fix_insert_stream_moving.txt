@@ -40,8 +40,8 @@ See "fix insert/stream"_fix_insert_stream.html command.
 
 [Related commands:]
 
-"fix_insert_pack"_fix_insert_pack.html, "fix_insert_rate_region"_fix_insert_rate_region.html,
-"fix_deposit"_fix_deposit.html, "fix_pour_dev"_fix_pour_dev.html, "fix_pour"_fix_pour.html
+"fix insert/pack"_fix_insert_pack.html, "fix insert/rate/region"_fix_insert_rate_region.html,
+"fix deposit"_fix_deposit.html, "fix pour/legacy"_fix_pour.html
 
 [Default:]
 

@@ -36,12 +36,12 @@ This command is not available in LAMMPS.
 [Description:]
 
 Calculates heat radiation between particles and temperature update according to
-Stefan Bolzmann's Law:
+Stefan Boltzmann's Law:
 
-:c,image(Eqs/heat_gran_radiation_bolzmann.png)
+:c,image(Eqs/heat_gran_radiation_boltzmann.png)
 
 where P is the radiative power, A the surface area of the particle, epsilon the
-thermal emissivity of the particle, sigma  Stefan Bolzmann's constant and T the
+thermal emissivity of the particle, sigma  Stefan Boltzmann's constant and T the
 temperature of the particle in Kelvin.
 
 Every timestep every particle radiates one ray.
@@ -50,9 +50,9 @@ reflected in a random direction (see assumption: diffuse surface of particles).
 
 It is assumed that:
 
-the temperature within the particles is uniform. :l
+the temperature within the particles is uniform. :ulb,l
 emissivity is not wavelength-dependent :l
-particles have perfectly diffuse sufaces :l
+particles have perfectly diffuse surfaces :l,ule
 
 To make particles adiabatic (so they do not change the temperature due to this fix),
 set their thermal emissivity to 0.0.
@@ -93,7 +93,7 @@ The particle temperature and heat source is written to
 None of the "fix_modify"_fix_modify.html options are relevant to this fix.
 
 This fix computes a scalar which can be accessed by various "output
-commands"_Section_howto.html#4_15.  This scalar is the total thermal energy
+commands"_Section_howto.html#howto_15.  This scalar is the total thermal energy
 of the fix group
 
 No parameter of this fix can be used with the {start/stop} keywords of

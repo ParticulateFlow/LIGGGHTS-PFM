@@ -261,7 +261,7 @@ The {image} keyword applies only to the dump {atom} style.  If the
 image value is {yes}, 3 flags are appended to each atom's coords which
 are the absolute box image of the atom in each dimension.  For
 example, an x image flag of -2 with a normalized coord of 0.5 means
-the atom is in the center of the box, but has passed thru the box
+the atom is in the center of the box, but has passed through the box
 boundary 2 times and is really 2 box lengths to the left of its
 current coordinate.  Note that for dump style {custom} these various
 values can be printed in the dump file by using the appropriate atom
@@ -336,7 +336,7 @@ regions.
 
 The {scale} keyword applies only to the dump {atom} style.  A scale
 value of {yes} means atom coords are written in normalized units from
-0.0 to 1.0 in each box dimension.  If the simluation box is triclinic
+0.0 to 1.0 in each box dimension.  If the simulation box is triclinic
 (tilted), then all atom coords will still be between 0.0 and 1.0.  A
 value of {no} means they are written in absolute distance units
 (e.g. Angstroms or sigma).
@@ -368,7 +368,7 @@ cost, as well as memory, versus unsorted output.
 
 The {thresh} keyword only applies to the dump {custom}, {cfg},
 {image}, and {movie} styles.  Multiple thresholds can be specified.
-Specifying "none" turns off all threshold criteria.  If thresholds are
+Specifying {none} turns off all threshold criteria.  If thresholds are
 specified, only atoms whose attributes meet all the threshold criteria
 are written to the dump file or included in the image.  The possible
 attributes that can be tested for are the same as those that can be
@@ -383,7 +383,7 @@ is above some threshold.
 
 The {unwrap} keyword only applies to the dump {dcd} and {xtc} styles.
 If set to {yes}, coordinates will be written "unwrapped" by the image
-flags for each atom.  Unwrapped means that if the atom has passed thru
+flags for each atom.  Unwrapped means that if the atom has passed through
 a periodic boundary one or more times, the value is printed for what
 the coordinate would be if it had not been wrapped back into the
 periodic box.  Note that these coordinates may thus be far outside the
@@ -589,7 +589,7 @@ using, e.g. Angstroms.
 :line
 
 The {bitrate} keyword can be used with the "dump
-movie"_dump_movie.html command to define the size of the resulting
+movie"_dump.html command to define the size of the resulting
 movie file and its quality via setting how many kbits per second are
 to be used for the movie file. Higher bitrates require less
 compression and will result in higher quality movies.  The quality is
@@ -625,7 +625,7 @@ pre-defined color names with new RBG values.
 :line
 
 The {framerate} keyword can be used with the "dump
-movie"_dump_movie.html command to define the duration of the resulting
+movie"_dump.html command to define the duration of the resulting
 movie file.  Movie files written by the dump {movie} command have a
 default frame rate of 24 frames per second and the images generated
 will be converted at that rate.  Thus a sequence of 1000 dump images

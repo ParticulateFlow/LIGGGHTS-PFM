@@ -71,7 +71,7 @@ atoms or other degrees of freedom.
 
 Note that the N in the first formula above is really
 degrees-of-freedom divided by d = dimensionality, where the DOF value
-is calcluated by the temperature compute.  See the various "compute
+is calculated by the temperature compute.  See the various "compute
 temperature"_compute.html styles for details.
 
 A compute of this style with the ID of "thermo_press" is created when

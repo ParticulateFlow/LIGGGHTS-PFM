@@ -128,7 +128,7 @@ a highly-converged minimization to detect a transition event.
 
 The event check is performed by a compute with the specified
 {compute-ID}.  Currently there is only one compute that works with the
-TAD commmand, which is the "compute
+TAD command, which is the "compute
 event/displace"_compute_event_displace.html command.  Other
 event-checking computes may be added.  "Compute
 event/displace"_compute_event_displace.html checks whether any atom in
@@ -251,7 +251,7 @@ number of replicas or processors.
 
 Note that within a single state, the dynamics will typically
 temporarily continue beyond the event that is ultimately chosen, until
-the stopping criterionis satisfied.  When the event is eventually
+the stopping criterion is satisfied.  When the event is eventually
 executed, the timestep counter is reset to the value when the event
 was detected. Similarly, after each quench and NEB minimization, the
 timestep counter is reset to the value at the start of the

@@ -38,7 +38,7 @@ subtracted to a group of atoms.
 The compute takes three arguments which are IDs of other
 "computes"_compute.html.  One calculates per-atom kinetic energy
 ({ke-ID}), one calculates per-atom potential energy ({pe-ID)}, and the
-third calcualtes per-atom stress ({stress-ID}).  These should be
+third calculates per-atom stress ({stress-ID}).  These should be
 defined for the same group used by compute heat/flux, though LAMMPS
 does not check for this.
 
@@ -80,7 +80,7 @@ The heat flux can be output every so many timesteps (e.g. via the
 post-processing operation, an autocorrelation can be performed, its
 integral estimated, and the Green-Kubo formula above evaluated.
 
-The "fix ave/correlate"_fix_ave_correlate.html command can calclate
+The "fix ave/correlate"_fix_ave_correlate.html command can calculate
 the autocorrelation.  The trap() function in the
 "variable"_variable.html command can calculate the integral.
 
@@ -92,7 +92,7 @@ result should be: average conductivity ~0.29 in W/mK.
 [Output info:]
 
 This compute calculates a global vector of length 6 (total heat flux
-vector, followed by conductive heat flux vector), which can be
+vector, followed by convective heat flux vector), which can be
 accessed by indices 1-6.  These values can be used by any command that
 uses global vector values from a compute as input.  See "this
 section"_Section_howto.html#howto_15 for an overview of LAMMPS output

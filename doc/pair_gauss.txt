@@ -63,7 +63,7 @@ solvent simulations of salt ions "(Lenart)"_#Lenart and of surfactants
 "(Jusufi)"_#Jusufi.  In these instances the Gaussian potential mimics
 the hydration barrier between a pair of particles. The hydration
 barrier is located at r_mh and has a width of sigma_h. The prefactor
-determines the hight of the potential barrier.
+determines the height of the potential barrier.
 
 The following coefficients must be defined for each pair of atom types
 via the "pair_coeff"_pair_coeff.html command as in the example above,
@@ -88,8 +88,8 @@ produce the same results, except for round-off and precision issues.
 
 These accelerated styles are part of the USER-CUDA, GPU, USER-OMP and OPT
 packages, respectively.  They are only enabled if LAMMPS was built with
-those packages.  See the "Making LAMMPS"_Section_start.html#start_3
-section for more info.
+those packages.  See the "Making LAMMPS with optional
+packages"_Section_start.html#start_3 section for more info.
 
 You can specify the accelerated styles explicitly in your input script
 by including their suffix, or you can use the "-suffix command-line
@@ -142,8 +142,8 @@ thermo_style custom step temp epair v_occ :pre
 [Restrictions:]
 
 The {gauss/cut} style is part of the "user-misc" package. It is only
-enabled if LAMMPS is build with that package. See the "Making of
-LAMMPS"_Section_start.html#3 section for more info.
+enabled if LAMMPS is build with that package. See the "Making LAMMPS with
+optional packages"_Section_start.html#start_3 section for more info.
 
 [Related commands:]
 

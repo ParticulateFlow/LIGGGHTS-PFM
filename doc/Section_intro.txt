@@ -38,7 +38,7 @@ parallel machine that compiles C++ and supports the "MPI"_mpi
 message-passing library.  This includes distributed- or shared-memory
 parallel machines and Beowulf-style clusters.
 
-:link(mpi,http://www-unix.mcs.anl.gov/mpi)
+:link(mpi,http://www.mcs.anl.gov/research/projects/mpi)
 
 LAMMPS can model systems with only a few particles up to millions or
 billions.  See "Section_perf"_Section_perf.html for information on
@@ -111,7 +111,7 @@ General features :h4
   syntax for defining and using variables and formulas
   syntax for looping over runs and breaking out of loops
   run one or multiple simulations simultaneously (in parallel) from one script
-  build as library, invoke LAMMPS thru library interface or provided Python wrapper
+  build as library, invoke LAMMPS through library interface or provided Python wrapper
   couple with other codes: LAMMPS calls other code, other code calls LAMMPS, umbrella code calls both :ul
 
 Particle and model types :h4
@@ -273,7 +273,7 @@ limited development resources :ul
 
 Specifically, LAMMPS itself does not:
 
-run thru a GUI
+run through a GUI
 build molecular systems
 assign force-field coefficients automagically
 perform sophisticated analyses of your MD simulation

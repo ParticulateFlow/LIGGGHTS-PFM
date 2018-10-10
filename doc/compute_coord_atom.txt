@@ -64,8 +64,8 @@ time the calculation is performed (i.e. each time a snapshot of atoms
 is dumped).  Thus it can be inefficient to compute/dump this quantity
 too frequently.
 
-Keyword {mix} controlls if all neighbors are counted or if only neighbors
-with same atom type are counted. The latter can be useful to quanitfy
+Keyword {mix} controls if all neighbors are counted or if only neighbors
+with same atom type are counted. The latter can be useful to quantify
 mixture of different species.
 
 IMPORTANT NOTE: If you have a bonded system, then the settings of

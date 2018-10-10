@@ -27,7 +27,7 @@ zero or more keyword/value pairs may be appended :l
 
 This part of "pair gran"_pair_gran.html and 
 "fix wall/gran"_fix_wall_gran.html
-is not availabe in LAMMPS.
+is not available in LAMMPS.
 
 [Description:]
 
@@ -107,7 +107,7 @@ Note, that not using limitForce might lead to attractive forces between particle
 
 If using SI units, youngsModulus must be > 5e6
 If using CGS units, youngsModulus must be > 5e5
-When using the limitForce, the specified coefficient of restitution is only approximate. This might become problematic for low coefficients of resitution as showin in Schwager and Poschel.
+When using the limitForce, the specified coefficient of restitution is only approximate. This might become problematic for low coefficients of restitution as shown in Schwager and Poschel.
 
 
 [Default:] 

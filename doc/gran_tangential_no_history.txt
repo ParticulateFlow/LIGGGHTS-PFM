@@ -17,7 +17,7 @@ tangential no_history :pre
 
 This part of "pair gran"_pair_gran.html and 
 "fix wall/gran"_fix_wall_gran.html
-is not availabe in LAMMPS.
+is not available in LAMMPS.
 
 [Description:]
 

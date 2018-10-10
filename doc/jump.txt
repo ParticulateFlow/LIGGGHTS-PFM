@@ -81,7 +81,7 @@ jump $f :pre
 
 Here is an example of a double loop which uses the "if"_if.html and
 jump commands to break out of the inner loop when a condition is met,
-then continues iterating thru the outer loop.
+then continues iterating through the outer loop.
 
 label	    loopa
 variable    a loop 5
