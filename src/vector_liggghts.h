@@ -27,6 +27,8 @@
 
 namespace LAMMPS_NS {
 
+#define TOLERANCE_NORM 1e-10
+
 //================================================
 //SOME VERY SIMPLE VECTOR OPERATIONS
 //================================================
@@ -80,6 +82,11 @@ inline double vectorMag3DSquared(const double *v)
 inline double vectorMag4D(const double *v)
 {
   return (  sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]+v[3]*v[3])  );
+}
+
+inline bool vectorIsNormalized3D(const double *v)
+{
+  return fabs(vectorMag3DSquared(v) - 1.) < TOLERANCE_NORM;
 }
 
 inline double pointDistance(const double *point1, const double *point2)
