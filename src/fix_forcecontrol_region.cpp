@@ -611,6 +611,7 @@ void FixForceControlRegion::post_force(int vflag)
     }
   }
 
+  // apply scale modifier to correct volume fraction
   std::map<class FixScaleDiameter*, std::set<int> >::iterator it = modifier_scale_.begin();
   for (; it!=modifier_scale_.end(); ++it) {
     std::set<int>::iterator it_cell = it->second.begin();
