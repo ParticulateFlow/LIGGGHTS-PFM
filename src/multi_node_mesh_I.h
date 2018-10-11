@@ -511,13 +511,11 @@
   template<int NUM_NODES>
   void MultiNodeMesh<NUM_NODES>::rotate(double totalAngle, double dAngle, const double *axis, const double *p)
   {
-    double totalQ[4],dQ[4], axisNorm[3], origin[3];
+    /// assume axis is normalized
+    ///assert(vectorIsNormalized3D(axis));
+    double totalQ[4],dQ[4];
 
     // rotates around axis through p
-
-    // normalize axis
-    vectorCopy3D(axis,axisNorm);
-    vectorScalarDiv3D(axisNorm,vectorMag3D(axisNorm));
 
     // quat for total rotation from original position
     totalQ[0] = cos(totalAngle*0.5);
@@ -529,11 +527,9 @@
     for(int i = 0; i < 3; i++)
       dQ[i+1] = axis[i]*sin(dAngle*0.5);
 
-    vectorCopy3D(p,origin);
-
     // apply rotation around center axis + displacement
     // = rotation around axis through p
-    rotate(totalQ,dQ,origin);
+    rotate(totalQ,dQ,p);
   }
 
   // protected
@@ -647,26 +643,21 @@
   template<int NUM_NODES>
   void MultiNodeMesh<NUM_NODES>::rotate(double dAngle, const double *axis, const double *p)
   {
-    double dQ[4], axisNorm[3], origin[3];
+    /// assume axis is normalized
+    ///assert(vectorIsNormalized3D(axis));
+
+    double dQ[4];
 
     // rotates around axis through p
-
-    // normalize axis
-    vectorCopy3D(axis,axisNorm);
-    vectorScalarDiv3D(axisNorm,vectorMag3D(axisNorm));
-
-    /*NL*/ //if (this->screen) printVec3D(this->screen,"axisNorm",axisNorm);
 
     // quat for rotation since last time-step
     dQ[0] = cos(dAngle*0.5);
     for(int i = 0; i < 3; i++)
       dQ[i+1] = axisNorm[i]*sin(dAngle*0.5);
 
-    vectorCopy3D(p,origin);
-
     // apply rotation around center axis + displacement
     // = rotation around axis through p
-    rotate(dQ,origin);
+    rotate(dQ,p);
   }
 
   // protected

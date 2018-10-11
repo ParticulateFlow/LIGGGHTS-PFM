@@ -533,6 +533,7 @@ void FixMesh::rotateMesh(double const axisX, double const axisY, double const ax
 
     if(vectorMag3D(axis) < 1e-5)
         error->fix_error(FLERR,this,"illegal magnitude of rotation axis");
+    vectorNormalize3D(axis);
 
     //if (comm->me == 0 && screen)
     //{
