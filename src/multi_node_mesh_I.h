@@ -60,9 +60,9 @@
   template<int NUM_NODES>
   MultiNodeMesh<NUM_NODES>::~MultiNodeMesh()
   {
-      if(node_orig_) delete node_orig_;
+      delete node_orig_;
       delete random_;
-      if(mesh_id_) delete []mesh_id_;
+      delete [] mesh_id_;
   }
 
   /* ----------------------------------------------------------------------
@@ -73,7 +73,7 @@
   template<int NUM_NODES>
   void MultiNodeMesh<NUM_NODES>::setMeshID(const char *_id)
   {
-      if(mesh_id_) delete []mesh_id_;
+      delete [] mesh_id_;
       mesh_id_ = new char[strlen(_id)+1];
       strcpy(mesh_id_,_id);
   }
