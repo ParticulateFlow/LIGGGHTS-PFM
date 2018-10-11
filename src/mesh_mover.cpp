@@ -72,8 +72,8 @@ void MeshMoverLinear::initial_integrate(double dTAbs,double dTSetup,double dt)
     double dX[3],dx[3];
 
     //NP size includes owned and ghost elements
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
     double ***v_node = get_v();
 
     // calculate total and incremental displacement
@@ -189,8 +189,8 @@ void MeshMoverLinearVariable::initial_integrate(double dTAbs,double dTSetup,doub
 {
     double dx[3];
 
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
     double ***v_node = get_v();
 
     modify->clearstep_compute();
@@ -252,7 +252,7 @@ void MeshMoverWiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
 
     double dX[3],dx[3],vNode[3];
-    double sine =   sin(omega_ * dTAbs) - sin(omega_ * (dTAbs-dTSetup));
+    const double sine = sin(omega_ * dTAbs) - sin(omega_ * (dTAbs-dTSetup));
     //double cosine = cos(omega_ * dTAbs) - cos(omega_ * (dTAbs-dTSetup));
 
     /*NL*///if(15001 == update->ntimestep) {
@@ -260,8 +260,8 @@ void MeshMoverWiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
     /*NL*///  error->all(FLERR,"end"); }
 
     //NP size includes owned and ghost elements
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
     double ***v_node = get_v();
 
     // calculate velocity, same for all nodes
@@ -326,8 +326,8 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double omegaVec[3];
     double reference_point[3];
-    double totalPhi = omega_*dTSetup;
-    double incrementalPhi = omega_*dt;
+    const double totalPhi = omega_*dTSetup;
+    const double incrementalPhi = omega_*dt;
 
     //NP get reference point which might have been
     //NP manipulated (translated, rotated) by move
@@ -454,8 +454,8 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
     double reference_point[3];
     double incrementalPhi;
 
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
     double ***v_node = get_v();
     double ***nodes = get_nodes();
 
@@ -540,18 +540,18 @@ void MeshMoverRiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double node[3],vRot[3],omegaVec[3],rPA[3];
 
-    double sine =   amplitude_*(sin(omega_ * dTAbs)-sin(omega_ * (dTAbs-dTSetup)));
-    double vel_prefactor = omega_*amplitude_*cos(omega_ * dTAbs);
+    const double sine =   amplitude_*(sin(omega_ * dTAbs)-sin(omega_ * (dTAbs-dTSetup)));
+    const double vel_prefactor = omega_*amplitude_*cos(omega_ * dTAbs);
 
     //NP size includes owned and ghost elements
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
     double ***v_node = get_v();
     double ***nodes = get_nodes();
 
     // calculate total and incremental angle
-    double totalPhi = sine;
-    double incrementalPhi = vel_prefactor*dt;
+    const double totalPhi = sine;
+    const double incrementalPhi = vel_prefactor*dt;
 
     // rotate the mesh
     mesh_->rotate(totalPhi,incrementalPhi,axis_,point_);
@@ -613,8 +613,8 @@ MeshMoverVibLin::~MeshMoverVibLin()
 void MeshMoverVibLin::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double dX[3],dx[3],vNode[3];
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
     double ***v_node = get_v();
 
     double arg = 0;
@@ -702,13 +702,13 @@ void MeshMoverVibRot::initial_integrate(double dTAbs,double dTSetup,double dt)
         vR = vR-ampl[j]*(j+1)*omega_*sin(omega_*(j+1)*dTAbs+phi[j]);
     }
 
-    int size = mesh_->size();
-    int numNodes = mesh_->numNodes();
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
     double ***v_node = get_v();
     double ***nodes = get_nodes();
 
-    double totalPhi = arg;
-    double incrementalPhi = vR*dt;
+    const double totalPhi = arg;
+    const double incrementalPhi = vR*dt;
 
     // rotate the mesh
     mesh_->rotate(totalPhi,incrementalPhi,axis_,p_);
