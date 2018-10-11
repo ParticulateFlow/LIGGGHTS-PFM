@@ -113,7 +113,7 @@
 
     //NP sizeLocal() is not up to date at this point but 1 behind
     //NP update is done in MultiNodeMeshParallel class
-    int n = sizeLocal();
+    const int n = sizeLocal();
 
     // calculate center
     vectorZeroize3D(avg);
@@ -403,8 +403,8 @@
 
     //NP ensure node_orig is long enough
     //NP can happen upon restart
-    int nall = this->sizeLocal()+this->sizeGhost();
-    int capacity = this->node_orig_->capacity();
+    const int nall = this->sizeLocal()+this->sizeGhost();
+    const int capacity = this->node_orig_->capacity();
     if(capacity < nall)
         this->node_orig_->addUninitialized(nall - capacity);
 
@@ -426,13 +426,13 @@
     if(!node_orig_)
         error->all(FLERR,"Internal error in MultiNodeMesh<NUM_NODES>::resetNodesToOrig");
 
-    int ntimestep = update->ntimestep;
+    const int ntimestep = update->ntimestep;
 
     //NP reset mesh nodes only if not yet done before in this time-step
 
     if(stepLastReset_ < ntimestep)
     {
-        int nall = sizeLocal() + sizeGhost();
+        const int nall = sizeLocal() + sizeGhost();
         stepLastReset_ = ntimestep;
         node_.copy_n(*node_orig_, nall);
         return true;
@@ -456,7 +456,7 @@
 
     //NP need only move owned elements
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
     for(int i = 0; i < n; i++)
     {
@@ -481,7 +481,7 @@
   void MultiNodeMesh<NUM_NODES>::move(double *vecIncremental)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
     for(int i = 0; i < n; i++)
     {
@@ -550,7 +550,7 @@
     //NP add rotation due to totalQ to each of the nodes, which have been reset to
     //NP original position before
     //resetToOrig();
-    int ntimestep = update->ntimestep;
+    const int ntimestep = update->ntimestep;
 
     //NP reset mesh nodes only if not yet done before in this time-step
     bool reset = false;
