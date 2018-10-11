@@ -60,9 +60,9 @@
   template<int NUM_NODES>
   MultiNodeMesh<NUM_NODES>::~MultiNodeMesh()
   {
-      if(node_orig_) delete node_orig_;
+      delete node_orig_;
       delete random_;
-      if(mesh_id_) delete []mesh_id_;
+      delete [] mesh_id_;
   }
 
   /* ----------------------------------------------------------------------
@@ -73,7 +73,7 @@
   template<int NUM_NODES>
   void MultiNodeMesh<NUM_NODES>::setMeshID(const char *_id)
   {
-      if(mesh_id_) delete []mesh_id_;
+      delete [] mesh_id_;
       mesh_id_ = new char[strlen(_id)+1];
       strcpy(mesh_id_,_id);
   }
@@ -113,7 +113,7 @@
 
     //NP sizeLocal() is not up to date at this point but 1 behind
     //NP update is done in MultiNodeMeshParallel class
-    int n = sizeLocal();
+    const int n = sizeLocal();
 
     // calculate center
     vectorZeroize3D(avg);
@@ -324,9 +324,7 @@
   template<int NUM_NODES>
   bool MultiNodeMesh<NUM_NODES>::registerMove(bool _scale, bool _translate, bool _rotate)
   {
-      bool isFirst = true;
-      if(nMove_ > 0)
-        isFirst = false;
+      bool isFirst = (nMove_ <= 0);
 
       /*NL*/ //if (this->screen) fprintf(this->screen,"mesh id %s called registerMove(),nMove_ %d\n",mesh_id_,nMove_);
 
@@ -375,13 +373,9 @@
       if(_translate) nTranslate_--;
       if(_rotate) nRotate_--;
 
-      bool del = true;
-      if(nMove_ > 0)
-        del = false;
-
       //NP only initialize if this is the first move command on the
       //NP mesh, i.e. the mesh has now the true original position
-      if(del)
+      if(nMove_ <= 0)
       {
           delete node_orig_;
           node_orig_ = NULL;
@@ -403,8 +397,8 @@
 
     //NP ensure node_orig is long enough
     //NP can happen upon restart
-    int nall = this->sizeLocal()+this->sizeGhost();
-    int capacity = this->node_orig_->capacity();
+    const int nall = this->sizeLocal()+this->sizeGhost();
+    const int capacity = this->node_orig_->capacity();
     if(capacity < nall)
         this->node_orig_->addUninitialized(nall - capacity);
 
@@ -426,13 +420,13 @@
     if(!node_orig_)
         error->all(FLERR,"Internal error in MultiNodeMesh<NUM_NODES>::resetNodesToOrig");
 
-    int ntimestep = update->ntimestep;
+    const int ntimestep = update->ntimestep;
 
     //NP reset mesh nodes only if not yet done before in this time-step
 
     if(stepLastReset_ < ntimestep)
     {
-        int nall = sizeLocal() + sizeGhost();
+        const int nall = sizeLocal() + sizeGhost();
         stepLastReset_ = ntimestep;
         node_.copy_n(*node_orig_, nall);
         return true;
@@ -456,7 +450,7 @@
 
     //NP need only move owned elements
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
     for(int i = 0; i < n; i++)
     {
@@ -481,7 +475,7 @@
   void MultiNodeMesh<NUM_NODES>::move(const double *vecIncremental)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
-    int n = sizeLocal() + sizeGhost();
+    const int n = sizeLocal() + sizeGhost();
 
     for(int i = 0; i < n; i++)
     {
@@ -552,7 +546,7 @@
     //NP add rotation due to totalQ to each of the nodes, which have been reset to
     //NP original position before
     //resetToOrig();
-    int ntimestep = update->ntimestep;
+    const int ntimestep = update->ntimestep;
 
     //NP reset mesh nodes only if not yet done before in this time-step
     bool reset = false;
