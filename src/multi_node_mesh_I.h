@@ -324,9 +324,7 @@
   template<int NUM_NODES>
   bool MultiNodeMesh<NUM_NODES>::registerMove(bool _scale, bool _translate, bool _rotate)
   {
-      bool isFirst = true;
-      if(nMove_ > 0)
-        isFirst = false;
+      bool isFirst = (nMove_ <= 0);
 
       /*NL*/ //if (this->screen) fprintf(this->screen,"mesh id %s called registerMove(),nMove_ %d\n",mesh_id_,nMove_);
 
@@ -375,13 +373,9 @@
       if(_translate) nTranslate_--;
       if(_rotate) nRotate_--;
 
-      bool del = true;
-      if(nMove_ > 0)
-        del = false;
-
       //NP only initialize if this is the first move command on the
       //NP mesh, i.e. the mesh has now the true original position
-      if(del)
+      if(nMove_ <= 0)
       {
           delete node_orig_;
           node_orig_ = NULL;
