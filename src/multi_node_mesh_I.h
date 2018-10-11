@@ -519,13 +519,15 @@
 
     // quat for total rotation from original position
     totalQ[0] = cos(totalAngle*0.5);
+    const double sin_halfTotalAngle = sin(totalAngle*0.5);
     for(int i=0;i<3;i++)
-      totalQ[i+1] = axis[i]*sin(totalAngle*0.5);
+      totalQ[i+1] = axis[i]*sin_halfTotalAngle;
 
     // quat for rotation since last time-step
     dQ[0] = cos(dAngle*0.5);
+    const double sin_halfDAngle = sin(dAngle*0.5);
     for(int i = 0; i < 3; i++)
-      dQ[i+1] = axis[i]*sin(dAngle*0.5);
+      dQ[i+1] = axis[i]*sin_halfDAngle;
 
     // apply rotation around center axis + displacement
     // = rotation around axis through p
@@ -652,8 +654,9 @@
 
     // quat for rotation since last time-step
     dQ[0] = cos(dAngle*0.5);
+    const double sin_halfDAngle = sin(dAngle*0.5);
     for(int i = 0; i < 3; i++)
-      dQ[i+1] = axisNorm[i]*sin(dAngle*0.5);
+      dQ[i+1] = axis[i]*sin_halfDAngle;
 
     // apply rotation around center axis + displacement
     // = rotation around axis through p
