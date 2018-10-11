@@ -122,8 +122,6 @@ MeshMoverLinearVariable::MeshMoverLinearVariable(LAMMPS *lmp,AbstractMesh *_mesh
       vel_[0] = input->variable->compute_equal(myvar1_);
       vel_[1] = input->variable->compute_equal(myvar2_);
       vel_[2] = input->variable->compute_equal(myvar3_);
-
-
 }
 
 void MeshMoverLinearVariable::post_create()
@@ -538,8 +536,6 @@ MeshMoverRiggle::~MeshMoverRiggle()
 
 void MeshMoverRiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
-    double node[3],vRot[3],omegaVec[3],rPA[3];
-
     const double sine =   amplitude_*(sin(omega_ * dTAbs)-sin(omega_ * (dTAbs-dTSetup)));
     const double vel_prefactor = omega_*amplitude_*cos(omega_ * dTAbs);
 
@@ -556,14 +552,15 @@ void MeshMoverRiggle::initial_integrate(double dTAbs,double dTSetup,double dt)
     // rotate the mesh
     mesh_->rotate(totalPhi,incrementalPhi,axis_,point_);
 
+    double vRot[3],omegaVec[3],rPA[3];
+
     // set mesh velocity, vel_prefactor * w/|w| x rPA
     vectorScalarMult3D(axis_,vel_prefactor,omegaVec);
     for(int i = 0; i < size; i++)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
       {
-          vectorCopy3D(nodes[i][iNode],node);
-          vectorSubtract3D(node,point_,rPA);
+          vectorSubtract3D(nodes[i][iNode],point_,rPA);
           vectorCross3D(omegaVec,rPA,vRot);
           vectorAdd3D(v_node[i][iNode],vRot,v_node[i][iNode]);
       }
@@ -691,7 +688,7 @@ MeshMoverVibRot::~MeshMoverVibRot()
 
 void MeshMoverVibRot::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
-    double node[3],omegaVec[3],rPA[3],vRot[3];
+    double omegaVec[3],rPA[3],vRot[3];
 
     double arg = 0;
     double vR = 0;
@@ -720,8 +717,7 @@ void MeshMoverVibRot::initial_integrate(double dTAbs,double dTSetup,double dt)
     {
       for(int iNode = 0; iNode < numNodes; iNode++)
       {
-          vectorCopy3D(nodes[i][iNode],node);
-          vectorSubtract3D(node,p_,rPA);
+          vectorSubtract3D(nodes[i][iNode],p_,rPA);
           vectorCross3D(omegaVec,rPA,vRot);
           vectorAdd3D(v_node[i][iNode],vRot,v_node[i][iNode]);
       }
