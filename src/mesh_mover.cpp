@@ -296,7 +296,7 @@ MeshMoverRotate::MeshMoverRotate(LAMMPS *lmp,AbstractMesh *_mesh,
     axis_[1] = axisY;
     axis_[2] = axisZ;
 
-    vectorScalarDiv3D(axis_,vectorMag3D(axis_));
+    vectorNormalize3D(axis_);
 
     point_[0] = px;
     point_[1] = py;
@@ -390,7 +390,7 @@ MeshMoverRotateVariable::MeshMoverRotateVariable(LAMMPS *lmp,AbstractMesh *_mesh
     axis_[1] = axisY;
     axis_[2] = axisZ;
 
-    vectorScalarDiv3D(axis_,vectorMag3D(axis_));
+    vectorNormalize3D(axis_);
 
     point_[0] = px;
     point_[1] = py;
@@ -512,7 +512,7 @@ MeshMoverRiggle::MeshMoverRiggle(LAMMPS *lmp,AbstractMesh *_mesh,
     axis_[1] = axisY;
     axis_[2] = axisZ;
 
-    vectorScalarDiv3D(axis_,vectorMag3D(axis_));
+    vectorNormalize3D(axis_);
 
     point_[0] = px;
     point_[1] = py;
@@ -586,7 +586,7 @@ MeshMoverVibLin::MeshMoverVibLin(LAMMPS *lmp,AbstractMesh *_mesh,
     axis_[2] = axisZ;
     ord = order;
 
-    vectorScalarDiv3D(axis_,vectorMag3D(axis_));
+    vectorNormalize3D(axis_);
     //array transfer
     for (int j=0;j<order; j++) {
        phi[j] = phase[j];
@@ -658,7 +658,7 @@ MeshMoverVibRot::MeshMoverVibRot(LAMMPS *lmp,AbstractMesh *_mesh,
     axis_[1] = axisY;
     axis_[2] = axisZ;
 
-    vectorScalarDiv3D(axis_,vectorMag3D(axis_));
+    vectorNormalize3D(axis_);
 
     p_[0] = px;
     p_[1] = py;
