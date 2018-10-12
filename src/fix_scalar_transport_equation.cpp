@@ -191,8 +191,8 @@ void FixScalarTransportEquation::post_create()
     fixarg[3]=flux_name;
     fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
     fixarg[5]="yes";    //NP restart yes
-    fixarg[6]="no";    //NP communicate ghost no
-    fixarg[7]="yes";    //NP communicate rev yes
+    fixarg[6]="yes";    //NP communicate ghost no   //EKI was no
+    fixarg[7]="no";    //NP communicate rev yes // EKI was yes
     fixarg[8]="0.";     //NP take 0 as default flux
     modify->add_fix(9,const_cast<char**>(fixarg));
     fix_flux=static_cast<FixPropertyAtom*>(modify->find_fix_property(flux_name,"property/atom","scalar",0,0,style));
