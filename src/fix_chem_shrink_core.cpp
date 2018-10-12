@@ -681,10 +681,10 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             Keq_ = exp(3968.37/T_[i]+3.94);
         else if (layer == 1)
             Keq_ = pow(10.0,(-1834.0/T_[i]+2.17));
-            //Keq_ = exp(-3585.64/T_[i]+4.58);
+            // Keq_ = exp(-3585.64/T_[i]+4.58);
         else if (layer == 0)
             Keq_ = pow(10.0,(914.0/T_[i]-1.097));
-            //Keq_ = exp(2744.63/T_[i]-2.946);
+            // Keq_ = exp(2744.63/T_[i]-2.946);
      }
      else if(strcmp(speciesA,"H2")==0)
      {
@@ -692,11 +692,11 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             Keq_   =   exp(-362.6/T_[i] + 10.334);
         else if (layer == 1)
             Keq_    =   pow(10.0,(-3577.0/T_[i]+3.74));
-            //Keq_   =   exp(-7916.6/T_[i] + 8.46);
+            // Keq_   =   exp(-7916.6/T_[i] + 8.46);
         else if (layer == 0)
-            //Keq_    =   pow(10.0,(-827.0/T_[i]+0.468)); // --> With this equilibrium constant R1 is occuring with all temperatures for H2
-            Keq_    =   pow(10.0,(-856.66/T_[i]+0.4387)); // Equilibrium constant from Turkdogan "Physical Chemistry of High Temperature Technology"
-            //Keq_   =   exp(-1586.9/T_[i] + 0.9317);
+            Keq_    =   pow(10.0,(-827.0/T_[i]+0.468)); // -->
+            // Keq_    =   pow(10.0,(-856.66/T_[i]+0.4387)); // Equilibrium constant from Turkdogan "Physical Chemistry of High Temperature Technology"
+            // Keq_   =   exp(-1586.9/T_[i] + 0.9317);
      }
      else
      {
@@ -805,11 +805,18 @@ void FixChemShrinkCore::getMassT(int i)
     if (molecularDiffusion_[i] < SMALL)
         molecularDiffusion_[i] += SMALL;
 
-    Sc_[i]  =   nuf_[i]/molecularDiffusion_[i];
-    Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
+    if (nuf_[i] == 0.0 || Rep_[i] == 0.0)
+      {
+	Massterm[i] = 0.0;
+      }
+    else
+      {
+	Sc_[i]  =   nuf_[i]/molecularDiffusion_[i];
+	Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
 
-    Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
-    Massterm[i] = 1.0/(Massterm[i]);
+	Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
+	Massterm[i] = 1.0/(Massterm[i]);
+      }
 
     if (screenflag_ && screen)
         fprintf(screen, "Schmidt number: %f \n",Sc_[0]);
@@ -860,6 +867,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
             dY[i][0]   =   (((Aterm[i][2]+Bterm[i][2])*(Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])+Aterm[i][1]*(Bterm[i][1]+Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[0])
                 -   (Aterm[i][1]*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[2])
                 -   ((Aterm[i][2]+Bterm[i][2])*(Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[1]))/W;
+
         // reaction doesn't happen if chemical reaction rate is negative
         if (dY[i][0] < 0.0) dY[i][0] = 0.0;
         dY_previous3 = true;
@@ -985,9 +993,9 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
         relRadii_[i][j] = rad[j]/rad[0];
     }
 
-    relRadii_[i][1] = std::min(0.9999999, relRadii_[i][1]);
-    relRadii_[i][2] = std::min(0.9999998, relRadii_[i][2]);
-    relRadii_[i][3] = std::min(0.9999997, relRadii_[i][3]);
+    relRadii_[i][1] = std::min(0.9999, relRadii_[i][1]);
+    relRadii_[i][2] = std::min(0.9998, relRadii_[i][2]);
+    relRadii_[i][3] = std::min(0.9997, relRadii_[i][3]);
 
     // Total mass of particle with coarse-graining
     pmass_[i]   =   sum_mass_p_new*cg_*cg_*cg_;
