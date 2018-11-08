@@ -694,8 +694,8 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             Keq_    =   pow(10.0,(-3577.0/T_[i]+3.74));
             // Keq_   =   exp(-7916.6/T_[i] + 8.46);
         else if (layer == 0)
-            Keq_    =   pow(10.0,(-827.0/T_[i]+0.468)); // -->
-            // Keq_    =   pow(10.0,(-856.66/T_[i]+0.4387)); // Equilibrium constant from Turkdogan "Physical Chemistry of High Temperature Technology"
+            //Keq_    =   pow(10.0,(-827.0/T_[i]+0.468)); // --> With this equilibrium constant R1 is occuring with all temperatures for H2
+            Keq_    =   pow(10.0,(-856.66/T_[i]+0.4387)); // Equilibrium constant from Turkdogan "Physical Chemistry of High Temperature Technology"
             // Keq_   =   exp(-1586.9/T_[i] + 0.9317);
      }
      else
