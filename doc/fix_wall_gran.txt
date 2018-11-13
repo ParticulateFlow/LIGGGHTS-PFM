@@ -31,7 +31,7 @@ wallstyle args for wallstyle {mesh} = {n_meshes} and {meshes} :l
     meshlist =  id(s) of the mesh(es) (see "fix mesh/surface"_fix_mesh_surface.html) to be used. These must be defined before :pre
 
 wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zplane} or {xcylinder} or {ycylinder} or {zcylinder} 
-                                           or {general_plane} or {general_cylinder} or {xcone} or {ycone} or {zcone} :l
+                                           or {general_plane} or {general_cylinder} or {general_cone} :l
   {type} args = tp
     tp = atom_type (material type) of the wall
   {xplane} or {yplane} or {zplane} args = pos
@@ -88,7 +88,7 @@ All particles in the group interact with the wall when they are close enough
 to touch it. The equation for the force between the wall and particles
 touching it is the same as the corresponding equation on the
 "pair_style granular"_pair_gran.html doc page, in the limit of one of the
- two particles going to infinite radius and mass (flat wall).
+two particles going to infinite radius and mass (flat wall).
 
 You must choose the models matching the pair style used, otherwise
 an error is created. As with "pair_style granular"_pair_gran.html, you have
@@ -109,8 +109,9 @@ For style {mesh}, the atom_type (material type) is inherited from the atom style
 in the "fix mesh/surface"_fix_mesh_surface.html command. 
 
 For {wallstyle primitive}, the atom_type (material type) has to be provided via
-keyword {type}. Primitve walls can be {xplane} or {yplane} or {zplane} or {cylindrical} 
-or {general_plane} or {x/y/zcone}. 
+keyword {type}. Primitive walls can be {xplane} or {yplane} or {zplane} or
+or {xcylinder} or {ycylinder} or {zcylinder} or {general_plane} or
+{general_cylinder} or {general_cone}. 
 The three axis-aligned planar options specify a single wall in a dimension.
 For an {xcylinder}, {ycylinder} or {zcylinder}, the radius and the cylinder axis
 in the other two dims are specified.
@@ -120,8 +121,8 @@ The vector does not need to be a unit vector.
 The {general_cylinder} is an arbitrarily oriented cylinder, where the radius, a point
 on and a direction vector parallel to the cylinder axis need to be specified.
 The direction vector does not need to be normalized.
-{general_cone} defines an open cone stump/frustrum/mantle surface as described
-by two points and the radii at the points.
+{general_cone} defines an open (frustum of a) cone described by the two endpoints of
+the cone (frustum) axis and the radii at these points.
 
 :line
 
@@ -156,7 +157,7 @@ store the wall force exerted on the particles in a
 is the id of the fix wall/gran command.
 
 The effect of keyword {rolling_friction}, {cohesion}, {tangential_damping},
-{viscous} and {absolute_damping} is explanted in "pair gran"_pair_gran.html
+{viscous} and {absolute_damping} is explained in "pair gran"_pair_gran.html
 
 :line
 

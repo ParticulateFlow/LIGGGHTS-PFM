@@ -118,7 +118,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
     target_volfrac = max_volfrac;
   }
 
-  radius_factor = pow(max_volfrac/target_volfrac,MathConst::THIRD);
+  radius_factor = std::cbrt(max_volfrac/target_volfrac);
   if (comm->me == 0 && screen)
     fprintf(screen, "radius scaling factor: %f\n",radius_factor);
 
@@ -159,7 +159,7 @@ void FixInsertPackDense::post_create()
   x_init = new double[3];
 
   double sublo[3],subhi[3];
-  double const insreg_cutoff = maxrad;//+neighbor->skin;
+  double const insreg_cutoff = maxrad;
   for (int i=0; i<3; ++i) {
     sublo[i] = domain->sublo[i]+insreg_cutoff;
     subhi[i] = domain->subhi[i]-insreg_cutoff;
@@ -167,14 +167,29 @@ void FixInsertPackDense::post_create()
 
   ins_bbox.shrinkToSubbox(sublo,subhi);
 
-  ins_bbox.getCenter(x_init);
+  // for insertion of inital config we need an insertion box with larger cutoff:
+  // circumscribed sphere (of 3 spheres with maxrad radius placed on the corners
+  // of an equilateral triangle) has a radius of (1. + 2./sqrt(3.))*maxrad ~ 2.155*maxrad
+  // where 2./sqrt(3.)*maxrad is the circumscribed circle of the triangle
+  double const init_cutoff = 2.155*maxrad;
+  for (int i=0; i<3; ++i) {
+    sublo[i] = domain->sublo[i]+init_cutoff;
+    subhi[i] = domain->subhi[i]-init_cutoff;
+  }
 
-  if (!ins_bbox.hasVolume()) {
+  BoundingBox init_config_bbox(ins_region->extent_xlo+init_cutoff,ins_region->extent_xhi-init_cutoff,
+                               ins_region->extent_ylo+init_cutoff,ins_region->extent_yhi-init_cutoff,
+                               ins_region->extent_zlo+init_cutoff,ins_region->extent_zhi-init_cutoff);
+  init_config_bbox.shrinkToSubbox(sublo,subhi);
+  init_config_bbox.getCenter(x_init);
+
+  if (!init_config_bbox.hasVolume()) {
     // no insertion volume on this subdomain
     is_inserter = false;
-  } else if (!ins_region->inside(x_init[0],x_init[1],x_init[2])) {
+  } else if (!init_config_bbox.isInside(x_init) ||
+             !ins_region->match_shrinkby_cut(x_init, init_cutoff)) {
     bool const subdomain_flag(true);
-    ins_region->generate_random_shrinkby_cut(x_init,3.*maxrad,subdomain_flag);
+    ins_region->generate_random_shrinkby_cut(x_init,init_cutoff,subdomain_flag);
   }
 
   neighlist.reset();
@@ -221,8 +236,8 @@ void FixInsertPackDense::pre_exchange()
       int static n_next_write = n_write;
       if (n_inserted_local > n_next_write) {
         double percent = static_cast<double>(n_inserted_local)/static_cast<double>(n_insert_estim_local)*100;
-        fprintf(screen,"process %d : %2.0f%% done, inserted %d/%d particles\n",
-                comm->me,percent,n_inserted_local,n_insert_estim_local);
+        if (screen) fprintf(screen,"process %d : %2.0f%% done, inserted %d/%d particles\n",
+                            comm->me,percent,n_inserted_local,n_insert_estim_local);
         n_next_write += n_write;
       }
     }
@@ -271,8 +286,7 @@ void FixInsertPackDense::prepare_insertion()
   if (is_inserter) {
     double rad_max_present = 0.;
     for(int i=0;i<atom->nlocal;i++){
-      if( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
-          || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0) {
+      if (ins_region->match_expandby_cut(atom->x[i],atom->radius[i])) {
         if(atom->radius[i] > rad_max_present) rad_max_present = atom->radius[i];
       }
     }
@@ -284,8 +298,7 @@ void FixInsertPackDense::prepare_insertion()
     }
 
     for (int i=0;i<atom->nlocal;i++) {
-      if ( ins_region->inside(atom->x[i][0],atom->x[i][1],atom->x[i][2])
-          || ins_region->surface_exterior(atom->x[i],atom->radius[i]) > 0) {
+      if (ins_region->match_expandby_cut(atom->x[i],atom->radius[i])) {
         neighlist.insert(atom->x[i],atom->radius[i]);
         volume_present_local += MathConst::MY_4PI3*atom->radius[i]*atom->radius[i]*atom->radius[i];
       }
@@ -312,7 +325,7 @@ void FixInsertPackDense::prepare_insertion()
   n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/v_part_ave);
 
   // check if starting point does not conflict with any pre-existing particles
-  double const maxrad_init = 3.*maxrad;
+  double const maxrad_init = 2.155*maxrad;
   if (neighlist.hasOverlap(x_init,maxrad_init)) {
     int const nAttemptMax = 100;
     int nAttempt = 0;
@@ -474,9 +487,6 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   MathExtra::sub3(x2,com,x2);
   MathExtra::sub3(x3,com,x3);
 
-  // maybe, at some point in the future, implement random orientation
-  // of initial packing
-
   // then, move to starting point & write to PTI
   MathExtra::add3(x1,x_init,p1->x_ins[0]);
   MathExtra::add3(x2,x_init,p2->x_ins[0]);
@@ -609,9 +619,7 @@ bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
   if(distfield.isInside(p.x) && !distfield.isInBoundary(p.x))
     return true;
 
-  return ins_region->inside(p.x[0],p.x[1],p.x[2])
-    && ins_bbox.isInside(p.x)
-    && ins_region->surface_interior(p.x,p.radius) == 0;
+  return ins_bbox.isInside(p.x) && ins_region->match_shrinkby_cut(p.x,p.radius);
 }
 
 /* ---------------------------------------------------------------------- */

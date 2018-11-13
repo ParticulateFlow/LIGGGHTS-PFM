@@ -238,7 +238,7 @@ void FixWallGranOMP::post_force_mesh(int vflag)
         int* b = meshNeighlist->partition_begin(tid);
         int* e = meshNeighlist->partition_end(tid);
 
-	// mark all contacts for delettion at this point
+        // mark all contacts for deletion at this point
         for(int* it = b; it != e; ++it) {
           assert(meshNeighlist->in_thread_partition(tid, *it));
           fix_contact->markForDeletion(tid, *it);
@@ -577,6 +577,8 @@ void FixWallGranOMP::cwl_add_wall_2(const LCM::CollisionData & cdata, const LCM:
   const double tor1 = i_forces.delta_torque[0]*cdata.area_ratio;
   const double tor2 = i_forces.delta_torque[1]*cdata.area_ratio;
   const double tor3 = i_forces.delta_torque[2]*cdata.area_ratio;
+  double normal[3];
+  vectorNegate3D(cdata.en,normal);
   #pragma omp critical
-  cwl_->add_wall_2(cdata.i,fx,fy,fz,tor1,tor2,tor3,cdata.contact_history,cdata.rsq);
+  cwl_->add_wall_2(cdata.i,fx,fy,fz,tor1,tor2,tor3,cdata.contact_history,cdata.rsq,normal);
 }

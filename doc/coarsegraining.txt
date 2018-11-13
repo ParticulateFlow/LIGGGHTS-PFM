@@ -38,14 +38,14 @@ Some of the models in LIGGGHTS support scaling of the model constants
 to counteract this change in physics on the bulk scale. Moreover,
 some commands (such as insertion commands or the neighbor command) re-scale
 some of their length scales. Using {model_check} = error will throw an error 
-if a model/command does not yield constistent results with coarse-graining.
+if a model/command does not yield consistent results with coarse-graining.
 Using {model_check} = warn will issue a warning if a model/command does not 
-yield constistent results with coarse-graining.
+yield consistent results with coarse-graining.
 
 [Model overview:]
 
 This table provides an overview of how different models behave when
-coarsegraining is used. Some models scale lengthscales, other models
+coarsegraining is used. Some models scale length-scales, other models
 scale model parameters to make results more coarse-graining consistent.
 Models that are not mentioned here are not affected by using the 
 coarsegraining command

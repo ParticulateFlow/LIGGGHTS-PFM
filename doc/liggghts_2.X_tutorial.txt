@@ -19,7 +19,7 @@ to modelling approaches.
 
 Commands covered by this tutorial: :h2
 
-atom_style sphere (formerly atom_style granular)  :l
+atom_style sphere (formerly atom_style granular)  :ulb,l
 dump mesh/stl (formerly dump stl) :l
 dump mesh/vtk (formerly dump mesh/gran/VTK) :l
 fix heat/gran :l
@@ -55,8 +55,19 @@ For details, see "atom_style sphere"_atom_style.html.
 
 [dump mesh/stl:]
 
+<!-- HTML_ONLY -->
+
 OLD: dmpstl all stl 300 post/dump*.stl
-NEW: dmpstl all mesh/stl 300 post/dump*.stl  :pre
+NEW: dmpstl all mesh/stl 300 post/dump*.stl :pre
+<!-- END_HTML_ONLY -->
+<!-- RST
+
+.. parsed-literal::
+
+   OLD: dmpstl all stl 300 post/dump*.stl
+   NEW: dmpstl all mesh/stl 300 post/dump*.stl
+
+END_RST -->
 
 NOTE: For compatibility reasons, the old syntax can still be used in LIGGGHTS 2.0
 
@@ -64,8 +75,19 @@ NOTE: For compatibility reasons, the old syntax can still be used in LIGGGHTS 2.
 
 [dump mesh/vtk:]
 
+<!-- HTML_ONLY -->
+
 OLD: dmpstl all mesh/gran/VTK 300 post/dump*.stl id
-NEW: dmpstl all mesh/vtk 300 post/dump*.stl id  :pre
+NEW: dmpstl all mesh/vtk 300 post/dump*.stl id :pre
+<!-- END_HTML_ONLY -->
+<!-- RST
+
+.. parsed-literal::
+
+   OLD: dmpstl all stl 300 post/dump*.stl
+   NEW: dmpstl all mesh/stl 300 post/dump*.stl
+
+END_RST -->
 
 NOTE: For compatibility reasons, the old syntax can still be used in LIGGGHTS 2.0
 
@@ -122,10 +144,21 @@ NEW: fix ID group-ID move/mesh mesh cad1 rotate origin 0. 0. 0. axis  0. 0. 1. p
 OLD: fix ID group-ID move/mesh/gran linear 20. 20. 0. cad1 1
 NEW: fix ID group-ID move/mesh mesh cad1 linear 20. 20. 0. :pre
 
+<!-- HTML_ONLY -->
 NOTES: :ule
-The trailing "1" for the {old_syntax} was no longer used in LIGGGHTS 1.5.3 :l
+The trailing "1" for the {old_syntax} was no longer used in LIGGGHTS 1.5.3 :ulb,l
 For compatibility reasons, the command name {fix move/mesh/gran} can be 
-used in LIGGGHTS 2.0. However, the syntax has to follow the LIGGGHTS 2.0 syntax. :l
+used in LIGGGHTS 2.0. However, the syntax has to follow the LIGGGHTS 2.0 syntax. :l,ule
+<!-- END_HTML_ONLY -->
+<!-- RST
+
+.. note::
+
+  * The trailing "1" for the *old_syntax* was no longer used in LIGGGHTS 1.5.3
+  * For compatibility reasons, the command name *fix move/mesh/gran* can be used in LIGGGHTS 2.0.
+    However, the syntax has to follow the LIGGGHTS 2.0 syntax.
+
+END_RST -->
 
 For details, see "fix move/mesh"_fix_move_mesh.html.
 
@@ -150,8 +183,9 @@ NEW: fix ID group-ID wall/gran/hertz/history primitive type 1 xplane -0.5 0.5 co
 OLD: fix ID group-ID wall/gran/hertz/history 0 0 zcylinder 0.05 1
 NEW: fix ID group-ID wall/gran/hertz/history primitive type 1 zcylinder 0.05 0. 0. tangential_damping off :pre
 
+<!-- HTML_ONLY -->
 NOTES: :ule
-Same applies for hooke/history, hooke, hooke/history/simple, hertz/history/simple :l
+Same applies for hooke/history, hooke, hooke/history/simple, hertz/history/simple :ulb,l
 {sjkr} stands for 'simplified JKR (Johnson-Kendall-Roberts)' model, and {cdt} for 
 'constant directional torque' model :l
 styles {xplane}, {yplane}, {zplane} take only one arg now (the wall position), if 
@@ -159,7 +193,19 @@ you want two walls you have to use two fix commands :l
 in addition to the existing style {zcylinder}, there is now {xcylinder} and 
 {ycylinder} as well :l 
 {xcylinder} {ycylinder} and {zcylinder} take 3 args: the cylinder radius, and 
-the location of the axis in the other two dimensions :l
+the location of the axis in the other two dimensions :l,ule
+<!-- END_HTML_ONLY -->
+<!-- RST
+
+.. note::
+
+  * Same applies for hooke/history, hooke, hooke/history/simple, hertz/history/simple
+  * *sjkr* stands for 'simplified JKR (Johnson-Kendall-Roberts)' model, and {cdt} for 'constant directional torque' model
+  * styles *xplane*, *yplane*, *zplane* take only one arg now (the wall position), if you want two walls you have to use two fix commands
+  * in addition to the existing style *zcylinder*, there is now *xcylinder* and *ycylinder* as well
+  * *xcylinder*, *ycylinder* and *zcylinder* take 3 args: the cylinder radius, and the location of the axis in the other two dimensions
+
+END_RST -->
 
 For details, see "fix wall/gran"_fix_wall_gran.html.
 
@@ -179,9 +225,19 @@ NEW: pair_style gran/hertz/history cohesion sjkr   :pre
 OLD: pair_style gran/hertz/history 0 0
 NEW: pair_style gran/hertz/history tangential_damping off :pre
 
+<!-- HTML_ONLY -->
 NOTES: :ule
-Same applies for hooke/history, hooke, hooke/history/simple, hertz/history/simple :l
-{sjkr} stands for "simplified JKR (Johnson-Kendall-Roberts)" model, and {cdt} for "constant directional torque" model :l
+Same applies for hooke/history, hooke, hooke/history/simple, hertz/history/simple :ulb,l
+{sjkr} stands for "simplified JKR (Johnson-Kendall-Roberts)" model, and {cdt} for "constant directional torque" model :l,ule
+<!-- END_HTML_ONLY -->
+<!-- RST
+
+.. note::
+
+  * Same applies for hooke/history, hooke, hooke/history/simple, hertz/history/simple
+  * *sjkr* stands for 'simplified JKR (Johnson-Kendall-Roberts)' model, and {cdt} for 'constant directional torque' model
+
+END_RST -->
 
 For details, see "pair_style gran"_pair_gran.html.
 

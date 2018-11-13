@@ -181,7 +181,7 @@ you do not do this, you may get an error when bonds are added.
 
 [Default:]
 
-All 3 Lennard-Jones and 3 Coulobmic weighting coefficients = 0.0,
+All 3 Lennard-Jones and 3 Coulombic weighting coefficients = 0.0,
 angle = no, dihedral = no, and extra = 0.
 
 :line

@@ -28,7 +28,7 @@ compute 2 molecule gyration/molecule tensor :pre
 
 Define a computation that calculates the radius of gyration Rg of
 individual molecules.  The calculation includes all effects due to
-atoms passing thru periodic boundaries.
+atoms passing through periodic boundaries.
 
 Rg is a measure of the size of a molecule, and is computed by this
 formula

@@ -29,11 +29,11 @@ is computed as the sum of the forces and torques on its constituent
 particles and the coordinates, velocities, and orientations of the
 atoms in each body are updated so that the body moves and rotates as a
 single entity. The integration that is performed by this command is 
-euqivalent to "fix_rigid"_fix_rigid.html. However, the following 
+equivalent to "fix_rigid"_fix_rigid.html. However, the following 
 implementation details are different:
 
 (1) Body data held by this fix is distributed across all processes, yielding 
-better parallel scalabilty. 
+better parallel scalability. 
 
 (2) Bodies (particle clumps) can be added/inserted via 
 "fix_insert_stream"_fix_insert_stream.html, 
@@ -68,7 +68,7 @@ using multisphere particles.
 None of the "fix_modify"_fix_modify.html options are relevant to this
 fix.  No global scalar or vector or per-atom quantities are stored by
 this fix for access by various "output
-commands"_Section_howto.html#4_15.  No parameter of this fix can be
+commands"_Section_howto.html#howto_15.  No parameter of this fix can be
 used with the {start/stop} keywords of the "run"_run.html command.
 This fix is not invoked during "energy minimization"_minimize.html.
 

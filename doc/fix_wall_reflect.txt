@@ -28,7 +28,8 @@ zero or more keyword/value pairs may be appended :l
 keyword = {units} :l
   {units} value = {lattice} or {box}
     {lattice} = the wall position is defined in lattice units
-    {box} = the wall position is defined in simulation box units :pre
+    {box} = the wall position is defined in simulation box units
+  {e} value = coefficient of restitution (value between 0 and 1) :pre
 :ule
 
 [Examples:]
@@ -40,7 +41,7 @@ fix top all wall/reflect zhi v_pressdown :pre
 [Description:]
 
 Bound the simulation with one or more walls which reflect particles
-in the specified group when they attempt to move thru them. 
+in the specified group when they attempt to move through them. 
 
 Reflection means that if an atom moves outside the wall on a timestep
 by a distance delta (e.g. due to "fix nve"_fix_nve.html), then it is
@@ -87,6 +88,9 @@ A {box} value selects standard distance units as defined by the
 A {lattice} value means the distance units are in lattice spacings.
 The "lattice"_lattice.html command must have been previously used to
 define the lattice spacings.
+
+Specifying the coefficient of restitution results in scaling the 
+post-impact velocity by this factor.
 
 :line
 
