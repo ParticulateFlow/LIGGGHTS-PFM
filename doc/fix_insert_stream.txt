@@ -80,7 +80,7 @@ stream_keywords = {duration} or {parallel} or {insertion_face} or {extrude_lengt
 
 [Examples:]
 
-fix ins all insert/stream seed 1001 distributiontemplate pdd1 nparticles 5000 vel constant 0. -0.5 -2. particlerate 1000 overlapcheck yes insertion_face ins_mesh extrude_length 0.6
+fix ins all insert/stream seed 1001 distributiontemplate pdd1 nparticles 5000 vel constant 0. -0.5 -2. particlerate 1000 overlapcheck yes insertion_face ins_mesh extrude_length 0.6 :pre
 
 [Description:]
 
