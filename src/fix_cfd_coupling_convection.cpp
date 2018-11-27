@@ -90,7 +90,7 @@ void FixCfdCouplingConvection::post_create()
         fixarg[2]="property/atom";
         fixarg[3]="convectiveHeatFlux";
         fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
-        fixarg[5]="yes";    //NP restart yes //EKI was no
+        fixarg[5]="no";    //NP restart yes
         fixarg[6]="yes";    //NP communicate ghost no
         fixarg[7]="no";    //NP communicate rev yes
         fixarg[8]="0.";
