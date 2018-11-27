@@ -110,6 +110,7 @@ FixScalarTransportEquation::FixScalarTransportEquation(LAMMPS *lmp, int narg, ch
 
   scalar_flag = 1; //NP total thermal energy computed
   global_freq = 1; //NP available always
+  cg_ = force->cg();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -191,8 +192,8 @@ void FixScalarTransportEquation::post_create()
     fixarg[3]=flux_name;
     fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
     fixarg[5]="yes";    //NP restart yes
-    fixarg[6]="yes";    //NP communicate ghost no   //EKI was no
-    fixarg[7]="no";    //NP communicate rev yes // EKI was yes
+    fixarg[6]="no";    //NP communicate ghost no
+    fixarg[7]="yes";    //NP communicate rev yes
     fixarg[8]="0.";     //NP take 0 as default flux
     modify->add_fix(9,const_cast<char**>(fixarg));
     fix_flux=static_cast<FixPropertyAtom*>(modify->find_fix_property(flux_name,"property/atom","scalar",0,0,style));
@@ -357,7 +358,7 @@ void FixScalarTransportEquation::final_integrate()
                                                             flux[i] 
                                                           + source[i]*double(nevery_) //multiply source to account for missing steps
                                                         ) * dt  
-                                                      / (rmass[i]*capacity); 
+                                                      / (rmass[i]/(cg_*cg_*cg_)*capacity);
            }
         }
     }
@@ -405,7 +406,7 @@ double FixScalarTransportEquation::compute_scalar()
         for (int i = 0; i < nlocal; i++)
         {
            capacity = fix_capacity->compute_vector(type[i]-1);
-           quantity_sum += capacity * rmass[i] * quantity[i];
+           quantity_sum += capacity * (rmass[i]/(cg_*cg_*cg_)) * quantity[i];
            /*NL*///if (screen) fprintf(screen,"step %d, proc %d, i %d quantity %f\n",update->ntimestep, comm->me,i,quantity[i]);
         }
     }
