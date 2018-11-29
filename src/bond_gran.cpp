@@ -182,6 +182,11 @@ void BondGran::compute(int eflag, int vflag)
   double dt = update->dt;
   double cutoff = neighbor->skin;
 
+  //modified A.N.
+  int xperiodic = domain->xperiodic;
+  int yperiodic = domain->yperiodic;
+  int zperiodic = domain->zperiodic;
+
   if(breakmode == BREAKSTYLE_STRESS_TEMP)
   {
       if(!fix_Temp) error->all(FLERR,"Internal error in BondGran");
@@ -202,46 +207,50 @@ void BondGran::compute(int eflag, int vflag)
     i1 = bondlist[n][0];
     i2 = bondlist[n][1];
 
+    //printf("nbondlist = %d, i1 = %d, i2 = %d \n", nbondlist, i1, i2);
+
     // check if bond overlap the box-borders
-    if (       x[i1][0] < (domain->boxlo[0]+cutoff)) {
+    // consider the periodicity of the boundaries also - mod by A.N.
+    if (       x[i1][0] < (domain->boxlo[0]+cutoff) && !xperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i1][0] > (domain->boxhi[0]-cutoff)) {
+    } else if (x[i1][0] > (domain->boxhi[0]-cutoff) && !xperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i1][1] < (domain->boxlo[1]+cutoff)) {
+    } else if (x[i1][1] < (domain->boxlo[1]+cutoff) && !yperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i1][1] > (domain->boxhi[1]-cutoff)) {
+    } else if (x[i1][1] > (domain->boxhi[1]-cutoff) && !yperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i1][2] < (domain->boxlo[2]+cutoff)) {
+    } else if (x[i1][2] < (domain->boxlo[2]+cutoff) && !zperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i1][2] > (domain->boxhi[2]-cutoff)) {
+    } else if (x[i1][2] > (domain->boxhi[2]-cutoff) && !zperiodic) {
       bondlist[n][3] = 1;
       continue;
     }
 
-    if (       x[i2][0] < (domain->boxlo[0]+cutoff)) {
+    if (       x[i2][0] < (domain->boxlo[0]+cutoff) && !xperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i2][0] > (domain->boxhi[0]-cutoff)) {
+    } else if (x[i2][0] > (domain->boxhi[0]-cutoff) && !xperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i2][1] < (domain->boxlo[1]+cutoff)) {
+    } else if (x[i2][1] < (domain->boxlo[1]+cutoff) && !yperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i2][1] > (domain->boxhi[1]-cutoff)) {
+    } else if (x[i2][1] > (domain->boxhi[1]-cutoff) && !yperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i2][2] < (domain->boxlo[2]+cutoff)) {
+    } else if (x[i2][2] < (domain->boxlo[2]+cutoff) && !zperiodic) {
       bondlist[n][3] = 1;
       continue;
-    } else if (x[i2][2] > (domain->boxhi[2]-cutoff)) {
+    } else if (x[i2][2] > (domain->boxhi[2]-cutoff) && !zperiodic) {
       bondlist[n][3] = 1;
       continue;
     }
+
 
     /*NL*/ //if (screen) fprintf(screen,"ts %d: handling id %d and %d\n",update->ntimestep,tag[i1],tag[i2]);
 
@@ -290,7 +299,6 @@ void BondGran::compute(int eflag, int vflag)
     Kt = St[type]*A/bondLength;
     K_tor = St[type]*Ip/bondLength;
     K_ben = Sn[type]*I/bondLength;
-
 #endif
 
     // relative translational velocity
@@ -489,7 +497,7 @@ void BondGran::compute(int eflag, int vflag)
     if (vel_norm == 0) f_norm =0;
     else f_norm = sqrt (f_norm) /vel_norm;
 
-    bondhistlist[n][9] = f_norm*vel_temp[0];
+    bondhistlist[n][ 9] = f_norm*vel_temp[0];
     bondhistlist[n][10] = f_norm*vel_temp[1];
     bondhistlist[n][11] = f_norm*vel_temp[2];
 #else
@@ -509,15 +517,15 @@ void BondGran::compute(int eflag, int vflag)
     bondhistlist[n][1] = dissipate * bondhistlist[n][1] + dnforce[1];
     bondhistlist[n][2] = dissipate * bondhistlist[n][2] + dnforce[2];
 #endif
-    bondhistlist[n][3] = dissipate * bondhistlist[n][3] + dtforce[0];
-    bondhistlist[n][4] = dissipate * bondhistlist[n][4] + dtforce[1];
-    bondhistlist[n][5] = dissipate * bondhistlist[n][5] + dtforce[2];
-    bondhistlist[n][6] = dissipate * bondhistlist[n][6] + dntorque[0];
-    bondhistlist[n][7] = dissipate * bondhistlist[n][7] + dntorque[1];
-    bondhistlist[n][8] = dissipate * bondhistlist[n][8] + dntorque[2];
-    bondhistlist[n][ 9] = dissipate * bondhistlist[n][ 9] + dttorque[0];
-    bondhistlist[n][10] = dissipate * bondhistlist[n][10] + dttorque[1];
-    bondhistlist[n][11] = dissipate * bondhistlist[n][11] + dttorque[2];
+    bondhistlist[n][ 3] = bondhistlist[n][ 3] + dtforce[0];
+    bondhistlist[n][ 4] = bondhistlist[n][ 4] + dtforce[1];
+    bondhistlist[n][ 5] = bondhistlist[n][ 5] + dtforce[2];
+    bondhistlist[n][ 6] = bondhistlist[n][ 6] + dntorque[0];
+    bondhistlist[n][ 7] = bondhistlist[n][ 7] + dntorque[1];
+    bondhistlist[n][ 8] = bondhistlist[n][ 8] + dntorque[2];
+    bondhistlist[n][ 9] = bondhistlist[n][ 9] + dttorque[0];
+    bondhistlist[n][10] = bondhistlist[n][10] + dttorque[1];
+    bondhistlist[n][11] = bondhistlist[n][11] + dttorque[2];
 
     //torque due to tangential bond force
     tor1 = - rinv * (dely*bondhistlist[n][5] - delz*bondhistlist[n][4]);
@@ -549,6 +557,8 @@ void BondGran::compute(int eflag, int vflag)
 #ifdef FLEXIBLE_BONDS
         bool nstress = sigman_break[type] < (nforce_mag/A + 2.*ttorque_mag/J*(rout-rin));
         bool tstress = tau_break[type]    < (tforce_mag/A +    ntorque_mag/J*(rout-rin));
+
+        //printf("Sigma = %f, Tau = %f \n",(nforce_mag/A + 2.*ttorque_mag/J*(rout-rin)),(tforce_mag/A +    ntorque_mag/J*(rout-rin)));
 #else
         bool nstress = sigman_break[type] < (nforce_mag/A + 2.*ttorque_mag/J*rbmin);
         bool tstress = tau_break[type]    < (tforce_mag/A +    ntorque_mag/J*rbmin);
@@ -564,13 +574,12 @@ void BondGran::compute(int eflag, int vflag)
         if(nstress || tstress || toohot)
         {
             bondlist[n][3] = 1;
-            /*NL*/ //if (screen) fprintf(screen,"broken bond at step %d\n",update->ntimestep);
+            if (screen) fprintf(screen,"broken bond between atoms %d and %d at time %ld \n",atom->tag[i1],atom->tag[i2],update->ntimestep);
             /*NL*/ //if(toohot && screen)fprintf(screen,"   it was too hot\n");
-            /*NL*/ //if(nstress && screen)fprintf(screen,"   it was nstress\n");
-            /*NL*/ //if(tstress && screen)fprintf(screen,"   it was tstress\n");
+            if(nstress && screen)fprintf(screen,"   it was nstress\n");
+            if(tstress && screen)fprintf(screen,"   it was tstress\n");
         }
     }
-
 
     //NP if (screen) fprintf(screen,"ts %d, particles %d %d - shear %f %f %f - tor %f %f %f\n",update->ntimestep,tag[i1],tag[i2],bondhistlist[n][3],bondhistlist[n][4],bondhistlist[n][5],tor1,tor2,tor3);
 
