@@ -31,7 +31,7 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
     error->all(FLERR,"Compute com/molecule requires molecular atom style");
 
   array_flag = 1;
-  size_array_cols = 3;
+  size_array_cols = 6;
   extarray = 0;
 
   // setup molecule-based data
@@ -42,7 +42,9 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
   memory->create(massproc,nmolecules,"com/molecule:massproc");
   memory->create(masstotal,nmolecules,"com/molecule:masstotal");
   memory->create(com,nmolecules,3,"com/molecule:com");
-  memory->create(comall,nmolecules,3,"com/molecule:comall");
+  memory->create(comall,nmolecules,6,"com/molecule:comall");
+  memory->create(v_com,nmolecules,3,"com/molecule:v_com");
+  memory->create(v_comall,nmolecules,3,"com/molecule:v_comall");
   array = comall;
 
   // compute masstotal for each molecule
@@ -80,6 +82,8 @@ ComputeCOMMolecule::~ComputeCOMMolecule()
   memory->destroy(masstotal);
   memory->destroy(com);
   memory->destroy(comall);
+  memory->destroy(v_com);
+  memory->destroy(v_comall);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -102,9 +106,10 @@ void ComputeCOMMolecule::compute_array()
   invoked_array = update->ntimestep;
 
   for (i = 0; i < nmolecules; i++)
-    com[i][0] = com[i][1] = com[i][2] = 0.0;
+    com[i][0] = com[i][1] = com[i][2] = v_com[i][0] = v_com[i][1] = v_com[i][2] = 0.0;
 
   double **x = atom->x;
+  double **v = atom->v;
   int *mask = atom->mask;
   int *molecule = atom->molecule;
   int *type = atom->type;
@@ -124,15 +129,26 @@ void ComputeCOMMolecule::compute_array()
       com[imol][0] += unwrap[0] * massone;
       com[imol][1] += unwrap[1] * massone;
       com[imol][2] += unwrap[2] * massone;
+      v_com[imol][0] += v[i][0] * massone;
+      v_com[imol][1] += v[i][1] * massone;
+      v_com[imol][2] += v[i][2] * massone;
     }
 
   MPI_Allreduce(&com[0][0],&comall[0][0],3*nmolecules,
                 MPI_DOUBLE,MPI_SUM,world);
+  MPI_Allreduce(&v_com[0][0],&v_comall[0][0],3*nmolecules,
+          MPI_DOUBLE,MPI_SUM,world);
   for (i = 0; i < nmolecules; i++) {
     if (masstotal[i] > 0.0) {
       comall[i][0] /= masstotal[i];
       comall[i][1] /= masstotal[i];
       comall[i][2] /= masstotal[i];
+      v_comall[i][0] /= masstotal[i];
+      v_comall[i][1] /= masstotal[i];
+      v_comall[i][2] /= masstotal[i];
+      comall[i][3] = v_comall[i][0];
+      comall[i][4] = v_comall[i][1];
+      comall[i][5] = v_comall[i][2];
     }
   }
 }

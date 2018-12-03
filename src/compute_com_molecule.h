@@ -38,6 +38,7 @@ class ComputeCOMMolecule : public Compute {
 
   double *massproc,*masstotal;
   double **com,**comall;
+  double **v_com,**v_comall;
 };
 
 }
