@@ -51,6 +51,9 @@ class Atom : protected Pointers {
   double **x,**v,**f;
   int * thread;
 
+  double **x_mol;               // variable to store molecule com as per-atom property - A.N.
+  double **v_mol;               // variable to store velocity of com of molecule as per-atom property - A.N.
+
   int *molecule;
   double *q,**mu;
   double **omega,**angmom,**torque;

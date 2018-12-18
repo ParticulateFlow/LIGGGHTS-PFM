@@ -90,6 +90,10 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   image = NULL;
   x = v = f = NULL;
 
+  // molecular data to per-atom property
+  x_mol = NULL;     // A. N.
+  v_mol = NULL;     // A. N.
+
   molecule = NULL;
   q = NULL;
   mu = NULL;
@@ -217,6 +221,10 @@ Atom::~Atom()
   memory->destroy(v);
   memory->destroy(f);
   memory->destroy(thread);
+
+  // modified A. N.
+  memory->destroy(x_mol);
+  memory->destroy(v_mol);
 
   memory->destroy(q);
   memory->destroy(mu);
@@ -1944,6 +1952,7 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"density") == 0) return (void *) density; //NP modified C.K.
   if (strcmp(name,"rho") == 0) return (void *) rho;  //NP modified A.A.
   if (strcmp(name,"pressure") == 0) return (void *) p;  //NP modified A.A.
+  if (strcmp(name,"molecule") == 0) return (void *) molecule; // modified A.N.
 
   len = 3; //NP modified C.K.
   if (strcmp(name,"x") == 0) return (void *) x;
@@ -1959,6 +1968,8 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"rmass") == 0) return (void *) rmass;
   if (strcmp(name,"vfrac") == 0) return (void *) vfrac;
   if (strcmp(name,"s0") == 0) return (void *) s0;
+  if (strcmp(name,"x_mol") == 0) return (void *) x_mol;     // modified A.N.
+  if (strcmp(name,"v_mol") == 0) return (void *) v_mol;     // modified A.N.
 
   len = -1; //NP modified C.K.
   return NULL;

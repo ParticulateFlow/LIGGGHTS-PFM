@@ -51,7 +51,7 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp) :
   size_border = 7;
   size_velocity = 3;
 #ifdef BOND_GRAN_USE_MOLECULE_ID
-  size_data_atom = 6; // with molecule ID
+  size_data_atom = 8; // with molecule ID, mol com and com vel
 #else
   size_data_atom = 5; // without molecule ID
 #endif
@@ -122,6 +122,9 @@ void AtomVecBondGran::grow(int n)
   v = memory->grow(atom->v,nmax,3,"atom:v");
   f = memory->grow(atom->f,nmax*comm->nthreads,3,"atom:f");
 
+  x_mol = memory->grow(atom->x_mol,nmax,3,"atom:x_mol");    // modified A.N.
+  v_mol = memory->grow(atom->v_mol,nmax,3,"atom:v_mol");    // modified A.N.
+
   molecule = memory->grow(atom->molecule,nmax,"atom:molecule");
 
   nspecial = memory->grow(atom->nspecial,nmax,3,"atom:nspecial");
@@ -164,6 +167,7 @@ void AtomVecBondGran::grow_reset()
   num_bond = atom->num_bond; bond_type = atom->bond_type;
   bond_atom = atom->bond_atom;
   bond_hist = atom->bond_hist;
+  x_mol = atom->x_mol; v_mol = atom->v_mol;     // modified A.N.
 }
 
 /* ---------------------------------------------------------------------- */
@@ -182,6 +186,14 @@ void AtomVecBondGran::copy(int i, int j, int delflag)
   v[j][0] = v[i][0];
   v[j][1] = v[i][1];
   v[j][2] = v[i][2];
+
+  // Modified A.N.
+  x_mol[j][0] = x_mol[i][0];
+  x_mol[j][1] = x_mol[i][1];
+  x_mol[j][2] = x_mol[i][2];
+  v_mol[j][0] = v_mol[i][0];
+  v_mol[j][1] = v_mol[i][1];
+  v_mol[j][2] = v_mol[i][2];
 
   molecule[j] = molecule[i];
 
@@ -223,6 +235,12 @@ int AtomVecBondGran::pack_comm(int n, int *list, double *buf,
       buf[m++] = x[j][0];
       buf[m++] = x[j][1];
       buf[m++] = x[j][2];
+      buf[m++] = x_mol[j][0];
+      buf[m++] = x_mol[j][1];
+      buf[m++] = x_mol[j][2];
+      buf[m++]=v_mol[j][0];
+      buf[m++]=v_mol[j][1];
+      buf[m++]=v_mol[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -239,6 +257,12 @@ int AtomVecBondGran::pack_comm(int n, int *list, double *buf,
       buf[m++] = x[j][0] + dx;
       buf[m++] = x[j][1] + dy;
       buf[m++] = x[j][2] + dz;
+      buf[m++] = x_mol[j][0];
+      buf[m++] = x_mol[j][1];
+      buf[m++] = x_mol[j][2];
+      buf[m++]=v_mol[j][0];
+      buf[m++]=v_mol[j][1];
+      buf[m++]=v_mol[j][2];
     }
   }
   return m;
@@ -262,6 +286,12 @@ int AtomVecBondGran::pack_comm_vel(int n, int *list, double *buf,
       buf[m++] = v[j][0];
       buf[m++] = v[j][1];
       buf[m++] = v[j][2];
+      buf[m++] = x_mol[j][0];
+      buf[m++] = x_mol[j][1];
+      buf[m++] = x_mol[j][2];
+      buf[m++] = v_mol[j][0];
+      buf[m++] = v_mol[j][1];
+      buf[m++] = v_mol[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -282,6 +312,12 @@ int AtomVecBondGran::pack_comm_vel(int n, int *list, double *buf,
         buf[m++] = v[j][0];
         buf[m++] = v[j][1];
         buf[m++] = v[j][2];
+        buf[m++] = x_mol[j][0];
+        buf[m++] = x_mol[j][1];
+        buf[m++] = x_mol[j][2];
+        buf[m++] = v_mol[j][0];
+        buf[m++] = v_mol[j][1];
+        buf[m++] = v_mol[j][2];
       }
     } else {
       dvx = pbc[0]*h_rate[0] + pbc[5]*h_rate[5] + pbc[4]*h_rate[4];
@@ -292,14 +328,23 @@ int AtomVecBondGran::pack_comm_vel(int n, int *list, double *buf,
         buf[m++] = x[j][0] + dx;
         buf[m++] = x[j][1] + dy;
         buf[m++] = x[j][2] + dz;
+        buf[m++] = x_mol[j][0];
+        buf[m++] = x_mol[j][1];
+        buf[m++] = x_mol[j][2];
         if (mask[i] & deform_groupbit) {
           buf[m++] = v[j][0] + dvx;
           buf[m++] = v[j][1] + dvy;
           buf[m++] = v[j][2] + dvz;
+          buf[m++] = v_mol[j][0];
+          buf[m++] = v_mol[j][1];
+          buf[m++] = v_mol[j][2];
         } else {
           buf[m++] = v[j][0];
           buf[m++] = v[j][1];
           buf[m++] = v[j][2];
+          buf[m++] = v_mol[j][0];
+          buf[m++] = v_mol[j][1];
+          buf[m++] = v_mol[j][2];
         }
       }
     }
@@ -319,6 +364,12 @@ void AtomVecBondGran::unpack_comm(int n, int first, double *buf)
     x[i][0] = buf[m++];
     x[i][1] = buf[m++];
     x[i][2] = buf[m++];
+    x_mol[i][0] = buf[m++];
+    x_mol[i][1] = buf[m++];
+    x_mol[i][2] = buf[m++];
+    v_mol[i][0] = buf[m++];
+    v_mol[i][1] = buf[m++];
+    v_mol[i][2] = buf[m++];
   }
 }
 
@@ -337,6 +388,12 @@ void AtomVecBondGran::unpack_comm_vel(int n, int first, double *buf)
     v[i][0] = buf[m++];
     v[i][1] = buf[m++];
     v[i][2] = buf[m++];
+    x_mol[i][0] = buf[m++];
+    x_mol[i][1] = buf[m++];
+    x_mol[i][2] = buf[m++];
+    v_mol[i][0] = buf[m++];
+    v_mol[i][1] = buf[m++];
+    v_mol[i][2] = buf[m++];
   }
 }
 
@@ -390,6 +447,12 @@ int AtomVecBondGran::pack_border(int n, int *list, double *buf,
       buf[m++] = type[j];
       buf[m++] = mask[j];
       buf[m++] = molecule[j];
+      buf[m++] = x_mol[j][0];
+      buf[m++] = x_mol[j][1];
+      buf[m++] = x_mol[j][2];
+      buf[m++] = v_mol[j][0];
+      buf[m++] = v_mol[j][1];
+      buf[m++] = v_mol[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -410,6 +473,12 @@ int AtomVecBondGran::pack_border(int n, int *list, double *buf,
       buf[m++] = type[j];
       buf[m++] = mask[j];
       buf[m++] = molecule[j];
+      buf[m++] = x_mol[j][0];
+      buf[m++] = x_mol[j][1];
+      buf[m++] = x_mol[j][2];
+      buf[m++] = v_mol[j][0];
+      buf[m++] = v_mol[j][1];
+      buf[m++] = v_mol[j][2];
     }
   }
 
@@ -442,6 +511,12 @@ int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
       buf[m++] = v[j][0];
       buf[m++] = v[j][1];
       buf[m++] = v[j][2];
+      buf[m++] = x_mol[j][0];
+      buf[m++] = x_mol[j][1];
+      buf[m++] = x_mol[j][2];
+      buf[m++] = v_mol[j][0];
+      buf[m++] = v_mol[j][1];
+      buf[m++] = v_mol[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -466,6 +541,12 @@ int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
         buf[m++] = v[j][0];
         buf[m++] = v[j][1];
         buf[m++] = v[j][2];
+        buf[m++] = x_mol[j][0];
+        buf[m++] = x_mol[j][1];
+        buf[m++] = x_mol[j][2];
+        buf[m++] = v_mol[j][0];
+        buf[m++] = v_mol[j][1];
+        buf[m++] = v_mol[j][2];
       }
     } else {
       dvx = pbc[0]*h_rate[0] + pbc[5]*h_rate[5] + pbc[4]*h_rate[4];
@@ -480,14 +561,23 @@ int AtomVecBondGran::pack_border_vel(int n, int *list, double *buf,
         buf[m++] = type[j];
         buf[m++] = mask[j];
         buf[m++] = molecule[j];
+        buf[m++] = x_mol[j][0];
+        buf[m++] = x_mol[j][1];
+        buf[m++] = x_mol[j][2];
         if (mask[i] & deform_groupbit) {
           buf[m++] = v[j][0] + dvx;
           buf[m++] = v[j][1] + dvy;
           buf[m++] = v[j][2] + dvz;
+          buf[m++] = v_mol[j][0];
+          buf[m++] = v_mol[j][1];
+          buf[m++] = v_mol[j][2];
         } else {
           buf[m++] = v[j][0];
           buf[m++] = v[j][1];
           buf[m++] = v[j][2];
+          buf[m++] = v_mol[j][0];
+          buf[m++] = v_mol[j][1];
+          buf[m++] = v_mol[j][2];
         }
       }
     }
@@ -539,6 +629,12 @@ void AtomVecBondGran::unpack_border(int n, int first, double *buf)
     type[i] = static_cast<int> (buf[m++]);
     mask[i] = static_cast<int> (buf[m++]);
     molecule[i] = static_cast<int> (buf[m++]);
+    x_mol[i][0] = buf[m++];
+    x_mol[i][1] = buf[m++];
+    x_mol[i][2] = buf[m++];
+    v_mol[i][0] = buf[m++];
+    v_mol[i][1] = buf[m++];
+    v_mol[i][2] = buf[m++];
   }
 
   if (atom->nextra_border)
@@ -567,6 +663,12 @@ void AtomVecBondGran::unpack_border_vel(int n, int first, double *buf)
     v[i][0] = buf[m++];
     v[i][1] = buf[m++];
     v[i][2] = buf[m++];
+    x_mol[i][0] = buf[m++];
+    x_mol[i][1] = buf[m++];
+    x_mol[i][2] = buf[m++];
+    v_mol[i][0] = buf[m++];
+    v_mol[i][1] = buf[m++];
+    v_mol[i][2] = buf[m++];
   }
 
   if (atom->nextra_border)
@@ -620,6 +722,13 @@ int AtomVecBondGran::pack_exchange(int i, double *buf)
 
   buf[m++] = molecule[i];
 
+  buf[m++] = x_mol[i][0];
+  buf[m++] = x_mol[i][1];
+  buf[m++] = x_mol[i][2];
+  buf[m++] = v_mol[i][0];
+  buf[m++] = v_mol[i][1];
+  buf[m++] = v_mol[i][2];
+
   buf[m++] = num_bond[i];
   for (k = 0; k < num_bond[i]; k++) {
     buf[m++] = bond_type[i][k];
@@ -668,6 +777,13 @@ int AtomVecBondGran::unpack_exchange(double *buf)
   image[nlocal] = *((tagint *) &buf[m++]);
 
   molecule[nlocal] = static_cast<int> (buf[m++]);
+
+  x_mol[nlocal][0] = buf[m++];
+  x_mol[nlocal][1] = buf[m++];
+  x_mol[nlocal][2] = buf[m++];
+  v_mol[nlocal][0] = buf[m++];
+  v_mol[nlocal][1] = buf[m++];
+  v_mol[nlocal][2] = buf[m++];
 
   num_bond[nlocal] = static_cast<int> (buf[m++]);
   for (k = 0; k < num_bond[nlocal]; k++) {
@@ -852,6 +968,13 @@ void AtomVecBondGran::create_atom(int itype, double *coord)
   num_bond[nlocal] = 0;
   nspecial[nlocal][0] = nspecial[nlocal][1] = nspecial[nlocal][2] = 0;
 
+  x_mol[nlocal][0] = 0;
+  x_mol[nlocal][1] = 0;
+  x_mol[nlocal][2] = 0;
+  v_mol[nlocal][0] = 0;
+  v_mol[nlocal][1] = 0;
+  v_mol[nlocal][2] = 0;
+
   atom->nlocal++;
 }
 
@@ -953,7 +1076,7 @@ void AtomVecBondGran::write_data(FILE *fp, int n, double **buf)
 {
   error->all(FLERR,"needs revision");
   for (int i = 0; i < n; i++)
-    fprintf(fp,"%d %d %d %-1.16e %-1.16e %-1.16e %d %d %d\n",
+    fprintf(fp,"%d %d %d %-1.16e %-1.16e %-1.16e %d %d %d \n",
             (int) buf[i][0],(int) buf[i][1],(int) buf[i][2],
             buf[i][3],buf[i][4],buf[i][5],
             (int) buf[i][6],(int) buf[i][7],(int) buf[i][8]);
@@ -1011,6 +1134,8 @@ bigint AtomVecBondGran::memory_usage()
   if (atom->memcheck("bond_atom")) bytes += memory->usage(bond_atom,nmax,atom->bond_per_atom);
 // P.F. not too sure about atom->n_bondhist
   if(atom->n_bondhist) bytes += nmax*sizeof(int);
+  if(atom->memcheck("x_mol")) bytes += memory->usage(x_mol,nmax,3);
+  if(atom->memcheck("v_mol")) bytes += memory->usage(v_mol,nmax,3);
 
 return bytes;
 }

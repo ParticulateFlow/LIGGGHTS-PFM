@@ -31,7 +31,7 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
     error->all(FLERR,"Compute com/molecule requires molecular atom style");
 
   array_flag = 1;
-  size_array_cols = 6;
+  size_array_cols = 7;
   extarray = 0;
 
   // setup molecule-based data
@@ -41,8 +41,8 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
 
   memory->create(massproc,nmolecules,"com/molecule:massproc");
   memory->create(masstotal,nmolecules,"com/molecule:masstotal");
-  memory->create(com,nmolecules,6,"com/molecule:com");
-  memory->create(comall,nmolecules,6,"com/molecule:comall");
+  memory->create(com,nmolecules,7,"com/molecule:com");
+  memory->create(comall,nmolecules,7,"com/molecule:comall");
   array = comall;
 
   // compute masstotal for each molecule
@@ -114,6 +114,8 @@ void ComputeCOMMolecule::compute_array()
   double *mass = atom->mass;
   double *rmass = atom->rmass;
   int nlocal = atom->nlocal;
+  double **x_mol = atom->x_mol;     // Modified by A.N.
+  double **v_mol = atom->v_mol;     // Modified by A.N.
 
   for (int i = 0; i < nlocal; i++)
     if (mask[i] & groupbit) {
@@ -129,9 +131,10 @@ void ComputeCOMMolecule::compute_array()
       com[imol][3] += v[i][0] * massone;
       com[imol][4] += v[i][1] * massone;
       com[imol][5] += v[i][2] * massone;
+      com[imol][6] = molecule[i];
     }
 
-  MPI_Allreduce(&com[0][0],&comall[0][0],6*nmolecules,
+  MPI_Allreduce(&com[0][0],&comall[0][0],7*nmolecules,
                 MPI_DOUBLE,MPI_SUM,world);
 
   for (i = 0; i < nmolecules; i++) {
@@ -144,6 +147,21 @@ void ComputeCOMMolecule::compute_array()
       comall[i][5] /= masstotal[i];
     }
   }
+
+  // Modified by A.N. - adding compute values as per-atom properties
+  for (int i = 0; i < nlocal; i++)
+    if (mask[i] & groupbit) {
+        for (int j = 0; j < nmolecules; j++) {
+            if(molecule[i] == comall[j][6]) {
+                x_mol[i][0] = comall[j][0];
+                x_mol[i][1] = comall[j][1];
+                x_mol[i][2] = comall[j][2];
+                v_mol[i][0] = comall[j][3];
+                v_mol[i][1] = comall[j][4];
+                v_mol[i][2] = comall[j][5];
+            }
+        }
+    }
 }
 
 /* ----------------------------------------------------------------------

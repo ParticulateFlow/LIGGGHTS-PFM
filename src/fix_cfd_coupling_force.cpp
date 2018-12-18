@@ -99,7 +99,7 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
             hasargs = true;
         } else if(strcmp(arg[iarg],"transfer_property") == 0) {
             if(narg < iarg+5)
-                error->fix_error(FLERR,this,"not enough arguments for 'transfer_type'");
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_property'");
             iarg++;
             use_property_ = true;
             if(strcmp(arg[iarg++],"name"))
@@ -224,6 +224,9 @@ void FixCfdCouplingForce::init()
     fix_coupling_->add_push_property("x","vector-atom");
     fix_coupling_->add_push_property("v","vector-atom");
     fix_coupling_->add_push_property("radius","scalar-atom");
+    fix_coupling_->add_push_property("molecule","scalar-atom");
+    fix_coupling_->add_push_property("x_mol","vector-atom");
+    fix_coupling_->add_push_property("v_mol","vector-atom");
     if(use_type_) fix_coupling_->add_push_property("type","scalar-atom");
     if(use_dens_) fix_coupling_->add_push_property("density","scalar-atom");
     if(use_torque_) fix_coupling_->add_push_property("omega","vector-atom");

@@ -75,6 +75,7 @@ class AtomVecBondGran : public AtomVec {
  private:
   int *tag,*type,*mask,*image;
   double **x,**v,**f;
+  double **x_mol,**v_mol;   // modified A.N.
   int *molecule;
   int **nspecial,**special;
   int *num_bond;
