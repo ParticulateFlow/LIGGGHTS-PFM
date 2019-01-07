@@ -35,6 +35,7 @@
 #include "fix_multisphere.h"
 #include "fix_property_global.h"
 #include "fix_property_atom.h"
+#include "fix_cfd_coupling.h"
 #include "style_cfd_datacoupling.h"
 #include "cfd_regionmodel.h"
 #include "style_cfd_regionmodel.h"
