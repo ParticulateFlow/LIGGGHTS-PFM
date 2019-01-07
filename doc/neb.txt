@@ -84,7 +84,7 @@ inter-replica springs and the forces they feel and their motion is
 computed in the usual way due only to other atoms within their
 replica.  Conceptually, the non-NEB atoms provide a background force
 field for the NEB atoms.  They can be allowed to move during the NEB
-minimiation procedure (which will typically induce different
+minimization procedure (which will typically induce different
 coordinates for non-NEB atoms in different replicas), or held fixed
 using other LAMMPS commands such as "fix setforce"_fix_setforce.  Note
 that the "partition"_partition.html command can be used to invoke a
@@ -100,7 +100,7 @@ Conceptually, the initial configuration for the first replica should
 be a state with all the atoms (NEB and non-NEB) having coordinates on
 one side of the energy barrier.  A perfect energy minimum is not
 required, since atoms in the first replica experience no spring forces
-from the 2nd replica.  Thus the damped dynamics minimizaiton will
+from the 2nd replica.  Thus the damped dynamics minimization will
 drive the first replica to an energy minimum if it is not already
 there.  However, you will typically get better convergence if the
 initial state is already at a minimum.  For example, for a system with
@@ -235,7 +235,7 @@ In the second stage of NEB, the replica with the highest energy
 is selected and the inter-replica forces on it are converted to a
 force that drives its atom coordinates to the top or saddle point of
 the barrier, via the barrier-climbing calculation described in
-"(Henkelman2)"_#Hinkelman2.  As before, the other replicas rearrange
+"(Henkelman2)"_#Henkelman2.  As before, the other replicas rearrange
 themselves along the MEP so as to be roughly equally spaced.
 
 When both stages are complete, if the NEB calculation was successful,
@@ -319,7 +319,7 @@ this case), the print-out to the screen and master log.lammps file
 contains a line of output, printed once every {Nevery} timesteps.  It
 contains the timestep, the maximum force per replica, the maximum
 force per atom (in any replica), potential gradients in the initial,
- final, and climbing replicas,  
+final, and climbing replicas,  
 the forward and backward energy barriers, 
 the total reaction coordinate (RDT), and
 the normalized reaction coordinate and potential energy of each replica.
@@ -376,7 +376,7 @@ parameters.
 There are 2 Python scripts provided in the tools/python directory,
 neb_combine.py and neb_final.py, which are useful in analyzing output
 from a NEB calculation.  Assume a NEB simulation with M replicas, and
-the NEB atoms labelled with a specific atom type.
+the NEB atoms labeled with a specific atom type.
 
 The neb_combine.py script extracts atom coords for the NEB atoms from
 all M dump files and creates a single dump file where each snapshot
@@ -406,12 +406,16 @@ This command can only be used if LAMMPS was built with the REPLICA
 package.  See the "Making LAMMPS"_Section_start.html#start_3 section
 for more info on packages.
 
+:line
+
 [Related commands:]
 
-"prd"_prd.html, "temper"_temper.html, "fix
-langevin"_fix_langevin.html, "fix viscous"_fix_viscous.html
+"prd"_prd.html, "temper"_temper.html, "fix langevin"_fix_langevin.html,
+"fix viscous"_fix_viscous.html
 
-[Default:] none
+[Default:]
+
+none
 
 :line
 

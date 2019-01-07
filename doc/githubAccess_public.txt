@@ -6,40 +6,35 @@
 :link(gitHelp,http://help.github.com/linux-set-up-git)
 
 :line
-githubAccess_public :h3
-:line
+Github access :h3
 
-[Description:]
+Description :h4
 
-This routine describes how to setup a github account and pull repositories of the CFDEMproject.
+This routine describes how to setup a github account and pull from repositories
+of the Department of Particulate Flow Modelling.
 
-[Procedure:]
+Procedure :h5
 
 Basically the following steps have to be performed:
-{git clone} the desired repository :ulb,l
+
+create an account at "Github"_http://github.com :ulb,l
+{git clone} the desired repository :l
 update your repositories by {git pull} :l
 :ule
 
-[{git clone} the desired repository:]
+{git clone} the desired repository :h5
 
 To clone the public LIGGGHTS repository, open a terminal and execute:
 
-git clone git@github.com:CFDEMproject/LIGGGHTS-PUBLIC.git :pre
-
-Note: the git protocol will not work if your computer is behind a firewall which blocks the relevant TCP port, you can use alternatively:
-
-git clone https://github.com/CFDEMproject/LIGGGHTS-PUBLIC.git :pre
+git clone https://github.com/ParticulateFlow/LIGGGHTS.git :pre
 
 To clone the public CFDEMcoupling repository, open a terminal and execute:
 
-git clone git@github.com:CFDEMproject/CFDEMcoupling-PUBLIC.git :pre
+git clone https://github.com/ParticulateFlow/CFDEMcoupling.git :pre
 
-Note: the git protocol will not work if your computer is behind a firewall which blocks the relevant TCP port, you can use alternatively:
-
-git clone https://github.com/CFDEMproject/CFDEMcoupling-PUBLIC.git :pre
-
-[Update your repositories by {git pull}:]
+Update your repositories by {git pull} :h5
 
 To get the latest version, open a terminal, go to the location of your local installation and type:
 
 git pull :pre
+

@@ -80,11 +80,11 @@ IMPORTANT NOTE: For all of the styles, you must insure that r is always > 0 for
 all particles in the group, or LIGGGHTS will generate an error. This means you
 cannot start your simulation with particles on the region surface (r = 0) or
 with particles on the wrong side of the region surface (r < 0). The force on the
-partice blows up as r -> 0. This means the initial particle distance from the
+particle blows up as r -> 0. This means the initial particle distance from the
 region surface must be larger than r0.
 
 An additional force is acting on particles within the cutoff distance of the
-interpolating kernel. They can "see" a clone of theirself at the wall. This
+interpolating kernel. They can "see" a clone of themselves at the wall. This
 leads to a small disturbance which prevents particle stacking. 
 
 :line
@@ -96,7 +96,7 @@ No information about this fix is written to "binary restart files"_restart.html.
 None of the "fix_modify"_fix_modify.html options are relevant to this fix.
 
 No global scalar or vector or per_atom quantities are stored by this fix for
-access by various "output commands"_Section_howto.html#4_15.
+access by various "output commands"_Section_howto.html#howto_15.
 
 No parameter of this fix can be used with the {start/stop} keywords of the "run"_run.html command.
 
@@ -108,7 +108,7 @@ This fix is not invoked during "energy minimization"_minimize.html.
 
 [Related commands:]
 
-"fix wall/sph/basic"_fix_wall_sph_basic.html
+fix wall/sph, fix wall/sph/general/simple
 
 [Default:] none
 

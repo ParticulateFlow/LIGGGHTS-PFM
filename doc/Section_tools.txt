@@ -8,7 +8,7 @@ Section"_Section_modify.html :c
 
 :line
 
-9. Additional tools :h3
+10. Additional tools :h3
 
 LAMMPS is designed to be a computational kernel for performing
 molecular dynamics computations.  Additional pre- and post-processing
@@ -275,7 +275,7 @@ Kohlmeyer (akohlmey at cmm.chem.upenn.edu) at U Penn.
 
 matlab tool :h4,link(matlab)
 
-The matlab sub-directory contains several "MATLAB"_matlab scripts for
+The matlab sub-directory contains several "MATLAB"_mathworks scripts for
 post-processing LAMMPS output.  The scripts include readers for log
 and dump files, a reader for EAM potential files, and a converter that
 reads LAMMPS dump files and produces CFG files that can be visualized
@@ -287,7 +287,7 @@ See the README.pdf file for more information.
 These scripts were written by Arun Subramaniyan at Purdue Univ
 (asubrama at purdue.edu).
 
-:link(matlab,http://www.mathworks.com)
+:link(mathworks,http://www.mathworks.com)
 
 :line
 
@@ -372,9 +372,9 @@ pymol_asphere tool :h4,link(pymol)
 The pymol_asphere sub-directory contains a tool for converting a
 LAMMPS dump file that contains orientation info for ellipsoidal
 particles into an input file for the "PyMol visualization
-package"_pymol.
+package"_pymolsf.
 
-:link(pymol,http://pymol.sourceforge.net)
+:link(pymolsf,http://pymol.sourceforge.net)
 
 Specifically, the tool triangulates the ellipsoids so they can be
 viewed as true ellipsoidal particles within PyMol.  See the README and
@@ -414,7 +414,7 @@ These tools were written by Aidan Thompson at Sandia.
 restart2data tool :h4,link(restart)
 
 IMPORTANT NOTE: This tool is now obsolete and is not included in the
-current LAMMPS distribution.  This is becaues there is now a
+current LAMMPS distribution.  This is because there is now a
 "write_data"_write_data.html command, which can create a data file
 from within an input script.  Running LAMMPS with the "-r"
 "command-line switch"_Section_start.html#start_7 as follows:

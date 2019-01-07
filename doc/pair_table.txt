@@ -54,7 +54,7 @@ used to find the appropriate set of coefficients which are used to
 evaluate a cubic polynomial which computes the energy or force.
 
 For the {bitmap} style, the N means to create interpolation tables
-that are 2^N in length.  <The pair distance is used to index into the
+that are 2^N in length.  The pair distance is used to index into the
 table via a fast bit-mapping technique "(Wolff)"_#Wolff and a linear
 interpolation is performed between adjacent table values.
 

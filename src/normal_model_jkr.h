@@ -147,7 +147,7 @@ namespace ContactModels
       const double Fn_damping = -gamman*cdata.vn;
       const double Fn_contact_hertz = kn*(cdata.radsum-cdata.r);
       const double cRad3 = cRad*cRad*cRad;
-      const double Fn_contact = 4/3*Yeff[itype][jtype]*cRad3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*cRad3);
+      const double Fn_contact = 4./3.*Yeff[itype][jtype]*cRad3/reff - sqrt(16.*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*cRad3);
       const double Fn = Fn_contact + Fn_damping;
       const double Fn_hertz = Fn_contact_hertz + Fn_damping;
 
@@ -200,7 +200,7 @@ namespace ContactModels
 
         //NP current state: no damping!
         const double cRad3 = cRad*cRad*cRad;
-        const double Fn = 4/3*Yeff[itype][jtype]*cRad3/reff - sqrt(16*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*cRad3);
+        const double Fn = 4./3.*Yeff[itype][jtype]*cRad3/reff - sqrt(16.*M_PI*cohEnergyDens[itype][jtype]*Yeff[itype][jtype]*cRad3);
 
         double **x = atom->x;
         const double rinv = 1.0 / r;

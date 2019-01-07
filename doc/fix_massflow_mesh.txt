@@ -100,8 +100,8 @@ accessed via "f_ID", where ID is the fix id. The first vector component
 is equal to the total mass which has crossed the mesh surface, the second vector 
 component indicates the particle count. The third vector component 
 is equal to the total mass which has crossed the mesh surface since the last output 
-divived by the time since the last output (i.e., the mass flow rate), the fourth vector 
-component indicates the particle count since the last output divived by the time
+divided by the time since the last output (i.e., the mass flow rate), the fourth vector 
+component indicates the particle count since the last output divided by the time
 since the last output (i.e., the number rate of particles). The fifth and sixth vector
 components are the deleted mass and the number of deleted particles. This vector
 can also be accessed by various "output commands"_Section_howto.html#howto_15.

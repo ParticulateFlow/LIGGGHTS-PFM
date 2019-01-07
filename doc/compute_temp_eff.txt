@@ -26,7 +26,7 @@ Define a computation that calculates the temperature of a group of
 nuclei and electrons in the "electron force field"_pair_eff.html
 model.  A compute of this style can be used by commands that compute a
 temperature, e.g. "thermo_modify"_thermo_modify.html, "fix
-npt/eff"_fix_npt_eff.html, etc.
+npt/eff"_fix_nh_eff.html, etc.
 
 The temperature is calculated by the formula KE = dim/2 N k T, where
 KE = total kinetic energy of the group of atoms (sum of 1/2 m v^2 for
@@ -42,9 +42,9 @@ valid for temperatures well below the Fermi temperature, which for
 densities two to five times the density of liquid H2 ranges from
 86,000 to 170,000 K.
 
-IMPORTANT NOTE: For eFF models, in order to override the default
-temperature reported by LAMMPS in the thermodynamic quantities
-reported via the "thermo"_thermo.html command, the user should apply a
+NOTE: For eFF models, in order to override the default temperature
+reported by LAMMPS in the thermodynamic quantities reported via the
+"thermo"_thermo.html command, the user should apply a
 "thermo_modify"_thermo_modify.html command, as shown in the following
 example:
 

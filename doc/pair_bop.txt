@@ -33,7 +33,7 @@ The {bop} pair style computes Bond-Order Potentials (BOP) based on
 quantum mechanical theory incorporating both sigma and pi bondings.
 By analytically deriving the BOP from quantum mechanical theory its
 transferability to different phases can approach that of quantum
-mechanical methods.  This particlular BOP is extremely effective at
+mechanical methods.  This particular BOP is extremely effective at
 modeling III-V and II-VI compounds such as GaAs and CdTe.  This
 potential is similar to the original BOP developed by Pettifor
 ("Pettifor_1"_#Pettifor_1, "Pettifor_2"_#Pettifor_2,
@@ -46,7 +46,7 @@ The BOP potential consists of three terms:
 
 where phi_ij(r_ij) is a short-range two-body function representing the
 repulsion between a pair of ion cores, beta_(sigma,ij)(r_ij) and
-beta_(sigma,ij)(r_ij) are respectively sigma and pi bond ingtegrals,
+beta_(sigma,ij)(r_ij) are respectively sigma and pi bond integrals,
 THETA_(sigma,ij) and THETA_(pi,ij) are sigma and pi bond-orders, and
 U_prom is the promotion energy for sp-valent systems.
 
@@ -116,7 +116,7 @@ difference on your machine for the specific problem you are modeling.
 
 The {sigmaoff} keyword optimizes the BOP equations for the case of
 a_sigma = 0.  For some published BOP potentials, a_sigma = 0 and
-several terms in the BOP equationas drop out.  If this is the case,
+several terms in the BOP equations drop out.  If this is the case,
 specifying {sigmaoff} will typically speed up the BOP pair style.
 
 :line
@@ -176,7 +176,7 @@ Line 1: global: (header) :ulb,l
 Line 2: delta_1-delta_7 (if all are not used in the particular 
 formulation, set unused values to 0.0) :l
 Line 3: ncutoff, r_big, r_small (r_big and r_small are parameters for 
-pairwise paramters gamma typically set to 0.99 and 0.01, respectively) :l
+pairwise parameters gamma typically set to 0.99 and 0.01, respectively) :l
 Line 4: which, alpha, nfunc (these are options for the spline 
 which=1.0 (means using a smooth function); which=2.0 (spline), alpha is 
 a parameter in the spline, nfunc is the type of GSP function (f_ij) 
@@ -387,15 +387,15 @@ non-tabulated potential file, a_0 is non-zero.
 
 :line
 
-:link(Pettofor_1)
+:link(Pettifor_1)
 [(Pettifor_1)] D.G. Pettifor and I.I. Oleinik, Phys. Rev. B, 59, 8487 
 (1999).
 
-:link(Pettofor_2)
+:link(Pettifor_2)
 [(Pettifor_2)] D.G. Pettifor and I.I. Oleinik, Phys. Rev. Lett., 84, 
 4124 (2000).
 
-:link(Pettofor_3)
+:link(Pettifor_3)
 [(Pettifor_3)] D.G. Pettifor and I.I. Oleinik, Phys. Rev. B, 65, 172103 
 (2002).
 

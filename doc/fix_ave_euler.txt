@@ -47,7 +47,7 @@ averaged. To calculate the stress, this command internally uses a
 "compute stress/atom"_compute_stress_atom.html . It includes the convective
 term correctly for granular particles with non-zero average velocity
 (which is not included  in "compute stress/atom"_compute_stress_atom.html).
-However, it does not include bond, angle, diahedral or kspace contributions
+However, it does not include bond, angle, dihedral or kspace contributions
 so that the stress tensor finally reads
 
 :c,image(Eqs/stress_tensor_granular.png)
@@ -97,7 +97,7 @@ minimization"_minimize.html.
 
 Volume fractions and stresses are calculated based on the assumption
 of a structured (equidistant regular) grid, so volume fractions and
-stresses near walls that are not alligned with the grid will be
+stresses near walls that are not aligned with the grid will be
 incorrect.
 
 [Related commands:]

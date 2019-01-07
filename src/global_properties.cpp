@@ -39,6 +39,7 @@ namespace MODEL_PARAMS
 {
   static const char * COHESION_ENERGY_DENSITY = "cohesionEnergyDensity";
   static const char * CHARACTERISTIC_VELOCITY = "characteristicVelocity";
+  static const char * STIFFFNESS_RATIO = "stiffnessRatio";
   static const char * YOUNGS_MODULUS = "youngsModulus";
   static const char * POISSONS_RATIO = "poissonsRatio";
   static const char * COEFFICIENT_RESTITUTION = "coefficientRestitution";
@@ -70,6 +71,14 @@ namespace MODEL_PARAMS
     return scalar;
   }
 
+  ScalarProperty* createScalarPropertyOrDefault(PropertyRegistry & registry, const char* name, const char * caller, double defaultValue)
+  {
+    ScalarProperty * scalar = new ScalarProperty();
+    FixPropertyGlobal * property = registry.getGlobalProperty(name,"property/global","scalar",0,0,caller,false);
+    scalar->data = property ? property->compute_scalar() : defaultValue;
+    return scalar;
+  }
+
   MatrixProperty* createPerTypePairProperty(PropertyRegistry & registry, const char * name, const char * caller)
   {
     const int max_type = registry.max_type();
@@ -96,15 +105,33 @@ namespace MODEL_PARAMS
   {
     LAMMPS * lmp = registry.getLAMMPS();
     ScalarProperty* charVelScalar = createScalarProperty(registry, CHARACTERISTIC_VELOCITY, caller);
-    double charVel = charVelScalar->data;
 
     if(sanity_checks)
     {
+      const double charVel = charVelScalar->data;
       if(strcmp(lmp->update->unit_style,"si") == 0  && charVel < 1e-2)
         lmp->error->all(FLERR,"characteristicVelocity >= 1e-2 required for SI units");
     }
 
     return charVelScalar;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  ScalarProperty* createStiffnessRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks)
+  {
+    LAMMPS * lmp = registry.getLAMMPS();
+    ScalarProperty* kappaScalar = createScalarPropertyOrDefault(registry, STIFFFNESS_RATIO, caller, 2./7.);
+
+    if(sanity_checks)
+    {
+      const double kappa = kappaScalar->data;
+      // Note: actually kappa should be >= 2/3, but some published works use lower values
+      if(kappa > 1.0 || kappa < 0.28)
+        lmp->error->all(FLERR,"2/7 <= stiffnessRatio <= 1 required");
+    }
+
+    return kappaScalar;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -193,7 +220,7 @@ namespace MODEL_PARAMS
         const double Yj=Y[j];
         const double vi=v[i];
         const double vj=v[j];
-        matrix->data[i][j] = 1./((1.-pow(vi,2.))/Yi+(1.-pow(vj,2.))/Yj);
+        matrix->data[i][j] = 1./((1.-vi*vi)/Yi+(1.-vj*vj)/Yj);
       }
     }
 
@@ -300,7 +327,7 @@ namespace MODEL_PARAMS
     {
       for(int j=1;j<max_type+1;j++)
       {
-        matrix->data[i][j] = coeffRestLog[i][j] / sqrt(pow(coeffRestLog[i][j],2.)+pow(M_PI,2.));
+        matrix->data[i][j] = coeffRestLog[i][j] / sqrt(coeffRestLog[i][j]*coeffRestLog[i][j] + M_PI*M_PI);
       }
     }
 

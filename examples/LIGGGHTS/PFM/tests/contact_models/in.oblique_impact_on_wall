@@ -1,0 +1,177 @@
+################################################################################
+# brief: Oblique impact of a sphere with a target wall                         #
+#                                                                              #
+# Mimics the analysis of Thornton et al., Powder Technol. 210, 189-197 (2011)  #
+# (elastic) and Thornton et al., Powder Technol. 233, 30-46 (2013) (inelastic) #
+# The sphere has an inital velocity of 5 m/s, no initial angular velocity and  #
+# an impact angle Theta [1°-45°]                                               #
+# The simulation outputs the normalized rebound surface velocity, normalized   #
+# rebound angular velocity and tangential coefficient of restitution as a      #
+# function of the normalized impact angle.                                     #
+# In case of elastic impact and an impact angle of 5°, the tangential force is #
+# saved together with the tangential displacement (run processData.m)          #
+# Note that in contrast to Thornton et al. we are equating maximum overlap     #
+# instead of collision time to get the normal stiffness for the hooke model.   #
+# The script expects:                                                          #
+# the normal model in the input variable NORMALMODEL,                          #
+# the tangential model in                TANGENTIALMODEL,                      #
+# an optional model option in            MODELOPTION,                          #
+# with model option setting in           MODELOPTIONSETTING,                   #
+# the coefficient of restitution in      RESTITUTION                           #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: May 2018                                                               #
+# copyright: 2018- JKU Linz                                                    #
+################################################################################
+
+# remove old output file
+shell rm -f post/${NORMALMODEL}_rebound_properties.txt
+
+label startloop
+variable anglevariations uloop 10
+variable Theta universe 1 5 10 15 20 25 30 35 40 45 # impact angles
+
+# define the attributes associated with the particles,
+# 'granular' (or 'sphere') style uses diameter, mass and angular velocity
+atom_style      granular
+
+# use an array to map particle IDs to local storage index,
+# do not sort atoms spatially
+atom_modify     map array sort 0 0
+
+# set simulation domain to be fixed in x y z
+boundary        f f f
+
+# save communication by turning off Newton's 3rd law for pairwise interaction,
+# note: this setting only influences communication between procs, Newton's
+# 3rd law is still used for contact force calculations
+newton          off
+
+# use a single value for ghost particle cutoff distance and
+# enable velocity to be communicated with ghost particles
+communicate     single vel yes
+
+# set unit system to SI
+units           si
+
+# define the region used as simulation domain (min/max X, min/max Y, min/max Z)
+region          domain block -0.1 0.1 -0.1 0.1 -0.1 0.1 units box
+
+# create the simulation domain and 1 material type for particles and walls
+create_box      1 domain
+
+# specify the skin distance for neighbor list generation
+neighbor        0.001 bin
+neigh_modify    delay 0
+
+variable deg2rad         equal  PI/180. # factor to convert degrees to radians
+variable vel             equal  5.0 # impact velocity (m/s)
+variable vely            equal  ${vel}*sin(${deg2rad}*${Theta}) # tangential
+variable velz            equal -${vel}*cos(${deg2rad}*${Theta}) # normal
+
+variable normalModel     string ${NORMALMODEL} # hertz or hooke
+variable tangentialModel string ${TANGENTIALMODEL} # history or no_history
+
+# particle size and density
+variable rad             equal  0.025 # 25 mm
+variable dia             equal  2*${rad}
+variable dens            equal  2650 # kg/m3
+
+# define the material properties required for granular pair styles
+variable Young           equal  70e9
+variable Poisson         equal  0.3
+variable kappa           equal  0.8235 # kt/kn
+variable coeffRes        equal  ${RESTITUTION}
+variable coeffFric       equal  0.1
+
+fix     m1 all property/global youngsModulus peratomtype ${Young}
+fix     m2 all property/global poissonsRatio peratomtype ${Poisson}
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${coeffRes}
+fix     m4 all property/global coefficientFriction peratomtypepair 1 ${coeffFric}
+fix     m5 all property/global characteristicVelocity scalar ${vel}
+fix     m6 all property/global stiffnessRatio scalar ${kappa}
+
+# specify contact model to use
+pair_style gran model ${normalModel} tangential ${tangentialModel} ${MODELOPTION} ${MODELOPTIONSETTING}
+pair_coeff * *
+
+# set the time step
+timestep        0.00000002
+
+# create a single particle of type 1 at the given position
+# by default particles are assigned to a group named 'all'
+create_atoms    1 single -0.025 -0.025 0.0255 units box
+
+# set diameter, density and initial velocity of created particle
+set             atom 1 diameter ${dia} density ${dens} vy ${vely} vz ${velz}
+
+# define the meshes used for walls
+# a quad with the same size as the domain, note that meshes must not exceed the
+# domain boundaries
+fix mesh_bottom all mesh/surface file meshes/zplane.stl type 1
+
+# use the mesh defined above as wall; note that specifying the wall contact
+# model is analogous to the pair_style command; there can only be a single fix
+# of style 'wall/gran' for mesh based walls
+fix mesh_walls all wall/gran model ${normalModel} tangential ${tangentialModel} &
+    mesh n_meshes 1 meshes mesh_bottom ${MODELOPTION} ${MODELOPTIONSETTING}
+
+# use constant NVE integration to update position, velocity and angular velocity
+fix integr all nve/sphere
+
+# check time step size
+fix ts_check all check/timestep/gran 1 0.1 0.1
+
+# compute rotational kinetic energy
+compute rke all erotate/sphere
+
+# output settings, include kinetic energy
+thermo_style    custom step atoms ke c_rke
+
+# set frequency of output
+thermo          200
+
+# ignore particles leaving the simulation domain,
+# do not normalize thermodynamic output values by the number of atoms
+thermo_modify   lost ignore norm no
+
+# set dynamic 'to' no as number of particles does not change
+# for a single particle we need to set extra dof to 0 to obtain correct ke
+compute_modify  thermo_temp dynamic no extra 0
+
+# compute tangential force and overlap (history) for impact angle of 5°
+if "${Theta} == 5 && ${coeffRes} == 1" then &
+  "compute wgl all wall/gran/local force_tangential history"
+
+run     1
+unfix   ts_check
+
+# output tangential force and overlap (history) for impact angle of 5°
+if "${Theta} == 5 && ${coeffRes} == 1" then &
+  "dump dmpdisp all local 100 post/displacement*.txt c_wgl[1] c_wgl[2] c_wgl[3] c_wgl[4] c_wgl[5] c_wgl[6]" &
+  "dump_modify dmpdisp pad 5"
+
+# dump particle data every 200 time steps
+dump    dmp all custom/vtk 200 post/contact*.vtk id type x y z vx vy vz &
+        fx fy fz omegax omegay omegaz radius
+
+# run 20000 time steps
+run     20000
+
+# normalized impact angle
+variable nia  equal 2.*tan(${deg2rad}*${Theta})/(${coeffFric}*(1+${coeffRes}))
+# normalized rebound surface velocity
+variable nrsv equal 2.*(vy[1]+${rad}*omegax[1])/((1+${coeffRes})*${coeffFric}*abs(${velz}))
+# normalized rebound angular velocity
+variable nrav equal 2.*${rad}*omegax[1]/((1+${coeffRes})*${coeffFric}*abs(${velz}))
+# tangential coefficient of restitution
+variable tcr equal vy[1]/${vely}
+
+fix     output all print 1 "${nia} ${nrsv} ${nrav} ${tcr}" title "none" &
+        append post/${NORMALMODEL}_rebound_properties.txt
+run     1
+
+next    anglevariations Theta
+clear
+jump    SELF startloop
+
