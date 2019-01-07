@@ -56,7 +56,6 @@ class FixCfdCoupling : public Fix {
   void add_push_property(const char *name, const char *type);
   void add_pull_property(const char *name, const char *type);
 
-  // EKI
   bigint latestpush(const char *name);
   bigint latestpull(const char *name);
 
@@ -64,7 +63,6 @@ class FixCfdCoupling : public Fix {
 
   int coupleThis() {return couple_this_;}
 
-  //EKI
   int ts;
 
   // couple every couple_nevery_ timesteps
