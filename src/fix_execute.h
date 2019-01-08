@@ -35,6 +35,9 @@ class FixExecute : public Fix {
  private:
   int me;
   char *string;
+
+  bool once;
+  int execution_step;
 };
 
 }

@@ -10,22 +10,25 @@ fix execute command :h3
 
 [Syntax:]
 
-fix ID group-ID execute N string :pre
+fix ID group-ID execute N string keyword :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 execute = style name of this fix command :l
 N = execute every N steps :l
 string = text string to be executed with optional variable names :l
+keyword = none or {once} :l
 :ule
 
 [Examples:]
 
 fix ex0 all execute 100 "variable a equal $x" :pre
+fix ex1 all execute 100 "variable a equal $x" once :pre
 
 [Description:]
 
 Executes a text string as LIGGGHTS command every N steps during a simulation run. This can
-be used for coupled simulations that would otherwise only take a given number of timesteps.
+be used for coupled simulations that would otherwise only take a given number of timesteps. If the "once" keyword is specified,
+the command is executed only once at time step N.
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
