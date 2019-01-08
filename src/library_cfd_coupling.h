@@ -48,6 +48,18 @@ void allocate_external_int(int    **&data, int len2, const char *,   int initval
 void allocate_external_double(double **&data, int len2, int len1, double initvalue, void *ptr);
 void allocate_external_double(double **&data, int len2, const char *,   double initvalue, void *ptr);
 
+double** o2o_liggghts_get_boundingbox(void *ptr);
+void o2o_data_of_to_liggghts
+(
+    const char *name,
+    const char *type,
+    void *ptr,
+    void *data,
+    const char *datatype,
+    const int* ids,
+    const int ncollected
+);
+
 #ifdef __cplusplus
 //}
 #endif

@@ -136,6 +136,8 @@ Neighbor::Neighbor(LAMMPS *lmp) : Pointers(lmp)
   nex_mol = maxex_mol = 0;
   ex_mol_group = ex_mol_bit = NULL;
 
+  no_build = 0;
+
   // pair lists
 
   maxatom = 0;
@@ -314,7 +316,7 @@ void Neighbor::init()
   /*NL*/ //if (screen) fprintf(screen,"cutneighmin/max %f %f\n",cutneighmin,cutneighmax);
   /*NL*/ //error->all(FLERR,"end"); //NP modified C.K.
 
-  // check other classes that can induce reneighboring in decide()
+  // check other classes that can induce reneighboring in (decide)()
   // don't check if build_once is set
 
   restart_check = 0;
@@ -1340,6 +1342,8 @@ void Neighbor::print_lists_of_lists()
 
 int Neighbor::decide()
 {
+  if (no_build) return 1;
+
   if (must_check) {
     const bigint n = update->ntimestep;
     if (restart_check && n == output->next_restart) return 1;
@@ -1459,6 +1463,8 @@ int Neighbor::check_distance()
 
 void Neighbor::build(int topoflag)
 {
+  if (no_build) return;
+
   int i;
 
   ago = 0;
@@ -1984,7 +1990,12 @@ void Neighbor::modify_params(int narg, char **arg)
 
       } else error->all(FLERR,"Illegal neigh_modify command");
 
-    } else error->all(FLERR,"Illegal neigh_modify command");
+    } else if (strcmp(arg[iarg],"no_build") == 0) {
+        if (iarg+2 > narg) error->all(FLERR,"Illegal neigh_modify command");
+        if (strcmp(arg[iarg+1],"yes") == 0) no_build = 1;
+        iarg += 2;
+    }
+    else error->all(FLERR,"Illegal neigh_modify command");
   }
 }
 
