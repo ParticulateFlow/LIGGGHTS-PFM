@@ -630,6 +630,8 @@ void FixChemShrinkCore::post_force(int)
                     // also the results of reaction function is used to calculate
                     // the changes in gas species
                     update_gas_properties(i, dmA_);
+                    // calculate delta_h, and dot_delta_h for heat of reaction
+                    heat_of_reaction(i, dmA_);
                 }
         }
     }
@@ -1058,6 +1060,101 @@ void FixChemShrinkCore::FractionalReduction(int i)
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
     fracRed_[i][2] = f_HM;
+}
+/* ---------------------------------------------------------------------- */
+/* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
+void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_)
+{
+    double a_coeff_nasa_Fe2O3[] = {298.15, 1700., 1000., -3.240851E+02, 1.152686E+00, -1.413588E-03, 7.496435E-07, -1.455880E-10, -2.647718E+04, 1.609668E+03, 1.066786E+01, -4.869774E-03, 5.056287E-05, -4.500105E-08, 7.709213E-12, -1.025006E+05, -5.068585E+01};
+    double a_coeff_nasa_Fe3O4[] = {298.15, 1870., 1000., 1.948880E+02, -4.225771E-01, 3.843026E-04, -1.536471E-07, 2.301151E-11, -1.944678E+05, -1.023246E+03, 7.781798E+01, -4.602735E-01, 1.199812E-03, -1.203296E-06, 4.119178E-10, -1.457550E+05, -3.319564E+02};
+    double a_coeff_nasa_FeO[] = {298.15, 1650., 1000., 5.762730E+00, 1.442345E-03, 1.309698E-07, -2.476342E-10,	 4.756658E-14, -3.453377E+04,  -2.603715E+01, 5.108889E+00, 3.732856E-03, -2.817518E-06, 1.393173E-09, -2.814222E-13,   -3.438676E+04, -2.280153E+01};
+    double a_coeff_nasa_Fe[] = {298.15, 1809., 1000., -2.674281E+02, 8.564543E-01, -9.799567E-04, 4.844980E-07,	-8.760776E-11, 6.533737E+04, 1.349404E+03, -8.123461E+00, 8.207546E-02, -2.126480E-04, 2.357984E-07, -9.114276E-11,	3.344653E+02, 3.269875E+01};
+    double a_coeff_nasa_CO[] = {200., 6000., 1000.,	3.048486E+00, 1.351728E-03, -4.857941E-07, 7.885364E-11, -4.698075E-15,	-1.426612E+04, 6.017098E+00, 3.579534E+00, -6.103537E-04, 1.016814E-06,	9.070059E-10, -9.044245E-13, -1.434409E+04,	3.508409E+00};
+    double a_coeff_nasa_CO2[] = {200., 6000., 1000., 4.636511E+00, 2.741457E-03, -9.958976E-07,	1.603867E-10, -9.161986E-15, -4.902490E+04, -1.934896E+00, 2.356813E+00, 8.984130E-03, -7.122063E-06, 2.457301E-09, -1.428855E-13, -4.837197E+04, 9.900904E+00};
+    double a_coeff_nasa_H2[] = {200., 6000., 1000.,	2.932831E+00, 8.265980E-04,	-1.464006E-07, 1.540985E-11, -6.887962E-16,	-8.130558E+02, -1.024316E+00, 2.344303E+00,	7.980425E-03, -1.947792E-05, 2.015697E-08, -7.376029E-12, -9.179241E+02, 6.830022E-01};
+    double a_coeff_nasa_H2O[] = {200., 6000., 1000., 2.677039E+00, 2.973182E-03, -7.737689E-07, 9.443351E-11, -4.268999E-15, -2.988589E+04, 6.882550E+00, 4.198635E+00, -2.036402E-03, 6.520342E-06, -5.487927E-09, 1.771968E-12, -3.029373E+04, -8.490090E-01};
+    //double a_coeff_nasa_N2[] = {200., 6000., 1000.,	2.952541E+00, 1.396884E-03, -4.926258E-07, 7.860009E-11, -4.607498E-15,	-9.239375E+02, 5.871822E+00, 3.530963E+00, -1.236595E-04, -5.029934E-07, 2.435277E-09, -1.408795E-12, -1.046964E+03, 2.967439E+00};
+    //double a_coeff_nasa_G[] = {300., 2327.,	1000., 1.183367E+01, 3.770888E-03, -1.786319E-07, -5.600881E-10, 1.407683E-13, -2.057113E+05, -6.359984E+01, -4.913831E+00,	7.939844E-02, -1.323792E-04, 1.044675E-07, -3.156633E-11, -2.026262E+05, 1.547807E+01};
+    // stoichiometric coefficients of reactions
+    double v_reac_[3] = {1, 1, 3};
+    double v_prod_[3] = {1, 3, 2};
+
+    double HR[layers_+1] = {0.};
+    /* reaction enthalpy */
+    double delta_h[nmaxlayers_+1] = {0.};
+    /* conventional enhalpy */
+    double conv_h[layers_+3] = {0.};
+    conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,layerMolMasses_[0],i)*layerMolMasses_[0];
+    conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,layerMolMasses_[1],i)*layerMolMasses_[1];
+    conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i)*layerMolMasses_[2];
+    conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[3],i)*layerMolMasses_[3];
+    if (strcmp(speciesA, "CO") == 0)
+    {
+        conv_h[4] = conv_enthalpy(a_coeff_nasa_CO,molMass_A_,i)*molMass_A_;
+        conv_h[5] = conv_enthalpy(a_coeff_nasa_CO2,molMass_C_,i)*molMass_C_;
+    } else if(strcmp(speciesA,"H2")==0)
+    {
+        conv_h[4] = conv_enthalpy(a_coeff_nasa_H2,molMass_A_,i)*molMass_A_;
+        conv_h[5] = conv_enthalpy(a_coeff_nasa_H2O,molMass_C_,i)*molMass_C_;
+    }
+
+    for (int j = 0; j < layers_; j++)
+    {
+         delta_h[j] = ((v_prod_[j]*conv_h[j]+conv_h[5])-(v_reac_[0]*conv_h[j+1]+conv_h[4]));
+    }
+
+    if (screen) {
+        if (strcmp(speciesA, "CO") == 0){
+        fprintf(screen, "delta_h w CO for reaction 1 is %f \n", delta_h[0]);
+        fprintf(screen, "delta_h w CO for reaction 2 is %f \n", delta_h[1]);
+        fprintf(screen, "delta_h w CO for reaction 3 is %f \n", delta_h[2]);}
+        else if (strcmp(speciesA,"H2")==0) {
+            fprintf(screen, "delta_h w H2 for reaction 1 is %f \n", delta_h[0]);
+            fprintf(screen, "delta_h w H2 for reaction 2 is %f \n", delta_h[1]);
+            fprintf(screen, "delta_h w H2 for reaction 3 is %f \n", delta_h[2]);
+        }
+    }
+
+    for (int k = 0; k < layers_; k++)
+    {
+        HR[k] = delta_h[k]*dmA_[k]/molMass_A_;
+    }
+
+    if (screen) {
+        if (strcmp(speciesA, "CO") == 0){
+        fprintf(screen, "heatFlux of reaction w CO for reaction 1 is %f \n", HR[0]);
+        fprintf(screen, "heatFlux of reaction w CO for reaction 2 is %f \n", HR[1]);
+        fprintf(screen, "heatFlux of reaction w CO for reaction 3 is %f \n", HR[2]);}
+        else if (strcmp(speciesA,"H2")==0) {
+            fprintf(screen, "heatFlux of reaction w H2 for reaction 1 is %f \n", HR[0]);
+            fprintf(screen, "heatFlux of reaction w H2 for reaction 2 is %f \n", HR[1]);
+            fprintf(screen, "heatFlux of reaction w H2 for reaction 3 is %f \n", HR[2]);
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Calculate conventional enthalpies of species */
+double FixChemShrinkCore::conv_enthalpy (double *a, double Mw, int i)
+{
+    double value = 0.;
+    double Tbound_low =0.;
+    double Tbound_high = 0.;
+
+    if (T_[i] < SMALL)
+        error->fix_error(FLERR, this, "Error T <= ZERO");
+
+    if (T_[i] < (Tbound_low=a[0])) {/*Temperature smaller than lower bound*/
+        value = a[10]*Tbound_low + a[11]*pow(Tbound_low,2.0)/2.0 + a[12]*pow(Tbound_low,3.0)/3.0 + a[13]*pow(Tbound_low,4.0)/4.0 + a[14]*pow(Tbound_low,5.0)/5.0 + a[15];
+    } else if (T_[i] < a[2]) {
+        value = a[10]*T_[i] + a[11]*pow(T_[i],2.0)/2.0 + a[12]*pow(T_[i],3.0)/3.0 + a[13]*pow(T_[i],4.0)/4.0 + a[14]*pow(T_[i],5.0)/5.0 + a[15];
+    } else if (T_[i]< (Tbound_high = a[1])) {
+         value =a[3]*T_[i] + a[4]*pow(T_[i],2.0)/2.0 + a[5]*pow(T_[i],3.0)/3.0 + a[6]*pow(T_[i],4.0)/4.0 + a[7]*pow(T_[i],5.0)/5.0 + a[8];
+    } else {
+        value =a[3]*Tbound_high + a[4]*pow(Tbound_high,2.0)/2.0 + a[5]*pow(Tbound_high,3.0)/3.0 + a[6]*pow(Tbound_high,4.0)/4.0 + a[7]*pow(Tbound_high,5.0)/5.0 + a[8];
+    }
+
+    return value*Runiv/Mw;
 }
 
 /* ---------------------------------------------------------------------- */

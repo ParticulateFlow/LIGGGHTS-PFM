@@ -61,6 +61,8 @@ public:
   void reaction(int, double *, double *);   // calculate chemical reaction rate
   void update_atom_properties(int, double *);   // update particle layers with depending on chemical reaction rate - per-particle
   void update_gas_properties(int, double *);    // update reactant and product gas masses depending on chemical reaction rate
+  void heat_of_reaction(int, double *);
+  double conv_enthalpy(double *, double , int);
 
   // variables
   bool screenflag_;
