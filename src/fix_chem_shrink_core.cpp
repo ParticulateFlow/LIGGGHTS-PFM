@@ -1131,6 +1131,10 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_)
             fprintf(screen, "heatFlux of reaction w H2 for reaction 3 is %f \n", HR[2]);
         }
     }
+
+    // add per-particle reactionHeat flux
+    for (int k = 0; k < layers_; k++)
+        reactionHeat_[i] += HR[k];
 }
 
 /* ---------------------------------------------------------------------- */
