@@ -51,7 +51,7 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp) :
   size_border = 7;
   size_velocity = 3;
 #ifdef BOND_GRAN_USE_MOLECULE_ID
-  size_data_atom = 8; // with molecule ID, mol com and com vel
+  size_data_atom = 6; // with molecule ID
 #else
   size_data_atom = 5; // without molecule ID
 #endif
@@ -1132,10 +1132,10 @@ bigint AtomVecBondGran::memory_usage()
   if (atom->memcheck("num_bond")) bytes += memory->usage(num_bond,nmax);
   if (atom->memcheck("bond_type")) bytes += memory->usage(bond_type,nmax,atom->bond_per_atom);
   if (atom->memcheck("bond_atom")) bytes += memory->usage(bond_atom,nmax,atom->bond_per_atom);
+  if(atom->memcheck("x_mol")) bytes += memory->usage(x_mol,nmax,3); // mod A.N
+  if(atom->memcheck("v_mol")) bytes += memory->usage(v_mol,nmax,3); // mod A.N
 // P.F. not too sure about atom->n_bondhist
   if(atom->n_bondhist) bytes += nmax*sizeof(int);
-  if(atom->memcheck("x_mol")) bytes += memory->usage(x_mol,nmax,3);
-  if(atom->memcheck("v_mol")) bytes += memory->usage(v_mol,nmax,3);
 
 return bytes;
 }

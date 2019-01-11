@@ -103,7 +103,8 @@ void ComputeCOMMolecule::compute_array()
 
   for (i = 0; i < nmolecules; i++) {
     com[i][0] = com[i][1] = com[i][2] = 0.0;
-    com[i][3] = com[i][4] = com[i][5] = 0.0; }
+    com[i][3] = com[i][4] = com[i][5] = 0.0;
+    com[i][6] = 0;  }
 
   double **x = atom->x;
   double **v = atom->v;
