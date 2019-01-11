@@ -1314,8 +1314,8 @@ void FixChemShrinkCore::getA_low(int i)
     updatePtrs();
     double k0_low_CO[] = {150., 150.};
     double k0_low_H2[] = {50., 25.};
-    double Ea_low_CO[] = {70000., 75000};
-    double Ea_low_H2[] = {75000., 75000};
+    double Ea_low_CO[] = {70000., 75000.};
+    double Ea_low_H2[] = {75000., 75000.};
 
     if (strcmp(speciesA, "CO") == 0)
     {
