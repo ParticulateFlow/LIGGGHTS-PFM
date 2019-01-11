@@ -592,19 +592,42 @@ void FixChemShrinkCore::post_force(int)
     int *mask   =   atom->mask;
     double x0_eq_[nmaxlayers_] = {0.};          // molar fraction of reactant gas
     double dmA_[nmaxlayers_] = {0.};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
+    double v_reac_[nmaxlayers_] = {0.};
+    double v_prod_[nmaxlayers_] = {0.};
 
     for (i = 0; i < nlocal; i++)
-       {
-           if (mask[i] & groupbit)
-           {
-               if (xA_[i] < minMolarFrac_)
-               {
-                   continue;
-               }
-                // 1st recalculate masses of layers if layer has reduced
-                // is ignored if there is no change in layers
-                active_layers(i);
-                if (active_layers(i) > 0)
+    {
+        if (mask[i] & groupbit)
+        {
+            if (xA_[i] < minMolarFrac_)
+            {
+                continue;
+            }
+            // 1st recalculate masses of layers if layer has reduced
+            // is ignored if there is no change in layers
+            active_layers(i);
+            if (active_layers(i) > 0)
+            {
+                if (T_[i] < 573.15)
+                {
+                    // do nothing -- no reaction takes place
+                    error->warning(FLERR, "The temperature is too low for reduction to take place!");
+
+                }else if (T_[i] > 573.15 && T_[i] < 843.15)
+                {
+                    layers_ = 2;
+                    active_layers(i);
+                    FR_low(i);
+                    getXi(i,x0_eq_);
+                    getA_low(i);
+                    getB(i);
+                    getMassT(i);
+                    reaction_low(i, dmA_, x0_eq_);
+                    update_atom_properties(i, dmA_,v_reac_,v_prod_);
+                    update_gas_properties(i, dmA_);
+                    heat_of_reaction(i, dmA_,v_reac_,v_prod_);
+                }
+                else if (T_[i] > 843.15)
                 {
                     // calculate values for fractional reduction f_i = (1-relRadii_i^3)
                     // or with mass ratio provides simplicity for calculations of A & B terms.
@@ -626,13 +649,14 @@ void FixChemShrinkCore::post_force(int)
                     // the results of reaction gives us the mass change of reactant species gas
                     // in the usual case that means the CO gas mass species change is given
                     // this information is used then to calculate mass changes of particle layers
-                    update_atom_properties(i, dmA_);
+                    update_atom_properties(i, dmA_,v_reac_,v_prod_);
                     // also the results of reaction function is used to calculate
                     // the changes in gas species
                     update_gas_properties(i, dmA_);
                     // calculate delta_h, and dot_delta_h for heat of reaction
-                    heat_of_reaction(i, dmA_);
+                    heat_of_reaction(i, dmA_,v_reac_,v_prod_);
                 }
+            }
         }
     }
 }
@@ -938,15 +962,23 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_atom_properties(int i, double *dmA_)
+void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_reac_,double* v_prod_)
 {
     updatePtrs();
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
     // based on material change: update relative radii, average density and mass of atom i
     // stoichiometric coefficients of reactions
-    double v_reac_[3] = {1, 1, 3};
-    double v_prod_[3] = {1, 3, 2};
+    if (T_[i] < 843.15) {
+        v_reac_[0] = 1.0/4.0; v_reac_[1] = 3.0;
+        v_prod_[0] = 3.0/4.0; v_prod_[1] = 2.0;
+    } else {
+        v_reac_[0] = 1.0; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
+        v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
+    }
+    //double v_reac_[] = {1, 1, 3};
+    //double v_prod_[] = {1, 3, 2};
+
     // initialize radius, mass change of layer and sum of particle
     double rad[nmaxlayers_+1] = {0.};
     double dmL_[nmaxlayers_+1] = {0.};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
@@ -1063,7 +1095,7 @@ void FixChemShrinkCore::FractionalReduction(int i)
 }
 /* ---------------------------------------------------------------------- */
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
-void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_)
+void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, double *v_prod_)
 {
     double a_coeff_nasa_Fe2O3[] = {298.15, 1700., 1000., -3.240851E+02, 1.152686E+00, -1.413588E-03, 7.496435E-07, -1.455880E-10, -2.647718E+04, 1.609668E+03, 1.066786E+01, -4.869774E-03, 5.056287E-05, -4.500105E-08, 7.709213E-12, -1.025006E+05, -5.068585E+01};
     double a_coeff_nasa_Fe3O4[] = {298.15, 1870., 1000., 1.948880E+02, -4.225771E-01, 3.843026E-04, -1.536471E-07, 2.301151E-11, -1.944678E+05, -1.023246E+03, 7.781798E+01, -4.602735E-01, 1.199812E-03, -1.203296E-06, 4.119178E-10, -1.457550E+05, -3.319564E+02};
@@ -1076,8 +1108,15 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_)
     //double a_coeff_nasa_N2[] = {200., 6000., 1000.,	2.952541E+00, 1.396884E-03, -4.926258E-07, 7.860009E-11, -4.607498E-15,	-9.239375E+02, 5.871822E+00, 3.530963E+00, -1.236595E-04, -5.029934E-07, 2.435277E-09, -1.408795E-12, -1.046964E+03, 2.967439E+00};
     //double a_coeff_nasa_G[] = {300., 2327.,	1000., 1.183367E+01, 3.770888E-03, -1.786319E-07, -5.600881E-10, 1.407683E-13, -2.057113E+05, -6.359984E+01, -4.913831E+00,	7.939844E-02, -1.323792E-04, 1.044675E-07, -3.156633E-11, -2.026262E+05, 1.547807E+01};
     // stoichiometric coefficients of reactions
-    double v_reac_[3] = {1, 1, 3};
-    double v_prod_[3] = {1, 3, 2};
+    if (T_[i] < 843.15) {
+        v_reac_[0] = 1.0/4.0; v_reac_[1] = 3.0;
+        v_prod_[0] = 3.0/4.0; v_prod_[1] = 2.0;
+    } else {
+        v_reac_[0] = 1.0; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
+        v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
+    }
+    //double v_reac_[3] = {1, 1, 3};
+    //double v_prod_[3] = {1, 3, 2};
 
     double HR[layers_+1] = {0.};
     /* reaction enthalpy */
@@ -1160,7 +1199,141 @@ double FixChemShrinkCore::conv_enthalpy (double *a, double Mw, int i)
 
     return value*Runiv/Mw;
 }
+/* ---------------------------------------------------------------------- */
 
+double FixChemShrinkCore::K_eq_low(int layer, int i)
+{
+    // 0 = Fe3O4 -> Fe , 1 = Fe2O3 -> Fe3O4
+    double Keq_low = 0.;
+
+    if (strcmp(speciesA, "CO") == 0)
+    {
+        if (layer == 1)
+            Keq_low = exp(3968.37/T_[i]+3.94);
+        else if (layer == 0)
+            Keq_low = pow(10.0,-0.009);
+    }
+    else if(strcmp(speciesA,"H2")==0)
+    {
+        if (layer == 1)
+            Keq_low = exp(-362.6/T_[i] + 10.334);
+        else if (layer == 0)
+            Keq_low = pow(10.0,(-1742.0/T_[i]+1.568));
+    }
+    else
+    {
+        printf("Error : Undefined Reaction \n");
+    }
+
+    if(screenflag_ && screen)
+        fprintf(screen,"Keq_low : %f \n",Keq_low);
+
+    return Keq_low;
+}
+
+/* ---------------------------------------------------------------------- */
+void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
+{
+    updatePtrs();
+    double W = 0.;
+    double p_eq_[nmaxlayers_] = {0.};
+    double p_A = 0.;
+    for (int layer = 0; layer < layers_; layer++)
+    {
+        p_eq_[layer] = x0_eq_[layer]*partP_[i];
+    }
+    p_A = xA_[i]*partP_[i];
+    if (screenflag_ && screen)
+            fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_A);
+
+    if (layers_ == 2)
+    {
+        W = (Aterm[i][1]+Bterm[i][1])*(Aterm[i][0]+Bterm[i][0]+Massterm[i])+Aterm[i][0]*(Bterm[i][0]+Massterm[i]);
+        // hematite to magnetite
+        dY[i][1]   =   ((Aterm[i][0]+Bterm[i][0]+Massterm[i])*(p_A - p_eq_[1])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[0]))/W;
+        if (dY[i][1] < 0.0) dY[i][1] = 0.0;
+        // magnetite to iron
+        if ((dY[i][1] == 0.0))
+            dY[i][0] = 0.0;
+        else
+            dY[i][0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(p_A - p_eq_[0])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[1]))/W;
+        if (dY[i][0] < 0.0) dY[i][0] = 0.0;
+
+        dY_previous2 = true;
+    }
+    else if (layers_ == 1)
+    {
+        // rate of chemical reaction for 1 active layer
+        W = Aterm[i][0]+Bterm[i][0]+Massterm[i];
+        // hematite to magnetite
+        dY[i][1]   =   0.0;
+        //magnetite to iron
+        if (dY_previous2 == true)
+        {
+            if (dY[i][0] == 0.0)
+                dY[i][0] = 0.0;
+            else
+                dY[i][0] = (p_A - p_eq_[0])/W;
+        }
+        else
+            dY[i][0]   =   (p_A - p_eq_[0])/W;
+
+        if (dY[i][0] < 0.0) dY[i][0] = 0.0;
+    }
+
+    for (int j = 0 ; j < layers_; j++)
+    {
+        // mass flow rate for reactant gas species
+        // dmA is a positive value
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+        // fix property added so values are otuputted to file
+        dmA_f_[i][j] = dmA_[j];
+    }
+}
+/* ---------------------------------------------------------------------- */
+
+void FixChemShrinkCore::FR_low(int i)
+{
+    updatePtrs();
+
+    double f_HM = 0.;
+    double f_MF = 0.;
+
+    f_MF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    f_HM = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+
+    fracRed_[i][0] = f_MF;
+    fracRed_[i][1] = f_HM;
+    fracRed_[i][2] = 0.0;
+}
+/* ---------------------------------------------------------------------- */
+
+// 0 = magnetite interface, 1 = hematite interface
+void FixChemShrinkCore::getA_low(int i)
+{
+    updatePtrs();
+    double k0_low_CO[] = {150., 150.};
+    double k0_low_H2[] = {50., 25.};
+    double Ea_low_CO[] = {70000., 75000};
+    double Ea_low_H2[] = {75000., 75000};
+
+    if (strcmp(speciesA, "CO") == 0)
+    {
+        for (int j = 0; j < layers_ ; j++)
+        {
+            Aterm[i][j]   =   (k0_low_CO[j]*exp(-Ea_low_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+            Aterm[i][j]   =   1.0/Aterm[i][j];
+        }
+    }
+    else if(strcmp(speciesA,"H2")==0)
+    {
+        for (int j = 0; j < layers_ ; j++)
+        {
+            Aterm[i][j]   =   (k0_low_H2[j]*exp(-Ea_low_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+            Aterm[i][j]   =   1.0/Aterm[i][j];
+        }
+    }
+}
 /* ---------------------------------------------------------------------- */
 void FixChemShrinkCore::init_defaults()
 {
