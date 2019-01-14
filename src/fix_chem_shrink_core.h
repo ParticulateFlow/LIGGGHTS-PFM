@@ -66,6 +66,7 @@ public:
   double K_eq_low(int, int);
   void reaction_low(int, double *, double *);
   void FR_low(int);
+  void getXi_low(int, double *);
   void getA_low(int);
 
   // variables

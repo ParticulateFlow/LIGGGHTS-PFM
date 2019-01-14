@@ -615,10 +615,8 @@ void FixChemShrinkCore::post_force(int)
 
                 }else if (T_[i] > 573.15 && T_[i] < 843.15)
                 {
-                    layers_ = 2;
-                    active_layers(i);
                     FR_low(i);
-                    getXi(i,x0_eq_);
+                    getXi_low(i,x0_eq_);
                     getA_low(i);
                     getB(i);
                     getMassT(i);
@@ -970,14 +968,12 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
     // based on material change: update relative radii, average density and mass of atom i
     // stoichiometric coefficients of reactions
     if (T_[i] < 843.15) {
-        v_reac_[0] = 1.0/4.0; v_reac_[1] = 3.0;
-        v_prod_[0] = 3.0/4.0; v_prod_[1] = 2.0;
+        v_reac_[0] = 1.0/4.0; v_reac_[1] = 3.0; v_reac_[2] = 0.;
+        v_prod_[0] = 3.0/4.0; v_prod_[1] = 2.0; v_prod_[2] = 0.;
     } else {
         v_reac_[0] = 1.0; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
         v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
     }
-    //double v_reac_[] = {1, 1, 3};
-    //double v_prod_[] = {1, 3, 2};
 
     // initialize radius, mass change of layer and sum of particle
     double rad[nmaxlayers_+1] = {0.};
@@ -1105,18 +1101,15 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
     double a_coeff_nasa_CO2[] = {200., 6000., 1000., 4.636511E+00, 2.741457E-03, -9.958976E-07,	1.603867E-10, -9.161986E-15, -4.902490E+04, -1.934896E+00, 2.356813E+00, 8.984130E-03, -7.122063E-06, 2.457301E-09, -1.428855E-13, -4.837197E+04, 9.900904E+00};
     double a_coeff_nasa_H2[] = {200., 6000., 1000.,	2.932831E+00, 8.265980E-04,	-1.464006E-07, 1.540985E-11, -6.887962E-16,	-8.130558E+02, -1.024316E+00, 2.344303E+00,	7.980425E-03, -1.947792E-05, 2.015697E-08, -7.376029E-12, -9.179241E+02, 6.830022E-01};
     double a_coeff_nasa_H2O[] = {200., 6000., 1000., 2.677039E+00, 2.973182E-03, -7.737689E-07, 9.443351E-11, -4.268999E-15, -2.988589E+04, 6.882550E+00, 4.198635E+00, -2.036402E-03, 6.520342E-06, -5.487927E-09, 1.771968E-12, -3.029373E+04, -8.490090E-01};
-    //double a_coeff_nasa_N2[] = {200., 6000., 1000.,	2.952541E+00, 1.396884E-03, -4.926258E-07, 7.860009E-11, -4.607498E-15,	-9.239375E+02, 5.871822E+00, 3.530963E+00, -1.236595E-04, -5.029934E-07, 2.435277E-09, -1.408795E-12, -1.046964E+03, 2.967439E+00};
-    //double a_coeff_nasa_G[] = {300., 2327.,	1000., 1.183367E+01, 3.770888E-03, -1.786319E-07, -5.600881E-10, 1.407683E-13, -2.057113E+05, -6.359984E+01, -4.913831E+00,	7.939844E-02, -1.323792E-04, 1.044675E-07, -3.156633E-11, -2.026262E+05, 1.547807E+01};
+
     // stoichiometric coefficients of reactions
     if (T_[i] < 843.15) {
-        v_reac_[0] = 1.0/4.0; v_reac_[1] = 3.0;
-        v_prod_[0] = 3.0/4.0; v_prod_[1] = 2.0;
+        v_reac_[0] = 1.0/4.0; v_reac_[1] = 3.0; v_reac_[2] = 0.;
+        v_prod_[0] = 3.0/4.0; v_prod_[1] = 2.0; v_prod_[2] = 0.;
     } else {
         v_reac_[0] = 1.0; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
         v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
     }
-    //double v_reac_[3] = {1, 1, 3};
-    //double v_prod_[3] = {1, 3, 2};
 
     double HR[layers_+1] = {0.};
     /* reaction enthalpy */
@@ -1307,6 +1300,23 @@ void FixChemShrinkCore::FR_low(int i)
     fracRed_[i][2] = 0.0;
 }
 /* ---------------------------------------------------------------------- */
+void FixChemShrinkCore::getXi_low(int i, double *x0_eq_)
+{
+    double kch2_ = 0.0;
+    kch2_ = xA_[i] + xC_[i];
+
+    for (int j = 0; j < layers_; j++)
+    {
+        x0_eq_[j]  =   kch2_/(1.0+K_eq_low(j,i));
+    }
+
+    x0_eq_[2] = 0.;
+
+    if (screenflag_ && screen)
+        fprintf(screen, "x0_eq_0: %f, x0_eq_1: %f, x0_eq_2: %f \n", x0_eq_[0], x0_eq_[1], x0_eq_[2]);
+}
+
+/* ---------------------------------------------------------------------- */
 
 // 0 = magnetite interface, 1 = hematite interface
 void FixChemShrinkCore::getA_low(int i)
@@ -1321,7 +1331,7 @@ void FixChemShrinkCore::getA_low(int i)
     {
         for (int j = 0; j < layers_ ; j++)
         {
-            Aterm[i][j]   =   (k0_low_CO[j]*exp(-Ea_low_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+            Aterm[i][j]   =   (k0_low_CO[j]*exp(-Ea_low_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq_low(j,i));
             Aterm[i][j]   =   1.0/Aterm[i][j];
         }
     }
@@ -1329,7 +1339,7 @@ void FixChemShrinkCore::getA_low(int i)
     {
         for (int j = 0; j < layers_ ; j++)
         {
-            Aterm[i][j]   =   (k0_low_H2[j]*exp(-Ea_low_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+            Aterm[i][j]   =   (k0_low_H2[j]*exp(-Ea_low_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq_low(j,i));
             Aterm[i][j]   =   1.0/Aterm[i][j];
         }
     }
