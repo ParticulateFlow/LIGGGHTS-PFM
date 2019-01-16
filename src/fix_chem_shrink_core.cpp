@@ -1135,7 +1135,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
          delta_h[j] = ((v_prod_[j]*conv_h[j]+conv_h[5])-(v_reac_[0]*conv_h[j+1]+conv_h[4]));
     }
 
-    if (screen) {
+    if (screenflag_ && screen) {
         if (strcmp(speciesA, "CO") == 0){
         fprintf(screen, "delta_h w CO for reaction 1 is %f \n", delta_h[0]);
         fprintf(screen, "delta_h w CO for reaction 2 is %f \n", delta_h[1]);
@@ -1152,7 +1152,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
         HR[k] = delta_h[k]*dmA_[k]/molMass_A_;
     }
 
-    if (screen) {
+    if (screenflag_ && screen) {
         if (strcmp(speciesA, "CO") == 0){
         fprintf(screen, "heatFlux of reaction w CO for reaction 1 is %f \n", HR[0]);
         fprintf(screen, "heatFlux of reaction w CO for reaction 2 is %f \n", HR[1]);
