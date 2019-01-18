@@ -31,7 +31,7 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
     error->all(FLERR,"Compute com/molecule requires molecular atom style");
 
   array_flag = 1;
-  size_array_cols = 7;
+  size_array_cols = 6;
   extarray = 0;
 
   // setup molecule-based data
@@ -41,8 +41,10 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
 
   memory->create(massproc,nmolecules,"com/molecule:massproc");
   memory->create(masstotal,nmolecules,"com/molecule:masstotal");
-  memory->create(com,nmolecules,7,"com/molecule:com");
-  memory->create(comall,nmolecules,7,"com/molecule:comall");
+  memory->create(localMol,nmolecules,"com/molecule:localMol");
+  memory->create(globalMol,nmolecules,"com/molecule:globalMol");
+  memory->create(com,nmolecules,6,"com/molecule:com");
+  memory->create(comall,nmolecules,6,"com/molecule:comall");
   array = comall;
 
   // compute masstotal for each molecule
@@ -57,7 +59,7 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
   int i,imol;
   double massone;
 
-  for (i = 0; i < nmolecules; i++) massproc[i] = 0.0;
+  for (i = 0; i < nmolecules; i++) { massproc[i] = 0.0; localMol[i] = 0;}
 
   for (i = 0; i < nlocal; i++)
     if (mask[i] & groupbit) {
@@ -80,6 +82,8 @@ ComputeCOMMolecule::~ComputeCOMMolecule()
   memory->destroy(masstotal);
   memory->destroy(com);
   memory->destroy(comall);
+  memory->destroy(localMol);
+  memory->destroy(globalMol);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -103,8 +107,7 @@ void ComputeCOMMolecule::compute_array()
 
   for (i = 0; i < nmolecules; i++) {
     com[i][0] = com[i][1] = com[i][2] = 0.0;
-    com[i][3] = com[i][4] = com[i][5] = 0.0;
-    com[i][6] = 0;  }
+    com[i][3] = com[i][4] = com[i][5] = 0.0; }
 
   double **x = atom->x;
   double **v = atom->v;
@@ -126,17 +129,18 @@ void ComputeCOMMolecule::compute_array()
       if (molmap) imol = molmap[imol-idlo];
       else imol--;
       domain->unmap(x[i],image[i],unwrap);
-      com[imol][0] += unwrap[0] * massone;
-      com[imol][1] += unwrap[1] * massone;
-      com[imol][2] += unwrap[2] * massone;
+      com[imol][0] += x[i][0] * massone; //unwrap[0] * massone;
+      com[imol][1] += x[i][1] * massone; //unwrap[1] * massone;
+      com[imol][2] += x[i][2] * massone; //unwrap[2] * massone;
       com[imol][3] += v[i][0] * massone;
       com[imol][4] += v[i][1] * massone;
       com[imol][5] += v[i][2] * massone;
-      com[imol][6] = molecule[i];
+      localMol[imol] = molecule[i];
     }
 
-  MPI_Allreduce(&com[0][0],&comall[0][0],7*nmolecules,
+  MPI_Allreduce(&com[0][0],&comall[0][0],6*nmolecules,
                 MPI_DOUBLE,MPI_SUM,world);
+  MPI_Allreduce(localMol,globalMol,nmolecules,MPI_INT,MPI_MAX,world);
 
   for (i = 0; i < nmolecules; i++) {
     if (masstotal[i] > 0.0) {
@@ -153,7 +157,7 @@ void ComputeCOMMolecule::compute_array()
   for (int i = 0; i < nlocal; i++)
     if (mask[i] & groupbit) {
         for (int j = 0; j < nmolecules; j++) {
-            if(molecule[i] == comall[j][6]) {
+            if(molecule[i] == globalMol[j]) {
                 x_mol[i][0] = comall[j][0];
                 x_mol[i][1] = comall[j][1];
                 x_mol[i][2] = comall[j][2];
@@ -173,6 +177,8 @@ double ComputeCOMMolecule::memory_usage()
 {
   double bytes = 2*nmolecules * sizeof(double);
   if (molmap) bytes += (idhi-idlo+1) * sizeof(int);
-  bytes += 2*nmolecules*3 * sizeof(double);
+  bytes += 2*nmolecules*6 * sizeof(double);
+  int bytes_int = 2*nmolecules * sizeof(int);
   return bytes;
+  return bytes_int;
 }
