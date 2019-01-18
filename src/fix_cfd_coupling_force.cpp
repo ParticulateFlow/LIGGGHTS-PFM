@@ -48,7 +48,8 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
     use_torque_(true),
     use_dens_(false),
     use_type_(false),
-    use_property_(false)
+    use_property_(false),
+    use_molecule_(false)
 {
     int iarg = 3;
 
@@ -108,6 +109,18 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
             if(strcmp(arg[iarg++],"type"))
                 error->fix_error(FLERR,this,"expecting 'type' after property name");
             sprintf(property_type,"%s",arg[iarg++]);
+            iarg++;
+            hasargs = true;
+        } else if(strcmp(arg[iarg],"transfer_molecule") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_molecule");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                use_molecule_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                use_molecule_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_molecule'");
             iarg++;
             hasargs = true;
         } else if (strcmp(this->style,"couple/cfd/force") == 0) {
@@ -225,8 +238,8 @@ void FixCfdCouplingForce::init()
     fix_coupling_->add_push_property("v","vector-atom");
     fix_coupling_->add_push_property("radius","scalar-atom");
     fix_coupling_->add_push_property("molecule","scalar-atom");
-    fix_coupling_->add_push_property("x_mol","vector-atom");
-    fix_coupling_->add_push_property("v_mol","vector-atom");
+    if(use_molecule_) fix_coupling_->add_push_property("x_mol","vector-atom");
+    if(use_molecule_) fix_coupling_->add_push_property("v_mol","vector-atom");
     if(use_type_) fix_coupling_->add_push_property("type","scalar-atom");
     if(use_dens_) fix_coupling_->add_push_property("density","scalar-atom");
     if(use_torque_) fix_coupling_->add_push_property("omega","vector-atom");
