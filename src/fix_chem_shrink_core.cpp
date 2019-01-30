@@ -173,6 +173,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     peratom_flag = 1;
     peratom_freq = 1;
     global_freq = 1;
+    //
+    time_integrate = 1;
 }
 
 /* ---------------------------------------------------------------------- */

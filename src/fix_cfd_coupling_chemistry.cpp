@@ -170,10 +170,9 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
    }
 
    // flags for vector output
-   //vector_flag = 1;
-   //size_vector = 3;
-   //global_freq = 1;
-   //extvector = 1;
+   global_freq = 1;
+   extvector = 1;
+   peratom_flag = 1;
 }
 
 /* ---------------------------------------------------------------------- */
