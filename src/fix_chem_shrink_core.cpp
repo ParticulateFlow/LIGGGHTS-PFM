@@ -173,6 +173,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     peratom_flag = 1;
     peratom_freq = 1;
     global_freq = 1;
+    //
+    time_integrate = 1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -187,7 +189,7 @@ void FixChemShrinkCore::post_create()
         const char* fixarg[11];
         // register property/atom for chemical reaction resistance
         fixarg[0]=fixname;            // fixid
-        fixarg[1]="all";
+        fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";          // vector with 3 values (for the different layers)
@@ -209,7 +211,7 @@ void FixChemShrinkCore::post_create()
         const char* fixarg[11];
         // register property/atom for diffusion resistance term
         fixarg[0]=fixname;            // fixid
-        fixarg[1]="all";
+        fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";          // vector with 3 values (for the different layers)
@@ -230,7 +232,7 @@ void FixChemShrinkCore::post_create()
 
         const char* fixarg[9];
         fixarg[0]=fixname;            // fixid
-        fixarg[1]="all";
+        fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="scalar";
@@ -249,7 +251,7 @@ void FixChemShrinkCore::post_create()
 
         const char* fixarg[11];
         fixarg[0]=fixname;            // fixid
-        fixarg[1]="all";
+        fixarg[1]=group->names[igroup]; //"all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
@@ -270,7 +272,7 @@ void FixChemShrinkCore::post_create()
 
         const char* fixarg[11];
         fixarg[0]=fixname;            // fixid
-        fixarg[1]="all";
+        fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
@@ -291,7 +293,7 @@ void FixChemShrinkCore::post_create()
 
         const char* fixarg[12];
         fixarg[0]=fixname;            // fixid
-        fixarg[1]="all";
+        fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
@@ -312,7 +314,7 @@ void FixChemShrinkCore::post_create()
 
         const char* fixarg[12];
         fixarg[0]=fixname;            // fixid
-        fixarg[1]="all";
+        fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
         fixarg[3]=fixname;           // propertyid
         fixarg[4]="vector";
