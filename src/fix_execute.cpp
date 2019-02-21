@@ -28,7 +28,9 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
-  Fix(lmp, narg, arg)
+  Fix(lmp, narg, arg),
+  once(false),
+  execution_step(0)
 {
   if (narg < 5) error->all(FLERR,"Illegal fix execute command");
   nevery = force->inumeric(FLERR,arg[3]);
@@ -39,6 +41,13 @@ FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
   int n = strlen(arg[4]) + 1;
   string = new char[n];
   strcpy(string,arg[4]);
+
+  if (narg == 6 && strcmp(arg[5],"once")==0)
+  {
+    once=true;
+    execution_step = nevery;
+    nevery = 1;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -61,5 +70,6 @@ int FixExecute::setmask()
 
 void FixExecute::end_of_step()
 {
+  if (!once || update->ntimestep == execution_step )
   input->one(string);
 }
