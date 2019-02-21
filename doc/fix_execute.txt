@@ -21,7 +21,7 @@ keyword = none or {once} :l
 
 [Examples:]
 
-fix ex0 all execute 100 "variable a equal $x" :pre
+fix ex0 all execute 100 "variable a equal $x"
 fix ex1 all execute 100 "variable a equal $x" once :pre
 
 [Description:]
