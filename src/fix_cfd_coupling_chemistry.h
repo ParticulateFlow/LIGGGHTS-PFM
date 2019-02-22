@@ -55,8 +55,6 @@ class FixCfdCouplingChemistry : public Fix  {
   int iarg_;                                    // int narg_
   char **mod_spec_names_;
   char **diffusant_names_, **molarfraction_names;
-  int n_species;
-  int n_diff;
   int num_diffusant;
 
   class FixCfdCoupling*     fix_coupling_;

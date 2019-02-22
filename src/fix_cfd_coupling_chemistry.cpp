@@ -64,8 +64,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   use_reactant_(false)
 {
     num_species = 0;
-    n_species = 0;
-    n_diff = 0;
     iarg_ = 3;
     mod_spec_names_ = diffusant_names_ = molarfraction_names = NULL;
     num_diffusant = 0;
@@ -81,7 +79,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
 
         if (strcmp(arg[iarg_],"n_species") == 0)
         {
-            n_species = 1;
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR,this,"Wrong number of arguments");
             iarg_++;
@@ -93,8 +90,8 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         }
         else if (strcmp(arg[iarg_],"species_names") == 0)
         {
-            if (n_species != 1)
-                error -> fix_error (FLERR,this, "have to define n_species before 'species_names'");
+            if (num_species < 1)
+                error -> fix_error (FLERR,this, "have to define number of species before 'species_names'");
             if (iarg_ + num_species > narg)
                 error -> fix_error(FLERR,this, "Wrong number of arguments");
             species_names_ = new char*[num_species];
@@ -109,7 +106,6 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         }
         else if (strcmp(arg[iarg_],"n_diff") == 0)
         {
-            n_diff = 1;
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR,this,"Wrong number of arguments");
             iarg_++;
@@ -121,7 +117,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
         }
         else if (strcmp(arg[iarg_],"diffusant_names") == 0)
         {
-            if (n_diff != 1)
+            if (num_diffusant < 1)
                 error -> fix_error (FLERR,this, "have to define n_diff before 'diffusant_names'");
             if (iarg_ + num_diffusant > narg)
                 error -> fix_error(FLERR,this, "Wrong number of arguments");
@@ -179,23 +175,18 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
 
 FixCfdCouplingChemistry::~FixCfdCouplingChemistry()
 {
-    for (int i=0;i<num_species;++i)
-    {
-        if (species_names_[i]) delete [] species_names_[i];
-        if (mod_spec_names_[i]) delete [] mod_spec_names_[i];
-        if (molarfraction_names[i]) delete [] molarfraction_names[i];
-    }
-
-    for (int j=0; j<num_diffusant;++j)
-        if (diffusant_names_[j]) delete [] diffusant_names_[j];
+    if (species_names_) for (int i=0;i<num_species;++i) delete [] species_names_[i];
+    if (mod_spec_names_) for (int i=0;i<num_species;++i) delete [] mod_spec_names_[i];
+    if (molarfraction_names) for (int i=0;i<num_species;++i) delete [] molarfraction_names[i];
+    if (diffusant_names_) for (int j=0;j<num_diffusant;++j) delete [] diffusant_names_[j];
 
     delete [] species_names_;
     delete [] mod_spec_names_;
     delete [] diffusant_names_;
     delete [] molarfraction_names;
 
-    if(fix_masschange_)     delete []fix_masschange_;
-    if(fix_diffusionCoeff_) delete []fix_diffusionCoeff_;
+    delete []fix_masschange_;
+    delete []fix_diffusionCoeff_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -210,14 +201,9 @@ void FixCfdCouplingChemistry::pre_delete(bool unfixflag)
     if(unfixflag && fix_partReynolds_)  modify -> delete_fix("partRe");
     if(unfixflag && fix_partPressure_)  modify -> delete_fix("partP");
 
-    for (int i = 0; i < num_species; ++i)
-    {
-        if (unfixflag && fix_masschange_[i])        modify -> delete_fix(mod_spec_names_[i]);
-        if (unfixflag && fix_molarfraction_[i])     modify -> delete_fix(molarfraction_names[i]);
-    }
-
-    for (int j = 0; j < num_diffusant; ++j)
-        if (unfixflag && fix_diffusionCoeff_[j])    modify -> delete_fix(diffusant_names_[j]);
+    if (unfixflag && fix_masschange_) for (int i=0;i<num_species;++i) modify->delete_fix(mod_spec_names_[i]);
+    if (unfixflag && fix_molarfraction_) for (int i=0;i<num_species;++i) modify->delete_fix(molarfraction_names[i]);
+    if (unfixflag && fix_diffusionCoeff_) for (int j=0;j<num_diffusant;++j) modify->delete_fix(diffusant_names_[j]);
     
     if(unfixflag && fix_reactantPerParticle_) modify->delete_fix("reactantPerParticle");
 }
@@ -436,7 +422,6 @@ void FixCfdCouplingChemistry::post_create()
 
 void FixCfdCouplingChemistry::init()
 {
-    // make sure there is only one fix of thfor(int i = 1; i <= n_FixMesh_; ++i)is style
     if(modify->n_fixes_style(style) != 1)
       error->fix_error(FLERR,this,"More than one fix of this style is not allowed");
 
@@ -476,12 +461,6 @@ void FixCfdCouplingChemistry::init()
 
 void FixCfdCouplingChemistry::initial_integrate(int)
 {
-    /* if (comm -> me == 0 && screen)
-        fprintf(screen,"activate initial integrate \n"); */
-    // for all species, reaction heat
-    // if current timestep - 1 == latestpush(species name)
-    // reset fix_masschange_(species name)
-    // -1 is needed because time step is advanced before this function is called
     bigint prev_time = update->ntimestep - 1;
     int *mask   = atom -> mask;
     int  nlocal = atom -> nlocal;
