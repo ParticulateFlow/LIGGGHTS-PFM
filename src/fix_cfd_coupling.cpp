@@ -187,9 +187,9 @@ void FixCfdCoupling::end_of_step()
     if(ts % couple_nevery_ || ts_create_ == ts) return;
 
     if(screen && comm->me == 0)
-        fprintf(screen,"CFD Coupling established at step %d\n",ts);
+        fprintf(screen,"CFD Coupling established at step %ld\n",ts);
     if(logfile && comm->me == 0)
-        fprintf(logfile,"CFD Coupling established at step %d\n",ts);
+        fprintf(logfile,"CFD Coupling established at step %ld\n",ts);
 
     // call region model
     if(rm_) rm_->rm_update();
