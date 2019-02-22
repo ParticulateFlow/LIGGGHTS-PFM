@@ -473,7 +473,7 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
     if(mass_shrink_me > 0. && mass_to_remove_me > 0.)
     {
         ratio_m = 1. - mass_to_remove_me / mass_shrink_me;
-        ratio_r = pow(ratio_m, THIRD);
+        ratio_r = cbrt(ratio_m);
 
         for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
         {
