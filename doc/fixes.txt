@@ -34,6 +34,7 @@ Fixes :h1
    fix_efield
    fix_enforce2d
    fix_evaporate
+   fix_execute
    fix_external
    fix_freeze
    fix_gcmc
