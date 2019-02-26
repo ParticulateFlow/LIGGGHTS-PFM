@@ -55,10 +55,8 @@ using namespace MathConst;
 #define Runiv   8.3144
 
 /* ---------------------------------------------------------------------- */
-
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
-    nmaxlayers_(3),
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
     rmin_(1e-5)       //  [m]

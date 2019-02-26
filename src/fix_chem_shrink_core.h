@@ -80,7 +80,7 @@ public:
   char *moleFracA, *moleFracC;
 
 
-  const int nmaxlayers_;    // maximum available layers - 3
+  static int const nmaxlayers_ = 3;    // maximum available layers - 3
   int layers_;          // current active layers
   double minMolarFrac_;
   const double rmin_;   // relative radius below which layers are neglected
