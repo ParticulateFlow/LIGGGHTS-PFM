@@ -94,6 +94,7 @@ public:
   double tortuosity_;
   double **relRadii_;
   double **massLayer_;
+  const double *k0_, *Ea_;
 
   // particle propertis
   double *radius_;
@@ -125,9 +126,12 @@ public:
   class FixPropertyAtom *fix_effDiffKnud;
   class FixPropertyAtom *fix_partPressure_;
 
+
   // particle properties
   class FixPropertyAtom *fix_layerRelRad_;
   class FixPropertyAtom *fix_layerMass_;
+  class FixPropertyGlobal *fix_k0_;
+  class FixPropertyGlobal *fix_Ea_;
   class FixPropertyAtom *fix_porosity_;
   class FixPropertyAtom *fix_rhoeff_;
   class FixPropertyGlobal *fix_tortuosity_;

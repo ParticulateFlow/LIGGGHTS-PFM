@@ -443,6 +443,9 @@ void FixChemShrinkCore::updatePtrs()
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
 
+    k0_             =   fix_k0_             ->  get_values();
+    Ea_             =   fix_Ea_             ->  get_values();
+
     porosity_       =   fix_porosity_       ->  array_atom;
     rhoeff_         =   fix_rhoeff_         ->  array_atom;
     //
@@ -482,6 +485,21 @@ void FixChemShrinkCore::init()
     // Define iron ore layer densities from Fe to Fe2O3
     double layerDensities_[] = {7870., 5740., 5170., 5240.};
 
+    int ntype = atom -> ntypes;
+    char* fixname = new char[strlen("k0_")+strlen(id)+1];
+    strcpy (fixname,"k0_");
+    strcat(fixname,id);
+    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
+    delete []fixname;
+
+    // look up activation energies Ea
+    // differs for every ore id
+    fixname = new char [strlen("Ea_")+strlen(id)+1];
+    strcpy(fixname, "Ea_");
+    strcat(fixname, id);
+    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, style));
+    delete[]fixname;
+
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style));
@@ -503,7 +521,7 @@ void FixChemShrinkCore::init()
     fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
 
-    char* fixname = new char [strlen("Aterm_")+strlen(id)+1];
+    fixname = new char [strlen("Aterm_")+strlen(id)+1];
     strcpy (fixname,"Aterm_");
     strcat(fixname,id);
     fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
@@ -741,23 +759,10 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 // 0 = wüstite interface, 1 = magnetite interface, 2 = hematite interface
 void FixChemShrinkCore::getA(int i)
 {
-    double k0_high_CO[] = {17., 25., 2700.};
-    double k0_high_H2[] = {30., 23., 160.};
-
-    double Ea_high_CO[] = {69488., 73674., 113859.};
-    double Ea_high_H2[] = {63627., 71162., 92092.};
-
     updatePtrs();
     for (int j = 0; j < layers_ ; j++)
     {
-        if (strcmp(speciesA, "CO") == 0)
-        {
-            Aterm[i][j]   =   (k0_high_CO[j]*exp(-Ea_high_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
-        }
-        else if (strcmp(speciesA,"H2")==0)
-        {
-            Aterm[i][j]   =   (k0_high_H2[j]*exp(-Ea_high_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
-        }
+        Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
         Aterm[i][j]   =   1.0/Aterm[i][j];
     }
 
@@ -1350,6 +1355,7 @@ void FixChemShrinkCore::init_defaults()
     porosity_ = NULL;
     pore_diameter_ = tortuosity_ = 0.0;
     relRadii_ = massLayer_ = NULL;
+    k0_ = Ea_ = NULL;
     xA_ = xC_ = NULL;
 
     // particle properties total
@@ -1383,6 +1389,8 @@ void FixChemShrinkCore::init_defaults()
     fix_partPressure_ = NULL;   // Pascal
     fix_layerRelRad_ = NULL;
     fix_layerMass_ = NULL;           //  [kg]
+    fix_k0_ = NULL;             //  [m/s]
+    fix_Ea_ = NULL;             //  [J/mol] - [kg*m^2/s^2*mol]
     fix_porosity_ = NULL;       //  [%]
     fix_rhoeff_ = NULL;
     fix_tortuosity_ = NULL;
