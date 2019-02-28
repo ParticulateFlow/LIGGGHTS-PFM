@@ -52,7 +52,7 @@ class Atom : protected Pointers {
   int * thread;
 
   int *molecule;
-  double *q,**mu;
+  double *q,**mu; // charge, orientation of dipole moment
   double **omega,**angmom,**torque;
   double *radius,*rmass,*vfrac,*s0;
   double *density; //NP modified C.K.

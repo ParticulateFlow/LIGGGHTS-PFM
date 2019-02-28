@@ -919,7 +919,8 @@ void Set::set(int keyword)
                 updFix->array_atom[i][1] = yvalue;
                 updFix->array_atom[i][2] = zvalue;
             }
-            else updFix->vector_atom[i]=dvalue;
+            else updFix->set_vector(i,dvalue);
+	      //updFix->vector_atom[i]=dvalue;
         }
         else
         {
@@ -928,7 +929,8 @@ void Set::set(int keyword)
                   for (int m = 0; m < nUpdValues; m++)
                      updFix->array_atom[i][m] = updValues[m];
             }
-            else updFix->vector_atom[i]=updValues[0];
+            else updFix->set_vector(i, updValues[0]);
+	      //updFix->vector_atom[i]=updValues[0];
         }
     }
 

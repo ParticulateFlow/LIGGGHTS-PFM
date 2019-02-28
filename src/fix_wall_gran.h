@@ -164,7 +164,9 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
     const double tor1 = i_forces.delta_torque[0]*cdata.area_ratio;
     const double tor2 = i_forces.delta_torque[1]*cdata.area_ratio;
     const double tor3 = i_forces.delta_torque[2]*cdata.area_ratio;
-    cwl_->add_wall_2(cdata.i,fx,fy,fz,tor1,tor2,tor3,cdata.contact_history,cdata.rsq);
+    double normal[3];
+    vectorNegate3D(cdata.en,normal);
+    cwl_->add_wall_2(cdata.i,fx,fy,fz,tor1,tor2,tor3,cdata.contact_history,cdata.rsq,normal);
   }
 
  protected:

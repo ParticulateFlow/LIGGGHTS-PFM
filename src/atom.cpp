@@ -1931,6 +1931,10 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"density") == 0) return (void *) density; //NP modified C.K.
   if (strcmp(name,"rho") == 0) return (void *) rho;  //NP modified A.A.
   if (strcmp(name,"pressure") == 0) return (void *) p;  //NP modified A.A.
+  if (strcmp(name,"molecule") == 0) return (void *) molecule;
+  if (strcmp(name,"q") == 0) return (void *) q;
+  if (strcmp(name,"vfrac") == 0) return (void *) vfrac;
+  if (strcmp(name,"s0") == 0) return (void *) s0;
   if (strcmp(name,"volume") == 0) return (void *) volume; // superquadric
   if (strcmp(name,"area") == 0) return (void *) area; // superquadric
 
@@ -1941,16 +1945,9 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"x") == 0) return (void *) x;
   if (strcmp(name,"v") == 0) return (void *) v;
   if (strcmp(name,"f") == 0) return (void *) f;
-  if (strcmp(name,"molecule") == 0) return (void *) molecule;
-  if (strcmp(name,"q") == 0) return (void *) q;
-  if (strcmp(name,"mu") == 0) return (void *) mu;
   if (strcmp(name,"omega") == 0) return (void *) omega;
   if (strcmp(name,"angmom") == 0) return (void *) angmom;
   if (strcmp(name,"torque") == 0) return (void *) torque;
-  if (strcmp(name,"radius") == 0) return (void *) radius;
-  if (strcmp(name,"rmass") == 0) return (void *) rmass;
-  if (strcmp(name,"vfrac") == 0) return (void *) vfrac;
-  if (strcmp(name,"s0") == 0) return (void *) s0;
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
   if (strcmp(name,"shape") == 0 && shape!=NULL) return (void *) shape;

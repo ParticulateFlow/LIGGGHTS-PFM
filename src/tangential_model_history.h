@@ -83,8 +83,8 @@ namespace ContactModels
         shear[1] += cdata.vtr2 * dt;
         shear[2] += cdata.vtr3 * dt;
 
-        // rotate shear displacements
-
+        // project vector into normal plane and
+        // subtract normal component from shear displacement vector
         double rsht = shear[0]*enx + shear[1]*eny + shear[2]*enz;
         shear[0] -= rsht * enx;
         shear[1] -= rsht * eny;

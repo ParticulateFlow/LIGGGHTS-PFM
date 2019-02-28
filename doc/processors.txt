@@ -27,7 +27,7 @@ keyword = {grid} or {map} or {part} or {file} :l
   {map} arg = {cart} or {cart/reorder} or {xyz} or {xzy} or {yxz} or {yzx} or {zxy} or {zyx}
      cart = use MPI_Cart() methods to map processors to 3d grid with reorder = 0
      cart/reorder = use MPI_Cart() methods to map processors to 3d grid with reorder = 1
-     xyz,xzy,yxz,yzx,zxy,zyx = map procesors to 3d grid in IJK ordering
+     xyz,xzy,yxz,yzx,zxy,zyx = map processors to 3d grid in IJK ordering
   {numa} arg = none
   {part} args = Psend Precv cstyle
     Psend = partition # (1 to Np) which will send its processor layout
@@ -160,7 +160,7 @@ The first non-blank, non-comment line should have
 Px Py Py :pre
 
 These must be compatible with the total number of processors
-and the Px, Py, Pz settings of the processors commmand.
+and the Px, Py, Pz settings of the processors command.
 
 This line should be immediately followed by
 P = Px*Py*Pz lines of the form:
@@ -225,7 +225,7 @@ The {part} keyword affects the factorization of P into Px,Py,Pz.
 
 It can be useful when running in multi-partition mode, e.g. with the
 "run_style verlet/split"_run_style.html command.  It specifies a
-dependency bewteen a sending partition {Psend} and a receiving
+dependency between a sending partition {Psend} and a receiving
 partition {Precv} which is enforced when each is setting up their own
 mapping of their processors to the simulation box.  Each of {Psend}
 and {Precv} must be integers from 1 to Np, where Np is the number of
@@ -252,7 +252,7 @@ processors, it could create a 4x2x10 grid, but it will not create a
 4.
 
 IMPORTANT NOTE: If you use the "partition"_partition.html command to
-invoke different "processsors" commands on different partitions, and
+invoke different "processors" commands on different partitions, and
 you also use the {part} keyword, then you must insure that both the
 sending and receiving partitions invoke the "processors" command that
 connects the 2 partitions via the {part} keyword.  LAMMPS cannot

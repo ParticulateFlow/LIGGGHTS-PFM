@@ -631,6 +631,7 @@ void FixInsert::pre_exchange()
       // schedule next insertion
       if (insert_every && (!ninsert_exists || ninserted < ninsert))
         next_reneighbor += insert_every;
+      else next_reneighbor = 0;
 
       return;
   }

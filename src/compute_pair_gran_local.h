@@ -48,7 +48,7 @@ class ComputePairGranLocal : public Compute {
   void add_pair(int i,int j,double fx,double fy,double fz,double tor1,double tor2,double tor3,double *hist);
   void add_heat(int i,int j,double hf);
   void add_wall_1(int iFMG,int iTri,int iP,double *contact_point,double *v_wall);
-  void add_wall_2(int i,double fx,double fy,double fz,double tor1,double tor2,double tor3,double *hist,double rsq);
+  void add_wall_2(int i,double fx,double fy,double fz,double tor1,double tor2,double tor3,double *hist,double rsq, double *normal);
   void add_heat_wall(int i,double hf);
 
  private:
@@ -71,8 +71,8 @@ class ComputePairGranLocal : public Compute {
 
   int ipair;
 
-  //NP flags which stuff to store
-  int posflag,velflag,idflag,fflag,tflag,hflag,aflag,hfflag;
+  // flags indicating which properties to store
+  int posflag,velflag,idflag,fflag,fnflag,ftflag,tflag,hflag,aflag,deltaflag,hfflag;
 
   //NP pairwise data coming from pair style
   int dnum;

@@ -23,9 +23,9 @@ compute 1 fluid inertia/molecule :pre
 
 Define a computation that calculates the inertia tensor of individual
 molecules.  The calculation includes all effects due to atoms passing
-thru periodic boundaries.
+through periodic boundaries.
 
-The symmetric intertia tensor has 6 components, ordered
+The symmetric inertia tensor has 6 components, ordered
 Ixx,Iyy,Izz,Ixy,Iyz,Ixz.  The tensor for a particular molecule is only
 computed if one or more of its atoms is in the specified group.
 Normally all atoms in the molecule should be in the group, however

@@ -23,9 +23,9 @@ compute 1 all msd/molecule :pre
 
 Define a computation that calculates the mean-squared displacement
 (MSD) of individual molecules.  The calculation includes all effects
-due to atoms passing thru periodic boundaries.
+due to atoms passing through periodic boundaries.
 
-Four quantites are calculated by this compute for each molecule.  The
+Four quantities are calculated by this compute for each molecule.  The
 first 3 quantities are the squared dx,dy,dz displacements of the
 center-of-mass.  The 4th component is the total squared displacement,
 i.e. (dx*dx + dy*dy + dz*dz) of the center-of-mass.
@@ -42,7 +42,7 @@ its atoms are in the specified group.  Normally all atoms in the
 molecule should be in the group, however this is not required.  LAMMPS
 will warn you if this is not the case.  Only atoms in the group
 contribute to the center-of-mass calculation for the molecule, which
-is used to caculate its initial and current position.
+is used to calculate its initial and current position.
 
 The ordering of per-molecule quantities produced by this compute is
 consistent with the ordering produced by other compute commands that
@@ -68,7 +68,7 @@ will need to post-process a "dump file"_dump.html containing
 coordinates of the atoms in the bodies.
 
 IMPORTANT NOTE: Unlike the "compute msd"_compute_msd.html command,
-this compute does not store the initial center-of-mass coorindates of
+this compute does not store the initial center-of-mass coordinates of
 its molecules in a restart file.  Thus you cannot continue the MSD per
 molecule calculation of this compute when running from a "restart
 file"_read_restart.html.

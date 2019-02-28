@@ -40,6 +40,7 @@ class FixWallReflect : public Fix {
   int varindex[6];
   int varflag;
   double xscale,yscale,zscale;
+  double e;
 };
 
 }

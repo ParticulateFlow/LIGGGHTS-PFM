@@ -45,7 +45,7 @@ following manner.  Their size is a function of the line segment length
 and the specified sigma for that particle type.  If a line segment has
 a length L and is of type I, then the number of spheres N that
 represent the segment is calculated as N = L/sigma_II, rounded up to
-an integer value.  Thus if L is not evenly divisibly by sigam_II, N is
+an integer value.  Thus if L is not evenly divisibly by sigma_II, N is
 incremented to include one extra sphere.  In this case, the spheres
 must be slightly smaller than sigma_II so as not to overlap, so a new
 sigma-prime is chosen as the sphere diameter, such that L/N =
@@ -121,8 +121,8 @@ This pair style can only be used via the {pair} keyword of the
 [Restrictions:]
 
 This style is part of the ASPHERE package.  It is only enabled if
-LAMMPS was built with that package.  See the "Making
-LAMMPS"_Section_start.html#2_3 section for more info.
+LAMMPS was built with that package.  See the "Making LAMMPS with optional
+packages"_Section_start.html#start_3 section for more info.
 
 Defining particles to be line segments so they participate in
 line/line or line/particle interactions requires the use the

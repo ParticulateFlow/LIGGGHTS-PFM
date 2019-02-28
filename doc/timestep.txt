@@ -23,6 +23,7 @@ timestep 0.003 :pre
 
 Set the timestep size for subsequent molecular dynamics simulations.
 See the "units"_units.html command for a discussion of time units.
+
 The default value for the timestep also depends on the choice of units
 for the simulation; see the default values below.
 
