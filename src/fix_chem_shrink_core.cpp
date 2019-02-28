@@ -345,28 +345,37 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 
         if (fix_moleFractionA_) { modify  ->  delete_fix(moleFracA); delete [] xA_; }
         if (fix_moleFractionC_) { modify  ->  delete_fix(moleFracC); delete [] xC_; }
-        if (fix_fracRed)        { modify  ->  delete_fix("fracRed"); delete [] fracRed_;}
+
+        fixname = new char [strlen("fracRed_")+strlen(group->names[igroup])+1];
+        strcpy(fixname,"fracRed_");
+        strcat(fixname,group->names[igroup]);
+        if (fix_fracRed)        { modify  ->  delete_fix(fixname); delete [] fracRed_;}
+        delete [] fixname;
 
         fixname = new char[strlen("Aterm_")+strlen(id)+1];
         strcpy (fixname,"Aterm_");
         strcat(fixname,id);
         if (fix_Aterm)          { modify  ->  delete_fix(fixname); delete [] Aterm; }
         delete []fixname;
+
         fixname = new char[strlen("Bterm_")+strlen(id)+1];
         strcpy (fixname,"Bterm_");
         strcat(fixname,id);
         if (fix_Bterm)          { modify  ->  delete_fix(fixname); delete [] Bterm; }
         delete []fixname;
+
         fixname = new char[strlen("Massterm_")+strlen(id)+1];
         strcpy (fixname,"Massterm_");
         strcat(fixname,id);
         if (fix_Massterm)       { modify  ->  delete_fix(fixname); delete [] Massterm; }
         delete []fixname;
+
         fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
         strcpy (fixname,"effDiffBinary_");
         strcat(fixname,id);
         if (fix_effDiffBinary)  { modify  ->  delete_fix(fixname); delete [] effDiffBinary;}
         delete []fixname;
+
         fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
         strcpy (fixname,"effDiffKnud_");
         strcat(fixname,id);
@@ -433,10 +442,7 @@ void FixChemShrinkCore::updatePtrs()
     xC_             =   fix_moleFractionC_  ->  vector_atom;
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
-    layerDensities_ =   fix_layerDens_           ->  get_values();
-    layerMolMasses_ =   fix_layerMolMass_        ->  get_values();
-    k0_             =   fix_k0_             ->  get_values();
-    Ea_             =   fix_Ea_             ->  get_values();
+
     porosity_       =   fix_porosity_       ->  array_atom;
     rhoeff_         =   fix_rhoeff_         ->  array_atom;
     //
@@ -473,36 +479,8 @@ void FixChemShrinkCore::init()
     if (!atom->tag_enable || 0 == atom->map_style)
       error->fix_error(FLERR,this,"requires atom tags and an atom map");
 
-    // look up pre-exponential factor k0
-    // differs for every ore id
-    int ntype = atom -> ntypes;
-    char* fixname = new char[strlen("k0_")+strlen(id)+1];
-    strcpy (fixname,"k0_");
-    strcat(fixname,id);
-    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
-    delete []fixname;
-
-    // look up activation energies Ea
-    // differs for every ore id
-    fixname = new char [strlen("Ea_")+strlen(id)+1];
-    strcpy(fixname, "Ea_");
-    strcat(fixname, id);
-    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, style));
-    delete[]fixname;
-
-    // Layer Molar Mass
-    fixname = new char [strlen("molMass_")+strlen(group->names[igroup])+1];
-    strcpy(fixname,"molMass_");
-    strcat(fixname,group->names[igroup]);
-    fix_layerMolMass_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
-    delete []fixname;
-
-    // Layer Density
-    fixname = new char [strlen("density_")+strlen(group->names[igroup])+1];
-    strcpy(fixname,"density_");
-    strcat(fixname,group->names[igroup]);
-    fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
-    delete []fixname;
+    // Define iron ore layer densities from Fe to Fe2O3
+    double layerDensities_[] = {7870., 5740., 5170., 5240.};
 
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
@@ -514,7 +492,7 @@ void FixChemShrinkCore::init()
     fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style));
     fix_moleFractionA_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracA, "property/atom", "scalar", 0, 0, style));
     fix_moleFractionC_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracC, "property/atom", "scalar", 0, 0, style));
-    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
+
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style));
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
@@ -525,7 +503,7 @@ void FixChemShrinkCore::init()
     fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
 
-    fixname = new char [strlen("Aterm_")+strlen(id)+1];
+    char* fixname = new char [strlen("Aterm_")+strlen(id)+1];
     strcpy (fixname,"Aterm_");
     strcat(fixname,id);
     fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
@@ -568,6 +546,12 @@ void FixChemShrinkCore::init()
     fix_dmA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete [] fixname;
 
+    fixname = new char [strlen("fracRed_")+strlen(group->names[igroup])+1];
+    strcpy(fixname,"fracRed_");
+    strcat(fixname,group->names[igroup]);
+    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
+    delete []fixname;
+
     updatePtrs();
 
     // get initial values for rhoeff, and use them to calculate mass of layers
@@ -594,6 +578,7 @@ void FixChemShrinkCore::post_force(int)
     double dmA_[nmaxlayers_] = {0.};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
     double v_reac_[nmaxlayers_] = {0.};
     double v_prod_[nmaxlayers_] = {0.};
+    double layerMolMasses_[] = {0.055845, 0.071844, 0.231532, 0.1596882};
 
     for (i = 0; i < nlocal; i++)
     {
@@ -615,21 +600,21 @@ void FixChemShrinkCore::post_force(int)
 
                 }else if (T_[i] > 573.15 && T_[i] < 843.15)
                 {
-                    FR_low(i);
+                    FR_low(i, layerMolMasses_);
                     getXi_low(i,x0_eq_);
                     getA_low(i);
                     getB(i);
                     getMassT(i);
                     reaction_low(i, dmA_, x0_eq_);
-                    update_atom_properties(i, dmA_,v_reac_,v_prod_);
+                    update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                     update_gas_properties(i, dmA_);
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_);
+                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                 }
                 else if (T_[i] > 843.15)
                 {
                     // calculate values for fractional reduction f_i = (1-relRadii_i^3)
                     // or with mass ratio provides simplicity for calculations of A & B terms.
-                    FractionalReduction(i);
+                    FractionalReduction(i,layerMolMasses_);
                     // get values for equilibrium molar fraction of reactant gas species,
                     // this value is calculated from the Equilibrium constants function Keq(layer,T).
                     // and used in the reaction rate determination.
@@ -647,12 +632,12 @@ void FixChemShrinkCore::post_force(int)
                     // the results of reaction gives us the mass change of reactant species gas
                     // in the usual case that means the CO gas mass species change is given
                     // this information is used then to calculate mass changes of particle layers
-                    update_atom_properties(i, dmA_,v_reac_,v_prod_);
+                    update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                     // also the results of reaction function is used to calculate
                     // the changes in gas species
                     update_gas_properties(i, dmA_);
                     // calculate delta_h, and dot_delta_h for heat of reaction
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_);
+                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                 }
             }
         }
@@ -756,10 +741,23 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 // 0 = wüstite interface, 1 = magnetite interface, 2 = hematite interface
 void FixChemShrinkCore::getA(int i)
 {
+    double k0_high_CO[] = {17., 25., 2700.};
+    double k0_high_H2[] = {30., 23., 160.};
+
+    double Ea_high_CO[] = {69488., 73674., 113859.};
+    double Ea_high_H2[] = {63627., 71162., 92092.};
+
     updatePtrs();
     for (int j = 0; j < layers_ ; j++)
     {
-        Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+        if (strcmp(speciesA, "CO") == 0)
+        {
+            Aterm[i][j]   =   (k0_high_CO[j]*exp(-Ea_high_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+        }
+        else if (strcmp(speciesA,"H2")==0)
+        {
+            Aterm[i][j]   =   (k0_high_H2[j]*exp(-Ea_high_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+        }
         Aterm[i][j]   =   1.0/Aterm[i][j];
     }
 
@@ -960,7 +958,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_reac_,double* v_prod_)
+void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_reac_,double* v_prod_, double* layerMolMasses_)
 {
     updatePtrs();
     if (screenflag_ && screen)
@@ -1061,7 +1059,7 @@ void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::FractionalReduction(int i)
+void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
 {
     // calculate the fractional reduction as defined in Tang et al. (2012)
     // "Simulation study on performance of Z-path Moving-fluidized Bed for Gaseous Reduction
@@ -1091,7 +1089,7 @@ void FixChemShrinkCore::FractionalReduction(int i)
 }
 /* ---------------------------------------------------------------------- */
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
-void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, double *v_prod_)
+void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, double *v_prod_, double* layerMolMasses_)
 {
     double a_coeff_nasa_Fe2O3[] = {298.15, 1700., 1000., -3.240851E+02, 1.152686E+00, -1.413588E-03, 7.496435E-07, -1.455880E-10, -2.647718E+04, 1.609668E+03, 1.066786E+01, -4.869774E-03, 5.056287E-05, -4.500105E-08, 7.709213E-12, -1.025006E+05, -5.068585E+01};
     double a_coeff_nasa_Fe3O4[] = {298.15, 1870., 1000., 1.948880E+02, -4.225771E-01, 3.843026E-04, -1.536471E-07, 2.301151E-11, -1.944678E+05, -1.023246E+03, 7.781798E+01, -4.602735E-01, 1.199812E-03, -1.203296E-06, 4.119178E-10, -1.457550E+05, -3.319564E+02};
@@ -1285,7 +1283,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
 }
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::FR_low(int i)
+void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
 {
     updatePtrs();
 
@@ -1352,7 +1350,6 @@ void FixChemShrinkCore::init_defaults()
     porosity_ = NULL;
     pore_diameter_ = tortuosity_ = 0.0;
     relRadii_ = massLayer_ = NULL;
-    layerDensities_ = layerMolMasses_ = k0_ = Ea_ = NULL;
     xA_ = xC_ = NULL;
 
     // particle properties total
@@ -1386,10 +1383,6 @@ void FixChemShrinkCore::init_defaults()
     fix_partPressure_ = NULL;   // Pascal
     fix_layerRelRad_ = NULL;
     fix_layerMass_ = NULL;           //  [kg]
-    fix_layerDens_ = NULL;           //  [kg/m^3]
-    fix_layerMolMass_ = NULL;        //  [kg/mole]
-    fix_k0_ = NULL;             //  [m/s]
-    fix_Ea_ = NULL;             //  [J/mol] - [kg*m^2/s^2*mol]
     fix_porosity_ = NULL;       //  [%]
     fix_rhoeff_ = NULL;
     fix_tortuosity_ = NULL;

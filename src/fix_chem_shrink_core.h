@@ -52,22 +52,25 @@ public:
   // functions declared in this class
   int active_layers(int);   // calculate number of active layers per-particle
   void calcMassLayer(int);  // calculate mass of layers per-particle
-  void FractionalReduction(int); // calculate fractional reduction per-layer depending on layer radius
+  void FractionalReduction(int, double *); // calculate fractional reduction per-layer depending on layer radius
   void getXi(int, double *);    // calculate molar equilibrium constant of reacting gas
   double K_eq(int, int); // calculate equilibrium constant based on the work of Valipour 2009
   void getA(int);   // calculate chemical reaction resistance term
   void getB(int);   // calculate diffusion resistance term
   void getMassT(int);   // calculate gas film mass transfer resistance term
   void reaction(int, double *, double *);   // calculate chemical reaction rate
-  void update_atom_properties(int, double *, double *, double *);   // update particle layers with depending on chemical reaction rate - per-particle
+  void update_atom_properties(int, double *, double *, double *, double *);   // update particle layers with depending on chemical reaction rate - per-particle
   void update_gas_properties(int, double *);    // update reactant and product gas masses depending on chemical reaction rate
-  void heat_of_reaction(int, double *, double *, double *);
+  void heat_of_reaction(int, double *, double *, double *, double *);
   double conv_enthalpy(double *, double , int);
   double K_eq_low(int, int);
   void reaction_low(int, double *, double *);
-  void FR_low(int);
+  void FR_low(int, double *);
   void getXi_low(int, double *);
   void getA_low(int);
+
+  // pre-defined variables for reduction process
+  static int const nmaxlayers_ = 3;
 
   // variables
   bool screenflag_;
@@ -79,13 +82,10 @@ public:
   char *diffA;
   char *moleFracA, *moleFracC;
 
-
-  static int const nmaxlayers_ = 3;    // maximum available layers - 3
   int layers_;          // current active layers
   double minMolarFrac_;
   const double rmin_;   // relative radius below which layers are neglected
   char *speciesA, *speciesC;
-
 
   // particle-layer variable values
   double **rhoeff_;
@@ -94,8 +94,6 @@ public:
   double tortuosity_;
   double **relRadii_;
   double **massLayer_;
-  const double *layerDensities_, *layerMolMasses_;
-  const double *k0_, *Ea_;
 
   // particle propertis
   double *radius_;
@@ -130,10 +128,6 @@ public:
   // particle properties
   class FixPropertyAtom *fix_layerRelRad_;
   class FixPropertyAtom *fix_layerMass_;
-  class FixPropertyGlobal *fix_layerDens_;
-  class FixPropertyGlobal *fix_layerMolMass_;
-  class FixPropertyGlobal *fix_k0_;
-  class FixPropertyGlobal *fix_Ea_;
   class FixPropertyAtom *fix_porosity_;
   class FixPropertyAtom *fix_rhoeff_;
   class FixPropertyGlobal *fix_tortuosity_;
