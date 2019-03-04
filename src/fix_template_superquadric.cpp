@@ -63,8 +63,6 @@ using namespace FixConst;
 FixTemplateSuperquadric::FixTemplateSuperquadric(LAMMPS *lmp, int narg, char **arg) :
     FixTemplateSphere(lmp, narg, arg)
 {
-  if (domain->dimension != 3)
-    error->fix_error(FLERR,this,"this fix is for 3D simulations only");
   if (!atom->superquadric_flag)
       error->all(FLERR,"Fix particletemplate/superquadric requires atom style superquadric");
 
