@@ -54,8 +54,9 @@ FixTemplateSphere::FixTemplateSphere(LAMMPS *lmp, int narg, char **arg) :
 
   restart_global = 1;
 
-  // random number generator, same for all procs
   if (narg < 4) error->fix_error(FLERR,this,"not enough arguments");
+
+  // random number generator, different seed for each proc
   seed = atoi(arg[3]) + comm->me;
   random = new RanPark(lmp,seed);
 

@@ -68,7 +68,6 @@ FixTemplateSuperquadric::FixTemplateSuperquadric(LAMMPS *lmp, int narg, char **a
 
   restart_global = 1;
 
-  // random number generator, same for all procs
   if (narg < 4) error->fix_error(FLERR,this,"not enough arguments");
 
   iarg = 4;
