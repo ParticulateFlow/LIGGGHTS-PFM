@@ -90,9 +90,6 @@ FixTemplateSuperquadric::FixTemplateSuperquadric(LAMMPS *lmp, int narg, char **a
   pdf_blockiness1->set_params<RANDOM_CONSTANT>(2.0);
   pdf_blockiness2->set_params<RANDOM_CONSTANT>(2.0);
 
-  delete pti;
-  pti = new ParticleToInsertSuperquadric(lmp);
-
   n_pti_max = 0;
   pti_list = NULL;
 
@@ -426,7 +423,6 @@ FixTemplateSuperquadric::~FixTemplateSuperquadric()
 
     if(strcmp(style,"particletemplate/superquadric") == 0)
     {
-        delete pti;
         if(pti_list) delete_ptilist();
     }
 }

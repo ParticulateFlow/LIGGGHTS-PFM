@@ -132,7 +132,6 @@ class FixTemplateSuperquadric : public FixTemplateSphere {
 
  protected:
 
-  class ParticleToInsert *pti;
   bool relative;
 
   // properties of particle template
