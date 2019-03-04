@@ -1,0 +1,60 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+How-to for superquadric particles :h3
+
+Introduction :h4
+
+Superquadric simulations allow LIGGGHTS(R) to use superquadric bodies as particles. 
+This text describes how to perform superquadric simulations in LIGGGHTS(R).
+
+Compilation :h4
+
+:link(boost,http://www.boost.org/)
+
+To compile LIGGGHTS(R) with this feature the "boost"_boost library must be
+available on the system.
+On most Linux-distributions a recent version can be installed via the package
+managment systems.
+
+Before starting the compilation, you have to enable the superquadric model in
+your Makefile. You have to add the following settings to your Makefile:
+
+LMP_INC += -DSUPERQUADRIC_ACTIVE_FLAG -DNONSPHERICAL_ACTIVE_FLAG :pre
+
+In case of a non-system-wide boost installation add:
+
+EXTRA_INC += -IPath/to/your/Boost/include :pre
+
+NOTE: Make sure that you add the definitions after the original assignments of
+LMP_INC and EXTRA_INC. Otherwise your changes will be overwritten.
+
+NOTE: Most Boost libraries are header-only: they consist entirely of header
+files containing templates and inline functions, and require no
+separately-compiled library binaries or special treatment when linking. ("link"_boost)
+
+Detailed description :h4
+
+The overall simulation structure stays the same for superquadric simulations as
+used for standard LIGGGHTS(R) simulations. In order to create a superquadric
+simulation based on an existing case you have to perform following steps:
+
+Use "atom_style superquadric"_atom_style.html 
+For contact models (pair_style gran as well as fix wall/gran) use "surface superquadric"_gran_surface_superquadric.html
+The superquadric model requires a special integrator, namly "fix nve/superquadric"_fix_nve_superquadric.html
+To define new superquadric particles use the "fix particletemplate/superquadric"_fix_particletemplate_superquadric.html :ul
+
+Performance :h4
+
+The superquadric model uses the framework of LIGGGHT(R). Therefore, the parallel
+scalability is linear as LIGGGHTS(R) itself. Compared to standard LIGGGHTS(R),
+the calculation of contact points is computational expensive for superquadric
+bodies.
+
+

@@ -1,0 +1,33 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+gran surface default model :h3
+
+[Syntax:]
+
+surface default :pre
+
+[Description:]
+
+This is the default surface model for a particle, it prepresents a smooth
+(non-rough) sphere.
+It is the default surface model for all LIGGGHTS(R) simulations.
+In case of a multi-sphere simulation, this surface model is applied to all
+spheres within one rigid body.
+
+[Coarse-graining information:]
+
+Using "coarsegraining"_coarsegraining.html in
+combination with this command should lead to
+statistically equivalent dynamics and system state.
+
+NOTE: "Coarsegraining"_coarsegraining.html may or
+may not be available in LIGGGHTS(R).
+
+[Restrictions:] none
