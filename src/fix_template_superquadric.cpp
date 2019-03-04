@@ -30,7 +30,7 @@
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
 
-#include <cmath>
+#include <math.h>
 #include "math_extra.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -428,53 +428,6 @@ FixTemplateSuperquadric::~FixTemplateSuperquadric()
 }
 
 /* ----------------------------------------------------------------------*/
-#if 0
-void FixTemplateSuperquadric::randomize_single()
-{
-
-    pti->atom_type = atom_type;
-    ParticleToInsertSuperquadric *ptisq_ptr = dynamic_cast<ParticleToInsertSuperquadric*>(pti);
-
-    // randomize shape
-    double shape[3];
-    if(pdf_size == NULL) {
-      shape[0] = rand(pdf_shapex, random_insertion);
-      shape[1] = rand(pdf_shapey, random_insertion);
-      shape[2] = rand(pdf_shapez, random_insertion);
-    } else {
-      double particle_size = 0.5*rand(pdf_size, random_insertion);
-      shape[0] = particle_size;
-      shape[1] = particle_size;
-      shape[2] = particle_size;
-    }
-    ptisq_ptr->shape_ins[0] = shape[0];
-    ptisq_ptr->shape_ins[1] = shape[1];
-    ptisq_ptr->shape_ins[2] = shape[2];
-    double blockiness[] = { rand(pdf_blockiness1, random_insertion),
-                           rand(pdf_blockiness2, random_insertion)};
-    ptisq_ptr->blockiness_ins[0] = blockiness[0];
-    ptisq_ptr->blockiness_ins[1] = blockiness[1];
-    double radius_;
-    MathExtraLiggghtsNonspherical::bounding_sphere_radius_superquadric(shape, blockiness, &radius_);
-    pti->radius_ins[0] = pti->r_bound_ins = radius_;
-
-    // randomize density
-    pti->density_ins = rand(pdf_density,random_insertion);
-
-    // calculate volume, mass and main components of inertia tensor
-    MathExtraLiggghtsNonspherical::volume_superquadric(ptisq_ptr->shape_ins, ptisq_ptr->blockiness_ins, &(ptisq_ptr->volume_ins));
-    MathExtraLiggghtsNonspherical::area_superquadric(ptisq_ptr->shape_ins, ptisq_ptr->blockiness_ins, &(ptisq_ptr->area_ins));
-    pti->mass_ins = pti->density_ins*pti->volume_ins;
-    MathExtraLiggghtsNonspherical::inertia_superquadric(ptisq_ptr->shape_ins, ptisq_ptr->blockiness_ins, ptisq_ptr->density_ins, ptisq_ptr->inertia_ins);
-
-    // init insertion position
-    vectorZeroize3D(pti->x_ins[0]);
-
-    pti->groupbit = groupbit;
-
-}
-#endif
-/* ----------------------------------------------------------------------*/
 
 void FixTemplateSuperquadric::init_ptilist(int n_random_max)///, const bool enforce_single, FixPropertyAtom * const fix_release)
 {
@@ -535,61 +488,11 @@ void FixTemplateSuperquadric::randomize_ptilist(int n_random,int distribution_gr
         vectorZeroize3D(pti_list[i]->omega_ins);
 
         pti_list[i]->groupbit = groupbit | distribution_groupbit;
-#if 0
-        pti_list[i]->distorder = distorder;
-#endif
     }
 
 }
 
 /* ----------------------------------------------------------------------*/
-#if 0
-void FixTemplateSuperquadric::direct_set_ptlist(const int i, const void * const data, const int distribution_groupbit, const int distorder)
-{
-    const PARTICLE_PACKING::SQ * const superquadric = static_cast<const PARTICLE_PACKING::SQ * const>(data);
-    ParticleToInsertSuperquadric *ptisq_ptr = dynamic_cast<ParticleToInsertSuperquadric*>(pti_list[i]);
-    ptisq_ptr->atom_type = atom_type;
-    const double radius = superquadric->get_radius();
-    ptisq_ptr->radius_ins[0] = radius;
-    ptisq_ptr->blockiness_ins[0] = superquadric->get_blockiness(0);
-    ptisq_ptr->blockiness_ins[1] = superquadric->get_blockiness(1);
-    ptisq_ptr->shape_ins[0] = superquadric->get_shape(0);
-    ptisq_ptr->shape_ins[1] = superquadric->get_shape(1);
-    ptisq_ptr->shape_ins[2] = superquadric->get_shape(2);
-    ptisq_ptr->density_ins = superquadric->get_density();
-    ptisq_ptr->volume_ins = superquadric->get_volume();
-    ptisq_ptr->mass_ins = ptisq_ptr->density_ins*ptisq_ptr->volume_ins;
-    ptisq_ptr->id_ins = superquadric->get_id();
-
-    // set fix_property_atom
-    if (ptisq_ptr->fix_property || ptisq_ptr->fix_property_value)
-        error->one(FLERR, "Ensure that set_property is not used in fix insert");
-    if (superquadric->n_fix_properties() > 0)
-    {
-        const int n = superquadric->n_fix_properties();
-        ptisq_ptr->n_fix_property = n;
-        ptisq_ptr->fix_property = new FixPropertyAtom*[n];
-        ptisq_ptr->fix_property_value = new double*[n];
-        for (int j = 0; j < n; j++)
-        {
-            ptisq_ptr->fix_property[j] = superquadric->get_fix_property(j);
-            const int m = superquadric->fix_property_nentries(j);
-            ptisq_ptr->fix_property_value[j] = new double[m];
-            for (int k = 0; k < m; k++)
-              ptisq_ptr->fix_property_value[j][k] = superquadric->fix_property_value(j, k);
-        }
-    }
-
-    // init insertion position
-    vectorZeroize3D(ptisq_ptr->x_ins[0]);
-    vectorZeroize3D(ptisq_ptr->v_ins);
-    vectorZeroize3D(ptisq_ptr->omega_ins);
-
-    ptisq_ptr->groupbit = groupbit | distribution_groupbit;
-
-    ptisq_ptr->distorder = distorder;
-}
-#endif
 
 double FixTemplateSuperquadric::min_rad() const
 {
@@ -637,43 +540,5 @@ double FixTemplateSuperquadric::max_r_bound() const
 {
   return max_rad();
 }
-
-#if 0
-/* ----------------------------------------------------------------------
-   generate hash to identify this template
-------------------------------------------------------------------------- */
-
-unsigned int FixTemplateSuperquadric::generate_hash()
-{
-    unsigned int hash = 0;
-    unsigned int start = seed_insertion*420001; // it's magic
-    add_hash_value(atom_type, start, hash);
-
-    add_hash_value(pdf_shapex->rand_style(), start, hash);
-    add_hash_value(expectancy(pdf_shapex), start, hash);
-    add_hash_value(cubic_expectancy(pdf_shapex), start, hash);
-
-    add_hash_value(pdf_shapey->rand_style(), start, hash);
-    add_hash_value(expectancy(pdf_shapey), start, hash);
-    add_hash_value(cubic_expectancy(pdf_shapey), start, hash);
-
-    add_hash_value(pdf_shapez->rand_style(), start, hash);
-    add_hash_value(expectancy(pdf_shapez), start, hash);
-    add_hash_value(cubic_expectancy(pdf_shapez), start, hash);
-
-    add_hash_value(pdf_blockiness1->rand_style(), start, hash);
-    add_hash_value(expectancy(pdf_blockiness1), start, hash);
-    add_hash_value(cubic_expectancy(pdf_blockiness1), start, hash);
-
-    add_hash_value(pdf_blockiness2->rand_style(), start, hash);
-    add_hash_value(expectancy(pdf_blockiness2), start, hash);
-    add_hash_value(cubic_expectancy(pdf_blockiness2), start, hash);
-
-    add_hash_value(pdf_density->rand_style(), start, hash);
-    add_hash_value(expectancy(pdf_density), start, hash);
-    add_hash_value(cubic_expectancy(pdf_density), start, hash);
-    return hash;
-}
-#endif
 
 #endif

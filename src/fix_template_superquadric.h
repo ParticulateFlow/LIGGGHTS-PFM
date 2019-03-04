@@ -43,7 +43,6 @@ FixStyle(particletemplate/superquadric,FixTemplateSuperquadric)
 #include "probability_distribution.h"
 #include "fix_template_sphere.h"
 #include "math_extra_liggghts_superquadric.h"
-#include "fix_template_sphere.h"
 
 namespace PARTICLE_PACKING
 {
@@ -110,25 +109,13 @@ class FixTemplateSuperquadric : public FixTemplateSphere {
   ~FixTemplateSuperquadric();
 
   // access to protected properties
-
   virtual double min_rad() const;
   virtual double max_rad() const;
   virtual double max_r_bound() const;
 
-  // single particle generation, used by fix insert/* commands
-#if 0
-  virtual void randomize_single();
-#endif
-
   // many particle generation, used by fix insert commands
-  virtual void init_ptilist(int n_random_max);///, const bool enforce_single = false, FixPropertyAtom * const fix_release = NULL);
-  virtual void randomize_ptilist(int,int);///,int distorder);
-#if 0
-  virtual void direct_set_ptlist(const int i, const void * const data, const int distribution_groupbit, const int distorder);
-
-  // generates hash for identification
-  virtual unsigned int generate_hash();
-#endif
+  virtual void init_ptilist(int n_random_max);
+  virtual void randomize_ptilist(int,int);
 
  protected:
 
