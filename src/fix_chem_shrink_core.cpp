@@ -489,7 +489,7 @@ void FixChemShrinkCore::init()
     char* fixname = new char[strlen("k0_")+strlen(id)+1];
     strcpy (fixname,"k0_");
     strcat(fixname,id);
-    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",ntype,0,style));
+    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","matrix",ntype,0,style));
     delete []fixname;
 
     // look up activation energies Ea
@@ -497,7 +497,7 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("Ea_")+strlen(id)+1];
     strcpy(fixname, "Ea_");
     strcat(fixname, id);
-    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", ntype, 0, style));
+    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "matrix", ntype, 0, style));
     delete[]fixname;
 
     // references for per atom properties.
