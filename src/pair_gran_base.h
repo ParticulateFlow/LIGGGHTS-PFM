@@ -188,8 +188,6 @@ public:
     const bool store_contact_forces = pg->storeContactForces();
     const int freeze_group_bit = pg->freeze_group_bit();
 
-    const double contactDistanceMultiplier = neighbor->contactDistanceFactor*neighbor->contactDistanceFactor;
-
     // clear data, just to be safe
     memset(aligned_cdata, 0, sizeof(CollisionData));
     memset(aligned_i_forces, 0, sizeof(ForceData));
@@ -333,12 +331,10 @@ public:
           // if there is a collision, there will always be a force
           cdata.has_force_update = true;
 
-        } else if(rsq < contactDistanceMultiplier * radsum * radsum) {
+        } else {
           // apply force update only if selected contact models have requested it
           cdata.has_force_update = false;
           cmodel.noCollision(cdata, i_forces, j_forces);
-        } else {
-          cdata.has_force_update = false;
         }
 
         if(cdata.has_force_update) {
