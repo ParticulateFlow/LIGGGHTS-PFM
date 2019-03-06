@@ -72,7 +72,7 @@ FixCfdCouplingForceImplicit::FixCfdCouplingForceImplicit(LAMMPS *lmp, int narg, 
             iarg++;
             hasargs = true;
         }
-// superquadric start
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
         else if (strcmp(arg[iarg],"CAddRhoFluid") == 0)
         {
             if(narg < iarg+2)
@@ -85,7 +85,7 @@ FixCfdCouplingForceImplicit::FixCfdCouplingForceImplicit(LAMMPS *lmp, int narg, 
             iarg++;
             hasargs = true;
         }
-// superquadric end
+#endif
     }
 
   nevery = 1;
@@ -147,7 +147,7 @@ void FixCfdCouplingForceImplicit::post_create()
         fixarg[10]="0.";
         fix_uf_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
     }
-// superquadric start
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
     if(!fix_KslRotation_)
     {
       const char* fixarg[11];
@@ -196,7 +196,7 @@ void FixCfdCouplingForceImplicit::post_create()
       fixarg[10]="0.";
       fix_KslExtra_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
     }
-// superquadric end
+#endif
 }
 
 /* ---------------------------------------------------------------------- */
@@ -205,11 +205,11 @@ void FixCfdCouplingForceImplicit::pre_delete(bool unfixflag)
 {
     if(unfixflag && fix_Ksl_) modify->delete_fix("Ksl");
     if(unfixflag && fix_uf_) modify->delete_fix("uf");
-// superquadric start
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
     if(unfixflag && fix_KslRotation_) modify->delete_fix("KslRotation");
     if(unfixflag && fix_KslExtra_) modify->delete_fix("KslExtra");
     if(unfixflag && fix_ex_) modify->delete_fix("ex");
-// superquadric end
+#endif
 }
 
 /* ---------------------------------------------------------------------- */
@@ -221,11 +221,11 @@ void FixCfdCouplingForceImplicit::init()
     // values to come from OF
     fix_coupling_->add_pull_property("Ksl","scalar-atom");
     fix_coupling_->add_pull_property("uf","vector-atom");
-// superquadric start
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
     fix_coupling_->add_pull_property("KslRotation","vector-atom");
     fix_coupling_->add_pull_property("KslExtra","vector-atom");
     fix_coupling_->add_pull_property("ex","vector-atom");
-// superquadric end
+#endif
 
     deltaT_ = 0.5 * update->dt * force->ftm2v;
 }
@@ -300,8 +300,8 @@ void FixCfdCouplingForceImplicit::end_of_step()
   {
     if (mask[i] & groupbit)
     {
-      if (rmass)  KslMDeltaT = Ksl[i]/(rmass[i]*onePlusCAddRhoFluid_)*deltaT_; // superquadric
-      else        KslMDeltaT = Ksl[i]/(mass[type[i]]*onePlusCAddRhoFluid_)*deltaT_; // superquadric
+        if (rmass)  KslMDeltaT = Ksl[i]/(rmass[i]*onePlusCAddRhoFluid_)*deltaT_; // superquadric
+        else        KslMDeltaT = Ksl[i]/(mass[type[i]]*onePlusCAddRhoFluid_)*deltaT_; // superquadric
 
         for(int dirI=0;dirI<3;dirI++)
         {
@@ -333,6 +333,6 @@ void FixCfdCouplingForceImplicit::end_of_step()
 
         // add up forces for post-proc
         vectorAdd3D(dragforce_total,frc,dragforce_total);
-     }
+    }
   }
 }

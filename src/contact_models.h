@@ -91,7 +91,7 @@ namespace ContactModels
     inline void endPass(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces);
     inline void registerSettings(Settings & settings);
     inline void connectToProperties(PropertyRegistry & registry);
-    inline bool checkSurfaceIntersect(CollisionData & sidata);
+    inline bool checkSurfaceIntersect(CollisionData & cdata);
     inline void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces);
     inline void noCollision(ContactData & cdata, ForceData & i_forces, ForceData & j_forces);
   };

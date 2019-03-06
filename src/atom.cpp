@@ -1938,8 +1938,10 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"volume") == 0) return (void *) volume; // superquadric
   if (strcmp(name,"area") == 0) return (void *) area; // superquadric
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
   len = 2; // superquadric
   if (strcmp(name,"blockiness") == 0) return (void *) blockiness; // superquadric
+#endif
 
   len = 3; //NP modified C.K.
   if (strcmp(name,"x") == 0) return (void *) x;
