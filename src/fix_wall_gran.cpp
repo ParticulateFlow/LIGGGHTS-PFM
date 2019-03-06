@@ -336,7 +336,7 @@ void FixWallGran::post_create()
     // register storage for wall force if required
     if(store_force_)
     {
-          char *wallforce_name = new char[strlen(style)+1+6];
+          char *wallforce_name = new char[strlen(id)+1+6];
           strcpy(wallforce_name,"force_");
           strcat(wallforce_name,id);
           char **fixarg = new char*[11];
