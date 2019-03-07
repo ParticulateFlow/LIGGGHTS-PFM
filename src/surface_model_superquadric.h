@@ -197,6 +197,8 @@ template<>
 class SurfaceModel<SURFACE_SUPERQUADRIC> : protected Pointers
 {
 public:
+    static const int MASK = CM_COLLISION;
+
     SurfaceModel(LAMMPS * lmp, IContactHistorySetup * hsetup) :
       Pointers(lmp)
     {
