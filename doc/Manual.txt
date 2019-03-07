@@ -160,6 +160,7 @@ it gives quick access to documentation for all LAMMPS commands.
    Section_packages
    Section_accelerate
    Section_howto
+   superquadric_simulations
    Section_example
    Section_perf
    Section_tools

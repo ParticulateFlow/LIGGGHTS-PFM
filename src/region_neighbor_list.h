@@ -29,6 +29,10 @@
 #include "vector_liggghts.h"
 #include "bounding_box.h"
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+#include "math_extra_liggghts_superquadric.h"
+#endif
+
 namespace LIGGGHTS {
 
 /**
@@ -38,10 +42,32 @@ struct Particle {
   double x[3];
   double radius;
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  double shape[3];
+  double quaternion[4];
+  double blockiness[2];
+#endif
+
   Particle(double * pos, double rad) {
     LAMMPS_NS::vectorCopy3D(pos, x);
     radius = rad;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    quaternion[0] = 1.0;
+    quaternion[1] = quaternion[2] = quaternion[3] = 0.0;
+    shape[0] = shape[1] = shape[2] = radius;
+    blockiness[0] = blockiness[1] = 2.0;
+#endif
   }
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  Particle(int _i,double * pos, double rad, double *quaternion_, double *shape_, double *blockiness_, int,int,double,double,double) {
+    LAMMPS_NS::vectorCopy3D(pos, x);
+    radius = rad;
+    LAMMPS_NS::vectorCopy4D(quaternion_, quaternion);
+    LAMMPS_NS::vectorCopy3D(shape_, shape);
+    LAMMPS_NS::vectorCopy2D(blockiness_, blockiness);
+  }
+#endif
 };
 
 
@@ -77,6 +103,10 @@ private:
   double bin_distance(int i, int j, int k);
   int coord2bin(double *x) const;
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  int check_obb_flag;
+#endif
+
 public:
     RegionNeighborList();
 
@@ -86,6 +116,15 @@ public:
     size_t count() const;
     void reset();
     bool setBoundingBox(LAMMPS_NS::BoundingBox & bb, double maxrad);
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    inline void coord2bin_calc_interpolation_weights(double *x,int ibin,int ix,int iy, int iz,int &quadrant,double &wx,double &wy,double &wz) const;
+    int coord2bin(double *x,int &quadrant,double &wx,double &wy,double &wz) const;
+    bool hasOverlap_superquadric(double * x, double radius, double *quaternion, double *shape, double *blockiness) const;
+    void insert_superquadric(double * x, double radius, double *quaternion, double *shape, double *blockiness, int index = -1);
+    void set_obb_flag(int check_obb_flag_) { check_obb_flag = check_obb_flag_; }
+    int mbins() const { return mbinx*mbiny*mbinz; }
+#endif
 
     ParticleBin* getParticlesCloseTo(double *x, double cutoff);
 };

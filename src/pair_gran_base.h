@@ -28,6 +28,11 @@
 #ifndef PAIR_GRAN_BASE_H_
 #define PAIR_GRAN_BASE_H_
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+#include "math_extra_liggghts_nonspherical.h"
+#include "math_const.h"
+#endif
+
 #include "contact_interface.h"
 #include "pair_gran.h"
 #include "neighbor.h"
@@ -166,6 +171,9 @@ public:
     int *type = atom->type;
     int *mask = atom->mask;
     int nlocal = atom->nlocal;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    int superquadric_flag = atom->superquadric_flag;
+#endif
     const int newton_pair = force->newton_pair;
 
     int inum = pg->list->inum;
@@ -209,7 +217,15 @@ public:
       const int jnum = numneigh[i];
 
       cdata.i = i;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if (superquadric_flag) {
+        cdata.radi = cbrt(0.75 * atom->volume[i] / M_PI);
+      } else {
+        cdata.radi = radi;
+      }
+#else
       cdata.radi = radi;
+#endif
 
       for (int jj = 0; jj < jnum; jj++) {
         const int j = jlist[jj] & NEIGHMASK;
@@ -219,6 +235,14 @@ public:
         const double delz = ztmp - x[j][2];
         const double rsq = delx * delx + dely * dely + delz * delz;
         const double radj = radius[j];
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        if (superquadric_flag) {
+          cdata.radj = cbrt(0.75 * atom->volume[j] / M_PI);
+        } else
+          cdata.radj = radj;
+#else
+        cdata.radj = radj;
+#endif
         const double radsum = radi + radj;
 
         cdata.j = j;
@@ -226,7 +250,6 @@ public:
         cdata.delta[1] = dely;
         cdata.delta[2] = delz;
         cdata.rsq = rsq;
-        cdata.radj = radj;
         cdata.radsum = radsum;
         cdata.touch = touch ? &touch[jj] : NULL;
         cdata.contact_history = allshear ? &allshear[dnum*jj] : NULL;
@@ -234,7 +257,30 @@ public:
         i_forces.reset();
         j_forces.reset();
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        if (rmass) {
+          cdata.mi = rmass[i];
+          cdata.mj = rmass[j];
+        } else {
+          cdata.mi = mass[type[i]];
+          cdata.mj = mass[type[j]];
+        }
+#endif
+
+        cdata.v_i     = v[i];
+        cdata.v_j     = v[j];
+        const int itype = type[i];
+        const int jtype = type[j];
+        cdata.itype = itype;
+        cdata.jtype = jtype;
+        cdata.omega_i = omega[i];
+        cdata.omega_j = omega[j];
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        if (rsq < radsum * radsum && cmodel.checkSurfaceIntersect(cdata)) {
+#else
         if (rsq < radsum * radsum) {
+#endif
           const double r = sqrt(rsq);
           const double rinv = 1.0 / r;
 
@@ -247,8 +293,6 @@ public:
           // if I or J part of rigid body, use body mass
           // if I or J is frozen, meff is other particle
           double mi, mj;
-          const int itype = type[i];
-          const int jtype = type[j];
 
           if (rmass) {
             mi = rmass[i];
@@ -271,30 +315,22 @@ public:
 
           // copy collision data to struct (compiler can figure out a better way to
           // interleave these stores with the double calculations above.
-          cdata.itype = itype;
-          cdata.jtype = jtype;
           cdata.r = r;
           cdata.rinv = rinv;
           cdata.meff = meff;
           cdata.mi = mi;
           cdata.mj = mj;
-          cdata.en[0]   = enx;
-          cdata.en[1]   = eny;
-          cdata.en[2]   = enz;
-          cdata.v_i     = v[i];
-          cdata.v_j     = v[j];
-          cdata.omega_i = omega[i];
-          cdata.omega_j = omega[j];
+          if (atom->sphere_flag) {
+            cdata.en[0]   = enx;
+            cdata.en[1]   = eny;
+            cdata.en[2]   = enz;
+          }
 
           cmodel.collision(cdata, i_forces, j_forces);
 
-          /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " xi %f %f %f xj %f %f %f\n",update->ntimestep,x[i][0],x[i][1],x[i][2],x[j][0],x[j][1],x[j][2]);
-          /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " iforces %f %f %f\n",update->ntimestep,i_forces.delta_F[0],i_forces.delta_F[1],i_forces.delta_F[2]);
-          /*NL*/ //if (screen) fprintf(screen,"step " BIGINT_FORMAT " mol %d %d i %d j %d, nlocal %d\n",update->ntimestep,atom->molecule[i],atom->molecule[j],i,j,atom->nlocal);
-          /*NL*/ //error->one(FLERR,"end");
-
           // if there is a collision, there will always be a force
           cdata.has_force_update = true;
+
         } else {
           // apply force update only if selected contact models have requested it
           cdata.has_force_update = false;
@@ -321,13 +357,13 @@ public:
           {
             double forces_torques_i[6],forces_torques_j[6];
 
-            if(!pg->fix_contact_forces()->has_partner(i,atom->tag[j]))
+            if(pg->fix_contact_forces()->has_partner(i,atom->tag[j]) == -1)
             {
                 vectorCopy3D(i_forces.delta_F,&(forces_torques_i[0]));
                 vectorCopy3D(i_forces.delta_torque,&(forces_torques_i[3]));
                 pg->fix_contact_forces()->add_partner(i,atom->tag[j],forces_torques_i);
             }
-            if(!pg->fix_contact_forces()->has_partner(j,atom->tag[i]))
+            if(pg->fix_contact_forces()->has_partner(j,atom->tag[i]) == -1)
             {
                 vectorCopy3D(j_forces.delta_F,&(forces_torques_j[0]));
                 vectorCopy3D(j_forces.delta_torque,&(forces_torques_j[3]));

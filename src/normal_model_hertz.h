@@ -79,20 +79,25 @@ namespace ContactModels
     {
       const int itype = cdata.itype;
       const int jtype = cdata.jtype;
-      double ri = cdata.radi;
-      double rj = cdata.radj;
-      double reff=cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
-      double meff=cdata.meff;
+      const double ri = cdata.radi;
+      const double rj = cdata.radj;
+      double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if(cdata.is_non_spherical && atom->superquadric_flag)
+        reff = cdata.reff;
+#endif
+      const double meff = cdata.meff;
+      const double deltan = cdata.deltan;
 
-      double sqrtval = sqrt(reff*cdata.deltan);
+      const double sqrtval = sqrt(reff*deltan);
 
-      double Sn=2.*Yeff[itype][jtype]*sqrtval;
-      double St=8.*Geff[itype][jtype]*sqrtval;
+      const double Sn=2.*Yeff[itype][jtype]*sqrtval;
+      const double St=8.*Geff[itype][jtype]*sqrtval;
 
       double kn=4./3.*Yeff[itype][jtype]*sqrtval;
       double kt=St;
       const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
-      double gamman=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(Sn*meff);
+      const double gamman=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(Sn*meff);
       double gammat=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(St*meff);
       /*NL*/ //if (screen) fprintf(screen,"tangential_damping %s\n",tangential_damping?"yes":"no");
       if (!tangential_damping) gammat = 0.0;
@@ -111,7 +116,7 @@ namespace ContactModels
       kt /= force->nktv2p;
 
       const double Fn_damping = -gamman*cdata.vn;
-      const double Fn_contact = kn*(cdata.radsum-cdata.r);
+      const double Fn_contact = kn*deltan;
       double Fn = Fn_damping + Fn_contact;
 
       //limit force to avoid the artefact of negative repulsion force
@@ -126,12 +131,30 @@ namespace ContactModels
       cdata.gamman = gamman;
       cdata.gammat = gammat;
 
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+      double torque_i[3] = {0., 0., 0.};
+      double Fn_i[3] = { Fn * cdata.en[0], Fn * cdata.en[1], Fn * cdata.en[2] };
+      if(cdata.is_non_spherical) {
+        double xci[3];
+        vectorSubtract3D(cdata.contact_point, atom->x[cdata.i], xci);
+        vectorCross3D(xci, Fn_i, torque_i);
+      }
+#endif
+
       // apply normal force
       if(cdata.is_wall) {
         const double Fn_ = Fn * cdata.area_ratio;
         i_forces.delta_F[0] = Fn_ * cdata.en[0];
         i_forces.delta_F[1] = Fn_ * cdata.en[1];
         i_forces.delta_F[2] = Fn_ * cdata.en[2];
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+        if(cdata.is_non_spherical) {
+          // for non-spherical particles normal force can produce torque!
+          i_forces.delta_torque[0] += torque_i[0];
+          i_forces.delta_torque[1] += torque_i[1];
+          i_forces.delta_torque[2] += torque_i[2];
+        }
+#endif
       } else {
         i_forces.delta_F[0] = cdata.Fn * cdata.en[0];
         i_forces.delta_F[1] = cdata.Fn * cdata.en[1];
@@ -140,6 +163,23 @@ namespace ContactModels
         j_forces.delta_F[0] = -i_forces.delta_F[0];
         j_forces.delta_F[1] = -i_forces.delta_F[1];
         j_forces.delta_F[2] = -i_forces.delta_F[2];
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+        if(cdata.is_non_spherical) {
+          // for non-spherical particles normal force can produce torque!
+          double xcj[3], torque_j[3];
+          double Fn_j[3] = { -Fn_i[0], -Fn_i[1], -Fn_i[2]};
+          vectorSubtract3D(cdata.contact_point, atom->x[cdata.j], xcj);
+          vectorCross3D(xcj, Fn_j, torque_j);
+
+          i_forces.delta_torque[0] += torque_i[0];
+          i_forces.delta_torque[1] += torque_i[1];
+          i_forces.delta_torque[2] += torque_i[2];
+
+          j_forces.delta_torque[0] += torque_j[0];
+          j_forces.delta_torque[1] += torque_j[1];
+          j_forces.delta_torque[2] += torque_j[2];
+        }
+#endif
       }
     }
 

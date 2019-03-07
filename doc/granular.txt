@@ -5,6 +5,8 @@ Granular Models :h1
 .. toctree::
    :maxdepth: 1
 
+   gran_surface_default
+   gran_surface_superquadric
    gran_cohesion_sjkr
    gran_cohesion_sjkr2
    gran_model_hertz

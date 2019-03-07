@@ -26,6 +26,7 @@ Computes :h1
    compute_erotate_rigid
    compute_erotate_sphere
    compute_erotate_sphere_atom
+   compute_erotate_superquadric
    compute_event_displace
    compute_group_group
    compute_gyration

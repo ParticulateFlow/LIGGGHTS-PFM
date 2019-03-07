@@ -64,7 +64,15 @@ namespace ContactModels
 
     void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces) //NP modified C.K.
     {
-      const double rmu= coeffRollFrict[cdata.itype][cdata.jtype];
+      const double rmu = coeffRollFrict[cdata.itype][cdata.jtype];
+      const double radi = cdata.radi;
+      const double radj = cdata.radj;
+      double reff = cdata.is_wall ? radi : (radi*radj/(radi+radj));
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if(cdata.is_non_spherical && atom->superquadric_flag)
+        reff = cdata.reff;
+#endif
 
       double r_torque[3], wr_roll[3];
       vectorZeroize3D(r_torque);
@@ -76,15 +84,15 @@ namespace ContactModels
         const double wrmag = sqrt(wr1*wr1+wr2*wr2+wr3*wr3);
         if (wrmag > 0.)
         {
-          const double radius = cdata.radi;
           const double kn = cdata.kn;
           const double enx = cdata.en[0];
           const double eny = cdata.en[1];
           const double enz = cdata.en[2];
 
-          r_torque[0] = rmu*kn*(radius-cdata.r)*wr1/wrmag*cdata.cri;
-          r_torque[1] = rmu*kn*(radius-cdata.r)*wr2/wrmag*cdata.cri;
-          r_torque[2] = rmu*kn*(radius-cdata.r)*wr3/wrmag*cdata.cri;
+          const double Fn = cdata.deltan*kn;
+          r_torque[0] = rmu*Fn*wr1/wrmag*reff;
+          r_torque[1] = rmu*Fn*wr2/wrmag*reff;
+          r_torque[2] = rmu*Fn*wr3/wrmag*reff;
 
           // remove normal (torsion) part of torque
           double rtorque_dot_delta = r_torque[0]*enx+ r_torque[1]*eny + r_torque[2]*enz;
@@ -100,14 +108,11 @@ namespace ContactModels
 
         if(wr_rollmag > 0.)
         {
-          const double radi = cdata.radi;
-          const double radj = cdata.radj;
           const double enx = cdata.en[0];
           const double eny = cdata.en[1];
           const double enz = cdata.en[2];
 
           // calculate torque
-          const double reff= cdata.is_wall ? radi : (radi*radj/(radi+radj));
           vectorScalarMult3D(wr_roll,rmu*cdata.kn*cdata.deltan*reff/wr_rollmag,r_torque);
 
           // remove normal (torsion) part of torque

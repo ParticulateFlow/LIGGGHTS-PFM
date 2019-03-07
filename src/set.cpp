@@ -25,6 +25,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+#include "math_extra_liggghts_superquadric.h"
+#include "atom_vec_superquadric.h"
+#endif
 #include "set.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -59,7 +63,11 @@ enum{TYPE,TYPE_FRACTION,MOLECULE,X,Y,Z,CHARGE,MASS,SHAPE,LENGTH,TRI,
      DIPOLE,DIPOLE_RANDOM,QUAT,QUAT_RANDOM,THETA,ANGMOM,
      DIAMETER,DENSITY,VOLUME,IMAGE,BOND,ANGLE,DIHEDRAL,IMPROPER,
      MESO_E,MESO_CV,MESO_RHO,INAME,DNAME,
-     VX,VY,VZ,OMEGAX,OMEGAY,OMEGAZ,PROPERTYPERATOM}; //NP modified C.K.
+     VX,VY,VZ,OMEGAX,OMEGAY,OMEGAZ,PROPERTYPERATOM,
+// superquadric start
+     BLOCKINESS, ASPECTRATIO, INERTIAX, INERTIAY, INERTIAZ
+// superquadric end
+};
 
 #define BIG INT_MAX
 
@@ -191,6 +199,32 @@ void Set::command(int narg, char **arg)
       set(OMEGAZ);
       iarg += 2;
 
+// superquadric start
+    } else if (strcmp(arg[iarg],"inertiax") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
+      else dvalue = force->numeric(FLERR,arg[iarg+1]);
+      if(!atom->superquadric_flag)
+        error->all(FLERR,"Cannot set this attribute for this atom style");
+      set(INERTIAX);
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"inertiay") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
+      else dvalue = force->numeric(FLERR,arg[iarg+1]);
+      if(!atom->superquadric_flag)
+          error->all(FLERR,"Cannot set this attribute for this atom style");
+      set(INERTIAY);
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"inertiaz") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
+      else dvalue = force->numeric(FLERR,arg[iarg+1]);
+      if(!atom->superquadric_flag)
+        error->all(FLERR,"Cannot set this attribute for this atom style");
+      set(INERTIAZ);
+      iarg += 2;
+// superquadric end
     } else if (strcmp(arg[iarg],"charge") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
@@ -217,11 +251,35 @@ void Set::command(int narg, char **arg)
       else yvalue = force->numeric(FLERR,arg[iarg+2]);
       if (strstr(arg[iarg+3],"v_") == arg[iarg+3]) varparse(arg[iarg+3],3);
       else zvalue = force->numeric(FLERR,arg[iarg+3]);
-      if (!atom->ellipsoid_flag)
+      if (!atom->ellipsoid_flag && !atom->superquadric_flag)
         error->all(FLERR,"Cannot set this attribute for this atom style");
       set(SHAPE);
       iarg += 4;
 
+// superquadric start
+    } else if (strcmp(arg[iarg],"blockiness") == 0 || strcmp(arg[iarg],"roundness") == 0) {
+      if (iarg+3 > narg) error->all(FLERR,"Illegal set command");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
+      else xvalue = force->numeric(FLERR,arg[iarg+1]);
+      if (strstr(arg[iarg+2],"v_") == arg[iarg+2]) varparse(arg[iarg+2],2);
+      else yvalue = force->numeric(FLERR,arg[iarg+2]);
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Cannot set this attribute for this atom style");
+      if(strcmp(arg[iarg],"roundness") == 0)
+        error->warning(FLERR,"Keyword 'roundness' will be deprecated in future, please use blockiness istead");
+      set(BLOCKINESS);
+      iarg += 3;
+    } else if (strcmp(arg[iarg],"aspect_ratio") == 0) {
+      if (iarg+3 > narg) error->all(FLERR,"Illegal set command");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
+      else xvalue = force->numeric(FLERR,arg[iarg+1]);
+      if (strstr(arg[iarg+2],"v_") == arg[iarg+2]) varparse(arg[iarg+2],2);
+      else yvalue = force->numeric(FLERR,arg[iarg+2]);
+      if (!atom->superquadric_flag)
+        error->all(FLERR,"Cannot set this attribute for this atom style");
+      set(ASPECTRATIO);
+      iarg += 3;
+// superquadric end
     } else if (strcmp(arg[iarg],"length") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
@@ -276,7 +334,7 @@ void Set::command(int narg, char **arg)
       else zvalue = force->numeric(FLERR,arg[iarg+3]);
       if (strstr(arg[iarg+4],"v_") == arg[iarg+4]) varparse(arg[iarg+4],4);
       else wvalue = force->numeric(FLERR,arg[iarg+4]);
-      if (!atom->ellipsoid_flag && !atom->tri_flag)
+      if (!atom->ellipsoid_flag && !atom->tri_flag && !atom->superquadric_flag)
         error->all(FLERR,"Cannot set this attribute for this atom style");
       set(QUAT);
       iarg += 5;
@@ -284,7 +342,7 @@ void Set::command(int narg, char **arg)
     } else if (strcmp(arg[iarg],"quat/random") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
       ivalue = force->inumeric(FLERR,arg[iarg+1]);
-      if (!atom->ellipsoid_flag && !atom->tri_flag)
+      if (!atom->ellipsoid_flag && !atom->tri_flag && !atom->superquadric_flag)
         error->all(FLERR,"Cannot set this attribute for this atom style");
       if (ivalue <= 0)
         error->all(FLERR,"Invalid random number seed in set command");
@@ -339,7 +397,7 @@ void Set::command(int narg, char **arg)
       if (iarg+2 > narg) error->all(FLERR,"Illegal set command");
       if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) varparse(arg[iarg+1],1);
       else dvalue = force->numeric(FLERR,arg[iarg+1]);
-      if (!atom->vfrac_flag)
+      if (!atom->vfrac_flag && !atom->superquadric_flag)
         error->all(FLERR,"Cannot set this attribute for this atom style");
       if (dvalue <= 0.0) error->all(FLERR,"Invalid volume in set command");
       set(VOLUME);
@@ -669,6 +727,9 @@ void Set::set(int keyword)
     (AtomVecEllipsoid *) atom->style_match("ellipsoid");
   AtomVecLine *avec_line = (AtomVecLine *) atom->style_match("line");
   AtomVecTri *avec_tri = (AtomVecTri *) atom->style_match("tri");
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  AtomVecSuperquadric *avec_superquadric = (AtomVecSuperquadric *) atom->style_match("superquadric");
+#endif
 
   int nlocal = atom->nlocal;
   for (int i = 0; i < nlocal; i++) {
@@ -697,32 +758,65 @@ void Set::set(int keyword)
     else if (keyword == X) atom->x[i][0] = dvalue;
     else if (keyword == Y) atom->x[i][1] = dvalue;
     else if (keyword == Z) atom->x[i][2] = dvalue;
-      else if (keyword == VX) atom->v[i][0] = dvalue; //NP modified C.K.
-      else if (keyword == VY) atom->v[i][1] = dvalue;
-      else if (keyword == VZ) atom->v[i][2] = dvalue;
-      else if (keyword == OMEGAX) atom->omega[i][0] = dvalue;  //NP modified C.K.
-      else if (keyword == OMEGAY) atom->omega[i][1] = dvalue;  //NP modified C.K.
-      else if (keyword == OMEGAZ) atom->omega[i][2] = dvalue;  //NP modified C.K.
+    else if (keyword == VX) atom->v[i][0] = dvalue; //NP modified C.K.
+    else if (keyword == VY) atom->v[i][1] = dvalue;
+    else if (keyword == VZ) atom->v[i][2] = dvalue;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    else if (keyword == INERTIAX) atom->inertia[i][0] = dvalue;
+    else if (keyword == INERTIAY) atom->inertia[i][1] = dvalue;
+    else if (keyword == INERTIAZ) atom->inertia[i][2] = dvalue;
+    else if (keyword == OMEGAX && atom->superquadric_flag) {
+      atom->omega[i][0] = dvalue;
+      MathExtraLiggghtsNonspherical::omega_to_angmom(atom->quaternion[i], atom->omega[i], atom->inertia[i],atom->angmom[i]);
+    }
+#endif
+    else if (keyword == OMEGAX) atom->omega[i][0] = dvalue;  //NP modified C.K.
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    else if (keyword == OMEGAY && atom->superquadric_flag) {
+      atom->omega[i][1] = dvalue;
+      MathExtraLiggghtsNonspherical::omega_to_angmom(atom->quaternion[i], atom->omega[i], atom->inertia[i],atom->angmom[i]);
+    }
+#endif
+    else if (keyword == OMEGAY) atom->omega[i][1] = dvalue;  //NP modified C.K.
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    else if (keyword == OMEGAZ && atom->superquadric_flag) {
+        atom->omega[i][2] = dvalue;
+        MathExtraLiggghtsNonspherical::omega_to_angmom(atom->quaternion[i], atom->omega[i], atom->inertia[i],atom->angmom[i]);
+    }
+#endif
+    else if (keyword == OMEGAZ) atom->omega[i][2] = dvalue;  //NP modified C.K.
     else if (keyword == CHARGE) atom->q[i] = dvalue;
     else if (keyword == MASS) {
               if (dvalue <= 0.0) error->one(FLERR,"Invalid mass in set command");
         atom->rmass[i] = dvalue;
     }
     else if (keyword == DIAMETER) {
-       if (dvalue < 0.0) error->one(FLERR,"Invalid diameter in set command");
-        atom->radius[i] = 0.5 * dvalue;
-        //NP modified C.K
-        if(atom->rmass_flag && atom->density_flag && atom->density[i] > 0.)
-        {
+      if (dvalue < 0.0) error->one(FLERR,"Invalid diameter in set command");
+      atom->radius[i] = 0.5 * dvalue;
+      //NP modified C.K
+      if(atom->rmass_flag && atom->density_flag && atom->density[i] > 0.)
+      {
+        if(atom->superquadric_flag) {
+          double vol = MY_PI/6.0 * dvalue * dvalue * dvalue;
+          atom->volume[i] = vol;
+        } else {
           if (domain->dimension == 2)
             atom->rmass[i] = MY_PI * atom->radius[i]*atom->radius[i] * atom->density[i];
           else
             atom->rmass[i] = 4.0*MY_PI/3.0 * atom->radius[i]*atom->radius[i]*atom->radius[i] * atom->density[i];
         }
+      }
     }
     else if (keyword == VOLUME) {
       if (dvalue <= 0.0) error->one(FLERR,"Invalid volume in set command");
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if (avec_superquadric)
+        atom->volume[i] = dvalue;
+      else
+        atom->vfrac[i] = dvalue;
+#else
       atom->vfrac[i] = dvalue;
+#endif
     }
     else if (keyword == MESO_E) atom->e[i] = dvalue;
     else if (keyword == MESO_CV) atom->cv[i] = dvalue;
@@ -737,7 +831,70 @@ void Set::set(int keyword)
         if (xvalue == 0.0 || yvalue == 0.0 || zvalue == 0.0)
           error->one(FLERR,"Invalid shape in set command");
       }
-      avec_ellipsoid->set_shape(i,0.5*xvalue,0.5*yvalue,0.5*zvalue);
+      if(avec_ellipsoid)
+        avec_ellipsoid->set_shape(i,0.5*xvalue,0.5*yvalue,0.5*zvalue);
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      else if(avec_superquadric) {
+        atom->shape[i][0] = xvalue;
+        atom->shape[i][1] = yvalue;
+        atom->shape[i][2] = zvalue;
+        MathExtraLiggghtsNonspherical::bounding_sphere_radius_superquadric(atom->shape[i], atom->blockiness[i], atom->radius+i); //re-calculate bounding sphere radius
+        MathExtraLiggghtsNonspherical::volume_superquadric(atom->shape[i], atom->blockiness[i], atom->volume+i); //re-calculate volume
+        MathExtraLiggghtsNonspherical::area_superquadric(atom->shape[i], atom->blockiness[i], atom->area+i);  //re-calculate surface area
+        atom->rmass[i] = atom->volume[i] * atom->density[i]; //re-calculate mass
+        MathExtraLiggghtsNonspherical::inertia_superquadric(atom->shape[i], atom->blockiness[i], atom->density[i], atom->inertia[i]); //re-calculate inertia tensor
+      }
+#endif // SUPERQUADRIC_ACTIVE_FLAG
+      else
+        error->one(FLERR,"Cannot set shape for this type of atom");
+    }
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    else if (keyword == ASPECTRATIO) {
+      if(avec_superquadric) {
+        if (xvalue < 0.0 || yvalue < 0.0)
+          error->one(FLERR,"Invalid aspect ratio in set command");
+        if (xvalue > 0.0 || yvalue > 0.0) {
+          if (xvalue == 0.0 || yvalue == 0.0)
+            error->one(FLERR,"Invalid aspect ratio in set command");
+        }
+        double k1 = xvalue;
+        double k2 = yvalue;
+
+        double shape_[3]={1.0, 1.0, 1.0};
+        double f_;
+        ///double vol = atom->volume[i];
+        MathExtraLiggghtsNonspherical::volume_superquadric(shape_, atom->blockiness[i], &f_);
+        atom->shape[i][0] = cbrt(atom->volume[i] / (k1*k2*f_));
+        atom->shape[i][1] = k1*atom->shape[i][0];
+        atom->shape[i][2] = k2*atom->shape[i][0];
+
+        MathExtraLiggghtsNonspherical::bounding_sphere_radius_superquadric(atom->shape[i], atom->blockiness[i], atom->radius+i); //re-calculate bounding sphere radius
+        MathExtraLiggghtsNonspherical::area_superquadric(atom->shape[i], atom->blockiness[i], atom->area+i);  //re-calculate surface area
+        MathExtraLiggghtsNonspherical::inertia_superquadric(atom->shape[i], atom->blockiness[i], atom->density[i], atom->inertia[i]); //re-calculate inertia tensor
+     }
+     else
+      error->one(FLERR,"Cannot set shape for this type of atom");
+    }
+#endif // SUPERQUADRIC_ACTIVE_FLAG
+    //set roundness parameters for superquadric *
+    else if (keyword == BLOCKINESS) {
+      if (xvalue < 2.0 || yvalue < 2.0)
+        error->one(FLERR,"Invalid blockiness (<2) in set command");
+      if(0) {}
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      else if(avec_superquadric) {
+        atom->blockiness[i][0] = xvalue;
+        atom->blockiness[i][1] = yvalue;
+        MathExtraLiggghtsNonspherical::bounding_sphere_radius_superquadric(atom->shape[i], atom->blockiness[i], atom->radius+i); //re-calculate bounding sphere radius
+        MathExtraLiggghtsNonspherical::volume_superquadric(atom->shape[i], atom->blockiness[i], atom->volume+i); //re-calculate volume
+        MathExtraLiggghtsNonspherical::area_superquadric(atom->shape[i], atom->blockiness[i], atom->area+i); //re-calculate surface area
+        atom->rmass[i] = atom->density[i] * atom->volume[i]; //re-calculate mass
+        MathExtraLiggghtsNonspherical::inertia_superquadric(atom->shape[i], atom->blockiness[i], atom->density[i], atom->inertia[i]); //re-calculate inertia tensor
+
+      }
+#endif // SUPERQUADRIC_ACTIVE_FLAG
+      else
+        error->one(FLERR,"Cannot set shape for this type of atom");
     }
     // set desired per-atom property
     else if (keyword == PROPERTYPERATOM) { //NP modified C.K.
@@ -800,34 +957,45 @@ void Set::set(int keyword)
 
     else if (keyword == DENSITY) {
       if (dvalue <= 0.0) error->one(FLERR,"Invalid density in set command");
-      if (atom->radius_flag && atom->radius[i] > 0.0)
-      {
+        if (atom->radius_flag && atom->radius[i] > 0.0)
+        {
           atom->density[i] = dvalue;
-          if (domain->dimension == 2)
-            atom->rmass[i] = MY_PI * atom->radius[i]*atom->radius[i] * atom->density[i]; //NP modified C.K.
-          else
-            atom->rmass[i] = 4.0*MY_PI/3.0 * atom->radius[i]*atom->radius[i]*atom->radius[i] * atom->density[i]; //NP modified C.K.
-      }
-      else if (atom->density_flag)//NP modified C.K.
-        atom->density[i] = dvalue;
-      else if (atom->ellipsoid_flag && atom->ellipsoid[i] >= 0) {
-        double *shape = avec_ellipsoid->bonus[atom->ellipsoid[i]].shape;
-        atom->rmass[i] = 4.0*MY_PI/3.0 * shape[0]*shape[1]*shape[2] * dvalue;
-      } else if (atom->line_flag && atom->line[i] >= 0) {
-        double length = avec_line->bonus[atom->line[i]].length;
-        atom->rmass[i] = length * dvalue;
-      } else if (atom->tri_flag && atom->tri[i] >= 0) {
-        double *c1 = avec_tri->bonus[atom->tri[i]].c1;
-        double *c2 = avec_tri->bonus[atom->tri[i]].c2;
-        double *c3 = avec_tri->bonus[atom->tri[i]].c3;
-        double c2mc1[3],c3mc1[3];
-        MathExtra::sub3(c2,c1,c2mc1);
-        MathExtra::sub3(c3,c1,c3mc1);
-        double norm[3];
-        MathExtra::cross3(c2mc1,c3mc1,norm);
-        double area = 0.5 * MathExtra::len3(norm);
-        atom->rmass[i] = area * dvalue;
-      } else atom->rmass[i] = dvalue;
+          if(!atom->superquadric_flag) {
+            if (domain->dimension == 2)
+              atom->rmass[i] = MY_PI * atom->radius[i]*atom->radius[i] * atom->density[i]; //NP modified C.K.
+            else
+              atom->rmass[i] = 4.0*MY_PI/3.0 * atom->radius[i]*atom->radius[i]*atom->radius[i] * atom->density[i]; //NP modified C.K.
+          } else {
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+            if (domain->dimension == 3) {
+              atom->rmass[i] = atom->density[i] * atom->volume[i];
+              MathExtraLiggghtsNonspherical::inertia_superquadric(atom->shape[i], atom->blockiness[i], atom->density[i], atom->inertia[i]);
+            }
+            else
+              error->one(FLERR,"Superquadrics are implemented only in 3D");
+#endif // SUPERQUADRIC_ACTIVE_FLAG
+          }
+        }
+        else if (atom->density_flag)//NP modified C.K.
+          atom->density[i] = dvalue;
+        else if (atom->ellipsoid_flag && atom->ellipsoid[i] >= 0) {
+          double *shape = avec_ellipsoid->bonus[atom->ellipsoid[i]].shape;
+          atom->rmass[i] = 4.0*MY_PI/3.0 * shape[0]*shape[1]*shape[2] * dvalue;
+        } else if (atom->line_flag && atom->line[i] >= 0) {
+          double length = avec_line->bonus[atom->line[i]].length;
+          atom->rmass[i] = length * dvalue;
+        } else if (atom->tri_flag && atom->tri[i] >= 0) {
+          double *c1 = avec_tri->bonus[atom->tri[i]].c1;
+          double *c2 = avec_tri->bonus[atom->tri[i]].c2;
+          double *c3 = avec_tri->bonus[atom->tri[i]].c3;
+          double c2mc1[3],c3mc1[3];
+          MathExtra::sub3(c2,c1,c2mc1);
+          MathExtra::sub3(c3,c1,c3mc1);
+          double norm[3];
+          MathExtra::cross3(c2mc1,c3mc1,norm);
+          double area = 0.5 * MathExtra::len3(norm);
+          atom->rmass[i] = area * dvalue;
+        } else atom->rmass[i] = dvalue;
     }
 
     // set dipole moment
@@ -849,6 +1017,10 @@ void Set::set(int keyword)
         quat = avec_ellipsoid->bonus[atom->ellipsoid[i]].quat;
       else if (avec_tri && atom->tri[i] >= 0)
         quat = avec_tri->bonus[atom->tri[i]].quat;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      else if (avec_superquadric)
+        quat = avec_superquadric->return_quat_ptr(i);
+#endif
       else
         error->one(FLERR,"Cannot set quaternion for atom that has none");
 
@@ -926,6 +1098,9 @@ void Set::setrandom(int keyword)
     (AtomVecEllipsoid *) atom->style_match("ellipsoid");
   atom->style_match("line"); // DEAD CODE?
   AtomVecTri *avec_tri = (AtomVecTri *) atom->style_match("tri");
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  AtomVecSuperquadric *avec_superquadric = (AtomVecSuperquadric *) atom->style_match("superquadric");
+#endif
 
   RanPark *random = new RanPark(lmp,1);
   double **x = atom->x;
@@ -1000,6 +1175,10 @@ void Set::setrandom(int keyword)
             quat = avec_ellipsoid->bonus[atom->ellipsoid[i]].quat;
           else if (avec_tri && atom->tri[i] >= 0)
             quat = avec_tri->bonus[atom->tri[i]].quat;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+          else if (avec_superquadric)
+            quat = avec_superquadric->return_quat_ptr(i);
+#endif
           else
             error->one(FLERR,"Cannot set quaternion for atom that has none");
 

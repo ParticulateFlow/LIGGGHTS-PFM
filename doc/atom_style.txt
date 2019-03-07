@@ -14,7 +14,7 @@ atom_style style args :pre
 
 style = {angle} or {atomic} or {body} or {bond} or {charge} or {dipole} or \
         {electron} or {ellipsoid} or {full} or {line} or {meso} or \
-        {molecular} or {peri} or {sphere} or {granular} or {bond/gran} or {tri} or {hybrid} or {sph} :ul
+        {molecular} or {peri} or {sphere} or {granular} or {bond/gran} or {superquadric} or {tri} or {hybrid} or {sph} :ul
   args = none for any style except {body} and {hybrid}
   {body} args = bstyle bstyle-args
     bstyle = style of body particles
@@ -26,6 +26,7 @@ style = {angle} or {atomic} or {body} or {bond} or {charge} or {dipole} or \
 
 atom_style atomic
 atom_style bond
+atom_style superquadric
 atom_style full
 atom_style body nparticle 2 10
 atom_style hybrid charge bond
@@ -72,6 +73,7 @@ quantities.
 {molecular} | bonds, angles, dihedrals, impropers | uncharged molecules |
 {peri} | mass, volume | mesocopic Peridynamic models |
 {sphere or granular} | diameter, mass, angular velocity | granular models |
+{superquadric} | semi-axes, blockiness parameters, mass, angular velocity, quaternion | granular models |
 {tri} | corner points, angular momentum | rigid bodies |
 {wavepacket} | charge, spin, eradius, etag, cs_re, cs_im | AWPMD :tb(c=3,s=|)
 
