@@ -303,7 +303,7 @@ int vtkSuperquadricGlyphFilter::RequestData(
         if (quat3data) quaty = quat3data->GetTuple1(inPtId);
         if (quat4data) quatz = quat4data->GetTuple1(inPtId);
 
-        quat.Set(quatw,quatz,quaty,quatz);
+        quat.Set(quatw,quatx,quaty,quatz);
         double axis[3] = {};
         double angle;
         angle = vtkMath::DegreesFromRadians(quat.GetRotationAngleAndAxis(axis));
