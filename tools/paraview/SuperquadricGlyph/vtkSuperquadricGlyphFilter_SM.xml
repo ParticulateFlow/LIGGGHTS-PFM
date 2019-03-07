@@ -330,9 +330,8 @@
 
       <StringVectorProperty
         name="RotationMatrixArray"
-        command="SetInputArrayToProcess"
-        number_of_elements="5"
-        element_types="0 0 0 0 2"
+        command="SetRotationMatrixArray"
+        number_of_elements="1"
         animateable="0"
         default_values="TENSOR"
         label="Rotation Matrix">

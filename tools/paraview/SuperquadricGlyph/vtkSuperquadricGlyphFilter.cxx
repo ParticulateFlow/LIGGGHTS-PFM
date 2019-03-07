@@ -57,15 +57,16 @@ vtkSuperquadricGlyphFilter::vtkSuperquadricGlyphFilter()
   // by default process active point scalars
   this->SetInputArrayToProcess(0,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                vtkDataSetAttributes::SCALARS);
-  // by default process active point vectors
-  this->SetInputArrayToProcess(1,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,
-                               vtkDataSetAttributes::VECTORS);
   // by default process active point normals
-  this->SetInputArrayToProcess(2,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,
-                               vtkDataSetAttributes::NORMALS);
-  // by default process active point scalars (color scalars)
-  this->SetInputArrayToProcess(3,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,
+  this->SetInputArrayToProcess(1,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                vtkDataSetAttributes::SCALARS);
+  // by default process active point vectors
+  this->SetInputArrayToProcess(2,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,
+                               vtkDataSetAttributes::VECTORS);
+  // by default process active point tensors
+  this->SetInputArrayToProcess(3,0,0,vtkDataObject::FIELD_ASSOCIATION_POINTS,
+                               vtkDataSetAttributes::TENSORS);
+
 }
 
 vtkSuperquadricGlyphFilter::~vtkSuperquadricGlyphFilter()
@@ -123,10 +124,6 @@ int vtkSuperquadricGlyphFilter::RequestData(
   int axis, abort = 0;
   vtkSuperquadricSource** superquadricsArray = NULL;
   vtkIdType superquadricsArrayCount = 0;
-  vtkDataArray *inScalars = NULL;
-  vtkDataArray *inVectors = NULL;
-  vtkDataArray *inNormals = NULL;
-  vtkDataArray *inCScalars = NULL;
   vtkIdTypeArray *numGlyphPts;
   double theta, phi;
   double scalex, scaley, scalez;
@@ -146,15 +143,6 @@ int vtkSuperquadricGlyphFilter::RequestData(
   {
     vtkErrorMacro(<<"No points to glyph!");
     return 1;
-  }
-
-  inScalars = this->GetInputArrayToProcess(0, inputVector);
-  inVectors = this->GetInputArrayToProcess(1, inputVector);
-  inNormals = this->GetInputArrayToProcess(2, input);
-  inCScalars = this->GetInputArrayToProcess(3, input);
-  if (inCScalars == NULL)
-  {
-    inCScalars = inScalars;
   }
 
   vtkDataArray *halfaxisdata = this->HalfAxisVectorArray ? input->GetPointData()->GetArray(this->HalfAxisVectorArray) : NULL;
