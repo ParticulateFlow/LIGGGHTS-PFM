@@ -7,7 +7,6 @@
 # e.g. liggghts -var blockiness1 4 -var blockiness2 4 -var angle 0 -in in.particle_particle
 # otherwise the index variables below will be used
 
-echo both
 log log.superquadric_pp
 
 variable blockiness1 index 2
@@ -24,29 +23,22 @@ communicate     single vel yes
 units           si
 
 region          reg block -0.05 0.05 -0.05 0.05 0.0 0.1 units box
-create_box      2 reg
+create_box      1 reg
 
 neighbor        0.002 bin
 neigh_modify    delay 0
 
-variable dt            equal 1e-5
+variable dt            equal 1e-6
 variable nStepsRun     equal 1.0/${dt}
 variable writeOutEvery equal 0.005/${dt}
 variable thermofreq    equal 0.01/${dt}
 
-variable cor_ww equal 1.0
-variable cor_pw equal 0.5
-variable cor_pp equal 0.5
+variable cor equal 0.5
 
-variable cof_ww equal 0.5
-variable cof_pw equal 0.5
-variable cof_pp equal 0.5
+variable cof equal 0.5
 
-variable corf_ww equal 0.0
-variable corf_pw equal 0.05
-variable corf_pp equal 0.05
+variable corf equal 0.05
 
-variable Yw equal 1e7
 variable Yp equal 1e7
 
 variable shapex equal 0.002
@@ -54,14 +46,11 @@ variable shapey equal 0.002
 variable shapez equal 0.004
 
 # material properties required for granular pair styles
-fix m1 all property/global youngsModulus peratomtype ${Yw} ${Yp}
-fix m2 all property/global poissonsRatio peratomtype 0.3 0.3
-fix m3 all property/global coefficientRestitution     peratomtypepair 2 ${cor_ww}  ${cor_pw}   &
-                                                                        ${cor_pw}  ${cor_pp}
-fix m4 all property/global coefficientFriction        peratomtypepair 2 ${cof_ww}  ${cof_pw}  &
-                                                                        ${cof_pw}  ${cof_pp}
-fix m5 all property/global coefficientRollingFriction peratomtypepair 2 ${corf_ww} ${corf_pw} &
-                                                                        ${corf_pw} ${corf_pp}
+fix m1 all property/global youngsModulus peratomtype ${Yp}
+fix m2 all property/global poissonsRatio peratomtype 0.3
+fix m3 all property/global coefficientRestitution     peratomtypepair 1 ${cor}
+fix m4 all property/global coefficientFriction        peratomtypepair 1 ${cof}
+fix m5 all property/global coefficientRollingFriction peratomtypepair 1 ${corf}
 
 # pair style
 pair_style gran model hertz tangential history rolling_friction epsd2 surface superquadric
@@ -71,23 +60,15 @@ timestep ${dt}
 
 variable totaltime equal step*${dt}
 
-fix xwalls1 all wall/gran model hertz tangential history rolling_friction epsd2 surface superquadric primitive type 1 xplane -0.05
-fix xwalls2 all wall/gran model hertz tangential history rolling_friction epsd2 surface superquadric primitive type 1 xplane  0.05
-fix ywalls1 all wall/gran model hertz tangential history rolling_friction epsd2 surface superquadric primitive type 1 yplane -0.05
-fix ywalls2 all wall/gran model hertz tangential history rolling_friction epsd2 surface superquadric primitive type 1 yplane  0.05
-fix zwalls1 all wall/gran model hertz tangential history rolling_friction epsd2 surface superquadric primitive type 1 zplane  0.00
-fix zwalls2 all wall/gran model hertz tangential history rolling_friction epsd2 surface superquadric primitive type 1 zplane  0.10
-
-
 create_atoms 1 single 0.0 0.0 0.01
-set atom 1 type 2 shape ${shapex} ${shapey} ${shapez} &
-                  blockiness ${blockiness1} ${blockiness2} &
-                  density 2500 vz 0.1 quat 1 0 0 ${angle}
+set atom 1 type 1 shape ${shapex} ${shapey} ${shapez} &
+           blockiness ${blockiness1} ${blockiness2} &
+           density 2500 vz 0.1 quat 1 0 0 ${angle}
 
 create_atoms 1 single 0.0 0.0 0.09
-set atom 2 type 2 shape ${shapex} ${shapey} ${shapez} &
-                  blockiness ${blockiness1} ${blockiness2} &
-                  density 2500 vz -0.1 quat 1 0 0 -${angle}
+set atom 2 type 1 shape ${shapex} ${shapey} ${shapez} &
+           blockiness ${blockiness1} ${blockiness2} &
+           density 2500 vz -0.1 quat 1 0 0 -${angle}
 
 # apply nve integration to all particles
 fix integr all nve/superquadric integration_scheme 1
@@ -106,7 +87,7 @@ thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic yes
 
 dump    dmp all custom/vtk ${writeOutEvery} post/superq_pp_*.vtk id type radius &
-        mass x y z  vx vy vz  fx fy fz  omegax omegay omegaz  shapex shapey shapez &
+        mass  x y z  vx vy vz  fx fy fz  omegax omegay omegaz  shapex shapey shapez &
         quat1 quat2 quat3 quat4  blockiness1 blockiness2  tqx tqy tqz &
         angmomx angmomy angmomz
 
