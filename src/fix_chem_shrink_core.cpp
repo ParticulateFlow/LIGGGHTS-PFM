@@ -345,6 +345,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 
         if (fix_moleFractionA_) { modify  ->  delete_fix(moleFracA); delete [] xA_; }
         if (fix_moleFractionC_) { modify  ->  delete_fix(moleFracC); delete [] xC_; }
+        // if (fix_fracRed)        { modify  ->  delete_fix("fracRed"); delete [] fracRed_;}
 
         fixname = new char [strlen("fracRed_")+strlen(group->names[igroup])+1];
         strcpy(fixname,"fracRed_");
@@ -510,7 +511,7 @@ void FixChemShrinkCore::init()
     fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style));
     fix_moleFractionA_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracA, "property/atom", "scalar", 0, 0, style));
     fix_moleFractionC_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracC, "property/atom", "scalar", 0, 0, style));
-
+    //fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style));
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
@@ -602,60 +603,59 @@ void FixChemShrinkCore::post_force(int)
     {
         if (mask[i] & groupbit)
         {
-            if (xA_[i] < minMolarFrac_)
+            if (xA_[i] > minMolarFrac_)
             {
-                continue;
-            }
-            // 1st recalculate masses of layers if layer has reduced
-            // is ignored if there is no change in layers
-            active_layers(i);
-            if (active_layers(i) > 0)
-            {
-                if (T_[i] < 573.15)
+                // 1st recalculate masses of layers if layer has reduced
+                // is ignored if there is no change in layers
+                active_layers(i);
+                if (active_layers(i) > 0)
                 {
-                    // do nothing -- no reaction takes place
-                    error->warning(FLERR, "The temperature is too low for reduction to take place!");
+                    if (T_[i] < 573.15)
+                    {
+                        // do nothing -- no reaction takes place
+                        error->warning(FLERR, "The temperature is too low for reduction to take place!");
 
-                }else if (T_[i] > 573.15 && T_[i] < 843.15)
-                {
-                    FR_low(i, layerMolMasses_);
-                    getXi_low(i,x0_eq_);
-                    getA_low(i);
-                    getB(i);
-                    getMassT(i);
-                    reaction_low(i, dmA_, x0_eq_);
-                    update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
-                    update_gas_properties(i, dmA_);
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
-                }
-                else if (T_[i] > 843.15)
-                {
-                    // calculate values for fractional reduction f_i = (1-relRadii_i^3)
-                    // or with mass ratio provides simplicity for calculations of A & B terms.
-                    FractionalReduction(i,layerMolMasses_);
-                    // get values for equilibrium molar fraction of reactant gas species,
-                    // this value is calculated from the Equilibrium constants function Keq(layer,T).
-                    // and used in the reaction rate determination.
-                    getXi(i,x0_eq_);
-                    // calculate the reaction resistance term
-                    getA(i);
-                    // calculate the diffusion resistance term
-                    getB(i);
-                    // calculate mass transfer resistance term
-                    getMassT(i);
-                    // do the reaction calculation with pre-calculated values of A, B and ß (massT)
-                    // the USCM model chemical reaction rate with gaseous species model
-                    // based on the works of Philbrook, Spitzer and Manning
-                    reaction(i, dmA_, x0_eq_);
-                    // the results of reaction gives us the mass change of reactant species gas
-                    // in the usual case that means the CO gas mass species change is given
-                    // this information is used then to calculate mass changes of particle layers
-                    update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
-                    // also the results of reaction function is used to calculate
-                    // the changes in gas species
-                    update_gas_properties(i, dmA_);
-                    // calculate delta_h, and dot_delta_h for heat of reaction
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    }else if (T_[i] > 573.15 && T_[i] < 843.15)
+                    {
+                        FR_low(i, layerMolMasses_);
+                        getXi_low(i,x0_eq_);
+                        getA_low(i);
+                        getB(i);
+                        getMassT(i);
+                        reaction_low(i, dmA_, x0_eq_);
+                        update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                        update_gas_properties(i, dmA_);
+                        heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    }
+                    else if (T_[i] > 843.15)
+                    {
+                        // calculate values for fractional reduction f_i = (1-relRadii_i^3)
+                        // or with mass ratio provides simplicity for calculations of A & B terms.
+                        FractionalReduction(i,layerMolMasses_);
+                        // get values for equilibrium molar fraction of reactant gas species,
+                        // this value is calculated from the Equilibrium constants function Keq(layer,T).
+                        // and used in the reaction rate determination.
+                        getXi(i,x0_eq_);
+                        // calculate the reaction resistance term
+                        getA(i);
+                        // calculate the diffusion resistance term
+                        getB(i);
+                        // calculate mass transfer resistance term
+                        getMassT(i);
+                        // do the reaction calculation with pre-calculated values of A, B and ß (massT)
+                        // the USCM model chemical reaction rate with gaseous species model
+                        // based on the works of Philbrook, Spitzer and Manning
+                        reaction(i, dmA_, x0_eq_);
+                        // the results of reaction gives us the mass change of reactant species gas
+                        // in the usual case that means the CO gas mass species change is given
+                        // this information is used then to calculate mass changes of particle layers
+                        update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                        // also the results of reaction function is used to calculate
+                        // the changes in gas species
+                        update_gas_properties(i, dmA_);
+                        // calculate delta_h, and dot_delta_h for heat of reaction
+                        heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    }
                 }
             }
         }
@@ -762,6 +762,11 @@ void FixChemShrinkCore::getA(int i)
     updatePtrs();
     for (int j = 0; j < layers_ ; j++)
     {
+        if (screenflag_ && screen)
+        {
+            fprintf(screen,"k0_ for layer %i is %f",j,k0_[j]);
+            fprintf(screen,"Ea_ for layer %i is %f",j,Ea_[j]);
+        }
         Aterm[i][j]   =   (k0_[j]*exp(-Ea_[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
         Aterm[i][j]   =   1.0/Aterm[i][j];
     }
@@ -995,14 +1000,11 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
     // Fe
     dmL_[0] = -dmA_[0]*v_prod_[0]*(layerMolMasses_[0]/molMass_A_);
 
-    for (int layer = 0; layer < layers_; layer++) {
-        dmL_[layer] *= scale_reduction_rate;
-    }
 
     // New layer masses
     for (int j = 0; j <= layers_; j++)
     {
-        massLayer_[i][j] -= dmL_[j];
+        massLayer_[i][j] -= dmL_[j]*scale_reduction_rate;
         // Limit minimum mass layer to 1e-20
         massLayer_[i][j] = std::max(massLayer_[i][j], 1e-20);
 
