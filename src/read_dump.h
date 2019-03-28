@@ -55,6 +55,9 @@ private:
   int boxflag;             // overwrite simulation with dump file box params
   int replaceflag,addflag; // flags for processing dump snapshot atoms
   int trimflag,purgeflag;
+  int bruteaddflag;
+
+  int retainstepflag;	   // retain current time step
   int scaleflag;           // user 0/1 if dump file coords are unscaled/scaled
   int wrapflag;            // user 0/1 if dump file coords are unwrapped/wrapped
   char *readerstyle;       // style of dump files to read

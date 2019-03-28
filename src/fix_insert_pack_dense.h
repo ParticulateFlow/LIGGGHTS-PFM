@@ -66,6 +66,11 @@ protected:
   class Region *ins_region;
   char *idregion;
 
+  // variable used to identify if insertion should take place
+  char *var;
+  double var_insvalid;
+  double var_threshold;
+
   //particle distribution
   class FixParticledistributionDiscrete *fix_distribution;
 
@@ -91,6 +96,7 @@ protected:
   bool is_inserter; // indicates if proc inserts
   double region_volume, region_volume_local;
   int n_insert_estim, n_insert_estim_local;
+  int insert_every;
   double radius_factor;
 
   void prepare_insertion();

@@ -38,6 +38,7 @@ namespace LIGGGHTS {
   public:
     RegionDistanceField();
     void build(LAMMPS_NS::Region *region, LAMMPS_NS::BoundingBox &bbox, double const rmax);
+    void reset();
     bool isInside(double *x);
     bool isInBoundary(double *x);
   private:
