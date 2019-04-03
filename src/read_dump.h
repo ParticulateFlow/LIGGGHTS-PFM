@@ -75,6 +75,7 @@ private:
   double xprd,yprd,zprd;
 
   bigint nsnapatoms;        // # of atoms in dump file shapshot
+  int nlocal_orig;          // # of local atoms when starting processing
 
   int npurge,nreplace,ntrim,nadd;     // stats on processed atoms
   int addproc;                        // proc that should add next atom

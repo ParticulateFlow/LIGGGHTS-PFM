@@ -67,6 +67,8 @@ ReadDump::ReadDump(LAMMPS *lmp) : Pointers(lmp)
 
   reader = NULL;
   fp = NULL;
+
+  nlocal_orig = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -452,7 +454,7 @@ void ReadDump::atoms()
   // uflag[i] = 1 for each owned atom appearing in dump
   // ucflag = similar flag for each chunk atom, used in process_atoms()
 
-  int nlocal = atom->nlocal;
+  int nlocal = nlocal_orig = atom->nlocal;
   memory->create(uflag,nlocal,"read_dump:uflag");
   for (int i = 0; i < nlocal; i++) uflag[i] = 0;
   memory->create(ucflag,CHUNK,"read_dump:ucflag");
@@ -766,9 +768,9 @@ void ReadDump::process_atoms(int n)
     // setting m = -1 forces new atom not to match
 
     itag = static_cast<int> (fields[i][0]);
-    if (itag <= map_tag_max) m = atom->map(static_cast<int> (fields[i][0]));
+    if (itag <= map_tag_max) m = atom->map(itag);
     else m = -1;
-    if (m < 0 || m >= nlocal) continue;
+    if (m < 0 || m >= nlocal_orig) continue;
 
     ucflag[i] = 1;
     uflag[m] = 1;
