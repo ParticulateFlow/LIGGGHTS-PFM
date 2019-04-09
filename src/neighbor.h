@@ -198,6 +198,9 @@ class Neighbor : protected Pointers {
   int *ex_mol_group;               // molecule group #'s to exclude
   int *ex_mol_bit;                 // molecule group bits to exclude
 
+  int no_build;                    // no neigh lists are built, but exchange
+                                   // of particles takes place
+
   int nblist,nglist,nslist;    // # of pairwise neigh lists of various kinds
   int *blist;                  // lists to build every reneighboring
   int *glist;                  // lists to grow atom arrays every reneigh

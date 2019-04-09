@@ -39,6 +39,7 @@
 #include "error.h"
 #include "comm.h"
 #include "cfd_datacoupling.h"
+#include "cfd_datacoupling_one2one.h"
 #include "universe.h"
 
 using namespace LAMMPS_NS;
@@ -201,3 +202,39 @@ void check_datatransfer(void *ptr, int iworld)
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
     fcfd->get_dc()->check_datatransfer();
 }
+
+/* ---------------------------------------------------------------------- */
+
+double** o2o_liggghts_get_boundingbox(void *ptr)
+{
+    LAMMPS *lmp = (LAMMPS *) ptr;
+    double** bbox = new double*[2];
+    bbox[0] = lmp->domain->sublo;
+    bbox[1] = lmp->domain->subhi;
+    return bbox;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void o2o_data_of_to_liggghts
+(
+    const char *name,
+    const char *type,
+    void *ptr,
+    void *data,
+    const char* datatype,
+    const int* ids,
+    const int ncollected
+)
+{
+    FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
+    CfdDatacouplingOne2One* dc = static_cast<CfdDatacouplingOne2One*>(fcfd->get_dc());
+
+    if(strcmp(datatype,"double") == 0)
+        dc->pull_mpi<double>(name, type, data, ids, ncollected);
+    else if(strcmp(datatype,"int") == 0)
+        dc->pull_mpi<int>(name, type, data, ids, ncollected);
+ //   else error->one(FLERR,"Illegal call to CfdDatacouplingOne2One::pull, valid datatypes are 'int' and double'");
+
+}
+

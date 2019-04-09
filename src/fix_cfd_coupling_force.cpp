@@ -69,7 +69,21 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_density'");
             iarg++;
             hasargs = true;
-        } 
+        }
+        else if(strcmp(arg[iarg],"transfer_force") == 0)
+        {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_force'");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                use_force_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                use_force_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_force'");
+            iarg++;
+            hasargs = true;
+        }
         else if(strcmp(arg[iarg],"transfer_torque") == 0)
         {
             if(narg < iarg+2)
@@ -243,26 +257,37 @@ void FixCfdCouplingForce::init()
 
 void FixCfdCouplingForce::post_force(int)
 {
-  double **f = atom->f;
-  double **torque = atom->torque;
-  int *mask = atom->mask;
-  int nlocal = atom->nlocal;
-  double **dragforce = fix_dragforce_->array_atom;
-  double **hdtorque = fix_hdtorque_->array_atom;
+    double **f = atom->f;
+    double **torque = atom->torque;
+    int *mask = atom->mask;
+    int nlocal = atom->nlocal;
 
-  vectorZeroize3D(dragforce_total);
-
-  // add dragforce to force vector
-  //NP no allreduce here, is done in compute_vector
-  for (int i = 0; i < nlocal; i++)
-  {
-    if (mask[i] & groupbit)
+    if(use_force_)
     {
-        if(use_force_) vectorAdd3D(f[i],dragforce[i],f[i]);
-        if(use_torque_) vectorAdd3D(torque[i],hdtorque[i],torque[i]);
-        vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
+        double **dragforce = fix_dragforce_->array_atom;
+        vectorZeroize3D(dragforce_total);
+        for (int i = 0; i < nlocal; i++)
+        {
+            if (mask[i] & groupbit)
+            {
+                vectorAdd3D(f[i],dragforce[i],f[i]);
+                vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
+            }
+        }
     }
-  }
+
+    if(use_torque_)
+    {
+        double **hdtorque = fix_hdtorque_->array_atom;
+        for (int i = 0; i < nlocal; i++)
+        {
+            if (mask[i] & groupbit)
+            {
+                vectorAdd3D(torque[i],hdtorque[i],torque[i]);
+            }
+        }
+    }
+  
 }
 
 /* ----------------------------------------------------------------------

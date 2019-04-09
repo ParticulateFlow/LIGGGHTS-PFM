@@ -26,8 +26,6 @@
 #include "atom.h"
 #include "memory.h"
 #include "error.h"
-
-//NP modified C.K.
 #include "pair_gran.h"
 #include "atom_vec.h"
 #include "force.h"
@@ -37,11 +35,13 @@
 #include "group.h"
 #include "timer.h"
 #include "neighbor.h"
+#include "math_const.h"
 
 #include "mpi_liggghts.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 #define EPSILON 0.001
 
@@ -185,7 +185,10 @@ void FixPropertyAtomPolydispParcel::set_arrays(int i)
 
     // update mass of particle accordingly
     double *mass = atom->rmass;
-    mass[i] *= vector_atom[i];
+    double *density = atom->density;
+    double *radius = atom->radius;
+    double newmass = MY_4PI3 * radius[i]*radius[i]*radius[i] * density[i] * vector_atom[i];
+    mass[i] = newmass;
 }
 
 
@@ -201,5 +204,8 @@ void FixPropertyAtomPolydispParcel::set_vector(int i, double value)
 {
     FixPropertyAtom::set_vector(i, value);
     double *mass = atom->rmass;
-    mass[i] *= vector_atom[i];
+    double *density = atom->density;
+    double *radius = atom->radius;
+    double newmass = MY_4PI3 * radius[i]*radius[i]*radius[i] * density[i] * vector_atom[i];
+    mass[i] = newmass;
 }
