@@ -36,6 +36,14 @@ class FixExecute : public Fix {
   int me;
   char *string;
 
+  // conditional execution
+  bool conditional;
+  // variable used to identify if insertion should take place
+  char *var;
+  double var_valid;
+  double var_threshold;
+
+  // single execution
   bool once;
   int execution_step;
 };

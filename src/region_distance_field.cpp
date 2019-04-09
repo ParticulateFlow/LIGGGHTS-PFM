@@ -86,6 +86,11 @@ namespace LIGGGHTS {
     }
   }
 
+  void RegionDistanceField::reset()
+  {
+    data.clear();
+  }
+
   bool RegionDistanceField::isInside(const double *x)
   {
     int const index = posToIndex(x);

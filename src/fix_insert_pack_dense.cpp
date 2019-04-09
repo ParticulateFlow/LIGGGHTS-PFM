@@ -36,8 +36,10 @@
 #include "error.h"
 #include "domain.h"
 #include "fix_particledistribution_discrete.h"
+#include "input.h"
 #include "random_park.h"
 #include "update.h"
+#include "variable.h"
 #include "particleToInsert.h"
 #include "math_extra.h"
 #include "math_extra_liggghts.h"
@@ -64,6 +66,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   x_init(NULL),
   ins_region(NULL),
   idregion(NULL),
+  var(NULL),
   fix_distribution(NULL),
   target_volfrac(max_volfrac),
   random(NULL),
@@ -71,6 +74,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   neighlist(lmp),
   insertion_done(false),
   is_inserter(true),
+  insert_every(0),
   n_inserted(0),
   n_inserted_local(0)
 {
@@ -110,6 +114,22 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
     } else if(strcmp(arg[iarg],"volumefraction_region") == 0) {
       if (iarg+2>narg) error->fix_error(FLERR,this,"");
       target_volfrac = atof(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"insert_every") == 0 || strcmp(arg[iarg],"every") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"");
+      insert_every = atoi(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
+    } else if(strcmp(arg[iarg],"target_variable") == 0) {
+      if (iarg+4>narg) error->fix_error(FLERR,this,"");
+      int n = strlen(arg[iarg+1]) + 1;
+      var = new char[n];
+      strcpy(var,arg[iarg+1]);
+      var_insvalid = atof(arg[iarg+2]);
+      var_threshold = atof(arg[iarg+3]);
+      iarg += 4;
+      hasargs = true;
     }
   }
 
@@ -202,9 +222,26 @@ void FixInsertPackDense::post_create()
 
 void FixInsertPackDense::pre_exchange()
 {
-  // this fix should only run exactly once
-  if (insertion_done) return;
+  // various checks if insertion should take place
+  // 1. periodic insertion and time to insert?
+  // 2. insertion once?
+  // 3. insertion according to external variable
+
+  if (insert_every > 0 && update->ntimestep % insert_every != 0) return;
+  if (insertion_done && insert_every <= 0) return;
+
+  if (var)
+  {
+    int ivar = input->variable->find(var);
+    if (ivar < 0) error->fix_error(FLERR,this,"target variable not found");
+    double value = input->variable->compute_equal(ivar);
+    if (fabs(value-var_insvalid) > var_threshold) return;
+  }
+
   insertion_done = true;
+
+  n_inserted = 0;
+  n_inserted_local = 0;
 
   prepare_insertion();
 
@@ -280,6 +317,10 @@ void FixInsertPackDense::prepare_insertion()
   // time to compute volume and actually insert already present
   // particles into region neighbor list with now appropriate bin size
   double volume_present_local = 0.;
+
+  neighlist.reset();
+  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
+  distfield.reset();
 
   if (is_inserter) {
     double rad_max_present = 0.;

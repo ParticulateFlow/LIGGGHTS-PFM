@@ -99,6 +99,8 @@ void FixWallSphGeneralSimple::compute_force(CollisionData & cdata, double *)
         f[ip][0] += fwall * cdata.delta[0];
         f[ip][1] += fwall * cdata.delta[1];
         f[ip][2] += fwall * cdata.delta[2];
+
+        cdata.has_force_update = true;
     }
 
 }

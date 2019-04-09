@@ -16,19 +16,24 @@ ID, group-ID are documented in "fix"_fix.html command :ulb,l
 execute = style name of this fix command :l
 N = execute every N steps :l
 string = text string to be executed with optional variable names :l
-keyword = none or {once} :l
+keyword = none or {once} or {conditional} :l
+{conditional} value = variable name, target value, tolerance
+    variable name = variable that triggers execution, needs to be defined beforehand in the input script
+    target value = value of variable at which fix is executed
+    tolerance = how much the value of the variable and the target value may differ :pre
 :ule
 
 [Examples:]
 
 fix ex0 all execute 100 "variable a equal $x"
-fix ex1 all execute 100 "variable a equal $x" once :pre
+fix ex1 all execute 100 "variable a equal $x" once
+fix ex2 all execute 100 "variable a equal $x" conditional trigger 10.0 0.1 :pre
 
 [Description:]
 
 Executes a text string as LIGGGHTS command every N steps during a simulation run. This can
 be used for coupled simulations that would otherwise only take a given number of timesteps. If the "once" keyword is specified,
-the command is executed only once at time step N.
+the command is executed only once at time step N. The "conditional" keyword allows to specify a variable which triggers the execution of the fix if it holds the desired value.
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 

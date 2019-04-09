@@ -67,6 +67,8 @@ ReadDump::ReadDump(LAMMPS *lmp) : Pointers(lmp)
 
   reader = NULL;
   fp = NULL;
+
+  nlocal_orig = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -113,7 +115,7 @@ void ReadDump::command(int narg, char **arg)
 
   // reset timestep to nstep
 
-  update->reset_timestep(nstep);
+  if (retainstepflag == 0) update->reset_timestep(nstep);
 
   // counters
 
@@ -452,7 +454,7 @@ void ReadDump::atoms()
   // uflag[i] = 1 for each owned atom appearing in dump
   // ucflag = similar flag for each chunk atom, used in process_atoms()
 
-  int nlocal = atom->nlocal;
+  int nlocal = nlocal_orig = atom->nlocal;
   memory->create(uflag,nlocal,"read_dump:uflag");
   for (int i = 0; i < nlocal; i++) uflag[i] = 0;
   memory->create(ucflag,CHUNK,"read_dump:ucflag");
@@ -474,7 +476,7 @@ void ReadDump::atoms()
 
   // if addflag set, add tags to new atoms if possible
 
-  if (addflag) {
+  if (addflag || bruteaddflag) {
     bigint nblocal = atom->nlocal;
     MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
     if (atom->natoms < 0 || atom->natoms > MAXBIGINT)
@@ -545,6 +547,9 @@ void ReadDump::atoms()
   double **x = atom->x;
   tagint *image = atom->image;
   nlocal = atom->nlocal;
+
+ //TL for (int i = 0; i < nlocal; i++) if(x[i][0] < -4.6 && x[i][2]>24.0) fprintf(screen,"prior: atom %d on proc %d with x = %f\n",i,me,x[i][0]);
+
   for (int i = 0; i < nlocal; i++) domain->remap(x[i],image[i]);
 
   if (triclinic) domain->x2lamda(atom->nlocal);
@@ -553,6 +558,9 @@ void ReadDump::atoms()
   irregular->migrate_atoms();
   delete irregular;
   if (triclinic) domain->lamda2x(atom->nlocal);
+
+ //TL for (int i = 0; i < nlocal; i++) if(x[i][0] < -4.6 && x[i][2]>24.0) fprintf(screen,"posterior: atom %d on proc %d with x = %f\n",i,me,x[i][0]);
+
 }
 
 /* ----------------------------------------------------------------------
@@ -572,7 +580,7 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
 
   int iarg;
   for (iarg = 0; iarg < narg; iarg++)
-    if (strcmp(arg[iarg],"add") == 0)
+    if (strcmp(arg[iarg],"add") == 0 || strcmp(arg[iarg],"bruteadd") == 0)
       if (iarg < narg-1 && strcmp(arg[iarg+1],"yes") == 0) break;
 
   nfield = 0;
@@ -639,6 +647,8 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
   purgeflag = 0;
   trimflag = 0;
   addflag = 0;
+  bruteaddflag = 0;
+  retainstepflag = 0;
   for (int i = 0; i < nfield; i++) fieldlabel[i] = NULL;
   scaleflag = 0;
   wrapflag = 1;
@@ -674,6 +684,18 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
       else if (strcmp(arg[iarg+1],"no") == 0) addflag = 0;
       else error->all(FLERR,"Illegal read_dump command");
       iarg += 2;
+    } else if (strcmp(arg[iarg],"bruteadd") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal read_dump command");
+      if (strcmp(arg[iarg+1],"yes") == 0) bruteaddflag = 1;
+      else if (strcmp(arg[iarg+1],"no") == 0) bruteaddflag = 0;
+      else error->all(FLERR,"Illegal read_dump command");
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"retaintimestep") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal read_dump command");
+      if (strcmp(arg[iarg+1],"yes") == 0) retainstepflag = 1;
+      else if (strcmp(arg[iarg+1],"no") == 0) retainstepflag = 0;
+      else error->all(FLERR,"Illegal read_dump command");
+      iarg += 2; 
     } else if (strcmp(arg[iarg],"label") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal read_dump command");
       int i;
@@ -740,14 +762,15 @@ void ReadDump::process_atoms(int n)
 
   for (i = 0; i < n; i++) {
     ucflag[i] = 0;
+    if (bruteaddflag) continue;
 
     // check if new atom matches one I own
     // setting m = -1 forces new atom not to match
 
     itag = static_cast<int> (fields[i][0]);
-    if (itag <= map_tag_max) m = atom->map(static_cast<int> (fields[i][0]));
+    if (itag <= map_tag_max) m = atom->map(itag);
     else m = -1;
-    if (m < 0 || m >= nlocal) continue;
+    if (m < 0 || m >= nlocal_orig) continue;
 
     ucflag[i] = 1;
     uflag[m] = 1;
@@ -822,7 +845,7 @@ void ReadDump::process_atoms(int n)
   // add atoms in round-robin sequence on processors
   // cannot do it geometrically b/c dump coords may not be in simulation box
 
-  if (!addflag) return;
+  if (!addflag && !bruteaddflag) return;
 
   MPI_Allreduce(ucflag,ucflag_all,n,MPI_INT,MPI_SUM,world);
 
@@ -863,6 +886,9 @@ void ReadDump::process_atoms(int n)
     // reset v,image ptrs in case they are reallocated
 
     m = atom->nlocal;
+
+//TL    fprintf(screen,"creating atom at %f %f %f, m = %d, proc = %d\n",one[0],one[1],one[2],m,me);
+
     atom->avec->create_atom(itype,one);
     nadd++;
 
@@ -916,6 +942,7 @@ void ReadDump::process_atoms(int n)
       image[m] = ((tagint) (xbox + IMGMAX) & IMGMASK) | 
         (((tagint) (ybox + IMGMAX) & IMGMASK) << IMGBITS) | 
         (((tagint) (zbox + IMGMAX) & IMGMASK) << IMG2BITS);
+
     }
   }
 

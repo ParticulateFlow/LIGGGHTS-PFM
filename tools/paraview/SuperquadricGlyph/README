@@ -1,0 +1,53 @@
+--------------------------------------------------
+Prerequisites:
+--------------------------------------------------
+- cmake
+- ParaView compiled from source or
+  a ParaView Development Installation
+
+--------------------------------------------------
+Installation:
+--------------------------------------------------
+1) mkdir build
+2) cd build
+3) cmake path/to/SuperquadricGlyph \
+         -DCMAKE_BUILD_TYPE:STRING=Release \
+         -DQT_QMAKE_EXECUTABLE:FILEPATH=/path/to/qmake \
+         -DParaView_DIR:PATH=/absolute/path/to/paraview/build/dir \
+         -DCMAKE_C_COMPILER:FILEPATH=/usr/bin/gcc-4.1 \
+         -DCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/g++-4.1
+   In case you are using a ParaView Development Installation
+   ParaView_DIR should be set to the location of the
+   ParaViewConfig.cmake file. It can be found in the following
+   locations:
+    * On Windows ParaViewConfig.cmake is in the root of the install
+      tree. For exampe C:\Program Files\ParaView-Development 3.8.0\ParaViewConfig.cmake
+    * On Mac and Linux the ParaViewConfig.cmake file is located in
+      lib\paraview-3.8.
+4) type [c] to configure
+5) keep providing any additional required setting and hitting [c]
+   until the option [g] appears
+6) hit [g], ccmake will end
+7) In case you are using a ParaView Development Installation
+   the Makefiles CMake has created contain references to the
+   Qt installation directory at Kitware. Replace the path with
+   the path to your Qt installation directory, e.g. by means of
+   sed -i -e 's,/home/kitware/.*ParaView-3-.*/Support/qt-4.6.2/bin/lib,/path/to/qt/lib,g' \
+        CMakeFiles/SuperquadricGlyphFilter.dir/build.make \
+        CMakeFiles/SuperquadricGlyphFilter.dir/flags.make \
+        CMakeFiles/SuperquadricGlyphFilter.dir/link.txt
+   The same procedure may be necessary for other libraries:
+
+   sed -i -e '/^libSuperquadricGlyphFilter.so: \/home\/kitware\/.*ParaView-3-.*\/Support\//d;' \
+        CMakeFiles/SuperquadricGlyphFilter.dir/build.make
+   sed -i -e 's/ [^ ]*libhdf5.a//; s/ [^ ]*libsz.a//; s/-lpython2.5//;' \
+        CMakeFiles/SuperquadricGlyphFilter.dir/link.txt
+8) run 'make'
+
+
+--------------------------------------------------
+Usage:
+--------------------------------------------------
+In ParaView go to
+   Tools --> Manage Plugins
+   --> Load New --> path/to/libSuperquadricGlyphFilter.so

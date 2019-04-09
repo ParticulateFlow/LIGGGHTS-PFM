@@ -161,16 +161,16 @@ inline double MathExtraLiggghts::cbrt_5d(double d)
 
 inline double MathExtraLiggghts::cbrta_halleyd(const double a, const double R)
 {
-        const double a3 = a*a*a;
-    const double b= a * (a3 + R + R) / (a3 + a3 + R);
-        return b;
+    const double a3 = a*a*a;
+    const double b = a * (a3 + R + R) / (a3 + a3 + R);
+    return b;
 }
 
 // cube root approximation using 1 iteration of Halley's method (double)
 inline double MathExtraLiggghts::halley_cbrt1d(double d)
 {
-        double a = cbrt_5d(d);
-        return cbrta_halleyd(a, d);
+    double a = cbrt_5d(d);
+    return cbrta_halleyd(a, d);
 }
 
 /*NP ----------------------------------------------------------------------
