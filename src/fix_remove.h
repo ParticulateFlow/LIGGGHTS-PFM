@@ -75,7 +75,7 @@ class FixRemove : public Fix {
   double delete_below_;
   double rate_remove_;              //NP in kg per sec
   int seed_;
-  bool integrated_error;
+  bool integrated_error_;
 
   bool variable_rate_;
   char* rate_name_;
