@@ -138,7 +138,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
     target_volfrac = max_volfrac;
   }
 
-  radius_factor = pow(max_volfrac/target_volfrac,MathConst::THIRD);
+  radius_factor = cbrt(max_volfrac/target_volfrac);
   if (comm->me == 0 && screen)
     fprintf(screen, "radius scaling factor: %f\n",radius_factor);
 
@@ -322,7 +322,7 @@ void FixInsertPackDense::prepare_insertion()
 
   neighlist.reset();
   neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
-  distfield.reset(); 
+  distfield.reset();
 
   if (is_inserter) {
     double rad_max_present = 0.;
