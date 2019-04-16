@@ -251,7 +251,6 @@ void BondGran::compute(int eflag, int vflag)
       continue;
     }
 
-
     /*NL*/ //if (screen) fprintf(screen,"ts %d: handling id %d and %d\n",update->ntimestep,tag[i1],tag[i2]);
 
     type = bondlist[n][2]; // Get current bond type properties
@@ -328,8 +327,8 @@ void BondGran::compute(int eflag, int vflag)
 
     // relative velocities for shear
 
-    vtr1 = vt1 - (delz*wr2-dely*wr3);
-    vtr2 = vt2 - (delx*wr3-delz*wr1);
+    vtr1 = vt1- (delz*wr2-dely*wr3);
+    vtr2 = vt2- (delx*wr3-delz*wr1);
     vtr3 = vt3 - (dely*wr1-delx*wr2);
 
     // relative rotational velocity for torsion and bending
@@ -345,7 +344,7 @@ void BondGran::compute(int eflag, int vflag)
 
     // normal component
 
-    wnnr = wr1*delx + wr2*dely + wr3*delz;
+    wnnr =wr1*delx + wr2*dely + wr3*delz;
     wn1 = delx*wnnr * rsqinv;
     wn2 = dely*wnnr * rsqinv;
     wn3 = delz*wnnr * rsqinv;

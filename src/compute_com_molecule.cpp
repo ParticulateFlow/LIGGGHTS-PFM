@@ -129,9 +129,9 @@ void ComputeCOMMolecule::compute_array()
       if (molmap) imol = molmap[imol-idlo];
       else imol--;
       domain->unmap(x[i],image[i],unwrap);
-      com[imol][0] += x[i][0] * massone; //unwrap[0] * massone;
-      com[imol][1] += x[i][1] * massone; //unwrap[1] * massone;
-      com[imol][2] += x[i][2] * massone; //unwrap[2] * massone;
+      com[imol][0] += unwrap[0] * massone;
+      com[imol][1] += unwrap[1] * massone;
+      com[imol][2] += unwrap[2] * massone;
       com[imol][3] += v[i][0] * massone;
       com[imol][4] += v[i][1] * massone;
       com[imol][5] += v[i][2] * massone;
@@ -161,9 +161,9 @@ void ComputeCOMMolecule::compute_array()
                 x_mol[i][0] = comall[j][0];
                 x_mol[i][1] = comall[j][1];
                 x_mol[i][2] = comall[j][2];
-                v_mol[i][0] = comall[j][3];
-                v_mol[i][1] = comall[j][4];
-                v_mol[i][2] = comall[j][5];
+                v_mol[i][0] = comall[j][3] - v[i][0];
+                v_mol[i][1] = comall[j][4] - v[i][1];
+                v_mol[i][2] = comall[j][5] - v[i][2];
             }
         }
     }

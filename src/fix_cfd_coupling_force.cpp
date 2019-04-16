@@ -237,7 +237,6 @@ void FixCfdCouplingForce::init()
     fix_coupling_->add_push_property("x","vector-atom");
     fix_coupling_->add_push_property("v","vector-atom");
     fix_coupling_->add_push_property("radius","scalar-atom");
-    fix_coupling_->add_push_property("molecule","scalar-atom");
     if(use_molecule_) fix_coupling_->add_push_property("x_mol","vector-atom");
     if(use_molecule_) fix_coupling_->add_push_property("v_mol","vector-atom");
     if(use_type_) fix_coupling_->add_push_property("type","scalar-atom");
