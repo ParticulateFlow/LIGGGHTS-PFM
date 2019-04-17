@@ -52,11 +52,13 @@
 #include "neigh_list.h"
 #include "math_const.h"
 #include "math_extra.h"
+#include "math_extra_liggghts.h"
 #include "fix_wall_gran.h"
 #include "primitive_wall.h"
 #include "tri_mesh_contacts.h"
 
 using namespace MathConst;
+using namespace MathExtraLiggghts;
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace LIGGGHTS::ContactModels;
@@ -537,19 +539,6 @@ void FixBreakParticle::pre_force(int)
     fix_collision_factor->set_all(1.0);
     n_break_this = 0;
   }
-}
-
-/* ---------------------------------------------------------------------- */
-
-unsigned int JSHash(const std::string& str)
-{
-  unsigned int hash = 1315423911;
-
-  for (std::size_t i = 0; i < str.length(); ++i) {
-    hash ^= ((hash << 5) + str[i] + (hash >> 2));
-  }
-
-  return hash;
 }
 
 /* ---------------------------------------------------------------------- */
