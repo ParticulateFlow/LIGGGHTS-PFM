@@ -80,7 +80,7 @@ FixInsertPackFaceUniverse::FixInsertPackFaceUniverse(LAMMPS *lmp, int narg, char
     }
     ++iarg;
   }
-  idmassflowface_hash = JSHash(idmassflowface, mpi_tag_upper_bound(universe->uworld));
+  idmassflowface_hash = bitwiseHash(idmassflowface, mpi_tag_upper_bound(universe->uworld));
   // no fixed total number of particles inserted by this fix exists
   if (strcmp(style,"insert/pack/face/universe") == 0)
     ninsert_exists = 0;

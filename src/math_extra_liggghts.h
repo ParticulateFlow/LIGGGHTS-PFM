@@ -108,7 +108,8 @@ namespace MathExtraLiggghts {
 
   inline bool line_triangle_intersect(const double *origin, const double *dir, const double *v0, const double *v1, const double *v2);
 
-  inline unsigned int JSHash(const std::string& str) {
+  // Zobel et al., 'In-memory hash tables for accumulating text vocabularies', Inf. Process. Lett., 80(6), pp. 271-277 (2001)
+  inline unsigned int bitwiseHash(const std::string& str) {
     unsigned int hash = 1315423911;
     for (std::size_t i = 0; i < str.length(); ++i) {
       hash ^= ((hash << 5) + str[i] + (hash >> 2));
@@ -116,8 +117,8 @@ namespace MathExtraLiggghts {
     return hash;
   }
 
-  inline unsigned int JSHash(const std::string& str, unsigned int max) {
-    return JSHash(str) % max;
+  inline unsigned int bitwiseHash(const std::string& str, unsigned int max) {
+    return bitwiseHash(str) % max;
   }
 
 }

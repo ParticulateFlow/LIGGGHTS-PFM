@@ -54,7 +54,7 @@ FixMassflowMeshFaceUniverse::FixMassflowMeshFaceUniverse(LAMMPS *lmp, int narg, 
     cg_ = force->cg();
     cg3_ = cg_*cg_*cg_;
 
-    id_hash_ = JSHash(id, mpi_tag_upper_bound(universe->uworld));
+    id_hash_ = bitwiseHash(id, mpi_tag_upper_bound(universe->uworld));
     couple_every_ = 0;
     send_to_world_ = -1;
 

@@ -50,7 +50,7 @@ FixAveEulerRegionUniverse::FixAveEulerRegionUniverse(LAMMPS *lmp, int narg, char
   if (universe->nworlds == 1)
     error->all(FLERR,"Must have more than one processor partition for fix ave/euler/region/universe");
 
-  id_hash_ = JSHash(id, mpi_tag_upper_bound(universe->uworld));
+  id_hash_ = bitwiseHash(id, mpi_tag_upper_bound(universe->uworld));
 
   int iarg = 3;
 

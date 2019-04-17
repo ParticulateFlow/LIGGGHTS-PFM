@@ -55,7 +55,7 @@ FixForceControlRegionUniverse::FixForceControlRegionUniverse(LAMMPS *lmp, int na
   while (iarg < narg) {
     if(strcmp(arg[iarg],"target_val") == 0) {
       if (narg < iarg+2) error->fix_error(FLERR,this,"not enough arguments for 'target_val'");
-      idtarget_hash = JSHash(arg[iarg+1], mpi_tag_upper_bound(universe->uworld));
+      idtarget_hash = bitwiseHash(arg[iarg+1], mpi_tag_upper_bound(universe->uworld));
       iarg += 2;
     } else if (strcmp(arg[iarg],"receive_from_partition") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
