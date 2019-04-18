@@ -23,6 +23,8 @@
    Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -157,3 +159,5 @@ void FixAveEulerRegionUniverse::send_coupling_data()
     }
   }
 }
+
+#endif

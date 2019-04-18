@@ -22,6 +22,8 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #ifdef FIX_CLASS
 
 FixStyle(insert/pack/face,FixInsertPackFace)
@@ -97,5 +99,6 @@ class FixInsertPackFace : public FixInsert {
 
 }
 
+#endif
 #endif
 #endif

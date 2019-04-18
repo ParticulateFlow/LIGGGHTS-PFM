@@ -23,6 +23,8 @@
    Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #ifdef FIX_CLASS
 
 FixStyle(forcecontrol/region/universe,FixForceControlRegionUniverse)
@@ -87,5 +89,6 @@ class FixForceControlRegionUniverse : public FixForceControlRegion {
 
 }
 
+#endif
 #endif
 #endif

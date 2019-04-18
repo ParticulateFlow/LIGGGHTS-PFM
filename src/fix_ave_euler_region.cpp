@@ -23,6 +23,8 @@
    Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -555,3 +557,5 @@ double FixAveEulerRegion::compute_array_by_id(int cell_id, int j)
 
   return compute_array(cellid2index_[cell_id], j);
 }
+
+#endif

@@ -23,6 +23,8 @@
    Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #include <string.h>
 #include <stdlib.h>
 #include "fix_ave_euler_region.h"
@@ -889,3 +891,4 @@ double FixForceControlRegion::target_cell_v_max_z(int cell_index)
   return target_->cell_v_max(cell_index, 2);
 }
 
+#endif

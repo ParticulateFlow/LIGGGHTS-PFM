@@ -22,6 +22,7 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -676,3 +677,5 @@ void FixInsertPackFace::restart(char *buf)
 
   ins_region->reset_random(seed + SEED_OFFSET);
 }
+
+#endif

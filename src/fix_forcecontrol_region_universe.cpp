@@ -23,6 +23,8 @@
    Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #include <string.h>
 #include <stdlib.h>
 #include "fix_forcecontrol_region_universe.h"
@@ -160,3 +162,5 @@ void FixForceControlRegionUniverse::receive_coupling_data()
     MPI_Bcast(&target_v_max_[0][0],  3*ncells, MPI_DOUBLE, 0, world);
   }
 }
+
+#endif

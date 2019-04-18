@@ -23,6 +23,8 @@
    Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #ifdef FIX_CLASS
 
 FixStyle(ave/euler/region,FixAveEulerRegion)
@@ -103,5 +105,6 @@ class FixAveEulerRegion : public FixAveEuler {
 
 }
 
+#endif
 #endif
 #endif

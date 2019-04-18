@@ -23,6 +23,8 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
+#if defined(LAMMPS_VTK)
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -450,3 +452,4 @@ void FixInsertPackFaceUniverse::x_v_omega(int ninsert_this_local,int &ninserted_
   }
 }
 
+#endif
