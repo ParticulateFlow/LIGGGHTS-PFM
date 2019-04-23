@@ -500,7 +500,7 @@ void FixChemShrinkCore::init()
     char* fixname = new char[strlen("k0_")+strlen(id)+1];
     strcpy (fixname,"k0_");
     strcat(fixname,id);
-    fix_k0_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname,"property/atom","vector",3,0,style));
+    fix_k0_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname,"property/atom","vector",0,0,style));
     delete []fixname;
 
     // look up activation energies Ea
@@ -508,7 +508,7 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("Ea_")+strlen(id)+1];
     strcpy(fixname, "Ea_");
     strcat(fixname, id);
-    fix_Ea_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_Ea_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete[]fixname;
 
     // references for per atom properties.
@@ -535,14 +535,14 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("Aterm_")+strlen(id)+1];
     strcpy (fixname,"Aterm_");
     strcat(fixname,id);
-    fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete []fixname;
 
 
     fixname = new char[strlen("Bterm_")+strlen(id)+1];
     strcpy (fixname,"Bterm_");
     strcat(fixname,id);
-    fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete [] fixname;
 
     fixname = new char[strlen("Massterm_")+strlen(id)+1];
@@ -554,31 +554,31 @@ void FixChemShrinkCore::init()
     fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
     strcpy (fixname,"effDiffBinary_");
     strcat(fixname,id);
-    fix_effDiffBinary = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_effDiffBinary = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete [] fixname;
 
     fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
     strcpy (fixname,"effDiffKnud_");
     strcat(fixname,id);
-    fix_effDiffKnud = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_effDiffKnud = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete [] fixname;
 
     fixname = new char[strlen("dY_")+strlen(id)+1];
     strcpy (fixname,"dY_");
     strcat(fixname,id);
-    fix_dY_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_dY_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete [] fixname;
 
     fixname = new char[strlen("dmA_")+strlen(id)+1];
     strcpy (fixname,"dmA_");
     strcat(fixname,id);
-    fix_dmA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_dmA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete [] fixname;
 
     fixname = new char [strlen("fracRed_")+strlen(group->names[igroup])+1];
     strcpy(fixname,"fracRed_");
     strcat(fixname,group->names[igroup]);
-    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 3, 0, style));
+    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete []fixname;
 
     updatePtrs();
@@ -664,7 +664,7 @@ void FixChemShrinkCore::post_force(int)
                         // the changes in gas species
                         update_gas_properties(i, dmA_);
                         // calculate delta_h, and dot_delta_h for heat of reaction
-                        heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                        //heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                     }
                 }
             }
@@ -1082,6 +1082,9 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
     fracRed_[i][2] = f_HM;
+
+    for (int layer=0; layer < nmaxlayers_; layer++)
+        fracRed_[i][layer] = std::min(0.9999999999,fracRed_[i][layer]);
 }
 /* ---------------------------------------------------------------------- */
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
