@@ -248,8 +248,8 @@ void FixInsertPackDense::pre_exchange()
   if (screen) {
     // only proc 0 writes general output
     if (comm->me == 0) {
-      fprintf(screen,"fix insert/pack/dense will attempt to insert approximately %d particles in region %s\n",
-              n_insert_estim,idregion);
+      fprintf(screen,"fix insert/pack/dense %s will attempt to insert approximately %d particles in region %s\n",
+              id,n_insert_estim,idregion);
       fprintf(screen,"maximum volume fraction: %f\n",max_volfrac);
       fprintf(screen,"target volume fraction:  %f\n",target_volfrac);
     }
