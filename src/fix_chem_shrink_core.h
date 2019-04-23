@@ -78,6 +78,7 @@ public:
   char* massA, *massC;
 
   double molMass_A_, molMass_C_;
+  double scale_reduction_rate;
 
   char *diffA;
   char *moleFracA, *moleFracC;

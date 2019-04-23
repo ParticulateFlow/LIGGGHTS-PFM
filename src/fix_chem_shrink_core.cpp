@@ -59,18 +59,16 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
-    rmin_(1e-5)       //  [m]
+    rmin_(1e-9)       //  [m]
 {
-    if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
+    if (narg < 15) error -> all (FLERR, "Illegal fix chem/shrink/core command, not enough arguments");
+
+    if (((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
     // set defaults
     init_defaults();
     screenflag_ =   0;
-    massA = massC = NULL;
-    diffA = moleFracA = moleFracC = NULL;
-    speciesA = speciesC = NULL;
-    molarConc_  =   NULL;
     dY_previous3 = dY_previous2 = false;
     cg_ = 0.0;
     int iarg_ = 3;
@@ -119,21 +117,24 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             iarg_ += 2; // iarg = 11
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"scale_reduction_rate") == 0 )
+        {
+            if (iarg_ + 2 > narg)
+                error -> fix_error(FLERR,this,"Wrong number of arguments");
+            scale_reduction_rate = atof(arg[iarg_ + 1]);
+            if (scale_reduction_rate < 0.0)
+                error->fix_error(FLERR, this, "scale_reduction_rate cannot be smaller or less then 0");
+            iarg_ += 2;
+            hasargs = true; //iarg = 13
+        }
         else if (strcmp(arg[iarg_],"screen") == 0)
         {
             if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
             if (strcmp(arg[iarg_+1],"yes") == 0) screenflag_ = 1;
             else if (strcmp(arg[iarg_+1],"no") == 0) screenflag_ = 0;
             else error->all(FLERR,"Illegal fix/chem/shrink command");
-            iarg_ += 2; // iarg = 13
+            iarg_ += 2; // iarg = 15
             hasargs = true;
-        }
-        else if (strcmp(arg[iarg_],"nevery") == 0)
-        {
-            nevery = atoi(arg[iarg_+1]);
-            if (nevery <= 0) error->fix_error(FLERR,this,"nevery must be larger than 0");
-            iarg_+=2;
-            hasargs = true; //iarg = 15
         }
         else if (strcmp(this->style,"chem/shrink") == 0)
         {
@@ -486,11 +487,10 @@ void FixChemShrinkCore::init()
     // Define iron ore layer densities from Fe to Fe2O3
     double layerDensities_[] = {7870., 5740., 5170., 5240.};
 
-    int ntype = atom -> ntypes;
     char* fixname = new char[strlen("k0_")+strlen(id)+1];
     strcpy (fixname,"k0_");
     strcat(fixname,id);
-    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","matrix",ntype,0,style));
+    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",3,0,style));
     delete []fixname;
 
     // look up activation energies Ea
@@ -498,7 +498,7 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("Ea_")+strlen(id)+1];
     strcpy(fixname, "Ea_");
     strcat(fixname, id);
-    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "matrix", ntype, 0, style));
+    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname, "property/global", "vector", 3, 0, style));
     delete[]fixname;
 
     // references for per atom properties.
@@ -839,15 +839,15 @@ void FixChemShrinkCore::getMassT(int i)
 
     if (nuf_[i] == 0.0 || Rep_[i] == 0.0)
       {
-	Massterm[i] = 0.0;
+    Massterm[i] = 0.0;
       }
     else
       {
-	Sc_[i]  =   nuf_[i]/molecularDiffusion_[i];
-	Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
+    Sc_[i]  =   nuf_[i]/molecularDiffusion_[i];
+    Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
 
-	Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
-	Massterm[i] = 1.0/(Massterm[i]);
+    Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
+    Massterm[i] = 1.0/(Massterm[i]);
       }
 
     if (screenflag_ && screen)
@@ -960,7 +960,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
-        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep;
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }
@@ -987,7 +987,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
     double rad[nmaxlayers_+1] = {0.};
     double dmL_[nmaxlayers_+1] = {0.};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
     double sum_mass_p_new = 0.0;
-    double scale_reduction_rate = 10.0;
+    //double scale_reduction_rate = 10.0;
 
     /* Mass Change of Layers */
     /* dmL is a positive value, therefore it will be subtracted from the total mass */
@@ -1013,7 +1013,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
     }
 
     // Core layer radius (initial Fe2O3)
-    rad[layers_] = cbrt((0.75*massLayer_[i][layers_])/(rhoeff_[i][layers_]*M_PI));     
+    rad[layers_] = cbrt((0.75*massLayer_[i][layers_])/(rhoeff_[i][layers_]*M_PI));
 
     // Outer layer radii (Fe3O4, FeO)
     for (int layer = layers_ - 1; layer > 0; layer--)
@@ -1283,7 +1283,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
-        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep;
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }
@@ -1359,6 +1359,7 @@ void FixChemShrinkCore::init_defaults()
     relRadii_ = massLayer_ = NULL;
     k0_ = Ea_ = NULL;
     xA_ = xC_ = NULL;
+    scale_reduction_rate = 0.;
 
     // particle properties total
     radius_ = pmass_ = pdensity_ = NULL;
@@ -1400,4 +1401,9 @@ void FixChemShrinkCore::init_defaults()
     fix_dY_ = NULL;
     fix_totalMole_      =   NULL;
     fix_dmA_ = NULL;
+
+    massA = massC = NULL;
+    diffA = moleFracA = moleFracC = NULL;
+    speciesA = speciesC = NULL;
+    molarConc_  =   NULL;
 }
