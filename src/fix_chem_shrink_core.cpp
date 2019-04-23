@@ -624,9 +624,7 @@ void FixChemShrinkCore::post_force(int)
                     {
                         // do nothing -- no reaction takes place
                         error->warning(FLERR, "The temperature is too low for reduction to take place!");
-
-                    }else if (T_[i] > 573.15 && T_[i] < 843.15)
-                    {
+                    } else if (T_[i] >= 573.15 && T_[i] < 843.15) {
                         FR_low(i, layerMolMasses_);
                         getXi_low(i,x0_eq_);
                         getA_low(i);
@@ -636,36 +634,34 @@ void FixChemShrinkCore::post_force(int)
                         update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                         update_gas_properties(i, dmA_);
                         heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
-                    }
-                    else if (T_[i] > 843.15)
-                    {
+                    } else if (T_[i] >= 843.15) {
                         // calculate values for fractional reduction f_i = (1-relRadii_i^3)
                         // or with mass ratio provides simplicity for calculations of A & B terms.
-                        FractionalReduction(i,layerMolMasses_);
+                            FractionalReduction(i,layerMolMasses_);
                         // get values for equilibrium molar fraction of reactant gas species,
                         // this value is calculated from the Equilibrium constants function Keq(layer,T).
                         // and used in the reaction rate determination.
-                        getXi(i,x0_eq_);
+                            getXi(i,x0_eq_);
                         // calculate the reaction resistance term
-                        getA(i);
+                            getA(i);
                         // calculate the diffusion resistance term
-                        getB(i);
+                            getB(i);
                         // calculate mass transfer resistance term
-                        getMassT(i);
+                            getMassT(i);
                         // do the reaction calculation with pre-calculated values of A, B and ß (massT)
                         // the USCM model chemical reaction rate with gaseous species model
                         // based on the works of Philbrook, Spitzer and Manning
-                        reaction(i, dmA_, x0_eq_);
+                            reaction(i, dmA_, x0_eq_);
                         // the results of reaction gives us the mass change of reactant species gas
                         // in the usual case that means the CO gas mass species change is given
                         // this information is used then to calculate mass changes of particle layers
-                        update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                            update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                         // also the results of reaction function is used to calculate
                         // the changes in gas species
-                        update_gas_properties(i, dmA_);
+                            update_gas_properties(i, dmA_);
                         // calculate delta_h, and dot_delta_h for heat of reaction
-                        //heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
-                    }
+                        //    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                  }
                 }
             }
         }
@@ -791,18 +787,16 @@ void FixChemShrinkCore::getB(int i)
     {
         // calculate fractional reduction to the power of 1/3 for simpler use
         fracRedThird_[layer] = cbrt(1.0-fracRed_[i][layer]);
-        //fracRedThird_[layer] = std::max(fracRedThird_[layer], SMALL);
 
         // Calculate the effective molecular diffusion
-        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_) + SMALL;
+        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_)+SMALL;
 
         // Calculate the knudsen diffusion
-        effDiffKnud[i][layer]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_) + SMALL;
+        effDiffKnud[i][layer]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_)+SMALL;
 
         // total effective diffusivity
-        diffEff_[layer] =   effDiffKnud[i][layer]*effDiffBinary[i][layer]/(effDiffBinary[i][layer]+effDiffKnud[i][layer]) + SMALL;
+        diffEff_[layer] = 1.0/(1.0/effDiffKnud[i][layer]+1.0/effDiffBinary[i][layer]);
     }
-
 
     // calculation of diffusion term
     if (molecularDiffusion_[i] < SMALL)
@@ -829,22 +823,11 @@ void FixChemShrinkCore::getMassT(int i)
     double Sc_[atom->nlocal] = {0.};
     double Sh_[atom->nlocal] = {0.};
 
-    // if molecular diffusion is around 0, overwrite to avoid numerical errors.
-    if (molecularDiffusion_[i] < SMALL)
-        molecularDiffusion_[i] += SMALL;
+    Sc_[i]  =   nuf_[i]/(molecularDiffusion_[i]+SMALL);
+    Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
 
-    if (nuf_[i] == 0.0 || Rep_[i] == 0.0)
-      {
-        Massterm[i] = 0.0;
-      }
-    else
-      {
-        Sc_[i]  =   nuf_[i]/molecularDiffusion_[i];
-        Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
-
-        Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
-        Massterm[i] = 1.0/(Massterm[i]);
-      }
+    Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_));
+    Massterm[i] = 1.0/(Massterm[i]+SMALL);
 }
 
 /* ---------------------------------------------------------------------- */
