@@ -507,13 +507,15 @@ void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
   vectorZeroize3D(x3);
 
   // first, construct touching spheres
-  double const r1=p1->radius_ins[0]*radius_factor,
-    r2=p2->radius_ins[0]*radius_factor,
-    r3=p3->radius_ins[0]*radius_factor;
+  double const r1 = p1->radius_ins[0]*radius_factor;
+  double const r2 = p2->radius_ins[0]*radius_factor;
+  double const r3 = p3->radius_ins[0]*radius_factor;
 
   x2[0] = r1+r2;
 
-  double const a=r2+r3,b=r1+r3,c=r1+r2;
+  double const a = r2+r3;
+  double const b = r1+r3;
+  double const c = r1+r2;
   double const alpha = acos((a*a-b*b-c*c)/(-2.*b*c));
 
   x3[0] = b*cos(alpha);
