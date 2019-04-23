@@ -584,7 +584,7 @@ void FixChemShrinkCore::init()
     updatePtrs();
 
     // get initial values for rhoeff, and use them to calculate mass of layers
-    for (int i = 0; i < atom->nlocal; ++i)
+    for (int i = 0; i < atom->nlocal; i++)
     {
         rhoeff_[i][layers_] = pdensity_[i];
         for (int layer=0; layer < layers_; layer++)
@@ -592,6 +592,10 @@ void FixChemShrinkCore::init()
             rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
         }
         calcMassLayer(i);
+    }
+
+    if (screenflag_ && screen) {
+        fprintf(screen, "rhoeff_[0][0] = %f \n rhoeff_[0][1] = %f \n rhoeff_[0][2] = %f \n rhoeff_[0][3] = %f \n", rhoeff_[0][0], rhoeff_[0][1], rhoeff_[0][2], rhoeff_[0][3]);
     }
 }
 
@@ -799,18 +803,10 @@ void FixChemShrinkCore::getB(int i)
     }
 
     // calculation of diffusion term
-    if (molecularDiffusion_[i] < SMALL)
+    Bterm[i][0]   =   ((1-fracRedThird_[0])/fracRedThird_[0])*((radius_[i]/cg_)/(diffEff_[0]));
+    for (int layer = 1; layer < layers_; layer++)
     {
-        for (int layer = 0; layer < layers_; layer++)
-            Bterm[i][layer] = 0.0;
-    }
-    else
-    {
-        Bterm[i][0]   =   ((1-fracRedThird_[0])/fracRedThird_[0])*((radius_[i]/cg_)/(diffEff_[0]));
-        for (int layer = 1; layer < layers_; layer++)
-        {
-            Bterm[i][layer] = (fracRedThird_[layer-1]-fracRedThird_[layer])/(fracRedThird_[layer-1]*fracRedThird_[layer])*((radius_[i]/cg_)/(diffEff_[layer]));
-        }
+        Bterm[i][layer] = (fracRedThird_[layer-1]-fracRedThird_[layer])/(fracRedThird_[layer-1]*fracRedThird_[layer])*((radius_[i]/cg_)/(diffEff_[layer]));
     }
 }
 
