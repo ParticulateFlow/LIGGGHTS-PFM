@@ -42,6 +42,8 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 
 namespace LAMMPS_NS {
 
+class FixPropertyAtom;
+
 class FixInsertPackDense : public Fix {
  public:
 
@@ -53,6 +55,8 @@ class FixInsertPackDense : public Fix {
   virtual int setmask();
 
   virtual void post_create();
+
+  virtual void init();
 
   virtual void pre_exchange();
 protected:
@@ -121,6 +125,14 @@ protected:
   bool candidate_point_is_valid(LIGGGHTS::Particle &p);
 
   int n_inserted, n_inserted_local;
+
+private:
+  char *property_name;
+  FixPropertyAtom *fix_property;
+  double fix_property_value;
+  int fix_property_ivalue;
+  int property_index;
+  int property_iindex;
 };
 
 }

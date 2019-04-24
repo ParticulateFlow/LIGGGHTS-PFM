@@ -31,11 +31,13 @@
 #include <math.h>
 #include <assert.h>
 
+#include "force.h"
 #include "region.h"
 #include "modify.h"
 #include "error.h"
 #include "domain.h"
 #include "fix_particledistribution_discrete.h"
+#include "fix_property_atom.h"
 #include "input.h"
 #include "random_park.h"
 #include "update.h"
@@ -76,7 +78,13 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   is_inserter(true),
   insert_every(0),
   n_inserted(0),
-  n_inserted_local(0)
+  n_inserted_local(0),
+  property_name(NULL),
+  fix_property(NULL),
+  fix_property_value(0.),
+  fix_property_ivalue(0),
+  property_index(1),
+  property_iindex(1)
 {
   int iarg = 3;
 
@@ -129,6 +137,15 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
       var_insvalid = atof(arg[iarg+2]);
       var_threshold = atof(arg[iarg+3]);
       iarg += 4;
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"set_property") == 0) {
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"");
+      int n = strlen(arg[iarg+1]) + 1;
+      property_name = new char[n];
+      strcpy(property_name,arg[iarg+1]);
+      fix_property_value = force->numeric(FLERR,arg[iarg+2]);
+      fix_property_ivalue = static_cast<int>(fix_property_value);
+      iarg += 3;
       hasargs = true;
     }
   }
@@ -220,6 +237,47 @@ void FixInsertPackDense::post_create()
 
 /* ---------------------------------------------------------------------- */
 
+void FixInsertPackDense::init()
+{
+    if(property_name)
+    {
+        fix_property = static_cast<FixPropertyAtom*>(modify->find_fix_property(property_name,"property/atom","scalar",1,1,this->style,false));
+        if(!fix_property)
+        {
+            if(strstr(property_name,"i_") == property_name)
+            {
+                int flag;
+                property_iindex = atom->find_custom(&property_name[2],flag);
+                if(property_iindex < 0 || flag != 0)
+                {
+                    char errmsg[500];
+                    sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
+                    error->all(FLERR,errmsg);
+                }
+            }
+            else if(strstr(property_name,"d_") == property_name)
+            {
+                int flag;
+                property_index = atom->find_custom(&property_name[2],flag);
+                if(property_index < 0 || flag != 1)
+                {
+                    char errmsg[500];
+                    sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
+                    error->all(FLERR,errmsg);
+                }
+            }
+            else
+            {
+                char errmsg[500];
+                sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
+                error->all(FLERR,errmsg);
+            }
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixInsertPackDense::pre_exchange()
 {
   // various checks if insertion should take place
@@ -283,7 +341,8 @@ void FixInsertPackDense::pre_exchange()
   }
 
   // actual insertion
-  fix_distribution->pre_insert();
+  fix_distribution->pre_insert(0,fix_property,fix_property_value,property_index,fix_property_ivalue,property_iindex);
+
   fix_distribution->insert(n_inserted_local);
 
   if (atom->tag_enable) {
@@ -660,6 +719,7 @@ FixInsertPackDense::~FixInsertPackDense()
 {
   delete[] x_init;
   delete[] idregion;
+  delete[] property_name;
   delete random;
 }
 
