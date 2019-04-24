@@ -143,7 +143,6 @@ public:
   double *molarConc_;
 
   class FixPropertyAtom *fix_dY_;
-  bool dY_previous3, dY_previous2;
   double **dY;
 
   class FixPropertyAtom *fix_dmA_;
