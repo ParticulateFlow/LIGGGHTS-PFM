@@ -50,8 +50,9 @@ public:
  protected:
 
   // functions declared in this class
+  void calcMassLayerPure(int);
   int active_layers(int);   // calculate number of active layers per-particle
-  void calcMassLayer(int);  // calculate mass of layers per-particle
+  void calcMassLayer(int);  // calculate mass of layers per-particle  
   void FractionalReduction(int, double *); // calculate fractional reduction per-layer depending on layer radius
   void getXi(int, double *);    // calculate molar equilibrium constant of reacting gas
   double K_eq(int, int); // calculate equilibrium constant based on the work of Valipour 2009
@@ -106,6 +107,7 @@ public:
   // handles of fixes
   double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *partP_, *Massterm, *reactionHeat_;
   double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
+  double **layerDensities_;
 
   // coarse_graining factor
   double cg_;
@@ -132,6 +134,7 @@ public:
   // particle properties
   class FixPropertyAtom *fix_layerRelRad_;
   class FixPropertyAtom *fix_layerMass_;
+  class FixPropertyAtom *fix_layerDens_;
   class FixPropertyAtom *fix_k0_;
   class FixPropertyAtom *fix_Ea_;
   class FixPropertyAtom *fix_porosity_;

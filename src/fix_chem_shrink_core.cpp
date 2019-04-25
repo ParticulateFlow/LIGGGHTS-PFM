@@ -602,6 +602,7 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     updatePtrs();
+
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; i++)
     {
@@ -706,6 +707,20 @@ int FixChemShrinkCore::active_layers(int i)
     if (screenflag_ && screen)
         fprintf(screen, "active layers: %i \n", layers_);
     return layers_;
+}
+
+/* ---------------------------------------------------------------------- */
+void FixChemShrinkCore::calcMassLayerPure(int i)
+{
+    double rad[nmaxlayers_+1] = {0.};
+    for (int layer = 0; layer <= layers_ ; layer++)
+        rad[layer] = (radius_[i]/cg_)*relRadii_[i][layer];
+
+    massLayer_[i][layers_]   =   MY_4PI3*rad[layers_]*rad[layers_]*rad[layers_]*layerDensities_[i][layers_];
+    for (int layer = 0 ; layer < layers_; layer++)
+    {
+        massLayer_[i][layer]   =   MY_4PI3*(rad[layer]*rad[layer]*rad[layer]-rad[layer+1]*rad[layer+1]*rad[layer+1])*layerDensities_[i][layer];
+    }
 }
 
 /* ---------------------------------------------------------------------- */
