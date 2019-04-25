@@ -83,8 +83,8 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   fix_property(NULL),
   fix_property_value(0.),
   fix_property_ivalue(0),
-  property_index(1),
-  property_iindex(1)
+  property_index(-1),
+  property_iindex(-1)
 {
   int iarg = 3;
 
