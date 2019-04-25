@@ -287,7 +287,7 @@ void FixChemShrinkCore::post_create()
         strcpy (fixname,"dY_");
         strcat(fixname,id);
 
-        const char* fixarg[12];
+        const char* fixarg[11];
         fixarg[0]=fixname;            // fixid
         fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
@@ -308,7 +308,7 @@ void FixChemShrinkCore::post_create()
         strcpy (fixname,"dmA_");
         strcat(fixname,id);
 
-        const char* fixarg[12];
+        const char* fixarg[11];
         fixarg[0]=fixname;            // fixid
         fixarg[1]=group->names[igroup];//"all";
         fixarg[2]="property/atom";
@@ -322,6 +322,24 @@ void FixChemShrinkCore::post_create()
         fixarg[10]="0.0";
         fix_dmA_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
         delete []fixname;
+    }
+
+    fix_porosity_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, this->style, false));
+    if (!fix_porosity_) {
+        const char* fixarg[12];
+        fixarg[0]="porosity";            // fixid
+        fixarg[1]=group->names[igroup];   //"all";
+        fixarg[2]="property/atom";
+        fixarg[3]="porosity_";           // propertyid
+        fixarg[4]="vector";
+        fixarg[5]="yes";
+        fixarg[6]="no";
+        fixarg[7]="no";
+        fixarg[8]="0.0";
+        fixarg[9]="0.0";
+        fixarg[10]="0.0";
+        fixarg[11]="0.0";
+        fix_porosity_ = modify->add_fix_property_atom(12,const_cast<char**>(fixarg),style);
     }
 }
 
@@ -453,6 +471,7 @@ void FixChemShrinkCore::updatePtrs()
     xC_                 =   fix_moleFractionC_  ->  vector_atom;
     relRadii_           =   fix_layerRelRad_    ->  array_atom;
     massLayer_          =   fix_layerMass_      ->  array_atom;
+    layerDensities_     =   fix_layerDens_      ->  array_atom;
 
     k0_                 =   fix_k0_             ->  array_atom;
     Ea_                 =   fix_Ea_             ->  array_atom;
@@ -493,9 +512,6 @@ void FixChemShrinkCore::init()
     if (!atom->tag_enable || 0 == atom->map_style)
       error->fix_error(FLERR,this,"requires atom tags and an atom map");
 
-    // Define iron ore layer densities from Fe to Fe2O3
-    double layerDensities_[] = {7870., 5740., 5170., 5240.};
-
     char* fixname = new char[strlen("k0_")+strlen(id)+1];
     strcpy (fixname,"k0_");
     strcat(fixname,id);
@@ -509,6 +525,12 @@ void FixChemShrinkCore::init()
     strcat(fixname, id);
     fix_Ea_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete[]fixname;
+
+    fixname = new char [strlen("density_")+strlen(group->names[igroup])+1];
+    strcpy(fixname,"density_");
+    strcat(fixname,group->names[igroup]);
+    fix_layerDens_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname,"property/atom","vector",0,0,style));
+    delete []fixname;
 
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
@@ -524,7 +546,7 @@ void FixChemShrinkCore::init()
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style));
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
-    fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, style));
+    // fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, style));
     fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
     // references for global properties - valid for every particle equally
     fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, style));
@@ -536,7 +558,6 @@ void FixChemShrinkCore::init()
     strcat(fixname,id);
     fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete []fixname;
-
 
     fixname = new char[strlen("Bterm_")+strlen(id)+1];
     strcpy (fixname,"Bterm_");
@@ -581,14 +602,13 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     updatePtrs();
-
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; i++)
     {
         rhoeff_[i][layers_] = pdensity_[i];
         for (int layer=0; layer < layers_; layer++)
         {
-            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
+            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
         }
         calcMassLayer(i);
     }
@@ -927,15 +947,16 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
 
     /* Mass Change of Layers */
     /* dmL is a positive value, therefore it will be subtracted from the total mass */
-    // Fe2O3 (iniital)
+
+    // Core layer initially Fe2O3
     dmL_[layers_] = dmA_[layers_-1]*v_reac_[layers_-1]*(layerMolMasses_[layers_]/molMass_A_);
+    // Intermediate layers
     // Initial FeO & Fe3O4 layers
     // changes with active layers
     for (int layer = 1; layer < layers_; layer++)
         dmL_[layer] = -dmA_[layer]*v_prod_[layer]*(layerMolMasses_[layer]/molMass_A_) + dmA_[layer-1]*v_reac_[layer-1]*(layerMolMasses_[layer]/molMass_A_);
-    // Fe
+    // Outer Shell - Fe
     dmL_[0] = -dmA_[0]*v_prod_[0]*(layerMolMasses_[0]/molMass_A_);
-
 
     // New layer masses
     for (int j = 0; j <= layers_; j++)
@@ -943,7 +964,6 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
         massLayer_[i][j] -= dmL_[j]*scale_reduction_rate;
         // Limit minimum mass layer to 1e-20
         massLayer_[i][j] = std::max(massLayer_[i][j], 1e-20);
-
         // calculate total mass of particle
         sum_mass_p_new    +=  massLayer_[i][j];
     }
@@ -1286,6 +1306,7 @@ void FixChemShrinkCore::init_defaults()
     k0_ = Ea_ = NULL;
     xA_ = xC_ = NULL;
     scale_reduction_rate = 0.;
+    layerDensities_ = NULL;
 
     // particle properties total
     radius_ = pmass_ = pdensity_ = NULL;
@@ -1318,6 +1339,7 @@ void FixChemShrinkCore::init_defaults()
     fix_partPressure_ = NULL;   // Pascal
     fix_layerRelRad_ = NULL;
     fix_layerMass_ = NULL;           //  [kg]
+    fix_layerDens_ = NULL;           //  [kg/m^3]
     fix_k0_ = NULL;             //  [m/s]
     fix_Ea_ = NULL;             //  [J/mol] - [kg*m^2/s^2*mol]
     fix_porosity_ = NULL;       //  [%]
