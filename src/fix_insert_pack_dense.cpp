@@ -426,7 +426,7 @@ void FixInsertPackDense::handle_next_front_sphere()
 
   do {
     ParticleToInsert *pti = get_next_pti();
-    double const r_insert = pti->radius_ins[0];
+    double const r_insert = pti->radius_ins[0]*radius_factor;
     double const cutoff_dist = current.radius+2.*r_insert;
 
     particles.clear();
@@ -436,7 +436,7 @@ void FixInsertPackDense::handle_next_front_sphere()
     candidatePoints.clear();
     for (unsigned int i=0; i<particles.size()-1; ++i) {
       for (unsigned int j=i+1; j<particles.size(); ++j) {
-        compute_and_append_candidate_points(current,particles[i],particles[j],r_insert*radius_factor);
+        compute_and_append_candidate_points(current,particles[i],particles[j],r_insert);
       }
     }
 
