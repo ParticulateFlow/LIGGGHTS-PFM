@@ -423,23 +423,22 @@ void FixInsertPackDense::insert_first_particles()
 void FixInsertPackDense::handle_next_front_sphere()
 {
   Particle current = frontSpheres.front();
-  RegionNeighborList::ParticleBin *particles(0);
+  RegionNeighborList::ParticleBin particles;
 
   int nValid = 1000;
   while(nValid > 1){
     ParticleToInsert *pti = get_next_pti();
     double const r_insert = pti->radius_ins[0];
     double const cutoff_dist = current.radius+2*r_insert;
-    // particles == 0 --> first try with front sphere
-    if(!particles){
-      particles = neighlist.getParticlesCloseTo(current.x,cutoff_dist);
-    }
+
+    particles.clear();
+    neighlist.getParticlesCloseTo(current.x,cutoff_dist,particles);
 
     // identify candidate points
     candidatePoints.clear();
-    for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
-      for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){
-        compute_and_append_candidate_points(current,*i,*j,r_insert*radius_factor);
+    for (unsigned int i=0; i<particles.size()-1; ++i) {
+      for (unsigned int j=i+1; j<particles.size(); ++j) {
+        compute_and_append_candidate_points(current,particles[i],particles[j],r_insert*radius_factor);
       }
     }
 
@@ -464,7 +463,6 @@ void FixInsertPackDense::handle_next_front_sphere()
     fix_distribution->pti_list.push_back(pti);
     frontSpheres.push_back(*closest_candidate);
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
-    particles->push_back(*closest_candidate);
     n_inserted_local++;
   }
 
