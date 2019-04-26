@@ -578,8 +578,7 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
 
 
   if(h < SMALL){ // only one candidate point
-    Particle candidate(c_m,0.);
-    candidate.radius = pointDistance(c_m,x_init);
+    Particle candidate(c_m,r_insert);
     if(candidate_point_is_valid(candidate)){
       candidatePoints.push_back(candidate);
     }
