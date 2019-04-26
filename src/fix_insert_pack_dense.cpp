@@ -424,7 +424,6 @@ void FixInsertPackDense::handle_next_front_sphere()
 {
   Particle current = frontSpheres.front();
   RegionNeighborList::ParticleBin *particles(0);
-  Particle *newsphere = NULL; // last inserted sphere
 
   int nValid = 1000;
   while(nValid > 1){
@@ -433,26 +432,14 @@ void FixInsertPackDense::handle_next_front_sphere()
     double const cutoff_dist = current.radius+2*r_insert;
     // particles == 0 --> first try with front sphere
     if(!particles){
-      candidatePoints.clear();
       particles = neighlist.getParticlesCloseTo(current.x,cutoff_dist);
-      for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
-        for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){
-          compute_and_append_candidate_points(current,*i,*j,r_insert*radius_factor);
-        }
-      }
-    } else{
-      // need to check if candidate points intersect with new sphere
-      for(ParticleList::iterator it=candidatePoints.begin();it!=candidatePoints.end();){
-        double const d_sqr = pointDistanceSqr(newsphere->x,(*it).x);
-        double const r_cut = newsphere->radius + (*it).radius;
-        if(d_sqr < r_cut*r_cut){
-          it = candidatePoints.erase(it);
-        } else{
-          ++it;
-        }
-      }
-      for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
-        compute_and_append_candidate_points(current,*newsphere,*i,r_insert*radius_factor);
+    }
+
+    // identify candidate points
+    candidatePoints.clear();
+    for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
+      for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){
+        compute_and_append_candidate_points(current,*i,*j,r_insert*radius_factor);
       }
     }
 
@@ -477,16 +464,9 @@ void FixInsertPackDense::handle_next_front_sphere()
     fix_distribution->pti_list.push_back(pti);
     frontSpheres.push_back(*closest_candidate);
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
-    n_inserted_local++;
-
-    delete newsphere;
-    newsphere = new Particle(*closest_candidate);
     particles->push_back(*closest_candidate);
-
-    candidatePoints.erase(closest_candidate);
+    n_inserted_local++;
   }
-
-  delete newsphere;
 
   frontSpheres.pop_front();
 }
