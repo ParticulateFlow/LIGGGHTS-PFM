@@ -85,7 +85,7 @@ public:
   typedef std::vector<const ParticleBin*> BinPtrVector;
 
 private:
-  
+
   std::vector<ParticleBin> bins;  // list of particle bins
   std::vector<int> stencil;       // stencil used to check bins for collisions
   size_t ncount;                  // total number of particles in neighbor list
@@ -126,7 +126,7 @@ public:
     int mbins() const { return mbinx*mbiny*mbinz; }
 #endif
 
-    ParticleBin* getParticlesCloseTo(double *x, double cutoff);
+    void getParticlesCloseTo(double *x, double cutoff, ParticleBin& neighbors);
 };
 
 }

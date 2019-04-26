@@ -213,7 +213,7 @@ void FixInsertPackDense::post_create()
   }
 
   neighlist.reset();
-  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
+  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad()*radius_factor);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -321,7 +321,7 @@ void FixInsertPackDense::prepare_insertion()
   double volume_present_local = 0.;
 
   neighlist.reset();
-  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
+  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad()*radius_factor);
   distfield.reset();
 
   if (is_inserter) {
@@ -331,11 +331,10 @@ void FixInsertPackDense::prepare_insertion()
         if(atom->radius[i] > rad_max_present) rad_max_present = atom->radius[i];
       }
     }
-    rad_max_present *= radius_factor;
 
     if (rad_max_present > fix_distribution->max_rad()) {
       neighlist.reset();
-      neighlist.setBoundingBox(ins_bbox,rad_max_present);
+      neighlist.setBoundingBox(ins_bbox,rad_max_present*radius_factor);
     }
 
     for (int i=0;i<atom->nlocal;i++) {
@@ -412,9 +411,9 @@ void FixInsertPackDense::insert_first_particles()
   neighlist.insert(p2.x,p2.radius);
   neighlist.insert(p3.x,p3.radius);
 
-  frontSpheres.push_back(p1);
-  frontSpheres.push_back(p2);
-  frontSpheres.push_back(p3);
+  frontSpheres.push(p1);
+  frontSpheres.push(p2);
+  frontSpheres.push(p3);
 
   n_inserted_local += 3;
 }
@@ -423,49 +422,33 @@ void FixInsertPackDense::insert_first_particles()
 void FixInsertPackDense::handle_next_front_sphere()
 {
   Particle current = frontSpheres.front();
-  RegionNeighborList::ParticleBin *particles(0);
-  Particle *newsphere = NULL; // last inserted sphere
+  RegionNeighborList::ParticleBin particles;
 
-  int nValid = 1000;
-  while(nValid > 1){
+  do {
     ParticleToInsert *pti = get_next_pti();
     double const r_insert = pti->radius_ins[0];
-    double const cutoff_dist = current.radius+2*r_insert;
-    // particles == 0 --> first try with front sphere
-    if(!particles){
-      candidatePoints.clear();
-      particles = neighlist.getParticlesCloseTo(current.x,cutoff_dist);
-      for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
-        for(RegionNeighborList::ParticleBin::iterator j=i+1;j!=particles->end();++j){
-          compute_and_append_candidate_points(current,*i,*j,r_insert*radius_factor);
-        }
-      }
-    } else{
-      // need to check if candidate points intersect with new sphere
-      for(ParticleList::iterator it=candidatePoints.begin();it!=candidatePoints.end();){
-        double const d_sqr = pointDistanceSqr(newsphere->x,(*it).x);
-        double const r_cut = newsphere->radius + (*it).radius;
-        if(d_sqr < r_cut*r_cut){
-          it = candidatePoints.erase(it);
-        } else{
-          ++it;
-        }
-      }
-      for(RegionNeighborList::ParticleBin::iterator i=particles->begin();i!=particles->end();++i){
-        compute_and_append_candidate_points(current,*newsphere,*i,r_insert*radius_factor);
+    double const cutoff_dist = current.radius+2.*r_insert;
+
+    particles.clear();
+    neighlist.getParticlesCloseTo(current.x,cutoff_dist,particles);
+
+    // identify candidate points
+    candidatePoints.clear();
+    for (unsigned int i=0; i<particles.size()-1; ++i) {
+      for (unsigned int j=i+1; j<particles.size(); ++j) {
+        compute_and_append_candidate_points(current,particles[i],particles[j],r_insert*radius_factor);
       }
     }
 
-    nValid = candidatePoints.size();
-    if(nValid == 0){
-      rejectedSpheres.push_back(pti);
+    if(candidatePoints.empty()){
+      rejectedSpheres.push(pti);
       break;
     }
 
     // then, search for candidate point closest to insertion center
     double d_min_sqr = 1000;
-    ParticleList::iterator closest_candidate;
-    for(ParticleList::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
+    ParticleVector::iterator closest_candidate;
+    for(ParticleVector::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
       double dist_sqr = pointDistanceSqr((*it).x,x_init);
       if(dist_sqr < d_min_sqr){
         d_min_sqr = dist_sqr;
@@ -475,20 +458,13 @@ void FixInsertPackDense::handle_next_front_sphere()
 
     vectorCopy3D((*closest_candidate).x,pti->x_ins[0]);
     fix_distribution->pti_list.push_back(pti);
-    frontSpheres.push_back(*closest_candidate);
+    frontSpheres.push(*closest_candidate);
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
     n_inserted_local++;
 
-    delete newsphere;
-    newsphere = new Particle(*closest_candidate);
-    particles->push_back(*closest_candidate);
+  } while(candidatePoints.size() > 1);
 
-    candidatePoints.erase(closest_candidate);
-  }
-
-  delete newsphere;
-
-  frontSpheres.pop_front();
+  frontSpheres.pop();
 }
 
 void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
@@ -540,9 +516,9 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
                                                              Particle const &p3,
                                                              double const r_insert)
 {
-  double const halo1 = p1.radius+r_insert;
-  double const halo2 = p2.radius+r_insert;
-  double const halo3 = p3.radius+r_insert;
+  double const halo1 = p1.radius+r_insert+SMALL;
+  double const halo2 = p2.radius+r_insert+SMALL;
+  double const halo3 = p3.radius+r_insert+SMALL;
 
   // exclude impossible combinations
   double const d_12_sqr = pointDistanceSqr(p1.x,p2.x);
@@ -598,8 +574,7 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
 
 
   if(h < SMALL){ // only one candidate point
-    Particle candidate(c_m,0.);
-    candidate.radius = pointDistance(c_m,x_init);
+    Particle candidate(c_m,r_insert);
     if(candidate_point_is_valid(candidate)){
       candidatePoints.push_back(candidate);
     }
@@ -634,7 +609,7 @@ ParticleToInsert* FixInsertPackDense::get_next_pti()
   // multiple times, it also gets inserted and deleted from the list
   // each time. Will refactor if performance critical.
   ParticleToInsert *pti = rejectedSpheres.front();
-  rejectedSpheres.pop_front();
+  rejectedSpheres.pop();
   return pti;
 }
 
@@ -668,6 +643,6 @@ bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
 bool FixInsertPackDense::candidate_point_is_valid(Particle &p)
 {
 
-  return ( !neighlist.hasOverlap(p.x,p.radius-SMALL) && is_completely_in_subregion(p) );
+  return ( !neighlist.hasOverlap(p.x,p.radius) && is_completely_in_subregion(p) );
 
 }
