@@ -59,7 +59,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
-    rmin_(1e-9)       //  [m]
+    rrmin_(1e-6)       //  [m]
 {
     if (narg < 15) error -> all (FLERR, "Illegal fix chem/shrink/core command, not enough arguments");
 
@@ -464,7 +464,7 @@ void FixChemShrinkCore::updatePtrs()
     changeOfC_          =   fix_changeOfC_      ->  vector_atom;
     T_                  =   fix_tgas_           ->  vector_atom;
     reactionHeat_       =   fix_reactionHeat_   ->  vector_atom;
-    molecularDiffusion_  = fix_diffcoeff_   ->  vector_atom;
+    molecularDiffusion_  = fix_diffcoeff_       ->  vector_atom;
     nuf_                =   fix_nuField_        ->  vector_atom;
     Rep_                =   fix_partRe_         ->  vector_atom;
     xA_                 =   fix_moleFractionA_  ->  vector_atom;
@@ -602,9 +602,8 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     updatePtrs();
-
     // get initial values for rhoeff, and use them to calculate mass of layers
-    for (int i = 0; i < atom->nlocal; i++)
+    /*for (int i = 0; i < atom->nlocal; i++)
     {
         rhoeff_[i][layers_] = pdensity_[i];
         for (int layer=0; layer < layers_; layer++)
@@ -616,7 +615,7 @@ void FixChemShrinkCore::init()
 
     if (screenflag_ && screen) {
         fprintf(screen, "rhoeff_[0][0] = %f \n rhoeff_[0][1] = %f \n rhoeff_[0][2] = %f \n rhoeff_[0][3] = %f \n", rhoeff_[0][0], rhoeff_[0][1], rhoeff_[0][2], rhoeff_[0][3]);
-    }
+    } */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -639,10 +638,10 @@ void FixChemShrinkCore::post_force(int)
         {
             if (xA_[i] > minMolarFrac_)
             {
-                // 1st recalculate masses of layers if layer has reduced
-                // is ignored if there is no change in layers
+                // Check active layers surrounding the core (initial for hematite there are 3 product layers)
                 active_layers(i);
-                if (active_layers(i) > 0)
+
+                if (layers_ > 0)
                 {
                     if (T_[i] < 573.15)
                     {
@@ -696,10 +695,19 @@ void FixChemShrinkCore::post_force(int)
 
 int FixChemShrinkCore::active_layers(int i)
 {
-    for(int j  = layers_; j > 0; j--)
+    /*
+     * for(int j  = layers_; j > 0; j--)
     {
         if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
         {
+            layers_ -= 1;
+            calcMassLayer(i);
+        }
+    }
+    */
+
+    for (int j = 1; j <= nmaxlayers_; j++) {
+        if (relRadii_[i][j] <= rrmin_) {
             layers_ -= 1;
             calcMassLayer(i);
         }
@@ -965,9 +973,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
 
     // Core layer initially Fe2O3
     dmL_[layers_] = dmA_[layers_-1]*v_reac_[layers_-1]*(layerMolMasses_[layers_]/molMass_A_);
-    // Intermediate layers
-    // Initial FeO & Fe3O4 layers
-    // changes with active layers
+    // Intermediate layers -- Initial FeO & Fe3O4 layers -- changes with active layers
     for (int layer = 1; layer < layers_; layer++)
         dmL_[layer] = -dmA_[layer]*v_prod_[layer]*(layerMolMasses_[layer]/molMass_A_) + dmA_[layer-1]*v_reac_[layer-1]*(layerMolMasses_[layer]/molMass_A_);
     // Outer Shell - Fe
@@ -988,6 +994,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
 
     // Outer layer radii (Fe3O4, FeO)
     for (int layer = layers_ - 1; layer > 0; layer--)
+
         rad[layer]   =   cbrt((0.75*massLayer_[i][layer]/(rhoeff_[i][layer]*M_PI))+rad[layer+1]*rad[layer+1]*rad[layer+1]);
 
     // Iron Layer / Ore radius = constant.
@@ -1007,7 +1014,10 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
     pmass_[i]   =   sum_mass_p_new*cg_*cg_*cg_;
 
     // total particle effective density
-    // pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+    pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+
+    if (screen)
+        fprintf(screen, "pdensity after mass reduction = %f \n", pdensity_[i]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1255,14 +1265,14 @@ void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
 {
     updatePtrs();
 
-    double f_HM = 0.;
-    double f_MF = 0.;
+    double f_WF = 0.;
+    double f_MW = 0.;
 
-    f_MF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
-    f_HM = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+    f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
 
-    fracRed_[i][0] = f_MF;
-    fracRed_[i][1] = f_HM;
+    fracRed_[i][0] = f_WF;
+    fracRed_[i][1] = f_MW;
     fracRed_[i][2] = 0.0;
 }
 /* ---------------------------------------------------------------------- */
