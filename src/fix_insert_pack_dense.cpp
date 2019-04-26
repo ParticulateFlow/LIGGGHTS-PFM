@@ -520,9 +520,9 @@ void FixInsertPackDense::compute_and_append_candidate_points(Particle const &p1,
                                                              Particle const &p3,
                                                              double const r_insert)
 {
-  double const halo1 = p1.radius+r_insert;
-  double const halo2 = p2.radius+r_insert;
-  double const halo3 = p3.radius+r_insert;
+  double const halo1 = p1.radius+r_insert+SMALL;
+  double const halo2 = p2.radius+r_insert+SMALL;
+  double const halo3 = p3.radius+r_insert+SMALL;
 
   // exclude impossible combinations
   double const d_12_sqr = pointDistanceSqr(p1.x,p2.x);
@@ -647,6 +647,6 @@ bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
 bool FixInsertPackDense::candidate_point_is_valid(Particle &p)
 {
 
-  return ( !neighlist.hasOverlap(p.x,p.radius-SMALL) && is_completely_in_subregion(p) );
+  return ( !neighlist.hasOverlap(p.x,p.radius) && is_completely_in_subregion(p) );
 
 }
