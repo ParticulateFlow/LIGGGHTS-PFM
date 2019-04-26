@@ -412,9 +412,9 @@ void FixInsertPackDense::insert_first_particles()
   neighlist.insert(p2.x,p2.radius);
   neighlist.insert(p3.x,p3.radius);
 
-  frontSpheres.push_back(p1);
-  frontSpheres.push_back(p2);
-  frontSpheres.push_back(p3);
+  frontSpheres.push(p1);
+  frontSpheres.push(p2);
+  frontSpheres.push(p3);
 
   n_inserted_local += 3;
 }
@@ -444,14 +444,14 @@ void FixInsertPackDense::handle_next_front_sphere()
 
     nValid = candidatePoints.size();
     if(nValid == 0){
-      rejectedSpheres.push_back(pti);
+      rejectedSpheres.push(pti);
       break;
     }
 
     // then, search for candidate point closest to insertion center
     double d_min_sqr = 1000;
-    ParticleList::iterator closest_candidate;
-    for(ParticleList::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
+    ParticleVector::iterator closest_candidate;
+    for(ParticleVector::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
       double dist_sqr = pointDistanceSqr((*it).x,x_init);
       if(dist_sqr < d_min_sqr){
         d_min_sqr = dist_sqr;
@@ -461,12 +461,12 @@ void FixInsertPackDense::handle_next_front_sphere()
 
     vectorCopy3D((*closest_candidate).x,pti->x_ins[0]);
     fix_distribution->pti_list.push_back(pti);
-    frontSpheres.push_back(*closest_candidate);
+    frontSpheres.push(*closest_candidate);
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
     n_inserted_local++;
   }
 
-  frontSpheres.pop_front();
+  frontSpheres.pop();
 }
 
 void FixInsertPackDense::generate_initial_config(ParticleToInsert *&p1,
@@ -611,7 +611,7 @@ ParticleToInsert* FixInsertPackDense::get_next_pti()
   // multiple times, it also gets inserted and deleted from the list
   // each time. Will refactor if performance critical.
   ParticleToInsert *pti = rejectedSpheres.front();
-  rejectedSpheres.pop_front();
+  rejectedSpheres.pop();
   return pti;
 }
 
