@@ -316,11 +316,9 @@ int RegionNeighborList::coord2bin(double *x) const
  * @return pointer to a particle bin with all particles in bins surrounding x.
  */
 
-RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double *x, double cutoff)
+void RegionNeighborList::getParticlesCloseTo(double *x, double cutoff, ParticleBin& neighbors)
 {
   assert(cutoff < binsizex && cutoff < binsizey && cutoff < binsizez);
-
-  ParticleBin *retBin = new ParticleBin();
 
   const int ibin = coord2bin(x);
 
@@ -335,11 +333,9 @@ RegionNeighborList::ParticleBin* RegionNeighborList::getParticlesCloseTo(double 
       const double rsq = pointDistanceSquared(x,p.x);
       const double radsum = cutoff + p.radius;
       if (rsq <= radsum*radsum)
-        retBin->push_back(p);
+        neighbors.push_back(p);
     }
   }
-
-  return retBin;
 }
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG

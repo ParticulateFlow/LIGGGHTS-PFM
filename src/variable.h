@@ -60,7 +60,7 @@ class Variable : protected Pointers {
   int me;
 
   struct Tree {            // parse tree for atom-style variables
-    double value;          // single scalar  
+    double value;          // single scalar
     double *array;         // per-atom or per-type list of doubles
     int *iarray;           // per-atom list of ints
     int type;              // operation, see enum{} in variable.cpp

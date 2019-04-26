@@ -35,7 +35,7 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 
 #include "fix.h"
 
-#include <list>
+#include <queue>
 
 #include "region_neighbor_list.h"
 #include "region_distance_field.h"
@@ -79,13 +79,15 @@ protected:
 
   static const double max_volfrac;
   double target_volfrac;
-  typedef std::list<LIGGGHTS::Particle> ParticleList;
-  typedef std::list<class ParticleToInsert*> PTIList;
 
-  ParticleList frontSpheres;
+  typedef std::vector<LIGGGHTS::Particle> ParticleVector;
+  typedef std::queue<LIGGGHTS::Particle> ParticleQueue;
+  typedef std::queue<class ParticleToInsert*> PTIList;
+
+  ParticleQueue frontSpheres;
   PTIList rejectedSpheres;
 
-  ParticleList candidatePoints;
+  ParticleVector candidatePoints;
 
   class RanPark *random;
   int seed;
