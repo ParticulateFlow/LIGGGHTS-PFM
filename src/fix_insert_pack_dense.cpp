@@ -425,8 +425,7 @@ void FixInsertPackDense::handle_next_front_sphere()
   Particle current = frontSpheres.front();
   RegionNeighborList::ParticleBin particles;
 
-  int nValid = 1000;
-  while(nValid > 1){
+  do {
     ParticleToInsert *pti = get_next_pti();
     double const r_insert = pti->radius_ins[0];
     double const cutoff_dist = current.radius+2*r_insert;
@@ -442,8 +441,7 @@ void FixInsertPackDense::handle_next_front_sphere()
       }
     }
 
-    nValid = candidatePoints.size();
-    if(nValid == 0){
+    if(candidatePoints.empty()){
       rejectedSpheres.push(pti);
       break;
     }
@@ -464,7 +462,8 @@ void FixInsertPackDense::handle_next_front_sphere()
     frontSpheres.push(*closest_candidate);
     neighlist.insert((*closest_candidate).x,(*closest_candidate).radius);
     n_inserted_local++;
-  }
+
+  } while(candidatePoints.size() > 1);
 
   frontSpheres.pop();
 }
