@@ -213,7 +213,7 @@ void FixInsertPackDense::post_create()
   }
 
   neighlist.reset();
-  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
+  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad()*radius_factor);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -321,7 +321,7 @@ void FixInsertPackDense::prepare_insertion()
   double volume_present_local = 0.;
 
   neighlist.reset();
-  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad());
+  neighlist.setBoundingBox(ins_bbox,fix_distribution->max_rad()*radius_factor);
   distfield.reset();
 
   if (is_inserter) {
@@ -331,11 +331,10 @@ void FixInsertPackDense::prepare_insertion()
         if(atom->radius[i] > rad_max_present) rad_max_present = atom->radius[i];
       }
     }
-    rad_max_present *= radius_factor;
 
     if (rad_max_present > fix_distribution->max_rad()) {
       neighlist.reset();
-      neighlist.setBoundingBox(ins_bbox,rad_max_present);
+      neighlist.setBoundingBox(ins_bbox,rad_max_present*radius_factor);
     }
 
     for (int i=0;i<atom->nlocal;i++) {
@@ -428,7 +427,7 @@ void FixInsertPackDense::handle_next_front_sphere()
   do {
     ParticleToInsert *pti = get_next_pti();
     double const r_insert = pti->radius_ins[0];
-    double const cutoff_dist = current.radius+2*r_insert;
+    double const cutoff_dist = current.radius+2.*r_insert;
 
     particles.clear();
     neighlist.getParticlesCloseTo(current.x,cutoff_dist,particles);
