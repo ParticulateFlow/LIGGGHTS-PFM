@@ -38,10 +38,10 @@
 
 struct Superquadric
 { //interface structure for easy coding
-  double *center;
-  double *quat;
-  double *shape;
-  double *blockiness;
+  const double *center; // struct doesn't take ownership!
+  const double *quat;   // struct doesn't take ownership!
+  double *shape;        // struct doesn't take ownership!
+  double *blockiness;   // struct doesn't take ownership!
   double gradient[3];
   double hessian[9];
   double rotation_matrix[9];
@@ -98,8 +98,8 @@ struct Superquadric
     useIntBlockiness = false;
     koef = 1.0;
   }
-  Superquadric(double *center_, double *quat_, double *shape_, double *blockiness_);
-  void set(double *center_, double *quat_, double *shape_, double *blockiness_);
+  Superquadric(const double *center_, const double *quat_, double *shape_, double *blockiness_);
+  void set(const double *center_, const double *quat_, double *shape_, double *blockiness_);
 };
 
 #endif
