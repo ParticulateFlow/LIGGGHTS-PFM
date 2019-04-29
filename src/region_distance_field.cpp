@@ -135,8 +135,6 @@ namespace LIGGGHTS {
 
   void RegionDistanceField::indexToPos(int index, double *x)
   {
-    if(!bbox.isInside(x)) return;
-    
     LAMMPS_NS::vectorCopy3D(x0,x);
 
     int const iz = index / (nx*ny);
