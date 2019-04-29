@@ -69,8 +69,8 @@ namespace LIGGGHTS {
 
     double pos_tmp[3];
     for(int i=0;i<nx;i++){
-      for(int j=0;i<ny;i++){
-        for(int k=0;i<nz;i++){
+      for(int j=0;j<ny;j++){
+        for(int k=0;k<nz;k++){
           int const index = index3ToIndex1(i,j,k);
           indexToPos(index,pos_tmp);
 
