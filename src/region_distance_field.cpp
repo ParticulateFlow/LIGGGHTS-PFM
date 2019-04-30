@@ -50,11 +50,16 @@ namespace LIGGGHTS {
     reg_bbox.getExtent(bbox_extent);
 
     dx = 2.*rmax;
-    test_rad = sqrt(3.01)*rmax;
-    
-    nx = bbox_extent[0]/dx;
-    ny = bbox_extent[1]/dx;
-    nz = bbox_extent[2]/dx;
+    oneoverdx = 1./dx;
+    // Note: test_rad = bounding sphere of bin plus particle radius
+    // if the sphere with test_rad radius is completely inside the
+    // insertion region, any particle center inside the corresponding
+    // bin is also completely inside the insertion region
+    test_rad = sqrt(3.0)*rmax+rmax;
+
+    nx = bbox_extent[0]*oneoverdx;
+    ny = bbox_extent[1]*oneoverdx;
+    nz = bbox_extent[2]*oneoverdx;
 
     double const x_over = bbox_extent[0] - dx*static_cast<double>(nx);
     x0[0] = bbox_xlo[0] + 0.5*x_over - 0.5*dx;
@@ -125,13 +130,13 @@ namespace LIGGGHTS {
   {
     if(!bbox.isInside(x)) return -1;
 
-    int const ix = (x[0]-x0[0])/dx;
+    int const ix = (x[0]-x0[0])*oneoverdx;
     if(ix < 0 || ix > nx-1) return -1;
 
-    int const iy = (x[1]-x0[1])/dx;
+    int const iy = (x[1]-x0[1])*oneoverdx;
     if(iy < 0 || iy > ny-1) return -1;
 
-    int const iz = (x[2]-x0[2])/dx;
+    int const iz = (x[2]-x0[2])*oneoverdx;
     if(iz < 0 || iz > nz-1) return -1;
 
     return index3ToIndex1(ix,iy,iz);

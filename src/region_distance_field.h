@@ -51,7 +51,7 @@ namespace LIGGGHTS {
     std::vector<PointStatus> data;
     LAMMPS_NS::BoundingBox bbox;
     int nx,ny,nz;
-    double dx, test_rad;
+    double dx,oneoverdx,test_rad;
     double xlo[3], xhi[3], x0[3];
   };
   
