@@ -77,10 +77,14 @@ namespace LIGGGHTS {
           if(!region->match(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
             continue;
 
-          if(region->surface(pos_tmp[0],pos_tmp[1],pos_tmp[2],test_rad))
-            data[index] = BOUNDARY;
-          else
+          pos_tmp[0] += 0.5*dx;
+          pos_tmp[1] += 0.5*dx;
+          pos_tmp[2] += 0.5*dx;
+
+          if(region->match_shrinkby_cut(pos_tmp,test_rad))
             data[index] = INSIDE;
+          else
+            data[index] = BOUNDARY;
         }
       }
     }
