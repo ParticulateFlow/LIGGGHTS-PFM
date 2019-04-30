@@ -107,9 +107,19 @@ namespace LIGGGHTS {
     if(index<0)
       return false;
 
-    return data[index] != OUTSIDE;
+    return data[index] == INSIDE;
   }
-  
+
+  bool RegionDistanceField::isOutside(double *x)
+  {
+    int const index = posToIndex(x);
+
+    if(index<0)
+      return false;
+
+    return data[index] == OUTSIDE;
+  }
+
   bool RegionDistanceField::isInBoundary(double *x)
   {
     int const index = posToIndex(x);

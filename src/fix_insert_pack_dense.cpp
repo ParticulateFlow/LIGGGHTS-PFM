@@ -632,9 +632,12 @@ Particle FixInsertPackDense::particle_from_pti(ParticleToInsert* pti)
 
 bool FixInsertPackDense::is_completely_in_subregion(Particle &p)
 {
-  if(distfield.isInside(p.x) && !distfield.isInBoundary(p.x))
+  if(distfield.isInside(p.x))
     return true;
+  if(distfield.isOutside(p.x))
+    return false;
 
+  // position was either not found or is in boundary cell of distfield
   return ins_bbox.isInside(p.x) && ins_region->match_shrinkby_cut(p.x,p.radius);
 }
 
