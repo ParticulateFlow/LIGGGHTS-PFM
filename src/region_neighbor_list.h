@@ -49,7 +49,7 @@ struct Particle {
   double blockiness[2];
 #endif
 
-  Particle(double * pos, double rad, int type) {
+  Particle(const double * pos, double rad, int type) {
     LAMMPS_NS::vectorCopy3D(pos, x);
     radius = rad;
     this->type = type;
@@ -62,7 +62,7 @@ struct Particle {
   }
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
-  Particle(int _i,double * pos, double rad, int type, double *quaternion_, double *shape_, double *blockiness_, int,int,double,double,double) {
+  Particle(int _i,const double * pos, double rad, int type, const double *quaternion_, const double *shape_, const double *blockiness_, int,int,double,double,double) {
     LAMMPS_NS::vectorCopy3D(pos, x);
     radius = rad;
     this->type = type;
@@ -103,7 +103,7 @@ private:
   double bininvx,bininvy,bininvz;     // inverse of bin sizes
 
   double bin_distance(int i, int j, int k);
-  int coord2bin(double *x) const;
+  int coord2bin(const double *x) const;
   bool type_exclusion(int itype, int jtype) const;
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
@@ -113,23 +113,23 @@ private:
 public:
     RegionNeighborList(LAMMPS_NS::LAMMPS *lmp);
 
-    bool hasOverlap(Particle &p) const;
-    bool hasOverlap(double * x, double radius, int type=-1) const;
-    void insert(double * x, double radius, int type);
+    bool hasOverlap(const Particle &p) const;
+    bool hasOverlap(const double * x, double radius, int type=-1) const;
+    void insert(const double * x, double radius, int type);
     size_t count() const;
     void reset();
     bool setBoundingBox(LAMMPS_NS::BoundingBox & bb, double maxrad);
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
-    inline void coord2bin_calc_interpolation_weights(double *x,int ibin,int ix,int iy, int iz,int &quadrant,double &wx,double &wy,double &wz) const;
-    int coord2bin(double *x,int &quadrant,double &wx,double &wy,double &wz) const;
-    bool hasOverlap_superquadric(double * x, double radius, int type, double *quaternion, double *shape, double *blockiness) const;
-    void insert_superquadric(double * x, double radius, int type, double *quaternion, double *shape, double *blockiness, int index = -1);
+    inline void coord2bin_calc_interpolation_weights(const double *x,int ibin,int ix,int iy, int iz,int &quadrant,double &wx,double &wy,double &wz) const;
+    int coord2bin(const double *x,int &quadrant,double &wx,double &wy,double &wz) const;
+    bool hasOverlap_superquadric(const double * x, double radius, int type, const double *quaternion, double *shape, double *blockiness) const;
+    void insert_superquadric(const double * x, double radius, int type, const double *quaternion, const double *shape, const double *blockiness, int index = -1);
     void set_obb_flag(int check_obb_flag_) { check_obb_flag = check_obb_flag_; }
     int mbins() const { return mbinx*mbiny*mbinz; }
 #endif
 
-    void getParticlesCloseTo(double *x, double cutoff, ParticleBin& neighbors);
+    void getParticlesCloseTo(const double *x, double cutoff, ParticleBin& neighbors);
 };
 
 }

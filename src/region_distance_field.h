@@ -40,6 +40,7 @@ namespace LIGGGHTS {
     void build(LAMMPS_NS::Region *region, LAMMPS_NS::BoundingBox &bbox, double const rmax);
     void reset();
     bool isInside(const double *x);
+    bool isOutside(const double *x);
     bool isInBoundary(const double *x);
 
   private:
@@ -52,7 +53,7 @@ namespace LIGGGHTS {
     std::vector<PointStatus> data;
     LAMMPS_NS::BoundingBox bbox;
     int nx,ny,nz;
-    double dx, test_rad;
+    double dx,oneoverdx,test_rad;
     double xlo[3], xhi[3], x0[3];
   };
 

@@ -52,7 +52,7 @@ RegionNeighborList::RegionNeighborList(LAMMPS *lmp) : Pointers(lmp) {
  * @param type     type of particle to check
  * @return true if particle has an overlap with a particle in this neighbor list, false otherwise
  */
-bool RegionNeighborList::hasOverlap(double * x, double radius, int type) const {
+bool RegionNeighborList::hasOverlap(const double * x, double radius, int type) const {
   int ibin = coord2bin(x);
 
   for(std::vector<int>::const_iterator it = stencil.begin(); it != stencil.end(); ++it) {
@@ -77,7 +77,7 @@ bool RegionNeighborList::hasOverlap(double * x, double radius, int type) const {
  * @param p particle to check
  * @return true if particle has an overlap with a particle in this neighbor list, false otherwise
  */
-bool RegionNeighborList::hasOverlap(Particle &p) const {
+bool RegionNeighborList::hasOverlap(const Particle &p) const {
   return hasOverlap(p.x,p.radius,p.type);
 }
 
@@ -99,7 +99,7 @@ bool RegionNeighborList::type_exclusion(int itype, int jtype) const {
  * @param radius   particle radius
  * @param type     particle type
  */
-void RegionNeighborList::insert(double * x, double radius, int type) {
+void RegionNeighborList::insert(const double * x, double radius, int type) {
   int ibin = coord2bin(x);
   assert(ibin >= 0 && static_cast<size_t>(ibin) <= bins.size());
 
@@ -278,7 +278,7 @@ double RegionNeighborList::bin_distance(int i, int j, int k)
  * @param x point in 3D
  * @return bin index of the given point x
  */
-int RegionNeighborList::coord2bin(double *x) const
+int RegionNeighborList::coord2bin(const double *x) const
 {
   int ix,iy,iz;
 
@@ -316,7 +316,7 @@ int RegionNeighborList::coord2bin(double *x) const
  * @return pointer to a particle bin with all particles in bins surrounding x.
  */
 
-void RegionNeighborList::getParticlesCloseTo(double *x, double cutoff, ParticleBin& neighbors)
+void RegionNeighborList::getParticlesCloseTo(const double *x, double cutoff, ParticleBin& neighbors)
 {
   assert(cutoff < binsizex && cutoff < binsizey && cutoff < binsizez);
 
@@ -339,13 +339,13 @@ void RegionNeighborList::getParticlesCloseTo(double *x, double cutoff, ParticleB
 }
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
-inline void RegionNeighborList::coord2bin_calc_interpolation_weights(double *x,int ibin,int ix,int iy, int iz,int &quadrant,double &wx,double &wy,double &wz) const
+inline void RegionNeighborList::coord2bin_calc_interpolation_weights(const double *x,int ibin,int ix,int iy, int iz,int &quadrant,double &wx,double &wy,double &wz) const
 {
     quadrant = 0;
     wx = wy = wz = 0.;
 }
 
-int RegionNeighborList::coord2bin(double *x,int &quadrant,double &wx,double &wy,double &wz) const
+int RegionNeighborList::coord2bin(const double *x,int &quadrant,double &wx,double &wy,double &wz) const
 {
   int ix,iy,iz;
 
@@ -383,7 +383,7 @@ int RegionNeighborList::coord2bin(double *x,int &quadrant,double &wx,double &wy,
 }
 
 
-bool RegionNeighborList::hasOverlap_superquadric(double * x, double radius, int type, double *quaternion, double *shape, double *blockiness) const
+bool RegionNeighborList::hasOverlap_superquadric(const double * x, double radius, int type, const double *quaternion, double *shape, double *blockiness) const
 {
   int ibin = coord2bin(x);
 
@@ -425,7 +425,7 @@ bool RegionNeighborList::hasOverlap_superquadric(double * x, double radius, int 
 }
 
 
-void RegionNeighborList::insert_superquadric(double * x, double radius, int type, double *quaternion, double *shape, double *blockiness, int index) {
+void RegionNeighborList::insert_superquadric(const double * x, double radius, int type, const double *quaternion, const double *shape, const double *blockiness, int index) {
   int quadrant;
   double wx,wy,wz;
   int ibin = coord2bin(x,quadrant,wx,wy,wz);
