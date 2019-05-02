@@ -820,8 +820,8 @@ void FixChemShrinkCore::getMassT(int i)
 {
     updatePtrs();
     // initialize sherwood & schmidt numbers for every particle
-    double Sc_[atom->nlocal] = {0.};
-    double Sh_[atom->nlocal] = {0.};
+    double Sc_i = 0.;
+    double Sh_i = 0.;
 
     // if molecular diffusion is around 0, overwrite to avoid numerical errors.
     if (molecularDiffusion_[i] < SMALL)
@@ -833,15 +833,15 @@ void FixChemShrinkCore::getMassT(int i)
       }
     else
       {
-	Sc_[i]  =   nuf_[i]/molecularDiffusion_[i];
-	Sh_[i]  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_[i]);
+	Sc_i  =   nuf_[i]/molecularDiffusion_[i];
+	Sh_i  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_i);
 
-	Massterm[i] = Sh_[i]*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
+	Massterm[i] = Sh_i*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
 	Massterm[i] = 1.0/(Massterm[i]);
       }
 
     if (screenflag_ && screen)
-        fprintf(screen, "Schmidt number: %f \n",Sc_[0]);
+        fprintf(screen, "Schmidt number: %f \n",Sc_i);
 }
 
 /* ---------------------------------------------------------------------- */
