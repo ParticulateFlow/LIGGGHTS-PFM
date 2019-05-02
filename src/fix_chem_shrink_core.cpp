@@ -1244,7 +1244,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
         dY[i][1]   =   ((Aterm[i][0]+Bterm[i][0]+Massterm[i])*(p_A - p_eq_[1])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[0]))/W;
         if (dY[i][1] < 0.0) dY[i][1] = 0.0;
         // magnetite to iron
-        if ((dY[i][1] == 0.0))
+        if (dY[i][1] == 0.0)
             dY[i][0] = 0.0;
         else
             dY[i][0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(p_A - p_eq_[0])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[1]))/W;
