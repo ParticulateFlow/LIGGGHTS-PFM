@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "stdlib.h"
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
 #include "respa.h"
@@ -36,7 +36,6 @@
 #include "memory.h"
 #include "modify.h"
 #include "comm.h"
-#include "math.h"
 #include "atom_vec.h"
 #include "vector_liggghts.h"
 #include "mpi_liggghts.h"
