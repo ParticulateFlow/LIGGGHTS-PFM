@@ -315,13 +315,13 @@ int FixChemShrink::setmask()
 
 void FixChemShrink::updatePtrs()
 {
-    xA_         =   fix_moleFractionA_  -> vector_atom;
+    xA_         =   fix_moleFractionA_  ->  vector_atom;
     xC_         =   fix_moleFractionC_  ->  vector_atom;
     changeOfA_  =   fix_changeOfA_  ->  vector_atom;
     changeOfC_  =   fix_changeOfC_  ->  vector_atom;
     rhogas_     =   fix_rhogas      ->  vector_atom;
     molarConc_  =   fix_totalMole_  ->  vector_atom;
-    
+
     if(use_reactant_)
     {
         reactantPerParticle_ = fix_reactantPerParticle_ -> vector_atom;
@@ -351,10 +351,10 @@ void FixChemShrink::reaction()
             double dA   =   0.0;
             molarConc = molarConc_[i];
             molarFrac = xA_[i];
-	    if(molarFrac < minMolarFrac_)
-	    {
-		continue;
-	    }
+            if(molarFrac < minMolarFrac_)
+            {
+                continue;
+            }
             double k = reactionRatConst(i);
             if(nu_A_ < 2)
             {
@@ -362,17 +362,17 @@ void FixChemShrink::reaction()
             }
             else
             {
-                dA   =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+                dA  =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
             }
 
             // limit mass change - can't remove more than present in cell
             // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.8)
             if(use_reactant_)
-	    {
-	        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+            {
+                if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
                 double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * relaxFac_;
                 if(-dA > dAmax) dA = -dAmax;
-	    }
+            }
 
             double dC   =   -dA*molMass_C_*nu_C_/(molMass_A_*nu_A_);
             // mass removed from particle
@@ -385,10 +385,10 @@ void FixChemShrink::reaction()
             changeOfC_[i]       +=  dC;
 
             // Mass of single particle
-	    // never remove more than half the particle's mass at once
+            // never remove more than half the particle's mass at once
             if(-dB > 0.5*pmass_[i])
             {
-                 pmass_[i] *= 0.5; 
+                 pmass_[i] *= 0.5;
             }
             else
             {
@@ -440,8 +440,8 @@ void FixChemShrink::init()
     // references
     fix_moleFractionA_  =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(moleFracA,"property/atom","scalar",0,0,style));
     fix_moleFractionC_  =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(moleFracC,"property/atom","scalar",0,0,style));
-    fix_changeOfA_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massA,"property/atom","scalar",0,0,style));
-    fix_changeOfC_       =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massC,"property/atom","scalar",0,0,style));
+    fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massA,"property/atom","scalar",0,0,style));
+    fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property(massC,"property/atom","scalar",0,0,style));
     fix_tgas            =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partTemp","property/atom","scalar",0,0,style));
     fix_rhogas          =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partRho","property/atom","scalar",0,0,style));
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
@@ -464,9 +464,9 @@ void FixChemShrink::post_force(int)
     pdensity_ = atom -> density;
     TimeStep = update -> dt;
     current_timestep = update->ntimestep;
-    
+
     // skip if integration not wanted at this timestep
-    if (current_timestep % nevery) 
+    if (current_timestep % nevery)
     {
         return;
     }
