@@ -883,7 +883,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
 
         // wustite to iron
         // if magnetite is not reducing, wustite does also not reduce
-        if ((dY[i][1] == 0.0))
+        if (dY[i][1] == 0.0)
             dY[i][0] = 0.0;
         else
             dY[i][0]   =   (((Aterm[i][2]+Bterm[i][2])*(Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])+Aterm[i][1]*(Bterm[i][1]+Bterm[i][0]+Massterm[i]))*(p_A-p_eq_[0])
@@ -913,7 +913,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
         if (dY[i][1] < 0.0) dY[i][1] = 0.0;
 
         // wustite to iron
-        if ((dY[i][1] == 0.0))
+        if (dY[i][1] == 0.0)
             dY[i][0] = 0.0;
         else
             dY[i][0]   =   ((Aterm[i][1]+Bterm[i][1]+Bterm[i][0]+Massterm[i])*(p_A - p_eq_[0])-(Bterm[i][0]+Massterm[i])*(p_A-p_eq_[1]))/W;
