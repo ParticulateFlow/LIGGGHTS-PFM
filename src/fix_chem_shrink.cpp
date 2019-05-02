@@ -280,6 +280,9 @@ FixChemShrink::~FixChemShrink()
 
     delete []speciesA;
     delete []speciesC;
+
+    delete []moleFracA;
+    delete []moleFracC;
 }
 
 /* ---------------------------------------------------------------------- */
