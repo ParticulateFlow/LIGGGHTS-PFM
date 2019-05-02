@@ -49,6 +49,8 @@ namespace LIGGGHTS {
     int posToIndex(double *x);
     void indexToPos(int index, double *x);
     void index3ToPos(int ix, int iy, int iz, double *x);
+    void dump();
+
     std::vector<PointStatus> data;
     LAMMPS_NS::BoundingBox bbox;
     int nx,ny,nz;

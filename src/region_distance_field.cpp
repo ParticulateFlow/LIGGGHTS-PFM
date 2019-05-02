@@ -32,6 +32,9 @@
 #include "region.h"
 #include "vector_liggghts.h"
 
+#ifdef DEBUG_REGIONDISTFIELD
+#include <mpi.h>
+#endif
 
 
 namespace LIGGGHTS {
@@ -94,6 +97,8 @@ namespace LIGGGHTS {
         }
       }
     }
+
+    dump();
   }
 
   void RegionDistanceField::reset()
@@ -175,5 +180,43 @@ namespace LIGGGHTS {
     x[2] = x0[2] + static_cast<double>(iz)*dx;
   }
 
+  void RegionDistanceField::dump()
+  {
+#ifdef DEBUG_REGIONDISTFIELD
+    int me = -1;
+    MPI_Comm_rank(MPI_COMM_WORLD,&me);
+
+    char filename[16]={};
+    sprintf(filename,"distfield%d.vtk",me);
+
+    FILE *out=fopen(filename, "wt");
+    if(out){
+      const int nbins = nx*ny*nz;
+      fprintf(out,"# vtk DataFile Version 3.0\n");
+      fprintf(out,"LIGGGHTS grid/mesh\n");
+      fprintf(out,"ASCII\n");
+      fprintf(out,"DATASET STRUCTURED_GRID\n");
+      fprintf(out,"DIMENSIONS %d %d %d\n",nx+1,ny+1,nz+1);
+      fprintf(out,"POINTS %d float\n",((nx+1)*(ny+1)*(nz+1)));
+
+      double pos_tmp[3] = {};
+      for(int k=0;k<=nz;++k){
+        for(int j=0;j<=ny;++j){
+          for(int i=0;i<=nx;++i){
+            index3ToPos(i,j,k,pos_tmp);
+            fprintf(out,"%f %f %f\n",pos_tmp[0],pos_tmp[1],pos_tmp[2]);
+          }
+        }
+      }
+
+      fprintf(out,"CELL_DATA %d\n",nbins);
+      fprintf(out,"SCALARS cell_type int\nLOOKUP_TABLE default\n");
+      for(int i=0;i<nbins;++i)
+        fprintf(out,"%d\n",data[i]);
+
+      fclose(out);
+    }
+#endif
+  }
 
 } // namespace LIGGGHTS
