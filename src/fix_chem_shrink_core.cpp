@@ -828,17 +828,17 @@ void FixChemShrinkCore::getMassT(int i)
         molecularDiffusion_[i] += SMALL;
 
     if (nuf_[i] == 0.0 || Rep_[i] == 0.0)
-      {
-	Massterm[i] = 0.0;
-      }
+    {
+        Massterm[i] = 0.0;
+    }
     else
-      {
-	Sc_i  =   nuf_[i]/molecularDiffusion_[i];
-	Sh_i  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_i);
+    {
+        Sc_i  =   nuf_[i]/molecularDiffusion_[i];
+        Sh_i  =   2.0+0.6*sqrt(Rep_[i])*cbrt(Sc_i);
 
-	Massterm[i] = Sh_i*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
-	Massterm[i] = 1.0/(Massterm[i]);
-      }
+        Massterm[i] = Sh_i*molecularDiffusion_[i]/(2.0*(radius_[i]/cg_)+SMALL);
+        Massterm[i] = 1.0/(Massterm[i]);
+    }
 
     if (screenflag_ && screen)
         fprintf(screen, "Schmidt number: %f \n",Sc_i);
@@ -859,7 +859,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
     }
     p_A = xA_[i]*partP_[i];
     if (screenflag_ && screen)
-            fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_eq_III: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_eq_[2],p_A);
+        fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_eq_III: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_eq_[2],p_A);
 
     if (layers_ == nmaxlayers_)
     {
@@ -1006,7 +1006,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
     }
 
     // Core layer radius (initial Fe2O3)
-    rad[layers_] = cbrt((0.75*massLayer_[i][layers_])/(rhoeff_[i][layers_]*M_PI));     
+    rad[layers_] = cbrt((0.75*massLayer_[i][layers_])/(rhoeff_[i][layers_]*M_PI));
 
     // Outer layer radii (Fe3O4, FeO)
     for (int layer = layers_ - 1; layer > 0; layer--)
@@ -1235,7 +1235,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
     }
     p_A = xA_[i]*partP_[i];
     if (screenflag_ && screen)
-            fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_A);
+        fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_A);
 
     if (layers_ == 2)
     {
