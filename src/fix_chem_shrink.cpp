@@ -397,7 +397,7 @@ void FixChemShrink::reaction()
 
 
             // change of radius of particle -assumption: density of particle is constant
-            radius_[i]           =   pow((0.75*pmass_[i]/(M_PI*pdensity_[i])),0.333333);
+            radius_[i]           =   cbrt(0.75*pmass_[i]/(M_PI*pdensity_[i]));
 
             // uncomment if postproc (verification)
             if (screenflag_ && screen)
