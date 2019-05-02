@@ -20,6 +20,7 @@
 /* ----------------------------------------------------------------------
    Contributing author:
    Philippe Seil (JKU)
+   Daniel Queteschiner (JKU)
 ------------------------------------------------------------------------- */
 
 
@@ -76,12 +77,12 @@ namespace LIGGGHTS {
     for(int i=0;i<nx;i++){
       for(int j=0;j<ny;j++){
         for(int k=0;k<nz;k++){
-          int const index = index3ToIndex1(i,j,k);
-          indexToPos(index,pos_tmp);
+          index3ToPos(i,j,k,pos_tmp);
 
           if(!region->match(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
             continue;
 
+          int const index = index3ToIndex1(i,j,k);
           pos_tmp[0] += 0.5*dx;
           pos_tmp[1] += 0.5*dx;
           pos_tmp[2] += 0.5*dx;
@@ -129,8 +130,8 @@ namespace LIGGGHTS {
 
     return data[index] == BOUNDARY;
   }
-  
-  
+
+
   int RegionDistanceField::index3ToIndex1(int const ix, int const iy, int const iz)
   {
     return (ix + nx*iy + nx*ny*iz);
@@ -165,6 +166,13 @@ namespace LIGGGHTS {
     x[0] += static_cast<double>(ix)*dx;
     x[1] += static_cast<double>(iy)*dx;
     x[2] += static_cast<double>(iz)*dx;
+  }
+
+  void RegionDistanceField::index3ToPos(int ix, int iy, int iz, double *x)
+  {
+    x[0] = x0[0] + static_cast<double>(ix)*dx;
+    x[1] = x0[1] + static_cast<double>(iy)*dx;
+    x[2] = x0[2] + static_cast<double>(iz)*dx;
   }
 
 
