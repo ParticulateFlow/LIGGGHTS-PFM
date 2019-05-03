@@ -323,71 +323,71 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 
     if (unfixflag)
     {
-        if (fix_changeOfA_)     { modify  ->  delete_fix(massA); delete [] changeOfA_;}
-        if (fix_changeOfC_)     { modify  ->  delete_fix(massC); delete [] changeOfC_;}
-        if (fix_tgas_)          { modify  ->  delete_fix("partTemp"); delete [] T_;}
-        if (fix_reactionHeat_)  { modify  ->  delete_fix("reactionHeat"); delete [] reactionHeat_;}
-        if (fix_diffcoeff_)     { modify  ->  delete_fix(diffA); delete [] molecularDiffusion_; }
-        if (fix_nuField_)       { modify  ->  delete_fix("partNu"); delete [] nuf_; }
-        if (fix_partRe_)        { modify  ->  delete_fix("partRe"); delete [] Rep_; }
+        if (fix_changeOfA_)     { modify  ->  delete_fix(massA); changeOfA_ = NULL; }
+        if (fix_changeOfC_)     { modify  ->  delete_fix(massC); changeOfC_ = NULL; }
+        if (fix_tgas_)          { modify  ->  delete_fix("partTemp"); T_ = NULL; }
+        if (fix_reactionHeat_)  { modify  ->  delete_fix("reactionHeat"); reactionHeat_ = NULL; }
+        if (fix_diffcoeff_)     { modify  ->  delete_fix(diffA); molecularDiffusion_ = NULL; }
+        if (fix_nuField_)       { modify  ->  delete_fix("partNu"); nuf_ = NULL; }
+        if (fix_partRe_)        { modify  ->  delete_fix("partRe"); Rep_ = NULL; }
 
-        if (fix_moleFractionA_) { modify  ->  delete_fix(moleFracA); delete [] xA_; }
-        if (fix_moleFractionC_) { modify  ->  delete_fix(moleFracC); delete [] xC_; }
+        if (fix_moleFractionA_) { modify  ->  delete_fix(moleFracA); xA_ = NULL; }
+        if (fix_moleFractionC_) { modify  ->  delete_fix(moleFracC); xC_ = NULL; }
 
         fixname = new char [strlen("fracRed_")+strlen(group->names[igroup])+1];
         strcpy(fixname,"fracRed_");
         strcat(fixname,group->names[igroup]);
-        if (fix_fracRed)        { modify  ->  delete_fix(fixname); delete [] fracRed_;}
+        if (fix_fracRed)        { modify  ->  delete_fix(fixname); fracRed_ = NULL; }
         delete [] fixname;
 
         fixname = new char[strlen("Aterm_")+strlen(id)+1];
         strcpy (fixname,"Aterm_");
         strcat(fixname,id);
-        if (fix_Aterm)          { modify  ->  delete_fix(fixname); delete [] Aterm; }
+        if (fix_Aterm)          { modify  ->  delete_fix(fixname); Aterm = NULL; }
         delete []fixname;
 
         fixname = new char[strlen("Bterm_")+strlen(id)+1];
         strcpy (fixname,"Bterm_");
         strcat(fixname,id);
-        if (fix_Bterm)          { modify  ->  delete_fix(fixname); delete [] Bterm; }
+        if (fix_Bterm)          { modify  ->  delete_fix(fixname); Bterm = NULL; }
         delete []fixname;
 
         fixname = new char[strlen("Massterm_")+strlen(id)+1];
         strcpy (fixname,"Massterm_");
         strcat(fixname,id);
-        if (fix_Massterm)       { modify  ->  delete_fix(fixname); delete [] Massterm; }
+        if (fix_Massterm)       { modify  ->  delete_fix(fixname); Massterm = NULL; }
         delete []fixname;
 
         fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
         strcpy (fixname,"effDiffBinary_");
         strcat(fixname,id);
-        if (fix_effDiffBinary)  { modify  ->  delete_fix(fixname); delete [] effDiffBinary;}
+        if (fix_effDiffBinary)  { modify  ->  delete_fix(fixname); effDiffBinary = NULL; }
         delete []fixname;
 
         fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
         strcpy (fixname,"effDiffKnud_");
         strcat(fixname,id);
-        if (fix_effDiffKnud)    { modify  ->  delete_fix(fixname); delete [] effDiffKnud;}
+        if (fix_effDiffKnud)    { modify  ->  delete_fix(fixname); effDiffKnud = NULL; }
         delete [] fixname;
 
-        if (fix_partPressure_)  { modify  ->  delete_fix("partP"); delete [] partP_;}
-        if (fix_layerRelRad_)   { modify  ->  delete_fix("relRadii"); delete [] relRadii_; }
-        if (fix_layerMass_)     { modify  ->  delete_fix("massLayer"); delete [] massLayer_; }
-        if (fix_porosity_)      { modify  ->  delete_fix("porosity_"); delete [] porosity_;}
-        if (fix_rhoeff_)        { modify  ->  delete_fix("rhoeff"); delete [] rhoeff_;}
+        if (fix_partPressure_)  { modify  ->  delete_fix("partP"); partP_ = NULL;}
+        if (fix_layerRelRad_)   { modify  ->  delete_fix("relRadii"); relRadii_ = NULL; }
+        if (fix_layerMass_)     { modify  ->  delete_fix("massLayer"); massLayer_ = NULL; }
+        if (fix_porosity_)      { modify  ->  delete_fix("porosity_"); porosity_ = NULL; }
+        if (fix_rhoeff_)        { modify  ->  delete_fix("rhoeff"); rhoeff_ = NULL; }
 
-        if(fix_totalMole_)      { modify  ->  delete_fix("partMolarConc"); delete [] molarConc_;}
+        if(fix_totalMole_)      { modify  ->  delete_fix("partMolarConc"); molarConc_ = NULL; }
 
         fixname = new char[strlen("dY_")+strlen(id)+1];
         strcpy (fixname,"dY_");
         strcat(fixname,id);
-        if(fix_dY_)      { modify  ->  delete_fix(fixname); delete [] dY;}
+        if(fix_dY_)      { modify  ->  delete_fix(fixname); dY = NULL; }
         delete []fixname;
 
         fixname = new char[strlen("dmA_")+strlen(id)+1];
         strcpy (fixname,"dmA_");
         strcat(fixname,id);
-        if(fix_dmA_)      { modify  ->  delete_fix(fixname); delete [] dmA_f_;}
+        if(fix_dmA_)      { modify  ->  delete_fix(fixname); dmA_f_ = NULL; }
         delete []fixname;
     }
 }
