@@ -597,7 +597,8 @@ void FixChemShrinkCore::post_force(int)
                     // do nothing -- no reaction takes place
                     error->warning(FLERR, "The temperature is too low for reduction to take place!");
 
-                }else if (T_[i] > 573.15 && T_[i] < 843.15)
+                }
+                else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
                 {
                     FR_low(i, layerMolMasses_);
                     getXi_low(i,x0_eq_);
@@ -609,7 +610,7 @@ void FixChemShrinkCore::post_force(int)
                     update_gas_properties(i, dmA_);
                     heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                 }
-                else if (T_[i] > 843.15)
+                else // T_[i] > 843.15
                 {
                     // calculate values for fractional reduction f_i = (1-relRadii_i^3)
                     // or with mass ratio provides simplicity for calculations of A & B terms.
