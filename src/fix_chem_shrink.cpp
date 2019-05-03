@@ -29,26 +29,10 @@
 #include <stdlib.h>
 #include "atom.h"
 #include "update.h"
-#include "respa.h"
-#include "region.h"
-#include "domain.h"
 #include "error.h"
-#include "memory.h"
 #include "modify.h"
-#include "comm.h"
-#include "atom_vec.h"
-#include "vector_liggghts.h"
-#include "mpi_liggghts.h"
 #include "fix_chem_shrink.h"
-#include "fix_cfd_coupling_chemistry.h"
-#include "pair_gran.h"
 #include "fix_property_atom.h"
-#include "fix_property_global.h"
-#include "properties.h"
-#include "property_registry.h"
-#include "global_properties.h"
-#include "force.h"
-
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
