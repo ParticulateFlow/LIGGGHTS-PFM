@@ -404,10 +404,9 @@ double FixChemShrink::reactionRatConst(int i)
 /* ----------------- compute particle surface area ------------------------ */
 
 double FixChemShrink::partSurfArea(double radius)
-    {
-        double A_p =   4*M_PI*radius*radius;
-        return (A_p);
-    }
+{
+    return 4.*M_PI*radius*radius;
+}
 
 /* ---------------------------------------------------------------------- */
 
