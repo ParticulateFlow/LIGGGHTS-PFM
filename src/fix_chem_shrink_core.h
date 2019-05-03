@@ -28,7 +28,6 @@ FixStyle(chem/shrink/core,FixChemShrinkCore)
 #define LMP_FIX_CHEM_SHRINKCORE_H
 
 #include "fix.h"
-#include "fix_cfd_coupling.h"
 
 namespace LAMMPS_NS {
 
