@@ -21,31 +21,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "stdlib.h"
+#include <stdlib.h>
 #include "atom.h"
 #include "update.h"
-#include "respa.h"
 #include "error.h"
-#include "memory.h"
 #include "modify.h"
-#include "comm.h"
-#include "math.h"
-#include "vector_liggghts.h"
-#include "mpi_liggghts.h"
 #include "fix_chem_shrink_core.h"
 #include "fix_property_atom.h"
-#include "pair_gran.h"
-#include "compute_pair_gran_local.h"
 #include "fix_property_global.h"
-#include "properties.h"
-#include "property_registry.h"
-#include "global_properties.h"
 #include "force.h"
 #include "group.h"
-#include "vector_liggghts.h"
 #include "math_const.h"
-#include <iostream>
-#include <fstream>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
