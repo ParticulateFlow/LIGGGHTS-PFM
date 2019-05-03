@@ -105,7 +105,7 @@ public:
 
   // TimeStep
   double TimeStep;
-  int current_timestep;
+  bigint current_timestep;
 
   bool use_reactant_;
 

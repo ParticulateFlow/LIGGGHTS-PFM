@@ -341,7 +341,7 @@ void FixChemShrink::reaction()
             if (screenflag_ && screen)
             {
                 fprintf(screen,"check TimeStep %f \n",TimeStep);
-                fprintf(screen,"check current timestep %d \n", current_timestep);
+                fprintf(screen,"check current timestep " BIGINT_FORMAT "\n", current_timestep);
             }
 
             // Current time step concentration change of reactant A and product C
