@@ -27,6 +27,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include "lmptype.h"
 #include "atom.h"
 #include "update.h"
 #include "error.h"
