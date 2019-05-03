@@ -76,15 +76,15 @@ public:
   int iarg_;
 
   // values from user
-  double k0;                                         // reaction rate coefficient
-  double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
+  double k0;                                 // reaction rate coefficient
+  double molMass_A_, molMass_B_, molMass_C_; // Molecular mass of species A, B and C
   double relaxFac_;
-  int nu_A_, nu_B_, nu_C_;                          // stoichiometric coefficients
+  int nu_A_, nu_B_, nu_C_;                   // stoichiometric coefficients
 
   // particle properties
-  double *radius_;                                  // radius of particle
-  double *pmass_;                                   // particle mass
-  double *pdensity_;
+  double *radius_;                           // radius of particle
+  double *pmass_;                            // particle mass
+  double *pdensity_;                         // particle density
 
   // minimum radius value -rmin input from user
   double rmin;

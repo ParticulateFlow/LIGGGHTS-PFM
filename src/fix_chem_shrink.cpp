@@ -137,7 +137,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             strcpy(speciesC,arg[iarg_+1]);
             hasargs = true;
             iarg_ +=2;
-        }else if (strcmp(arg[iarg_],"molMassC") == 0)
+        }
+        else if (strcmp(arg[iarg_],"molMassC") == 0)
         {
             if (spcC != 1)
                 error -> fix_error(FLERR, this, "have to define keyword 'speciesC' before 'molMassC'");
@@ -354,11 +355,11 @@ void FixChemShrink::reaction()
             double k = reactionRatConst(i);
             if(nu_A_ < 2)
             {
-                dA  =   -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
+                dA = -k*molarFrac*molarConc*molMass_A_*partSurfArea(radius_[i])*TimeStep*nevery;
             }
             else
             {
-                dA  =   -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
+                dA = -k*pow((molarFrac*molarConc),nu_A_)*partSurfArea(radius_[i])*molMass_A_*nu_A_*TimeStep*nevery;
             }
 
             // limit mass change - can't remove more than present in cell
@@ -366,7 +367,9 @@ void FixChemShrink::reaction()
             if(use_reactant_)
             {
                 if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+
                 double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * relaxFac_;
+
                 if(-dA > dAmax) dA = -dAmax;
             }
 
@@ -384,7 +387,7 @@ void FixChemShrink::reaction()
             // never remove more than half the particle's mass at once
             if(-dB > 0.5*pmass_[i])
             {
-                 pmass_[i] *= 0.5;
+                pmass_[i] *= 0.5;
             }
             else
             {
@@ -407,6 +410,8 @@ void FixChemShrink::reaction()
         }
     }
 }
+
+/* ---------------------------------------------------------------------- */
 
 double FixChemShrink::reactionRatConst(int i)
 {
