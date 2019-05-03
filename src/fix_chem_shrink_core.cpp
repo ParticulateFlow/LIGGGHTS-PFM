@@ -40,7 +40,9 @@ using namespace MathConst;
 #define SMALL   1e-10
 #define Runiv   8.3144
 
+
 /* ---------------------------------------------------------------------- */
+
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     layers_(nmaxlayers_),
@@ -167,7 +169,7 @@ void FixChemShrinkCore::post_create()
 {
     if (fix_Aterm==NULL) {
         char *fixname = new char [strlen("Aterm_")+strlen(id)+1];
-        strcpy (fixname,"Aterm_");
+        strcpy(fixname,"Aterm_");
         strcat(fixname,id);
 
         const char* fixarg[11];
@@ -189,7 +191,7 @@ void FixChemShrinkCore::post_create()
 
     if (fix_Bterm==NULL) {
         char *fixname = new char[strlen("Bterm_")+strlen(id)+1];
-        strcpy (fixname,"Bterm_");
+        strcpy(fixname,"Bterm_");
         strcat(fixname,id);
 
         const char* fixarg[11];
@@ -211,7 +213,7 @@ void FixChemShrinkCore::post_create()
 
     if (fix_Massterm==NULL) {
         char *fixname = new char[strlen("Massterm_")+strlen(id)+1];
-        strcpy (fixname,"Massterm_");
+        strcpy(fixname,"Massterm_");
         strcat(fixname,id);
 
         const char* fixarg[9];
@@ -230,7 +232,7 @@ void FixChemShrinkCore::post_create()
 
     if (fix_effDiffBinary==NULL) {
         char *fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
-        strcpy (fixname,"effDiffBinary_");
+        strcpy(fixname,"effDiffBinary_");
         strcat(fixname,id);
 
         const char* fixarg[11];
@@ -251,7 +253,7 @@ void FixChemShrinkCore::post_create()
 
     if (fix_effDiffKnud==NULL)    {
         char *fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
-        strcpy (fixname,"effDiffKnud_");
+        strcpy(fixname,"effDiffKnud_");
         strcat(fixname,id);
 
         const char* fixarg[11];
@@ -272,7 +274,7 @@ void FixChemShrinkCore::post_create()
 
     if (fix_dY_==NULL)     {
         char* fixname = new char[strlen("dY_")+strlen(id)+1];
-        strcpy (fixname,"dY_");
+        strcpy(fixname,"dY_");
         strcat(fixname,id);
 
         const char* fixarg[12];
@@ -293,7 +295,7 @@ void FixChemShrinkCore::post_create()
 
     if (fix_dmA_==NULL)     {
         char* fixname = new char[strlen("dmA_")+strlen(id)+1];
-        strcpy (fixname,"dmA_");
+        strcpy(fixname,"dmA_");
         strcat(fixname,id);
 
         const char* fixarg[12];
@@ -450,7 +452,7 @@ void FixChemShrinkCore::updatePtrs()
 
     molarConc_  =   fix_totalMole_  ->  vector_atom;
     dY          =   fix_dY_         ->  array_atom;
-    dmA_f_    =   fix_dmA_ -> array_atom;
+    dmA_f_      =   fix_dmA_ -> array_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -582,7 +584,6 @@ void FixChemShrinkCore::post_force(int)
                 {
                     // do nothing -- no reaction takes place
                     error->warning(FLERR, "The temperature is too low for reduction to take place!");
-
                 }
                 else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
                 {
@@ -665,6 +666,7 @@ void FixChemShrinkCore::calcMassLayer(int i)
 }
 
 /* ---------------------------------------------------------------------- */
+
 double FixChemShrinkCore::K_eq(int layer, int i)
 {
     // 0 = w->fe , 1 = m->w, 2 = h->m;
@@ -1073,7 +1075,9 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
     fracRed_[i][1] = f_MW;
     fracRed_[i][2] = f_HM;
 }
+
 /* ---------------------------------------------------------------------- */
+
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
 void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, double *v_prod_, double* layerMolMasses_)
 {
@@ -1100,17 +1104,19 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
     double delta_h[nmaxlayers_+1] = {0.};
     /* conventional enhalpy */
     std::vector<double> conv_h(layers_+3,0.);
-    conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,layerMolMasses_[0],i)*layerMolMasses_[0];
-    conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,layerMolMasses_[1],i)*layerMolMasses_[1];
+    conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i)*layerMolMasses_[0];
+    conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,  layerMolMasses_[1],i)*layerMolMasses_[1];
     conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i)*layerMolMasses_[2];
     conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[3],i)*layerMolMasses_[3];
+
     if (strcmp(speciesA, "CO") == 0)
     {
-        conv_h[4] = conv_enthalpy(a_coeff_nasa_CO,molMass_A_,i)*molMass_A_;
+        conv_h[4] = conv_enthalpy(a_coeff_nasa_CO, molMass_A_,i)*molMass_A_;
         conv_h[5] = conv_enthalpy(a_coeff_nasa_CO2,molMass_C_,i)*molMass_C_;
-    } else if(strcmp(speciesA,"H2")==0)
+    }
+    else if(strcmp(speciesA,"H2")==0)
     {
-        conv_h[4] = conv_enthalpy(a_coeff_nasa_H2,molMass_A_,i)*molMass_A_;
+        conv_h[4] = conv_enthalpy(a_coeff_nasa_H2, molMass_A_,i)*molMass_A_;
         conv_h[5] = conv_enthalpy(a_coeff_nasa_H2O,molMass_C_,i)*molMass_C_;
     }
 
@@ -1120,11 +1126,11 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
     }
 
     if (screenflag_ && screen) {
-        if (strcmp(speciesA, "CO") == 0){
-        fprintf(screen, "delta_h w CO for reaction 1 is %f \n", delta_h[0]);
-        fprintf(screen, "delta_h w CO for reaction 2 is %f \n", delta_h[1]);
-        fprintf(screen, "delta_h w CO for reaction 3 is %f \n", delta_h[2]);}
-        else if (strcmp(speciesA,"H2")==0) {
+        if (strcmp(speciesA, "CO") == 0) {
+            fprintf(screen, "delta_h w CO for reaction 1 is %f \n", delta_h[0]);
+            fprintf(screen, "delta_h w CO for reaction 2 is %f \n", delta_h[1]);
+            fprintf(screen, "delta_h w CO for reaction 3 is %f \n", delta_h[2]);
+        } else if (strcmp(speciesA,"H2") == 0) {
             fprintf(screen, "delta_h w H2 for reaction 1 is %f \n", delta_h[0]);
             fprintf(screen, "delta_h w H2 for reaction 2 is %f \n", delta_h[1]);
             fprintf(screen, "delta_h w H2 for reaction 3 is %f \n", delta_h[2]);
@@ -1137,11 +1143,11 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
     }
 
     if (screenflag_ && screen) {
-        if (strcmp(speciesA, "CO") == 0){
-        fprintf(screen, "heatFlux of reaction w CO for reaction 1 is %f \n", HR[0]);
-        fprintf(screen, "heatFlux of reaction w CO for reaction 2 is %f \n", HR[1]);
-        fprintf(screen, "heatFlux of reaction w CO for reaction 3 is %f \n", HR[2]);}
-        else if (strcmp(speciesA,"H2")==0) {
+        if (strcmp(speciesA, "CO") == 0) {
+            fprintf(screen, "heatFlux of reaction w CO for reaction 1 is %f \n", HR[0]);
+            fprintf(screen, "heatFlux of reaction w CO for reaction 2 is %f \n", HR[1]);
+            fprintf(screen, "heatFlux of reaction w CO for reaction 3 is %f \n", HR[2]);
+        } else if (strcmp(speciesA,"H2") == 0) {
             fprintf(screen, "heatFlux of reaction w H2 for reaction 1 is %f \n", HR[0]);
             fprintf(screen, "heatFlux of reaction w H2 for reaction 2 is %f \n", HR[1]);
             fprintf(screen, "heatFlux of reaction w H2 for reaction 3 is %f \n", HR[2]);
@@ -1154,6 +1160,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
 }
 
 /* ---------------------------------------------------------------------- */
+
 /* Calculate conventional enthalpies of species */
 double FixChemShrinkCore::conv_enthalpy (double *a, double Mw, int i)
 {
@@ -1206,6 +1213,7 @@ double FixChemShrinkCore::conv_enthalpy (double *a, double Mw, int i)
 
     return value*Runiv/Mw;
 }
+
 /* ---------------------------------------------------------------------- */
 
 double FixChemShrinkCore::K_eq_low(int layer, int i)
@@ -1249,6 +1257,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
     {
         p_eq_[layer] = x0_eq_[layer]*partP_[i];
     }
+
     p_A = xA_[i]*partP_[i];
     if (screenflag_ && screen)
         fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_A);
@@ -1297,6 +1306,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
         dmA_f_[i][j] = dmA_[j];
     }
 }
+
 /* ---------------------------------------------------------------------- */
 
 void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
@@ -1313,7 +1323,9 @@ void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
     fracRed_[i][1] = f_HM;
     fracRed_[i][2] = 0.0;
 }
+
 /* ---------------------------------------------------------------------- */
+
 void FixChemShrinkCore::getXi_low(int i, double *x0_eq_)
 {
     double kch2_ = 0.0;
@@ -1358,7 +1370,9 @@ void FixChemShrinkCore::getA_low(int i)
         }
     }
 }
+
 /* ---------------------------------------------------------------------- */
+
 void FixChemShrinkCore::init_defaults()
 {
     molMass_A_  =   molMass_C_  =  0.0;
@@ -1398,12 +1412,12 @@ void FixChemShrinkCore::init_defaults()
     fix_effDiffKnud = NULL;
     fix_partPressure_ = NULL;   // Pascal
     fix_layerRelRad_ = NULL;
-    fix_layerMass_ = NULL;           //  [kg]
+    fix_layerMass_ = NULL;      //  [kg]
     fix_porosity_ = NULL;       //  [%]
     fix_rhoeff_ = NULL;
     fix_tortuosity_ = NULL;
     fix_pore_diameter_ = NULL;   //  [m]
     fix_dY_ = NULL;
-    fix_totalMole_      =   NULL;
+    fix_totalMole_ = NULL;
     fix_dmA_ = NULL;
 }
