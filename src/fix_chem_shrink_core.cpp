@@ -1172,20 +1172,50 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
 double FixChemShrinkCore::conv_enthalpy (double *a, double Mw, int i)
 {
     double value = 0.;
-    double Tbound_low =0.;
-    double Tbound_high = 0.;
 
     if (T_[i] < SMALL)
         error->fix_error(FLERR, this, "Error T <= ZERO");
 
-    if (T_[i] < (Tbound_low=a[0])) {/*Temperature smaller than lower bound*/
-        value = a[10]*Tbound_low + a[11]*pow(Tbound_low,2.0)/2.0 + a[12]*pow(Tbound_low,3.0)/3.0 + a[13]*pow(Tbound_low,4.0)/4.0 + a[14]*pow(Tbound_low,5.0)/5.0 + a[15];
+    if (T_[i] < a[0]) {/*Temperature smaller than lower bound*/
+        const double Tbound_low = a[0];
+        const double Tbound_low_sq = Tbound_low*Tbound_low;
+        const double Tbound_low_cb = Tbound_low_sq*Tbound_low;
+        value =   a[10]*Tbound_low
+                + a[11]*Tbound_low_sq*0.5
+                + a[12]*Tbound_low_cb/3.0
+                + a[13]*Tbound_low_sq*Tbound_low_sq*0.25
+                + a[14]*Tbound_low_sq*Tbound_low_cb*0.20
+                + a[15];
     } else if (T_[i] < a[2]) {
-        value = a[10]*T_[i] + a[11]*pow(T_[i],2.0)/2.0 + a[12]*pow(T_[i],3.0)/3.0 + a[13]*pow(T_[i],4.0)/4.0 + a[14]*pow(T_[i],5.0)/5.0 + a[15];
-    } else if (T_[i]< (Tbound_high = a[1])) {
-         value =a[3]*T_[i] + a[4]*pow(T_[i],2.0)/2.0 + a[5]*pow(T_[i],3.0)/3.0 + a[6]*pow(T_[i],4.0)/4.0 + a[7]*pow(T_[i],5.0)/5.0 + a[8];
+        const double Ti = T_[i];
+        const double Ti_sq = Ti*Ti;
+        const double Ti_cb = Ti_sq*Ti;
+        value =   a[10]*Ti
+                + a[11]*Ti_sq*0.5
+                + a[12]*Ti_cb/3.0
+                + a[13]*Ti_sq*Ti_sq*0.25
+                + a[14]*Ti_sq*Ti_cb*0.20
+                + a[15];
+    } else if (T_[i] < a[1]) {
+        const double Ti = T_[i];
+        const double Ti_sq = Ti*Ti;
+        const double Ti_cb = Ti_sq*Ti;
+        value =   a[3]*Ti
+                + a[4]*Ti_sq*0.5
+                + a[5]*Ti_cb/3.0
+                + a[6]*Ti_sq*Ti_sq*0.25
+                + a[7]*Ti_sq*Ti_cb*0.20
+                + a[8];
     } else {
-        value =a[3]*Tbound_high + a[4]*pow(Tbound_high,2.0)/2.0 + a[5]*pow(Tbound_high,3.0)/3.0 + a[6]*pow(Tbound_high,4.0)/4.0 + a[7]*pow(Tbound_high,5.0)/5.0 + a[8];
+        const double Tbound_high = a[1];
+        const double Tbound_high_sq = Tbound_high*Tbound_high;
+        const double Tbound_high_cb = Tbound_high_sq*Tbound_high;
+        value =   a[3]*Tbound_high
+                + a[4]*Tbound_high_sq*0.5
+                + a[5]*Tbound_high_cb/3.0
+                + a[6]*Tbound_high_sq*Tbound_high_sq*0.25
+                + a[7]*Tbound_high_sq*Tbound_high_cb*0.20
+                + a[8];
     }
 
     return value*Runiv/Mw;
