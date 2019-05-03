@@ -58,13 +58,13 @@ public:
   void getA(int);   // calculate chemical reaction resistance term
   void getB(int);   // calculate diffusion resistance term
   void getMassT(int);   // calculate gas film mass transfer resistance term
-  void reaction(int, double *, double *);   // calculate chemical reaction rate
-  void update_atom_properties(int, double *, double *, double *, double *);   // update particle layers with depending on chemical reaction rate - per-particle
-  void update_gas_properties(int, double *);    // update reactant and product gas masses depending on chemical reaction rate
-  void heat_of_reaction(int, double *, double *, double *, double *);
-  double conv_enthalpy(double *, double , int);
+  void reaction(int, double *, const double *);   // calculate chemical reaction rate
+  void update_atom_properties(int, const double *, double *, double *, const double *);   // update particle layers with depending on chemical reaction rate - per-particle
+  void update_gas_properties(int, const double *);    // update reactant and product gas masses depending on chemical reaction rate
+  void heat_of_reaction(int, const double *, double *, double *, const double *);
+  double conv_enthalpy(const double *, double , int);
   double K_eq_low(int, int);
-  void reaction_low(int, double *, double *);
+  void reaction_low(int, double *, const double *);
   void FR_low(int, double *);
   void getXi_low(int, double *);
   void getA_low(int);

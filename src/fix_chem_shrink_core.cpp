@@ -834,7 +834,7 @@ void FixChemShrinkCore::getMassT(int i)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
+void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 {
     updatePtrs();
     double W = 0.;
@@ -946,7 +946,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_reac_,double* v_prod_, double* layerMolMasses_)
+void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double *v_reac_,double* v_prod_, const double* layerMolMasses_)
 {
     updatePtrs();
     if (screenflag_ && screen)
@@ -1025,7 +1025,7 @@ void FixChemShrinkCore::update_atom_properties(int i, double *dmA_,double *v_rea
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_gas_properties(int i, double *dmA_)
+void FixChemShrinkCore::update_gas_properties(int i, const double *dmA_)
 {
     /*double kch2_ = 0.0;
     kch2_ = xA_[i] + xC_[i];*/
@@ -1075,7 +1075,7 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
 /* ---------------------------------------------------------------------- */
 
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
-void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, double *v_prod_, double* layerMolMasses_)
+void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_reac_, double *v_prod_, const double* layerMolMasses_)
 {
     double a_coeff_nasa_Fe2O3[] = {298.15, 1700., 1000., -3.240851E+02, 1.152686E+00, -1.413588E-03, 7.496435E-07, -1.455880E-10, -2.647718E+04, 1.609668E+03, 1.066786E+01, -4.869774E-03, 5.056287E-05, -4.500105E-08, 7.709213E-12, -1.025006E+05, -5.068585E+01};
     double a_coeff_nasa_Fe3O4[] = {298.15, 1870., 1000., 1.948880E+02, -4.225771E-01, 3.843026E-04, -1.536471E-07, 2.301151E-11, -1.944678E+05, -1.023246E+03, 7.781798E+01, -4.602735E-01, 1.199812E-03, -1.203296E-06, 4.119178E-10, -1.457550E+05, -3.319564E+02};
@@ -1158,7 +1158,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
 /* ---------------------------------------------------------------------- */
 
 /* Calculate conventional enthalpies of species */
-double FixChemShrinkCore::conv_enthalpy (double *a, double Mw, int i)
+double FixChemShrinkCore::conv_enthalpy (const double *a, double Mw, int i)
 {
     double value = 0.;
 
@@ -1243,7 +1243,8 @@ double FixChemShrinkCore::K_eq_low(int layer, int i)
 }
 
 /* ---------------------------------------------------------------------- */
-void FixChemShrinkCore::reaction_low(int i, double *dmA_, double *x0_eq_)
+
+void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 {
     updatePtrs();
     double W = 0.;
