@@ -41,45 +41,57 @@ using namespace FixConst;
 
 FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp,narg,arg),
+    screenflag_ (0),
+    speciesA(NULL),
+    speciesC(NULL),
+    massA(NULL),
+    massC(NULL),
+    moleFracA(NULL),
+    moleFracC(NULL),
+    fix_changeOfA_(NULL),
+    fix_changeOfC_(NULL),
+    fix_rhogas(NULL),
+    fix_tgas(NULL),
+    fix_reactionheat_(NULL),
+    fix_totalMole_(NULL),
+    fix_nuField_(NULL),
+    fix_partRe_(NULL),
+    fix_reactantPerParticle_(NULL),
+    fix_moleFractionA_(NULL),
+    fix_moleFractionC_(NULL),
+    xA_(NULL),
+    xC_(NULL),
+    nuf_(NULL),
+    Rep_(NULL),
+    iarg_(3),
+    k0(0),
+    molMass_A_(0),
+    molMass_B_(0),
+    molMass_C_(0),
+    relaxFac_(0.5),
+    nu_A_(1),
+    nu_B_(1),
+    nu_C_(1),
+    radius_(NULL),
+    pmass_(NULL),
+    pdensity_(NULL),
+    rmin(0.),
+    minMolarFrac_(1e-3),
+    changeOfA_(NULL),
+    changeOfC_(NULL),
+    rhogas_(NULL),
+    tgas_(NULL),
+    molarConc_(NULL),
+    reactantPerParticle_(NULL),
+    spcA(0),
+    spcC(0),
+    TimeStep(0.0),
+    current_timestep(0),
     use_reactant_(false)
 {
     if ((strncmp(style,"chem/shrink",11) == 0) && (!atom->radius_flag||!atom->rmass_flag))
             error -> all (FLERR,"Fix chem/shrink needs per particle radius and mass");
 
-    // defaults
-    fix_moleFractionA_  =   NULL;
-    fix_moleFractionC_  =   NULL;
-    fix_changeOfA_      =   NULL;
-    fix_changeOfC_      =   NULL;
-    fix_rhogas          =   NULL;
-    fix_tgas            =   NULL;
-    fix_reactionheat_   =   NULL;
-    fix_totalMole_      =   NULL;
-    fix_reactantPerParticle_ = NULL;
-
-    screenflag_ = 0;
-    iarg_ = 3;
-    k0 = 0;
-    molMass_A_ = 0;
-    molMass_C_ = 0;
-    molMass_B_ = 0;
-    relaxFac_ = 0.5;
-    nu_A_ = 1;
-    nu_B_ = 1;
-    nu_C_ = 1;
-
-    pmass_ = NULL;
-    speciesA = speciesC = NULL;
-
-    rmin = 0.;
-    minMolarFrac_ = 1e-3;
-    spcA = 0;
-    spcC = 0;
-
-
-    screenflag_ = 0;
-
-    iarg_ = 3;
     bool hasargs = true;
 
     if (narg < 24) error -> all (FLERR,"Fix chem/shrink: Wrong number of arguments");
