@@ -53,16 +53,15 @@ public:
 
  protected:
   int screenflag_;
-   
+
   char* speciesA, *speciesC;
   char* massA, *massC;
   char* moleFracA, *moleFracC;
 
-  // class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C
-  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C
-  class FixPropertyAtom *fix_rhogas;                           //  density of gas
-  class FixPropertyAtom *fix_tgas;                             //  temperature of gas
-  class FixPropertyAtom *fix_reactionheat_;                     //  DeltaQ
+  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_; //  change of concentration of species A and C
+  class FixPropertyAtom *fix_rhogas;                      //  density of gas
+  class FixPropertyAtom *fix_tgas;                        //  temperature of gas
+  class FixPropertyAtom *fix_reactionheat_;               //  DeltaQ
   class FixPropertyAtom *fix_totalMole_;
   // checking communication for nuField and Rep
   class FixPropertyAtom *fix_nuField_;
@@ -109,7 +108,7 @@ public:
   int current_timestep;
 
   bool use_reactant_;
- 
+
   virtual double reactionRatConst(int);
 };
 

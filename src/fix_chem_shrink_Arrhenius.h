@@ -41,16 +41,16 @@ class FixChemShrinkArrhenius : public FixChemShrink  {
 public:
   FixChemShrinkArrhenius(class LAMMPS *, int, char **);
   ~FixChemShrinkArrhenius();
-  
+
   void updatePtrs();
 
- 
+
 
  protected:
 
-  // values from user                                       
-  double T0;			// activation temperature
-  
+  // values from user
+  double T0; // activation temperature
+
   double reactionRatConst(int);
 
 

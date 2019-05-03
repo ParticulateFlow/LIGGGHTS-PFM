@@ -47,12 +47,14 @@ FixChemShrinkArrhenius::FixChemShrinkArrhenius(LAMMPS *lmp, int narg, char **arg
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             T0 = atof(arg[iarg_+1]);
-            if (T0 <= 0)
+            if (T0 <= 0.)
                 error -> fix_error(FLERR, this, "T is not (well-)defined");
             iarg_ +=2;
-        }else{
-	    iarg_++;
-	}
+        }
+        else
+        {
+            iarg_++;
+        }
     }
 }
 
@@ -68,8 +70,8 @@ FixChemShrinkArrhenius::~FixChemShrinkArrhenius()
 
 void FixChemShrinkArrhenius::updatePtrs()
 {
-    FixChemShrink::updatePtrs();    
-    tgas_       =   fix_tgas        ->  vector_atom;
+    FixChemShrink::updatePtrs();
+    tgas_ = fix_tgas->vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -78,7 +80,8 @@ void FixChemShrinkArrhenius::updatePtrs()
 
 double FixChemShrinkArrhenius::reactionRatConst(int i)
 {
-    double t = tgas_[i];
+    const double t = tgas_[i];
+
     if(t < 100.0)
     {
         return 0.0;
