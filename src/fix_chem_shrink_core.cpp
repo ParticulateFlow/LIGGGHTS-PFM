@@ -639,7 +639,7 @@ int FixChemShrinkCore::active_layers(int i)
     {
         if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
         {
-            layers_ -= 1;
+            --layers_;
             calcMassLayer(i);
         }
     }
@@ -1063,13 +1063,9 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
     fracRed_[i][2] = f_HM; */
     updatePtrs();
 
-    double f_HM = 0.;
-    double f_MW = 0.;
-    double f_WF = 0.;
-
-    f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
-    f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
-    f_HM = 1.0 - relRadii_[i][3]*relRadii_[i][3]*relRadii_[i][3];
+    const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+    const double f_HM = 1.0 - relRadii_[i][3]*relRadii_[i][3]*relRadii_[i][3];
 
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
@@ -1092,8 +1088,8 @@ void FixChemShrinkCore::heat_of_reaction(int i, double *dmA_, double *v_reac_, d
 
     // stoichiometric coefficients of reactions
     if (T_[i] < 843.15) {
-        v_reac_[0] = 1.0/4.0; v_reac_[1] = 3.0; v_reac_[2] = 0.;
-        v_prod_[0] = 3.0/4.0; v_prod_[1] = 2.0; v_prod_[2] = 0.;
+        v_reac_[0] = 0.25; v_reac_[1] = 3.0; v_reac_[2] = 0.;
+        v_prod_[0] = 0.75; v_prod_[1] = 2.0; v_prod_[2] = 0.;
     } else {
         v_reac_[0] = 1.0; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
         v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
@@ -1313,11 +1309,8 @@ void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
 {
     updatePtrs();
 
-    double f_HM = 0.;
-    double f_MF = 0.;
-
-    f_MF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
-    f_HM = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+    const double f_MF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    const double f_HM = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
 
     fracRed_[i][0] = f_MF;
     fracRed_[i][1] = f_HM;
