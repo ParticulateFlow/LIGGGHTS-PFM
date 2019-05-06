@@ -730,31 +730,32 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 // 0 = wüstite interface, 1 = magnetite interface, 2 = hematite interface
 void FixChemShrinkCore::getA(int i)
 {
+    updatePtrs();
     double k0_high_CO[] = {17., 25., 2700.};
     double k0_high_H2[] = {30., 23., 160.};
-
     double Ea_high_CO[] = {69488., 73674., 113859.};
     double Ea_high_H2[] = {63627., 71162., 92092.};
-
-    updatePtrs();
 
     if (strcmp(speciesA, "CO") == 0)
     {
         for (int j = 0; j < layers_ ; j++)
         {
-            Aterm[i][j]   =   (k0_high_CO[j]*exp(-Ea_high_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
-            Aterm[i][j]   =   1.0/Aterm[i][j];
+            Aterm[i][j] = (k0_high_CO[j] * exp(-Ea_high_CO[j] / (Runiv*T_[i])))
+                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * (1.0 + 1.0 / K_eq(j,i));
+            Aterm[i][j] = 1.0 / Aterm[i][j];
         }
     }
-    else if (strcmp(speciesA,"H2")==0)
+    else if (strcmp(speciesA,"H2") == 0)
     {
         for (int j = 0; j < layers_ ; j++)
         {
-            Aterm[i][j]   =   (k0_high_H2[j]*exp(-Ea_high_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
-            Aterm[i][j]   =   1.0/Aterm[i][j];
+            Aterm[i][j] = (k0_high_H2[j] * exp(-Ea_high_H2[j] / (Runiv*T_[i])))
+                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * (1.0 + 1.0 / K_eq(j,i));
+            Aterm[i][j] = 1.0 / Aterm[i][j];
         }
     }
-
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1404,7 +1405,7 @@ void FixChemShrinkCore::getA_low(int i)
             Aterm[i][j] = 1.0 / Aterm[i][j];
         }
     }
-    else if(strcmp(speciesA,"H2")==0)
+    else if(strcmp(speciesA,"H2") == 0)
     {
         for (int j = 0; j < layers_ ; j++)
         {
