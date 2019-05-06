@@ -698,7 +698,7 @@ double FixChemShrinkCore::K_eq(int layer, int i)
      }
      else
      {
-         printf("Error : Undefined Reaction \n");
+         error->one(FLERR, "Undefined Reaction\n");
      }
 
      if(screenflag_ && screen)
