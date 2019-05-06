@@ -1276,13 +1276,13 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 {
     updatePtrs();
     double p_eq_[nmaxlayers_] = {0.};
-    double p_A = 0.;
     for (int layer = 0; layer < layers_; layer++)
     {
         p_eq_[layer] = x0_eq_[layer]*partP_[i];
     }
 
-    p_A = xA_[i]*partP_[i];
+    const double p_A = xA_[i] * partP_[i];
+
     if (screenflag_ && screen)
         fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_A);
 
@@ -1365,8 +1365,7 @@ void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
 
 void FixChemShrinkCore::getXi_low(int i, double *x0_eq_)
 {
-    double kch2_ = 0.0;
-    kch2_ = xA_[i] + xC_[i];
+    const double kch2_ = xA_[i] + xC_[i];
 
     for (int j = 0; j < layers_; j++)
     {
