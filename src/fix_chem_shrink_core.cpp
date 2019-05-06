@@ -737,17 +737,22 @@ void FixChemShrinkCore::getA(int i)
     double Ea_high_H2[] = {63627., 71162., 92092.};
 
     updatePtrs();
-    for (int j = 0; j < layers_ ; j++)
+
+    if (strcmp(speciesA, "CO") == 0)
     {
-        if (strcmp(speciesA, "CO") == 0)
+        for (int j = 0; j < layers_ ; j++)
         {
             Aterm[i][j]   =   (k0_high_CO[j]*exp(-Ea_high_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+            Aterm[i][j]   =   1.0/Aterm[i][j];
         }
-        else if (strcmp(speciesA,"H2")==0)
+    }
+    else if (strcmp(speciesA,"H2")==0)
+    {
+        for (int j = 0; j < layers_ ; j++)
         {
             Aterm[i][j]   =   (k0_high_H2[j]*exp(-Ea_high_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq(j,i));
+            Aterm[i][j]   =   1.0/Aterm[i][j];
         }
-        Aterm[i][j]   =   1.0/Aterm[i][j];
     }
 
 }
