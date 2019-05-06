@@ -1162,15 +1162,9 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_re
     }
 
     if (screenflag_ && screen) {
-        if (strcmp(speciesA, "CO") == 0) {
-            fprintf(screen, "delta_h w CO for reaction 1 is %f \n", delta_h[0]);
-            fprintf(screen, "delta_h w CO for reaction 2 is %f \n", delta_h[1]);
-            fprintf(screen, "delta_h w CO for reaction 3 is %f \n", delta_h[2]);
-        } else if (strcmp(speciesA,"H2") == 0) {
-            fprintf(screen, "delta_h w H2 for reaction 1 is %f \n", delta_h[0]);
-            fprintf(screen, "delta_h w H2 for reaction 2 is %f \n", delta_h[1]);
-            fprintf(screen, "delta_h w H2 for reaction 3 is %f \n", delta_h[2]);
-        }
+        fprintf(screen, "delta_h w %s for reaction 1 is %f \n", speciesA, delta_h[0]);
+        fprintf(screen, "delta_h w %s for reaction 2 is %f \n", speciesA, delta_h[1]);
+        fprintf(screen, "delta_h w %s for reaction 3 is %f \n", speciesA, delta_h[2]);
     }
 
     for (int k = 0; k < layers_; k++)
@@ -1179,15 +1173,9 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_re
     }
 
     if (screenflag_ && screen) {
-        if (strcmp(speciesA, "CO") == 0) {
-            fprintf(screen, "heatFlux of reaction w CO for reaction 1 is %f \n", HR[0]);
-            fprintf(screen, "heatFlux of reaction w CO for reaction 2 is %f \n", HR[1]);
-            fprintf(screen, "heatFlux of reaction w CO for reaction 3 is %f \n", HR[2]);
-        } else if (strcmp(speciesA,"H2") == 0) {
-            fprintf(screen, "heatFlux of reaction w H2 for reaction 1 is %f \n", HR[0]);
-            fprintf(screen, "heatFlux of reaction w H2 for reaction 2 is %f \n", HR[1]);
-            fprintf(screen, "heatFlux of reaction w H2 for reaction 3 is %f \n", HR[2]);
-        }
+        fprintf(screen, "heatFlux of reaction w %s for reaction 1 is %f \n", speciesA, HR[0]);
+        fprintf(screen, "heatFlux of reaction w %s for reaction 2 is %f \n", speciesA, HR[1]);
+        fprintf(screen, "heatFlux of reaction w %s for reaction 3 is %f \n", speciesA, HR[2]);
     }
 
     // add per-particle reactionHeat flux
