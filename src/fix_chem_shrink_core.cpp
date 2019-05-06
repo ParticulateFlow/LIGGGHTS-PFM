@@ -41,6 +41,7 @@ using namespace MathConst;
 #define Runiv   8.3144
 
 
+
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
@@ -370,7 +371,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify  ->  delete_fix(fixname); effDiffKnud = NULL; }
         delete [] fixname;
 
-        if (fix_partPressure_)  { modify  ->  delete_fix("partP"); partP_ = NULL;}
+        if (fix_partPressure_)  { modify  ->  delete_fix("partP"); partP_ = NULL; }
         if (fix_layerRelRad_)   { modify  ->  delete_fix("relRadii"); relRadii_ = NULL; }
         if (fix_layerMass_)     { modify  ->  delete_fix("massLayer"); massLayer_ = NULL; }
         if (fix_porosity_)      { modify  ->  delete_fix("porosity_"); porosity_ = NULL; }
@@ -781,9 +782,12 @@ void FixChemShrinkCore::getB(int i)
 
     if (screenflag_ && screen)
     {
-        fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f, diffEff_[2]: %f \n fracRedThird_[0]: %f, fracRedThird_[1]: %f, fracRedThird_[2] : %f \n"
-                        "fracRed_[0]: %f, fracRed_[1]: %f, fracRed_[2]: %f \n"
-                ,diffEff_[0], diffEff_[1], diffEff_[2], fracRedThird_[0], fracRedThird_[1] , fracRedThird_[2],fracRed_[0][0], fracRed_[0][1], fracRed_[0][2]);
+        fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f, diffEff_[2]: %f \n"
+                        "fracRedThird_[0]: %f, fracRedThird_[1]: %f, fracRedThird_[2] : %f \n"
+                        "fracRed_[0]: %f, fracRed_[1]: %f, fracRed_[2]: %f \n",
+                        diffEff_[0], diffEff_[1], diffEff_[2],
+                        fracRedThird_[0], fracRedThird_[1] , fracRedThird_[2],
+                        fracRed_[0][0], fracRed_[0][1], fracRed_[0][2]);
     }
 
     // calculation of diffusion term
@@ -894,7 +898,9 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
                     -   (A2plusB2 *       B0plusMass)                                * (p_A - p_eq_[1])) / W;
 
         // reaction doesn't happen if chemical reaction rate is negative
-        if (dY[i][0] < 0.0) dY[i][0] = 0.0;
+        if (dY[i][0] < 0.0)
+            dY[i][0] = 0.0;
+
         dY_previous3 = true;
     }
     else if (layers_ == 2)
@@ -981,6 +987,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double 
     updatePtrs();
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
+
     // based on material change: update relative radii, average density and mass of atom i
     // stoichiometric coefficients of reactions
     if (T_[i] < 843.15) {
@@ -1151,7 +1158,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_re
 
     for (int j = 0; j < layers_; j++)
     {
-         delta_h[j] = ((v_prod_[j]*conv_h[j]+conv_h[5])-(v_reac_[0]*conv_h[j+1]+conv_h[4]));
+         delta_h[j] = (v_prod_[j] * conv_h[j] + conv_h[5]) - (v_reac_[0] * conv_h[j+1] + conv_h[4]);
     }
 
     if (screenflag_ && screen) {
@@ -1391,7 +1398,7 @@ void FixChemShrinkCore::getA_low(int i)
 {
     updatePtrs();
     double k0_low_CO[] = {150., 150.};
-    double k0_low_H2[] = {50., 25.};
+    double k0_low_H2[] = { 50.,  25.};
     double Ea_low_CO[] = {70000., 75000.};
     double Ea_low_H2[] = {75000., 75000.};
 
@@ -1399,16 +1406,20 @@ void FixChemShrinkCore::getA_low(int i)
     {
         for (int j = 0; j < layers_ ; j++)
         {
-            Aterm[i][j]   =   (k0_low_CO[j]*exp(-Ea_low_CO[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq_low(j,i));
-            Aterm[i][j]   =   1.0/Aterm[i][j];
+            Aterm[i][j] = (k0_low_CO[j] * exp(-Ea_low_CO[j] / (Runiv * T_[i])))
+                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * (1.0 + 1.0 / K_eq_low(j,i));
+            Aterm[i][j] = 1.0 / Aterm[i][j];
         }
     }
     else if(strcmp(speciesA,"H2")==0)
     {
         for (int j = 0; j < layers_ ; j++)
         {
-            Aterm[i][j]   =   (k0_low_H2[j]*exp(-Ea_low_H2[j]/(Runiv*T_[i])))*cbrt((1.0-fracRed_[i][j])*(1.0-fracRed_[i][j]))*(1+1/K_eq_low(j,i));
-            Aterm[i][j]   =   1.0/Aterm[i][j];
+            Aterm[i][j] = (k0_low_H2[j] * exp(-Ea_low_H2[j] / (Runiv * T_[i])))
+                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * (1.0 + 1.0 / K_eq_low(j,i));
+            Aterm[i][j] = 1.0 / Aterm[i][j];
         }
     }
 }
