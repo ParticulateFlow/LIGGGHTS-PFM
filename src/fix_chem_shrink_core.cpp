@@ -468,9 +468,6 @@ void FixChemShrinkCore::init()
     if (!atom->tag_enable || 0 == atom->map_style)
       error->fix_error(FLERR,this,"requires atom tags and an atom map");
 
-    // Define iron ore layer densities from Fe to Fe2O3
-    double layerDensities_[] = {7870., 5740., 5170., 5240.};
-
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style));
@@ -542,6 +539,9 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     updatePtrs();
+
+    // Define iron ore layer densities from Fe to Fe2O3
+    const double layerDensities_[] = {7870., 5740., 5170., 5240.};
 
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
