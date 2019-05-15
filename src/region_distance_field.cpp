@@ -2,7 +2,7 @@
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
 
-   Copyright 2014-     JKU Linz
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
