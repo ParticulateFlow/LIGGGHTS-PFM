@@ -65,6 +65,7 @@ class BondGran : public Bond {
   double *ro, *ri; // Outside and Inside bond radius multiplier
   double *lb; // bond length scale
   double *bnl; // non-linearization parameter
+  double *b_density; // adding a bond density
 
   void allocate();
 

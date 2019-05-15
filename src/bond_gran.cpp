@@ -105,6 +105,7 @@ BondGran::~BondGran()
     memory->destroy(lb);
     memory->destroy(damp);
     memory->destroy(bnl);
+    memory->destroy(b_density);
 #else
     memory->destroy(rb);
 #endif
@@ -154,7 +155,7 @@ void BondGran::compute(int eflag, int vflag)
 
 #ifdef FLEXIBLE_BONDS
   double Ip, Me, I, Js; // MS
-  double *density = atom->density; //MS
+  // double *density = atom->density; //MS
   double Kn,Kt,K_ben,K_tor; //MS
   double d_fn_sqrt_2_Me_Sn, d_ft_sqrt_2_Me_St, d_mn_sqrt_2_Js_Ktor, d_mt_sqrt_2_Js_Kben; //MS
   double rin,rout,m1,m2; //MS
@@ -262,8 +263,8 @@ void BondGran::compute(int eflag, int vflag)
     A = M_PI * (rout*rout - rin*rin); // area of parallel bond cross-section
     J = A * 0.5 * (rout*rout - rin*rin); // polar moment of inertia of parallel bond cross-section
 
-    m1 = MathConst::MY_4PI3*density[i1]*radius[i1]*radius[i1]*radius[i1];
-    m2 = MathConst::MY_4PI3*density[i2]*radius[i2]*radius[i2]*radius[i2];
+    m1 = MathConst::MY_4PI3*b_density[type]*radius[i1]*radius[i1]*radius[i1];
+    m2 = MathConst::MY_4PI3*b_density[type]*radius[i2]*radius[i2]*radius[i2];
     Me = m1*m2/(m1+m2);
 
     Ip = 0.5*M_PI*(rout*rout*rout*rout - rin*rin*rin*rin); // MS
@@ -644,6 +645,7 @@ void BondGran::allocate()
   memory->create(lb,n+1,"bond:lb");
   memory->create(damp,n+1,"bond:damp");
   memory->create(bnl,n+1,"bond:bnl");
+  memory->create(b_density,n+1,"bond:b_density");
 #else
   memory->create(rb,n+1,"bond:rb");
 #endif
@@ -667,7 +669,7 @@ void BondGran::allocate()
 void BondGran::coeff(int narg, char **arg)
 {
 #ifdef FLEXIBLE_BONDS
-  if(narg < 8) error->all(FLERR,"Incorrect args for bond coefficients (ro, ri, lb, sn, st, damp, bnl)"); // Matt Schramm
+  if(narg < 9) error->all(FLERR,"Incorrect args for bond coefficients (ro, ri, lb, sn, st, damp, bnl, b_density)"); // Matt Schramm
 #else
   if(narg < 4) error->all(FLERR,"Incorrect args for bond coefficients");
 #endif
@@ -680,6 +682,7 @@ void BondGran::coeff(int narg, char **arg)
   double St_one = force->numeric(FLERR,arg[5]);
   double damp_one = force->numeric(FLERR,arg[6]);
   double bnl_one = force->numeric(FLERR,arg[7]);
+  double bdensity_one = force->numeric(FLERR,arg[8]);
 #else
   double rb_one = force->numeric(FLERR,arg[1]);
   double Sn_one = force->numeric(FLERR,arg[2]);
@@ -697,7 +700,7 @@ void BondGran::coeff(int narg, char **arg)
   /*NL*///if (screen) fprintf(screen,"Sn %f, St%f\n",Sn_one,St_one);
 
 #ifdef FLEXIBLE_BONDS
-  int iarg = 8;
+  int iarg = 9;
 #else
   int iarg = 4;
 #endif
@@ -743,6 +746,7 @@ void BondGran::coeff(int narg, char **arg)
     lb[i] = lb_one;
     damp[i] = damp_one;
     bnl[i] = bnl_one;
+    b_density[i] = bdensity_one;
 #else
     rb[i] = rb_one;
 #endif
@@ -786,6 +790,7 @@ void BondGran::write_restart(FILE *fp)
   fwrite(&ri[1],sizeof(double),atom->nbondtypes,fp);
   fwrite(&lb[1],sizeof(double),atom->nbondtypes,fp);
   fwrite(&bnl[1],sizeof(double),atom->nbondtypes,fp);
+  fwrite(&b_density[1],sizeof(double),atom->nbondtypes,fp);
 #else
   fwrite(&rb[1],sizeof(double),atom->nbondtypes,fp);
 #endif
@@ -810,6 +815,7 @@ void BondGran::read_restart(FILE *fp)
     fread(&ri[1],sizeof(double),atom->nbondtypes,fp);
     fread(&lb[1],sizeof(double),atom->nbondtypes,fp);
     fread(&bnl[1],sizeof(double),atom->nbondtypes,fp);
+    fread(&b_density[1],sizeof(double),atom->nbondtypes,fp);
 #else
     fread(&rb[1],sizeof(double),atom->nbondtypes,fp);
 #endif
@@ -824,6 +830,7 @@ void BondGran::read_restart(FILE *fp)
   MPI_Bcast(&ri[1],atom->nbondtypes,MPI_DOUBLE,0,world);
   MPI_Bcast(&lb[1],atom->nbondtypes,MPI_DOUBLE,0,world);
   MPI_Bcast(&bnl[1],atom->nbondtypes,MPI_DOUBLE,0,world);
+  MPI_Bcast(&b_density[1],atom->nbondtypes,MPI_DOUBLE,0,world);
 #else
   MPI_Bcast(&rb[1],atom->nbondtypes,MPI_DOUBLE,0,world);
 #endif
