@@ -102,7 +102,8 @@ void PairGranProxy::read_restart_settings(FILE * fp)
     // read model hashcode, but reset file pointer afterwards.
     // this way read_restart_settings can still read the hashcode (sanity check)
     fread(&selected, sizeof(int64_t), 1, fp);
-    fseek(fp, -sizeof(int64_t), SEEK_CUR);
+    long offset = sizeof(int64_t);
+    fseek(fp, -offset, SEEK_CUR);
   }
   MPI_Bcast(&selected,8,MPI_CHAR,0,world);
 

@@ -38,7 +38,7 @@
 
 #define PHI_INV 0.61803398874989479 //: = 1/phi = 2.0/(1.0+sqrt(5.0))
 
-Superquadric::Superquadric(double *center_, double *quat_, double *shape_, double *blockiness_)
+Superquadric::Superquadric(const double *center_, const double *quat_, double *shape_, double *blockiness_)
 {
   set(center_, quat_, shape_, blockiness_);
 }
@@ -71,7 +71,7 @@ void Superquadric::global2local(const double *input_coord, double *result)
    rotate_global2local(x_temp, result); //rotate x_temp from global to local
  }
 
-void Superquadric::set(double *center_, double *quat_, double *shape_, double *blockiness_)
+void Superquadric::set(const double *center_, const double *quat_, double *shape_, double *blockiness_)
 {
   center = center_;
   quat = quat_;
