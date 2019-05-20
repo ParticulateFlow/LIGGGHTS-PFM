@@ -44,6 +44,8 @@ class Group : protected Pointers {
   double charge(int,int);
   void bounds(int, double *);              // bounds of atoms in group
   void bounds(int, double *, int);
+  void idbounds(int, int *);               // id bounds of atoms in group
+  void idbounds(int, int *, int);
   void xcm(int, double, double *);         // center-of-mass coords of group
   void xcm(int, double, double *, int);
   void vcm(int, double, double *);         // center-of-mass velocity of group

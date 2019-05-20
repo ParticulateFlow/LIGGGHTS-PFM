@@ -49,12 +49,12 @@ style = {delete} or {index} or {loop} or {world} or {universe} or {uloop} or {st
                      ramp(x,y), stagger(x,y), logfreq(x,y,z), stride(x,y,z), vdisplace(x,y), swiggle(x,y,z), cwiggle(x,y,z)
     group functions = count(group), mass(group), charge(group),
 		      xcm(group,dim), vcm(group,dim), fcm(group,dim),
-		      bound(group,xmin), gyration(group), ke(group),
+		      bound(group,xmin), idbound(group,xmin), gyration(group), ke(group),
 		      angmom(group,dim), torque(group,dim),
                       inertia(group,dimdim), omega(group,dim)
     region functions = count(group,region), mass(group,region), charge(group,region),
 		      xcm(group,dim,region), vcm(group,dim,region), fcm(group,dim,region),
-		      bound(group,xmin,region), gyration(group,region), ke(group,reigon),
+		      bound(group,xmin,region), idbound(group,xmin,region), gyration(group,region), ke(group,reigon),
 		      angmom(group,dim,region), torque(group,dim,region), 
 		      inertia(group,dimdim,region), omega(group,dim,region)
     special functions = sum(x), min(x), max(x), ave(x), trap(x), gmask(x), rmask(x), grmask(x,y), next(x)
@@ -75,6 +75,7 @@ variable b1 equal "x\[234\] + 0.5*vol"
 variable b equal xcm(mol1,x)/2.0
 variable b equal c_myTemp
 variable b atom x*y/vol
+variable maxID equal idbound(all,idmax)
 variable foo string myfile
 variable f file values.txt
 variable temp world 300.0 310.0 320.0 $\{Tfinal\}
@@ -347,12 +348,12 @@ Math functions: sqrt(x), exp(x), ln(x), log(x), abs(x), \
      stagger(x,y), logfreq(x,y,z), stride(x,y,z), vdisplace(x,y), \
      swiggle(x,y,z), cwiggle(x,y,z)
 Group functions: count(ID), mass(ID), charge(ID), xcm(ID,dim), \
-     vcm(ID,dim), fcm(ID,dim), bound(ID,dir), \
+     vcm(ID,dim), fcm(ID,dim), bound(ID,dir), idbound(ID,dir),\
      gyration(ID), ke(ID), angmom(ID,dim), torque(ID,dim), \
      inertia(ID,dimdim), omega(ID,dim)
 Region functions: count(ID,IDR), mass(ID,IDR), charge(ID,IDR), \
      xcm(ID,dim,IDR), vcm(ID,dim,IDR), fcm(ID,dim,IDR), \
-     bound(ID,dir,IDR), gyration(ID,IDR), ke(ID,IDR), \
+     bound(ID,dir,IDR), idbound(ID,dir,IDR), gyration(ID,IDR), ke(ID,IDR), \
      angmom(ID,dim,IDR), torque(ID,dim,IDR), \
      inertia(ID,dimdim,IDR), omega(ID,dim,IDR)
 Special functions: sum(x), min(x), max(x), ave(x), trap(x), gmask(x), rmask(x), \
@@ -574,7 +575,8 @@ group functions mass() and charge() are the total mass and charge of
 the group.  Xcm() and vcm() return components of the position and
 velocity of the center of mass of the group.  Fcm() returns a
 component of the total force on the group of atoms.  Bound() returns
-the min/max of a particular coordinate for all atoms in the group.
+the min/max of a particular coordinate for all atoms in the group. Similarly,
+IDbound() returns the min/max atom ID in the group.
 Gyration() computes the radius-of-gyration of the group of atoms.  See
 the "compute gyration"_compute_gyration.html command for a definition
 of the formula.  Angmom() returns components of the angular momentum
