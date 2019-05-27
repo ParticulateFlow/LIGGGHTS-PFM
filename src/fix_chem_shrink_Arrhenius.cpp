@@ -23,32 +23,11 @@
    M.Efe Kinaci (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "stdlib.h"
-#include "atom.h"
-#include "update.h"
-#include "respa.h"
-#include "region.h"
-#include "domain.h"
 #include "error.h"
-#include "memory.h"
-#include "modify.h"
-#include "comm.h"
-#include "math.h"
-#include "atom_vec.h"
-#include "vector_liggghts.h"
-#include "mpi_liggghts.h"
 #include "fix_chem_shrink_Arrhenius.h"
-#include "fix_cfd_coupling_chemistry.h"
-#include "pair_gran.h"
 #include "fix_property_atom.h"
-#include "fix_property_global.h"
-#include "properties.h"
-#include "property_registry.h"
-#include "global_properties.h"
-#include "force.h"
 
 
 using namespace LAMMPS_NS;
@@ -68,12 +47,14 @@ FixChemShrinkArrhenius::FixChemShrinkArrhenius(LAMMPS *lmp, int narg, char **arg
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             T0 = atof(arg[iarg_+1]);
-            if (T0 <= 0)
+            if (T0 <= 0.)
                 error -> fix_error(FLERR, this, "T is not (well-)defined");
             iarg_ +=2;
-        }else{
-	    iarg_++;
-	}
+        }
+        else
+        {
+            iarg_++;
+        }
     }
 }
 
@@ -89,8 +70,8 @@ FixChemShrinkArrhenius::~FixChemShrinkArrhenius()
 
 void FixChemShrinkArrhenius::updatePtrs()
 {
-    FixChemShrink::updatePtrs();    
-    tgas_       =   fix_tgas        ->  vector_atom;
+    FixChemShrink::updatePtrs();
+    tgas_ = fix_tgas->vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -99,7 +80,8 @@ void FixChemShrinkArrhenius::updatePtrs()
 
 double FixChemShrinkArrhenius::reactionRatConst(int i)
 {
-    double t = tgas_[i];
+    const double t = tgas_[i];
+
     if(t < 100.0)
     {
         return 0.0;

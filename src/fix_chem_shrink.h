@@ -53,16 +53,15 @@ public:
 
  protected:
   int screenflag_;
-   
+
   char* speciesA, *speciesC;
   char* massA, *massC;
   char* moleFracA, *moleFracC;
 
-  // class FixPropertyAtom *fix_concA_, *fix_concC_;               //  concentration of species A and C
-  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;       //  change of concentration of species A and C
-  class FixPropertyAtom *fix_rhogas;                           //  density of gas
-  class FixPropertyAtom *fix_tgas;                             //  temperature of gas
-  class FixPropertyAtom *fix_reactionheat_;                     //  DeltaQ
+  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_; //  change of concentration of species A and C
+  class FixPropertyAtom *fix_rhogas;                      //  density of gas
+  class FixPropertyAtom *fix_tgas;                        //  temperature of gas
+  class FixPropertyAtom *fix_reactionheat_;               //  DeltaQ
   class FixPropertyAtom *fix_totalMole_;
   // checking communication for nuField and Rep
   class FixPropertyAtom *fix_nuField_;
@@ -77,15 +76,15 @@ public:
   int iarg_;
 
   // values from user
-  double k0;                                         // reaction rate coefficient
-  double molMass_A_, molMass_B_, molMass_C_;        // Molecular mass of species A, B and C
+  double k0;                                 // reaction rate coefficient
+  double molMass_A_, molMass_B_, molMass_C_; // Molecular mass of species A, B and C
   double relaxFac_;
-  int nu_A_, nu_B_, nu_C_;                          // stoichiometric coefficients
+  int nu_A_, nu_B_, nu_C_;                   // stoichiometric coefficients
 
   // particle properties
-  double *radius_;                                  // radius of particle
-  double *pmass_;                                   // particle mass
-  double *pdensity_;
+  double *radius_;                           // radius of particle
+  double *pmass_;                            // particle mass
+  double *pdensity_;                         // particle density
 
   // minimum radius value -rmin input from user
   double rmin;
@@ -106,10 +105,10 @@ public:
 
   // TimeStep
   double TimeStep;
-  int current_timestep;
+  bigint current_timestep;
 
   bool use_reactant_;
- 
+
   virtual double reactionRatConst(int);
 };
 
