@@ -695,15 +695,6 @@ void FixChemShrinkCore::post_force(int)
 
 int FixChemShrinkCore::active_layers(int i)
 {
-    /*for(int j  = layers_; j > 0; j--)
-    {
-        if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
-        {
-            --layers_;
-            calcMassLayer(i);
-        }
-    }*/
-
     for (int j = 1; j <= nmaxlayers_; j++) {
         if (relRadii_[i][j] <= rrmin_) {
             --layers_;
