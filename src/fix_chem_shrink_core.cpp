@@ -48,14 +48,15 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
-    rrmin_(1e-6)       //  [m]
+    rrmin_(1e-3)       //  [m]
 {
-    if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
+    if (narg < 15) error -> all (FLERR, "Illegal fix chem/shrink/core command, not enough arguments");
+
+    if (((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
 
-//if (narg < 15) error -> all (FLERR, "Illegal fix chem/shrink/core command, not enough arguments");
-//    if (((!atom->radius_flag) || (!atom->rmass_flag)))
-    
+    /*if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
+        error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");*/    
 
     // set defaults
     init_defaults();
@@ -463,15 +464,15 @@ void FixChemShrinkCore::updatePtrs()
     xC_             =   fix_moleFractionC_  ->  vector_atom;
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
+    layerDensities_ =	fix_layerDens_      ->  array_atom;
 
     k0_             =   fix_k0_             ->  array_atom;
     Ea_             =   fix_Ea_             ->  array_atom;
     porosity_       =   fix_porosity_       ->  array_atom;
     rhoeff_         =   fix_rhoeff_         ->  array_atom;
-    //
     tortuosity_     =   fix_tortuosity_     ->  compute_scalar();
     pore_diameter_  =   fix_pore_diameter_  ->  compute_scalar();
-    //
+
     fracRed_        =   fix_fracRed         ->  array_atom;
     Aterm           =   fix_Aterm           ->  array_atom;
     Bterm           =   fix_Bterm           ->  array_atom;
@@ -549,7 +550,6 @@ void FixChemShrinkCore::init()
     fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname, "property/atom", "vector", 0, 0, style));
     delete []fixname;
 
-
     fixname = new char[strlen("Bterm_")+strlen(id)+1];
     strcpy (fixname,"Bterm_");
     strcat(fixname,id);
@@ -593,7 +593,16 @@ void FixChemShrinkCore::init()
     delete []fixname;
 
     updatePtrs();
-    // get initial values for rhoeff, and use them to calculate mass of layers
+    // check active layers  
+    for (int i=0; i<atom->nlocal; ++i) {
+        for (int j=0; j <=layers_; ++j) {
+            if (relRadii_[i][j] <= rrmin_) {
+                --layers;
+            }
+        }
+    }
+
+/* //get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
     {
         rhoeff_[i][layers_] = pdensity_[i];
@@ -602,7 +611,7 @@ void FixChemShrinkCore::init()
             rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
         }
         calcMassLayer(i);
-    }
+    } */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -686,18 +695,18 @@ void FixChemShrinkCore::post_force(int)
 
 int FixChemShrinkCore::active_layers(int i)
 {
-    for(int j  = layers_; j > 0; j--)
+    /*for(int j  = layers_; j > 0; j--)
     {
         if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
         {
             --layers_;
             calcMassLayer(i);
         }
-    }
+    }*/
 
     for (int j = 1; j <= nmaxlayers_; j++) {
         if (relRadii_[i][j] <= rrmin_) {
-            layers_ -= 1;
+            --layers_;
             calcMassLayer(i);
         }
     }
