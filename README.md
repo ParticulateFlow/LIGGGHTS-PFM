@@ -42,7 +42,7 @@ cd LIGGGHTS
 mkdir -p build
 cd src
 make fedora
-cp lmp_fedora ../build
+cp lmp_fedora ../build/liggghts
 ```
 
 ### Add an alias
@@ -51,7 +51,7 @@ You may want to create a permanent alias for the executable.
 
 ```bash
 gedit ~/.bashrc &
-alias liggghts='~/LIGGGHTS/build/lmp_fedora'
+alias liggghts='~/LIGGGHTS/build/liggghts'
 source ~/.bashrc
 ```
 

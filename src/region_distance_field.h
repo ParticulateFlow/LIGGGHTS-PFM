@@ -2,7 +2,7 @@
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
 
-   Copyright 2014-     JKU Linz
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -49,6 +49,8 @@ namespace LIGGGHTS {
     int index3ToIndex1(int const ix, int const iy, int const iz);
     int posToIndex(const double *x);
     void indexToPos(int index, double *x);
+    void index3ToPos(int ix, int iy, int iz, double *x);
+    void dump();
 
     std::vector<PointStatus> data;
     LAMMPS_NS::BoundingBox bbox;

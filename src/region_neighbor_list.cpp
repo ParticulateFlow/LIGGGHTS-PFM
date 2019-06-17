@@ -28,6 +28,7 @@
 #include "neighbor.h"
 #include "region_neighbor_list.h"
 #include <limits>
+#include <algorithm>
 #include <assert.h>
 
 static const double SMALL = 1.0e-6;
