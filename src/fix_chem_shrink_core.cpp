@@ -643,6 +643,9 @@ void FixChemShrinkCore::post_force(int)
     double v_prod_[nmaxlayers_] = {0.};
     double layerMolMasses_[] = {0.055845, 0.071844, 0.231532, 0.1596882};
 
+    if (layers_ == 0)
+        return;
+
     for (i = 0; i < nlocal; i++)
     {
         if (mask[i] & groupbit)
