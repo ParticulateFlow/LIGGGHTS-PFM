@@ -1116,6 +1116,8 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double 
 
     if (screen)
         fprintf(screen, "pdensity after mass reduction = %f \n", pdensity_[i]);
+
+    if (screen) fprintf(screen, "rhoeff_[0][3] = % f \n rhoeff_[0][2] = %f \n rhoeff_[0][1] = %f \n rhoeff_[0][0] = %f \n",rhoeff_[i][3], rhoeff_[i][2], rhoeff_[i][1], rhoeff_[i][0]);
 }
 
 /* ---------------------------------------------------------------------- */
