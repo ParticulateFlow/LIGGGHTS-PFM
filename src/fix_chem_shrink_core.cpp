@@ -601,7 +601,6 @@ void FixChemShrinkCore::init()
                 --layers_;
             }
         }
-
         if (screen) fprintf(screen,"LAYERS = %i \n",layers_);
     }
 
@@ -624,7 +623,7 @@ void FixChemShrinkCore::init()
         {
             rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
         } */
-        calcMassLayer(i);
+        // calcMassLayer(i);
     }
 
 }
@@ -716,8 +715,8 @@ int FixChemShrinkCore::active_layers(int i)
     for (int j = layers_; j > 0; j--) {
         if (relRadii_[i][j] <= rrmin_) {
             --layers_;
-            calcMassLayer(i);
         }
+        calcMassLayer(i);
     }
 
     if (screenflag_ && screen)
