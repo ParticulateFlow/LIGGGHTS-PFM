@@ -648,7 +648,7 @@ void FixChemShrinkCore::post_force(int)
                 }
                 else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
                 {
-                    FR_low(i, layerMolMasses_);
+                   /* FR_low(i, layerMolMasses_);
                     getXi_low(i,x0_eq_);
                     getA_low(i);
                     getB(i);
@@ -656,7 +656,7 @@ void FixChemShrinkCore::post_force(int)
                     reaction_low(i, dmA_, x0_eq_);
                     update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                     update_gas_properties(i, dmA_);
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);*/
                 }
                 else // T_[i] > 843.15
                 {
@@ -685,7 +685,7 @@ void FixChemShrinkCore::post_force(int)
                     // the changes in gas species
                     update_gas_properties(i, dmA_);
                     // calculate delta_h, and dot_delta_h for heat of reaction
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    //heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
                 }
             }
         }
@@ -696,12 +696,13 @@ void FixChemShrinkCore::post_force(int)
 
 int FixChemShrinkCore::active_layers(int i)
 {
-    for (int j = 1; j <= nmaxlayers_; j++) {
+    for (int j = layers_; j > 0; j--) {
         if (relRadii_[i][j] <= rrmin_) {
             --layers_;
             calcMassLayer(i);
         }
     }
+
     if (screenflag_ && screen)
         fprintf(screen, "active layers: %i \n", layers_);
     return layers_;
