@@ -1067,8 +1067,8 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double 
     for (int j = 0; j <= layers_; j++)
     {
         massLayer_[i][j] -= dmL_[j]*scale_reduction_rate;
-        // Limit minimum mass layer to 1e-20
-        massLayer_[i][j] = std::max(massLayer_[i][j], 1e-20);
+        // Limit minimum mass layer to 1e-20 -- obsolete since rrmin is already defined
+        // massLayer_[i][j] = std::max(massLayer_[i][j], 1e-20);
 
         // calculate total mass of particle
         sum_mass_p_new    +=  massLayer_[i][j];
