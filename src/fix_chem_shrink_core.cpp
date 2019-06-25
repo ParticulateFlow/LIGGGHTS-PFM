@@ -1118,6 +1118,31 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double 
         fprintf(screen, "pdensity after mass reduction = %f \n", pdensity_[i]);
 
     if (screen) fprintf(screen, "rhoeff_[0][3] = % f \n rhoeff_[0][2] = %f \n rhoeff_[0][1] = %f \n rhoeff_[0][0] = %f \n",rhoeff_[i][3], rhoeff_[i][2], rhoeff_[i][1], rhoeff_[i][0]);
+
+    for (int j = layers_; j >= 0; j--)
+        porosity_[i][j] = 1.0 - (rhoeff_[i][j]/layerDensities_[i][j]);
+
+    for (int j = 0; j <= layers_ ; j++)
+        porosity_[i][j] = std::min(0.68, porosity_[i][j]);
+
+    if (screen)  fprintf(screen, "porosity_[0] = %f \n porosity[1] = %f \n porosity[2] = %f \n porosity[3] = %f \n", porosity_[i][0], porosity_[i][1], porosity_[i][2], porosity_[i][3]);
+
+    /*std::vector<double> q_{0.699426, 0.9110, 0.966603};
+    porosity_[i][layers_] = 1.0 - pdensity_[i]/layerDensities_[i][layers_];
+    rhoeff_[i][layers_] = pdensity_[i];
+
+    for (int j = layers_-1; j >= 0; j--)
+        rhoeff_[i][j] = rhoeff_[i][j+1]*q_[j];
+
+    if (screen) fprintf(screen, "rhoeff_[0][2] = %f \n rhoeff_[0][1] = %f \n rhoeff_[0][0] = %f \n",rhoeff_[i][2], rhoeff_[i][1], rhoeff_[i][0]); */
+
+    /*for (int j = layers_-1; j >= 0; j--)
+        porosity_[i][j] = 1.0 - (rhoeff_[i][j]/layerDensities_[i][j]);
+
+    for (int j = 0; j <= layers_ ; j++)
+        std::min(0.68, porosity_[i][j]);
+
+    if (screen)  fprintf(screen, "porosity_[0] = %f \n porosity[1] = %f \n porosity[2] = %f \n porosity[3] = %f \n", porosity_[i][0], porosity_[i][1], porosity_[i][2], porosity_[i][3]);*/
 }
 
 /* ---------------------------------------------------------------------- */
