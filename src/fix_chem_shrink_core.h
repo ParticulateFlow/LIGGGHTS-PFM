@@ -49,7 +49,6 @@ public:
  protected:
 
   // functions declared in this class
-  void calcMassLayerPure(int);
   int active_layers(int);   // calculate number of active layers per-particle
   void calcMassLayer(int);  // calculate mass of layers per-particle  
   void FractionalReduction(int, double *); // calculate fractional reduction per-layer depending on layer radius
@@ -110,6 +109,9 @@ public:
 
   // coarse_graining factor
   double cg_;
+
+  // bool flags for reduction steps
+  bool dY_previous3, dY_previous2;
 
   class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;
   class FixPropertyAtom *fix_tgas_;
