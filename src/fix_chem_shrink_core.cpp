@@ -787,6 +787,7 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 // 0 = wüstite interface, 1 = magnetite interface, 2 = hematite interface
 void FixChemShrinkCore::getA(int i)
 {
+    for (int j = 0; j < layers_ ; j++)
     {
             Aterm[i][j] = (k0_[i][j] * exp(-Ea_[i][j] / (Runiv*T_[i])))
                         * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
