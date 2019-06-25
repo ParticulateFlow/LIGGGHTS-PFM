@@ -1101,11 +1101,18 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double 
     relRadii_[i][2] = std::min(0.9998, relRadii_[i][2]);
     relRadii_[i][3] = std::min(0.9997, relRadii_[i][3]);
 
-    // Total mass of particle with coarse-graining
-    pmass_[i]   =   sum_mass_p_new*cg_*cg_*cg_;
-
     // total particle effective density
     pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+    pdensity_[i]    =   std::max(2400., pdensity_[i]);
+
+    rhoeff_[i][layers_] = pdensity_[i];
+
+    std::vector<double> q_{0.699426, 0.9110, 0.966603};
+    for (int j = layers_-1; j >= 0; j--)
+        rhoeff_[i][j] = rhoeff_[i][j+1]*q_[j];
+
+    for (int j = 0; j <= layers_; j++)
+        rhoeff_[i][j] = std::max(2400.,rhoeff_[i][j]);
 
     if (screen)
         fprintf(screen, "pdensity after mass reduction = %f \n", pdensity_[i]);
