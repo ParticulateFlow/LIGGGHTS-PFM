@@ -605,16 +605,28 @@ void FixChemShrinkCore::init()
         if (screen) fprintf(screen,"LAYERS = %i \n",layers_);
     }
 
-    /* //get initial values for rhoeff, and use them to calculate mass of layers
+    std::vector<double> q_{0.699426, 0.9110, 0.966603};
+    //get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
     {
         rhoeff_[i][layers_] = pdensity_[i];
-        for (int layer=0; layer < layers_; layer++)
+        porosity_[i][layers_] = 1.0 - rhoeff_[i][layers_]/layerDensities_[i][layers_];
+
+        for (int j = layers_-1; j >= 0; j--)
+            rhoeff_[i][j] = rhoeff_[i][j+1]*q_[j];
+
+        for (int j = layers_-1; j >= 0; j--)
+            porosity_[i][j] = 1.0 - (rhoeff_[i][j]/layerDensities_[i][j]);
+
+        if (screen)  fprintf(screen, "porosity_[0] = %f \n porosity[1] = %f \n porosity[2] = %f \n porosity[3] = %f \n", porosity_[i][0], porosity_[i][1], porosity_[i][2], porosity_[i][3]);
+
+        /* for (int layer=0; layer < layers_; layer++)
         {
-            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
-        }
+            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
+        } */
         calcMassLayer(i);
-    } */
+    }
+
 }
 
 /* ---------------------------------------------------------------------- */
