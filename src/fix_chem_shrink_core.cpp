@@ -596,11 +596,13 @@ void FixChemShrinkCore::init()
 
     // check active layers  
     for (int i=0; i<atom->nlocal; ++i) {
-        for (int j=0; j <=layers_; ++j) {
-            if (relRadii_[i][j] <= rrmin_) {
-                --layers;
+        for (int j=layers_; j > 0; j--) {
+            if (relRadii_[i][j] < rrmin_) {
+                --layers_;
             }
         }
+
+        if (screen) fprintf(screen,"LAYERS = %i \n",layers_);
     }
 
     /* //get initial values for rhoeff, and use them to calculate mass of layers
