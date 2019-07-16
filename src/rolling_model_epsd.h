@@ -267,17 +267,21 @@ namespace ContactModels
         r_torque[2] *= factor;
 
         // save rolling torque due to spring
-        c_history[0] = r_torque[0];
-        c_history[1] = r_torque[1];
-        c_history[2] = r_torque[2];
+        if (cdata.shearupdate && cdata.computeflag) {
+          c_history[0] = r_torque[0];
+          c_history[1] = r_torque[1];
+          c_history[2] = r_torque[2];
+        }
 
         // no damping / no dashpot in case of full mobilisation rolling angle
 
       } else {
         // save rolling torque due to spring before adding damping torque
-        c_history[0] = r_torque[0];
-        c_history[1] = r_torque[1];
-        c_history[2] = r_torque[2];
+        if (cdata.shearupdate && cdata.computeflag) {
+          c_history[0] = r_torque[0];
+          c_history[1] = r_torque[1];
+          c_history[2] = r_torque[2];
+        }
 
         // dashpot
         /*NL*/ //if (screen) fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);

@@ -177,9 +177,11 @@ namespace ContactModels
       }
 
       // save rolling torque due to spring
-      c_history[0] = r_torque[0];
-      c_history[1] = r_torque[1];
-      c_history[2] = r_torque[2];
+      if (cdata.shearupdate && cdata.computeflag) {
+        c_history[0] = r_torque[0];
+        c_history[1] = r_torque[1];
+        c_history[2] = r_torque[2];
+      }
 
       // dashpot only for the original epsd model
 
