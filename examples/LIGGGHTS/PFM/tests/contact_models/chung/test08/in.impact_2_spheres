@@ -145,7 +145,7 @@ thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic no
 
 # run 2500 time steps
-run     2500
+run     5500
 
 # beta sliding limit + 1
 variable betasl1 equal -(3.5*${coeffFric}*(1+${coeffRes})*${velz})/(${rad}*${omegaxvar})
