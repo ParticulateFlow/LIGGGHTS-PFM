@@ -143,7 +143,7 @@ compute rke all erotate/sphere
 thermo_style    custom step atoms ke c_rke
 
 # set frequency of output
-thermo          200
+thermo          100
 
 # ignore particles leaving the simulation domain,
 # do not normalize thermodynamic output values by the number of atoms
@@ -156,8 +156,8 @@ compute_modify  thermo_temp dynamic no extra 0
 run     1
 unfix   ts_check
 
-# run 1000 time steps
-run     1000
+# run 2000 time steps
+run     2000
 
 # normalized incident angle
 variable nia equal -${vely}/(${coeffFric}*${velz})

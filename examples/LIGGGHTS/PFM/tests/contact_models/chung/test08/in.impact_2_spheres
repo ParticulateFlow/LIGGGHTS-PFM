@@ -144,7 +144,7 @@ thermo_modify   lost ignore norm no
 # set dynamic 'to' no as number of particles does not change
 compute_modify  thermo_temp dynamic no
 
-# run 2500 time steps
+# run 5500 time steps
 run     5500
 
 # beta sliding limit + 1
