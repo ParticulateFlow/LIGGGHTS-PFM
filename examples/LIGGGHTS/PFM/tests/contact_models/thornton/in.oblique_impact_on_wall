@@ -146,14 +146,14 @@ compute_modify  thermo_temp dynamic no extra 0
 
 # compute tangential force and overlap (history) for impact angle of 5°
 if "${Theta} == 5 && ${coeffRes} == 1" then &
-  "compute wgl all wall/gran/local force_tangential history"
+  "compute wgl all wall/gran/local force_normal force_tangential history"
 
 run     1
 unfix   ts_check
 
 # output tangential force and overlap (history) for impact angle of 5°
 if "${Theta} == 5 && ${coeffRes} == 1" then &
-  "dump dmpdisp all local 100 post/displacement*.txt c_wgl[1] c_wgl[2] c_wgl[3] c_wgl[4] c_wgl[5] c_wgl[6]" &
+  "dump dmpdisp all local 100 post/displacement*.txt c_wgl[1] c_wgl[2] c_wgl[3] c_wgl[4] c_wgl[5] c_wgl[6] c_wgl[7] c_wgl[8] c_wgl[9]" &
   "dump_modify dmpdisp pad 5"
 
 # dump particle data every 200 time steps
