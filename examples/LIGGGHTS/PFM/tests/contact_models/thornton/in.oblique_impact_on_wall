@@ -23,6 +23,11 @@
 # date: May 2018                                                               #
 # copyright: 2018- JKU Linz                                                    #
 ################################################################################
+variable NORMALMODEL        index hertz
+variable TANGENTIALMODEL    index incremental_history
+variable MODELOPTION        index limitForce
+variable MODELOPTIONSETTING index off
+variable RESTITUTION        index 1.0
 
 # remove old output file
 shell rm -f post/${NORMALMODEL}_rebound_properties.txt
