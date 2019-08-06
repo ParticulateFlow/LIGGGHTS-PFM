@@ -53,7 +53,8 @@ fix		integr all nve/sphere
 
 #screen output
 compute		rke all erotate/sphere
-thermo_style	custom step atoms ke c_rke cpu vol
+variable		all_mass equal mass(all)
+thermo_style	custom step atoms ke c_rke v_all_mass cpu vol
 thermo		1000
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
