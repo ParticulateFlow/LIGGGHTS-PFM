@@ -12,7 +12,8 @@ filepattern = 'displacement*.txt';
 
 filelist = dir(fullfile(dirfile,filepattern));
 
-fout = fopen('./post/force_displacement.txt','w'); % open new data file
+fout1 = fopen('./post/force_displacement.txt','w'); % open new data file
+fout2 = fopen('./post/force_time.txt','w'); % open new data file
 
 nFiles = length(filelist);
 
@@ -33,12 +34,15 @@ for ii=1:nFiles
         line = fgetl(fin); line = fgetl(fin);
         line = fgetl(fin); line = fgetl(fin);
         line = fgetl(fin); line = fgetl(fin);
-        A = sscanf(line,'%f',[1 6]);
-        % write tangential overlap (micrometer) and Force (N) to the new file
-        fprintf(fout,'%f %f\n',A(5)*1000000,-A(2));
+        A = sscanf(line,'%f',[1 4]);
+        % write normal overlap (micrometer) and Force (N) to the new file
+        fprintf(fout1,'%f %f\n',A(4)*1000000,A(3)*0.001);
+        % write time (microseconds) and Force (N) to the new file
+        fprintf(fout2,'%f %f\n',(ii-1),A(3)*0.001);
     end
     fclose(fin);
 end
 
-fclose(fout);
+fclose(fout1);
+fclose(fout2);
 
