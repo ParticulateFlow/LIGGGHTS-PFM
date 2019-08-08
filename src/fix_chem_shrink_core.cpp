@@ -1141,11 +1141,11 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_re
         v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
     }
 
-    std::vector<double> HR(layers_+1,0.);
+    double HR[nmaxlayers_] = {0.};
     /* reaction enthalpy */
-    double delta_h[nmaxlayers_+1] = {0.};
+    double delta_h[nmaxlayers_] = {0.};
     /* conventional enhalpy */
-    std::vector<double> conv_h(layers_+3,0.);
+    double conv_h[6] = {0.};
     conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i)*layerMolMasses_[0];
     conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,  layerMolMasses_[1],i)*layerMolMasses_[1];
     conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i)*layerMolMasses_[2];
