@@ -70,6 +70,14 @@ public:
 
   // pre-defined variables for reduction process
   static int const nmaxlayers_ = 3;
+  static const double a_coeff_nasa_Fe2O3[];
+  static const double a_coeff_nasa_Fe3O4[];
+  static const double a_coeff_nasa_FeO[];
+  static const double a_coeff_nasa_Fe[];
+  static const double a_coeff_nasa_CO[];
+  static const double a_coeff_nasa_CO2[];
+  static const double a_coeff_nasa_H2[];
+  static const double a_coeff_nasa_H2O[];
 
   // variables
   bool screenflag_;
