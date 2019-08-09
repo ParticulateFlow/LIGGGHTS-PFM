@@ -70,6 +70,7 @@ public:
 
   // pre-defined variables for reduction process
   static int const nmaxlayers_ = 3;
+  static double const Runiv;
   static const double a_coeff_nasa_Fe2O3[];
   static const double a_coeff_nasa_Fe3O4[];
   static const double a_coeff_nasa_FeO[];

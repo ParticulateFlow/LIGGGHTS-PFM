@@ -38,7 +38,8 @@ using namespace FixConst;
 using namespace MathConst;
 
 #define SMALL   1e-10
-#define Runiv   8.3144
+
+const double FixChemShrinkCore::Runiv = 8.3144;
 
 const double FixChemShrinkCore::a_coeff_nasa_Fe2O3[] = { 298.15, 1700., 1000., -3.240851E+02,  1.152686E+00, -1.413588E-03,  7.496435E-07, -1.455880E-10, -2.647718E+04,
                                                          1.609668E+03,  1.066786E+01, -4.869774E-03,  5.056287E-05, -4.500105E-08,  7.709213E-12, -1.025006E+05, -5.068585E+01 };
