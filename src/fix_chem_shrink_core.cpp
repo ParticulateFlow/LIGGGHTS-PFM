@@ -1140,11 +1140,11 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_re
 {
     // stoichiometric coefficients of reactions
     if (T_[i] < 843.15) {
-        v_reac_[0] = 0.25; v_reac_[1] = 3.0; v_reac_[2] = 0.;
-        v_prod_[0] = 0.75; v_prod_[1] = 2.0; v_prod_[2] = 0.;
+        v_reac_[0] = 0.25; v_reac_[1] = 3.0; v_reac_[2] = 0.0;
+        v_prod_[0] = 0.75; v_prod_[1] = 2.0; v_prod_[2] = 0.0;
     } else {
-        v_reac_[0] = 1.0; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
-        v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
+        v_reac_[0] = 1.00; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
+        v_prod_[0] = 1.00; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
     }
 
     double HR[nmaxlayers_] = {0.};
