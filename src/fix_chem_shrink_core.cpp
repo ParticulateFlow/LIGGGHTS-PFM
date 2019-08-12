@@ -695,8 +695,6 @@ void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 // 0 = wüstite interface, 1 = magnetite interface, 2 = hematite interface
 void FixChemShrinkCore::getA(int i)
 {
-    updatePtrs();
-
     if (strcmp(speciesA, "CO") == 0)
     {
         for (int j = 0; j < layers_ ; j++)
@@ -727,7 +725,6 @@ void FixChemShrinkCore::getA(int i)
 // there is no diffusion through the hematite layer
 void FixChemShrinkCore::getB(int i)
 {
-    updatePtrs();
     double fracRedThird_[nmaxlayers_] = {0.};
     double diffEff_[nmaxlayers_] = {0.};
 
@@ -777,7 +774,6 @@ void FixChemShrinkCore::getB(int i)
 
 void FixChemShrinkCore::getMassT(int i)
 {
-    updatePtrs();
     // initialize sherwood & schmidt numbers for every particle
     double Sc_i = 0.;
     double Sh_i = 0.;
@@ -807,7 +803,6 @@ void FixChemShrinkCore::getMassT(int i)
 
 void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 {
-    updatePtrs();
     double p_eq_[nmaxlayers_] = {0.};
     double p_A = 0.;
 
@@ -951,7 +946,6 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 
 void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double *v_reac_,double* v_prod_, const double* layerMolMasses_)
 {
-    updatePtrs();
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
 
@@ -1068,7 +1062,6 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
     fracRed_[i][2] = f_HM; */
-    updatePtrs();
 
     const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
@@ -1232,7 +1225,6 @@ double FixChemShrinkCore::K_eq_low(int layer, int i)
 
 void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 {
-    updatePtrs();
     double p_eq_[nmaxlayers_] = {0.};
     for (int layer = 0; layer < layers_; layer++)
     {
@@ -1309,8 +1301,6 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 
 void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
 {
-    updatePtrs();
-
     const double f_MF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_HM = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
 
@@ -1341,8 +1331,6 @@ void FixChemShrinkCore::getXi_low(int i, double *x0_eq_)
 // 0 = magnetite interface, 1 = hematite interface
 void FixChemShrinkCore::getA_low(int i)
 {
-    updatePtrs();
-
     if (strcmp(speciesA, "CO") == 0)
     {
         for (int j = 0; j < layers_ ; j++)
