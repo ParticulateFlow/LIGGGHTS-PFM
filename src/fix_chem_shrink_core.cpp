@@ -350,23 +350,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 
     if (unfixflag)
     {
-        if (fix_changeOfA_)     { modify  ->  delete_fix(massA); changeOfA_ = NULL; }
-        if (fix_changeOfC_)     { modify  ->  delete_fix(massC); changeOfC_ = NULL; }
-        if (fix_tgas_)          { modify  ->  delete_fix("partTemp"); T_ = NULL; }
-        if (fix_reactionHeat_)  { modify  ->  delete_fix("reactionHeat"); reactionHeat_ = NULL; }
-        if (fix_diffcoeff_)     { modify  ->  delete_fix(diffA); molecularDiffusion_ = NULL; }
-        if (fix_nuField_)       { modify  ->  delete_fix("partNu"); nuf_ = NULL; }
-        if (fix_partRe_)        { modify  ->  delete_fix("partRe"); Rep_ = NULL; }
-
-        if (fix_moleFractionA_) { modify  ->  delete_fix(moleFracA); xA_ = NULL; }
-        if (fix_moleFractionC_) { modify  ->  delete_fix(moleFracC); xC_ = NULL; }
-
-        fixname = new char [strlen("fracRed_")+strlen(group->names[igroup])+1];
-        strcpy(fixname,"fracRed_");
-        strcat(fixname,group->names[igroup]);
-        if (fix_fracRed)        { modify  ->  delete_fix(fixname); fracRed_ = NULL; }
-        delete [] fixname;
-
         fixname = new char[strlen("Aterm_")+strlen(id)+1];
         strcpy (fixname,"Aterm_");
         strcat(fixname,id);
@@ -396,14 +379,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         strcat(fixname,id);
         if (fix_effDiffKnud)    { modify  ->  delete_fix(fixname); effDiffKnud = NULL; }
         delete [] fixname;
-
-        if (fix_partPressure_)  { modify  ->  delete_fix("partP"); partP_ = NULL; }
-        if (fix_layerRelRad_)   { modify  ->  delete_fix("relRadii"); relRadii_ = NULL; }
-        if (fix_layerMass_)     { modify  ->  delete_fix("massLayer"); massLayer_ = NULL; }
-        if (fix_porosity_)      { modify  ->  delete_fix("porosity_"); porosity_ = NULL; }
-        if (fix_rhoeff_)        { modify  ->  delete_fix("rhoeff"); rhoeff_ = NULL; }
-
-        if(fix_totalMole_)      { modify  ->  delete_fix("partMolarConc"); molarConc_ = NULL; }
 
         fixname = new char[strlen("dY_")+strlen(id)+1];
         strcpy (fixname,"dY_");
