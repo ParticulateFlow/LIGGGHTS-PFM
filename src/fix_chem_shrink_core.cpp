@@ -346,51 +346,15 @@ void FixChemShrinkCore::post_create()
 
 void FixChemShrinkCore::pre_delete(bool unfixflag)
 {
-    char *fixname;
-
     if (unfixflag)
     {
-        fixname = new char[strlen("Aterm_")+strlen(id)+1];
-        strcpy (fixname,"Aterm_");
-        strcat(fixname,id);
-        if (fix_Aterm)          { modify  ->  delete_fix(fixname); Aterm = NULL; }
-        delete []fixname;
-
-        fixname = new char[strlen("Bterm_")+strlen(id)+1];
-        strcpy (fixname,"Bterm_");
-        strcat(fixname,id);
-        if (fix_Bterm)          { modify  ->  delete_fix(fixname); Bterm = NULL; }
-        delete []fixname;
-
-        fixname = new char[strlen("Massterm_")+strlen(id)+1];
-        strcpy (fixname,"Massterm_");
-        strcat(fixname,id);
-        if (fix_Massterm)       { modify  ->  delete_fix(fixname); Massterm = NULL; }
-        delete []fixname;
-
-        fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
-        strcpy (fixname,"effDiffBinary_");
-        strcat(fixname,id);
-        if (fix_effDiffBinary)  { modify  ->  delete_fix(fixname); effDiffBinary = NULL; }
-        delete []fixname;
-
-        fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
-        strcpy (fixname,"effDiffKnud_");
-        strcat(fixname,id);
-        if (fix_effDiffKnud)    { modify  ->  delete_fix(fixname); effDiffKnud = NULL; }
-        delete [] fixname;
-
-        fixname = new char[strlen("dY_")+strlen(id)+1];
-        strcpy (fixname,"dY_");
-        strcat(fixname,id);
-        if(fix_dY_)      { modify  ->  delete_fix(fixname); dY = NULL; }
-        delete []fixname;
-
-        fixname = new char[strlen("dmA_")+strlen(id)+1];
-        strcpy (fixname,"dmA_");
-        strcat(fixname,id);
-        if(fix_dmA_)      { modify  ->  delete_fix(fixname); dmA_f_ = NULL; }
-        delete []fixname;
+        if (fix_Aterm)          { modify->delete_fix(fix_Aterm->id); Aterm = NULL; }
+        if (fix_Bterm)          { modify->delete_fix(fix_Bterm->id); Bterm = NULL; }
+        if (fix_Massterm)       { modify->delete_fix(fix_Massterm->id); Massterm = NULL; }
+        if (fix_effDiffBinary)  { modify->delete_fix(fix_effDiffBinary->id); effDiffBinary = NULL; }
+        if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
+        if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
+        if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
     }
 }
 
