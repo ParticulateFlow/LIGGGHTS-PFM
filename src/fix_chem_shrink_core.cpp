@@ -676,8 +676,7 @@ double FixChemShrinkCore::K_eq(int layer, int i)
 
 void FixChemShrinkCore::getXi(int i, double *x0_eq_)
 {
-    double kch2_ = 0.0;
-    kch2_ = xA_[i] + xC_[i];
+    const double kch2_ = xA_[i] + xC_[i];
 
     for (int j = 0; j < layers_; j++)
     {
