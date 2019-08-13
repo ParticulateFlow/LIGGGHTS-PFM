@@ -64,7 +64,7 @@ public:
   double conv_enthalpy(const double *, double , int);
   double K_eq_low(int, int);
   void reaction_low(int, double *, const double *);
-  void FR_low(int, double *);
+  void FractionalReduction_low(int, double *);
   void getXi_low(int, double *);
   void getA_low(int);
 

@@ -553,7 +553,7 @@ void FixChemShrinkCore::post_force(int)
                 }
                 else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
                 {
-                    FR_low(i, layerMolMasses_);
+                    FractionalReduction_low(i, layerMolMasses_);
                     getXi_low(i,x0_eq_);
                     getA_low(i);
                     getB(i);
@@ -1299,7 +1299,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::FR_low(int i, double* layerMolMasses_)
+void FixChemShrinkCore::FractionalReduction_low(int i, double* layerMolMasses_)
 {
     const double f_MF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_HM = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
