@@ -1088,8 +1088,9 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_re
     double HR[nmaxlayers_] = {0.};
     /* reaction enthalpy */
     double delta_h[nmaxlayers_] = {0.};
-    /* conventional enhalpy */
+    /* conventional enthalpy */
     double conv_h[6] = {0.};
+
     conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i)*layerMolMasses_[0];
     conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,  layerMolMasses_[1],i)*layerMolMasses_[1];
     conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i)*layerMolMasses_[2];
@@ -1356,7 +1357,7 @@ void FixChemShrinkCore::getA_low(int i)
 
 void FixChemShrinkCore::init_defaults()
 {
-    molMass_A_  =   molMass_C_  =  0.0;
+    molMass_A_ = molMass_C_ = 0.0;
     rhoeff_ = NULL;
     porosity_ = NULL;
     pore_diameter_ = tortuosity_ = 0.0;
@@ -1367,14 +1368,14 @@ void FixChemShrinkCore::init_defaults()
     radius_ = pmass_ = pdensity_ = NULL;
 
     // initialise fix handles
-    changeOfA_ = changeOfC_ = T_ =  molecularDiffusion_ = nuf_ = Rep_ =  partP_ = Massterm = reactionHeat_ = NULL;
-    Aterm = Bterm = effDiffBinary = effDiffKnud = fracRed_ =   NULL;
+    changeOfA_ = changeOfC_ = T_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = reactionHeat_ = NULL;
+    Aterm = Bterm = effDiffBinary = effDiffKnud = fracRed_ = NULL;
 
     dY = dmA_f_ = NULL;
 
     TimeStep = 0.0;
 
-    fix_changeOfA_  = NULL;
+    fix_changeOfA_ = NULL;
     fix_changeOfC_ = NULL;
     fix_tgas_ = NULL;       // [K]
     fix_reactionHeat_= NULL;
@@ -1393,11 +1394,11 @@ void FixChemShrinkCore::init_defaults()
     fix_effDiffKnud = NULL;
     fix_partPressure_ = NULL;   // Pascal
     fix_layerRelRad_ = NULL;
-    fix_layerMass_ = NULL;      //  [kg]
-    fix_porosity_ = NULL;       //  [%]
+    fix_layerMass_ = NULL;      // [kg]
+    fix_porosity_ = NULL;       // [%]
     fix_rhoeff_ = NULL;
     fix_tortuosity_ = NULL;
-    fix_pore_diameter_ = NULL;   //  [m]
+    fix_pore_diameter_ = NULL;  // [m]
     fix_dY_ = NULL;
     fix_totalMole_ = NULL;
     fix_dmA_ = NULL;
