@@ -113,13 +113,13 @@ void CfdDatacoupling::grow_()
     nvalues_max_ +=10;
     memory->grow(pullnames_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:valnames");
     memory->grow(pulltypes_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:valtypes");
-    memory->grow(pushinvoked_,MAXLENGTH,"FixCfdCoupling:pushinvoked_");
-    memory->grow(latestpush_,MAXLENGTH,"FixCfdCoupling:latestpush_");
+    memory->grow(pushinvoked_,nvalues_max_,"FixCfdCoupling:pushinvoked_");
+    memory->grow(latestpush_,nvalues_max_,"FixCfdCoupling:latestpush_");
 
     memory->grow(pushnames_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:pushnames_");
     memory->grow(pushtypes_,nvalues_max_,MAXLENGTH,"FixCfdCoupling:pushtypes_");
-    memory->grow(pullinvoked_,MAXLENGTH,"FixCfdCoupling:pullinvoked_");
-    memory->grow(latestpull_,MAXLENGTH,"FixCfdCoupling:latestpull_");
+    memory->grow(pullinvoked_,nvalues_max_,"FixCfdCoupling:pullinvoked_");
+    memory->grow(latestpull_,nvalues_max_,"FixCfdCoupling:latestpull_");
 }
 
 /* ----------------------------------------------------------------------
@@ -257,6 +257,8 @@ void CfdDatacoupling::add_pull_property(const char *name, const char *type)
 
     strcpy(pullnames_[npull_],name);
     strcpy(pulltypes_[npull_],type);
+    pullinvoked_[npull_] = 0;
+    latestpull_[npull_] = -1;
     npull_++;
 }
 
@@ -292,6 +294,8 @@ void CfdDatacoupling::add_push_property(const char *name, const char *type)
 
     strcpy(pushnames_[npush_],name);
     strcpy(pushtypes_[npush_],type);
+    pushinvoked_[npush_] = 0;
+    latestpush_[npush_] = -1;
     npush_++;
 }
 
