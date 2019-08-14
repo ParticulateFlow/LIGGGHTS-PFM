@@ -587,9 +587,9 @@ void FixForceControlRegion::post_force(int vflag)
             if (vflag) {
                 const double delta = 2.0*actual_->cell_radius(*it_cell);
                 const double pre = 0.5*a;
-                vatom[i][0] -= pre*fabs(fx)*delta;
-                vatom[i][1] -= pre*fabs(fy)*delta;
-                vatom[i][2] -= pre*fabs(fz)*delta;
+                vatom[i][0] += pre*fabs(fx)*delta;
+                vatom[i][1] += pre*fabs(fy)*delta;
+                vatom[i][2] += pre*fabs(fz)*delta;
             }
           } else {
             f[i][0] += fadex_ * xvalue[*it_cell];
@@ -603,9 +603,9 @@ void FixForceControlRegion::post_force(int vflag)
             }
             if (vflag) {
                 const double delta = 2.0*actual_->cell_radius(*it_cell);
-                vatom[i][0] -= 0.5*fabs(fadex_ * xvalue[*it_cell])*delta;
-                vatom[i][1] -= 0.5*fabs(fadey_ * yvalue[*it_cell])*delta;
-                vatom[i][2] -= 0.5*fabs(fadez_ * zvalue[*it_cell])*delta;
+                vatom[i][0] += 0.5*fabs(fadex_ * xvalue[*it_cell])*delta;
+                vatom[i][1] += 0.5*fabs(fadey_ * yvalue[*it_cell])*delta;
+                vatom[i][2] += 0.5*fabs(fadez_ * zvalue[*it_cell])*delta;
             }
           }
         }
