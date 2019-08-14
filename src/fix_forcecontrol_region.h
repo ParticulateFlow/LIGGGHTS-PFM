@@ -68,9 +68,9 @@ class FixForceControlRegion : public Fix {
   double *xvalue;
   double *yvalue;
   double *zvalue;
-  double *const_part_cell_;
-  double *used_part_cell_;
-  double *sinesq_part_cell_;
+  double *const_part_cell_; // part of cell where control force is applied constantly
+  double *used_part_cell_; // part of cell where control force is applied
+  double *sinesq_part_cell_; // part of cell where correction force is faded out
   int *ncontrolled_cell_; // # of controlled particles in each cell
   double foriginal[4],foriginal_all[4];
   int force_flag;
@@ -84,7 +84,7 @@ class FixForceControlRegion : public Fix {
   double err_[3];
   double kp_,ki_,kd_;
 
-  int ctrl_style_;
+  int ctrl_style_; // stress or velocity control style
   // timesteps
   double dtf_,dtv_,dtv_inverse_;
   double fadex_,fadey_,fadez_;
@@ -94,8 +94,8 @@ class FixForceControlRegion : public Fix {
   double **old_pv_vec_;
   double **sum_err_;
 
-  std::set<int> active_;
-  std::vector<bool> modifier_;
+  std::set<int> active_; // set of active cells
+  std::vector<bool> modifier_; // if true apply massflow corrections
   std::map<class FixScaleDiameter*, std::set<int> > modifier_scale_;
   const double acceptable_deviation_min;
   const double acceptable_deviation_max;
