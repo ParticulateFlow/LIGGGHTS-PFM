@@ -25,7 +25,7 @@ using namespace LAMMPS_NS;
 ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
   Compute(lmp, narg, arg)
 {
-  if (narg != 3) error->all(FLERR,"Illegal compute com/molecule command");
+  if (narg < 3) error->all(FLERR,"Illegal compute com/molecule command");
 
   if (atom->molecular == 0)
     error->all(FLERR,"Compute com/molecule requires molecular atom style");
@@ -168,6 +168,7 @@ void ComputeCOMMolecule::compute_array()
         }
     }
 }
+
 
 /* ----------------------------------------------------------------------
    memory usage of local data

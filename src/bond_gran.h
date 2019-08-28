@@ -64,7 +64,7 @@ class BondGran : public Bond {
   double *damp; // damping coefficient
   double *ro, *ri; // Outside and Inside bond radius multiplier
   double *lb; // bond length scale
-  double *bnl; // non-linearization parameter
+  double *bn, *bt; // non-linearization parameters
 
   void allocate();
 

@@ -33,8 +33,8 @@ class ComputeCOMMolecule : public Compute {
   double memory_usage();
 
  private:
-  int nmolecules;
-  int idlo,idhi;
+
+  int idlo,idhi,nmolecules;
 
   double *massproc,*masstotal;
   double **com,**comall;
