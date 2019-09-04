@@ -93,8 +93,8 @@ void DumpEulerVTK::init_style()
   if (binary)
     error->all(FLERR,"Can not dump VTK files in binary mode");
 
-  // node center (3), av vel (3), volume fraction, radius, stress
-  size_one = 9;
+  // node center (3), av vel (3), volume fraction, radius, pressure, normal and shear stresses (6)
+  size_one = 15;
 
   delete [] format;
 }
@@ -153,6 +153,13 @@ void DumpEulerVTK::pack(int *ids)
     buf[m++] = fix_euler_->cell_vol_fr(i);
     buf[m++] = fix_euler_->cell_radius(i);
     buf[m++] = fix_euler_->cell_pressure(i);
+
+    buf[m++] = fix_euler_->cell_stress(i,0);
+    buf[m++] = fix_euler_->cell_stress(i,1);
+    buf[m++] = fix_euler_->cell_stress(i,2);
+    buf[m++] = fix_euler_->cell_stress(i,3);
+    buf[m++] = fix_euler_->cell_stress(i,4);
+    buf[m++] = fix_euler_->cell_stress(i,5);
   }
   return ;
 }
@@ -251,6 +258,27 @@ void DumpEulerVTK::write_data_ascii(int n, double *mybuf)
   }
   buf_pos++;
 
+  fprintf(fp,"VECTORS sigma float\n");
+  m = buf_pos;
+  for (int i = 0; i < n; i++)
+  {
+      // normal stresses
+      fprintf(fp,"%f %f %f\n",mybuf[m],mybuf[m+1],mybuf[m+2]);
+      m += size_one;
+  }
+  buf_pos += 3;
+
+  fprintf(fp,"VECTORS tau float\n");
+  m = buf_pos;
+  for (int i = 0; i < n; i++)
+  {
+      // shear stresses
+      // note: internal order of stresses is (xx, yy, zz, xy, xz, yz)
+      //       Voigt notation is             (xx, yy, zz, yz, xz, xy)
+      fprintf(fp,"%f %f %f\n",mybuf[m],mybuf[m+1],mybuf[m+2]);
+      m += size_one;
+  }
+  buf_pos += 3;
   // footer not needed
   // if would be needed, would do like in dump stl
 }
