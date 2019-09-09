@@ -453,10 +453,10 @@ void FixInsert::print_stats_start()
 
 void FixInsert::print_stats_during(int ninsert_this, double mass_inserted_this)
 {
-  bigint step = update->ntimestep;
-
   if (me == 0 && print_stats_during_flag)
   {
+    bigint step = update->ntimestep;
+
     if (screen)
       fprintf(screen ,"INFO: Particle insertion %s: inserted %d particle templates (mass %f) at step " BIGINT_FORMAT "\n - a total of %d particle templates (mass %f) inserted so far.\n",
               id,ninsert_this,mass_inserted_this,step,ninserted,massinserted);
