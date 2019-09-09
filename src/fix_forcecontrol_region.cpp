@@ -346,6 +346,11 @@ void FixForceControlRegion::post_force(int vflag)
         sp_vec_[1] = -(pre_t*target_cell_stress_yy(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
         sp_vec_[2] = -(pre_t*target_cell_stress_zz(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
 
+        // do nothing in case of negative pressure
+        if(pv_vec_[0] < 0.) pv_vec_[0] = 0.;
+        if(pv_vec_[1] < 0.) pv_vec_[1] = 0.;
+        if(pv_vec_[2] < 0.) pv_vec_[2] = 0.;
+
         // get stress directions from region mesh/hex (vector properties stored in vtk file)
         double *stress_ctrl_dir = actual_->cell_vector_property(*it_cell, "stress_ctrl_dir");
         axis_[0] = stress_ctrl_dir[0];
