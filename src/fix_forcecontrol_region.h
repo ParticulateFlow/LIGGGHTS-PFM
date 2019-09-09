@@ -128,6 +128,8 @@ class FixForceControlRegion : public Fix {
 
   virtual void receive_post_create_data() {}
   virtual void receive_coupling_data() {}
+
+  void grow_cell_arrays(int ncells);
 };
 
 }

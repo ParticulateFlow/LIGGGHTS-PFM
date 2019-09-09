@@ -259,22 +259,9 @@ void FixForceControlRegion::min_setup(int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void FixForceControlRegion::post_force(int vflag)
+void FixForceControlRegion::grow_cell_arrays(int ncells)
 {
-  if (vflag) v_setup(vflag);
-  else evflag = 0;
-
-  double **x = atom->x;
-  double **f = atom->f;
-  double **v = atom->v;
-  int *mask = atom->mask;
-  int nlocal = atom->nlocal;
-  double *rmass = atom->rmass;
-  int ncells = actual_->ncells();
-  double fx, fy, fz;
-  double vx, vy, vz;
-
-  // reallocate old_pv_vec_ array if necessary
+  // reallocate arrays if necessary
   if (ncells > ncells_max_) {
     memory->grow(xvalue,ncells,"forcecontrol/region:xvalue");
     memory->grow(yvalue,ncells,"forcecontrol/region:yvalue");
@@ -296,11 +283,32 @@ void FixForceControlRegion::post_force(int vflag)
       ncontrolled_cell_[ncells_max_] = -1;
 
       for (int i = 0; i < 3; ++i) {
-          old_pv_vec_[ncells_max_][i] = 0.0;
-          sum_err_[ncells_max_][i] = 0.0;
+        old_pv_vec_[ncells_max_][i] = 0.0;
+        sum_err_[ncells_max_][i] = 0.0;
       }
     }
   }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixForceControlRegion::post_force(int vflag)
+{
+  if (vflag) v_setup(vflag);
+  else evflag = 0;
+
+  double **x = atom->x;
+  double **f = atom->f;
+  double **v = atom->v;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+  double *rmass = atom->rmass;
+  int ncells = actual_->ncells();
+  double fx, fy, fz;
+  double vx, vy, vz;
+
+  // reallocate arrays if necessary
+  grow_cell_arrays(ncells);
 
   std::set<int>::iterator it_cell = active_.begin();
   for (; it_cell!=active_.end(); ++it_cell) { // active actual_ cell indices
@@ -804,32 +812,7 @@ void FixForceControlRegion::restart(char *buf)
 
   ++list;
 
-  if (ncells > ncells_max_) {
-    memory->grow(xvalue,ncells,"forcecontrol/region:xvalue");
-    memory->grow(yvalue,ncells,"forcecontrol/region:yvalue");
-    memory->grow(zvalue,ncells,"forcecontrol/region:zvalue");
-    memory->grow(const_part_cell_,ncells,"forcecontrol/region:const_part_cell_");
-    memory->grow(used_part_cell_,ncells,"forcecontrol/region:used_part_cell_");
-    memory->grow(sinesq_part_cell_,ncells,"forcecontrol/region:sinesq_part_cell_");
-    memory->grow(ncontrolled_cell_,ncells,"forcecontrol/region:ncontrolled_cell_");
-    memory->grow(old_pv_vec_,ncells,3,"forcecontrol/region:old_pv_mag_");
-    memory->grow(sum_err_,ncells,3,"forcecontrol/region:sum_err_");
-
-    for (; ncells_max_ < ncells; ++ncells_max_) {
-      xvalue[ncells_max_] = 0.0;
-      yvalue[ncells_max_] = 0.0;
-      zvalue[ncells_max_] = 0.0;
-      const_part_cell_[ncells_max_] = const_part_;
-      used_part_cell_[ncells_max_] = used_part_;
-      sinesq_part_cell_[ncells_max_] = sinesq_part_;
-      ncontrolled_cell_[ncells_max_] = -1;
-
-      for (int i = 0; i < 3; ++i) {
-        old_pv_vec_[ncells_max_][i] = 0.0;
-        sum_err_[ncells_max_][i] = 0.0;
-      }
-    }
-  }
+  grow_cell_arrays(ncells);
 
   for (int icell=0; icell<ncells_max_; ++icell) {
     used_part_cell_[icell] = list[icell];
