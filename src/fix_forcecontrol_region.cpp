@@ -385,9 +385,10 @@ void FixForceControlRegion::post_force(int vflag)
     err_[2] = sp_vec_[2] - pv_vec_[2];
 
     if (ctrl_style_ == STRESS) {
-      err_[0] *= axis_[0];
-      err_[1] *= axis_[1];
-      err_[2] *= axis_[2];
+      // axis value (one of {-1,0,1}) turns on/off control
+      err_[0] *= fabs(axis_[0]);
+      err_[1] *= fabs(axis_[1]);
+      err_[2] *= fabs(axis_[2]);
     }
 
     sum_err_[*it_cell][0] += err_[0] * dtv_;
@@ -413,9 +414,9 @@ void FixForceControlRegion::post_force(int vflag)
 
     if (ctrl_style_ == STRESS) {
       // do not apply an outward force; particles should relax in that direction automatically
-      xvalue[*it_cell] = (axis_[0] < 0.) ? std::min(0., ctrl_op_[0]) : std::max(0., ctrl_op_[0]);
-      yvalue[*it_cell] = (axis_[1] < 0.) ? std::min(0., ctrl_op_[1]) : std::max(0., ctrl_op_[1]);
-      zvalue[*it_cell] = (axis_[2] < 0.) ? std::min(0., ctrl_op_[2]) : std::max(0., ctrl_op_[2]);
+      xvalue[*it_cell] = (ctrl_op_[0] > 0.) ? (axis_[0] * ctrl_op_[0]) : 0.;
+      yvalue[*it_cell] = (ctrl_op_[1] > 0.) ? (axis_[1] * ctrl_op_[1]) : 0.;
+      zvalue[*it_cell] = (ctrl_op_[2] > 0.) ? (axis_[2] * ctrl_op_[2]) : 0.;
     } else {
       xvalue[*it_cell] = ctrl_op_[0];
       yvalue[*it_cell] = ctrl_op_[1];
