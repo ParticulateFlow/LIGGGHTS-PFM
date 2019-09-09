@@ -27,6 +27,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <mpi.h>
 #include "fix_ave_euler_region.h"
 #include "fix_forcecontrol_region.h"
 #include "fix_scale_diameter.h"
@@ -46,6 +47,9 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 
 enum{NONE,STRESS,VELOCITY};
+
+extern MPI_Op MPI_ABSMIN_OP;
+extern MPI_Op MPI_ABSMAX_OP;
 
 /* ---------------------------------------------------------------------- */
 
@@ -754,6 +758,23 @@ double FixForceControlRegion::compute_vector(int n)
 
 void FixForceControlRegion::write_restart(FILE *fp)
 {
+  std::vector<double> used_part_cell_all(ncells_max_,0.0);
+  std::vector<double> old_pv_vec_all(3*ncells_max_,0.0);
+  std::vector<double> sum_err_all(3*ncells_max_,0.0);
+
+  MPI_Reduce(used_part_cell_,      &used_part_cell_all[0], ncells_max_, MPI_DOUBLE, MPI_MAX,       0, world);
+  MPI_Reduce(&(old_pv_vec_[0][0]), &old_pv_vec_all[0],   3*ncells_max_, MPI_DOUBLE, MPI_ABSMAX_OP, 0, world);
+  MPI_Reduce(&(sum_err_[0][0]),    &sum_err_all[0],      3*ncells_max_, MPI_DOUBLE, MPI_ABSMAX_OP, 0, world);
+
+  if (comm->me == 0) {
+    int size = (1 + ncells_max_ * (1+3+3)) * sizeof(double);
+    fwrite(&size,sizeof(int),1,fp);
+    double ncells = static_cast<double>(ncells_max_);
+    fwrite(&ncells,sizeof(double),1,fp);
+    fwrite(&used_part_cell_all[0],sizeof(double),  ncells_max_,fp);
+    fwrite(&old_pv_vec_all[0],    sizeof(double),3*ncells_max_,fp);
+    fwrite(&sum_err_all[0],       sizeof(double),3*ncells_max_,fp);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -763,6 +784,49 @@ void FixForceControlRegion::write_restart(FILE *fp)
 void FixForceControlRegion::restart(char *buf)
 {
   double *list = (double *) buf;
+
+  int ncells = static_cast<int>(list[0]);
+  if (ncells != actual_->ncells())
+    error->fix_error(FLERR, this, "number of cells has changed upon restart");
+
+  ++list;
+
+  if (ncells > ncells_max_) {
+    memory->grow(xvalue,ncells,"forcecontrol/region:xvalue");
+    memory->grow(yvalue,ncells,"forcecontrol/region:yvalue");
+    memory->grow(zvalue,ncells,"forcecontrol/region:zvalue");
+    memory->grow(const_part_cell_,ncells,"forcecontrol/region:const_part_cell_");
+    memory->grow(used_part_cell_,ncells,"forcecontrol/region:used_part_cell_");
+    memory->grow(sinesq_part_cell_,ncells,"forcecontrol/region:sinesq_part_cell_");
+    memory->grow(ncontrolled_cell_,ncells,"forcecontrol/region:ncontrolled_cell_");
+    memory->grow(old_pv_vec_,ncells,3,"forcecontrol/region:old_pv_mag_");
+    memory->grow(sum_err_,ncells,3,"forcecontrol/region:sum_err_");
+
+    for (; ncells_max_ < ncells; ++ncells_max_) {
+      xvalue[ncells_max_] = 0.0;
+      yvalue[ncells_max_] = 0.0;
+      zvalue[ncells_max_] = 0.0;
+      const_part_cell_[ncells_max_] = const_part_;
+      used_part_cell_[ncells_max_] = used_part_;
+      sinesq_part_cell_[ncells_max_] = sinesq_part_;
+      ncontrolled_cell_[ncells_max_] = -1;
+
+      for (int i = 0; i < 3; ++i) {
+        old_pv_vec_[ncells_max_][i] = 0.0;
+        sum_err_[ncells_max_][i] = 0.0;
+      }
+    }
+  }
+
+  for (int icell=0; icell<ncells_max_; ++icell) {
+    used_part_cell_[icell] = list[icell];
+    const_part_cell_[icell] = used_part_cell_[icell] * CONST_TO_USED_PART_RATIO;
+    sinesq_part_cell_[icell] = used_part_cell_[icell] - const_part_cell_[icell];
+    for (int i=0; i<3; ++i) {
+      old_pv_vec_[icell][i] = list[  ncells_max_+3*icell+i];
+      sum_err_   [icell][i] = list[4*ncells_max_+3*icell+i];
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */
