@@ -540,7 +540,9 @@ void FixForceControlRegion::post_force(int vflag)
 
             fx = fadex_ * xvalue[*it_cell];
 
-            if (fabs(fx) > fabs(f[i][0]*0.005)) {
+#define FORCE_LIMIT_PERCENTAGE_TRESHOLD 0.05
+
+            if (fabs(fx) > fabs(f[i][0]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
               vx = v[i][0] + dtfm * (f[i][0] + fx);
 
               if (vx > vel_max_[0]) {
@@ -558,7 +560,7 @@ void FixForceControlRegion::post_force(int vflag)
 
             fy = fadey_ * yvalue[*it_cell];
 
-            if (fabs(fy) > fabs(f[i][1]*0.005)) {
+            if (fabs(fy) > fabs(f[i][1]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
               vy = v[i][1] + dtfm * (f[i][1] + fy);
               if (vy > vel_max_[1]) {
                 if (vy - dtfm * fy < vel_max_[1])
@@ -575,7 +577,7 @@ void FixForceControlRegion::post_force(int vflag)
 
             fz = fadez_ * zvalue[*it_cell];
 
-            if (fabs(fz) > fabs(f[i][2]*0.005)) {
+            if (fabs(fz) > fabs(f[i][2]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
               vz = v[i][2] + dtfm * (f[i][2] + fz);
               if (vz > vel_max_[2]) {
                 if (vz - dtfm * fz < vel_max_[2])
