@@ -193,12 +193,8 @@ void ExtrudeSurface::triangulate(int narg, char **arg, vtkDataSet* dset)
     pts->GetPoint(0, a);
     pts->GetPoint(1, c);
     pts->GetPoint(2, b);
-    ab[0] = b[0] - a[0];
-    ab[1] = b[1] - a[1];
-    ab[2] = b[2] - a[2];
-    ac[0] = c[0] - a[0];
-    ac[1] = c[1] - a[1];
-    ac[2] = c[2] - a[2];
+    MathExtra::sub3(b, a, ab);
+    MathExtra::sub3(c, a, ac);
     MathExtra::cross3(ab, ac, cross);
     double area = 0.5 * MathExtra::len3(cross);
     if (area < SMALL_AREA)
@@ -423,15 +419,9 @@ bool ExtrudeSurface::collinear(double *a, double *b, double *c)
 {
   // test if a,b,c are colinear (distance of point (c) to line (a,b))
   double dir1[3], dir2[3], dir3[3], cross[3];
-  dir1[0] = c[0] - a[0];
-  dir1[1] = c[1] - a[1];
-  dir1[2] = c[2] - a[2];
-  dir2[0] = c[0] - b[0];
-  dir2[1] = c[1] - b[1];
-  dir2[2] = c[2] - b[2];
-  dir3[0] = b[0] - a[0];
-  dir3[1] = b[1] - a[1];
-  dir3[2] = b[2] - a[2];
+  MathExtra::sub3(c, a, dir1);
+  MathExtra::sub3(c, b, dir2);
+  MathExtra::sub3(b, a, dir3);
   MathExtra::cross3(dir1, dir2, cross);
   double dsq = MathExtra::lensq3(cross)/MathExtra::lensq3(dir3);
   if(dsq > 1e-10) {
