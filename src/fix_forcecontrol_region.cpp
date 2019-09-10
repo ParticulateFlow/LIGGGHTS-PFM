@@ -556,15 +556,17 @@ void FixForceControlRegion::post_force(int vflag)
               vx = v[i][0] + dtfm * (f[i][0] + fx);
 
               if (vx > vel_max_[0]) {
-                if (vx - dtfm * fx < vel_max_[0])
+                if (vx - dtfm * fx < vel_max_[0]) {
                   limit[0] = (vel_max_[0] - v[i][0] - dtfm * f[i][0])/(dtfm * fx);
-                else if (fx > 0.)
+                } else if (fx > 0.) {
                   limit[0] = 0.;
+                }
               } else if (vx < vel_min_[0]) {
-                if (vx - dtfm * fx > vel_min_[0])
+                if (vx - dtfm * fx > vel_min_[0]) {
                   limit[0] = (vel_min_[0] - v[i][0] - dtfm * f[i][0])/(dtfm * fx);
-                else if (fx < 0)
+                } else if (fx < 0) {
                   limit[0] = 0.;
+                }
               }
             }
 
@@ -573,15 +575,17 @@ void FixForceControlRegion::post_force(int vflag)
             if (fabs(fy) > fabs(f[i][1]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
               vy = v[i][1] + dtfm * (f[i][1] + fy);
               if (vy > vel_max_[1]) {
-                if (vy - dtfm * fy < vel_max_[1])
+                if (vy - dtfm * fy < vel_max_[1]) {
                   limit[1] = (vel_max_[1] - v[i][1] - dtfm * f[i][1])/(dtfm * fy);
-                else if (fy > 0.)
+                } else if (fy > 0.) {
                   limit[1] = 0.;
+                }
               } else if (vy < vel_min_[1]) {
-                if (vy - dtfm * fy > vel_min_[1])
+                if (vy - dtfm * fy > vel_min_[1]) {
                   limit[1] = (vel_min_[1] - v[i][1] - dtfm * f[i][1])/(dtfm * fy);
-                else if (fy < 0.)
+                } else if (fy < 0.) {
                   limit[1] = 0.;
+                }
               }
             }
 
@@ -590,15 +594,17 @@ void FixForceControlRegion::post_force(int vflag)
             if (fabs(fz) > fabs(f[i][2]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
               vz = v[i][2] + dtfm * (f[i][2] + fz);
               if (vz > vel_max_[2]) {
-                if (vz - dtfm * fz < vel_max_[2])
+                if (vz - dtfm * fz < vel_max_[2]) {
                   limit[2] = (vel_max_[2] - v[i][2] - dtfm * f[i][2])/(dtfm * fz);
-                else if (fz > 0.)
+                } else if (fz > 0.) {
                   limit[2] = 0.;
+                }
               } else if (vz < vel_min_[2]) {
-                if (vz - dtfm * fz > vel_min_[2])
+                if (vz - dtfm * fz > vel_min_[2]) {
                   limit[2] = (vel_min_[2] - v[i][2] - dtfm * f[i][2])/(dtfm * fz);
-                else if (fz < 0.)
+                } else if (fz < 0.) {
                   limit[2] = 0.;
+                }
               }
             }
 
