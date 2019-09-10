@@ -51,6 +51,8 @@ enum{NONE,STRESS,VELOCITY};
 extern MPI_Op MPI_ABSMIN_OP;
 extern MPI_Op MPI_ABSMAX_OP;
 
+#define CONST_TO_USED_PART_RATIO 0.875
+
 /* ---------------------------------------------------------------------- */
 
 FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) :
@@ -220,8 +222,8 @@ void FixForceControlRegion::post_create_stress_part()
 {
   double maxrd,minrd;
   modify->max_min_rad(maxrd,minrd);
-  const_part_ = (2.*maxrd/cg_target_)*1.2;
   used_part_ = (2.*maxrd/cg_target_)*1.4;
+  const_part_ = used_part_ * CONST_TO_USED_PART_RATIO;
   sinesq_part_ = used_part_ - const_part_;
 }
 
