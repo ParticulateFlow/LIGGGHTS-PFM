@@ -58,7 +58,6 @@ FixChemShrinkArrhenius::FixChemShrinkArrhenius(LAMMPS *lmp, int narg, char **arg
     }
 }
 
-
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkArrhenius::~FixChemShrinkArrhenius()
@@ -76,8 +75,6 @@ void FixChemShrinkArrhenius::updatePtrs()
 
 /* ---------------------------------------------------------------------- */
 
-
-
 double FixChemShrinkArrhenius::reactionRatConst(int i)
 {
     const double t = tgas_[i];
@@ -91,10 +88,6 @@ double FixChemShrinkArrhenius::reactionRatConst(int i)
         return k0*exp(-T0/t);
     }
 }
-
-
-
-
 
 /* ---------------------------------------------------------------------- */
 
