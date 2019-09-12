@@ -371,8 +371,8 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
-	if (fix_k0_)		{ modify->delete_fix(fix_k0_ -> id); k0_ = NULL; }
-	if (fix_Ea_)		{ modify->delete_fix(fix_Ea_ -> id); Ea_ NULL; }
+        if (fix_k0_)		{ modify->delete_fix(fix_k0_ -> id); k0_ = NULL; }
+        if (fix_Ea_)		{ modify->delete_fix(fix_Ea_ -> id); Ea_ = NULL; }
     }
 }
 
@@ -553,7 +553,7 @@ void FixChemShrinkCore::init()
         rhoeff_[i][layers_] = pdensity_[i];
         for (int layer=0; layer < layers_; layer++)
         {
-            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
+            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
         }
         calcMassLayer(i);
     }
@@ -1088,14 +1088,15 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
     fracRed_[i][1] = f_MW;
     fracRed_[i][2] = f_HM;
 
-    /*const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    /* const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
     const double f_HM = 1.0 - relRadii_[i][3]*relRadii_[i][3]*relRadii_[i][3];
 
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
-    fracRed_[i][2] = f_HM; */
+    fracRed_[i][2] = f_HM;  */
 
+}
 /* ---------------------------------------------------------------------- */
 
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
@@ -1326,8 +1327,8 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 
 void FixChemShrinkCore::FractionalReduction_low(int i, double* layerMolMasses_)
 {
-    const double f_MF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
-    const double f_HM = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+    const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
 
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
