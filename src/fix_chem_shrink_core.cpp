@@ -412,7 +412,9 @@ void FixChemShrinkCore::updatePtrs()
     xC_             =   fix_moleFractionC_  ->  vector_atom;
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
-    layerDensities_ =	fix_layerDens_      ->  array_atom;
+
+    //
+    layerDensities_ =	fix_layerDens_      ->  values;
 
     k0_             =   fix_k0_             ->  array_atom;
     Ea_             =   fix_Ea_             ->  array_atom;
@@ -469,7 +471,8 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("density_")+strlen(group->names[igroup])+1];
     strcpy(fixname,"density_");
     strcat(fixname,group->names[igroup]);
-    fix_layerDens_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname,"property/atom","vector",0,0,style));
+    //fix_layerDens_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname,"property/atom","vector",0,0,style));
+    fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",4,0,style));
     delete []fixname;
 
     // references for per atom properties.
@@ -544,6 +547,8 @@ void FixChemShrinkCore::init()
 
     updatePtrs();
 
+    if (screen)
+        fprintf(screen,"layerDensity[0] = %f , layerDensity[1] = %f, layerDenisty[2] = %f , layerDensity[3] = %f",layerDensities_[0],layerDensities_[1],layerDensities_[2], layerDensities_[3]);
 
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
@@ -551,7 +556,7 @@ void FixChemShrinkCore::init()
         rhoeff_[i][layers_] = pdensity_[i];
         for (int layer=0; layer < layers_; layer++)
         {
-            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
+            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
         }
         calcMassLayer(i);
     }
