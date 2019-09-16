@@ -75,10 +75,6 @@ public:
   static const double k0_low_H2[];
   static const double Ea_low_CO[];
   static const double Ea_low_H2[];
-  static const double k0_high_CO[];
-  static const double k0_high_H2[];
-  static const double Ea_high_CO[];
-  static const double Ea_high_H2[];
   static const double a_coeff_nasa_Fe2O3[];
   static const double a_coeff_nasa_Fe3O4[];
   static const double a_coeff_nasa_FeO[];

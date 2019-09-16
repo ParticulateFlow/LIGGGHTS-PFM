@@ -46,11 +46,6 @@ const double FixChemShrinkCore::k0_low_H2[] = {  50.,  25. };
 const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 75000. };
 const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000. };
 
-//const double FixChemShrinkCore::k0_high_CO[] = { 17., 25., 2700. };
-//const double FixChemShrinkCore::k0_high_H2[] = { 30., 23.,  160. };
-//const double FixChemShrinkCore::Ea_high_CO[] = { 69488., 73674., 113859. };
-//const double FixChemShrinkCore::Ea_high_H2[] = { 63627., 71162.,  92092. };
-
 const double FixChemShrinkCore::a_coeff_nasa_Fe2O3[] = { 298.15, 1700., 1000., -3.240851E+02,  1.152686E+00, -1.413588E-03,  7.496435E-07, -1.455880E-10, -2.647718E+04,
                                                          1.609668E+03,  1.066786E+01, -4.869774E-03,  5.056287E-05, -4.500105E-08,  7.709213E-12, -1.025006E+05, -5.068585E+01 };
 const double FixChemShrinkCore::a_coeff_nasa_Fe3O4[] = { 298.15, 1870., 1000.,  1.948880E+02, -4.225771E-01,  3.843026E-04, -1.536471E-07,  2.301151E-11, -1.944678E+05,
