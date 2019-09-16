@@ -271,7 +271,7 @@ void FixChemShrinkCore::post_create()
         delete [] fixname;
     }
 
-    if (fix_effDiffKnud==NULL)    {
+    if (fix_effDiffKnud==NULL) {
         char *fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
         strcpy(fixname,"effDiffKnud_");
         strcat(fixname,id);
@@ -292,7 +292,7 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    if (fix_dY_==NULL)     {
+    if (fix_dY_==NULL) {
         char* fixname = new char[strlen("dY_")+strlen(id)+1];
         strcpy(fixname,"dY_");
         strcat(fixname,id);
@@ -313,7 +313,7 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    if (fix_dmA_==NULL)     {
+    if (fix_dmA_==NULL) {
         char* fixname = new char[strlen("dmA_")+strlen(id)+1];
         strcpy(fixname,"dmA_");
         strcat(fixname,id);
@@ -409,7 +409,7 @@ void FixChemShrinkCore::updatePtrs()
     massLayer_      =   fix_layerMass_      ->  array_atom;
 
     //
-    layerDensities_ =	fix_layerDens_      ->  values;
+    layerDensities_ =   fix_layerDens_      ->  values;
 
     k0_             =   fix_k0_             ->  array_atom;
     Ea_             =   fix_Ea_             ->  array_atom;
@@ -542,8 +542,10 @@ void FixChemShrinkCore::init()
 
     updatePtrs();
 
-    if (screen)
-        fprintf(screen,"layerDensity[0] = %f , layerDensity[1] = %f, layerDenisty[2] = %f , layerDensity[3] = %f",layerDensities_[0],layerDensities_[1],layerDensities_[2], layerDensities_[3]);
+    if (screen) {
+        fprintf(screen,"layerDensity[0] = %f , layerDensity[1] = %f, layerDenisty[2] = %f , layerDensity[3] = %f",
+                        layerDensities_[0],layerDensities_[1],layerDensities_[2], layerDensities_[3]);
+    }
 
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)

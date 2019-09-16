@@ -50,7 +50,7 @@ public:
 
   // functions declared in this class
   int active_layers(int);   // calculate number of active layers per-particle
-  void calcMassLayer(int);  // calculate mass of layers per-particle  
+  void calcMassLayer(int);  // calculate mass of layers per-particle
   void FractionalReduction(int, double *); // calculate fractional reduction per-layer depending on layer radius
   void getXi(int, double *);    // calculate molar equilibrium constant of reacting gas
   double K_eq(int, int); // calculate equilibrium constant based on the work of Valipour 2009
