@@ -542,10 +542,6 @@ void FixChemShrinkCore::init()
 
     updatePtrs();
 
-    if (screen) {
-        fprintf(screen,"layerDensity[0] = %f , layerDensity[1] = %f, layerDenisty[2] = %f , layerDensity[3] = %f",
-                        layerDensities_[0],layerDensities_[1],layerDensities_[2], layerDensities_[3]);
-    }
 
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
@@ -1016,12 +1012,12 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double 
         sum_mass_p_new    +=  massLayer_[i][j];
     }
 
-    if (screen) fprintf(screen,"total mass of particle = %f \n", sum_mass_p_new);
+    // if (screen) fprintf(screen,"total mass of particle = %f \n", sum_mass_p_new);
 
     // Total mass of particle with coarse-graining
     pmass_[i]   =   sum_mass_p_new*cg_*cg_*cg_;
 
-    if (screen) fprintf(screen, "pmass = %f \n",pmass_[i]);
+    // if (screen) fprintf(screen, "pmass = %f \n",pmass_[i]);
 
     // Core layer radius (initial Fe2O3)
     rad[layers_] = cbrt((0.75*massLayer_[i][layers_])/(rhoeff_[i][layers_]*M_PI));
