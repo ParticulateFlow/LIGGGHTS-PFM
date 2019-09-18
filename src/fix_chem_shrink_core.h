@@ -118,8 +118,11 @@ public:
   // handles of fixes
   double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *partP_, *Massterm, *reactionHeat_;
   double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
-  //double **layerDensities_;
+#ifdef PER_ATOM_LAYER_DENSITIES
+  double **layerDensities_;
+#else
   double *layerDensities_;
+#endif
 
   // coarse_graining factor
   double cg_;
@@ -150,8 +153,11 @@ public:
   class FixPropertyAtom *fix_layerRelRad_;
   class FixPropertyAtom *fix_layerMass_;
 
-  //class FixPropertyAtom *fix_layerDens_;
+#ifdef PER_ATOM_LAYER_DENSITIES
+  class FixPropertyAtom *fix_layerDens_;
+#else
   class FixPropertyGlobal *fix_layerDens_;
+#endif
 
   class FixPropertyAtom *fix_k0_;
   class FixPropertyAtom *fix_Ea_;

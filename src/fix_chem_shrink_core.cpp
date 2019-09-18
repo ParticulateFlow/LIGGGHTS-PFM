@@ -408,8 +408,11 @@ void FixChemShrinkCore::updatePtrs()
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
 
-    //
+#ifdef PER_ATOM_LAYER_DENSITIES
+    layerDensities_ =   fix_layerDens_      ->  array_atom;
+#else
     layerDensities_ =   fix_layerDens_      ->  values;
+#endif
 
     k0_             =   fix_k0_             ->  array_atom;
     Ea_             =   fix_Ea_             ->  array_atom;
@@ -466,8 +469,11 @@ void FixChemShrinkCore::init()
     fixname = new char [strlen("density_")+strlen(group->names[igroup])+1];
     strcpy(fixname,"density_");
     strcat(fixname,group->names[igroup]);
-    //fix_layerDens_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname,"property/atom","vector",0,0,style));
+#ifdef PER_ATOM_LAYER_DENSITIES
+    fix_layerDens_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(fixname,"property/atom","vector",0,0,style));
+#else
     fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(fixname,"property/global","vector",4,0,style));
+#endif
     delete []fixname;
 
     // references for per atom properties.
@@ -542,6 +548,12 @@ void FixChemShrinkCore::init()
 
     updatePtrs();
 
+#ifndef PER_ATOM_LAYER_DENSITIES
+    if (screen) {
+        fprintf(screen,"layerDensity[0] = %f , layerDensity[1] = %f, layerDenisty[2] = %f , layerDensity[3] = %f",
+                        layerDensities_[0],layerDensities_[1],layerDensities_[2], layerDensities_[3]);
+    }
+#endif
 
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
@@ -549,7 +561,11 @@ void FixChemShrinkCore::init()
         rhoeff_[i][layers_] = pdensity_[i];
         for (int layer=0; layer < layers_; layer++)
         {
+#ifdef PER_ATOM_LAYER_DENSITIES
+            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
+#else
             rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
+#endif
         }
         calcMassLayer(i);
     }
