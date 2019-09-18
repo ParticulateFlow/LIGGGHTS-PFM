@@ -548,12 +548,6 @@ void FixChemShrinkCore::init()
 
     updatePtrs();
 
-#ifndef PER_ATOM_LAYER_DENSITIES
-    if (screen) {
-        fprintf(screen,"layerDensity[0] = %f , layerDensity[1] = %f, layerDenisty[2] = %f , layerDensity[3] = %f",
-                        layerDensities_[0],layerDensities_[1],layerDensities_[2], layerDensities_[3]);
-    }
-#endif
 
     // get initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
