@@ -1,0 +1,67 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix chem/shrink command :h3
+
+[Syntax:]
+
+fix ID group-ID chem/shrink speciesA A_keyword molMassA A_value speciesC C_keyword molMassC C_value molMassB B_value k k_value rmin r_value :pre
+
+ID, group-ID are documented in "fix"_fix.html command :l
+chem/shrink = style name of this fix command :l
+speciesA, speciesC, molMassA, molMassB, molMassC, k, rmin = obligatory keywords :l
+A_, C_keyword = corresponding species :l
+A_, C_, B_value = molar mass values for given species (A = reacting gas, B = particle, C = product gas) :l
+k_value = reaction rate constant :l
+r_value = user defined minimum radius value  :l
+:ule
+
+[Examples:]
+
+fix     cfd4 all chem/shrink speciesA O2 molMassA 31.99 speciesC CO2 molMassC 44.01 molMassB 12.01 k 2.5e3 rmin 0.005
+
+[LIGGGHTS vs. LAMMPS info:]
+
+This command is not available in LAMMPS.
+
+[Description:]
+
+The mass flow rate for the reactant gas species can be calculated with the equation
+
+dmA = -k*rho_gas*Y_a*Particle_surface_area*dt,
+
+in which Y_a and rho_gas are the reactant gas species concentration and the density at the particle location. :b
+The mass flow rates of partcile and product gas can then be calculated as
+
+dmB = dmA*MolarMassB/MolarMassA, :b
+dmC = -dmA*MolarMassC/MolarMassA.
+
+The calculation of mass flow rate of the particle allows us to determine the new mass at every time step, and thus
+the new radius of particle. Since the particle reacts with gas, the radius will shrink. :b
+With the help of the user defined rmin value, the minimum particle radius is defined. Particles that reach the rmin value are deleted from the domain in order to avoid numerical complications.
+
+It must be kept in mind that the mass flow rates depend highly on the reaction rate coefficient. The higher the reaction
+rate constant, the faster the reduction of the particle will be.
+
+[Restart, fix_modify, run start/stop, minimize info:]
+
+No information about this fix is written to "binary restart files"_restart.html. None of the "fix_modify"_fix_modify.html options are relevant to this fix.
+
+No global or per-atom quantities are stores by this fix for access by various
+"output commands"_Section_howto.html#4_15.
+
+No parameter of this fix can be used with the {start/stop} keywords of
+the "run"_run.html command.  This fix is not invoked during "energy
+minimization"_minimize.html.
+
+[Restrictions:] none
+
+[Related commands:] This fix needs a fix couple/cfd and couple/cfd/chemistry before it is defined.
+
+[Default:] none

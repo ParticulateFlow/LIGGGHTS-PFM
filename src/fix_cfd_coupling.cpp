@@ -173,7 +173,7 @@ void FixCfdCoupling::end_of_step()
     // only do this if coupling desired
     if(couple_nevery_ == 0) return;
 
-    int ts = update->ntimestep;
+    ts = update->ntimestep;
 
     // set flag if couple the next time-step
     // will not be active this ts, since in eos
@@ -186,10 +186,12 @@ void FixCfdCoupling::end_of_step()
     // do not execute on step of creation
     if(ts % couple_nevery_ || ts_create_ == ts) return;
 
-    if(screen && comm->me == 0)
-        fprintf(screen,"CFD Coupling established at step %d\n",ts);
-    if(logfile && comm->me == 0)
-        fprintf(logfile,"CFD Coupling established at step %d\n",ts);
+    if(comm->me == 0) {
+        if(screen)
+            fprintf(screen,"CFD Coupling established at step " BIGINT_FORMAT "\n",ts);
+        if(logfile)
+            fprintf(logfile,"CFD Coupling established at step" BIGINT_FORMAT "\n",ts);
+    }
 
     // call region model
     if(rm_) rm_->rm_update();
@@ -235,3 +237,18 @@ void FixCfdCoupling::add_pull_property(const char *name, const char *type)
 {
     dc_->add_pull_property(name,type);
 }
+
+/* ---------------------------------------------------------------------- */
+
+bigint FixCfdCoupling::latestpull(const char *name)
+{
+    return dc_->latestpull(name);
+}
+/* ---------------------------------------------------------------------- */
+
+bigint FixCfdCoupling::latestpush(const char *name)
+{
+    return dc_->latestpush(name);
+}
+/* ---------------------------------------------------------------------- */
+
