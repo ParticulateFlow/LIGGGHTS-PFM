@@ -67,10 +67,6 @@ fix		pt2 all mesh/surface/stress file meshes/compFace.stl type 1 scale ${scale} 
 fix		pt3 all mesh/surface/stress file meshes/cylinder.stl type 2 scale ${scale}
 fix		granwalls all wall/gran model hertz tangential history mesh n_meshes 3 meshes pt1 pt2 pt3 store_force yes
 
-#region for insertion
-fix		inface all mesh/surface file meshes/entry.stl type 2 scale ${scale} move 0. 0. 0.
-
-
 #distributions for insertion
 variable rad2 equal ${rad}*1.05
 variable rad3 equal ${rad}*0.95
@@ -98,8 +94,7 @@ compute_modify	thermo_temp dynamic yes
 #insert the first particles so that dump is not empty
 run		1
 dump		dmp all custom 1000 post/dump*.cohesion id type x y z vx vy vz fx fy fz omegax omegay omegaz radius f_force_granwalls[1] f_force_granwalls[2] f_force_granwalls[3]
-dump 		dumpstress all mesh/vtk 1000 post/dump*.vtk stress pt1 pt2 pt3 inface
-dump 		inface all mesh/vtk 1000 post/dump_inface*.vtk stress inface
+dump 		dumpstress all mesh/vtk 1000 post/dump*.vtk stress pt1 pt2 pt3
 
 #insert particles
 run		5000
