@@ -1396,7 +1396,7 @@ void FixChemShrinkCore::init_defaults()
     relRadii_ = massLayer_ = NULL;
     k0_ = Ea_ = NULL;
     xA_ = xC_ = NULL;
-    scale_reduction_rate = 0.;
+    scale_reduction_rate = 1.;
     layerDensities_ = NULL;
 
     // particle properties total
