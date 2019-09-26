@@ -111,6 +111,8 @@ BondGran::~BondGran()
 #endif
     memory->destroy(Sn);
     memory->destroy(St);
+    memory->destroy(S_ben);
+    memory->destroy(S_tor);
     memory->destroy(r_break);
     memory->destroy(sigman_break);
     memory->destroy(tau_break);
@@ -297,8 +299,8 @@ void BondGran::compute(int eflag, int vflag)
     // set stiffness values
     Kn = Sn[type]*A/bondLength;
     Kt = St[type]*A/bondLength;
-    K_tor = St[type]*Ip/bondLength;
-    K_ben = Sn[type]*I/bondLength;
+    K_tor = S_tor[type]*Ip/bondLength;
+    K_ben = S_ben[type]*I/bondLength;
 #endif
 
     // relative translational velocity
@@ -650,6 +652,8 @@ void BondGran::allocate()
 #endif
   memory->create(Sn,n+1,"bond:Sn");
   memory->create(St,n+1,"bond:St");
+  memory->create(S_ben,n+1,"bond:S_ben");
+  memory->create(S_tor,n+1,"bond:S_tor");
 
   memory->create(r_break,(n+1),"bond:r_break");
   memory->create(sigman_break,(n+1),"bond:sigman_break");
@@ -668,7 +672,7 @@ void BondGran::allocate()
 void BondGran::coeff(int narg, char **arg)
 {
 #ifdef FLEXIBLE_BONDS
-  if(narg < 9) error->all(FLERR,"Incorrect args for bond coefficients (ro, ri, lb, sn, st, damp, bn, bt, b_density)"); // Matt Schramm
+  if(narg < 11) error->all(FLERR,"Incorrect args for bond coefficients (ro, ri, lb, sn, st, s_ben, s_tor, damp, bn, bt, b_density)"); // Matt Schramm
 #else
   if(narg < 4) error->all(FLERR,"Incorrect args for bond coefficients");
 #endif
@@ -679,9 +683,11 @@ void BondGran::coeff(int narg, char **arg)
   double lb_one = force->numeric(FLERR,arg[3]);
   double Sn_one = force->numeric(FLERR,arg[4]);
   double St_one = force->numeric(FLERR,arg[5]);
-  double damp_one = force->numeric(FLERR,arg[6]);
-  double bn_one = force->numeric(FLERR,arg[7]);
-  double bt_one = force->numeric(FLERR,arg[8]);
+  double Sben_one = force->numeric(FLERR,arg[6]);
+  double Stor_one = force->numeric(FLERR,arg[7]);
+  double damp_one = force->numeric(FLERR,arg[8]);
+  double bn_one = force->numeric(FLERR,arg[9]);
+  double bt_one = force->numeric(FLERR,arg[10]);
 #else
   double rb_one = force->numeric(FLERR,arg[1]);
   double Sn_one = force->numeric(FLERR,arg[2]);
@@ -699,7 +705,7 @@ void BondGran::coeff(int narg, char **arg)
   /*NL*///if (screen) fprintf(screen,"Sn %f, St%f\n",Sn_one,St_one);
 
 #ifdef FLEXIBLE_BONDS
-  int iarg = 9;
+  int iarg = 11;
 #else
   int iarg = 4;
 #endif
@@ -751,6 +757,8 @@ void BondGran::coeff(int narg, char **arg)
 #endif
     Sn[i] = Sn_one;
     St[i] = St_one;
+    S_ben[i] = Sben_one;
+    S_tor[i] = Stor_one;
 
     if(breakmode == BREAKSTYLE_SIMPLE) r_break[i] = r_break_one;
     else
@@ -795,6 +803,8 @@ void BondGran::write_restart(FILE *fp)
 #endif
   fwrite(&Sn[1],sizeof(double),atom->nbondtypes,fp);
   fwrite(&St[1],sizeof(double),atom->nbondtypes,fp);
+  fwrite(&S_ben[1],sizeof(double),atom->nbondtypes,fp);
+  fwrite(&S_tor[1],sizeof(double),atom->nbondtypes,fp);
 #ifdef FLEXIBLE_BONDS
   fwrite(&damp[1],sizeof(double),atom->nbondtypes,fp);
 #endif
@@ -820,6 +830,8 @@ void BondGran::read_restart(FILE *fp)
 #endif
     fread(&Sn[1],sizeof(double),atom->nbondtypes,fp);
     fread(&St[1],sizeof(double),atom->nbondtypes,fp);
+    fread(&S_ben[1],sizeof(double),atom->nbondtypes,fp);
+    fread(&S_tor[1],sizeof(double),atom->nbondtypes,fp);
 #ifdef FLEXIBLE_BONDS
     fread(&damp[1],sizeof(double),atom->nbondtypes,fp); //MS
 #endif
@@ -835,6 +847,8 @@ void BondGran::read_restart(FILE *fp)
 #endif
   MPI_Bcast(&Sn[1],atom->nbondtypes,MPI_DOUBLE,0,world);
   MPI_Bcast(&St[1],atom->nbondtypes,MPI_DOUBLE,0,world);
+  MPI_Bcast(&S_ben[1],atom->nbondtypes,MPI_DOUBLE,0,world);
+  MPI_Bcast(&S_tor[1],atom->nbondtypes,MPI_DOUBLE,0,world);
 #ifdef FLEXIBLE_BONDS
   MPI_Bcast(&damp[1],atom->nbondtypes,MPI_DOUBLE,0,world); //MS
 #endif

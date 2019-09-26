@@ -58,6 +58,7 @@ class BondGran : public Bond {
   int breakmode;
   double *rb;
   double *Sn,*St;
+  double *S_ben, *S_tor;
   double *r_break,*sigman_break,*tau_break,*T_break;
 
   // flexible bonds
