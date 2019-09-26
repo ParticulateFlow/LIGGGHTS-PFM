@@ -113,17 +113,18 @@ FixPropertyAtomTimeTracer::FixPropertyAtomTimeTracer(LAMMPS *lmp, int narg, char
     strcpy(tracer_name,id);
     int n_reg = iregion_.size();
     char **baseargs = new char*[9+n_reg]; // VS does not support variable-length arrays --> new
-    baseargs[0] = tracer_name; 
+    baseargs[0] = tracer_name;
     baseargs[1] = (char *) "all";
     baseargs[2] = (char *) "property/atom/tracer";
     baseargs[3] = tracer_name;
-    if(0 == n_reg)
-        baseargs[4] = (char *) "scalar"; 
-    else
-        baseargs[4] = (char *) "vector"; 
-    baseargs[5] = (char *) "yes";    
-    baseargs[6] = (char *) "yes";    
-    baseargs[7] = (char *) "no";    
+    if(0 == n_reg) {
+        baseargs[4] = (char *) "scalar";
+    } else {
+        baseargs[4] = (char *) "vector";
+    }
+    baseargs[5] = (char *) "yes";
+    baseargs[6] = (char *) "yes";
+    baseargs[7] = (char *) "no";
     baseargs[8] = (char *) "0.";
     for(int i = 0; i < n_reg; i++)
         baseargs[9+i] = (char *) "0.";
@@ -196,7 +197,7 @@ void FixPropertyAtomTimeTracer::end_of_step()
         this->set_all(0.0);
         if (screen)
         {
-            fprintf(screen,"resetting residence time dist. at timestep %ld\n",update->ntimestep);
+            fprintf(screen,"resetting residence time dist. at timestep " BIGINT_FORMAT "\n",update->ntimestep);
         }
     }
 

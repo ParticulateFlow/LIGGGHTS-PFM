@@ -12,36 +12,44 @@
 This section describes what granular models can be used along with
 "pair gran"_pair_gran.html and "fix wall/gran"_fix_wall_gran.html.
 
+4.1 surface commands :link(con_1),h4
 
-4.1 cohesion commands :link(con_1),h4
+Click on the surface model style itself for a full description:
 
-Click on the style itself for a full description:
-
-"sjkr"_gran_cohesion_sjkr.html,
-"sjkr2"_gran_cohesion_sjkr2.html :tb(c=4,ea=c)
+"default"_gran_surface_default.html,
+"roughness"_#con_1,
+"superquadric"_gran_surface_superquadric.html :tb(c=3,ea=c)
 
 4.2 model commands :link(con_2),h4
 
-Click on the style itself for a full description:
+Click on the normal model style itself for a full description:
 
 "hertz"_gran_model_hertz.html,
 "hertz/stiffness"_gran_model_hertz_stiffness.html,
 "hooke"_gran_model_hooke.html,
 "hooke/stiffness"_gran_model_hooke_stiffness.html :tb(c=4,ea=c)
 
-4.3 rolling_friction commands :link(con_3),h4
+4.3 cohesion commands :link(con_3),h4
 
-Click on the style itself for a full description:
+Click on the cohesion model style itself for a full description:
+
+"sjkr"_gran_cohesion_sjkr.html,
+"sjkr2"_gran_cohesion_sjkr2.html :tb(c=4,ea=c)
+
+4.4 tangential commands :link(con_4),h4
+
+Click on the tangential model style itself for a full description:
+
+"history"_gran_tangential_history.html,
+"incremental_history"_gran_tangential_incremental_history.html,
+"no_history"_gran_tangential_no_history.html :tb(c=4,ea=c)
+
+4.5 rolling_friction commands :link(con_5),h4
+
+Click on the rolling friction model style itself for a full description:
 
 "cdt"_gran_rolling_friction_cdt.html,
 "epsd"_gran_rolling_friction_epsd.html,
 "epsd2"_gran_rolling_friction_epsd2.html :tb(c=4,ea=c)
 
-4.4 tangential commands :link(con_4),h4
-
-Click on the style itself for a full description:
-
-"history"_gran_tangential_history.html,
-"incremental_history"_gran_tangential_incremental_history.html,
-"no_history"_gran_tangential_no_history.html :tb(c=4,ea=c)
 

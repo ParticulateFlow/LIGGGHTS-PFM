@@ -21,6 +21,7 @@
 #include "memory.h"
 #include "error.h"
 #include "force.h"
+#include <math.h>
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -29,6 +30,10 @@ using namespace FixConst;
 
 FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
+  conditional(false),
+  var(NULL),
+  var_valid(0.0),
+  var_threshold(0.0),
   once(false),
   execution_step(0)
 {
@@ -44,10 +49,19 @@ FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
 
   if (narg == 6 && strcmp(arg[5],"once")==0)
   {
-    once=true;
+    once = true;
     execution_step = nevery;
     nevery = 1;
   }
+  else if (narg == 9 && strcmp(arg[5],"conditional") == 0) {
+    conditional = true;
+    int n = strlen(arg[6]) + 1;
+    var = new char[n];
+    strcpy(var,arg[6]);
+    var_valid = atof(arg[7]);
+    var_threshold = atof(arg[8]);
+  }
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -70,6 +84,14 @@ int FixExecute::setmask()
 
 void FixExecute::end_of_step()
 {
+  if (conditional)
+  {
+    int ivar = input->variable->find(var);
+    if (ivar < 0) error->fix_error(FLERR,this,"target variable not found");
+    double value = input->variable->compute_equal(ivar);
+    if (fabs(value-var_valid) > var_threshold) return;
+  }
+
   if (!once || update->ntimestep == execution_step )
   input->one(string);
 }

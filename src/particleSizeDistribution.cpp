@@ -27,6 +27,7 @@
 #include "math_const.h"
 #include "particleSizeDistribution.h"
 #include <stdio.h>
+#include <algorithm>
 
 using namespace LAMMPS_NS;
 using namespace MathConst;

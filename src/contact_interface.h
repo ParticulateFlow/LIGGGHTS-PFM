@@ -52,7 +52,33 @@ struct ContactData {
   bool is_wall;
   bool has_force_update;
 
-  ContactData() : area_ratio(1.0) {}
+  bool is_non_spherical; // superquadric
+
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+  double contact_point[3];
+#endif
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  double reff;
+#endif
+
+  ContactData() :
+    radi(0.0),
+    radj(0.0),
+    radsum(0.0),
+    rsq(0.0),
+    area_ratio(1.0),
+    touch(NULL),
+    contact_history(NULL),
+    i(-1),
+    j(-1),
+    is_wall(false),
+    has_force_update(false),
+    is_non_spherical(false)
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    ,reff(0.0)
+#endif
+  {}
 };
 
 // data available in collision() only

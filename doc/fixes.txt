@@ -24,8 +24,11 @@ Fixes :h1
    fix_box_relax
    fix_break_particle
    fix_buoyancy
+   fix_cfd_coupling_chemistry
    fix_cfd_coupling_recurrence
    fix_check_timestep_gran
+   fix_chem_shrink
+   fix_chem_shrink_core
    fix_colvars
    fix_deform
    fix_deposit
@@ -89,6 +92,7 @@ Fixes :h1
    fix_nve_line
    fix_nve_noforce
    fix_nve_sphere
+   fix_nve_superquadric
    fix_nve_tri
    fix_nvt_asphere
    fix_nvt_sllod
@@ -99,6 +103,7 @@ Fixes :h1
    fix_particletemplate_fragments
    fix_particletemplate_multisphere
    fix_particletemplate_sphere
+   fix_particletemplate_superquadric
    fix_phonon
    fix_planeforce
    fix_poems

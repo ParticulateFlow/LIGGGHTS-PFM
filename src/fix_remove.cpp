@@ -35,6 +35,8 @@
 #include "fix_multisphere.h"
 #include "multisphere_parallel.h"
 #include "math_const.h"
+#include "input.h"
+#include "variable.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -55,9 +57,14 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   delete_below_(0.),     // set below
   rate_remove_(0.),      // set below
   seed_(0),              // set below
+  integrated_error_(true),
+  variable_rate_(false),
+  ivar_(-1),
   mass_removed_(0.),
   mass_to_remove_(0.),
+  integrated_rate_(0.),
   time_origin_(update->ntimestep),
+  time_last_(update->ntimestep),
   verbose_(false),
   compress_flag_(1),
   fix_ms_(0),
@@ -71,10 +78,23 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   nevery = atoi(arg[iarg++]);
   if (nevery <= 0) error->fix_error(FLERR,this,"");
 
-  if (strcmp(arg[iarg++],"massrate") != 0)
-      error->fix_error(FLERR,this,"expecting 'massrate' keyword");
-  rate_remove_ = atof(arg[iarg++]);
-  if (rate_remove_ <= 0.) error->fix_error(FLERR,this,"");
+  if (strcmp(arg[iarg],"massrate") != 0 && strcmp(arg[iarg],"massratevariable") != 0)
+      error->fix_error(FLERR,this,"expecting 'massrate' or 'massratevariable' keywords");
+  if (strcmp(arg[iarg],"massrate") == 0)
+  {
+      rate_remove_ = atof(arg[iarg+1]);
+      if (rate_remove_ <= 0.) error->fix_error(FLERR,this,"");
+  }
+  else if (strcmp(arg[iarg],"massratevariable") == 0)
+  {
+      variable_rate_ = true;
+      int n = strlen(arg[iarg+1]) + 1;
+      rate_name_ = new char[n];
+      strcpy(rate_name_,arg[iarg+1]);
+      if(comm->me == 0 && screen) fprintf(screen,"fix_remove: using variable mass rate\n");
+  }
+  iarg++;
+  iarg++;
 
   if (strcmp(arg[iarg++],"style") != 0)
       error->fix_error(FLERR,this,"expecting 'style' keyword");
@@ -118,6 +138,14 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       else if(strcmp(arg[iarg+1],"no"))
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'verbose'");
       iarg += 2;
+    } else if(strcmp(arg[iarg],"integrated_error") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'integrated_error'");
+      if(strcmp(arg[iarg+1],"no") == 0)
+        integrated_error_ = false;
+      else if(strcmp(arg[iarg+1],"yes"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'integrated_error'");
+      iarg += 2;
     } else if(strcmp(arg[iarg],"compress") == 0) {
       if(narg < iarg+2)
         error->fix_error(FLERR,this,"Illegal compress option");
@@ -148,6 +176,7 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
 FixRemove::~FixRemove()
 {
   delete random_;
+  if (variable_rate_) delete [] rate_name_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -204,6 +233,8 @@ void FixRemove::init()
     ms_ = 0;
 
   /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::init end\n");
+
+  if (variable_rate_) ivar_ = input->variable->find(rate_name_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -214,6 +245,14 @@ void FixRemove::pre_exchange()
 
     int time_now = update->ntimestep;
     if(time_now != next_reneighbor) return;
+
+    // update if variable mass rate
+    if (variable_rate_)
+    {
+        if(comm->me == 0 && screen) fprintf(screen,"fix_remove: updating removal rate with variable %s\n",rate_name_);
+        ivar_ = input->variable->find(rate_name_);
+        rate_remove_ = input->variable->compute_equal(ivar_);
+    }
 
     //NP clear containers
 
@@ -229,7 +268,16 @@ void FixRemove::pre_exchange()
     // schedule next event and calc mass to remove this step
 
     next_reneighbor = time_now + nevery;
-    mass_to_remove_ = (time_now - time_origin_) * dt_ * rate_remove_ - mass_removed_;
+    if (integrated_error_)
+    {
+        integrated_rate_ += (time_now - time_last_) * dt_ * rate_remove_;
+        mass_to_remove_ = integrated_rate_ - mass_removed_;
+    }
+    else
+    {
+        mass_to_remove_ = (time_now - time_last_) * dt_ * rate_remove_;
+    }
+    time_last_ = time_now;
 
     // print to logfile
 
@@ -241,6 +289,8 @@ void FixRemove::pre_exchange()
         if(logfile)
             fprintf(logfile,"Timestep %d, removing material, mass to remove this step %f\n",
                         time_now,mass_to_remove_);
+       if(logfile)
+            fprintf(logfile,"fix_remove: integrated rate = %f, rate_remove = %f\n",integrated_rate_,rate_remove_);
     }
 
     // return if nothing to do

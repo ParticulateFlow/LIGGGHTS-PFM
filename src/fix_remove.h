@@ -75,9 +75,14 @@ class FixRemove : public Fix {
   double delete_below_;
   double rate_remove_;              //NP in kg per sec
   int seed_;
+  bool integrated_error_;
 
-  double mass_removed_,mass_to_remove_;
-  int time_origin_;
+  bool variable_rate_;
+  char* rate_name_;
+  int ivar_;
+
+  double mass_removed_,mass_to_remove_,integrated_rate_;
+  int time_origin_,time_last_;
   double dt_;
   bool verbose_;
   int compress_flag_;

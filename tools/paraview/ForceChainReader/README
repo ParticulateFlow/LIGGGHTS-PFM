@@ -1,0 +1,13 @@
+The Plugin converts the dump local files to a ParaView readable format.
+In the inputscript use a compute like this
+
+compute fc all pair/gran/local id pos force
+
+and a dump command like this
+
+#                                            x1      y1      z1      x2      y2      z2      id1     id2     periodic fx       fy       fz
+dump forcechain all local 1000 post/fc*.dump c_fc[1] c_fc[2] c_fc[3] c_fc[4] c_fc[5] c_fc[6] c_fc[7] c_fc[8] c_fc[9]  c_fc[10] c_fc[11] c_fc[12]
+
+to generate the dump files.
+
+The Plugin outputs a VTKPolyData Object which contains the Points and a line connecting each contact-pair for visualisation.

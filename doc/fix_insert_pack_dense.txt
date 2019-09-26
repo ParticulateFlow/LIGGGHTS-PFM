@@ -22,13 +22,16 @@ dist-ID = ID of a "fix_particledistribution_discrete"_fix_particledistribution_d
 region = obligatory keyword :l
 region-id = id of the {region} to be used for insertion
 one or more keyword/value pairs can be appended :l
-keywords = {volumefraction_region} :l
-  {volumefraction_region} = the intended volume fraction in the region :pre
+keywords = {volumefraction_region} or {insert_every} or {target_variable} :l
+  {volumefraction_region} = the intended volume fraction in the region
+  {insert_every} = if specified, perform insertion every N time steps, otherwise only once
+  {target_variable} = name of a previously defined variable together with a target and a threshold value; insertion only if they match :pre
 :ule
 
 [Examples:]
 
 fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 volumefraction_region 0.53 :pre
+fix ins_pack_dense all insert/pack/dense seed 123 region reg distributiontemplate pdd2 volumefraction_region 0.53 insert_every 10000 target_variable fillLevel 0.0 0.1 :pre
 
 [Description:]
 

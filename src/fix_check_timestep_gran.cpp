@@ -141,7 +141,7 @@ void FixCheckTimestepGran::end_of_step()
     /*NL*/ //   fprintf(screen,"time-step is %f %% of hertz time\n",fraction_hertz*100.);
     /*NL*/ //}
 
-    if(warnflag&&comm->me==0)
+    if(warnflag && comm->me==0)
     {
         if(fraction_skin >= 0.5)
         {
@@ -193,14 +193,20 @@ void FixCheckTimestepGran::calc_rayleigh_hertz_estims()
   {
     if (mask[i] & groupbit)
     {
+        double ri = r[i];
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        if(atom->superquadric_flag)
+            ri = std::min(std::min(atom->shape[i][0],atom->shape[i][1]),atom->shape[i][2]);
+#endif
+
         double shear_mod = Y->values[type[i]-1]/(2.*(nu->values[type[i]-1]+1.));
-        rayleigh_time_i = M_PI*r[i]*sqrt(density[i]/shear_mod)/(0.1631*nu->values[type[i]-1]+0.8766);
+        rayleigh_time_i = M_PI*ri*sqrt(density[i]/shear_mod)/(0.1631*nu->values[type[i]-1]+0.8766);
         if(rayleigh_time_i < rayleigh_time) rayleigh_time = rayleigh_time_i;
 
         vmag = sqrt(v[i][0]*v[i][0]+v[i][1]*v[i][1]+v[i][2]*v[i][2]);
         if(vmag > vmax) vmax=vmag;
 
-        if(r[i] < r_min) r_min = r[i];
+        if(ri < r_min) r_min = ri;
     }
   }
 
@@ -263,6 +269,12 @@ void FixCheckTimestepGran::calc_rayleigh_hertz_estims()
                 if(type[i]!=ti || type[i]!=tj) continue;
                 meff = 4.*r[i]*r[i]*r[i]*M_PI/3.*density[i];
                 reff = r[i]/2.;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+                if (atom->superquadric_flag) {
+                    meff = atom->volume[i]*density[i];
+                    reff = std::max(std::max(atom->shape[i][0],atom->shape[i][1]),atom->shape[i][2])/2.0;
+                }    
+#endif
                 hertz_time_i = 2.87*pow(meff*meff/(reff*Eeff*Eeff*vmax),0.2);
                 if(hertz_time_i<hertz_time_min)
                     hertz_time_min=hertz_time_i;

@@ -1,7 +1,7 @@
 # LIGGGHTS
 
 LIGGGHTS® - LAMMPS Improved for General Granular and Granular Heat Transfer Simulations - is a discrete element method (DEM) particle simulation software.
-LIGGGHTS® is part of the [CFDEM®project](www.cfdem.com) and is based on the molecular dynamics simulation code [LAMMPS](https://lammps.sandia.gov/).
+LIGGGHTS® is part of the [CFDEM®project](https://www.cfdem.com) and is based on the molecular dynamics simulation code [LAMMPS](https://lammps.sandia.gov/).
 
 [![CircleCI](https://circleci.com/gh/ParticulateFlow/LIGGGHTS.svg?style=shield&circle-token=8905cdbf813717ce628dd05a454d0f7581110907)](https://circleci.com/gh/ParticulateFlow/LIGGGHTS)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
@@ -9,7 +9,7 @@ LIGGGHTS® is part of the [CFDEM®project](www.cfdem.com) and is based on the mo
 ## Disclaimer
 
 > This is an academic adaptation of the LIGGGHTS® software package, released by the
-[Department of Particulate Flow Modelling at Johannes Kepler University in Linz, Austria.](www.jku.at/pfm)
+[Department of Particulate Flow Modelling at Johannes Kepler University in Linz, Austria.](https://www.jku.at/pfm)
 > LIGGGHTS® and CFDEM® are registered trademarks, and this offering is not approved or
 endorsed by DCS Computing GmbH, the official producer of the LIGGGHTS® and CFDEM®coupling software.
 
@@ -23,14 +23,22 @@ This is a short summary of how to install LIGGGHTS on Linux. A more comprehensiv
 sudo apt-get install build-essential cmake openmpi-bin libopenmpi-dev python-dev
 ```
 
+We recommend installing LIGGGHTS to a directory named `CFDEM`, especially when used with CFDEMcoupling.
+
+```bash
+cd
+mkdir -p CFDEM
+cd CFDEM
+```
+
 Clone or download the LIGGGHTS source from the repository.
 
 ### Build LIGGGHTS with CMake
 
 ```bash
 cd LIGGGHTS
-mkdir -p build
-cd build
+mkdir -p src-build
+cd src-build
 cmake ../src/
 make
 ```
@@ -39,10 +47,10 @@ make
 
 ```bash
 cd LIGGGHTS
-mkdir -p build
+mkdir -p src-build
 cd src
 make fedora
-cp lmp_fedora ../build
+cp lmp_fedora ../src-build/liggghts
 ```
 
 ### Add an alias
@@ -51,7 +59,7 @@ You may want to create a permanent alias for the executable.
 
 ```bash
 gedit ~/.bashrc &
-alias liggghts='~/LIGGGHTS/build/lmp_fedora'
+alias liggghts='~/CFDEM/LIGGGHTS/src-build/liggghts'
 source ~/.bashrc
 ```
 

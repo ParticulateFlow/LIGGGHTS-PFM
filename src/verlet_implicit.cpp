@@ -133,7 +133,7 @@ void VerletImplicit::run(int n)
 
         timer->stamp();
 
-        /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0)fprintf(screen,"    doing pair force\n");__debug__(lmp);}
+        /*NL*/if(DEBUG_VERLET_IMP) {MPI_Barrier(world);if(comm->me==0 && screen)fprintf(screen,"    doing pair force\n");__debug__(lmp);}
         if (force->pair) {
           force->pair->compute(eflag,vflag);
           timer->stamp(TIME_PAIR);

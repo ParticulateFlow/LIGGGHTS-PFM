@@ -40,12 +40,18 @@
 
 using namespace LAMMPS_NS;
 
-typedef struct
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+using namespace MathExtraLiggghtsNonspherical;
+#else
+struct point
 {
   double x;
   double y;
   double z;
-} point;
+  point(double a, double b, double c):
+    x(a), y(b), z(c) {}
+};
+#endif
 
 ParticleSpatialDistribution::ParticleSpatialDistribution(RanPark *rp, double overlap, int maxattempt) :
   RNG(rp),
@@ -142,7 +148,7 @@ bool create(int generation, int clan, double A, double B, double C, double D, do
     if (inversionCircle || outerCircle) {
       return false;
     } else {
-      point x = {a * r, b * r, c * r};
+      point x(a * r, b * r, c * r);
       pos.insert(std::pair<double,point>(r,x));
       return true;
     }

@@ -1,0 +1,62 @@
+﻿<ServerManagerConfiguration>
+<ProxyGroup name="internal_sources">
+   <SourceProxy name="liggghts_forcechainreader_core"
+                class="liggghts_forcechainreader"
+                label="liggghts forcechain Reader">
+    <StringVectorProperty
+        name="FileName"
+        animateable="0"
+        command="SetFileName"
+        number_of_elements="1">
+        <FileListDomain name="files"/>
+        <Documentation>
+          This property specifies the file name for the reader.
+        </Documentation>
+     </StringVectorProperty>
+     <Hints>
+      <ReaderFactory extensions="dump"
+          file_description="liggghts forcechain files" />
+     </Hints>
+   </SourceProxy>
+  </ProxyGroup>
+
+  <ProxyGroup name="sources">
+    <SourceProxy name="liggghts_forcechainreader"
+                         si_class="vtkSIMetaReaderProxy"
+                         class="vtkFileSeriesReader"
+                         file_name_method="SetFileName">
+      <SubProxy>
+        <Proxy name="Reader"
+          proxygroup="internal_sources"
+          proxyname="liggghts_forcechainreader_core">
+        </Proxy>
+      </SubProxy>
+      <StringVectorProperty name="FileNames"
+                         clean_command="RemoveAllFileNames"
+                         command="AddFileName"
+                         animateable="0"
+                         number_of_elements="0"
+                         repeat_command="1">
+     <FileListDomain name="files" />
+     <Documentation>
+       The file or list of files to be read by the reader.
+       A list of files will be sequenced over time.
+     </Documentation>
+   </StringVectorProperty>
+
+   <DoubleVectorProperty name="TimestepValues"
+                         repeatable="1"
+                         information_only="1">
+     <TimeStepsInformationHelper />
+     <Documentation>
+       Available timestep values.
+     </Documentation>
+   </DoubleVectorProperty>
+
+     <Hints>
+      <ReaderFactory extensions="dump"
+          file_description="liggghts forcechain files" />
+     </Hints>
+     </SourceProxy>
+  </ProxyGroup>
+</ServerManagerConfiguration>

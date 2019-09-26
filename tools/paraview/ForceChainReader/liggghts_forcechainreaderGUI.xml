@@ -1,0 +1,4 @@
+<ParaViewReaders>
+ <Proxy group="sources" name="liggghts_forcechainreader" />
+</ParaViewReaders>
+

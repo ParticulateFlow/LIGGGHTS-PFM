@@ -50,6 +50,10 @@ class ComputePropertyAtom : public Compute {
   void pack_id(int);
   void pack_molecule(int);
   void pack_type(int);
+// superquadric start
+  void pack_vol(int);
+  void pack_eq_radius(int n);
+// superquadric end
   void pack_mass(int);
 
   void pack_x(int);
