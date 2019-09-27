@@ -23,14 +23,22 @@ This is a short summary of how to install LIGGGHTS on Linux. A more comprehensiv
 sudo apt-get install build-essential cmake openmpi-bin libopenmpi-dev python-dev
 ```
 
+We recommend installing LIGGGHTS to a directory named `CFDEM`, especially when used with CFDEMcoupling.
+
+```bash
+cd
+mkdir -p CFDEM
+cd CFDEM
+```
+
 Clone or download the LIGGGHTS source from the repository.
 
 ### Build LIGGGHTS with CMake
 
 ```bash
 cd LIGGGHTS
-mkdir -p build
-cd build
+mkdir -p src-build
+cd src-build
 cmake ../src/
 make
 ```
@@ -39,10 +47,10 @@ make
 
 ```bash
 cd LIGGGHTS
-mkdir -p build
+mkdir -p src-build
 cd src
 make fedora
-cp lmp_fedora ../build/liggghts
+cp lmp_fedora ../src-build/liggghts
 ```
 
 ### Add an alias
@@ -51,7 +59,7 @@ You may want to create a permanent alias for the executable.
 
 ```bash
 gedit ~/.bashrc &
-alias liggghts='~/LIGGGHTS/build/liggghts'
+alias liggghts='~/CFDEM/LIGGGHTS/src-build/liggghts'
 source ~/.bashrc
 ```
 

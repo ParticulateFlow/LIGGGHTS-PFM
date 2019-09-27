@@ -91,7 +91,7 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       int n = strlen(arg[iarg+1]) + 1;
       rate_name_ = new char[n];
       strcpy(rate_name_,arg[iarg+1]);
-      if(comm->me == 0) fprintf(screen,"fix_remove: using variable mass rate\n");
+      if(comm->me == 0 && screen) fprintf(screen,"fix_remove: using variable mass rate\n");
   }
   iarg++;
   iarg++;
@@ -249,7 +249,7 @@ void FixRemove::pre_exchange()
     // update if variable mass rate
     if (variable_rate_)
     {
-        if(comm->me == 0) fprintf(screen,"fix_remove: updating removal rate with variable %s\n",rate_name_);
+        if(comm->me == 0 && screen) fprintf(screen,"fix_remove: updating removal rate with variable %s\n",rate_name_);
         ivar_ = input->variable->find(rate_name_);
         rate_remove_ = input->variable->compute_equal(ivar_);
     }

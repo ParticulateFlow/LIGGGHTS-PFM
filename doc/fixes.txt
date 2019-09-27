@@ -25,8 +25,11 @@ Fixes :h1
    fix_box_relax
    fix_break_particle
    fix_buoyancy
+   fix_cfd_coupling_chemistry
    fix_cfd_coupling_recurrence
    fix_check_timestep_gran
+   fix_chem_shrink
+   fix_chem_shrink_core
    fix_colvars
    fix_deform
    fix_deposit

@@ -72,7 +72,6 @@ namespace MathExtraLiggghtsNonspherical {
   inline void mulN(const double k, const double *a, const int len, double *result);
   inline void matvecN(const double *A, const double *b, const int len, double *c);
   inline void matmat(const double *A, double *B, const int N, const int K, const int M, double *C);
-  inline void zeros(double *a, const int len);
   inline void tensor_quat_rotate(const double *mat, const double *quat, double *result);
   template<int N, int m_start> void GMRES(const double *A, const double *b, const double *x0, double *x);
   inline double distsq(const double *v1, const double *v2, int len);
@@ -231,15 +230,11 @@ template<int N, int m_start> void MathExtraLiggghtsNonspherical::GMRES(const dou
 
   double beta = ::sqrt(beta_sq);
 
-  double y[m_start];
-  double v[(m_start+1)*N];
-  double h[(m_start+1)*m_start];
-  double w[m_start*N];
+  double y[m_start] = {0.0};
+  double v[(m_start+1)*N] = {0.0};
+  double h[(m_start+1)*m_start] = {0.0};
+  double w[m_start*N] = {0.0};
 
-  zeros(y, m);
-  zeros(v, (m+1)*N);
-  zeros(h, (m+1)*m);
-  zeros(w, m*N);
 
   mulN(1.0/beta, res, N, v); //v0 = res / beta
 
@@ -261,9 +256,8 @@ template<int N, int m_start> void MathExtraLiggghtsNonspherical::GMRES(const dou
       mulN(1.0/h[(j+1)*m + j], w+j*N, N, v+(j+1)*N);
   }
 
-  double hm[(m_start+1)*m_start];
-  double g[m_start+1];
-  zeros(g, m+1);
+  double hm[(m_start+1)*m_start] = {0.0};
+  double g[m_start+1] = {0.0};
   g[0] = beta;
 
   for(int i = 0; i < m + 1; i++) {
@@ -272,8 +266,8 @@ template<int N, int m_start> void MathExtraLiggghtsNonspherical::GMRES(const dou
     }
   }
 
-  double row1[m_start];
-  double row2[m_start];
+  double row1[m_start] = {0.0};
+  double row2[m_start] = {0.0};
 
   for(int j = 0; j < m; j++) {
     double root_inv = 1.0 / sqrt(hm[j*m_start+j]*hm[j*m_start+j] + hm[(j+1)*m_start+j]*hm[(j+1)*m_start+j]);
@@ -397,12 +391,6 @@ inline void MathExtraLiggghtsNonspherical::matmat(const double *A, double *B, co
       }
     }
   }
-}
-
-//fill the first <len> elements of a with zeros
-inline void MathExtraLiggghtsNonspherical::zeros(double *a, const int len)
-{
-  memset(a, 0.0, len*sizeof(double));
 }
 
 //squared distance between two points in N-dimensional space
