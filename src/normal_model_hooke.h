@@ -133,7 +133,7 @@ namespace ContactModels
         /*
         if (comm->me == 0 && screen) {
           if(ktToKn)
-              fprintf(screen," NormalModel<HOOKE>: will use user-modified ktToKn of 2/7.\n");
+              fprintf(screen," NormalModel<HOOKE>: will use user-modified ktToKn of %f.\n",kappa);
           if(tangential_damping)
               fprintf(screen," NormalModel<HOOKE>: will apply tangential damping.\n");
           if(viscous)

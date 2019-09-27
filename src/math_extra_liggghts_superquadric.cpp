@@ -849,9 +849,8 @@ void calc_contact_point(Superquadric *particleA, Superquadric *particleB,
   double size = std::min(size_i, size_j);
 
   J4[15] = 0.0;
-  double delta[4], delta_0[4];
-  zeros(delta, 4);
-  zeros(delta_0, 4);
+  double delta[4] = {0.0};
+  double delta_0[4] = {0.0};
   const int Niter = 100000;
   double pointb[3], pointa[3];
   double J4_inv[16];
@@ -1154,8 +1153,8 @@ double minimal_distance(Superquadric *particleA, Superquadric *particleB, const 
   LAMMPS_NS::vectorCopy3D(pointA, pointA0);
   LAMMPS_NS::vectorCopy3D(pointB, pointB0);
 
-  double delta[ndim], delta_0[ndim];
-  zeros(delta, ndim);
+  double delta[ndim] = {0.0};
+  double delta_0[ndim];
   for(int i = 0; i < ndim; i++)
     delta_0[i] = 1.0;
   double hessA[9], hessB[9];

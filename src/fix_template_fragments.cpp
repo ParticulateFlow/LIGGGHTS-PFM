@@ -165,7 +165,7 @@ double FixTemplateFragments::max_r_bound() const
 // used by pdd to check which template has the most spheres
 int FixTemplateFragments::number_spheres()
 {
-  if (LMP_DEBUGMODE_FRAGMENTS) fprintf(screen,"FixTemplateFragments::number_spheres: nspheres = %d\n", nspheres);
+  if (LMP_DEBUGMODE_FRAGMENTS && screen) fprintf(screen,"FixTemplateFragments::number_spheres: nspheres = %d\n", nspheres);
   return nspheres;
 }
 

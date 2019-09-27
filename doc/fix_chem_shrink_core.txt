@@ -11,26 +11,34 @@ fix chem/shrink/core command :h3
 
 [Syntax:]
 
-fix ID group-ID chem/shrink/core speciesA A_keyword molMassA A_value speciesC C_keyword molMassC C_value kch2 kch2_value screen screen-value nevery nevery-value:pre
+fix ID group-ID chem/shrink/core speciesA A_name molMassA A_value speciesC C_name molMassC C_value kch2 kch2_value keyword values :pre
 
 ID, group-ID are documented in "fix"_fix.html command :l
 chem/shrink/core = style name of this fix command :l
-speciesA, speciesC, molMassA, molMassC, kch2, = obligatory keywords :l
-A_, C_keyword = corresponding species :l
-A_, C_ = molar masses of relative species A and C in kg/mol :l
-kch2_value = total carbon or hydrogen content in the system, depending on the species A :l
-screen-value = <i>yes</i> or <i>no</i> depending on, if the values should be printed in the log file or not :l
-nevery-value = 1,10... N. Number defining when in which intervals the chemical reaction core should take place :l
+speciesA = obligatory keyword :l
+A_name = name of species A :l
+molMassA = obligatory keyword :l
+A_value = molar mass of species A in kg/mol :l
+speciesC = obligatory keyword :l
+C_name = name of species C :l
+molMassC = obligatory keyword :l
+C_value = molar mass of species C in kg/mol :l
+kch2, = obligatory keyword :l
+kch2_value = total carbon or hydrogen content in the system, depending on species A :l
+zero or more keyword/value pairs may be appended :l
+keyword = {scale_reduction_rate} or {screen} :l
+  {scale_reduction_rate} value = multiplaction factor for reduction rate
+  {screen} value = {yes} or {no} :pre
 :ule
 
 [Examples:]
 
-fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 speciesC CO2 molMassC 0.04401 kch2 0.4 screen yes nevery 1 
+fix cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 speciesC CO2 molMassC 0.04401 kch2 0.4 screen scale_reduction_rate 10.0 yes :pre
 
 Multiple gases:
 
-fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 speciesC CO2 molMassC 0.04401 kch2 0.37 screen yes nevery 1 
-fix     cfd6 all chem/shrink/core speciesA H2 molMassA 0.00202 speciesC H2O molMassC 0.01801 kch2 0.03 screen yes nevery 1
+fix cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 speciesC CO2 molMassC 0.04401 kch2 0.37 scale_reduction_rate 10.0 screen yes
+fix cfd6 all chem/shrink/core speciesA H2 molMassA 0.00202 speciesC H2O molMassC 0.01801 kch2 0.03 scale_reduction_rate 10.0 screen yes :pre
 
 [LIGGGHTS vs. LAMMPS info:]
 
@@ -38,16 +46,27 @@ This command is not available in LAMMPS.
 
 [Description:]
 
-Activates the fix for <i> unreacted shrinking core model </i> in the liggghts library, for reactant species A and product species C. Species molar masses have to written in kg/mol units, a specific total carbon or hydrogen value has to be defined in the fix depending on the relative percentage, i.e. a kch2 value of 0.4 in CO - CO2 mixture shows that there is 40% CO in the incoming gas species. If the other gases are not specified in another fix, that means that they are inert gases.
+Activates the fix for {unreacted shrinking core model} in the liggghts library,
+for reactant species A and product species C. Species molar masses have to
+written in kg/mol units, a specific total carbon or hydrogen value has to be
+defined in the fix depending on the relative percentage, i.e. a kch2 value of
+0.4 in CO - CO2 mixture shows that there is 40% CO in the incoming gas species.
+If the other gases are not specified in another fix, that means that they are
+inert gases.
 
-The fix follows through the loop of calculating particle layer masses, fractional reduction, equilibrium constant and molar equilibrium values, reaction resistance term, diffusion resistance term, mass transfer term, chemical reaction rate, and particle and gas mass updates. 
+The fix follows through the loop of calculating particle layer masses,
+fractional reduction, equilibrium constant and molar equilibrium values,
+reaction resistance term, diffusion resistance term, mass transfer term,
+chemical reaction rate, and particle and gas mass updates.
 
-All three resistance terms are implemented from the model of "Valipour 2009 Mathematical Modeling of a Non-Catalytic Gas-Solid Reaction:Hematite Pellet Reduction with Syngas". For detailed equations please check the related publication.
+All three resistance terms are implemented from the model of "Valipour (2009)"_#Valipour2009.
+For detailed equations please check the related publication.
 
-Once this fix is activated, one needs to define the following fixes defining the reaction properties;
+Once this fix is activated, one needs to specify the following fixes defining
+the reaction properties;
 
-fix k0-ID group-ID property/global k0_fix-ID vector Fe/Wustite-value Wustite/Magnetite-value Magnetite/Hematite-value:pre
-fix Ea-ID group-ID property/global Ea_fix-ID vector Fe/Wustite-value Wustite/Magnetite-value Magnetite/Hematite-value:pre
+fix k0-ID group-ID property/global k0_fix-ID vector Fe/Wustite-value Wustite/Magnetite-value Magnetite/Hematite-value
+fix Ea-ID group-ID property/global Ea_fix-ID vector Fe/Wustite-value Wustite/Magnetite-value Magnetite/Hematite-value :pre
 
 k0-ID, Ea-ID = name for k0,Ea fix :l
 k0_fix-ID, Ea_fix-ID = variable name, that must start with k0_, Ea_ and the fix-ID of the main fix is added :l
@@ -56,56 +75,74 @@ Values = value for frequency factor and activation energies that can be found in
 
 [Examples - 2:]
 
-fix     k0_CO all property/global k0_cfd5 vector 17 25 2700 :l
-fix     Ea_CO all property/global Ea_cfd5 vector 69488 73674 113859 :l 
+fix k0_CO all property/atom k0_cfd5 vector yes no no 17 25 2700
+fix Ea_CO all property/atom Ea_cfd5 vector yes no no 69488 73674 113859
+fix k0_H2 all property/atom k0_cfd6 vector yes no no 30 23 160
+fix Ea_H2 all property/atom Ea_cfd6 vector yes no no 63627 71162 92092 :pre
 
-fix 	k0_H2 all property/global k0_cfd6 vector 30 23 160 :l
-fix 	Ea_H2 all property/global Ea_cfd6 vector 63627 71162 92092 :l
-
-Particle properties such as layer porosity, tortuosity, pore_diameter, density and molar masses are also defined as fixes;
+Particle properties such as layer porosity, tortuosity, pore_diameter, density
+and molar masses are also defined as fixes;
 
 [Examples - 3:]
 
-fix     porosity 	all property/atom   porosity_ 	    vector yes no no layer-porosity-values
-fix     tortuosity 	all property/global tortuosity_     scalar tor_value 
-fix     pore_diameter   all property/global pore_diameter_  scalar dp_value 
+fix porosity      all property/atom   porosity_        vector yes no no layer-porosity-values
+fix tortuosity    all property/global tortuosity_      scalar tor_value
+fix pore_diameter all property/global pore_diameter_   scalar dp_value
+fix density       all property/global density_group-ID vector layer_values :pre
 
-fix     density all property/global density_group-ID vector layer_values 
-fix     molMass all property/global molMass_group-ID vector layer_values
+In density fixes variable names are to be defined with the {density_} keyword
+plus the fix group-IDs as there might be a need for multiple particle/ore groups.
 
-In density and molMass fixes variable names are to be defined with the density_, molMass_ keywords plus the fix group-ID's as there might be a need for multiple particle/ore groups.
-
-The relative layer radii, used in the initial particle mass calcualtion and layer mass fixes are also to be included. The mass layers are default set to zero. This fix is important if one uses multiple gases thus multiple chem/shrink/core fixes, and couples the mass of the layer particles between so it doesn't change between gases.
+The relative layer radii, used in the initial particle mass calcualtion and
+layer mass fixes are also to be included. The mass layers are by default set to
+zero.
+This fix is important if one uses multiple gases, i.e. multiple chem/shrink/core
+fixes, and couples the mass of the layer particles between so it doesn't change
+between gases.
+Additionally, it is required to define property/atom fixes for the effective
+layer density {rhoeff} and the fractional reduction {fracRed}.
 
 [Examples - 4:]
 
-fix     layerRelRad all property/atom relRadii vector yes no no layer-values :l
-fix	massLayer all property/atom massLayer vector no no no 0. 0. 0. 0. :l
+fix layerRelRad all property/atom relRadii  vector yes no no layer-values
+fix massLayer   all property/atom massLayer vector yes no no 0. 0. 0. 0.
+fix rhoeff      all property/atom rhoeff    vector yes no no 0. 0. 0. 0.
+fix fracRed     all property/atom fracRed_group-ID vector yes no no 0. 0. 0. :pre
 
-Additional fixes that can be activated are used to print out informative values of the reduction;
+Additional internal fixes can be used to print out informative values of the reduction:
 
-fix	fracRed	all property/atom fracRed vector yes no no 0. 0. 0. :l
-fix	Aterm all property/atom Aterm vector yes no no 0. 0. 0. :l
-fix 	Bterm all property/atom Bterm vector yes no no 0. 0. 0. :l 
-fix	Massterm all property/atom Massterm scalar yes no no 0. :l 
-fix	effDiffBinary all property/atom effDiffBinary vector yes no no 0. 0. 0. :l
-fix	effDiffKnud all property/atom effDiffKnud vector yes no no 0. 0. 0. :l 
+fix Aterm_fix-ID         all property/atom Aterm_fix-ID         vector yes no no 0. 0. 0.
+fix Bterm_fix-ID         all property/atom Bterm_fix-ID         vector yes no no 0. 0. 0.
+fix Massterm_fix-ID      all property/atom Massterm_fix-ID      scalar yes no no 0.
+fix effDiffBinary_fix-ID all property/atom effDiffBinary_fix-ID vector yes no no 0. 0. 0.
+fix effDiffKnud_fix-ID   all property/atom effDiffKnud_fix-ID   vector yes no no 0. 0. 0. :pre
 
-which allows the user to print out the values into files for verification/validation.
 
 [Restart, fix_modify, run start/stop, minimize info:]
 
-No information about this fix is written to "binary restart files"_restart.html. None of the "fix_modify"_fix_modify.html options are relevant to this fix.
-
-No global or per-atom quantities are stores by this fix for access by various
-"output commands"_Section_howto.html#4_15.
+No information about this fix is written to "binary restart files"_restart.html.
+None of the "fix_modify"_fix_modify.html options are relevant to this fix.
+No global or per-atom quantities are stored by this fix for access by various
+"output commands"_Section_howto.html#howto_15.
 
 No parameter of this fix can be used with the {start/stop} keywords of
 the "run"_run.html command.  This fix is not invoked during "energy
 minimization"_minimize.html.
 
-[Restrictions:] none
+[Restrictions:]
 
-[Related commands:] This fix needs a fix couple/cfd and couple/cfd/chemistry before it is defined.
+This fix needs a fix couple/cfd and couple/cfd/chemistry before it is defined.
 
-[Default:] none
+[Related commands:]
+
+"fix couple/cfd/chemistry"_fix_cfd_coupling_chemistry.html
+
+[Default:]
+
+{scale_reduction_rate} = 1, {screen} = {no}
+
+:line
+
+:link(Valipour2009)
+[(Valipour, 2009)] "Mathematical Modeling of a Non-Catalytic Gas-Solid Reaction: Hematite Pellet Reduction with Syngas", M. S. Valipour, Sci. Iran., Vol. 16, No. 2, pp. 108-124 (2009)
+

@@ -7,25 +7,43 @@
 
 :line
 
-fix ID group-ID couple/cfd/chemistry n_species #N-value species_names names :h3
+fix couple/cfd/chemistry command :h3
 
 [Syntax:]
 
-fix ID group-ID couple/cfd/chemistry keyword values :pre
+fix ID group-ID couple/cfd/chemistry n_species Ns species_names s_names n_diff Nd diffusant_names d_names keyword value :pre
+
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 couple/cfd/chemistry = style name of this fix command :l
-n_species, species_names are obligatory keywors :l
-#N-value = number of gas species flowing in :l
-names = names of the relative gases:pre
+n_species = obligatory keyword :l
+Ns = number of gas species flowing in :l
+species_names = obligatory keyword :l
+s_names = names of the relative gases :l
+n_diff = obligatory keyword :l
+Nd = number of diffusant names :l
+diffusant_names = obligatory keyword :l
+d_names = diffusant names :l
+zero or more keyword/value pairs may be appended :l
+keyword = {transfer_reactant} :l
+  {transfer_reactant} value = {yes} or {no} :pre
 :ule
 
 [Examples:]
 
-fix     cfd3 all couple/cfd/chemistry n_species 5 species_names H2 H2O CO CO2 N2 :pre
+fix cfd3 all couple/cfd/chemistry n_species 5 species_names H2 H2O CO CO2 N2 n_diff 2 diffusant_names CO H2 :pre
 
 [Description:]
 
-This fix exchanges chemical reaction relevant data between LIGGGHTS and CFDEMcoupoling.
-Particle positions, velocities, radii and volumeweights are transferred from LIGGGHTS to CFDEMcoupling, the reacting gas species and product gas species from CFDEMcoupling to LIGGGHTS
+This fix exchanges chemical reaction relevant data between LIGGGHTS and CFDEMcoupling.
+Particle positions, velocities, radii and volumeweights are transferred from
+LIGGGHTS to CFDEMcoupling, the reacting gas species and product gas species from
+CFDEMcoupling to LIGGGHTS.
+
+[Restrictions:]
 
 This fix needs a fix couple/cfd before it is defined.
+
+[Default:]
+
+{transfer_reactant} = {no}
+
