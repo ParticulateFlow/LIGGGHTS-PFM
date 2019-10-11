@@ -113,7 +113,7 @@ void CreateBox::command(int narg, char **arg)
   //NP need to uncomment this since AtomVecBondGran sets this before
   //NP since needed for mem allocation
   //NP atom->nbondtypes = 0;
-  atom->nangletypes = 0;
+  //NP atom->nangletypes = 0;
   atom->ndihedraltypes = 0;
   atom->nimpropertypes = 0;
 

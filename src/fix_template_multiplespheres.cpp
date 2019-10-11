@@ -246,6 +246,16 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
         iarg += 2;
         hasargs = true;
     }
+    else if(strcmp(arg[iarg],"angle_type") == 0)
+    {
+        if (narg < iarg+2)
+            error->fix_error(FLERR,this,"not enough arguments for option 'angle_type'");
+        angle_type = atoi(arg[iarg+1]);
+        if (angle_type < 1 || angle_type > atom->nangletypes)
+            error->fix_error(FLERR,this,"'angle_type' value must be > 0 and <= number of angle types");
+        iarg += 2;
+        hasargs = true;
+    }
     else if(strcmp(style,"particletemplate/multiplespheres") == 0)
     {
         error->fix_error(FLERR,this,"unknown keyword");
@@ -622,3 +632,5 @@ void FixTemplateMultiplespheres::finalize_insertion()
         }
     }
 }
+
+/* --------------------------------------------------------------------------*/
