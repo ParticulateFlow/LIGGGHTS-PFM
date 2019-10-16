@@ -52,7 +52,7 @@ namespace LAMMPS_NS {
    * usage:
    * create_multisphere_clump dmin 0.0001 rmin 0.002 pmax 1.0 seed 1321 surfacefile infile.vtk
    *                          [subdivide linear|loop|butterfly 3 [subdivisionfile subdiv.vtk]]
-   *                          clumpfile clump.dat
+   *                          clumpfile clump.dat [clump.vtk]
    */
 class CreateMultisphereClump : protected Pointers {
  public:
@@ -85,6 +85,10 @@ class CreateMultisphereClump : protected Pointers {
    * @brief output the sphere configuration to a file
    */
   void write_clump_file(const char* filename);
+  /**
+   * @brief output the sphere configuration to a vtk file
+   */
+  void write_clump_file_debug(const char*filename);
   /**
    * @brief check the distance between generated spheres and the given point
    */

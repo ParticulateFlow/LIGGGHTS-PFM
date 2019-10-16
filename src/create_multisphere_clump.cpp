@@ -183,7 +183,10 @@ void CreateMultisphereClump::command(int narg, char **arg)
       error->one(FLERR, "create_multisphere_clump: not enough arguments");
 
     if (strcmp(arg[iarg++],"clumpfile") == 0) {
-      write_clump_file(arg[iarg]);
+      write_clump_file(arg[iarg++]);
+      if (iarg < narg) {
+        write_clump_file_debug(arg[iarg]);
+      }
     } else {
       error->one(FLERR,"create_multisphere_clump command expects keyword 'clumpfile'");
     }
@@ -211,7 +214,7 @@ vtkSmartPointer<vtkPolyData> CreateMultisphereClump::triangulate(vtkPolyData* ds
 
 /* ---------------------------------------------------------------------- */
 
-void CreateMultisphereClump::write_clump_file(const char*filename)
+void CreateMultisphereClump::write_clump_file(const char* filename)
 {
   if (me == 0) {
     FILE* clumpfile = fopen(filename,"wt");
@@ -221,8 +224,15 @@ void CreateMultisphereClump::write_clump_file(const char*filename)
       }
       fclose(clumpfile);
     }
-#ifdef DEBUG_MS_CLUMP_CREATION
-    clumpfile = fopen("clumptests.vtk","wt");
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void CreateMultisphereClump::write_clump_file_debug(const char* filename)
+{
+  if (me == 0) {
+    FILE* clumpfile = fopen(filename,"wt");
     if (clumpfile) {
       const unsigned int nspheres = radii.size();
       fprintf(clumpfile,"# vtk DataFile Version 3.0\n");
@@ -245,7 +255,6 @@ void CreateMultisphereClump::write_clump_file(const char*filename)
       }
       fclose(clumpfile);
     }
-#endif
   }
 }
 
