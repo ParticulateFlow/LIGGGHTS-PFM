@@ -72,6 +72,7 @@ CreateMultisphereClump::CreateMultisphereClump(LAMMPS *lmp) : Pointers(lmp)
 {
   MPI_Comm_rank(world, &me);
   atom_type = 1;
+  sign_normals = -1.0;
   binary = false;
   density = 1000.0;
   iarg = 0;
@@ -173,6 +174,14 @@ void CreateMultisphereClump::command(int narg, char **arg)
 
     // triangulate surface
     pd = triangulate(pd);
+
+    if (strcmp(arg[iarg],"invert_normals") == 0) {
+      ++iarg;
+      if (strcmp(arg[iarg++],"yes") == 0)
+        sign_normals = -1.0;
+      else
+        sign_normals = 1.0;
+    }
 
     // subdivide faces to get more points for better fit
     if (strcmp(arg[iarg],"subdivide") == 0) {
@@ -463,7 +472,7 @@ void CreateMultisphereClump::generate_spheres(vtkPolyData* dset)
     inNormals->GetTuple(ptId, normal);
 
     srad = r_bound; // start with max radius a sphere can have in this clump
-    MathExtra::addscaled3(px, normal, -srad, sxyz); // initial center of sphere
+    MathExtra::addscaled3(px, normal, sign_normals*srad, sxyz); // initial center of sphere
 
     tmpId = -1;
 
@@ -485,7 +494,7 @@ void CreateMultisphereClump::generate_spheres(vtkPolyData* dset)
         double lambdasq = (distsq - shortestdistsq);
         if (lambdasq > SMALL_DIST_SQ) {
           srad = 0.5 * distsq / sqrt(lambdasq); // update sphere radius
-          MathExtra::addscaled3(px, normal, -srad, sxyz); // update sphere center
+          MathExtra::addscaled3(px, normal, sign_normals*srad, sxyz); // update sphere center
           tmpId = ptId1;
         }
       }

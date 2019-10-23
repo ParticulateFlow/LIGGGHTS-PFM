@@ -115,6 +115,7 @@ class CreateMultisphereClump : protected Pointers {
   double dmin;
   double rmin;
   double pmax;
+  double sign_normals;
   int seed;
   class RanPark *random;
   std::vector<double> radii;
