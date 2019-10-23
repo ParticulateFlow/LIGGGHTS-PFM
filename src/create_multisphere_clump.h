@@ -82,7 +82,11 @@ class CreateMultisphereClump : protected Pointers {
    */
   void generate_spheres(vtkPolyData* dset);
   /**
-   * @brief output the sphere configuration to a file
+   * @brief output the sphere configuration to a LAMMPS data file
+   */
+  void write_data_file(const char* filename);
+  /**
+   * @brief output the sphere configuration to a clump file
    */
   void write_clump_file(const char* filename);
   /**
@@ -100,7 +104,10 @@ class CreateMultisphereClump : protected Pointers {
 
   int me;
   int iarg;
+  int atom_type;
+  static int tag;
   bool binary;
+  double density;
   double dmin;
   double rmin;
   double pmax;

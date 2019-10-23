@@ -32,6 +32,7 @@
 #include "create_multisphere_clump.h"
 #include "math_extra.h"
 #include "random_park.h"
+#include "domain.h"
 #include <vtkVersion.h>
 #ifndef VTK_MAJOR_VERSION
 #include <vtkConfigure.h>
@@ -64,12 +65,15 @@
 
 using namespace LAMMPS_NS;
 
+int CreateMultisphereClump::tag = 0;
 /* ---------------------------------------------------------------------- */
 
 CreateMultisphereClump::CreateMultisphereClump(LAMMPS *lmp) : Pointers(lmp)
 {
   MPI_Comm_rank(world, &me);
+  atom_type = 1;
   binary = false;
+  density = 1000.0;
   iarg = 0;
   seed = 1;
   random = new RanPark(lmp,seed);
@@ -182,10 +186,20 @@ void CreateMultisphereClump::command(int narg, char **arg)
     if (narg <= iarg+1)
       error->one(FLERR, "create_multisphere_clump: not enough arguments");
 
-    if (strcmp(arg[iarg++],"clumpfile") == 0) {
+    if (strcmp(arg[iarg],"clumpfile") == 0) {
+      ++iarg;
       write_clump_file(arg[iarg++]);
       if (iarg < narg) {
         write_clump_file_debug(arg[iarg]);
+      }
+    } else if (strcmp(arg[iarg],"datafile") == 0) {
+      ++iarg;
+      write_data_file(arg[iarg++]);
+      if (iarg < narg) {
+        atom_type = atoi(arg[iarg++]);
+      }
+      if (iarg < narg) {
+        density = atof(arg[iarg++]);
       }
     } else {
       error->one(FLERR,"create_multisphere_clump command expects keyword 'clumpfile'");
@@ -214,11 +228,36 @@ vtkSmartPointer<vtkPolyData> CreateMultisphereClump::triangulate(vtkPolyData* ds
 
 /* ---------------------------------------------------------------------- */
 
+void CreateMultisphereClump::write_data_file(const char* filename)
+{
+  if (me == 0) {
+    FILE* datafile = fopen(filename,"wt");
+    if (datafile) {
+      fprintf(datafile,"# LIGGGHTS multi-sphere clump data\n"
+                        "%lu atoms\n%d atom types\n", radii.size(),(atom_type>atom->ntypes)?atom_type:atom->ntypes);
+      fprintf(datafile,"%f %f xlo xhi\n%f %f ylo yhi\n%f %f zlo zhi\n\nAtoms\n\n",
+              domain->boxlo[0], domain->boxhi[0],
+              domain->boxlo[1], domain->boxhi[1],
+              domain->boxlo[2], domain->boxhi[2]);
+      for (unsigned int isphere=0; isphere<radii.size(); ++isphere,++tag) {
+        // atom-ID atom-type diameter density x y z
+        fprintf(datafile,"%u %d %f %f %f %f %f\n",
+                atom->tag_max()+1+tag, atom_type, 2.*radii[isphere], density,
+                sx[isphere], sy[isphere], sz[isphere]);
+      }
+      fclose(datafile);
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
 void CreateMultisphereClump::write_clump_file(const char* filename)
 {
   if (me == 0) {
     FILE* clumpfile = fopen(filename,"wt");
     if (clumpfile) {
+      fprintf(clumpfile,"# LIGGGHTS multi-sphere clump data\n# %lu atoms\n# x y z radius\n", radii.size());
       for (unsigned int isphere=0; isphere<radii.size(); ++isphere) {
         fprintf(clumpfile,"%f %f %f %f\n", sx[isphere], sy[isphere], sz[isphere], radii[isphere]); // x y z r
       }
