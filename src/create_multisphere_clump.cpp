@@ -50,6 +50,8 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataReader.h>
 #include <vtkPolyDataWriter.h>
+#include <vtkSTLReader.h>
+#include <vtkPLYReader.h>
 #include <vtkXMLPolyDataWriter.h>
 #include <vtkPointData.h>
 #include <vtkCell.h>
@@ -164,6 +166,15 @@ void CreateMultisphereClump::command(int narg, char **arg)
         error->one(FLERR,"create_multisphere_clump cannot read input file");
       }
       dset = read_file<vtkXMLUnstructuredGridReader>(filename);
+    } else if (suffix > filename && strcmp(suffix,".ply") == 0) {
+      vtkPLYReader *chooser = vtkPLYReader::New();
+      if (!chooser->CanReadFile(filename)) {
+        chooser->Delete();
+        error->one(FLERR,"create_multisphere_clump cannot read PLY input file");
+      }
+      dset = read_file<vtkPLYReader>(filename);
+    } else if (suffix > filename && strcmp(suffix,".stl") == 0) {
+      dset = read_file<vtkSTLReader>(filename);
     } else {
       error->one(FLERR,"create_multisphere_clump: invalid input file");
     }
