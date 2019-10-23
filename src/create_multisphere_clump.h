@@ -101,6 +101,10 @@ class CreateMultisphereClump : protected Pointers {
    * @brief check if the given sphere contains the given point
    */
   bool is_point_in_sphere(const double* center, double radius, const double* x);
+  /**
+   * @brief check if the given box contains the given sphere
+   */
+  bool is_sphere_in_bounds(const double* bounds, const double *center, double radius);
 
   int me;
   int iarg;

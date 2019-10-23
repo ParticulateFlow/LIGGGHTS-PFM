@@ -491,7 +491,7 @@ void CreateMultisphereClump::generate_spheres(vtkPolyData* dset)
       }
     }
 
-    if (tmpId >= 0 && srad >= rmin) {
+    if (tmpId >= 0 && srad >= rmin && is_sphere_in_bounds(pd_bounds, sxyz, srad)) {
       // save sphere data for later
       radii.push_back(srad);
       sx.push_back(sxyz[0]);
@@ -530,6 +530,20 @@ bool CreateMultisphereClump::is_point_in_sphere(const double *center,
   MathExtra::sub3(center, x, delta);
 
   return (MathExtra::lensq3(delta) < radius*radius);
+}
+
+/* ---------------------------------------------------------------------- */
+
+bool CreateMultisphereClump::is_sphere_in_bounds(const double* bounds,
+                                                 const double *center,
+                                                 double radius)
+{
+  if (center[0]-radius >= bounds[0] && center[0]+radius <= bounds[1] &&
+      center[1]-radius >= bounds[2] && center[1]+radius <= bounds[3] &&
+      center[2]-radius >= bounds[4] && center[2]+radius <= bounds[5])
+    return true;
+
+  return false;
 }
 
 #endif
