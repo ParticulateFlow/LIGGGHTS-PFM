@@ -1,11 +1,11 @@
 # Multisphere clump generation from surface mesh
 
-create_multisphere_clump dmin 0.0002 rmin 0.002 pmax 1.0 seed 2133421 &
+create_multisphere_clump dmin absolute 0.0002 rmin 0.002 pmax 1.0 seed 2133421 &
                          surfacefile meshes/infile1.vtk &
                          subdivide linear 3 subdivisionfile meshes/subdiv1.vtk &
                          clumpfile data/clump1.dat post/clump1.vtk
 
-create_multisphere_clump dmin 0.0002 rmin 0.002 pmax 1.0 seed 4524661 &
+create_multisphere_clump dmin absolute 0.0002 rmin 0.002 pmax 1.0 seed 4524661 &
                          surfacefile meshes/infile2.vtk &
                          subdivide linear 3 subdivisionfile meshes/subdiv2.vtk &
                          clumpfile data/clump2.dat post/clump2.vtk
