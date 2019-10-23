@@ -74,6 +74,7 @@ CreateMultisphereClump::CreateMultisphereClump(LAMMPS *lmp) : Pointers(lmp)
   atom_type = 1;
   sign_normals = -1.0;
   binary = false;
+  absolute_dmin = true;
   density = 1000.0;
   iarg = 0;
   seed = 1;
@@ -112,6 +113,16 @@ void CreateMultisphereClump::command(int narg, char **arg)
   if (me == 0) {
     if (strcmp(arg[iarg++],"dmin") != 0)
       error->one(FLERR,"create_multisphere_clump command expects keyword 'dmin'");
+
+    if(strcmp(arg[iarg],"radius_ratio") == 0)
+        absolute_dmin = false;
+    else if(strcmp(arg[iarg],"absolute") == 0)
+        absolute_dmin = true;
+    else
+        error->one(FLERR,"expecting keyword 'absolute' or 'radius_ratio'");
+
+    ++iarg;
+
     dmin = atof(arg[iarg++]);
 
     if (strcmp(arg[iarg++],"rmin") != 0)
@@ -132,6 +143,7 @@ void CreateMultisphereClump::command(int narg, char **arg)
 
     char *filename = arg[iarg++];
     char *suffix = filename + strlen(filename) - strlen(".vtk");
+
     vtkDataSet* dset = NULL;
 
     if (suffix > filename && strcmp(suffix,".vtk") == 0) {
@@ -185,7 +197,7 @@ void CreateMultisphereClump::command(int narg, char **arg)
 
     // subdivide faces to get more points for better fit
     if (strcmp(arg[iarg],"subdivide") == 0) {
-        iarg++;
+        ++iarg;
         pd = subdivide(narg, arg, pd);
         write_subdiv_file(narg, arg, pd);
     }
@@ -516,13 +528,15 @@ void CreateMultisphereClump::generate_spheres(vtkPolyData* dset)
 bool CreateMultisphereClump::check_sphere_distance(const double *x)
 {
   double center[3];
+  double radius;
 
   for (unsigned int isphere=0; isphere<radii.size(); ++isphere) {
     center[0] = sx[isphere];
     center[1] = sy[isphere];
     center[2] = sz[isphere];
+    radius = absolute_dmin?(radii[isphere]+dmin):(radii[isphere]*(1.+dmin));
 
-    if (is_point_in_sphere(center, radii[isphere]+dmin, x))
+    if (is_point_in_sphere(center, radius, x))
       return false;
   }
 

@@ -50,9 +50,10 @@ namespace LAMMPS_NS {
    * and write it to a file.
    * Cf. J.F. Ferellec and G.R. McDowell, Granular Matter (2010) 12:459–467
    * usage:
-   * create_multisphere_clump dmin 0.0001 rmin 0.002 pmax 1.0 seed 1321 surfacefile infile.vtk
-   *                          [subdivide linear|loop|butterfly 3 [subdivisionfile subdiv.vtk]]
-   *                          clumpfile clump.dat [clump.vtk]
+   * create_multisphere_clump dmin (absolute)|(radius_ratio) 0.0001 rmin 0.002 pmax 1.0 seed 1321
+   *                          surfacefile infile.vtk [invert_normals no]
+   *                          [subdivide (linear)|(loop)|(butterfly) 3 [subdivisionfile subdiv.vtk]]
+   *                          (clumpfile clump.dat [clump.vtk])|(datafile data.clump [atom_type density])
    */
 class CreateMultisphereClump : protected Pointers {
  public:
@@ -111,6 +112,7 @@ class CreateMultisphereClump : protected Pointers {
   int atom_type;
   static int tag;
   bool binary;
+  bool absolute_dmin;
   double density;
   double dmin;
   double rmin;
