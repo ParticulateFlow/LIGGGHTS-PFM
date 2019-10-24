@@ -23,6 +23,10 @@ available on the system.
 On most Linux-distributions a recent version can be installed via the package
 managment systems.
 
+The way how to enable the superquadric feature depends on the build-system.
+
+Using make :h5
+
 Before starting the compilation, you have to enable the superquadric model in
 your Makefile. You have to add the following settings to your Makefile:
 
@@ -38,6 +42,16 @@ LMP_INC and EXTRA_INC. Otherwise your changes will be overwritten.
 NOTE: Most Boost libraries are header-only: they consist entirely of header
 files containing templates and inline functions, and require no
 separately-compiled library binaries or special treatment when linking. ("link"_boost)
+
+
+Using cmake :h5
+
+To enable the superquadric feature, open the file CMakeLists.txt from the src directory, find the following line:
+
+OPTION(USE_SUPERQUADRIC "Superquadric particles" OFF) :pre
+
+and change the parameter from OFF to ON.
+
 
 Detailed description :h4
 
