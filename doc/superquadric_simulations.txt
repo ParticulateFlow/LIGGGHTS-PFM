@@ -46,23 +46,22 @@ separately-compiled library binaries or special treatment when linking. ("link"_
 
 Using cmake :h5
 
-To enable the superquadric feature, open the file CMakeLists.txt from the src directory, find the following line:
+To enable the superquadric feature using the cmake build system, we provide cmake a command-line parameter.
 
-OPTION(USE_SUPERQUADRIC "Superquadric particles" OFF) :pre
+cmake ../src -DUSE_SUPERQUADRIC=on :pre
 
-and change the parameter from OFF to ON.
 
 
 Compile the ParaView plug-in :h4
 
 The superquadric feature of LIGGGHTS comes with its own dedicated ParaView plug-in to properly visualize superquadric particles.
 
-Depending on the local installation, the compilation can be done with the following steps. Adjust the paths and version numbers accordingly.
+The compilation of the plug-in is done with the following steps. Adjust the paths according to your local installation.
 
-cd /home/user/CFDEM/LIGGGHTS-19.09/tools/paraview/SuperquadricGlyph
+cd ~/CFDEM/LIGGGHTS/tools/paraview/SuperquadricGlyph
 mkdir build
 cd build
-cmake .. -DParaView_DIR:PATH=/home/user/OpenFOAM/ThirdParty-4.x/build/linux64Gcc/ParaView-5.0.1
+cmake .. -DParaView_DIR:PATH=/absolute/path/to/paraview/build/dir
 make  :pre
 
 NOTE: The path to ParaView is the build directory, and not the source directory. If a CFDEM environment has been sourced, then cmake should be able to automatically find the proper path to ParaView.
