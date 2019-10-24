@@ -53,6 +53,25 @@ OPTION(USE_SUPERQUADRIC "Superquadric particles" OFF) :pre
 and change the parameter from OFF to ON.
 
 
+Compile the ParaView plug-in :h4
+
+The superquadric feature of LIGGGHTS comes with its own dedicated ParaView plug-in to properly visualize superquadric particles.
+
+Depending on the local installation, the compilation can be done with the following steps. Adjust the paths and version numbers accordingly.
+
+cd /home/user/CFDEM/LIGGGHTS-19.09/tools/paraview/SuperquadricGlyph
+mkdir build
+cd build
+cmake .. -DParaView_DIR:PATH=/home/user/OpenFOAM/ThirdParty-4.x/build/linux64Gcc/ParaView-5.0.1
+make  :pre
+
+NOTE: The path to ParaView is the build directory, and not the source directory. If a CFDEM environment has been sourced, then cmake should be able to automatically find the proper path to ParaView.
+
+If compilation finishes without any errors, then the build directory will contain a library named libSuperquadricGlyphFilter.so.
+
+To visualize superquadrics in ParaView, open the converted dump files of a superquadric case, click in the menu "Tools --> Manage Plugins...", click on the "Load New ..." button and select the libSuperquadricGlyphFilter.so file.
+
+
 Detailed description :h4
 
 The overall simulation structure stays the same for superquadric simulations as
