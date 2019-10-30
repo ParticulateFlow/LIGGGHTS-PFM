@@ -25,6 +25,8 @@
 */
 
 #include <mpi.h>
+#include <string>
+#include <sstream>
 
 /* ifdefs allow this file to be included in a C program - DROPPED*/
 
@@ -36,6 +38,7 @@ int liggghts_get_maxtag(void *ptr);
 /*NL*/ int liggghts_get_maxtag_ms(void *ptr);
 /*NL*/ int liggghts_get_ntypes_ms(void *ptr);
 /*NL*/ double* liggghts_get_vclump_ms(void *ptr);
+double liggghts_get_variable(void *ptr, const char *variablename);
 void* locate_coupling_fix(void *ptr);
 void data_liggghts_to_of(const char *name, const char *type, void *ptr, void *&data, const char *datatype);
 void data_of_to_liggghts(const char *name, const char *type, void *ptr, void *data,  const char *datatype);
