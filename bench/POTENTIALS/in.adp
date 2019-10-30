@@ -21,4 +21,3 @@ fix		1 all nve
 timestep	0.005
 
 run		100
-

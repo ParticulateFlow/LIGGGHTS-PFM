@@ -548,8 +548,6 @@ void ReadDump::atoms()
   tagint *image = atom->image;
   nlocal = atom->nlocal;
 
- //TL for (int i = 0; i < nlocal; i++) if(x[i][0] < -4.6 && x[i][2]>24.0) fprintf(screen,"prior: atom %d on proc %d with x = %f\n",i,me,x[i][0]);
-
   for (int i = 0; i < nlocal; i++) domain->remap(x[i],image[i]);
 
   if (triclinic) domain->x2lamda(atom->nlocal);
@@ -558,8 +556,6 @@ void ReadDump::atoms()
   irregular->migrate_atoms();
   delete irregular;
   if (triclinic) domain->lamda2x(atom->nlocal);
-
- //TL for (int i = 0; i < nlocal; i++) if(x[i][0] < -4.6 && x[i][2]>24.0) fprintf(screen,"posterior: atom %d on proc %d with x = %f\n",i,me,x[i][0]);
 
 }
 
@@ -695,7 +691,7 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
       if (strcmp(arg[iarg+1],"yes") == 0) retainstepflag = 1;
       else if (strcmp(arg[iarg+1],"no") == 0) retainstepflag = 0;
       else error->all(FLERR,"Illegal read_dump command");
-      iarg += 2; 
+      iarg += 2;
     } else if (strcmp(arg[iarg],"label") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal read_dump command");
       int i;
@@ -835,8 +831,8 @@ void ReadDump::process_atoms(int n)
 
       if (!wrapped) xbox = ybox = zbox = 0;
 
-      image[m] = ((tagint) (xbox + IMGMAX) & IMGMASK) | 
-        (((tagint) (ybox + IMGMAX) & IMGMASK) << IMGBITS) | 
+      image[m] = ((tagint) (xbox + IMGMAX) & IMGMASK) |
+        (((tagint) (ybox + IMGMAX) & IMGMASK) << IMGBITS) |
         (((tagint) (zbox + IMGMAX) & IMGMASK) << IMG2BITS);
     }
   }
@@ -886,8 +882,6 @@ void ReadDump::process_atoms(int n)
     // reset v,image ptrs in case they are reallocated
 
     m = atom->nlocal;
-
-//TL    fprintf(screen,"creating atom at %f %f %f, m = %d, proc = %d\n",one[0],one[1],one[2],m,me);
 
     atom->avec->create_atom(itype,one);
     nadd++;
@@ -939,8 +933,8 @@ void ReadDump::process_atoms(int n)
 
       // replace image flag in case changed by ix,iy,iz fields
 
-      image[m] = ((tagint) (xbox + IMGMAX) & IMGMASK) | 
-        (((tagint) (ybox + IMGMAX) & IMGMASK) << IMGBITS) | 
+      image[m] = ((tagint) (xbox + IMGMAX) & IMGMASK) |
+        (((tagint) (ybox + IMGMAX) & IMGMASK) << IMGBITS) |
         (((tagint) (zbox + IMGMAX) & IMGMASK) << IMG2BITS);
 
     }

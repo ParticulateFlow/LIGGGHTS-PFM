@@ -78,8 +78,8 @@ void FixLimitVel::setup(int vflag)
   }
 
   // error checks on coarsegraining
-  if(force->cg_active())
-    error->cg(FLERR,this->style);
+  /*if(force->cg_active())
+    error->cg(FLERR,this->style); */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -89,7 +89,7 @@ void FixLimitVel::post_force(int vflag)
   double **v = atom->v;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-  
+
   double scale;
 
   double vsq;
@@ -104,7 +104,7 @@ void FixLimitVel::post_force(int vflag)
           v[i][0] *= scale;
           v[i][1] *= scale;
           v[i][2] *= scale;
-      }      
+      }
     }
 }
 

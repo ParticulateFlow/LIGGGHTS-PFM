@@ -69,7 +69,7 @@ namespace ContactModels
       hsetup->add_history_value("enx", "1");
       hsetup->add_history_value("eny", "1");
       hsetup->add_history_value("enz", "1");
-      /*NL*/ if(comm->me == 0) fprintf(screen, "HOOKE/BREAK loaded\n");
+      /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HOOKE/BREAK loaded\n");
     }
 
     inline void registerSettings(Settings & settings)
@@ -179,14 +179,16 @@ namespace ContactModels
       if (!displayedSettings) {
         displayedSettings = true;
         /*
-        if(ktToKn)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE_BREAK>: will use user-modified ktToKn of 2/7.\n");
-        if(tangential_damping)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE_BREAK>: will apply tangential damping.\n");
-        if(viscous)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE_BREAK>: will apply damping based on Stokes number.\n");
-        if(limitForce)
-            if(0 == comm->me) fprintf(screen," NormalModel<HOOKE_BREAK>: will limit normal force.\n");
+        if (comm->me == 0 && screen) {
+          if(ktToKn)
+            fprintf(screen," NormalModel<HOOKE_BREAK>: will use user-modified ktToKn of %f.\n",kappa);
+          if(tangential_damping)
+            fprintf(screen," NormalModel<HOOKE_BREAK>: will apply tangential damping.\n");
+          if(viscous)
+            fprintf(screen," NormalModel<HOOKE_BREAK>: will apply damping based on Stokes number.\n");
+          if(limitForce)
+            fprintf(screen," NormalModel<HOOKE_BREAK>: will limit normal force.\n");
+        }
         */
       }
       if (viscous) {

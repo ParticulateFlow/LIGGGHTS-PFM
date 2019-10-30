@@ -57,6 +57,11 @@ class CfdDatacoupling : protected Pointers {
   virtual void exchange() = 0;
   void check_datatransfer();
 
+  // TL:
+  // to be used in fix_cfd_coupling_chemistry: if latestpush(m_i)==now {reset m_i}
+  bigint latestpush(const char*);
+  bigint latestpull(const char*);
+
  protected:
 
   void grow_();
@@ -86,6 +91,8 @@ class CfdDatacoupling : protected Pointers {
   char **pulltypes_;
   // flag used to check if transfer invoked - only if liggghts is not active
   int *pullinvoked_;
+  // TL:
+  bigint *latestpull_;
 
   // ------------------------------------
   // values stored in atom or a fix property
@@ -97,6 +104,8 @@ class CfdDatacoupling : protected Pointers {
   char **pushtypes_;
   // flag used to check if transfer invoked - only if liggghts is not active
   int *pushinvoked_;
+  // TL:
+  bigint *latestpush_;
 
   int iarg_;
   class FixCfdCoupling *fc_;
