@@ -20,33 +20,42 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(couple/cfd/parttempfield,FixCfdCouplingPartTempField)
+FixStyle(couple/cfd/deform,FixCfdCouplingDeform)
 
 #else
 
-#ifndef LMP_FIX_CFD_COUPLING_PARTTEMPFIELD_H
-#define LMP_FIX_CFD_COUPLING_PARTTEMPFIELD_H
+#ifndef LMP_FIX_CFD_COUPLING_DEFORM_H
+#define LMP_FIX_CFD_COUPLING_DEFORM_H
 
 #include "fix_cfd_coupling.h"
 
 namespace LAMMPS_NS {
 
-class FixCfdCouplingPartTempField : public Fix {
-
+class FixCfdCouplingDeform : public Fix  {
  public:
-  FixCfdCouplingPartTempField(class LAMMPS *, int, char **);
-  ~FixCfdCouplingPartTempField();
+  FixCfdCouplingDeform(class LAMMPS *, int, char **);
+  ~FixCfdCouplingDeform();
   void post_create();
   void pre_delete(bool unfixflag);
 
-  virtual int setmask();
-  virtual void init();
-  virtual void post_force(int);
+  int setmask();
+  void init();
+  void post_force(int);
 
  protected:
-  class FixCfdCoupling* fix_coupling;
-  class FixPropertyAtom* fix_temp;
-  double T0;
+
+  class FixCfdCoupling* fix_coupling_;
+  class FixPropertyAtom* fix_partdeformations_;
+  class FixPropertyAtomPolydispParcel* fix_effvolfactors_;
+
+ private:
+  bool verbose_;
+
+  int compress_flag_;
+
+  double mass_removed_;
+
+  void delete_particle(int);
 };
 
 }
