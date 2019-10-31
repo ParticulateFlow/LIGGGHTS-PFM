@@ -81,7 +81,7 @@ int FixCfdCouplingPartTempField::setmask()
 
 void FixCfdCouplingPartTempField::post_create()
 {
-  //  register particle temperatures
+  fix_temp=static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style));
   if(!fix_temp)
   {
         const char* fixarg[9];
@@ -100,8 +100,6 @@ void FixCfdCouplingPartTempField::post_create()
         modify->add_fix(9,const_cast<char**>(fixarg));
         fix_temp=static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style));
   }
-
-  
 }
 
 /* ---------------------------------------------------------------------- */
@@ -117,14 +115,8 @@ void FixCfdCouplingPartTempField::init()
     if(!fix_coupling)
       error->fix_error(FLERR,this,"needs a fix of type couple/cfd");
 
-    //values to send to OF
-    fix_coupling->add_push_property("Temp","scalar-atom");
-
     //values to come from OF
     fix_coupling->add_pull_property("Temp","scalar-atom");
-
-    // get reference to particle temperatures
-    fix_temp = static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style));
 }
 
 /* ---------------------------------------------------------------------- */
