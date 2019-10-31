@@ -336,10 +336,10 @@ void FixRemove::pre_exchange()
     if(comm->me == 0)
     {
         if(verbose_ && screen)
-            fprintf(screen,"    Ammount actually removed %f (#particles totally removed %d)\n",
+            fprintf(screen,"    Amount actually removed %f (#particles totally removed %d)\n",
                     mass_removed_this,nremoved_this);
         if(logfile)
-            fprintf(logfile,"    Ammount actually removed %f (#particles totally removed %d)\n",
+            fprintf(logfile,"    Amount actually removed %f (#particles totally removed %d)\n",
                     mass_removed_this,nremoved_this);
     }
 
