@@ -44,9 +44,10 @@ files containing templates and inline functions, and require no
 separately-compiled library binaries or special treatment when linking. ("link"_boost)
 
 
-Using cmake :h5
+Using CMake :h5
 
-To enable the superquadric feature using the cmake build system, we provide cmake a command-line parameter.
+To enable the superquadric feature using the CMake build system, we provide
+CMake a command-line parameter.
 
 cmake ../src -DUSE_SUPERQUADRIC=on :pre
 
@@ -54,9 +55,11 @@ cmake ../src -DUSE_SUPERQUADRIC=on :pre
 
 Compile the ParaView plug-in :h4
 
-The superquadric feature of LIGGGHTS comes with its own dedicated ParaView plug-in to properly visualize superquadric particles.
+The superquadric feature of LIGGGHTS comes with its own dedicated ParaView
+plug-in to properly visualize superquadric particles.
 
-The compilation of the plug-in is done with the following steps. Adjust the paths according to your local installation.
+The compilation of the plug-in is done with the following steps. Adjust the
+paths according to your local installation.
 
 cd ~/CFDEM/LIGGGHTS/tools/paraview/SuperquadricGlyph
 mkdir build
@@ -64,11 +67,16 @@ cd build
 cmake .. -DParaView_DIR:PATH=/absolute/path/to/paraview/build/dir
 make  :pre
 
-NOTE: The path to ParaView is the build directory, and not the source directory. If a CFDEM environment has been sourced, then cmake should be able to automatically find the proper path to ParaView.
+NOTE: The path to ParaView is the build directory, and not the source directory.
+If a CFDEM environment has been sourced, then CMake should be able to
+automatically find the proper path to ParaView.
 
-If compilation finishes without any errors, then the build directory will contain a library named libSuperquadricGlyphFilter.so.
+If compilation finishes without any errors, then the build directory will
+contain a library named libSuperquadricGlyphFilter.so.
 
-To visualize superquadrics in ParaView, open the converted dump files of a superquadric case, click in the menu "Tools --> Manage Plugins...", click on the "Load New ..." button and select the libSuperquadricGlyphFilter.so file.
+To visualize superquadrics in ParaView, open the converted dump files of a
+superquadric case, click in the menu "Tools --> Manage Plugins...", click on the
+"Load New ..." button and select the libSuperquadricGlyphFilter.so file.
 
 
 Detailed description :h4
@@ -84,7 +92,7 @@ To define new superquadric particles use the "fix particletemplate/superquadric"
 
 Performance :h4
 
-The superquadric model uses the framework of LIGGGHT(R). Therefore, the parallel
+The superquadric model uses the framework of LIGGGHTS(R). Therefore, the parallel
 scalability is linear as LIGGGHTS(R) itself. Compared to standard LIGGGHTS(R),
 the calculation of contact points is computational expensive for superquadric
 bodies.
