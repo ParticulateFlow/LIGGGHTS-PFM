@@ -13,9 +13,11 @@ group command :h3
 group ID style args :pre
 
 ID = user-defined name of the group :ulb,l
-style = {delete} or {region} or {type} or {id} or {molecule} or {variable} or \
+style = {delete} or {clear} or {empty} or {region} or {type} or {id} or {molecule} or {variable} or \
       {subtract} or {union} or {intersect} or {dynamic} :l
   {delete} = no args
+  {clear} = no args
+  {empty} = no args
   {region} args = region-ID
   {type} or {id} or {molecule}
     args = list of one or more atom types, atom IDs, or molecule IDs
@@ -85,6 +87,10 @@ below) that no more than 32 groups can be defined at any time, the
 so that more can be specified.  You cannot delete a group if it has
 been used to define a current "fix"_fix.html or "compute"_compute.html
 or "dump"_dump.html.
+
+The {clear} style un-assigns all atoms that were assigned to that group.
+
+The {empty} style creates an empty group.
 
 The {region} style puts all atoms in the region volume into the group.
 Note that this is a static one-time assignment.  The atoms remain
