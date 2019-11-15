@@ -59,6 +59,8 @@ FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
     if(strcmp(arg[iarg],"once") == 0)
     {
       once = true;
+      execution_step = nevery;
+      nevery = 1;
       iarg++;
       hasargs = true;
     }
@@ -119,7 +121,7 @@ void FixExecute::end_of_step()
     if (fabs(value-var_valid) > var_threshold) return;
   }
 
-  if (!once || update->ntimestep == execution_step )
+  if (!once || update->ntimestep == execution_step)
   {
     if (file)
     {
