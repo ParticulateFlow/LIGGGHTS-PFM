@@ -30,6 +30,7 @@
 #include "comm.h"
 #include <math.h>
 #include "vector_liggghts.h"
+#include "math_const.h"
 #include "mpi_liggghts.h"
 #include "fix_cfd_coupling_deform.h"
 #include "fix_property_atom.h"
@@ -37,6 +38,7 @@
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 #define SMALL 1e-6
 
@@ -154,6 +156,7 @@ void FixCfdCouplingDeform::post_force(int)
     // deformation = 1 --> maximum deformation before removal
     int *mask = atom->mask;
     int nlocal = atom->nlocal;
+    double *density = atom->density;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
 
@@ -168,6 +171,8 @@ void FixCfdCouplingDeform::post_force(int)
     double mass_removed_this_me = 0.0;
     double mass_removed_this = 0.0;
 
+    double newradius = 0.0;
+
     for (int i = 0; i < nlocal; i++)
     {
         if (mask[i] & groupbit)
@@ -178,8 +183,14 @@ void FixCfdCouplingDeform::post_force(int)
                 // deform particle such that it keeps its volume
                 effvolfactor = effvolfactors_[i];
                 neweffvolfactor = effvolfactor + deformation * (1.5 - effvolfactor); // 1/alpha_max \approx 1.5
-                radius[i] *= pow(effvolfactor/neweffvolfactor, 0.33);
-                fix_effvolfactors_->set_vector(i,neweffvolfactor);
+                newradius = pow(3*rmass[i]/(4*MY_PI*density[i]*neweffvolfactor),0.333);
+                // particles can gradually deform but won't recover state of higher sphericity
+                if (newradius < radius[i])
+                {
+                    radius[i] = pow(3*rmass[i]/(4*MY_PI*density[i]*neweffvolfactor),0.333);
+                    fix_effvolfactors_->set_vector(i,neweffvolfactor);
+                }
+
             }
             else if (deformation > 1.0 - SMALL)
             {
