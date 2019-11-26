@@ -125,6 +125,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             iarg_ += 2; // iarg = 11
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"nevery") == 0)
+        {
+            nevery = atoi(arg[iarg_+1]);
+            if (nevery <= 0) error->fix_error(FLERR,this,"nevery must be larger than 0");
+            iarg_+=2;
+            hasargs = true;
+        }
         else if (strcmp(arg[iarg_],"scale_reduction_rate") == 0 )
         {
             if (iarg_ + 2 > narg)
@@ -568,6 +575,9 @@ void FixChemShrinkCore::init()
 
 void FixChemShrinkCore::post_force(int)
 {
+    if (update->ntimestep % nevery)
+        return;
+
     updatePtrs();
     int i = 0;
     int nlocal  =   atom->nlocal;
@@ -968,7 +978,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
-        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep;
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }
@@ -1322,7 +1332,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
-        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep;
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }
