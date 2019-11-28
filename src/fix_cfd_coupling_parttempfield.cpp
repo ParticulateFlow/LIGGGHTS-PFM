@@ -44,6 +44,8 @@ FixCfdCouplingPartTempField::FixCfdCouplingPartTempField(LAMMPS *lmp, int narg, 
     fix_coupling = NULL;
     fix_temp = NULL;
 
+    created_fix_temp = false;
+
     int iarg = 3;
 
     if(narg < iarg + 2) error->all(FLERR,"Fix couple/cfd/parttempfield: Wrong number of arguments");
@@ -64,7 +66,7 @@ FixCfdCouplingPartTempField::~FixCfdCouplingPartTempField()
 
 void FixCfdCouplingPartTempField::pre_delete(bool unfixflag)
 {
-    if(fix_temp) modify->delete_fix("Temp");
+    if(fix_temp && created_fix_temp) modify->delete_fix("Temp");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -98,6 +100,7 @@ void FixCfdCouplingPartTempField::post_create()
 
         modify->add_fix(9,const_cast<char**>(fixarg));
         fix_temp=static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style));
+        created_fix_temp = true;
   }
 }
 

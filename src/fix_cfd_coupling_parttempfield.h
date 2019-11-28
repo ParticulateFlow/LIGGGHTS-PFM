@@ -46,6 +46,7 @@ class FixCfdCouplingPartTempField : public Fix {
  protected:
   class FixCfdCoupling* fix_coupling;
   class FixPropertyAtom* fix_temp;
+  bool created_fix_temp;
   double T0;
 };
 
