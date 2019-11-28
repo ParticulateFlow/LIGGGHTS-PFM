@@ -50,7 +50,8 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     fix_effvolfactors_(0),
     verbose_(false),
     compress_flag_(1),
-    mass_removed_(0.0)
+    mass_removed_(0.0),
+    fmax_(1.5) // 1/alpha_max \approx 1.5
 {
 
   int iarg = 3;
@@ -180,14 +181,17 @@ void FixCfdCouplingDeform::post_force(int)
             deformation = partdeformations[i];
             if (deformation < 1.0 - SMALL && deformation > SMALL)
             {
-                // deform particle such that it keeps its volume
                 effvolfactor = effvolfactors_[i];
-                neweffvolfactor = effvolfactor + deformation * (1.5 - effvolfactor); // 1/alpha_max \approx 1.5
-                newradius = pow(3*rmass[i]/(4*MY_PI*density[i]*neweffvolfactor),0.333);
+                neweffvolfactor = 1.0 + deformation * (fmax_ - 1.0);
+                // update properties only if new eff vol factor larger than old one (by e.g. 1%) 
+                if (neweffvolfactor <= 1.01*effvolfactor) continue;
+
+                // deform particle such that it keeps its volume
+                newradius = pow(3.0*rmass[i]/(4.0*MY_PI*density[i]*neweffvolfactor),0.33333);
                 // particles can gradually deform but won't recover state of higher sphericity
                 if (newradius < radius[i])
                 {
-                    radius[i] = pow(3*rmass[i]/(4*MY_PI*density[i]*neweffvolfactor),0.333);
+                    radius[i] = newradius;
                     fix_effvolfactors_->set_vector(i,neweffvolfactor);
                 }
 

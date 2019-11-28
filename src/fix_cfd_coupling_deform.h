@@ -55,6 +55,8 @@ class FixCfdCouplingDeform : public Fix  {
 
   double mass_removed_;
 
+  const double fmax_;
+
   void delete_particle(int);
 };
 
