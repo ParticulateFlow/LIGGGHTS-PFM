@@ -145,11 +145,11 @@ namespace ContactModels
       }
       if (viscous)  {
          // Stokes Number from MW Schmeeckle (2001)
-         const double stokes=cdata.meff*cdata.vn/(6.0*M_PI*coeffMu[itype][jtype]*reff*reff);
+         const double stokes = meff*cdata.vn/(6.0*M_PI*coeffMu[itype][jtype]*reff*reff);
          // Empirical from Legendre (2006)
-         coeffRestLogChosen=log(coeffRestMax[itype][jtype])+coeffStc[itype][jtype]/stokes;
+         coeffRestLogChosen = log(coeffRestMax[itype][jtype])+coeffStc[itype][jtype]/stokes;
       } else {
-         coeffRestLogChosen=coeffRestLog[itype][jtype];
+         coeffRestLogChosen = coeffRestLog[itype][jtype];
       }
 
       const double k = (16./15.)*sqrtval*(Yeff[itype][jtype]);
