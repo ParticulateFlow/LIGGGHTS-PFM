@@ -123,7 +123,7 @@ namespace ContactModels
       if(cdata.is_non_spherical && atom->superquadric_flag)
         reff = cdata.reff;
 #endif
-      double meff=cdata.meff;
+      const double meff = cdata.meff;
       double coeffRestLogChosen;
       const double sqrtval = sqrt(reff);
 

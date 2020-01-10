@@ -96,7 +96,7 @@ namespace ContactModels
     {
       const int itype = cdata.itype;
       const int jtype = cdata.jtype;
-      double meff=cdata.meff;
+      const double meff = cdata.meff;
 
       double kn = k_n[itype][jtype];
       double kt = k_t[itype][jtype];
