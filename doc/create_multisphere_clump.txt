@@ -1,0 +1,74 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+create_multisphere_clump command :h3
+
+[Syntax:]
+
+create_multisphere_clump dmin dstyle dvalue rmin rvalue pmax pvalue seed svalue surfacefile file keyword values filetype fileargs :pre
+
+dmin = obligatory keyword :ulb,l
+dstyle = {absolute} or {radius_ratio} :l
+dvalue = minimum distance between spheres and next surface point used for sphere generation :l
+rmin  = obligatory keyword :l
+rvalue = minimum sphere radius :l
+pmax = obligatory keyword :l
+pvalue = maximum fraction of surface points used for sphere generation :l
+seed  = obligatory keyword :l
+svalue = random number seed :l
+surfacefile = obligatory keyword :l
+file = surface file name :l
+zero or more keyword/value pairs may be appended :l
+keyword = {invert_normals} or {subdivide} :l
+  {invert_normals} value = {yes} or {no}
+  {subdivide} values = style N
+    style = {linear} or {loop} or {butterfly}
+    N = number of subdivision iterations :pre
+one output filetype must be appended :l
+filetype = {clumpfile} or {datafile} :l
+  {clumpfile} args = filename
+  {datafile} args = filename atom_type density
+    filename = data filename
+    atom_type = atom type (optional)
+    density = particle density (optional) :pre
+:ule
+
+[Examples:]
+
+create_multisphere_clump dmin absolute 0.0002 rmin 0.002 pmax 1.0 seed 2133421 surfacefile meshes/infile1.vtk clumpfile data/clump1.dat :pre
+
+[Description:]
+
+This command creates a multi-sphere clump from a VTK, STL or PLY surface mesh
+file and writes the clump data to a file.
+The VTK library is used to read an STL file, a PLY file, or an unstructured grid
+or polydata dataset from VTK simple legacy or XML files.
+The polygons of the surface mesh are triangulated and optionally the surface is
+subdivided.
+Finally, the overlapping multi-sphere clump method (OMCM, see "Ferellec"_#Ferellec2010)
+is used to generate a clump configuration which is then written to a clump or
+data file.
+
+[Restrictions:]
+
+Requires LIGGGHTS to be linked to the VTK library.
+
+[Related commands:]
+
+"fix particletemplate/multisphere"_fix_particletemplate_multisphere.html, "read_data"_read_data.html
+
+[Default:]
+
+{invert_normals} = {yes}, {subdivide} = off, atom_type = 1, density = 1000
+
+:line
+
+:link(Ferellec2010)
+[(Ferellec, 2010)] "A method to model realistic particle shape and inertia in DEM", J.F. Ferellec and G.R. McDowell, Granular Matter (2010) 12:459–467
+
