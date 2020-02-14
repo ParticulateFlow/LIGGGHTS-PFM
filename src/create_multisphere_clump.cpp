@@ -473,7 +473,8 @@ void CreateMultisphereClump::generate_spheres(vtkPolyData* dset)
   double sizex = pd_bounds[1] - pd_bounds[0];
   double sizey = pd_bounds[3] - pd_bounds[2];
   double sizez = pd_bounds[5] - pd_bounds[4];
-  double r_bound = 0.5*sqrt(sizex*sizex + sizey*sizey + sizez*sizez);
+  double d_bound = sizex<sizey?sizex:sizey; d_bound = d_bound<sizez?d_bound:sizez;
+  double r_bound = 0.5*d_bound;
   double px[3], px1[3];
   double normal[3];
   double sxyz[3];
