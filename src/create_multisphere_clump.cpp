@@ -226,13 +226,15 @@ void CreateMultisphereClump::command(int narg, char **arg)
       }
     } else if (strcmp(arg[iarg],"datafile") == 0) {
       ++iarg;
-      write_data_file(arg[iarg++]);
+      int farg = iarg;
+      ++iarg;
       if (iarg < narg) {
         atom_type = atoi(arg[iarg++]);
       }
       if (iarg < narg) {
         density = atof(arg[iarg++]);
       }
+      write_data_file(arg[farg]);
     } else {
       error->one(FLERR,"create_multisphere_clump command expects keyword 'clumpfile'");
     }
