@@ -227,6 +227,8 @@ void CreateMultisphereClump::command(int narg, char **arg)
     } else if (strcmp(arg[iarg],"datafile") == 0) {
       ++iarg;
       int farg = iarg;
+      atom_type = 1;
+      density = 1000.0;
       ++iarg;
       if (iarg < narg) {
         atom_type = atoi(arg[iarg++]);
