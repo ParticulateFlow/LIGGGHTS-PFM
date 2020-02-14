@@ -236,7 +236,7 @@ void CreateMultisphereClump::command(int narg, char **arg)
       }
       write_data_file(arg[farg]);
     } else {
-      error->one(FLERR,"create_multisphere_clump command expects keyword 'clumpfile'");
+      error->one(FLERR,"create_multisphere_clump command expects keyword 'clumpfile' or 'datafile'");
     }
 
     dset->Delete();
