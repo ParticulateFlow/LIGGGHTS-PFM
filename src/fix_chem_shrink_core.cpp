@@ -606,7 +606,7 @@ void FixChemShrinkCore::post_force(int)
                 if (T_[i] < 573.15)
                 {
                     // do nothing -- no reaction takes place
-                    error->warning(FLERR, "The temperature is too low for reduction to take place!");
+                    if (screenflag_) error->warning(FLERR, "The temperature is too low for reduction to take place!");
                 }
                 else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
                 {
