@@ -58,9 +58,9 @@ public:
   void getB(int);   // calculate diffusion resistance term
   void getMassT(int);   // calculate gas film mass transfer resistance term
   void reaction(int, double *, const double *);   // calculate chemical reaction rate
-  void update_atom_properties(int, const double *, double *, double *, const double *);   // update particle layers with depending on chemical reaction rate - per-particle
+  void update_atom_properties(int, const double *, const double *, const double *, const double *);   // update particle layers with depending on chemical reaction rate - per-particle
   void update_gas_properties(int, const double *);    // update reactant and product gas masses depending on chemical reaction rate
-  void heat_of_reaction(int, const double *, double *, double *, const double *);
+  void heat_of_reaction(int, const double *, const double *, const double *, const double *);
   double conv_enthalpy(const double *, double , int);
   double K_eq_low(int, int);
   void reaction_low(int, double *, const double *);
@@ -83,6 +83,12 @@ public:
   static const double a_coeff_nasa_CO2[];
   static const double a_coeff_nasa_H2[];
   static const double a_coeff_nasa_H2O[];
+
+  // stoichiometric coefficients of reactions
+  static const double v_reac_[];
+  static const double v_prod_[];
+  static const double v_reac_low_[];
+  static const double v_prod_low_[];
 
   // variables
   bool screenflag_;
