@@ -600,6 +600,9 @@ void FixChemShrinkCore::post_force(int)
             {
                 continue;
             }
+
+            layers_ = (T_[i] < 843.15) ? 2 : 3;
+
             // 1st recalculate masses of layers if layer has reduced
             // is ignored if there is no change in layers
             if (active_layers(i) > 0)
