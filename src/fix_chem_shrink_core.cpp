@@ -591,8 +591,6 @@ void FixChemShrinkCore::post_force(int)
     double dmA_[nmaxlayers_] = {0.};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
     double layerMolMasses_[] = {0.055845, 0.071844, 0.231532, 0.1596882};
 
-    if (layers_ == 0)
-        return;
 
     for (i = 0; i < nlocal; i++)
     {
