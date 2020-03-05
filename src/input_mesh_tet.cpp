@@ -38,9 +38,6 @@
 
 using namespace LAMMPS_NS;
 
-#define MAXLINE 2048
-#define DELTA 4
-
 InputMeshTet::InputMeshTet(LAMMPS *lmp, int argc, char **argv) : Input(lmp, argc, argv),
 verbose_(false)
 {}
