@@ -84,9 +84,12 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 {
   int n,m;
 
-  double phix = (mesh->rot_angle[0])*M_PI/180.;
-  double phiy = (mesh->rot_angle[1])*M_PI/180.;
-  double phiz = (mesh->rot_angle[2])*M_PI/180.;
+  const double sin_phix = sin(mesh->rot_angle[0] * M_PI/180.);
+  const double sin_phiy = sin(mesh->rot_angle[1] * M_PI/180.);
+  const double sin_phiz = sin(mesh->rot_angle[2] * M_PI/180.);
+  const double cos_phix = cos(mesh->rot_angle[0] * M_PI/180.);
+  const double cos_phiy = cos(mesh->rot_angle[1] * M_PI/180.);
+  const double cos_phiz = cos(mesh->rot_angle[2] * M_PI/180.);
 
   int flag_outside = 0;
 
@@ -205,15 +208,15 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
             }
 
             // rotate the vertex
-            vert_after_rot[0] = vert_before_rot[0] *   cos(phiy)*cos(phiz)
-                              + vert_before_rot[1] * ( cos(phiz)*sin(phix)*sin(phiy) - cos(phix)*sin(phiz))
-                              + vert_before_rot[2] * ( cos(phix)*cos(phiz)*sin(phiy) + sin(phix)*sin(phiz));
-            vert_after_rot[1] = vert_before_rot[0] *   cos(phiy)*sin(phiz)
-                              + vert_before_rot[2] * (-cos(phiz)*sin(phix) + cos(phix)*sin(phiy)*sin(phiz))
-                              + vert_before_rot[1] * ( cos(phix)*cos(phiz) + sin(phix)*sin(phiy)*sin(phiz));
-            vert_after_rot[2] = vert_before_rot[2] *   cos(phix)*cos(phiy)
-                              + vert_before_rot[1] *   cos(phiy)*sin(phix)
-                              - vert_before_rot[0] *   sin(phiy);
+            vert_after_rot[0] = vert_before_rot[0] *   cos_phiy*cos_phiz
+                              + vert_before_rot[1] * ( cos_phiz*sin_phix*sin_phiy - cos_phix*sin_phiz)
+                              + vert_before_rot[2] * ( cos_phix*cos_phiz*sin_phiy + sin_phix*sin_phiz);
+            vert_after_rot[1] = vert_before_rot[0] *   cos_phiy*sin_phiz
+                              + vert_before_rot[2] * (-cos_phiz*sin_phix + cos_phix*sin_phiy*sin_phiz)
+                              + vert_before_rot[1] * ( cos_phix*cos_phiz + sin_phix*sin_phiy*sin_phiz);
+            vert_after_rot[2] = vert_before_rot[2] *   cos_phix*cos_phiy
+                              + vert_before_rot[1] *   cos_phiy*sin_phix
+                              - vert_before_rot[0] *   sin_phiy;
 
             if (!domain->is_in_domain(vert_after_rot))
                 flag_outside = 1;
