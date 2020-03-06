@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 #include "input.h"
 #include "modify.h"
 #include "update.h"
@@ -31,7 +32,6 @@
 #include "domain.h"
 #include "comm.h"
 #include "memory.h"
-#include <math.h>
 #include "vector_liggghts.h"
 #include "input_mesh_tet.h"
 #include "region_mesh_tet.h"
@@ -60,8 +60,8 @@ void InputMeshTet::meshtetfile(const char *filename, class RegTetMesh *mesh, boo
   // if single open file is not stdin, close it
   // open new filename and set stl___file
 
-  if (me == 0) {
-
+  if (me == 0)
+  {
     nonlammps_file = fopen(filename,"r");
     if (nonlammps_file == NULL) {
       char str[128];
@@ -105,8 +105,8 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
   int flag_other_than_tet = 0;
 
-  while (1) {
-
+  while (1)
+  {
     // read a line from input script
     // n = length of line including str terminator, 0 if end of file
     // if line ends in continuation char '&', concatenate next line
@@ -169,19 +169,22 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
     if(iLine == 2)
     {
-        if(strcmp(arg[0],"ASCII")) error->all(FLERR,"Expecting ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"ASCII"))
+            error->all(FLERR,"Expecting ASCII VTK mesh file, cannot continue");
         continue;
     }
 
     if(iLine == 3)
     {
-        if(strcmp(arg[0],"DATASET") || strcmp(arg[1],"UNSTRUCTURED_GRID")) error->all(FLERR,"Expecting ASCII VTK unstructured grid mesh file, cannot continue");
+        if(strcmp(arg[0],"DATASET") || strcmp(arg[1],"UNSTRUCTURED_GRID"))
+            error->all(FLERR,"Expecting ASCII VTK unstructured grid mesh file, cannot continue");
         continue;
     }
 
     if(iLine == 4)
     {
-        if(strcmp(arg[0],"POINTS")) error->all(FLERR,"Expecting 'POINTS' section in ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"POINTS"))
+            error->all(FLERR,"Expecting 'POINTS' section in ASCII VTK mesh file, cannot continue");
         npoints = atoi(arg[1]);
 
         memory->create(points,npoints,3,"input_mesh:points");
@@ -225,7 +228,8 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
     if(iLine == 5+nPointLines)
     {
-        if(strcmp(arg[0],"CELLS")) error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"CELLS"))
+            error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
         ncells = atoi(arg[1]);
 
         memory->create(cells,ncells,4,"input_mesh:cells");
@@ -237,8 +241,8 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
     {
         if(narg == 5)
         {
-            for (int j=0;j<4;j++) cells[icell][j] = atoi(arg[1+j]);
-
+            for (int j=0;j<4;j++)
+                cells[icell][j] = atoi(arg[1+j]);
         }
         else
         {
@@ -251,8 +255,10 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
     if(iLine == 6+nPointLines+ncells)
     {
-        if(strcmp(arg[0],"CELL_TYPES")) error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
-        if(ncells != atoi(arg[1]))  error->all(FLERR,"Inconsistency in 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"CELL_TYPES"))
+            error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
+        if(ncells != atoi(arg[1]))
+            error->all(FLERR,"Inconsistency in 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
         icell = 0;
 
         continue;
@@ -267,10 +273,11 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
             flag_other_than_tet = 1;
         }
         else ntets++;
+
         icell++;
         continue;
     }
-}
+  }
 
   //must throw an error here since regions may not extend outside box
   if(flag_outside)
@@ -284,7 +291,9 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
   for(int i = 0; i < ncells; i++)
   {
-      if(cells[i][0] == -1) continue;
+      if(cells[i][0] == -1)
+        continue;
+
       for (int j = 0; j < 4; j++)
         vectorCopy3D(points[cells[i][j]],tetnodes[j]);
 
