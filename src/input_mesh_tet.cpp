@@ -101,6 +101,7 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
   int iLine = 0;
 
   int nLines = 0;
+  int nPointLines = 0;
 
   int flag_other_than_tet = 0;
 
@@ -187,29 +188,42 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
         continue;
     }
 
-    if(iLine <= 4+npoints)
+    if(ipoint < npoints)
     {
-        if(narg != 3) error->all(FLERR,"Expecting 3 values per line for each point in 'POINTS' section of ASCII VTK mesh file, cannot continue");
+        if(narg % 3)
+            error->all(FLERR,"Expecting multiple of 3 values of point data in 'POINTS' section of ASCII VTK mesh file, cannot continue");
 
-        //read the vertex, translate and scale it
-        for (int j=0;j<3;j++) vert_before_rot[j]=(atof(arg[j])+(mesh->off_fact[j]))*(mesh->scale_fact);
+        for(int i = 0; i < narg/3; ++i)
+        {
+            // read the vertex, translate and scale it
+            for(int j = 0; j < 3; ++j)
+            {
+                vert_before_rot[j] = (atof(arg[j]) + (mesh->off_fact[j])) * mesh->scale_fact;
+            }
 
-        //rotate the vertex
-        vert_after_rot[0] = vert_before_rot[0]*cos(phiy)*cos(phiz)+vert_before_rot[1]*(cos(phiz)*sin(phix)*sin(phiy)-cos(phix)*sin(phiz))+vert_before_rot[2]*(cos(phix)*cos(phiz)*sin(phiy)+sin(phix)*sin(phiz));
-        vert_after_rot[1] = vert_before_rot[0]*cos(phiy)*sin(phiz)+vert_before_rot[2]*(-cos(phiz)*sin(phix)+cos(phix)*sin(phiy)*sin(phiz))+vert_before_rot[1]*(cos(phix)*cos(phiz)+sin(phix)*sin(phiy)*sin(phiz));
-        vert_after_rot[2] = vert_before_rot[2]*cos(phix)*cos(phiy)+vert_before_rot[1]*cos(phiy)*sin(phix)-vert_before_rot[0]*sin(phiy);
+            // rotate the vertex
+            vert_after_rot[0] = vert_before_rot[0] *   cos(phiy)*cos(phiz)
+                              + vert_before_rot[1] * ( cos(phiz)*sin(phix)*sin(phiy) - cos(phix)*sin(phiz))
+                              + vert_before_rot[2] * ( cos(phix)*cos(phiz)*sin(phiy) + sin(phix)*sin(phiz));
+            vert_after_rot[1] = vert_before_rot[0] *   cos(phiy)*sin(phiz)
+                              + vert_before_rot[2] * (-cos(phiz)*sin(phix) + cos(phix)*sin(phiy)*sin(phiz))
+                              + vert_before_rot[1] * ( cos(phix)*cos(phiz) + sin(phix)*sin(phiy)*sin(phiz));
+            vert_after_rot[2] = vert_before_rot[2] *   cos(phix)*cos(phiy)
+                              + vert_before_rot[1] *   cos(phiy)*sin(phix)
+                              - vert_before_rot[0] *   sin(phiy);
 
-        if (!domain->is_in_domain(vert_after_rot))
-            flag_outside = 1;
+            if (!domain->is_in_domain(vert_after_rot))
+                flag_outside = 1;
 
-        //store the vertex
-
-        vectorCopy3D(vert_after_rot,points[ipoint]);
-        ipoint++;
+            // store the vertex
+            vectorCopy3D(vert_after_rot,points[ipoint]);
+            ++ipoint;
+        }
+        ++nPointLines;
         continue;
     }
 
-    if(iLine == 5+npoints)
+    if(iLine == 5+nPointLines)
     {
         if(strcmp(arg[0],"CELLS")) error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
         ncells = atoi(arg[1]);
@@ -219,7 +233,7 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
     }
 
     //copy data of all which have 4 values - can be tet, quad, poly_line or triangle_strip
-    if(iLine <= 5+npoints+ncells)
+    if(iLine <= 5+nPointLines+ncells)
     {
         if(narg == 5)
         {
@@ -235,7 +249,7 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
         continue;
     }
 
-    if(iLine == 6+npoints+ncells)
+    if(iLine == 6+nPointLines+ncells)
     {
         if(strcmp(arg[0],"CELL_TYPES")) error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
         if(ncells != atoi(arg[1]))  error->all(FLERR,"Inconsistency in 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
@@ -245,7 +259,7 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
     }
 
     //only take tetraeders (cell type 10 according to VTK standard) - count them
-    if(iLine <= 6+npoints+2*ncells)
+    if(iLine <= 6+nPointLines+2*ncells)
     {
         if(strcmp(arg[0],"10"))
         {
