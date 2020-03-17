@@ -63,6 +63,11 @@ const double FixChemShrinkCore::a_coeff_nasa_H2[]    = { 200.00, 6000., 1000.,  
 const double FixChemShrinkCore::a_coeff_nasa_H2O[]   = { 200.00, 6000., 1000.,  2.677039E+00,  2.973182E-03, -7.737689E-07,  9.443351E-11, -4.268999E-15, -2.988589E+04,
                                                          6.882550E+00,  4.198635E+00, -2.036402E-03,  6.520342E-06, -5.487927E-09,  1.771968E-12, -3.029373E+04, -8.490090E-01 };
 
+const double FixChemShrinkCore::v_reac_[] = { 1.0, 1.0, 3.0 };
+const double FixChemShrinkCore::v_prod_[] = { 1.0, 3.0, 2.0 };
+const double FixChemShrinkCore::v_reac_low_[] = { 0.25, 3.0, 0.0 };
+const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 2.0, 0.0 };
+
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
@@ -125,6 +130,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             iarg_ += 2; // iarg = 11
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"nevery") == 0)
+        {
+            nevery = atoi(arg[iarg_+1]);
+            if (nevery <= 0) error->fix_error(FLERR,this,"nevery must be larger than 0");
+            iarg_+=2;
+            hasargs = true;
+        }
         else if (strcmp(arg[iarg_],"scale_reduction_rate") == 0 )
         {
             if (iarg_ + 2 > narg)
@@ -180,7 +192,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     peratom_flag = 1;
     peratom_freq = 1;
     global_freq = 1;
-    time_integrate = 1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -569,14 +580,15 @@ void FixChemShrinkCore::init()
 
 void FixChemShrinkCore::post_force(int)
 {
+    if (update->ntimestep % nevery)
+        return;
+
     updatePtrs();
     int i = 0;
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
     double x0_eq_[nmaxlayers_] = {0.};          // molar fraction of reactant gas
     double dmA_[nmaxlayers_] = {0.};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
-    double v_reac_[nmaxlayers_] = {0.};
-    double v_prod_[nmaxlayers_] = {0.};
     double layerMolMasses_[] = {0.055845, 0.071844, 0.231532, 0.1596882};
 
     if (layers_ == 0)
@@ -597,7 +609,7 @@ void FixChemShrinkCore::post_force(int)
                 if (T_[i] < 573.15)
                 {
                     // do nothing -- no reaction takes place
-                    error->warning(FLERR, "The temperature is too low for reduction to take place!");
+                    if (screenflag_) error->warning(FLERR, "The temperature is too low for reduction to take place!");
                 }
                 else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
                 {
@@ -607,9 +619,9 @@ void FixChemShrinkCore::post_force(int)
                     getB(i);
                     getMassT(i);
                     reaction_low(i, dmA_, x0_eq_);
-                    update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    update_atom_properties(i, dmA_,v_reac_low_,v_prod_low_,layerMolMasses_);
                     update_gas_properties(i, dmA_);
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    heat_of_reaction(i, dmA_,v_reac_low_,v_prod_low_,layerMolMasses_);
                 }
                 else // T_[i] > 843.15
                 {
@@ -969,7 +981,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
-        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep;
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }
@@ -977,20 +989,12 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double *v_reac_,double* v_prod_, const double* layerMolMasses_)
+void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const double *v_reac, const double* v_prod, const double* layerMolMasses_)
 {
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
 
     // based on material change: update relative radii, average density and mass of atom i
-    // stoichiometric coefficients of reactions
-    if (T_[i] < 843.15) {
-        v_reac_[0] = 0.25; v_reac_[1] = 3.0; v_reac_[2] = 0.;
-        v_prod_[0] = 0.75; v_prod_[1] = 2.0; v_prod_[2] = 0.;
-    } else {
-        v_reac_[0] = 1.0; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
-        v_prod_[0] = 1.0; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
-    }
 
     // initialize radius, mass change of layer and sum of particle
     double rad[nmaxlayers_+1] = {0.};
@@ -1000,16 +1004,16 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,double 
     /* Mass Change of Layers */
     /* dmL is a positive value, therefore it will be subtracted from the total mass */
     // Fe2O3 (iniital)
-    dmL_[layers_] = dmA_[layers_-1] * v_reac_[layers_-1] * (layerMolMasses_[layers_] / molMass_A_);
+    dmL_[layers_] = dmA_[layers_-1] * v_reac[layers_-1] * (layerMolMasses_[layers_] / molMass_A_);
 
     // Initial FeO & Fe3O4 layers
     // changes with active layers
     for (int layer = 1; layer < layers_; layer++)
-        dmL_[layer] = -dmA_[layer]   * v_prod_[layer]   * (layerMolMasses_[layer] / molMass_A_)
-                     + dmA_[layer-1] * v_reac_[layer-1] * (layerMolMasses_[layer] / molMass_A_);
+        dmL_[layer] = -dmA_[layer]   * v_prod[layer]   * (layerMolMasses_[layer] / molMass_A_)
+                     + dmA_[layer-1] * v_reac[layer-1] * (layerMolMasses_[layer] / molMass_A_);
 
     // Fe
-    dmL_[0] = -dmA_[0] * v_prod_[0] * (layerMolMasses_[0] / molMass_A_);
+    dmL_[0] = -dmA_[0] * v_prod[0] * (layerMolMasses_[0] / molMass_A_);
 
     // New layer masses
     for (int j = 0; j <= layers_; j++)
@@ -1106,17 +1110,8 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
 /* ---------------------------------------------------------------------- */
 
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
-void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_reac_, double *v_prod_, const double* layerMolMasses_)
+void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double *v_reac, const double *v_prod, const double* layerMolMasses_)
 {
-    // stoichiometric coefficients of reactions
-    if (T_[i] < 843.15) {
-        v_reac_[0] = 0.25; v_reac_[1] = 3.0; v_reac_[2] = 0.0;
-        v_prod_[0] = 0.75; v_prod_[1] = 2.0; v_prod_[2] = 0.0;
-    } else {
-        v_reac_[0] = 1.00; v_reac_[1] = 1.0; v_reac_[2] = 3.0;
-        v_prod_[0] = 1.00; v_prod_[1] = 3.0; v_prod_[2] = 2.0;
-    }
-
     double HR[nmaxlayers_] = {0.};
     /* reaction enthalpy */
     double delta_h[nmaxlayers_] = {0.};
@@ -1141,7 +1136,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, double *v_re
 
     for (int j = 0; j < layers_; j++)
     {
-         delta_h[j] = (v_prod_[j] * conv_h[j] + conv_h[5]) - (v_reac_[0] * conv_h[j+1] + conv_h[4]);
+         delta_h[j] = (v_prod[j] * conv_h[j] + conv_h[5]) - (v_reac[0] * conv_h[j+1] + conv_h[4]);
     }
 
     if (screenflag_ && screen) {
@@ -1323,7 +1318,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
-        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep;
+        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }

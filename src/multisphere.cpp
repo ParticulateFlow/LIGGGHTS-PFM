@@ -19,8 +19,6 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#define DELTA 10000
-
 #include "multisphere.h"
 #include "domain.h"
 #include "force.h"

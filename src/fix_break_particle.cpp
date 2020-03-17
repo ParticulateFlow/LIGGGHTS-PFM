@@ -607,7 +607,6 @@ void FixBreakParticle::check_energy_criterion()
   int *mask = atom->mask;
   int *tag = atom->tag;
   double *radius = atom->radius;
-  double *rmass = atom->rmass;
   int nall = nlocal + atom->nghost;
 
   int inum = pair_gran->list->inum;
@@ -645,11 +644,11 @@ void FixBreakParticle::check_energy_criterion()
       double impact_energy_limited_j;
 
       if (thresholdstyle == ATOM) {
-        impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset]/rmass[i] - 0.5*thresholdAtom[i]/radius[i]);
-        impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset]/rmass[j] - 0.5*thresholdAtom[j]/radius[j]);
+        impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[i]/radius[i]);
+        impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[j]/radius[j]);
       } else {
-        impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset]/rmass[i] - 0.5*threshold/radius[i]);
-        impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset]/rmass[j] - 0.5*threshold/radius[j]);
+        impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[i]);
+        impact_energy_limited_j = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[j]);
       }
 
       if (!already_doomed[i]) { // no breaker yet
@@ -731,9 +730,9 @@ void FixBreakParticle::check_energy_criterion()
               double impact_energy_limited_i;
 
               if (thresholdstyle == ATOM) {
-                impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset]/rmass[iPart] - 0.5*thresholdAtom[iPart]/radius[iPart]);
+                impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[iPart]/radius[iPart]);
               } else {
-                impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset]/rmass[iPart] - 0.5*threshold/radius[iPart]);
+                impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
               }
               if (impact_energy_limited_i > 0.0) {
                 flag[iPart] += impact_energy_limited_i;
@@ -782,9 +781,9 @@ void FixBreakParticle::check_energy_criterion()
           double impact_energy_limited_i;
 
           if (thresholdstyle == ATOM) {
-            impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset]/rmass[iPart] - 0.5*thresholdAtom[iPart]/radius[iPart]);
+            impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*thresholdAtom[iPart]/radius[iPart]);
           } else {
-            impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset]/rmass[iPart] - 0.5*threshold/radius[iPart]);
+            impact_energy_limited_i = std::max(0.0, contact_history[impactEnergyOffset] - 0.5*threshold/radius[iPart]);
           }
           flag[iPart] += impact_energy_limited_i;
 
