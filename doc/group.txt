@@ -13,18 +13,11 @@ group command :h3
 group ID style args :pre
 
 ID = user-defined name of the group :ulb,l
-<<<<<<< HEAD
 style = {delete} or {clear} or {empty} or {region} or {type} or {id} or {molecule} or {variable} or \
       {subtract} or {union} or {intersect} or {dynamic} :l
   {delete} = no args
   {clear} = no args
   {empty} = no args
-=======
-style = {delete} or {clear} or {region} or {type} or {id} or {molecule} or \
-      {variable} or {subtract} or {union} or {intersect} or {dynamic} :l
-  {delete} = no args
-  {clear} = no args
->>>>>>> a762bf4b6e589a9e1983c6f6b460a92c1b68db9b
   {region} args = region-ID
   {type} or {id} or {molecule}
     args = list of one or more atom types, atom IDs, or molecule IDs
@@ -96,14 +89,11 @@ been used to define a current "fix"_fix.html or "compute"_compute.html
 or "dump"_dump.html.
 
 The {clear} style un-assigns all atoms that were assigned to that group.
-<<<<<<< HEAD
-
-The {empty} style creates an empty group.
-=======
 This may be dangerous to do during a simulation run, e.g. using the
 "run every"_run.html command if a fix or compute or other operation expects
 the atoms in the group to remain constant, but LAMMPS does not check for this.
->>>>>>> a762bf4b6e589a9e1983c6f6b460a92c1b68db9b
+
+The {empty} style creates an empty group.
 
 The {region} style puts all atoms in the region volume into the group.
 Note that this is a static one-time assignment.  The atoms remain
