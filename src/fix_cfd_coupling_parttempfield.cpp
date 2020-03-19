@@ -5,9 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Department for Particulate Flow Modelling
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -45,6 +44,8 @@ FixCfdCouplingPartTempField::FixCfdCouplingPartTempField(LAMMPS *lmp, int narg, 
     fix_coupling = NULL;
     fix_temp = NULL;
 
+    created_fix_temp = false;
+
     int iarg = 3;
 
     if(narg < iarg + 2) error->all(FLERR,"Fix couple/cfd/parttempfield: Wrong number of arguments");
@@ -65,7 +66,7 @@ FixCfdCouplingPartTempField::~FixCfdCouplingPartTempField()
 
 void FixCfdCouplingPartTempField::pre_delete(bool unfixflag)
 {
-    if(fix_temp) modify->delete_fix("Temp");
+    if(fix_temp && created_fix_temp) modify->delete_fix("Temp");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -81,7 +82,7 @@ int FixCfdCouplingPartTempField::setmask()
 
 void FixCfdCouplingPartTempField::post_create()
 {
-  //  register particle temperatures
+  fix_temp=static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style));
   if(!fix_temp)
   {
         const char* fixarg[9];
@@ -99,9 +100,8 @@ void FixCfdCouplingPartTempField::post_create()
 
         modify->add_fix(9,const_cast<char**>(fixarg));
         fix_temp=static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style));
+        created_fix_temp = true;
   }
-
-  
 }
 
 /* ---------------------------------------------------------------------- */
@@ -117,14 +117,8 @@ void FixCfdCouplingPartTempField::init()
     if(!fix_coupling)
       error->fix_error(FLERR,this,"needs a fix of type couple/cfd");
 
-    //values to send to OF
-    fix_coupling->add_push_property("Temp","scalar-atom");
-
     //values to come from OF
     fix_coupling->add_pull_property("Temp","scalar-atom");
-
-    // get reference to particle temperatures
-    fix_temp = static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style));
 }
 
 /* ---------------------------------------------------------------------- */

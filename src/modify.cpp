@@ -906,7 +906,14 @@ void Modify::modify_fix(int narg, char **arg)
 void Modify::delete_fix(const char *id, bool unfixflag) //NP modified C.K.
 {
   int ifix = find_fix(id);
-  if (ifix < 0) error->all(FLERR,"Could not find fix ID to delete");
+  if (ifix < 0)
+  {
+    char * errmsg = new char[50+strlen(id)];
+    sprintf(errmsg,"Could not find fix with ID \"%s\" to delete",id);
+    error->all(FLERR,errmsg);
+    delete [] errmsg;
+//error->all(FLERR,"Could not find fix ID to delete");
+  }
 
   //NP modified C.K.
   //NP this is if fix has to do clean-up, such as to delete other fixes

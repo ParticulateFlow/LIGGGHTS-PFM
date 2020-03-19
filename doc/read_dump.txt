@@ -21,13 +21,14 @@ field = {x} or {y} or {z} or {vx} or {vy} or {vz} or {q} or {ix} or {iy} or {iz}
   {q} = charge
   {ix},{iy},{iz} = image flags in each dimension :pre
 zero or more keyword/value pairs may be appended :l
-keyword = {box} or {replace} or {purge} or {trim} or {add} or {bruteadd} or {retainstep} or {label} or {scaled} or {wrapped} or {format} :l
+keyword = {box} or {replace} or {purge} or {trim} or {add} or {bruteadd} or {exactstep} or {retainstep} or {label} or {scaled} or {wrapped} or {format} :l
   {box} value = {yes} or {no} = replace simulation box with dump box
   {replace} value = {yes} or {no} = overwrite atoms with dump atoms
   {purge} value = {yes} or {no} = delete all atoms before adding dump atoms
   {trim} value = {yes} or {no} = trim atoms not in dump snapshot
   {add} value = {yes} or {no} = add new dump atoms to system
   {bruteadd} value = {yes} or {no} = add all dump atoms to system
+  {exactstep} value = {yes} or {no} = look for Nstep in dump file or use first timestep equal or larger than Nstep
   {retainstep} value = {yes} or {no} = retain current timestep or use that from dump file
   {label} value = field column
     field = one of the listed fields or {id} or {type}

@@ -44,6 +44,7 @@ using namespace FixConst;
 using namespace MathConst;
 
 #define EPSILON 0.001
+#define INVALPHAMAX 1.5
 
 /* ---------------------------------------------------------------------- */
 
@@ -85,6 +86,11 @@ void FixPropertyAtomPolydispParcel::parse_args(int narg, char **arg)
     for (int j = 0; j < ndefaultvalues; j++)
     {
         defaultvalues[j] = force->numeric(FLERR,arg[4+j]);
+        if (defaultvalues[j] > INVALPHAMAX)
+        {
+            // fp = 1 / alpha_max with mono-disp. eff. parcels leads to occupation of whole volume
+            error->all(FLERR,"Polydisp. parcel factor larger than 1 / alpha_max not reasonable.");
+        }
     }
     
 
@@ -202,6 +208,13 @@ void FixPropertyAtomPolydispParcel::set_all(double value)
 ------------------------------------------------------------------------- */
 void FixPropertyAtomPolydispParcel::set_vector(int i, double value)
 {
+    if (value > INVALPHAMAX)
+    {
+        value = INVALPHAMAX;
+        if(comm->me==0 && screen)  fprintf(screen ,"WARNING: Polydisp. parcel factor larger than 1 / alpha_max not reasonable.\n");
+        if(comm->me==0 && logfile) fprintf(logfile,"WARNING: Polydisp. parcel factor larger than 1 / alpha_max not reasonable.\n");
+    }
+
     FixPropertyAtom::set_vector(i, value);
     double *mass = atom->rmass;
     double *density = atom->density;
