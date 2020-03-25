@@ -68,6 +68,8 @@ const double FixChemShrinkCore::v_prod_[] = { 1.0, 3.0, 2.0 };
 const double FixChemShrinkCore::v_reac_low_[] = { 0.25, 3.0, 0.0 };
 const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 2.0, 0.0 };
 
+const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.071844, 0.231532, 0.1596882 };
+
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
@@ -589,7 +591,6 @@ void FixChemShrinkCore::post_force(int)
     int *mask   =   atom->mask;
     double x0_eq_[nmaxlayers_] = {0.};          // molar fraction of reactant gas
     double dmA_[nmaxlayers_] = {0.};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
-    double layerMolMasses_[] = {0.055845, 0.071844, 0.231532, 0.1596882};
 
 
     for (i = 0; i < nlocal; i++)
@@ -614,21 +615,21 @@ void FixChemShrinkCore::post_force(int)
                 }
                 else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
                 {
-                    FractionalReduction_low(i, layerMolMasses_);
+                    FractionalReduction_low(i);
                     getXi_low(i,x0_eq_);
                     getA_low(i);
                     getB(i);
                     getMassT(i);
                     reaction_low(i, dmA_, x0_eq_);
-                    update_atom_properties(i, dmA_,v_reac_low_,v_prod_low_,layerMolMasses_);
+                    update_atom_properties(i, dmA_,v_reac_low_,v_prod_low_);
                     update_gas_properties(i, dmA_);
-                    heat_of_reaction(i, dmA_,v_reac_low_,v_prod_low_,layerMolMasses_);
+                    heat_of_reaction(i, dmA_,v_reac_low_,v_prod_low_);
                 }
                 else // T_[i] > 843.15
                 {
                     // calculate values for fractional reduction f_i = (1-relRadii_i^3)
                     // or with mass ratio provides simplicity for calculations of A & B terms.
-                    FractionalReduction(i,layerMolMasses_);
+                    FractionalReduction(i);
                     // get values for equilibrium molar fraction of reactant gas species,
                     // this value is calculated from the Equilibrium constants function Keq(layer,T).
                     // and used in the reaction rate determination.
@@ -646,12 +647,12 @@ void FixChemShrinkCore::post_force(int)
                     // the results of reaction gives us the mass change of reactant species gas
                     // in the usual case that means the CO gas mass species change is given
                     // this information is used then to calculate mass changes of particle layers
-                    update_atom_properties(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    update_atom_properties(i, dmA_,v_reac_,v_prod_);
                     // also the results of reaction function is used to calculate
                     // the changes in gas species
                     update_gas_properties(i, dmA_);
                     // calculate delta_h, and dot_delta_h for heat of reaction
-                    heat_of_reaction(i, dmA_,v_reac_,v_prod_,layerMolMasses_);
+                    heat_of_reaction(i, dmA_,v_reac_,v_prod_);
                 }
             }
         }
@@ -990,7 +991,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const double *v_reac, const double* v_prod, const double* layerMolMasses_)
+void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const double *v_reac, const double* v_prod)
 {
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
@@ -1085,7 +1086,7 @@ void FixChemShrinkCore::update_gas_properties(int i, const double *dmA_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
+void FixChemShrinkCore::FractionalReduction(int i)
 {
     // calculate the fractional reduction as defined in Tang et al. (2012)
     // "Simulation study on performance of Z-path Moving-fluidized Bed for Gaseous Reduction
@@ -1111,7 +1112,7 @@ void FixChemShrinkCore::FractionalReduction(int i, double* layerMolMasses_)
 /* ---------------------------------------------------------------------- */
 
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
-void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double *v_reac, const double *v_prod, const double* layerMolMasses_)
+void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double *v_reac, const double *v_prod)
 {
     double HR[nmaxlayers_] = {0.};
     /* reaction enthalpy */
@@ -1327,7 +1328,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCore::FractionalReduction_low(int i, double* layerMolMasses_)
+void FixChemShrinkCore::FractionalReduction_low(int i)
 {
     const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];

@@ -51,26 +51,28 @@ public:
   // functions declared in this class
   int active_layers(int);   // calculate number of active layers per-particle
   void calcMassLayer(int);  // calculate mass of layers per-particle
-  void FractionalReduction(int, double *); // calculate fractional reduction per-layer depending on layer radius
+  void FractionalReduction(int); // calculate fractional reduction per-layer depending on layer radius
   void getXi(int, double *);    // calculate molar equilibrium constant of reacting gas
   double K_eq(int, int); // calculate equilibrium constant based on the work of Valipour 2009
   void getA(int);   // calculate chemical reaction resistance term
   void getB(int);   // calculate diffusion resistance term
   void getMassT(int);   // calculate gas film mass transfer resistance term
   void reaction(int, double *, const double *);   // calculate chemical reaction rate
-  void update_atom_properties(int, const double *, const double *, const double *, const double *);   // update particle layers with depending on chemical reaction rate - per-particle
-  void update_gas_properties(int, const double *);    // update reactant and product gas masses depending on chemical reaction rate
-  void heat_of_reaction(int, const double *, const double *, const double *, const double *);
+  // update particle layers (relative radii, mass) depending on chemical reaction rate
+  void update_atom_properties(int, const double *, const double *, const double *);
+  // update reactant and product gas masses depending on chemical reaction rate
+  void update_gas_properties(int, const double *);
+  void heat_of_reaction(int, const double *, const double *, const double *);
   double conv_enthalpy(const double *, double , int);
   double K_eq_low(int, int);
   void reaction_low(int, double *, const double *);
-  void FractionalReduction_low(int, double *);
+  void FractionalReduction_low(int);
   void getXi_low(int, double *);
   void getA_low(int);
 
   // pre-defined variables for reduction process
   static int const nmaxlayers_ = 3;
-  static double const Runiv;
+  static double const Runiv; // universal gas constant
   static const double k0_low_CO[];
   static const double k0_low_H2[];
   static const double Ea_low_CO[];
@@ -89,6 +91,8 @@ public:
   static const double v_prod_[];
   static const double v_reac_low_[];
   static const double v_prod_low_[];
+
+  static const double layerMolMasses_[];
 
   // variables
   bool screenflag_;
