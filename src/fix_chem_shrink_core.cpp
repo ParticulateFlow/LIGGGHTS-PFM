@@ -697,31 +697,33 @@ void FixChemShrinkCore::calcMassLayer(int i)
 
 double FixChemShrinkCore::K_eq(int layer, int i)
 {
-    // 0 = w->fe , 1 = m->w, 2 = h->m;
+    // 0 = FeO (wüstite)     -> Fe (iron)
+    // 1 = Fe3O4 (magnetite) -> FeO (wüstite)
+    // 2 = Fe2O3 (hematite)  -> Fe3O4 (magnetite)
     double Keq_ = 0.;
 
     if (strcmp(speciesA, "CO") == 0)
     {
         if (layer == 2)
-            Keq_ = exp(3968.37/T_[i]+3.94);
+            Keq_ = exp(3968.37/T_[i]+3.94);        // Valipour 2009, Nietrost 2012
         else if (layer == 1)
-            Keq_ = pow(10.0,(-1834.0/T_[i]+2.17));
-            // Keq_ = exp(-3585.64/T_[i]+4.58);
+            Keq_ = pow(10.0,(-1834.0/T_[i]+2.17)); // Nietrost 2012
+            // Keq_ = exp(-3585.64/T_[i]+4.58);    // ???
         else if (layer == 0)
-            Keq_ = pow(10.0,(914.0/T_[i]-1.097));
-            // Keq_ = exp(2744.63/T_[i]-2.946);
+            Keq_ = pow(10.0,(914.0/T_[i]-1.097));  // Nietrost 2012
+            // Keq_ = exp(2744.63/T_[i]-2.946);    // Valipour 2009
      }
      else if(strcmp(speciesA,"H2")==0)
      {
         if (layer == 2)
-            Keq_   =   exp(-362.6/T_[i] + 10.334);
+            Keq_   =   exp(-362.6/T_[i] + 10.334); // Valipour 2009, Nietrost 2012
         else if (layer == 1)
-            Keq_    =   pow(10.0,(-3577.0/T_[i]+3.74));
-            // Keq_   =   exp(-7916.6/T_[i] + 8.46);
+            Keq_    =   pow(10.0,(-3577.0/T_[i]+3.74)); // Nietrost 2012
+            // Keq_   =   exp(-7916.6/T_[i] + 8.46); // Valipour 2009
         else if (layer == 0)
             //Keq_    =   pow(10.0,(-827.0/T_[i]+0.468)); // --> With this equilibrium constant R1 is occuring with all temperatures for H2
             Keq_    =   pow(10.0,(-856.66/T_[i]+0.4387)); // Equilibrium constant from Turkdogan "Physical Chemistry of High Temperature Technology"
-            // Keq_   =   exp(-1586.9/T_[i] + 0.9317);
+            // Keq_   =   exp(-1586.9/T_[i] + 0.9317); // Valipour 2009
      }
      else
      {
@@ -900,11 +902,15 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
         // wustite to iron
         // if magnetite is not reducing, wustite does also not reduce
         if (dY[i][1] == 0.0)
+        {
             dY[i][0] = 0.0;
+        }
         else
+        {
             dY[i][0] = ((A2plusB2 * (A1 + B0plusB1plusMass) + A1 * B0plusB1plusMass) * (p_A - p_eq_[0])
                     -   (                                     A1 * B0plusMass)       * (p_A - p_eq_[2])
                     -   (A2plusB2 *       B0plusMass)                                * (p_A - p_eq_[1])) / W;
+        }
 
         // reaction doesn't happen if chemical reaction rate is negative
         if (dY[i][0] < 0.0)
@@ -942,9 +948,13 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 
         // wustite to iron
         if (dY[i][1] == 0.0)
+        {
             dY[i][0] = 0.0;
+        }
         else
+        {
             dY[i][0] = ((A1plusB1 + B0plusMass) * (p_A - p_eq_[0])  -  B0plusMass * (p_A - p_eq_[1])) / W;
+        }
 
         if (dY[i][0] < 0.0)
             dY[i][0] = 0.0;
@@ -983,7 +993,9 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
-        dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+        dmA_[j] =   dY[i][j] * (1.0 / (Runiv * T_[i])) * molMass_A_
+                   * (MY_4PI * ((radius_[i] * radius_[i]) / (cg_ * cg_)))
+                   * TimeStep * nevery;
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }
@@ -1003,8 +1015,8 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     double dmL_[nmaxlayers_+1] = {0.};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
     double sum_mass_p_new = 0.0;
 
-    /* Mass Change of Layers */
-    /* dmL is a positive value, therefore it will be subtracted from the total mass */
+    // Mass Change of Layers
+    // dmL is a positive value, therefore it will be subtracted from the total mass
     // Fe2O3 (iniital)
     dmL_[layers_] = dmA_[layers_-1] * v_reac[layers_-1] * (layerMolMasses_[layers_] / molMass_A_);
 
@@ -1115,15 +1127,15 @@ void FixChemShrinkCore::FractionalReduction(int i)
 void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double *v_reac, const double *v_prod)
 {
     double HR[nmaxlayers_] = {0.};
-    /* reaction enthalpy */
+    // reaction enthalpy
     double delta_h[nmaxlayers_] = {0.};
-    /* conventional enthalpy */
+    // conventional enthalpy
     double conv_h[6] = {0.};
 
-    conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i)*layerMolMasses_[0];
-    conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,  layerMolMasses_[1],i)*layerMolMasses_[1];
-    conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i)*layerMolMasses_[2];
-    conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[3],i)*layerMolMasses_[3];
+    conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i) * layerMolMasses_[0];
+    conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,  layerMolMasses_[1],i) * layerMolMasses_[1];
+    conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i) * layerMolMasses_[2];
+    conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[3],i) * layerMolMasses_[3];
 
     if (strcmp(speciesA, "CO") == 0)
     {
@@ -1173,7 +1185,7 @@ double FixChemShrinkCore::conv_enthalpy (const double *a, double Mw, int i)
     if (T_[i] < SMALL)
         error->fix_error(FLERR, this, "Error T <= ZERO");
 
-    if (T_[i] < a[0]) {/*Temperature smaller than lower bound*/
+    if (T_[i] < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];
         const double Tbound_low_sq = Tbound_low*Tbound_low;
         const double Tbound_low_cb = Tbound_low_sq*Tbound_low;
@@ -1255,6 +1267,7 @@ double FixChemShrinkCore::K_eq_low(int layer, int i)
 void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 {
     double p_eq_[nmaxlayers_] = {0.};
+
     for (int layer = 0; layer < layers_; layer++)
     {
         p_eq_[layer] = x0_eq_[layer]*partP_[i];
@@ -1263,7 +1276,9 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
     const double p_A = xA_[i] * partP_[i];
 
     if (screenflag_ && screen)
+    {
         fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_A);
+    }
 
     if (layers_ == 2)
     {
@@ -1426,8 +1441,8 @@ void FixChemShrinkCore::init_defaults()
     fix_effDiffKnud = NULL;
     fix_partPressure_ = NULL;   // Pascal
     fix_layerRelRad_ = NULL;
-    fix_layerMass_ = NULL;           //  [kg]
-    fix_layerDens_ = NULL;           //  [kg/m^3]
+    fix_layerMass_ = NULL;      //  [kg]
+    fix_layerDens_ = NULL;      //  [kg/m^3]
     fix_k0_ = NULL;             //  [m/s]
     fix_Ea_ = NULL;             //  [J/mol] - [kg*m^2/s^2*mol]
     fix_porosity_ = NULL;       //  [%]
