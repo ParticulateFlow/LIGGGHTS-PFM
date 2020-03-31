@@ -49,11 +49,8 @@ class FixCfdCouplingDissolve : public Fix {
 
  protected:
   class FixCfdCoupling* fix_coupling;
-  //class FixPropertyAtom* fix_conductiveFlux;
   class FixPropertyAtom* fix_convectiveFlux;
-  //class FixPropertyAtom* fix_heatFlux;
   double rmin;
-  //bool gran_field_conduction;
 
   std::vector<int> atom_tags_delete_;
 

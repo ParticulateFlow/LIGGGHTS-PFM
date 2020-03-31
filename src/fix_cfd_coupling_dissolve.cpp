@@ -45,9 +45,7 @@ FixCfdCouplingDissolve::FixCfdCouplingDissolve(LAMMPS *lmp, int narg, char **arg
 {
     fix_coupling = NULL;
 	fix_convectiveFlux = NULL;
-    //fix_conductiveFlux = fix_convectiveFlux  = fix_heatFlux = NULL;
     rmin = -1.0;
-    //gran_field_conduction = false;
 
     int iarg = 3;
 
@@ -65,22 +63,6 @@ FixCfdCouplingDissolve::FixCfdCouplingDissolve(LAMMPS *lmp, int narg, char **arg
             iarg++;
             hasargs = true;
         }
-		/*
-        else if(strcmp(arg[iarg],"transfer_conduction") == 0)
-        {
-            if(narg < iarg+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'transfer_conduction'");
-            iarg++;
-            if(strcmp(arg[iarg],"yes") == 0)
-                gran_field_conduction = true;
-            else if(strcmp(arg[iarg],"no") == 0)
-                gran_field_conduction = false;
-            else
-                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_conduction'");
-            iarg++;
-            hasargs = true;
-        }
-		*/
     }
 
     if(rmin < 0.) error->all(FLERR,"Fix couple/cfd/dissolve: rmin must be >= 0. Specify a meaningful value.");
@@ -97,7 +79,6 @@ FixCfdCouplingDissolve::~FixCfdCouplingDissolve()
 
 void FixCfdCouplingDissolve::pre_delete(bool unfixflag)
 {
-   // if(fix_conductiveFlux) modify->delete_fix("conductiveHeatFlux");
     if(fix_convectiveFlux) modify->delete_fix("convectiveMassFlux");
 }
 
@@ -130,49 +111,6 @@ void FixCfdCouplingDissolve::post_create()
         fixarg[8]="0.";
         fix_convectiveFlux = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
   }
-
-	/*
-  //  register conductive flux
-  if(!fix_conductiveFlux && gran_field_conduction)
-  {
-        const char* fixarg[11];
-        fixarg[0]="conductiveHeatFlux";
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="conductiveHeatFlux";
-        fixarg[4]="scalar"; //NP 1 scalar per particle to be registered
-        fixarg[5]="no";    //NP restart yes
-        fixarg[6]="yes";    //NP communicate ghost no
-        fixarg[7]="no";    //NP communicate rev yes
-        fixarg[8]="0.";
-        fix_conductiveFlux = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
-  }
-
-  //  add heat transfer model if not yet active
-  FixScalarTransportEquation *fix_ste = modify->find_fix_scalar_transport_equation("heattransfer");
-  if(!fix_ste)
-  {
-        const char *newarg[15];
-        newarg[0] = "ste_heattransfer";
-        newarg[1] = group->names[igroup];
-        newarg[2] = "transportequation/scalar";
-        newarg[3] = "equation_id";
-        newarg[4] = "heattransfer";
-        newarg[5] = "quantity";
-        newarg[6] = "Temp";
-        newarg[7] = "default_value";
-        char arg8[30];
-        sprintf(arg8,"%f",T0);
-        newarg[8] = arg8;
-        newarg[9] = "flux_quantity";
-        newarg[10] = "heatFlux";
-        newarg[11] = "source_quantity";
-        newarg[12] = "heatSource";
-        newarg[13] = "capacity_quantity";
-        newarg[14] = "thermalCapacity";
-        modify->add_fix(15,const_cast<char**>(newarg));
-  }
-  */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -188,25 +126,10 @@ void FixCfdCouplingDissolve::init()
     if(!fix_coupling)
       error->fix_error(FLERR,this,"needs a fix of type couple/cfd");
 
-    //values to send to OF
-    //fix_coupling->add_push_property("Temp","scalar-atom");
-
     //values to come from OF
     fix_coupling->add_pull_property("convectiveMassFlux","scalar-atom");
 
-    // heat transfer added heatFlux, get reference to it
-    //fix_heatFlux = static_cast<FixPropertyAtom*>(modify->find_fix_property("heatFlux","property/atom","scalar",0,0,style));
-
     fix_convectiveFlux = static_cast<FixPropertyAtom*>(modify->find_fix_property("convectiveMassFlux","property/atom","scalar",0,0,style));
-
-    // granular field conduction?
-	/*
-    if (gran_field_conduction)
-    {
-      fix_coupling->add_pull_property("conductiveHeatFlux","scalar-atom");
-      fix_conductiveFlux = static_cast<FixPropertyAtom*>(modify->find_fix_property("conductiveHeatFlux","property/atom","scalar",0,0,style));
-    }
-	*/
 }
 
 /* ---------------------------------------------------------------------- */
@@ -227,17 +150,8 @@ void FixCfdCouplingDissolve::post_force(int)
   if(0 == neighbor->ago)
   {
       fix_convectiveFlux->do_forward_comm();
-	  /*
-      if (gran_field_conduction)
-      {
-          fix_conductiveFlux->do_forward_comm();
-      }
-	  */
   }
 
-  //double *heatFlux = fix_heatFlux->vector_atom;
-  //double *conductiveFlux = NULL;
-  //if (gran_field_conduction) conductiveFlux = fix_conductiveFlux->vector_atom;
   double *convectiveFlux = fix_convectiveFlux->vector_atom;
 
 
@@ -246,13 +160,6 @@ void FixCfdCouplingDissolve::post_force(int)
   for (int i = 0; i < nlocal; i++)
     if (mask[i] & groupbit)
     {
-        /*
-		heatFlux[i] += convectiveFlux[i];
-        if (gran_field_conduction)
-        {
-            heatFlux[i] += conductiveFlux[i];
-        }
-		*/
 
 		if (radius_[i]>rmin)
 		{
