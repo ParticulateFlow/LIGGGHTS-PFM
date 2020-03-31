@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "atom.h"
+#include "atom_vec.h"
 #include "update.h"
 #include "respa.h"
 #include "error.h"
@@ -45,7 +46,7 @@ FixCfdCouplingDissolve::FixCfdCouplingDissolve(LAMMPS *lmp, int narg, char **arg
     fix_coupling = NULL;
 	fix_convectiveFlux = NULL;
     //fix_conductiveFlux = fix_convectiveFlux  = fix_heatFlux = NULL;
-    //T0 = -1.0;
+    rmin = -1.0;
     //gran_field_conduction = false;
 
     int iarg = 3;
@@ -54,16 +55,17 @@ FixCfdCouplingDissolve::FixCfdCouplingDissolve(LAMMPS *lmp, int narg, char **arg
     while(iarg < narg && hasargs)
     {
         hasargs = false;
-		/*
-        if(strcmp(arg[iarg],"T0") == 0)
+		
+        if(strcmp(arg[iarg],"rmin") == 0)
         {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'T0'");
+                error->fix_error(FLERR,this,"not enough arguments for 'rmin'");
             iarg++;
-            T0 = atof(arg[iarg]);
+            rmin = atof(arg[iarg]);
             iarg++;
             hasargs = true;
         }
+		/*
         else if(strcmp(arg[iarg],"transfer_conduction") == 0)
         {
             if(narg < iarg+2)
@@ -81,7 +83,7 @@ FixCfdCouplingDissolve::FixCfdCouplingDissolve(LAMMPS *lmp, int narg, char **arg
 		*/
     }
 
-    //if(T0 < 0.) error->all(FLERR,"Fix couple/cfd/dissolve: T0 must be >= 0. Specify a meaningful value.");
+    if(rmin < 0.) error->all(FLERR,"Fix couple/cfd/dissolve: rmin must be >= 0. Specify a meaningful value.");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -104,6 +106,7 @@ void FixCfdCouplingDissolve::pre_delete(bool unfixflag)
 int FixCfdCouplingDissolve::setmask()
 {
   int mask = 0;
+  mask |= PRE_EXCHANGE;
   mask |= POST_FORCE;
   return mask;
 }
@@ -217,6 +220,8 @@ void FixCfdCouplingDissolve::post_force(int)
 	double *pmass_  = atom ->  rmass;
     double *pdensity_ = atom -> density;
 
+	double vmin = (4./3.)*M_PI*rmin*rmin*rmin;
+
   // communicate convective flux to ghosts, there might be new data
   
   if(0 == neighbor->ago)
@@ -236,7 +241,7 @@ void FixCfdCouplingDissolve::post_force(int)
   double *convectiveFlux = fix_convectiveFlux->vector_atom;
 
 
-  //NP add convective flux to per-particle heat flux
+  //NP add convective flux to per-particle mass flux
   
   for (int i = 0; i < nlocal; i++)
     if (mask[i] & groupbit)
@@ -249,9 +254,73 @@ void FixCfdCouplingDissolve::post_force(int)
         }
 		*/
 
-		pmass_[i] += convectiveFlux[i]*dt;
-		radius_[i] = cbrt(0.75*pmass_[i]/(M_PI*pdensity_[i]));
+		if (radius_[i]>rmin)
+		{
+			pmass_[i] += convectiveFlux[i]*dt;
 
-    }
-	
+			if (pmass_[i] <= (vmin*pdensity_[i]))
+			{
+				// set to minimum radius and mark for delete
+				pmass_[i] = vmin*pdensity_[i];
+				radius_[i] = rmin;
+				atom_tags_delete_.push_back(atom->tag[i]);
+				//fprintf(screen, "Marking atom %i for deletion \n",atom->tag[i]);
+			}
+			else
+			{
+				// set new radius
+				radius_[i] = cbrt(0.75*pmass_[i]/(M_PI*pdensity_[i]));
+			}						
+		}
+    }	
+}
+
+void FixCfdCouplingDissolve::pre_exchange()
+{
+	delete_atoms();
+}
+
+void FixCfdCouplingDissolve::delete_atoms()
+{
+    int nparticles_deleted_this_ = 0.;
+	int *atom_map_array = atom->get_map_array();
+	AtomVec *avec = atom->avec;
+	int nlocal = atom->nlocal;
+
+	while (atom_tags_delete_.size() > 0)
+	{
+		int iPart = atom->map(atom_tags_delete_[0]);		
+
+		avec->copy(nlocal-1,iPart,1);
+
+		nparticles_deleted_this_++;
+		nlocal--;
+
+		//NP manipulate atom map array
+		//NP need to do this since atom map is needed for deletion
+		atom_map_array[atom->tag[atom->nlocal-1]] = iPart;
+
+		atom_tags_delete_.erase(atom_tags_delete_.begin());
+	}
+
+	atom_tags_delete_.clear();
+
+	//NP tags and maps
+	atom->nlocal = nlocal;
+
+	//fprintf(screen,"nparticles_deleted_this_ = %i \n", nparticles_deleted_this_);
+
+	bigint nblocal = atom->nlocal;
+	MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
+
+	if (atom->tag_enable)
+	{
+		if (atom->map_style)
+		{
+			atom->nghost = 0;
+			atom->map_init();
+			atom->map_set();
+		}
+	}
+
 }

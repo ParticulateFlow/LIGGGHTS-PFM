@@ -29,6 +29,7 @@ FixStyle(couple/cfd/dissolve,FixCfdCouplingDissolve)
 #define LMP_FIX_CFD_COUPLING_DISSOLVE_H
 
 #include "fix_cfd_coupling.h"
+#include <vector>
 
 namespace LAMMPS_NS {
 
@@ -43,14 +44,19 @@ class FixCfdCouplingDissolve : public Fix {
   virtual int setmask();
   virtual void init();
   virtual void post_force(int);
+  void pre_exchange();
+  void delete_atoms();
 
  protected:
   class FixCfdCoupling* fix_coupling;
   //class FixPropertyAtom* fix_conductiveFlux;
   class FixPropertyAtom* fix_convectiveFlux;
   //class FixPropertyAtom* fix_heatFlux;
-  //double T0;
+  double rmin;
   //bool gran_field_conduction;
+
+  std::vector<int> atom_tags_delete_;
+
 };
 
 }
