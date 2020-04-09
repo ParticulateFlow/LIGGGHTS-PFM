@@ -78,6 +78,8 @@ class FixPropertyAtom : public Fix {
   int pack_reverse_comm(int, int, double *);
   void unpack_reverse_comm(int, int *, double *);
   double compute_vector(int n);
+  int num_defaultvalues();
+  double defaultvalue(int);
 
   virtual void mark_tracers(int ilo, int ihi) { UNUSED(ilo); UNUSED(ihi); }
 
