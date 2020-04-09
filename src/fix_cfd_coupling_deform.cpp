@@ -51,7 +51,9 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     verbose_(false),
     compress_flag_(1),
     mass_removed_(0.0),
-    fmax_(1.5) // 1/alpha_max \approx 1.5
+    rmin_(0.0),
+    fmax_(1.5), // 1/alpha_max \approx 1.5
+    default_effvolfactors_(NULL)
 {
 
   int iarg = 3;
@@ -79,6 +81,15 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'verbose'");
       iarg += 2;
     }
+    else if(strcmp(arg[iarg],"rmin") == 0)
+    {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'rmin'");
+      rmin_ = atof(arg[iarg+1]);
+      if(rmin_ < 0.0)
+        error->fix_error(FLERR,this,"rmin cannot be negative");
+      iarg += 2;
+    }
     else error->fix_error(FLERR,this,"unknown keyword");
   }
 }
@@ -87,7 +98,7 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
 
 FixCfdCouplingDeform::~FixCfdCouplingDeform()
 {
-
+    delete [] default_effvolfactors_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -114,6 +125,13 @@ void FixCfdCouplingDeform::post_create()
     if (!fix_effvolfactors_)
     {
         error->fix_error(FLERR,this,"Fix couple/cfd/deform needs a fix for type eff. vol. factor");
+    }
+
+    int num_defaultvalues = fix_effvolfactors_->num_defaultvalues();
+    default_effvolfactors_ = new double[num_defaultvalues];
+    for (int i=0;i<num_defaultvalues;i++)
+    {
+        default_effvolfactors_[i] = fix_effvolfactors_->defaultvalue(i);
     }
 }
 
@@ -157,6 +175,7 @@ void FixCfdCouplingDeform::post_force(int)
     // deformation = 1 --> maximum deformation before removal
     int *mask = atom->mask;
     int nlocal = atom->nlocal;
+    int *type = atom->type;
     double *density = atom->density;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
@@ -174,6 +193,8 @@ void FixCfdCouplingDeform::post_force(int)
 
     double newradius = 0.0;
 
+    double f0 = 0.0;
+
     for (int i = 0; i < nlocal; i++)
     {
         if (mask[i] & groupbit)
@@ -182,21 +203,22 @@ void FixCfdCouplingDeform::post_force(int)
             if (deformation < 1.0 - SMALL && deformation > SMALL)
             {
                 effvolfactor = effvolfactors_[i];
-                neweffvolfactor = 1.0 + deformation * (fmax_ - 1.0);
+                f0 = default_effvolfactors_[type[i]];
+                neweffvolfactor = f0 + deformation * (fmax_ - f0);
                 // update properties only if new eff vol factor larger than old one (by e.g. 1%) 
                 if (neweffvolfactor <= 1.01*effvolfactor) continue;
 
                 // deform particle such that it keeps its volume
                 newradius = pow(3.0*rmass[i]/(4.0*MY_PI*density[i]*neweffvolfactor),0.33333);
                 // particles can gradually deform but won't recover state of higher sphericity
-                if (newradius < radius[i])
+                if (newradius < radius[i] && newradius >= rmin_)
                 {
                     radius[i] = newradius;
                     fix_effvolfactors_->set_vector(i,neweffvolfactor);
                 }
 
             }
-            else if (deformation > 1.0 - SMALL)
+            else if (deformation >= 1.0 - SMALL)
             {
                 nremoved_this_me++;
                 mass_removed_this_me += rmass[i];

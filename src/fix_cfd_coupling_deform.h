@@ -55,7 +55,11 @@ class FixCfdCouplingDeform : public Fix  {
 
   double mass_removed_;
 
+  double rmin_;
+
   const double fmax_;
+
+  double* default_effvolfactors_;
 
   void delete_particle(int);
 };

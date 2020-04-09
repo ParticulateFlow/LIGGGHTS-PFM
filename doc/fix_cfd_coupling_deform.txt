@@ -15,8 +15,10 @@ fix ID group-ID couple/cfd/deform keyword values :pre
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 couple/cfd/deform = style name of this fix command :l
 zero or more keyword/value pairs may be appended :l
-keyword = {compress} or {verbose} :l
-  values = {yes} or {no} :pre
+keyword = {compress} or {verbose} or {rmin}:l
+  {compress} value = {yes} or {no}
+  {verbose} value = {yes} or {no}
+  {rmin} value = radius below which particles cannot deform :pre
 :ule
 
 [Examples:]
