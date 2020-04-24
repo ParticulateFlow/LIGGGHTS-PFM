@@ -558,11 +558,15 @@ void FixChemShrinkCore::init()
     strcat(propertyname,group->names[igroup]);
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 0, 0, style));
     delete []propertyname;
+}
 
+/* ---------------------------------------------------------------------- */
+
+void FixChemShrinkCore::setup(int)
+{
     updatePtrs();
 
-
-    // get initial values for rhoeff, and use them to calculate mass of layers
+    // set initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
     {
         rhoeff_[i][layers_] = pdensity_[i];

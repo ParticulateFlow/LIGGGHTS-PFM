@@ -44,6 +44,7 @@ public:
   virtual void updatePtrs();
   virtual void init();
   void init_defaults();
+  virtual void setup(int);
   virtual void post_force(int);
 
  protected:
