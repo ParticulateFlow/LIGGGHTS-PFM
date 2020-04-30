@@ -1058,6 +1058,9 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         rad[layer]   =   cbrt((0.75*massLayer_[i][layer]/(rhoeff_[i][layer]*M_PI))+rad[layer+1]*rad[layer+1]*rad[layer+1]);
 
     // Iron Layer / Ore radius = constant.
+    // NOTE: keeping the particle radius constant may introduce a mismatch between
+    //       the mass calculated from the chemical reaction and the mass calculated
+    //       from the (relative) radii (as in calcMassLayer())!
     rad[0] = radius_[i]/cg_;
 
     // Determine new relative radii after reduction
