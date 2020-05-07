@@ -34,10 +34,10 @@ fix zwalls all wall/gran model hertz tangential history primitive type 1 zplane 
 
 # templates and distribution for insertion
 fix pts1 all particletemplate/multisphere 1272435 atom_type 1 density constant 2500 &
-    nspheres 105 ntry 1000000 spheres file data/clump1.dat scale 1.0 type 1
+    nspheres 104 ntry 1000000 spheres file data/clump1.dat scale 1.0 type 1
 
 fix pts2 all particletemplate/multisphere 4573687 atom_type 1 density constant 2500 &
-    nspheres 176 ntry 1000000 spheres file data/clump2.dat scale 1.0 type 2
+    nspheres 150 ntry 1000000 spheres file data/clump2.dat scale 1.0 type 2
 
 fix pdd1 all particledistribution/discrete 521451 2 pts1 0.5 pts2 0.5
 
