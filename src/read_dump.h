@@ -56,6 +56,7 @@ private:
   int replaceflag,addflag; // flags for processing dump snapshot atoms
   int trimflag,purgeflag;
   int bruteaddflag;
+  int exactflag;           // user 0/1 if using close/exact timestep from dump
 
   int retainstepflag;	   // retain current time step
   int scaleflag;           // user 0/1 if dump file coords are unscaled/scaled

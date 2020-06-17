@@ -31,6 +31,7 @@ using namespace FixConst;
 FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   conditional(false),
+  file(false),
   var(NULL),
   var_valid(0.0),
   var_threshold(0.0),
@@ -47,21 +48,49 @@ FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
   string = new char[n];
   strcpy(string,arg[4]);
 
-  if (narg == 6 && strcmp(arg[5],"once")==0)
-  {
-    once = true;
-    execution_step = nevery;
-    nevery = 1;
-  }
-  else if (narg == 9 && strcmp(arg[5],"conditional") == 0) {
-    conditional = true;
-    int n = strlen(arg[6]) + 1;
-    var = new char[n];
-    strcpy(var,arg[6]);
-    var_valid = atof(arg[7]);
-    var_threshold = atof(arg[8]);
-  }
 
+  int iarg = 5;
+
+  bool hasargs = true;
+  while(iarg < narg && hasargs)
+  {
+    hasargs = false;
+
+    if(strcmp(arg[iarg],"once") == 0)
+    {
+      once = true;
+      execution_step = nevery;
+      nevery = 1;
+      iarg++;
+      hasargs = true;
+    }
+    else if(strcmp(arg[iarg],"conditional") == 0)
+    {
+      conditional = true;
+      if(narg < iarg+4)
+        error->fix_error(FLERR,this,"not enough arguments for 'conditional'");
+      iarg++;
+      int n = strlen(arg[iarg]) + 1;
+      var = new char[n];
+      strcpy(var,arg[iarg]);
+      iarg++;
+      var_valid = atof(arg[iarg]);
+      iarg++;
+      var_threshold = atof(arg[iarg]);
+      iarg++;
+      hasargs = true;
+    }
+    else if(strcmp(arg[iarg],"file") == 0)
+    {
+      file = true;
+      iarg++;
+      hasargs = true;
+    }
+    else 
+    {
+      error->fix_error(FLERR,this,"unknown keyword");
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -92,6 +121,15 @@ void FixExecute::end_of_step()
     if (fabs(value-var_valid) > var_threshold) return;
   }
 
-  if (!once || update->ntimestep == execution_step )
-  input->one(string);
+  if (!once || update->ntimestep == execution_step)
+  {
+    if (file)
+    {
+      input->file(string);
+    }
+    else
+    {
+      input->one(string);
+    }
+  }
 }

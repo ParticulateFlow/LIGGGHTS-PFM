@@ -38,6 +38,7 @@
 #include "memory.h"
 #include "error.h"
 #include "comm.h"
+#include "variable.h"
 #include "cfd_datacoupling.h"
 #include "cfd_datacoupling_one2one.h"
 
@@ -91,6 +92,22 @@ double* liggghts_get_vclump_ms(void *ptr)
   FixMultisphere *fix_ms = static_cast<FixMultisphere*>(lmp->modify->find_fix_style_strict("multisphere",0));
   if(!fix_ms) return 0;
   return fix_ms->vclump();
+}
+
+/* ---------------------------------------------------------------------- */
+
+double liggghts_get_variable(void *ptr, const char *variablename)
+{
+    LAMMPS *lmp = (LAMMPS *) ptr;
+    int var = lmp->input->variable->find(variablename);
+    if (var < 0)
+    {
+      std::stringstream ss;
+      ss << "Could not find DEM variable '" << variablename << "' required by OF, aborting.";
+      std::string error_message = ss.str();
+      lmp->error->all(FLERR,error_message.c_str());
+    }
+    return lmp->input->variable->compute_equal(var);
 }
 
 /* ---------------------------------------------------------------------- */

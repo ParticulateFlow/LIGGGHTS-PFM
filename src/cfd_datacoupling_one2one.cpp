@@ -37,8 +37,6 @@
 using namespace LAMMPS_NS;
 using namespace std;
 
-#define DELTA 10000
-
 /* ---------------------------------------------------------------------- */
 
 CfdDatacouplingOne2One::CfdDatacouplingOne2One(LAMMPS *lmp,int iarg, int narg, char **arg,FixCfdCoupling* fc) :

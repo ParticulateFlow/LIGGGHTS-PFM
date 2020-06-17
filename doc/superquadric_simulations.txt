@@ -23,6 +23,10 @@ available on the system.
 On most Linux-distributions a recent version can be installed via the package
 managment systems.
 
+The way how to enable the superquadric feature depends on the build-system.
+
+Using make :h5
+
 Before starting the compilation, you have to enable the superquadric model in
 your Makefile. You have to add the following settings to your Makefile:
 
@@ -39,6 +43,42 @@ NOTE: Most Boost libraries are header-only: they consist entirely of header
 files containing templates and inline functions, and require no
 separately-compiled library binaries or special treatment when linking. ("link"_boost)
 
+
+Using CMake :h5
+
+To enable the superquadric feature using the CMake build system, we provide
+CMake a command-line parameter.
+
+cmake ../src -DUSE_SUPERQUADRIC=on :pre
+
+
+
+Compile the ParaView plug-in :h4
+
+The superquadric feature of LIGGGHTS comes with its own dedicated ParaView
+plug-in to properly visualize superquadric particles.
+
+The compilation of the plug-in is done with the following steps. Adjust the
+paths according to your local installation.
+
+cd ~/CFDEM/LIGGGHTS/tools/paraview/SuperquadricGlyph
+mkdir build
+cd build
+cmake .. -DParaView_DIR:PATH=/absolute/path/to/paraview/build/dir
+make  :pre
+
+NOTE: The path to ParaView is the build directory, and not the source directory.
+If a CFDEM environment has been sourced, then CMake should be able to
+automatically find the proper path to ParaView.
+
+If compilation finishes without any errors, then the build directory will
+contain a library named libSuperquadricGlyphFilter.so.
+
+To visualize superquadrics in ParaView, open the converted dump files of a
+superquadric case, click in the menu "Tools --> Manage Plugins...", click on the
+"Load New ..." button and select the libSuperquadricGlyphFilter.so file.
+
+
 Detailed description :h4
 
 The overall simulation structure stays the same for superquadric simulations as
@@ -52,7 +92,7 @@ To define new superquadric particles use the "fix particletemplate/superquadric"
 
 Performance :h4
 
-The superquadric model uses the framework of LIGGGHT(R). Therefore, the parallel
+The superquadric model uses the framework of LIGGGHTS(R). Therefore, the parallel
 scalability is linear as LIGGGHTS(R) itself. Compared to standard LIGGGHTS(R),
 the calculation of contact points is computational expensive for superquadric
 bodies.
