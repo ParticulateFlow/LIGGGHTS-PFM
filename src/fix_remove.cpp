@@ -56,6 +56,7 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   style_(-1),            // set below
   delete_below_(0.),     // set below
   rate_remove_(0.),      // set below
+  m_remove_min_(1e-6),
   seed_(0),              // set below
   integrated_error_(true),
   variable_rate_(false),
@@ -164,6 +165,9 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       else if(strcmp(arg[iarg+1],"yes"))
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'integrated_error'");
       iarg += 2;
+    } else if (strcmp(arg[iarg],"minmass") == 0){
+      iarg++;
+      m_remove_min_ = atof(arg[iarg++]);
     } else if(strcmp(arg[iarg],"compress") == 0) {
       if(narg < iarg+2)
         error->fix_error(FLERR,this,"Illegal compress option");
@@ -321,7 +325,7 @@ void FixRemove::pre_exchange()
     // return if nothing to do
     //NP could e.g. be because very large particle was deleted last deletion step
 
-    if(mass_to_remove_ <= 0.) return;
+    if(mass_to_remove_ <= m_remove_min_) return;
 
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 1\n");
 
