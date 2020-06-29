@@ -15,18 +15,23 @@ fix ID group-ID couple/cfd/recurrence keyword values :pre
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 couple/cfd/recurrence = style name of this fix command :l
 zero or more keyword/value pairs may be appended :l
-keyword = {transfer_density} or {transfer_type} or {transfer_force} or {transfer_fluctuations} or {transfer_tracer} :l
+keyword = {transfer_density} or {transfer_type} or {transfer_force} or {transfer_fluctuations} or {transfer_tracer} or {limit_fluctuations} or {max_vfluc} or {relative_limit} or {region} :l
   {transfer_*} values = {yes} or {no} :pre
+  {limit_fluctuations} value = {yes} or {no} :pre
+  {max_vfluc} value = maximum fluctuation velocity :pre
+  {relative_limit} value = {yes} or {no} :pre
+  {region} value = name of region :pre
 :ule
 
 [Examples:]
 
 fix cfd2 all couple/cfd/recurrence transfer_force yes transfer_fluctuations yes :pre
+fix cfd3 all couple/cfd/recurrence transfer_force yes transfer_fluctuations yes limit_fluctuations yes max_vfluc 0.05 relative_limit no region closeToWall :pre
 
 [Description:]
 
 This fix exchanges the recurrence CFD relevant data between LIGGGHTS and CFDEMcoupling.
 Particle positions, velocities, radii and volumeweights are transferred from LIGGGHTS to CFDEMcoupling, the recurrence-prescribed velocities from CFDEMcoupling to LIGGGHTS.
-If needed, particle types and densities can also be communicated from LIGGGHTS to CFDEMcoupling (disabled per default) and forces (e.g. drag), velocity fluctuations and tracer concentrations from CFDEMcoupling to LIGGGHTS (disabled per default).
+If needed, particle types and densities can also be communicated from LIGGGHTS to CFDEMcoupling (disabled per default) and forces (e.g. drag), velocity fluctuations and tracer concentrations from CFDEMcoupling to LIGGGHTS (disabled per default). Fluctuations may be limited with an absolute or relative (in units of particle radius per time step) value, either everywhere or in a specific region.
 
 This fix needs a fix couple/cfd before it is defined.
