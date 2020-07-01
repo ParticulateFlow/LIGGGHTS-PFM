@@ -27,12 +27,13 @@ delete_below_value = radius below which particles are removed if style_value is 
 seed = obligatory keyword :l
 seed_value = random # seed (positive integer) :l
 zero or more keyword/value pairs may be appended :l
-keywords = {region} or {atomtype} or {integrated_error} or {restart_read} or {restart_write} or {verbose} or {compress} :l
+keywords = {region} or {atomtype} or {integrated_error} or {minmass} or {restart_read} or {restart_write} or {verbose} or {compress} :l
   {region} value = region-ID
     region-ID = ID of the region where the particles will be removed
   {atomtype} value = type
     type = type of atoms to remove
   {integrated_error} value = {yes} or {no}
+  {minmass} value = minimal mass to be removed at once
   {restart_read} value = {yes} or {no}
   {restart_write} value = {yes} or {no}
   {verbose} value = {yes} or {no}
@@ -62,6 +63,8 @@ The {atomtype} option allows to restrict deletion to a single type of atoms.
 
 The {integrated_error} option (default yes) accumulates the mass to be removed over time and subtracts the actually removed mass. If disabled, mass
 is removed proportionally to the removal rate.
+
+The {minmass} option allows to specify a minimal value (default 1e-6) for the mass to be removed at once. 
 
 The {verbose} keyword controls whether statistics about particle
 removal is output to the screen each time particles are removed.
