@@ -1,14 +1,19 @@
 ﻿/* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
+
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
+
    Copyright 2015-     JKU Linz
+
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
+
    This software is distributed under the GNU General Public License.
+
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
@@ -16,6 +21,7 @@
    Contributing authors:
    Thomas Lichtenegger (JKU Linz)
    M.Efe Kinaci (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include <stdio.h>
@@ -46,22 +52,36 @@ const double FixChemShrinkCore::k0_low_H2[] = {  50.,  25. };
 const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 75000. };
 const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000. };
 
-const double FixChemShrinkCore::a_coeff_nasa_Fe2O3[] = { 298.15, 1700., 1000., -3.240851E+02,  1.152686E+00, -1.413588E-03,  7.496435E-07, -1.455880E-10, -2.647718E+04,
-                                                         1.609668E+03,  1.066786E+01, -4.869774E-03,  5.056287E-05, -4.500105E-08,  7.709213E-12, -1.025006E+05, -5.068585E+01 };
-const double FixChemShrinkCore::a_coeff_nasa_Fe3O4[] = { 298.15, 1870., 1000.,  1.948880E+02, -4.225771E-01,  3.843026E-04, -1.536471E-07,  2.301151E-11, -1.944678E+05,
-                                                        -1.023246E+03,  7.781798E+01, -4.602735E-01,  1.199812E-03, -1.203296E-06,  4.119178E-10, -1.457550E+05, -3.319564E+02 };
-const double FixChemShrinkCore::a_coeff_nasa_FeO[]   = { 298.15, 1650., 1000.,  5.762730E+00,  1.442345E-03,  1.309698E-07, -2.476342E-10,  4.756658E-14, -3.453377E+04,
-                                                        -2.603715E+01,  5.108889E+00,  3.732856E-03, -2.817518E-06,  1.393173E-09, -2.814222E-13, -3.438676E+04, -2.280153E+01 };
-const double FixChemShrinkCore::a_coeff_nasa_Fe[]    = { 298.15, 1809., 1000., -2.674281E+02,  8.564543E-01, -9.799567E-04,  4.844980E-07, -8.760776E-11,  6.533737E+04,
-                                                         1.349404E+03, -8.123461E+00,  8.207546E-02, -2.126480E-04,  2.357984E-07, -9.114276E-11,  3.344653E+02,  3.269875E+01 };
-const double FixChemShrinkCore::a_coeff_nasa_CO[]    = { 200.00, 6000., 1000.,  3.048486E+00,  1.351728E-03, -4.857941E-07,  7.885364E-11, -4.698075E-15, -1.426612E+04,
-                                                         6.017098E+00,  3.579534E+00, -6.103537E-04,  1.016814E-06,  9.070059E-10, -9.044245E-13, -1.434409E+04,  3.508409E+00 };
-const double FixChemShrinkCore::a_coeff_nasa_CO2[]   = { 200.00, 6000., 1000.,  4.636511E+00,  2.741457E-03, -9.958976E-07,  1.603867E-10, -9.161986E-15, -4.902490E+04,
-                                                        -1.934896E+00,  2.356813E+00,  8.984130E-03, -7.122063E-06,  2.457301E-09, -1.428855E-13, -4.837197E+04,  9.900904E+00 };
-const double FixChemShrinkCore::a_coeff_nasa_H2[]    = { 200.00, 6000., 1000.,  2.932831E+00,  8.265980E-04, -1.464006E-07,  1.540985E-11, -6.887962E-16, -8.130558E+02,
-                                                        -1.024316E+00,  2.344303E+00,  7.980425E-03, -1.947792E-05,  2.015697E-08, -7.376029E-12, -9.179241E+02,  6.830022E-01 };
-const double FixChemShrinkCore::a_coeff_nasa_H2O[]   = { 200.00, 6000., 1000.,  2.677039E+00,  2.973182E-03, -7.737689E-07,  9.443351E-11, -4.268999E-15, -2.988589E+04,
-                                                         6.882550E+00,  4.198635E+00, -2.036402E-03,  6.520342E-06, -5.487927E-09,  1.771968E-12, -3.029373E+04, -8.490090E-01 };
+// 7-coefficient NASA polynomials, see
+// Burcat, A., Ruscic, B. (2005). Third millenium ideal gas and condensed phase thermochemical database for combustion
+// (with update from active thermochemical tables) (No. ANL-05/20).
+// T_low, T_high, T_middle,
+// The first  set of 7 constants belongs to the T_middle - T_high K polynomial,
+// the second set of 7 constants belongs to the T_low  - T_middle K polynomial
+const double FixChemShrinkCore::a_coeff_nasa_Fe2O3[] = { 298.15, 1700., 1000.,
+                                                        -3.240851E+02,  1.152686E+00, -1.413588E-03,  7.496435E-07, -1.455880E-10, -2.647718E+04,  1.609668E+03,
+                                                         1.066786E+01, -4.869774E-03,  5.056287E-05, -4.500105E-08,  7.709213E-12, -1.025006E+05, -5.068585E+01 };
+const double FixChemShrinkCore::a_coeff_nasa_Fe3O4[] = { 298.15, 1870., 1000.,
+                                                         1.948880E+02, -4.225771E-01,  3.843026E-04, -1.536471E-07,  2.301151E-11, -1.944678E+05, -1.023246E+03,
+                                                         7.781798E+01, -4.602735E-01,  1.199812E-03, -1.203296E-06,  4.119178E-10, -1.457550E+05, -3.319564E+02 };
+const double FixChemShrinkCore::a_coeff_nasa_FeO[]   = { 298.15, 1650., 1000.,
+                                                         5.762730E+00,  1.442345E-03,  1.309698E-07, -2.476342E-10,  4.756658E-14, -3.453377E+04, -2.603715E+01,
+                                                         5.108889E+00,  3.732856E-03, -2.817518E-06,  1.393173E-09, -2.814222E-13, -3.438676E+04, -2.280153E+01 };
+const double FixChemShrinkCore::a_coeff_nasa_Fe[]    = { 298.15, 1809., 1000.,
+                                                        -2.674281E+02,  8.564543E-01, -9.799567E-04,  4.844980E-07, -8.760776E-11,  6.533737E+04,  1.349404E+03,
+                                                        -8.123461E+00,  8.207546E-02, -2.126480E-04,  2.357984E-07, -9.114276E-11,  3.344653E+02,  3.269875E+01 };
+const double FixChemShrinkCore::a_coeff_nasa_CO[]    = { 200.00, 6000., 1000.,
+                                                         3.048486E+00,  1.351728E-03, -4.857941E-07,  7.885364E-11, -4.698075E-15, -1.426612E+04,  6.017098E+00,
+                                                         3.579534E+00, -6.103537E-04,  1.016814E-06,  9.070059E-10, -9.044245E-13, -1.434409E+04,  3.508409E+00 };
+const double FixChemShrinkCore::a_coeff_nasa_CO2[]   = { 200.00, 6000., 1000.,
+                                                         4.636511E+00,  2.741457E-03, -9.958976E-07,  1.603867E-10, -9.161986E-15, -4.902490E+04, -1.934896E+00,
+                                                         2.356813E+00,  8.984130E-03, -7.122063E-06,  2.457301E-09, -1.428855E-13, -4.837197E+04,  9.900904E+00 };
+const double FixChemShrinkCore::a_coeff_nasa_H2[]    = { 200.00, 6000., 1000.,
+                                                         2.932831E+00,  8.265980E-04, -1.464006E-07,  1.540985E-11, -6.887962E-16, -8.130558E+02, -1.024316E+00,
+                                                         2.344303E+00,  7.980425E-03, -1.947792E-05,  2.015697E-08, -7.376029E-12, -9.179241E+02,  6.830022E-01 };
+const double FixChemShrinkCore::a_coeff_nasa_H2O[]   = { 200.00, 6000., 1000.,
+                                                         2.677039E+00,  2.973182E-03, -7.737689E-07,  9.443351E-11, -4.268999E-15, -2.988589E+04,  6.882550E+00,
+                                                         4.198635E+00, -2.036402E-03,  6.520342E-06, -5.487927E-09,  1.771968E-12, -3.029373E+04, -8.490090E-01 };
 
 const double FixChemShrinkCore::v_reac_[] = { 1.0, 1.0, 3.0 };
 const double FixChemShrinkCore::v_prod_[] = { 1.0, 3.0, 2.0 };
@@ -205,7 +225,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 
 void FixChemShrinkCore::post_create()
 {
-    if (fix_Aterm==NULL) {
+    if (fix_Aterm == NULL) {
         char *fixname = new char [strlen("Aterm_")+strlen(id)+1];
         strcpy(fixname,"Aterm_");
         strcat(fixname,id);
@@ -227,7 +247,7 @@ void FixChemShrinkCore::post_create()
         delete [] fixname;
     }
 
-    if (fix_Bterm==NULL) {
+    if (fix_Bterm == NULL) {
         char *fixname = new char[strlen("Bterm_")+strlen(id)+1];
         strcpy(fixname,"Bterm_");
         strcat(fixname,id);
@@ -249,7 +269,7 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    if (fix_Massterm==NULL) {
+    if (fix_Massterm == NULL) {
         char *fixname = new char[strlen("Massterm_")+strlen(id)+1];
         strcpy(fixname,"Massterm_");
         strcat(fixname,id);
@@ -268,7 +288,7 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    if (fix_effDiffBinary==NULL) {
+    if (fix_effDiffBinary == NULL) {
         char *fixname = new char[strlen("effDiffBinary_")+strlen(id)+1];
         strcpy(fixname,"effDiffBinary_");
         strcat(fixname,id);
@@ -289,7 +309,7 @@ void FixChemShrinkCore::post_create()
         delete [] fixname;
     }
 
-    if (fix_effDiffKnud==NULL) {
+    if (fix_effDiffKnud == NULL) {
         char *fixname = new char[strlen("effDiffKnud_")+strlen(id)+1];
         strcpy(fixname,"effDiffKnud_");
         strcat(fixname,id);
@@ -310,7 +330,7 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    if (fix_dY_==NULL) {
+    if (fix_dY_ == NULL) {
         char* fixname = new char[strlen("dY_")+strlen(id)+1];
         strcpy(fixname,"dY_");
         strcat(fixname,id);
@@ -331,7 +351,7 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    if (fix_dmA_==NULL) {
+    if (fix_dmA_ == NULL) {
         char* fixname = new char[strlen("dmA_")+strlen(id)+1];
         strcpy(fixname,"dmA_");
         strcat(fixname,id);
@@ -353,7 +373,7 @@ void FixChemShrinkCore::post_create()
     }
 
     fix_porosity_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, this->style, false));
-    if (!fix_porosity_) {
+    if (fix_porosity_ == NULL) {
         const char* fixarg[12];
         fixarg[0]="porosity";            // fixid
         fixarg[1]=group->names[igroup];   //"all";
@@ -391,14 +411,14 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
 
 FixChemShrinkCore::~FixChemShrinkCore()
 {
-    delete []massA;
-    delete []massC;
-    delete []diffA;
-    delete []moleFracA;
-    delete []moleFracC;
+    delete [] massA;
+    delete [] massC;
+    delete [] diffA;
+    delete [] moleFracA;
+    delete [] moleFracC;
 
-    delete []speciesA;
-    delete []speciesC;
+    delete [] speciesA;
+    delete [] speciesC;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -474,7 +494,7 @@ void FixChemShrinkCore::init()
     strcpy (propertyname,"k0_");
     strcat(propertyname,id);
     fix_k0_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname,"property/atom","vector",0,0,style));
-    delete []propertyname;
+    delete [] propertyname;
 
     // look up activation energies Ea
     // differs for every ore id
@@ -482,7 +502,7 @@ void FixChemShrinkCore::init()
     strcpy(propertyname, "Ea_");
     strcat(propertyname, id);
     fix_Ea_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 0, 0, style));
-    delete[]propertyname;
+    delete [] propertyname;
 
     propertyname = new char [strlen("density_")+strlen(group->names[igroup])+1];
     strcpy(propertyname,"density_");
@@ -492,7 +512,7 @@ void FixChemShrinkCore::init()
 #else
     fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname,"property/global","vector",4,0,style));
 #endif
-    delete []propertyname;
+    delete [] propertyname;
 
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
@@ -519,7 +539,7 @@ void FixChemShrinkCore::init()
     strcpy (propertyname,"Aterm_");
     strcat(propertyname,id);
     fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 0, 0, style));
-    delete []propertyname;
+    delete [] propertyname;
 
 
     propertyname = new char[strlen("Bterm_")+strlen(id)+1];
@@ -562,7 +582,7 @@ void FixChemShrinkCore::init()
     strcpy(propertyname,"fracRed_");
     strcat(propertyname,group->names[igroup]);
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 0, 0, style));
-    delete []propertyname;
+    delete [] propertyname;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -598,8 +618,8 @@ void FixChemShrinkCore::post_force(int)
     int i = 0;
     int nlocal  =   atom->nlocal;
     int *mask   =   atom->mask;
-    double x0_eq_[nmaxlayers_] = {0.};          // molar fraction of reactant gas
-    double dmA_[nmaxlayers_] = {0.};            // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
+    double x0_eq_[nmaxlayers_] = {0.}; // molar fraction of reactant gas
+    double dmA_[nmaxlayers_] = {0.};   // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
 
 
     for (i = 0; i < nlocal; i++)
@@ -672,7 +692,7 @@ void FixChemShrinkCore::post_force(int)
 
 int FixChemShrinkCore::active_layers(int i)
 {
-    for(int j  = layers_; j > 0; j--)
+    for (int j = layers_; j > 0; j--)
     {
         if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
         {
@@ -695,10 +715,12 @@ void FixChemShrinkCore::calcMassLayer(int i)
     for (int layer = 0; layer <= layers_ ; layer++)
         rad[layer] = (radius_[i]/cg_)*relRadii_[i][layer];
 
-    massLayer_[i][layers_]   =   MY_4PI3*rad[layers_]*rad[layers_]*rad[layers_]*rhoeff_[i][layers_];
+    massLayer_[i][layers_] = MY_4PI3*rhoeff_[i][layers_]*rad[layers_]*rad[layers_]*rad[layers_];
+
     for (int layer = 0 ; layer < layers_; layer++)
     {
-        massLayer_[i][layer]   =   MY_4PI3*(rad[layer]*rad[layer]*rad[layer]-rad[layer+1]*rad[layer+1]*rad[layer+1])*rhoeff_[i][layer];
+        massLayer_[i][layer] = MY_4PI3*rhoeff_[i][layer]*(rad[layer  ]*rad[layer  ]*rad[layer  ]
+                                                         -rad[layer+1]*rad[layer+1]*rad[layer+1]);
     }
 }
 
@@ -717,7 +739,7 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             Keq_ = exp(3968.37/T_[i]+3.94);        // Valipour 2009, Nietrost 2012
         else if (layer == 1)
             Keq_ = pow(10.0,(-1834.0/T_[i]+2.17)); // Nietrost 2012
-            // Keq_ = exp(-3585.64/T_[i]+4.58);    // ???
+            // Keq_ = exp(-3585.64/T_[i]+4.58);    // ??? // exp(-3585.64/T_[i]+8.98); // Valipour 2009
         else if (layer == 0)
             Keq_ = pow(10.0,(914.0/T_[i]-1.097));  // Nietrost 2012
             // Keq_ = exp(2744.63/T_[i]-2.946);    // Valipour 2009
@@ -730,7 +752,7 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             Keq_    =   pow(10.0,(-3577.0/T_[i]+3.74)); // Nietrost 2012
             // Keq_   =   exp(-7916.6/T_[i] + 8.46); // Valipour 2009
         else if (layer == 0)
-            //Keq_    =   pow(10.0,(-827.0/T_[i]+0.468)); // --> With this equilibrium constant R1 is occuring with all temperatures for H2
+            // Keq_    =   pow(10.0,(-827.0/T_[i]+0.468)); // Nietrost --> With this equilibrium constant R1 is occuring with all temperatures for H2
             Keq_    =   pow(10.0,(-856.66/T_[i]+0.4387)); // Equilibrium constant from Turkdogan "Physical Chemistry of High Temperature Technology"
             // Keq_   =   exp(-1586.9/T_[i] + 0.9317); // Valipour 2009
      }
@@ -820,6 +842,7 @@ void FixChemShrinkCore::getB(int i)
     }
     else
     {
+        // diffusion resistance through Fe
         Bterm[i][0]   =   ((1-fracRedThird_[0])/fracRedThird_[0])*((radius_[i]/cg_)/(diffEff_[0]));
         for (int layer = 1; layer < layers_; layer++)
         {
@@ -865,7 +888,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 
     for (int layer = 0; layer < layers_; layer++)
     {
-        p_eq_[layer] = x0_eq_[layer]*partP_[i];
+        p_eq_[layer] = x0_eq_[layer] * partP_[i];
     }
 
     const double p_A = xA_[i] * partP_[i];
@@ -1051,7 +1074,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     // if (screen) fprintf(screen,"total mass of particle = %f \n", sum_mass_p_new);
 
     // Total mass of particle with coarse-graining
-    pmass_[i]   =   sum_mass_p_new*cg_*cg_*cg_;
+    pmass_[i] = sum_mass_p_new*cg_*cg_*cg_;
 
     // if (screen) fprintf(screen, "pmass = %f \n",pmass_[i]);
 
@@ -1081,7 +1104,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     // total particle effective density
     // pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
 
-    if(screenflag_ && screen)
+    if (screenflag_ && screen)
         fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[0], pmass_[0], pdensity_[0]);
 }
 
@@ -1132,6 +1155,7 @@ void FixChemShrinkCore::FractionalReduction(int i)
     fracRed_[i][2] = f_HM;
 
 }
+
 /* ---------------------------------------------------------------------- */
 
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
@@ -1153,7 +1177,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
         conv_h[4] = conv_enthalpy(a_coeff_nasa_CO, molMass_A_,i)*molMass_A_;
         conv_h[5] = conv_enthalpy(a_coeff_nasa_CO2,molMass_C_,i)*molMass_C_;
     }
-    else if(strcmp(speciesA,"H2")==0)
+    else if (strcmp(speciesA,"H2")==0)
     {
         conv_h[4] = conv_enthalpy(a_coeff_nasa_H2, molMass_A_,i)*molMass_A_;
         conv_h[5] = conv_enthalpy(a_coeff_nasa_H2O,molMass_C_,i)*molMass_C_;
@@ -1189,6 +1213,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
 /* ---------------------------------------------------------------------- */
 
 /* Calculate conventional enthalpies of species */
+
 double FixChemShrinkCore::conv_enthalpy (const double *a, double Mw, int i)
 {
     double value = 0.;
@@ -1243,6 +1268,8 @@ double FixChemShrinkCore::conv_enthalpy (const double *a, double Mw, int i)
 
 /* ---------------------------------------------------------------------- */
 
+// Equilibrium constant for low temperature reactions
+
 double FixChemShrinkCore::K_eq_low(int layer, int i)
 {
     // 0 = Fe3O4 -> Fe , 1 = Fe2O3 -> Fe3O4
@@ -1267,7 +1294,7 @@ double FixChemShrinkCore::K_eq_low(int layer, int i)
         printf("Error : Undefined Reaction \n");
     }
 
-    if(screenflag_ && screen)
+    if (screenflag_ && screen)
         fprintf(screen,"Keq_low : %f \n",Keq_low);
 
     return Keq_low;
@@ -1281,14 +1308,14 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 
     for (int layer = 0; layer < layers_; layer++)
     {
-        p_eq_[layer] = x0_eq_[layer]*partP_[i];
+        p_eq_[layer] = x0_eq_[layer] * partP_[i];
     }
 
     const double p_A = xA_[i] * partP_[i];
 
     if (screenflag_ && screen)
     {
-        fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_A);
+        fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1], p_A);
     }
 
     if (layers_ == 2)
