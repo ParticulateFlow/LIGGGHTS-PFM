@@ -101,7 +101,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
 #endif
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
-    rmin_(1e-5)       //  [m]
+    rmin_(1e-5),      //  [m]
+    created_fix_porosity_(false)
 {
     if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
@@ -388,6 +389,7 @@ void FixChemShrinkCore::post_create()
         fixarg[10]="0.0";
         fixarg[11]="0.0";
         fix_porosity_ = modify->add_fix_property_atom(12,const_cast<char**>(fixarg),style);
+        created_fix_porosity_ = true;
     }
 }
 
@@ -404,6 +406,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
+        if (fix_porosity_ && created_fix_porosity_) { modify->delete_fix(fix_porosity_->id); porosity_ = NULL; }
     }
 }
 
