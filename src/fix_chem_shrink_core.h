@@ -72,7 +72,7 @@ public:
   void getA_low(int);
 
   // pre-defined variables for reduction process
-  static int const nmaxlayers_ = 3;
+  int const nmaxlayers_;
   static double const Runiv; // universal gas constant
   static const double k0_low_CO[];
   static const double k0_low_H2[];

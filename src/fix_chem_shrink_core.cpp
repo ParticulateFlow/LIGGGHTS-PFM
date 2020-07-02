@@ -74,6 +74,11 @@ const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.071844, 0.2315
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
+#ifdef TWO_LAYERS
+    nmaxlayers_(2),
+#else
+    nmaxlayers_(3),
+#endif
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
     rmin_(1e-5)       //  [m]
