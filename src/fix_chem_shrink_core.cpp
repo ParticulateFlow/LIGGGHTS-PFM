@@ -533,7 +533,6 @@ void FixChemShrinkCore::init()
     // references for global properties - valid for every particle equally
     fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, style));
     fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
-    fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
 
     propertyname = new char [strlen("Aterm_")+strlen(id)+1];
     strcpy (propertyname,"Aterm_");
@@ -1490,11 +1489,9 @@ void FixChemShrinkCore::init_defaults()
     fix_tortuosity_ = NULL;
     fix_pore_diameter_ = NULL;  // [m]
     fix_dY_ = NULL;
-    fix_totalMole_ = NULL;
     fix_dmA_ = NULL;
 
     massA = massC = NULL;
     diffA = moleFracA = moleFracC = NULL;
     speciesA = speciesC = NULL;
-    molarConc_  =   NULL;
 }

@@ -195,8 +195,6 @@ public:
   class FixPropertyGlobal *fix_tortuosity_; // [script]
   class FixPropertyGlobal *fix_pore_diameter_; // [script]
 
-  class FixPropertyAtom *fix_totalMole_;
-  double *molarConc_;
 
   class FixPropertyAtom *fix_dY_; // [internal]
   double **dY;
