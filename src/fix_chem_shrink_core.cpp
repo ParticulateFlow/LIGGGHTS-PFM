@@ -47,11 +47,6 @@ using namespace MathConst;
 
 const double FixChemShrinkCore::Runiv = 8.3144;
 
-const double FixChemShrinkCore::k0_low_CO[] = { 150., 150. };
-const double FixChemShrinkCore::k0_low_H2[] = {  50.,  25. };
-const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 75000. };
-const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000. };
-
 // 7-coefficient NASA polynomials, see
 // Burcat, A., Ruscic, B. (2005). Third millenium ideal gas and condensed phase thermochemical database for combustion
 // (with update from active thermochemical tables) (No. ANL-05/20).
@@ -83,15 +78,35 @@ const double FixChemShrinkCore::a_coeff_nasa_H2O[]   = { 200.00, 6000., 1000.,
                                                          2.677039E+00,  2.973182E-03, -7.737689E-07,  9.443351E-11, -4.268999E-15, -2.988589E+04,  6.882550E+00,
                                                          4.198635E+00, -2.036402E-03,  6.520342E-06, -5.487927E-09,  1.771968E-12, -3.029373E+04, -8.490090E-01 };
 
-const double FixChemShrinkCore::v_reac_[] = { 1.0, 1.0, 3.0 };
-const double FixChemShrinkCore::v_prod_[] = { 1.0, 3.0, 2.0 };
+const double FixChemShrinkCore::v_reac_[] = { 1.0, 1.0, 3.0 }; // reaction of w, m, h
+const double FixChemShrinkCore::v_prod_[] = { 1.0, 3.0, 2.0 }; // production of Fe, w, m
 
 #define SWITCH_LOW_HIGH_TEMPERATURE 843.15
 
+#ifdef TWO_LAYERS
 const double FixChemShrinkCore::v_reac_low_[] = { 0.25, 3.0, 0.0 };
 const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 2.0, 0.0 };
+const double FixChemShrinkCore::k0_low_CO[] = { 150., 150. };
+const double FixChemShrinkCore::k0_low_H2[] = {  50.,  25. };
+const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 75000. };
+const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000. };
+//                                                  {       Fe,    Fe3O4,     Fe2O3 }
+const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.231532, 0.1596882 };
+#else
+#define PSEUDO_THREE_LAYERS
+#ifdef PSEUDO_THREE_LAYERS // treat wustite layer as if it were iron; TODO! beware of CO transformation!!!
+const double FixChemShrinkCore::v_reac_low_[] = { 1.0, 0.25, 3.0 };  // reaction of Fe, m, h
+const double FixChemShrinkCore::v_prod_low_[] = { 0.055845/0.071844, 0.75, 2.0 }; // production of Fe, Fe, m
+const double FixChemShrinkCore::k0_low_CO[] = { 150., 150., 150. };
+const double FixChemShrinkCore::k0_low_H2[] = {  50.,  50.,  25. };
+const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 70000., 75000. };
+const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000., 75000. };
+#else
 
+#endif
+//                                                  {       Fe,      FeO,    Fe3O4,     Fe2O3 }
 const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.071844, 0.231532, 0.1596882 };
+#endif
 
 /* ---------------------------------------------------------------------- */
 
@@ -686,7 +701,7 @@ void FixChemShrinkCore::post_force(int)
                 continue;
             }
 
-            layers_ = (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE) ? 2 : 3;
+            layers_ = nmaxlayers_;
 
             // 1st recalculate masses of layers if layer has reduced
             // is ignored if there is no change in layers
@@ -699,7 +714,17 @@ void FixChemShrinkCore::post_force(int)
                 }
                 else if (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE) // T_[i] between 573.15 and 843.15 Kelvin (300 and 570 Celsius)
                 {
+#ifdef TWO_LAYERS
                     FractionalReduction_low(i);
+#else
+#ifdef PSEUDO_THREE_LAYERS
+                    // treating wustite layer as if it were Fe, thus no more reaction at this point
+                    if (layers_ <= 1)
+                        continue;
+#endif
+
+                    FractionalReduction(i);
+#endif
                     getXi_low(i,x0_eq_);
                     getA_low(i);
                     getB(i);
@@ -881,12 +906,25 @@ void FixChemShrinkCore::getB(int i)
 
     if (screenflag_ && screen)
     {
-        fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f, diffEff_[2]: %f \n"
+        switch (nmaxlayers_)
+        {
+        case 3:
+            fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f, diffEff_[2]: %f \n"
                         "fracRedThird_[0]: %f, fracRedThird_[1]: %f, fracRedThird_[2] : %f \n"
                         "fracRed_[0]: %f, fracRed_[1]: %f, fracRed_[2]: %f \n",
                         diffEff_[0], diffEff_[1], diffEff_[2],
                         fracRedThird_[0], fracRedThird_[1] , fracRedThird_[2],
                         fracRed_[0][0], fracRed_[0][1], fracRed_[0][2]);
+            break;
+        case 2:
+            fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f \n"
+                        "fracRedThird_[0]: %f, fracRedThird_[1]: %f \n"
+                        "fracRed_[0]: %f, fracRed_[1]: %f \n",
+                        diffEff_[0], diffEff_[1],
+                        fracRedThird_[0], fracRedThird_[1],
+                        fracRed_[0][0], fracRed_[0][1]);
+            break;
+        }
     }
 
     // calculation of diffusion term
@@ -904,6 +942,19 @@ void FixChemShrinkCore::getB(int i)
             Bterm[i][layer] = (fracRedThird_[layer-1]-fracRedThird_[layer])/(fracRedThird_[layer-1]*fracRedThird_[layer])*((radius_[i]/cg_)/(diffEff_[layer]));
         }
     }
+
+#ifndef TWO_LAYER
+    if (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE) {
+#ifdef PSEUDO_THREE_LAYERS
+        Bterm[i][0] = 1.0; // not used, set to something that does not disturb plotting of Bterms
+        if (layers_ > 1)
+            Bterm[i][1] = ((1-fracRedThird_[1])/fracRedThird_[1])*((radius_[i]/cg_)/(diffEff_[0]));
+#else
+
+#endif
+    }
+#endif
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -939,6 +990,12 @@ void FixChemShrinkCore::getMassT(int i)
 
 void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 {
+
+#ifdef TWO_LAYERS
+    if (nmaxlayers_ < 3)
+        return;
+#endif
+
     double p_eq_[nmaxlayers_] = {0.};
 
     for (int layer = 0; layer < layers_; layer++)
@@ -1171,7 +1228,11 @@ void FixChemShrinkCore::update_gas_properties(int i, const double *dmA_)
     kch2_ = xA_[i] + xC_[i];*/
 
     // based on material change: update gas-phase source terms for mass and heat
+#ifdef PSEUDO_THREE_LAYERS
+    for (int j = (T_[i]<SWITCH_LOW_HIGH_TEMPERATURE)?1:0; j < nmaxlayers_;j++)
+#else
     for (int j = 0; j < nmaxlayers_;j++)
+#endif
     {
         // Reactant gas mass change
         changeOfA_[i]   -=  dmA_[j];
@@ -1220,10 +1281,29 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
     // conventional enthalpy
     double conv_h[6] = {0.};
 
-    conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i) * layerMolMasses_[0];
-    conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,  layerMolMasses_[1],i) * layerMolMasses_[1];
-    conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i) * layerMolMasses_[2];
-    conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[3],i) * layerMolMasses_[3];
+    {
+#ifdef TWO_LAYERS
+        conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i) * layerMolMasses_[0];
+        conv_h[1] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[1],i) * layerMolMasses_[1];
+        conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[2],i) * layerMolMasses_[2];
+#else
+#ifdef PSEUDO_THREE_LAYERS
+        if (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE)
+        {
+            conv_h[0] = 0.0;
+            conv_h[1] = conv_enthalpy(a_coeff_nasa_Fe, layerMolMasses_[0],i) * layerMolMasses_[0];
+        }
+        else
+#endif
+        {
+            conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe, layerMolMasses_[0],i) * layerMolMasses_[0];
+            conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,layerMolMasses_[1],i) * layerMolMasses_[1];
+        }
+
+        conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i) * layerMolMasses_[2];
+        conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[3],i) * layerMolMasses_[3];
+#endif
+    }
 
     if (strcmp(speciesA, "CO") == 0)
     {
@@ -1327,15 +1407,17 @@ double FixChemShrinkCore::conv_enthalpy (const double *a, double Mw, int i)
 
 double FixChemShrinkCore::K_eq_low(int layer, int i)
 {
-    // 0 = Fe3O4 -> Fe , 1 = Fe2O3 -> Fe3O4
-    double Keq_low = 0.;
-
+    double Keq_low = 0.0;
+#ifdef TWO_LAYERS
+    // 0 = Fe3O4 (magnetite) -> Fe (iron)
+    // 1 = Fe2O3 (hematite)  -> Fe3O4 (magnetite)
     if (strcmp(speciesA, "CO") == 0)
     {
-        if (layer == 1)
+        if (layer == 1) {
             Keq_low = exp(3968.37/T_[i]+3.94);
-        else if (layer == 0)
-            Keq_low = pow(10.0,-0.009);
+        } else if (layer == 0) {
+            Keq_low = 0.97949;// =pow(10.0,-0.009);
+        }
     }
     else if(strcmp(speciesA,"H2")==0)
     {
@@ -1344,6 +1426,36 @@ double FixChemShrinkCore::K_eq_low(int layer, int i)
         else if (layer == 0)
             Keq_low = pow(10.0,(-1742.0/T_[i]+1.568));
     }
+#else
+    if (strcmp(speciesA, "CO") == 0)
+    {
+        switch(layer) {
+        case LAYER_HEMATITE:
+            Keq_low = exp(3968.37/T_[i]+3.94); break;
+        case LAYER_MAGNETITE:
+            Keq_low = 0.97949; break; // = pow(10.0,-0.009);
+        case LAYER_WUSTITE:
+            Keq_low = 0.97949; break; // = pow(10.0,-0.009);
+        default:
+            error->fix_error(FLERR, this, "invalid layer in equilibrium constant method");
+            break;
+        }
+    }
+    else if (strcmp(speciesA,"H2")==0)
+    {
+        switch(layer) {
+        case LAYER_HEMATITE:
+            Keq_low = exp(-362.6/T_[i] + 10.334); break;
+        case LAYER_MAGNETITE:
+            Keq_low = pow(10.0,(-1742.0/T_[i]+1.568)); break;
+        case LAYER_WUSTITE:
+            Keq_low = pow(10.0,(-1742.0/T_[i]+1.568)); break;
+        default:
+            error->fix_error(FLERR, this, "invalid layer in equilibrium constant method");
+            break;
+        }
+    }
+#endif
     else
     {
         error->fix_error(FLERR, this, "Undefined Reaction \n");
@@ -1373,6 +1485,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
         fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_A: %f \n", p_eq_[0], p_eq_[1], p_A);
     }
 
+#ifdef TWO_LAYERS
     if (layers_ == 2)
     {
         const double A0 = Aterm[i][0];
@@ -1423,6 +1536,56 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
         if (dY[i][0] < 0.0)
             dY[i][0] = 0.0;
     }
+#else
+#ifdef PSEUDO_THREE_LAYERS
+    if (layers_ == 3)
+    {
+        const double A0 = Aterm[i][1];
+        const double A1plusB1         = Aterm[i][2] + Bterm[i][2];
+        const double B0plusMass       = Bterm[i][1] + Massterm[i];
+        const double A0plusB0plusMass = A0 + B0plusMass;
+
+        const double W = A1plusB1 * A0plusB0plusMass + A0 * B0plusMass;
+
+        // hematite to magnetite
+        dY[i][2]   =   (A0plusB0plusMass * (p_A - p_eq_[2]) - B0plusMass * (p_A - p_eq_[1])) / W;
+
+        if (dY[i][2] < 0.0)
+            dY[i][2] = 0.0;
+
+        // magnetite to iron
+        if (dY[i][2] == 0.0)
+            dY[i][1] = 0.0;
+        else
+            dY[i][1] = ((A1plusB1 + B0plusMass) * (p_A - p_eq_[1]) - B0plusMass * (p_A - p_eq_[2])) / W;
+
+        if (dY[i][1] < 0.0)
+            dY[i][1] = 0.0;
+    }
+    else if (layers_ == 2)
+    {
+        // rate of chemical reaction for 1 active layer
+        const double W = Aterm[i][1] + Bterm[i][1] + Massterm[i];
+
+        // hematite to magnetite
+        dY[i][2] = 0.0;
+
+        //magnetite to iron
+        dY[i][1]   =   (p_A - p_eq_[1]) / W;
+
+        if (dY[i][1] < 0.0)
+            dY[i][1] = 0.0;
+    }
+    else if (layers_ == 1)
+    {
+        // should never get here (see post_force)
+        error->fix_error(FLERR, this, "Trying to reduce wuestite layer at low T");
+    }
+#else
+
+#endif
+    dY[i][0] = dY[i][1];
+#endif
 
     for (int j = 0 ; j < layers_; j++)
     {
@@ -1432,6 +1595,14 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
         // fix property added so values are otuputted to file
         dmA_f_[i][j] = dmA_[j];
     }
+
+#ifndef TWO_LAYERS
+#ifdef PSEUDO_THREE_LAYERS
+    dmA_f_[i][0] = dmA_[0] = dmA_[1];
+#else
+
+#endif
+#endif
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1457,7 +1628,9 @@ void FixChemShrinkCore::getXi_low(int i, double *x0_eq_)
         x0_eq_[j]  =   kch2_/(1.0+K_eq_low(j,i));
     }
 
+#ifdef TWO_LAYERS
     x0_eq_[2] = 0.;
+#endif
 
     if (screenflag_ && screen)
         fprintf(screen, "x0_eq_0: %f, x0_eq_1: %f, x0_eq_2: %f \n", x0_eq_[0], x0_eq_[1], x0_eq_[2]);
