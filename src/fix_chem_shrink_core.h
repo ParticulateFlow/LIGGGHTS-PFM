@@ -1,14 +1,19 @@
 /* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
+
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
+
    Copyright 2015-     JKU Linz
+
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
+
    This software is distributed under the GNU General Public License.
+
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
@@ -16,6 +21,7 @@
    Contributing authors:
    Thomas Lichtenegger (JKU Linz)
    M.Efe Kinaci (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
@@ -49,7 +55,6 @@ public:
 
  protected:
 
-  // functions declared in this class
   int active_layers(int);   // calculate number of active layers per-particle
   void calcMassLayer(int);  // calculate mass of layers per-particle
   void FractionalReduction(int); // calculate fractional reduction per-layer depending on layer radius
@@ -116,10 +121,10 @@ public:
   double **porosity_;
   double pore_diameter_;
   double tortuosity_;
-  double **relRadii_;
-  double **massLayer_;
-  double **Ea_, **k0_;
-  //const double *k0_, *Ea_;
+  double **relRadii_; // relative radii of individual layers
+  double **massLayer_; // mass of individual layers
+  double **Ea_; // activation energy
+  double **k0_; // frequency factor
 
   // particle propertis
   double *radius_;
@@ -127,8 +132,19 @@ public:
   double *pdensity_;
 
   // handles of fixes
-  double *changeOfA_, *changeOfC_, *T_, *molecularDiffusion_, *nuf_, *Rep_, *partP_, *Massterm, *reactionHeat_;
-  double **Aterm, **Bterm, **effDiffBinary, **effDiffKnud, **fracRed_;
+  double *changeOfA_, *changeOfC_;
+  double *T_;
+  double *molecularDiffusion_;
+  double *nuf_;
+  double *Rep_;
+  double *partP_;
+  double *reactionHeat_;    // heat of reaction
+  double *Massterm;         // mass transfer resistance
+  double **Aterm;           // reaction resistance
+  double **Bterm;           // diffusion resistance
+  double **effDiffBinary;   // effective binary diffusion coefficient
+  double **effDiffKnud;     // effective Knudsen diffusion coefficient
+  double **fracRed_;        // fractional reduction
 #ifdef PER_ATOM_LAYER_DENSITIES
   double **layerDensities_;
 #else
@@ -141,49 +157,51 @@ public:
   // bool flags for reduction steps
   bool dY_previous3, dY_previous2;
 
-  class FixPropertyAtom *fix_changeOfA_, *fix_changeOfC_;
-  class FixPropertyAtom *fix_tgas_;
-  class FixPropertyAtom *fix_reactionHeat_;
-  class FixPropertyAtom *fix_diffcoeff_;
-  class FixPropertyAtom *fix_nuField_;
-  class FixPropertyAtom *fix_partRe_;
+  class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_reactionHeat_; // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_diffcoeff_;    // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_nuField_;      // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_partRe_;       // [cfd/coupling/chemistry]
 
-  class FixPropertyAtom *fix_moleFractionA_, *fix_moleFractionC_;
+  class FixPropertyAtom *fix_moleFractionA_; // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_moleFractionC_; // [cfd/coupling/chemistry]
   double *xA_, *xC_;
 
-  class FixPropertyAtom *fix_fracRed;
-  class FixPropertyAtom *fix_Aterm;
-  class FixPropertyAtom *fix_Bterm;
-  class FixPropertyAtom *fix_Massterm;
-  class FixPropertyAtom *fix_effDiffBinary;
-  class FixPropertyAtom *fix_effDiffKnud;
-  class FixPropertyAtom *fix_partPressure_;
+  class FixPropertyAtom *fix_fracRed;       // [script]
+  class FixPropertyAtom *fix_Aterm;         // [internal]
+  class FixPropertyAtom *fix_Bterm;         // [internal]
+  class FixPropertyAtom *fix_Massterm;      // [internal]
+  class FixPropertyAtom *fix_effDiffBinary; // [internal]
+  class FixPropertyAtom *fix_effDiffKnud;   // [internal]
+  class FixPropertyAtom *fix_partPressure_; // [cfd/coupling/chemistry]
 
 
   // particle properties
-  class FixPropertyAtom *fix_layerRelRad_;
-  class FixPropertyAtom *fix_layerMass_;
+  class FixPropertyAtom *fix_layerRelRad_;  // [script]
+  class FixPropertyAtom *fix_layerMass_;    // [script]
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
 #else
-  class FixPropertyGlobal *fix_layerDens_;
+  class FixPropertyGlobal *fix_layerDens_;  // [script]
 #endif
 
-  class FixPropertyAtom *fix_k0_;
-  class FixPropertyAtom *fix_Ea_;
-  class FixPropertyAtom *fix_porosity_;
-  class FixPropertyAtom *fix_rhoeff_;
-  class FixPropertyGlobal *fix_tortuosity_;
-  class FixPropertyGlobal *fix_pore_diameter_;
+  class FixPropertyAtom *fix_k0_;           // [script]
+  class FixPropertyAtom *fix_Ea_;           // [script]
+  class FixPropertyAtom *fix_porosity_;     // [script/internal]
+  class FixPropertyAtom *fix_rhoeff_;       // [script]
+  class FixPropertyGlobal *fix_tortuosity_; // [script]
+  class FixPropertyGlobal *fix_pore_diameter_; // [script]
 
   class FixPropertyAtom *fix_totalMole_;
   double *molarConc_;
 
-  class FixPropertyAtom *fix_dY_;
+  class FixPropertyAtom *fix_dY_; // [internal]
   double **dY;
 
-  class FixPropertyAtom *fix_dmA_;
+  class FixPropertyAtom *fix_dmA_; // [internal]
   double **dmA_f_;
 
 };
