@@ -690,7 +690,7 @@ void FixChemShrinkCore::post_force(int)
             // is ignored if there is no change in layers
             if (active_layers(i) > 0)
             {
-                if (T_[i] < 573.15)
+                if (T_[i] < 573.15) // Kelvin / 300 Celsius
                 {
                     // do nothing -- no reaction takes place
                     if (screenflag_) error->warning(FLERR, "The temperature is too low for reduction to take place!");
@@ -707,7 +707,7 @@ void FixChemShrinkCore::post_force(int)
                     update_gas_properties(i, dmA_);
                     heat_of_reaction(i, dmA_,v_reac_low_,v_prod_low_);
                 }
-                else // T_[i] > 843.15
+                else // T_[i] > 843.15 K
                 {
                     // calculate values for fractional reduction f_i = (1-relRadii_i^3)
                     // or with mass ratio provides simplicity for calculations of A & B terms.
@@ -1191,13 +1191,11 @@ void FixChemShrinkCore::FractionalReduction(int i)
     // "Simulation study on performance of Z-path Moving-fluidized Bed for Gaseous Reduction
     // of Iron Ore Fines" ISIJ International, Vol. 52, No. 7, pp. 1241 - 1249
 
-    /*const double f_WF = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
+    /*
+    const double f_WF = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
     const double f_MW = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
     const double f_HM = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
-
-    fracRed_[i][0] = f_WF;
-    fracRed_[i][1] = f_MW;
-    fracRed_[i][2] = f_HM; */
+    */
 
     const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
