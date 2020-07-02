@@ -85,6 +85,9 @@ const double FixChemShrinkCore::a_coeff_nasa_H2O[]   = { 200.00, 6000., 1000.,
 
 const double FixChemShrinkCore::v_reac_[] = { 1.0, 1.0, 3.0 };
 const double FixChemShrinkCore::v_prod_[] = { 1.0, 3.0, 2.0 };
+
+#define SWITCH_LOW_HIGH_TEMPERATURE 843.15
+
 const double FixChemShrinkCore::v_reac_low_[] = { 0.25, 3.0, 0.0 };
 const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 2.0, 0.0 };
 
@@ -674,7 +677,6 @@ void FixChemShrinkCore::post_force(int)
     double x0_eq_[nmaxlayers_] = {0.}; // molar fraction of reactant gas
     double dmA_[nmaxlayers_] = {0.};   // mass flow rate of reactant gas species for each layer at w->fe, m->w & h->m interfaces
 
-
     for (i = 0; i < nlocal; i++)
     {
         if (mask[i] & groupbit)
@@ -684,7 +686,7 @@ void FixChemShrinkCore::post_force(int)
                 continue;
             }
 
-            layers_ = (T_[i] < 843.15) ? 2 : 3;
+            layers_ = (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE) ? 2 : 3;
 
             // 1st recalculate masses of layers if layer has reduced
             // is ignored if there is no change in layers
@@ -695,7 +697,7 @@ void FixChemShrinkCore::post_force(int)
                     // do nothing -- no reaction takes place
                     if (screenflag_) error->warning(FLERR, "The temperature is too low for reduction to take place!");
                 }
-                else if (T_[i] < 843.15) // T_[i] between 573.15 and 843.15
+                else if (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE) // T_[i] between 573.15 and 843.15 Kelvin (300 and 570 Celsius)
                 {
                     FractionalReduction_low(i);
                     getXi_low(i,x0_eq_);
