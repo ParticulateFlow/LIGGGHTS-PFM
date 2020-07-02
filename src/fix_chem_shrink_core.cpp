@@ -777,7 +777,6 @@ int FixChemShrinkCore::active_layers(int i)
         if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
         {
             --layers_;
-            calcMassLayer(i);
         }
     }
 
