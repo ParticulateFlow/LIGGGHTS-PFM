@@ -154,9 +154,6 @@ public:
   // coarse_graining factor
   double cg_;
 
-  // bool flags for reduction steps
-  bool dY_previous3, dY_previous2;
-
   class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]

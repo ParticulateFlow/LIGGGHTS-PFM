@@ -138,7 +138,6 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     cg_ = 0.0;
     int iarg_ = 3;
     bool hasargs = true;
-    dY_previous3 = dY_previous2 = false;
 
     while (iarg_ < narg && hasargs)
     {
@@ -1065,7 +1064,6 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
         if (dY[i][0] < 0.0)
             dY[i][0] = 0.0;
 
-        dY_previous3 = true;
     }
     else if (layers_ == 2)
     {
@@ -1080,17 +1078,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
         dY[i][2] = 0.0;
 
         // magnetite to wustite
-        if (dY_previous3)
-        {
-            if (dY[i][1] == 0.0)
-                dY[i][1] = 0.0;
-            else
-                dY[i][1] = (A0plusB0plusMass * (p_A - p_eq_[1])  -  B0plusMass * (p_A - p_eq_[0])) / W;
-        }
-        else
-        {
-            dY[i][1]     = (A0plusB0plusMass * (p_A - p_eq_[1])  -  B0plusMass * (p_A - p_eq_[0])) / W;
-        }
+        dY[i][1]     = (A0plusB0plusMass * (p_A - p_eq_[1])  -  B0plusMass * (p_A - p_eq_[0])) / W;
 
         if (dY[i][1] < 0.0)
             dY[i][1] = 0.0;
@@ -1108,7 +1096,6 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
         if (dY[i][0] < 0.0)
             dY[i][0] = 0.0;
 
-        dY_previous2 = true;
     }
     else if (layers_ == 1)
     {
@@ -1122,17 +1109,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
         dY[i][1]   =   0.0;
 
         // wustite to iron
-        if (dY_previous2)
-        {
-            if (dY[i][0] == 0.0)
-                dY[i][0] = 0.0;
-            else
-                dY[i][0] = (p_A - p_eq_[0]) / W;
-        }
-        else
-        {
-            dY[i][0]   =   (p_A - p_eq_[0]) / W;
-        }
+        dY[i][0]   =   (p_A - p_eq_[0]) / W;
 
         if (dY[i][0] < 0.0)
             dY[i][0] = 0.0;
@@ -1516,7 +1493,6 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
         if (dY[i][0] < 0.0)
             dY[i][0] = 0.0;
 
-        dY_previous2 = true;
     }
     else if (layers_ == 1)
     {
@@ -1526,18 +1502,8 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
         // hematite to magnetite
         dY[i][1] = 0.0;
 
-        //magnetite to iron
-        if (dY_previous2)
-        {
-            if (dY[i][0] == 0.0)
-                dY[i][0] = 0.0;
-            else
-                dY[i][0] = (p_A - p_eq_[0]) / W;
-        }
-        else
-        {
-            dY[i][0]   =   (p_A - p_eq_[0]) / W;
-        }
+        // magnetite to iron
+        dY[i][0]   =   (p_A - p_eq_[0]) / W;
 
         if (dY[i][0] < 0.0)
             dY[i][0] = 0.0;
