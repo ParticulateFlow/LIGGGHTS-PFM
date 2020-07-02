@@ -46,10 +46,6 @@ FixMeanFreeTime::FixMeanFreeTime(LAMMPS *lmp, int narg, char **arg) :
   check_every_(1),
   t_start_(0.0)
 {
-    // do the derived class stuff
-
-    // parse args
-
     bool hasargs = true;
     int iarg = 3;
 
@@ -97,16 +93,12 @@ void FixMeanFreeTime::init()
  if (force->pair == NULL)
     error->all(FLERR,"Fix mean_free_time requires a pair style be defined");
 
-  // need an occasional neighbor list
-
   int irequest = neighbor->request((void *) this);
- // neighbor->requests[irequest]->half = 0;
- // neighbor->requests[irequest]->gran = 1;
+  neighbor->requests[irequest]->half = 0;
+  neighbor->requests[irequest]->gran = 1;
   neighbor->requests[irequest]->pair = 0;
   neighbor->requests[irequest]->fix = 1;
- // neighbor->requests[irequest]->occasional = 1;
 
-fprintf(screen, "irequest = %d\n",irequest);
 
   const char* fixarg[12];
   // register property/atom for time between collisions
@@ -146,68 +138,68 @@ int FixMeanFreeTime::setmask()
 
 void FixMeanFreeTime::end_of_step()
 {
-    int i,j,ii,jj,inum,jnum;
-    double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
-    double radi,radsum,radsumsq;
-    int *ilist,*jlist,*numneigh,**firstneigh;
+  int i,j,ii,jj,inum,jnum;
+  double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
+  double radi,radsum,radsumsq;
+  int *ilist,*jlist,*numneigh,**firstneigh;
 
-    double **meanfreetime = fix_meanfreetime_->array_atom;
+  double **meanfreetime = fix_meanfreetime_->array_atom;
 
-    bigint currstep = update->ntimestep;
+  bigint currstep = update->ntimestep;
 
-    if (update->dt * currstep < t_start_) return;
-    // invoke neighbor list (will copy or build if necessary)
-//    neighbor->build_one(list->index);
+  if (update->dt * currstep < t_start_) return;
 
-    inum = list->inum;
-    ilist = list->ilist;
-    numneigh = list->numneigh;
-    firstneigh = list->firstneigh;
+  inum = list->inum;
+  ilist = list->ilist;
+  numneigh = list->numneigh;
+  firstneigh = list->firstneigh;
 
-    // compute number of contacts for each atom in group
-    // contact if distance <= sum of radii
-    // tally for both I and J
+  double **x = atom->x;
+  double *radius = atom->radius;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+  bool contact = false;
 
-    double **x = atom->x;
-    double *radius = atom->radius;
-    int *mask = atom->mask;
-    int nlocal = atom->nlocal;
+  for (ii = 0; ii < inum; ii++) {
+    i = ilist[ii];
+    contact = false;
+    if (mask[i] & groupbit) {
+      xtmp = x[i][0];
+      ytmp = x[i][1];
+      ztmp = x[i][2];
+      radi = radius[i];
+      jlist = firstneigh[i];
+      jnum = numneigh[i];
+      for (jj = 0; jj < jnum; jj++) {
+        j = jlist[jj];
+        j &= NEIGHMASK;
 
-    for (ii = 0; ii < inum; ii++) {
-      i = ilist[ii];
-      if (mask[i] & groupbit) {
-        xtmp = x[i][0];
-        ytmp = x[i][1];
-        ztmp = x[i][2];
-        radi = radius[i];
-        jlist = firstneigh[i];
-        jnum = numneigh[i];
-        for (jj = 0; jj < jnum; jj++) {
-          j = jlist[jj];
-          j &= NEIGHMASK;
-
-          delx = xtmp - x[j][0];
-          dely = ytmp - x[j][1];
-          delz = ztmp - x[j][2];
-          rsq = delx*delx + dely*dely + delz*delz;
-          radsum = radi + radius[j];
-          radsumsq = radsum*radsum;
-          if (rsq <= radsumsq) {
-            if (meanfreetime[i][3] < 0.5) {
-              meanfreetime[i][0] += currstep - meanfreetime[i][1];
-              meanfreetime[i][2] += 1.0;
-              meanfreetime[i][3] = 1.0;
-            }
-          }
-          else {
-            if (meanfreetime[i][3] > 0.5) {
-              meanfreetime[i][1] = currstep;
-              meanfreetime[i][3] = 0.0;
-            }
-          }
+        delx = xtmp - x[j][0];
+        dely = ytmp - x[j][1];
+        delz = ztmp - x[j][2];
+        rsq = delx*delx + dely*dely + delz*delz;
+        radsum = radi + radius[j];
+        radsumsq = radsum*radsum;
+        if (rsq <= radsumsq) {
+          contact = true;
+          break;
+        }
+      }
+      if (contact) {
+        if (meanfreetime[i][3] < 0.5) {
+          meanfreetime[i][0] += currstep - meanfreetime[i][1];
+          meanfreetime[i][2] += 1.0;
+          meanfreetime[i][3] = 1.0;
+        }
+      }
+      else {
+        if (meanfreetime[i][3] > 0.5) {
+          meanfreetime[i][1] = currstep;
+          meanfreetime[i][3] = 0.0;
         }
       }
     }
+  }
 }
 
 /* ----------------------------------------------------------------------
