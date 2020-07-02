@@ -108,6 +108,13 @@ const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000., 75000. };
 const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.071844, 0.231532, 0.1596882 };
 #endif
 
+enum {
+    LAYER_WUSTITE = 0,
+    LAYER_MAGNETITE,
+    LAYER_HEMATITE,
+    LAYER_MAX
+};
+
 /* ---------------------------------------------------------------------- */
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
