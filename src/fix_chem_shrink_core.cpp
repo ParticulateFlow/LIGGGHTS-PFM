@@ -510,7 +510,7 @@ void FixChemShrinkCore::init()
 #ifdef PER_ATOM_LAYER_DENSITIES
     fix_layerDens_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname,"property/atom","vector",0,0,style));
 #else
-    fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname,"property/global","vector",4,0,style));
+    fix_layerDens_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname,"property/global","vector",nmaxlayers_+1,0,style));
 #endif
     delete [] propertyname;
 
@@ -545,7 +545,7 @@ void FixChemShrinkCore::init()
     propertyname = new char[strlen("Bterm_")+strlen(id)+1];
     strcpy (propertyname,"Bterm_");
     strcat(propertyname,id);
-    fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 3, 0, style));
+    fix_Bterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", nmaxlayers_, 0, style));
     delete [] propertyname;
 
     propertyname = new char[strlen("Massterm_")+strlen(id)+1];
@@ -557,13 +557,13 @@ void FixChemShrinkCore::init()
     propertyname = new char[strlen("effDiffBinary_")+strlen(id)+1];
     strcpy (propertyname,"effDiffBinary_");
     strcat(propertyname,id);
-    fix_effDiffBinary = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 3, 0, style));
+    fix_effDiffBinary = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", nmaxlayers_, 0, style));
     delete [] propertyname;
 
     propertyname = new char[strlen("effDiffKnud_")+strlen(id)+1];
     strcpy (propertyname,"effDiffKnud_");
     strcat(propertyname,id);
-    fix_effDiffKnud = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 3, 0, style));
+    fix_effDiffKnud = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", nmaxlayers_, 0, style));
     delete [] propertyname;
 
     propertyname = new char[strlen("dY_")+strlen(id)+1];
@@ -898,7 +898,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
         fprintf(screen, "p_eq_I: %f, p_eq_II: %f, p_eq_III: %f, p_A: %f \n", p_eq_[0], p_eq_[1],p_eq_[2],p_A);
     }
 
-    if (layers_ == nmaxlayers_)
+    if (layers_ == 3)
     {
         const double A0 = Aterm[i][0];
         const double A1 = Aterm[i][1];
@@ -1191,6 +1191,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
     if (screenflag_ && screen) {
         fprintf(screen, "delta_h w %s for reaction 1 is %f \n", speciesA, delta_h[0]);
         fprintf(screen, "delta_h w %s for reaction 2 is %f \n", speciesA, delta_h[1]);
+        if (nmaxlayers_ == 3)
         fprintf(screen, "delta_h w %s for reaction 3 is %f \n", speciesA, delta_h[2]);
     }
 
@@ -1202,6 +1203,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
     if (screenflag_ && screen) {
         fprintf(screen, "heatFlux of reaction w %s for reaction 1 is %f \n", speciesA, HR[0]);
         fprintf(screen, "heatFlux of reaction w %s for reaction 2 is %f \n", speciesA, HR[1]);
+        if (nmaxlayers_ == 3)
         fprintf(screen, "heatFlux of reaction w %s for reaction 3 is %f \n", speciesA, HR[2]);
     }
 
