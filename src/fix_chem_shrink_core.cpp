@@ -648,8 +648,7 @@ void FixChemShrinkCore::setup(int)
     // set initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
     {
-        rhoeff_[i][layers_] = pdensity_[i];
-        for (int layer=0; layer < layers_; layer++)
+        for (int layer=0; layer <= layers_; layer++)
         {
 #ifdef PER_ATOM_LAYER_DENSITIES
             rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
