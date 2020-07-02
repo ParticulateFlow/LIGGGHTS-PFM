@@ -473,7 +473,6 @@ void FixChemShrinkCore::updatePtrs()
     pmass_          =   atom    -> rmass;
     pdensity_       =   atom    -> density;
 
-    molarConc_  =   fix_totalMole_  ->  vector_atom;
     dY          =   fix_dY_         ->  array_atom;
     dmA_f_      =   fix_dmA_ -> array_atom;
 }
