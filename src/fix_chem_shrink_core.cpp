@@ -1273,7 +1273,6 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
 #ifdef PSEUDO_THREE_LAYERS
         if (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE)
         {
-            conv_h[0] = 0.0;
             conv_h[1] = conv_enthalpy(a_coeff_nasa_Fe, layerMolMasses_[0],i) * layerMolMasses_[0];
         }
         else
@@ -1299,9 +1298,13 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
         conv_h[5] = conv_enthalpy(a_coeff_nasa_H2O,molMass_C_,i)*molMass_C_;
     }
 
+#ifdef PSEUDO_THREE_LAYERS
+    for (int j = (T_[i]<SWITCH_LOW_HIGH_TEMPERATURE)?1:0; j < layers_; j++)
+#else
     for (int j = 0; j < layers_; j++)
+#endif
     {
-         delta_h[j] = (v_prod[j] * conv_h[j] + conv_h[5]) - (v_reac[0] * conv_h[j+1] + conv_h[4]);
+        delta_h[j] = (v_prod[j] * conv_h[j] + conv_h[5]) - (v_reac[j] * conv_h[j+1] + conv_h[4]);
     }
 
     if (screenflag_ && screen) {
