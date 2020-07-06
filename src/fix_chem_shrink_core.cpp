@@ -1161,11 +1161,13 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         massLayer_[i][j] -= dmL_[j]*scale_reduction_rate;
         if (massLayer_[i][j] < 0.0)
             massLayer_[i][j] = 0.0;
-        // Limit minimum mass layer to 1e-20 -- obsolete since rrmin is already defined
-        // massLayer_[i][j] = std::max(massLayer_[i][j], 1e-20);
-
+    }
+    for (int j = 0; j <= nmaxlayers_; j++)
+    {
         // calculate total mass of particle
-        sum_mass_p_new    +=  massLayer_[i][j];
+        // since there is a minimum radius for layers, there is always a
+        // non-zero contribution (at least from the innermost layer)
+        sum_mass_p_new += massLayer_[i][j];
     }
 
     // if (screen) fprintf(screen,"total mass of particle = %f \n", sum_mass_p_new);
