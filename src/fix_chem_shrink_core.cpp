@@ -676,6 +676,8 @@ void FixChemShrinkCore::setup(int)
     // set initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
     {
+        active_layers(i);
+
         for (int layer=0; layer <= layers_; layer++)
         {
 #ifdef PER_ATOM_LAYER_DENSITIES
@@ -710,8 +712,6 @@ void FixChemShrinkCore::post_force(int)
             {
                 continue;
             }
-
-            layers_ = nmaxlayers_;
 
             // 1st recalculate masses of layers if layer has reduced
             // is ignored if there is no change in layers
@@ -782,6 +782,8 @@ void FixChemShrinkCore::post_force(int)
 
 int FixChemShrinkCore::active_layers(int i)
 {
+    layers_ = nmaxlayers_;
+
     for (int j = layers_; j > 0; j--)
     {
         if (relRadii_[i][j]*(radius_[i]/cg_) < rmin_)
