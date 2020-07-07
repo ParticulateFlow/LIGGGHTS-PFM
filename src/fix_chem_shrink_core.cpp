@@ -45,6 +45,8 @@ using namespace MathConst;
 
 #define SMALL   1e-10
 
+//#define nmaxlayers_ 3
+
 const double FixChemShrinkCore::Runiv = 8.3144;
 
 // 7-coefficient NASA polynomials, see
@@ -84,6 +86,7 @@ const double FixChemShrinkCore::v_prod_[] = { 1.0, 3.0, 2.0 }; // production of 
 #define SWITCH_LOW_HIGH_TEMPERATURE 843.15
 
 #ifdef TWO_LAYERS
+#define nmaxlayers_ 2
 const double FixChemShrinkCore::v_reac_low_[] = { 0.25, 3.0, 0.0 };
 const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 2.0, 0.0 };
 const double FixChemShrinkCore::k0_low_CO[] = { 150., 150. };
@@ -93,6 +96,7 @@ const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000. };
 //                                                  {       Fe,    Fe3O4,     Fe2O3 }
 const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.231532, 0.1596882 };
 #else
+#define nmaxlayers_ 3
 #define PSEUDO_THREE_LAYERS
 #ifdef PSEUDO_THREE_LAYERS // treat wustite layer as if it were iron; TODO! beware of CO transformation!!!
 const double FixChemShrinkCore::v_reac_low_[] = { 1.0, 0.25, 3.0 };  // reaction of Fe, m, h
@@ -119,11 +123,11 @@ enum {
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
-#ifdef TWO_LAYERS
-    nmaxlayers_(2),
-#else
-    nmaxlayers_(3),
-#endif
+//#ifdef TWO_LAYERS
+//    nmaxlayers_(2),
+//#else
+//    nmaxlayers_(3),
+//#endif
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
     rmin_(1e-5),      //  [m]
