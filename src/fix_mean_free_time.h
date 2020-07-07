@@ -1,56 +1,60 @@
 /* ----------------------------------------------------------------------
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
-
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
-
-   Department for Particulate Flow Modelling
    Copyright 2015-     JKU Linz
-
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
-
    This software is distributed under the GNU General Public License.
-
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Thomas Lichtenegger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
 
-FixStyle(couple/cfd/parttempfield,FixCfdCouplingPartTempField)
+FixStyle(meanfreetime,FixMeanFreeTime)
 
 #else
 
-#ifndef LMP_FIX_CFD_COUPLING_PARTTEMPFIELD_H
-#define LMP_FIX_CFD_COUPLING_PARTTEMPFIELD_H
+#ifndef LMP_FIX_MEAN_FREE_TIME_H
+#define LMP_FIX_MEAN_FREE_TIME_H
 
-#include "fix_cfd_coupling.h"
+#include "fix.h"
+#include <vector>
 
 namespace LAMMPS_NS {
 
-class FixCfdCouplingPartTempField : public Fix {
+class FixMeanFreeTime : public Fix {
 
  public:
-  FixCfdCouplingPartTempField(class LAMMPS *, int, char **);
-  ~FixCfdCouplingPartTempField();
-  void post_create();
-  void pre_delete(bool unfixflag);
 
-  virtual int setmask();
-  virtual void init();
-  virtual void post_force(int);
+  FixMeanFreeTime(class LAMMPS *, int, char **);
+  ~FixMeanFreeTime();
+
+  void init();
+  void init_list(int, class NeighList *);
+  int setmask();
+  void end_of_step();
+
+  virtual double compute_scalar();
 
  protected:
-  class FixCfdCoupling* fix_coupling;
-  class FixPropertyAtom* fix_temp;
-  bool created_fix_temp;
-  double T0;
+
+  class FixPropertyAtom *fix_meanfreetime_;
+  class NeighList *list;
+
+  double check_every_;
+  double t_start_;
 };
 
 }
+#endif
+#endif
 
-#endif
-#endif

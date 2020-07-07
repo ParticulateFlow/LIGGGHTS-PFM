@@ -601,3 +601,26 @@ double FixPropertyAtom::compute_vector(int n)
   MPI_Sum_Scalar(value,world);
   return value;
 }
+
+/* ----------------------------------------------------------------------
+   return number of default values
+------------------------------------------------------------------------- */
+
+int FixPropertyAtom::num_defaultvalues()
+{
+    return nvalues;
+}
+
+/* ----------------------------------------------------------------------
+   return default value of type n
+------------------------------------------------------------------------- */
+
+double FixPropertyAtom::defaultvalue(int n)
+{
+    if(n<0 || n>=nvalues)
+    {
+        error->fix_error(FLERR,this,"request non-existent default value");
+    }
+
+    return defaultvalues[n];
+}

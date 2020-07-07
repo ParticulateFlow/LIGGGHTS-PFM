@@ -56,6 +56,7 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   style_(-1),            // set below
   delete_below_(0.),     // set below
   rate_remove_(0.),      // set below
+  m_remove_min_(1e-6),
   seed_(0),              // set below
   integrated_error_(true),
   variable_rate_(false),
@@ -65,6 +66,8 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   integrated_rate_(0.),
   time_origin_(update->ntimestep),
   time_last_(update->ntimestep),
+  restart_read_(true),
+  restart_write_(true),
   verbose_(false),
   compress_flag_(1),
   fix_ms_(0),
@@ -130,6 +133,22 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       type_remove_ = atoi(arg[iarg++]);
       if (type_remove_ <= 0)
           error->fix_error(FLERR,this,"'atomtype' > 0 required");
+   } else if(strcmp(arg[iarg],"restart_read") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'restart_read'");
+      if(strcmp(arg[iarg+1],"no") == 0)
+        restart_read_ = false;
+      else if(strcmp(arg[iarg+1],"yes"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'restart_read'");
+      iarg += 2;
+   } else if(strcmp(arg[iarg],"restart_write") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'restart_write'");
+      if(strcmp(arg[iarg+1],"no") == 0)
+        restart_write_ = false;
+      else if(strcmp(arg[iarg+1],"yes"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'restart'");
+      iarg += 2;
     } else if(strcmp(arg[iarg],"verbose") == 0) {
       if(narg < iarg+2)
         error->fix_error(FLERR,this,"not enough arguments for 'verbose'");
@@ -146,6 +165,9 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       else if(strcmp(arg[iarg+1],"yes"))
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'integrated_error'");
       iarg += 2;
+    } else if (strcmp(arg[iarg],"minmass") == 0){
+      iarg++;
+      m_remove_min_ = atof(arg[iarg++]);
     } else if(strcmp(arg[iarg],"compress") == 0) {
       if(narg < iarg+2)
         error->fix_error(FLERR,this,"Illegal compress option");
@@ -164,7 +186,14 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   force_reneighbor = 1;
   next_reneighbor = time_origin_ + nevery;
 
-  restart_global = 1; //NP modified C.K.
+  if (restart_read_ || restart_write_)
+  {
+    restart_global = 1; //NP modified C.K.
+  }
+  else
+  {
+    restart_global = 0;
+  }
 
   // random number generator, same for all procs
 
@@ -296,7 +325,7 @@ void FixRemove::pre_exchange()
     // return if nothing to do
     //NP could e.g. be because very large particle was deleted last deletion step
 
-    if(mass_to_remove_ <= 0.) return;
+    if(mass_to_remove_ <= m_remove_min_) return;
 
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 1\n");
 
@@ -336,10 +365,10 @@ void FixRemove::pre_exchange()
     if(comm->me == 0)
     {
         if(verbose_ && screen)
-            fprintf(screen,"    Ammount actually removed %f (#particles totally removed %d)\n",
+            fprintf(screen,"    Amount actually removed %f (#particles totally removed %d)\n",
                     mass_removed_this,nremoved_this);
         if(logfile)
-            fprintf(logfile,"    Ammount actually removed %f (#particles totally removed %d)\n",
+            fprintf(logfile,"    Amount actually removed %f (#particles totally removed %d)\n",
                     mass_removed_this,nremoved_this);
     }
 
@@ -659,6 +688,7 @@ void FixRemove::delete_bodies()
 
 void FixRemove::write_restart(FILE *fp)
 {
+  if (!restart_write_) return;
   int n = 0;
   double list[5];
   list[n++] = static_cast<double>(random_->state());
@@ -680,6 +710,7 @@ void FixRemove::write_restart(FILE *fp)
 
 void FixRemove::restart(char *buf)
 {
+  if (!restart_read_) return;
   int n = 0;
   double *list = (double *) buf;
   double rate_remove_re;

@@ -31,8 +31,6 @@
 #include "fix_cfd_coupling.h"
 #include "cfd_regionmodel_none.h"
 
-#define DELTA 10000
-
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */

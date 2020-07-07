@@ -74,6 +74,7 @@ class FixRemove : public Fix {
   int style_;
   double delete_below_;
   double rate_remove_;              //NP in kg per sec
+  double m_remove_min_;             // minimal amount of mass to be removed at once
   int seed_;
   bool integrated_error_;
 
@@ -84,6 +85,8 @@ class FixRemove : public Fix {
   double mass_removed_,mass_to_remove_,integrated_rate_;
   int time_origin_,time_last_;
   double dt_;
+  bool restart_read_;
+  bool restart_write_;
   bool verbose_;
   int compress_flag_;
 
