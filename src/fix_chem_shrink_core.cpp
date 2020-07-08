@@ -419,54 +419,6 @@ void FixChemShrinkCore::post_create()
         fix_porosity_ = modify->add_fix_property_atom(12,const_cast<char**>(fixarg),style);
         created_fix_porosity_ = true;
     }
-
-#ifdef NO_CFD_COUPLING
-    // create fixes that otherwise are created by fix cfd/coupling/chemistry
-    fix_changeOfA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massA,"property/atom","scalar",0,0,style,false));
-    if (fix_changeOfA_ == NULL) {
-        const char* fixarg[9];
-        fixarg[0]=massA;
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]=massA;
-        fixarg[4]="scalar";     // 1 scalar per particle to be registered
-        fixarg[5]="yes";        // restart
-        fixarg[6]="yes";        // communicate ghost
-        fixarg[7]="no";         // communicate rev
-        fixarg[8]="0.";
-        fix_changeOfA_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
-    }
-
-    fix_changeOfC_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(massC,"property/atom","scalar",0,0,style,false));
-    if (fix_changeOfC_ == NULL) {
-        const char* fixarg[9];
-        fixarg[0]=massC;
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]=massC;
-        fixarg[4]="scalar";     // 1 scalar per particle to be registered
-        fixarg[5]="yes";        // restart
-        fixarg[6]="yes";        // communicate ghost
-        fixarg[7]="no";         // communicate rev
-        fixarg[8]="0.";
-        fix_changeOfC_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
-    }
-
-    fix_reactionHeat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat","property/atom","scalar",0,0,style,false));
-    if (fix_reactionHeat_ == NULL) {
-        const char* fixarg[9];
-        fixarg[0]="reactionHeat";
-        fixarg[1]="all";
-        fixarg[2]="property/atom";
-        fixarg[3]="reactionHeat";
-        fixarg[4]="scalar";     // 1 scalar per particle to be registered
-        fixarg[5]="yes";        // restart
-        fixarg[6]="no";         // communicate ghost
-        fixarg[7]="no";         // communicate rev
-        fixarg[8]="0.";
-        fix_reactionHeat_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
-    }
-#endif
 }
 
 /* ---------------------------------------------------------------------- */
@@ -483,11 +435,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
         if (fix_porosity_ && created_fix_porosity_) { modify->delete_fix(fix_porosity_->id); porosity_ = NULL; }
-#ifdef NO_CFD_COUPLING
-        if (fix_changeOfA_)     { modify->delete_fix(fix_changeOfA_->id); changeOfA_ = NULL; }
-        if (fix_changeOfC_)     { modify->delete_fix(fix_changeOfC_->id); changeOfC_ = NULL; }
-        if (fix_reactionHeat_)  { modify->delete_fix(fix_reactionHeat_->id); reactionHeat_ = NULL; }
-#endif
     }
 }
 

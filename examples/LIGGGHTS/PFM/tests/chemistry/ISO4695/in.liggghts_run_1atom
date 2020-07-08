@@ -1,7 +1,6 @@
 ################################################################################
 # chemistry test case (unreacted shrinking core model)
 # reduction of a single particle under ISO 4695 conditions without CFD coupling
-# requires LIGGGHTS to be compiled with -DNO_CFD_COUPLING
 ################################################################################
 
 log             log.liggghts
@@ -56,6 +55,11 @@ fix     X_CO2    all property/atom X_CO2 scalar yes no no 0.0
 fix     X_N2     all property/atom X_N2  scalar yes no no 0.6
 # molecular diffusion coefficient
 fix     CO_diffCoeff all property/atom CO_diffCoeff scalar yes no no 0.00023
+# output fixes for fix chem/shrink/core that would otherwise be provided by fix
+# couple/cfd/chemistry
+fix     Modified_CO  all property/atom Modified_CO  scalar yes yes no 0.0
+fix     Modified_CO2 all property/atom Modified_CO2 scalar yes yes no 0.0
+fix     reactionHeat all property/atom reactionHeat scalar yes no  no 0.0
 
 ################################################################################
 # activate 3-layer unreacted shrinking core model
