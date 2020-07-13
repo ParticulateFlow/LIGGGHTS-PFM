@@ -476,8 +476,8 @@ void FixChemShrinkCore::updatePtrs()
     layerDensities_ =   fix_layerDens_      ->  values;
 #endif
 
-    k0_             =   fix_k0_             ->  array_atom;
-    Ea_             =   fix_Ea_             ->  array_atom;
+    k0_             =   fix_k0_             ->  values;
+    Ea_             =   fix_Ea_             ->  values;
     porosity_       =   fix_porosity_       ->  array_atom;
     rhoeff_         =   fix_rhoeff_         ->  array_atom;
     //
@@ -516,7 +516,7 @@ void FixChemShrinkCore::init()
     char* propertyname = new char[strlen("k0_")+strlen(id)+1];
     strcpy (propertyname,"k0_");
     strcat(propertyname,id);
-    fix_k0_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname,"property/atom","vector",0,0,style));
+    fix_k0_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname,"property/global","vector",MAX_LAYERS,0,style));
     delete [] propertyname;
 
     // look up activation energies Ea
@@ -524,7 +524,7 @@ void FixChemShrinkCore::init()
     propertyname = new char [strlen("Ea_")+strlen(id)+1];
     strcpy(propertyname, "Ea_");
     strcat(propertyname, id);
-    fix_Ea_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 0, 0, style));
+    fix_Ea_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname,"property/global","vector",MAX_LAYERS,0,style));
     delete [] propertyname;
 
     propertyname = new char [strlen("density_")+strlen(group->names[igroup])+1];
@@ -822,7 +822,7 @@ void FixChemShrinkCore::getA(int i)
 {
     for (int j = 0; j < layers_ ; j++)
     {
-            Aterm[i][j] = (k0_[i][j] * exp(-Ea_[i][j] / (Runiv*T_[i])))
+            Aterm[i][j] = (k0_[j] * exp(-Ea_[j] / (Runiv*T_[i])))
                         * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
                         * (1.0 + 1.0 / K_eq(j,i));
             Aterm[i][j] = 1.0 / Aterm[i][j];

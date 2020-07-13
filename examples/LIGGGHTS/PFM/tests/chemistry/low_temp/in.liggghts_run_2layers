@@ -64,16 +64,16 @@ fix     Modified_CO2 all property/atom Modified_CO2 scalar yes yes no 0.0
 fix     reactionHeat all property/atom reactionHeat scalar yes no  no 0.0
 
 ################################################################################
-
 # activate 2-layer unreacted shrinking core model
 fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 &
         speciesC CO2 molMassC 0.04401 &
         scale_reduction_rate 10.0 nevery 1 #screen yes
+
 # chemical properties for unreacted shrinking core model
 # these are actually hard-coded for low T:
-#                                                        m->Fe   h->m
-fix     k0_CO all property/atom k0_cfd5 vector yes no no   150   150
-fix     Ea_CO all property/atom Ea_cfd5 vector yes no no 70000 75000
+#                                                m->Fe   h->m
+fix     k0_CO all property/global k0_cfd5 vector   150   150
+fix     Ea_CO all property/global Ea_cfd5 vector 70000 75000
 
 # particle porosity/tortuosity/pore diameter
 fix     porosity        all property/atom   porosity_       vector yes no no 0.61 0.16 0.15

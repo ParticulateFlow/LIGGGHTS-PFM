@@ -122,8 +122,8 @@ public:
   double tortuosity_;
   double **relRadii_; // relative radii of individual layers
   double **massLayer_; // mass of individual layers
-  double **Ea_; // activation energy
-  double **k0_; // frequency factor
+  double *Ea_; // activation energy
+  double *k0_; // frequency factor
 
   // particle propertis
   double *radius_;
@@ -184,8 +184,8 @@ public:
   class FixPropertyGlobal *fix_layerDens_;  // [script]
 #endif
 
-  class FixPropertyAtom *fix_k0_;           // [script]
-  class FixPropertyAtom *fix_Ea_;           // [script]
+  class FixPropertyGlobal *fix_k0_;         // [script]
+  class FixPropertyGlobal *fix_Ea_;         // [script]
   class FixPropertyAtom *fix_porosity_;     // [script/internal]
   class FixPropertyAtom *fix_rhoeff_;       // [script]
   class FixPropertyGlobal *fix_tortuosity_; // [script]
