@@ -857,25 +857,21 @@ void FixChemShrinkCore::getB(int i)
 
     if (screenflag_ && screen)
     {
-        switch (MAX_LAYERS)
-        {
-        case 3:
-            fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f, diffEff_[2]: %f \n"
-                        "fracRedThird_[0]: %f, fracRedThird_[1]: %f, fracRedThird_[2] : %f \n"
-                        "fracRed_[0]: %f, fracRed_[1]: %f, fracRed_[2]: %f \n",
-                        diffEff_[0], diffEff_[1], diffEff_[2],
-                        fracRedThird_[0], fracRedThird_[1] , fracRedThird_[2],
-                        fracRed_[0][0], fracRed_[0][1], fracRed_[0][2]);
-            break;
-        case 2:
-            fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f \n"
-                        "fracRedThird_[0]: %f, fracRedThird_[1]: %f \n"
-                        "fracRed_[0]: %f, fracRed_[1]: %f \n",
-                        diffEff_[0], diffEff_[1],
-                        fracRedThird_[0], fracRedThird_[1],
-                        fracRed_[0][0], fracRed_[0][1]);
-            break;
-        }
+#ifdef TWO_LAYERS
+        fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f \n"
+                    "fracRedThird_[0]: %f, fracRedThird_[1]: %f \n"
+                    "fracRed_[0]: %f, fracRed_[1]: %f \n",
+                    diffEff_[0], diffEff_[1],
+                    fracRedThird_[0], fracRedThird_[1],
+                    fracRed_[0][0], fracRed_[0][1]);
+#else
+        fprintf(screen, "diffEff_[0]: %f, diffEff_[1]: %f, diffEff_[2]: %f \n"
+                    "fracRedThird_[0]: %f, fracRedThird_[1]: %f, fracRedThird_[2] : %f \n"
+                    "fracRed_[0]: %f, fracRed_[1]: %f, fracRed_[2]: %f \n",
+                    diffEff_[0], diffEff_[1], diffEff_[2],
+                    fracRedThird_[0], fracRedThird_[1] , fracRedThird_[2],
+                    fracRed_[0][0], fracRed_[0][1], fracRed_[0][2]);
+#endif
     }
 
     // calculation of diffusion term
@@ -1259,8 +1255,9 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
     if (screenflag_ && screen) {
         fprintf(screen, "delta_h w %s for reaction 1 is %f \n", speciesA, delta_h[0]);
         fprintf(screen, "delta_h w %s for reaction 2 is %f \n", speciesA, delta_h[1]);
-        if (MAX_LAYERS == 3)
+#ifndef TWO_LAYERS
         fprintf(screen, "delta_h w %s for reaction 3 is %f \n", speciesA, delta_h[2]);
+#endif
     }
 
     for (int k = 0; k < layers_; k++)
@@ -1271,8 +1268,9 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
     if (screenflag_ && screen) {
         fprintf(screen, "heatFlux of reaction w %s for reaction 1 is %f \n", speciesA, HR[0]);
         fprintf(screen, "heatFlux of reaction w %s for reaction 2 is %f \n", speciesA, HR[1]);
-        if (MAX_LAYERS == 3)
+#ifndef TWO_LAYERS
         fprintf(screen, "heatFlux of reaction w %s for reaction 3 is %f \n", speciesA, HR[2]);
+#endif
     }
 
     // add per-particle reactionHeat flux
