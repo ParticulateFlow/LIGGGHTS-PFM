@@ -45,8 +45,6 @@ using namespace MathConst;
 
 #define SMALL   1e-10
 
-//#define nmaxlayers_ 3
-
 const double FixChemShrinkCore::Runiv = 8.3144;
 
 // 7-coefficient NASA polynomials, see
@@ -123,11 +121,6 @@ enum {
 
 FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     Fix(lmp, narg, arg),
-//#ifdef TWO_LAYERS
-//    nmaxlayers_(2),
-//#else
-//    nmaxlayers_(3),
-//#endif
     layers_(nmaxlayers_),
     minMolarFrac_(1e-3),
     rmin_(1e-5),      //  [m]
