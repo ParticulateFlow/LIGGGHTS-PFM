@@ -35,6 +35,7 @@
 #include "fix_chem_shrink_core.h"
 #include "fix_property_atom.h"
 #include "fix_property_global.h"
+#include "fix_property_atom_polydispparcel.h"
 #include "force.h"
 #include "group.h"
 #include "math_const.h"
@@ -139,7 +140,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     // set defaults
     init_defaults();
     screenflag_ = 0;
-    cg_ = 0.0;
+    cg_ = -1.0;
     int iarg_ = 3;
     bool hasargs = true;
 
@@ -190,6 +191,13 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
         {
             nevery = atoi(arg[iarg_+1]);
             if (nevery <= 0) error->fix_error(FLERR,this,"nevery must be larger than 0");
+            iarg_+=2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"cg") == 0)
+        {
+            cg_ = atof(arg[iarg_+1]);
+            if (cg_ <= 0.0) error->fix_error(FLERR,this,"cg must be larger than 0");
             iarg_+=2;
             hasargs = true;
         }
@@ -244,7 +252,7 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     strcat(moleFracC,speciesC);
 
     time_depend = 1;
-    cg_ = force->cg();
+    if (cg_ < 0.0) cg_ = force->cg();
     peratom_flag = 1;
     peratom_freq = 1;
     global_freq = 1;
@@ -401,13 +409,16 @@ void FixChemShrinkCore::post_create()
         delete []fixname;
     }
 
-    fix_porosity_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, this->style, false));
+    char* propertyname = new char [strlen("porosity_")+strlen(group->names[igroup])+1];
+    strcpy(propertyname,"porosity_");
+    strcat(propertyname,group->names[igroup]);
+    fix_porosity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "vector", 0, 0, this->style, false));
     if (fix_porosity_ == NULL) {
         const char* fixarg[12];
-        fixarg[0]="porosity";            // fixid
+        fixarg[0]=propertyname;            // fixid
         fixarg[1]=group->names[igroup];   //"all";
-        fixarg[2]="property/atom";
-        fixarg[3]="porosity_";           // propertyid
+        fixarg[2]="property/global";
+        fixarg[3]=propertyname;           // propertyid
         fixarg[4]="vector";
         fixarg[5]="yes";
         fixarg[6]="no";
@@ -416,9 +427,10 @@ void FixChemShrinkCore::post_create()
         fixarg[9]="0.0";
         fixarg[10]="0.0";
         fixarg[11]="0.0";
-        fix_porosity_ = modify->add_fix_property_atom(12,const_cast<char**>(fixarg),style);
+        fix_porosity_ = modify->add_fix_property_global(12,const_cast<char**>(fixarg),style);
         created_fix_porosity_ = true;
     }
+    delete []propertyname;
 
 #ifdef NO_CFD_COUPLING
     // create fixes that otherwise are created by fix cfd/coupling/chemistry
@@ -529,6 +541,7 @@ void FixChemShrinkCore::updatePtrs()
     xC_             =   fix_moleFractionC_  ->  vector_atom;
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
+    effvolfactors_  =   fix_polydisp_       ->  vector_atom;
 
 #ifdef PER_ATOM_LAYER_DENSITIES
     layerDensities_ =   fix_layerDens_      ->  array_atom;
@@ -538,7 +551,7 @@ void FixChemShrinkCore::updatePtrs()
 
     k0_             =   fix_k0_             ->  array_atom;
     Ea_             =   fix_Ea_             ->  array_atom;
-    porosity_       =   fix_porosity_       ->  array_atom;
+    porosity_       =   fix_porosity_       ->  values;
     rhoeff_         =   fix_rhoeff_         ->  array_atom;
     //
     tortuosity_     =   fix_tortuosity_     ->  compute_scalar();
@@ -611,18 +624,40 @@ void FixChemShrinkCore::init()
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style));
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
-    fix_porosity_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("porosity_", "property/atom", "vector", 0, 0, style));
     fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
+    fix_polydisp_       =   static_cast<FixPropertyAtomPolydispParcel*>(modify->find_fix_property("effvolfactor", "property/atom","scalar",0,0,style));
+
+    if (screenflag_ && screen)
+    {
+        if (fix_polydisp_ == NULL) fprintf(screen,"fix chem/shrink/core: found no fix for particle effective volumina\n");
+        else fprintf(screen,"fix chem/shrink/core: found fix for particle effective volumina\n");
+    }
+
     // references for global properties - valid for every particle equally
-    fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("tortuosity_", "property/global", "scalar", 0, 0, style));
-    fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property("pore_diameter_", "property/global", "scalar", 0, 0,style));
+    propertyname = new char [strlen("porosity_")+strlen(group->names[igroup])+1];
+    strcpy(propertyname,"porosity_");
+    strcat(propertyname,group->names[igroup]);
+    fix_porosity_       =   static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "vector", 0, 0, style));
+    delete [] propertyname;
+
+    propertyname = new char [strlen("tortuosity_")+strlen(group->names[igroup])+1];
+    strcpy(propertyname,"tortuosity_");
+    strcat(propertyname,group->names[igroup]);
+    fix_tortuosity_     =   static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "scalar", 0, 0, style));
+    delete [] propertyname;
+
+    propertyname = new char [strlen("pore_diameter_")+strlen(group->names[igroup])+1];
+    strcpy(propertyname,"pore_diameter_");
+    strcat(propertyname,group->names[igroup]);
+    fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "scalar", 0, 0,style));
+    delete [] propertyname;
+
 
     propertyname = new char [strlen("Aterm_")+strlen(id)+1];
     strcpy (propertyname,"Aterm_");
     strcat(propertyname,id);
     fix_Aterm           =   static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "vector", 0, 0, style));
     delete [] propertyname;
-
 
     propertyname = new char[strlen("Bterm_")+strlen(id)+1];
     strcpy (propertyname,"Bterm_");
@@ -681,9 +716,9 @@ void FixChemShrinkCore::setup(int)
         for (int layer=0; layer <= layers_; layer++)
         {
 #ifdef PER_ATOM_LAYER_DENSITIES
-            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[i][layer];
+            rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[i][layer];
 #else
-            rhoeff_[i][layer] = (1.0 - porosity_[i][layer])*layerDensities_[layer];
+            rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[layer];
 #endif
         }
         calcMassLayer(i);
@@ -813,6 +848,14 @@ void FixChemShrinkCore::calcMassLayer(int i)
         massLayer_[i][layer] = MY_4PI3*rhoeff_[i][layer]*(rad[layer  ]*rad[layer  ]*rad[layer  ]
                                                          -rad[layer+1]*rad[layer+1]*rad[layer+1]);
     }
+
+    if (fix_polydisp_)
+    {
+        for (int layer = 0 ; layer <= layers_; layer++)
+        {
+            massLayer_[i][layer] *= effvolfactors_[i];
+        }
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -906,10 +949,10 @@ void FixChemShrinkCore::getB(int i)
         fracRedThird_[layer] = cbrt(1.0-fracRed_[i][layer]);
 
         // Calculate the effective molecular diffusion
-        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[i][layer]/tortuosity_) + SMALL;
+        effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[layer]/tortuosity_) + SMALL;
 
         // Calculate the knudsen diffusion
-        effDiffKnud[i][layer]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[i][layer]/tortuosity_) + SMALL;
+        effDiffKnud[i][layer]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[layer]/tortuosity_) + SMALL;
 
         // total effective diffusivity
         diffEff_[layer] =   effDiffKnud[i][layer]*effDiffBinary[i][layer]/(effDiffBinary[i][layer]+effDiffKnud[i][layer]) + SMALL;
@@ -1189,6 +1232,14 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     // Outer layer radii (Fe3O4, FeO)
     for (int layer = layers_ - 1; layer > 0; layer--)
         rad[layer]   =   cbrt((0.75*massLayer_[i][layer]/(rhoeff_[i][layer]*M_PI))+rad[layer+1]*rad[layer+1]*rad[layer+1]);
+
+    if (fix_polydisp_)
+    {
+        for (int layer = layers_; layer > 0; layer--)
+        {
+            rad[layer] /= cbrt(effvolfactors_[i]);
+        }
+    }
 
     // Iron Layer / Ore radius = constant.
     // NOTE: keeping the particle radius constant may introduce a mismatch between
