@@ -122,7 +122,7 @@ public:
   double *Bterm;           // diffusion resistance
   double *effDiffBinary;   // effective binary diffusion coefficient
   double *effDiffKnud;     // effective Knudsen diffusion coefficient
-  double *fracRed_;        // fractional reduction
+  double **fracRed_;        // fractional reduction
 #ifdef PER_ATOM_LAYER_DENSITIES
   double **layerDensities_;
 #else

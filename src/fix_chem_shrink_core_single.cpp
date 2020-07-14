@@ -553,7 +553,7 @@ void FixChemShrinkCoreSingle::updatePtrs()
     tortuosity_     =   fix_tortuosity_     ->  compute_scalar();
     pore_diameter_  =   fix_pore_diameter_  ->  compute_scalar();
     //
-    fracRed_        =   fix_fracRed         ->  vector_atom;
+    fracRed_        =   fix_fracRed         ->  array_atom;
     Aterm           =   fix_Aterm           ->  vector_atom;
     Bterm           =   fix_Bterm           ->  vector_atom;
     Massterm        =   fix_Massterm        ->  vector_atom;
@@ -677,11 +677,7 @@ void FixChemShrinkCoreSingle::init()
     fix_dmA_ = static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "scalar", 0, 0, style));
     delete [] propertyname;
 
-    propertyname = new char [strlen("fracRed_")+strlen(group->names[igroup])+1];
-    strcpy(propertyname,"fracRed_");
-    strcat(propertyname,group->names[igroup]);
-    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property(propertyname, "property/atom", "scalar", 0, 0, style));
-    delete [] propertyname;
+    fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -831,7 +827,7 @@ void FixChemShrinkCoreSingle::getA(int i)
 {
     double T = T_[i];
     Aterm[i] = k0_ * exp(-T0_ / T)
-                        * cbrt((1.0 - fracRed_[i]) * (1.0 - fracRed_[i]))
+                        * cbrt((1.0 - fracRed_[i][0]) * (1.0 - fracRed_[i][0]))
                         * (1.0 + 1.0 / K_eq(i));
     for (int j=0;j < nPreFactor_;j++)
     {
@@ -851,7 +847,7 @@ void FixChemShrinkCoreSingle::getB(int i)
 
 
     // calculate fractional reduction to the power of 1/3 for simpler use
-    fracRedThird_ = cbrt(1.0-fracRed_[i]);
+    fracRedThird_ = cbrt(1.0-fracRed_[i][0]);
 
     // Calculate the effective molecular diffusion
     effDiffBinary[i] = molecularDiffusion_[i]*(porosity_[0]/tortuosity_) + SMALL;
@@ -1026,7 +1022,7 @@ void FixChemShrinkCoreSingle::FractionalReduction(int i)
 {
     const double f = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
 
-    fracRed_[i] = f;
+    fracRed_[i][0] = f;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1056,7 +1052,8 @@ void FixChemShrinkCoreSingle::init_defaults()
 
     // initialise fix handles
     changeOfA_ = changeOfC_ = T_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = reactionHeat_ = NULL;
-    Aterm = Bterm = effDiffBinary = effDiffKnud = fracRed_ = NULL;
+    Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
+    fracRed_ = NULL;
 
     dY = dmA_f_ = NULL;
 

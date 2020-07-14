@@ -1,6 +1,6 @@
 ################################################################################
 # chemistry test case (unreacted shrinking core model)
-# reduction of a single particle under ISO 4695 conditions without CFD coupling
+# reduction of a single particle at low T without CFD coupling
 ################################################################################
 
 log             log.liggghts
@@ -24,6 +24,7 @@ neigh_modify    delay 0
 
 ################################################################################
 # material properties required for granular pair styles
+
 fix         m1 all property/global youngsModulus peratomtype 5.e6
 fix         m2 all property/global poissonsRatio peratomtype 0.45
 fix         m3 all property/global coefficientRestitution peratomtypepair 1 0.3
@@ -45,7 +46,7 @@ fix     ftca all property/global thermalCapacity peratomtype 3000
 # chemistry
 # input fixes for fix chem/shrink/core that would otherwise be provided by fix
 # couple/cfd/chemistry
-fix     partTemp all property/atom partTemp scalar yes no no 1223.15 # Kelvin
+fix     partTemp all property/atom partTemp scalar yes no no 840.0 # Kelvin
 fix     partNu   all property/atom partNu   scalar yes no no 0.00004125
 fix     partRe   all property/atom partRe   scalar yes no no 2.7500
 fix     partP    all property/atom partP    scalar yes no no 101325
@@ -65,12 +66,13 @@ fix     reactionHeat all property/atom reactionHeat scalar yes no  no 0.0
 # activate 3-layer unreacted shrinking core model
 fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 &
         speciesC CO2 molMassC 0.04401 &
-        scale_reduction_rate 2.0 nevery 25 #screen yes
+        scale_reduction_rate 10.0 nevery 1 #screen yes
 
 # chemical properties for unreacted shrinking core model
+# these are actually hard-coded for low T:
 #                                                w->Fe  m->w   h->m
-fix     k0_CO all property/global k0_cfd5 vector    17    25   2700
-fix     Ea_CO all property/global Ea_cfd5 vector 69488 73674 113859
+fix     k0_CO all property/global k0_cfd5 vector   150   150   150
+fix     Ea_CO all property/global Ea_cfd5 vector 70000 70000 75000
 
 # particle porosity/tortuosity/pore diameter
 fix     porosity        all property/atom   porosity_       vector yes no no 0.61 0.31 0.16 0.15
@@ -90,14 +92,14 @@ fix     rhoeff all property/atom rhoeff vector yes no no 0. 0. 0. 0.
 
 ################################################################################
 # Write data into files for post-processing
-variable WI     equal 100
+variable WI     equal 10
 variable time   equal time
 variable m1     equal mass[1]
 variable rp     equal radius[1]
 variable rho1   equal mass[1]/((4./3.)*PI*radius[1]*radius[1]*radius[1])
 
 fix printmass all print ${WI} "${time} ${m1} ${rp}" &
-    file post/mass_rad.dat title "#time mass radius" screen no
+    file post/mass-rad.dat title "#time mass radius" screen no
 
 # effective layer densities
 compute layerrhoeff all reduce sum f_rhoeff[1] f_rhoeff[2] f_rhoeff[3] f_rhoeff[4]
@@ -160,7 +162,7 @@ variable fr_d1_3 equal f_fr_d1[3]
 variable frOV_d1 equal 1./9.*(f_fr_d1[3])+2./9.*(f_fr_d1[2])+6./9.*(f_fr_d1[1])
 
 fix printfr1 all print ${WI} "${time} ${fr_d1_1} ${fr_d1_2} ${fr_d1_3} ${frOV_d1}" &
-    file post/fr_d1.dat title "#time fr_{w->Fe} fr_{m->w} fr_{h->m} fr_{overall}" screen no
+    file post/fr-d1.dat title "#time fr_{w->Fe} fr_{m->w} fr_{h->m} fr_{overall}" screen no
 
 # layer radii
 compute layerRad1 all reduce sum f_LayerRelRadii[1]
@@ -197,17 +199,24 @@ variable lmassfromrr2 equal 4.*PI*f_layerrhoeff[2]*(f_redRad2*f_redRad2*f_redRad
 variable lmassfromrr3 equal 4.*PI*f_layerrhoeff[3]*(f_redRad3*f_redRad3*f_redRad3-f_redRad4*f_redRad4*f_redRad4)*v_rp*v_rp*v_rp/3.
 variable lmassfromrr4 equal 4.*PI*f_layerrhoeff[4]*(f_redRad4*f_redRad4*f_redRad4)*${rp}*${rp}*${rp}/3.
 variable lmassfromrrtot equal v_lmassfromrr1+v_lmassfromrr2+v_lmassfromrr3+v_lmassfromrr4
-
 fix printmasslayer all print ${WI} "${time} ${m1} ${lmass1} ${lmass2} ${lmass3} ${lmass4} ${lmasstot} ${lmassfromrr1} ${lmassfromrr2} ${lmassfromrr3} ${lmassfromrr4} ${lmassfromrrtot}" &
-    file post/mass_layer.dat title "#time mass lmass1 lmass2 lmass3 lmass4 lmass_{tot} lmassfromrr1 lmassfromrr2 lmassfromrr3 lmassfromrr4 lmassfromrr_{tot}" screen no
+    file post/mass-layer.dat title "#time mass lmass1 lmass2 lmass3 lmass4 lmass_{tot} lmassfromrr1 lmassfromrr2 lmassfromrr3 lmassfromrr4 lmassfromrr_{tot}" screen no
 
 # absolute layer radii
 variable ar2 equal v_rr2*v_rp
 variable ar3 equal v_rr3*v_rp
 variable ar4 equal v_rr4*v_rp
-
 fix printabsrad all print ${WI} "${time} ${rp} ${ar2} ${ar3} ${ar4}" &
     file post/absRadii.dat title "#time r_{Fe} r_{w} r_{m} r_{h}" screen no
+
+# rate change of species
+compute XAC all reduce sum f_Modified_CO f_Modified_CO2
+fix     XAC_val all ave/time 1 1 1 c_XAC[1] c_XAC[2]
+variable XA equal f_XAC_val[1]
+variable XC equal f_XAC_val[2]
+
+fix printXAC all print ${WI} "${time} ${XA} ${XC}" &
+    file post/XAC.dat title "#time X_{CO} X_{CO2}" screen no
 
 # reaction heat
 compute heat all reduce sum f_reactionHeat
@@ -230,5 +239,5 @@ dump    dmp all custom 100 post/dump*.liggghts_run id type x y z vx vy vz &
         fx fy fz radius mass f_fracRed[1] f_fracRed[2] f_fracRed[3] &
         f_partNu f_partRe f_partP f_partTemp f_CO_diffCoeff
 
-run     600000
+run     60000
 

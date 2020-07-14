@@ -1,6 +1,6 @@
 ################################################################################
 # chemistry test case (unreacted shrinking core model)
-# reduction of a single particle under ISO 4695 conditions without CFD coupling
+# reduction of a single particle with increasing T without CFD coupling
 ################################################################################
 
 log             log.liggghts
@@ -45,7 +45,7 @@ fix     ftca all property/global thermalCapacity peratomtype 3000
 # chemistry
 # input fixes for fix chem/shrink/core that would otherwise be provided by fix
 # couple/cfd/chemistry
-fix     partTemp all property/atom partTemp scalar yes no no 1223.15 # Kelvin
+fix     partTemp all property/atom partTemp scalar yes no no 600 #1223.15 # Kelvin
 fix     partNu   all property/atom partNu   scalar yes no no 0.00004125
 fix     partRe   all property/atom partRe   scalar yes no no 2.7500
 fix     partP    all property/atom partP    scalar yes no no 101325
@@ -68,6 +68,7 @@ fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 &
         scale_reduction_rate 2.0 nevery 25 #screen yes
 
 # chemical properties for unreacted shrinking core model
+# k0, Ea for high T, values for low T are actually hard-coded
 #                                                w->Fe  m->w   h->m
 fix     k0_CO all property/global k0_cfd5 vector    17    25   2700
 fix     Ea_CO all property/global Ea_cfd5 vector 69488 73674 113859
@@ -209,6 +210,15 @@ variable ar4 equal v_rr4*v_rp
 fix printabsrad all print ${WI} "${time} ${rp} ${ar2} ${ar3} ${ar4}" &
     file post/absRadii.dat title "#time r_{Fe} r_{w} r_{m} r_{h}" screen no
 
+# rate change of species
+compute XAC all reduce sum f_Modified_CO f_Modified_CO2
+fix     XAC_val all ave/time 1 1 1 c_XAC[1] c_XAC[2]
+variable XA equal f_XAC_val[1]
+variable XC equal f_XAC_val[2]
+
+fix printXAC all print ${WI} "${time} ${XA} ${XC}" &
+    file post/XAC.dat title "#time X_{CO} X_{CO2}" screen no
+
 # reaction heat
 compute heat all reduce sum f_reactionHeat
 fix     heat_val all ave/time 1 1 1 c_heat
@@ -226,9 +236,11 @@ thermo          100
 thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic no extra 0
 
-dump    dmp all custom 100 post/dump*.liggghts_run id type x y z vx vy vz &
+dump    dmp all custom 1000 post/dump*.liggghts_run id type x y z vx vy vz &
         fx fy fz radius mass f_fracRed[1] f_fracRed[2] f_fracRed[3] &
         f_partNu f_partRe f_partP f_partTemp f_CO_diffCoeff
 
-run     600000
+variable rampT equal 600+step*0.001
+run     600000 every 5000 "set group all property/atom partTemp ${rampT}"
+
 

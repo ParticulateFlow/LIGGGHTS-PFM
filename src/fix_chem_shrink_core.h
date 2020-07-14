@@ -77,7 +77,6 @@ public:
   void getA_low(int);
 
   // pre-defined variables for reduction process
-//  int const nmaxlayers_;
   static double const Runiv; // universal gas constant
   static const double k0_low_CO[];
   static const double k0_low_H2[];
@@ -124,8 +123,9 @@ public:
   double **relRadii_; // relative radii of individual layers
   double **massLayer_; // mass of individual layers
   double *effvolfactors_;
-  double **Ea_; // activation energy
-  double **k0_; // frequency factor
+  double *Ea_; // activation energy
+  double *k0_; // frequency factor
+
 
   // particle propertis
   double *radius_;
@@ -187,9 +187,8 @@ public:
 #endif
 
   class FixPropertyAtomPolydispParcel *fix_polydisp_;
-
-  class FixPropertyAtom *fix_k0_;           // [script]
-  class FixPropertyAtom *fix_Ea_;           // [script]
+  class FixPropertyGlobal *fix_k0_;         // [script]
+  class FixPropertyGlobal *fix_Ea_;         // [script]
   class FixPropertyAtom *fix_rhoeff_;       // [script]
   class FixPropertyGlobal *fix_porosity_;     // [script/internal]
   class FixPropertyGlobal *fix_tortuosity_; // [script]

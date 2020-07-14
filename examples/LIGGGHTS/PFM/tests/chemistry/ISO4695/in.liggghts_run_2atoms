@@ -2,7 +2,6 @@
 # chemistry test case (unreacted shrinking core model)
 # reduction of two particles under ISO 4695 conditions without CFD coupling
 # whereby the second particle is added after 6000 s
-# requires LIGGGHTS to be compiled with -DNO_CFD_COUPLING
 ################################################################################
 
 log             log.liggghts_2
@@ -57,6 +56,11 @@ fix     X_CO2    all property/atom X_CO2 scalar yes no no 0.0
 fix     X_N2     all property/atom X_N2  scalar yes no no 0.6
 # molecular diffusion coefficient
 fix     CO_diffCoeff all property/atom CO_diffCoeff scalar yes no no 0.00023
+# output fixes for fix chem/shrink/core that would otherwise be provided by fix
+# couple/cfd/chemistry
+fix     Modified_CO  all property/atom Modified_CO  scalar yes yes no 0.0
+fix     Modified_CO2 all property/atom Modified_CO2 scalar yes yes no 0.0
+fix     reactionHeat all property/atom reactionHeat scalar yes no  no 0.0
 
 ################################################################################
 # activate 3-layer unreacted shrinking core model
@@ -65,9 +69,9 @@ fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 &
         scale_reduction_rate 2.0 nevery 25 #screen yes
 
 # chemical properties for unreacted shrinking core model
-#                                                        w->Fe  m->w   h->m
-fix     k0_CO all property/atom k0_cfd5 vector yes no no    17    25   2700
-fix     Ea_CO all property/atom Ea_cfd5 vector yes no no 69488 73674 113859
+#                                                w->Fe  m->w   h->m
+fix     k0_CO all property/global k0_cfd5 vector    17    25   2700
+fix     Ea_CO all property/global Ea_cfd5 vector 69488 73674 113859
 
 # particle porosity/tortuosity/pore diameter
 fix     porosity        all property/atom   porosity_       vector yes no no 0.61 0.31 0.16 0.15
