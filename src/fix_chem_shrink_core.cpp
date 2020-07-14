@@ -445,6 +445,7 @@ void FixChemShrinkCore::post_create()
 
     fix_fracRed = static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", MAX_LAYERS, 0, style, false));
     if (fix_fracRed == NULL) {
+        const char* fixarg[11];
         fixarg[0]="fracRed";
         fixarg[1]="all";
         fixarg[2]="property/atom";
