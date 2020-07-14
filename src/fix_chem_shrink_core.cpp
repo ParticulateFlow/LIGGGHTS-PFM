@@ -401,29 +401,6 @@ void FixChemShrinkCore::post_create()
         fix_dmA_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
         delete []fixname;
     }
-
-    char* propertyname = new char [strlen("porosity_")+strlen(group->names[igroup])+1];
-    strcpy(propertyname,"porosity_");
-    strcat(propertyname,group->names[igroup]);
-    fix_porosity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "vector", 0, 0, this->style, false));
-    if (fix_porosity_ == NULL) {
-        const char* fixarg[12];
-        fixarg[0]=propertyname;            // fixid
-        fixarg[1]=group->names[igroup];   //"all";
-        fixarg[2]="property/global";
-        fixarg[3]=propertyname;           // propertyid
-        fixarg[4]="vector";
-        fixarg[5]="yes";
-        fixarg[6]="no";
-        fixarg[7]="no";
-        fixarg[8]="0.0";
-        fixarg[9]="0.0";
-        fixarg[10]="0.0";
-        fixarg[11]="0.0";
-        fix_porosity_ = modify->add_fix_property_global(12,const_cast<char**>(fixarg),style);
-        created_fix_porosity_ = true;
-    }
-    delete []propertyname;
 }
 
 /* ---------------------------------------------------------------------- */
