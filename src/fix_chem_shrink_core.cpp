@@ -544,12 +544,6 @@ void FixChemShrinkCore::init()
     fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
     fix_polydisp_       =   static_cast<FixPropertyAtomPolydispParcel*>(modify->find_fix_property("effvolfactor", "property/atom","scalar",0,0,style));
 
-    if (screenflag_ && screen)
-    {
-        if (fix_polydisp_ == NULL) fprintf(screen,"fix chem/shrink/core: found no fix for particle effective volumina\n");
-        else fprintf(screen,"fix chem/shrink/core: found fix for particle effective volumina\n");
-    }
-
     // references for global properties - valid for every particle equally
     propertyname = new char [strlen("porosity_")+strlen(group->names[igroup])+1];
     strcpy(propertyname,"porosity_");
