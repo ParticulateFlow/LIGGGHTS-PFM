@@ -125,7 +125,9 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     layers_(MAX_LAYERS),
     minMolarFrac_(1e-3),
     rmin_(1e-5),      //  [m]
-    created_fix_porosity_(false)
+    created_fix_layerMass_(false),
+    created_fix_rhoeff_(false),
+    created_fix_fracRed(false)
 {
     if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
@@ -401,6 +403,63 @@ void FixChemShrinkCore::post_create()
         fix_dmA_ = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
         delete []fixname;
     }
+
+    // shared fixes
+    fix_layerMass_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer", "property/atom", "vector", MAX_LAYERS+1, 0, style, false));
+    if (fix_layerMass_ == NULL) {
+        const char* fixarg[12];
+        fixarg[0]="LayerMasses";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="massLayer";
+        fixarg[4]="vector";
+        fixarg[5]="yes";
+        fixarg[6]="no";
+        fixarg[7]="no";
+        fixarg[8]="0.0";
+        fixarg[9]="0.0";
+        fixarg[10]="0.0";
+        fixarg[11]="0.0";
+        fix_layerMass_ = modify->add_fix_property_atom(12,const_cast<char**>(fixarg),style);
+        created_fix_layerMass_ = true;
+    }
+
+    fix_rhoeff_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", MAX_LAYERS+1, 0, style, false));
+    if (fix_rhoeff_ == NULL) {
+        const char* fixarg[12];
+        fixarg[0]="rhoeff";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="rhoeff";
+        fixarg[4]="vector";
+        fixarg[5]="yes";
+        fixarg[6]="no";
+        fixarg[7]="no";
+        fixarg[8]="0.0";
+        fixarg[9]="0.0";
+        fixarg[10]="0.0";
+        fixarg[11]="0.0";
+        fix_rhoeff_ = modify->add_fix_property_atom(12,const_cast<char**>(fixarg),style);
+        created_fix_rhoeff_ = true;
+    }
+
+    fix_fracRed = static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", MAX_LAYERS, 0, style, false));
+    if (fix_fracRed == NULL) {
+        fixarg[0]="fracRed";
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="fracRed";
+        fixarg[4]="vector";
+        fixarg[5]="yes";
+        fixarg[6]="no";
+        fixarg[7]="no";
+        fixarg[8]="0.0";
+        fixarg[9]="0.0";
+        fixarg[10]="0.0";
+        fix_fracRed = modify->add_fix_property_atom(11,const_cast<char**>(fixarg),style);
+        created_fix_fracRed = true;
+    }
+
 }
 
 /* ---------------------------------------------------------------------- */
@@ -416,7 +475,9 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
-        if (fix_porosity_ && created_fix_porosity_) { modify->delete_fix(fix_porosity_->id); porosity_ = NULL; }
+        if (fix_layerMass_ && created_fix_layerMass_)   { modify->delete_fix(fix_layerMass_->id); massLayer_ = NULL; }
+        if (fix_rhoeff_    && created_fix_rhoeff_)      { modify->delete_fix(fix_rhoeff_->id); rhoeff_ = NULL; }
+        if (fix_fracRed    && created_fix_fracRed)      { modify->delete_fix(fix_fracRed->id); fracRed_ = NULL; }
     }
 }
 
@@ -458,7 +519,7 @@ void FixChemShrinkCore::updatePtrs()
     xC_             =   fix_moleFractionC_  ->  vector_atom;
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
-    if(fix_polydisp_)
+    if (fix_polydisp_)
         effvolfactors_  =   fix_polydisp_   ->  vector_atom;
 
 #ifdef PER_ATOM_LAYER_DENSITIES
@@ -467,11 +528,11 @@ void FixChemShrinkCore::updatePtrs()
     layerDensities_ =   fix_layerDens_      ->  values;
 #endif
 
-    porosity_       =   fix_porosity_       ->  values;
     k0_             =   fix_k0_             ->  values;
     Ea_             =   fix_Ea_             ->  values;
     rhoeff_         =   fix_rhoeff_         ->  array_atom;
     //
+    porosity_       =   fix_porosity_       ->  values;
     tortuosity_     =   fix_tortuosity_     ->  compute_scalar();
     pore_diameter_  =   fix_pore_diameter_  ->  compute_scalar();
     //

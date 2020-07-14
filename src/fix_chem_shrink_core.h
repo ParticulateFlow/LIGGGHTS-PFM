@@ -167,7 +167,7 @@ public:
   class FixPropertyAtom *fix_moleFractionC_; // [cfd/coupling/chemistry]
   double *xA_, *xC_;
 
-  class FixPropertyAtom *fix_fracRed;       // [script]
+  class FixPropertyAtom *fix_fracRed;       // [internal]
   class FixPropertyAtom *fix_Aterm;         // [internal]
   class FixPropertyAtom *fix_Bterm;         // [internal]
   class FixPropertyAtom *fix_Massterm;      // [internal]
@@ -178,7 +178,8 @@ public:
 
   // particle properties
   class FixPropertyAtom *fix_layerRelRad_;  // [script]
-  class FixPropertyAtom *fix_layerMass_;    // [script]
+  class FixPropertyAtom *fix_layerMass_;    // [internal]
+  class FixPropertyAtom *fix_rhoeff_;       // [internal]
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
@@ -189,12 +190,13 @@ public:
   class FixPropertyAtomPolydispParcel *fix_polydisp_;
   class FixPropertyGlobal *fix_k0_;         // [script]
   class FixPropertyGlobal *fix_Ea_;         // [script]
-  class FixPropertyAtom *fix_rhoeff_;       // [script]
-  class FixPropertyGlobal *fix_porosity_;     // [script/internal]
+  class FixPropertyGlobal *fix_porosity_;   // [script]
   class FixPropertyGlobal *fix_tortuosity_; // [script]
   class FixPropertyGlobal *fix_pore_diameter_; // [script]
 
-  bool created_fix_porosity_;
+  bool created_fix_layerMass_;
+  bool created_fix_rhoeff_;
+  bool created_fix_fracRed;
 
   class FixPropertyAtom *fix_dY_; // [internal]
   double **dY;
