@@ -81,13 +81,8 @@ fix     pore_diameter   all property/global pore_diameter_all scalar 5.5e-7
 # define layer properties
 fix     LayerRelRadii   all property/atom relRadii vector yes no no  1.0 0.998 0.995 0.98
 
-# define fix for mass layer
-fix     LayerMasses     all property/atom massLayer vector yes no no 0. 0. 0. 0.
+# define fix for layer densities
 fix     LayerDensities  all property/global density_all vector 7870. 5740. 5170. 5240.
-
-# define fix for rho_eff and fracRed - initialize as zero
-fix     fracRed all property/atom fracRed vector yes no no 0. 0. 0.
-fix     rhoeff  all property/atom rhoeff  vector yes no no 0. 0. 0. 0.
 
 ################################################################################
 # Write data into files for post-processing
