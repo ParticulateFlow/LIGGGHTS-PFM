@@ -458,7 +458,8 @@ void FixChemShrinkCore::updatePtrs()
     xC_             =   fix_moleFractionC_  ->  vector_atom;
     relRadii_       =   fix_layerRelRad_    ->  array_atom;
     massLayer_      =   fix_layerMass_      ->  array_atom;
-    effvolfactors_  =   fix_polydisp_       ->  vector_atom;
+    if(fix_polydisp_)
+        effvolfactors_  =   fix_polydisp_   ->  vector_atom;
 
 #ifdef PER_ATOM_LAYER_DENSITIES
     layerDensities_ =   fix_layerDens_      ->  array_atom;
@@ -542,7 +543,7 @@ void FixChemShrinkCore::init()
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
     fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
-    fix_polydisp_       =   static_cast<FixPropertyAtomPolydispParcel*>(modify->find_fix_property("effvolfactor", "property/atom","scalar",0,0,style));
+    fix_polydisp_       =   static_cast<FixPropertyAtomPolydispParcel*>(modify->find_fix_property("effvolfactor", "property/atom","scalar",0,0,style,false));
 
     // references for global properties - valid for every particle equally
     propertyname = new char [strlen("porosity_")+strlen(group->names[igroup])+1];
