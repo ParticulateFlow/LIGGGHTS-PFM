@@ -677,20 +677,26 @@ void FixChemShrinkCore::setup(int)
 {
     updatePtrs();
 
-    // set initial values for rhoeff, and use them to calculate mass of layers
-    for (int i = 0; i < atom->nlocal; ++i)
-    {
-        active_layers(i);
+    int nlocal = atom->nlocal;
+    int *mask  = atom->mask;
 
-        for (int layer=0; layer <= layers_; layer++)
+    // set initial values for rhoeff, and use them to calculate mass of layers
+    for (int i = 0; i < nlocal; ++i)
+    {
+        if (mask[i] & groupbit)
         {
+            active_layers(i);
+
+            for (int layer=0; layer <= layers_; layer++)
+            {
 #ifdef PER_ATOM_LAYER_DENSITIES
-            rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[i][layer];
+                rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[i][layer];
 #else
-            rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[layer];
+                rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[layer];
 #endif
+            }
+            calcMassLayer(i);
         }
-        calcMassLayer(i);
     }
 }
 
