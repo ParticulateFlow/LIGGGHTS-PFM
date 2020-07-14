@@ -107,6 +107,7 @@ public:
   double TimeStep;
   bigint current_timestep;
 
+  bool shrink_;
   bool use_reactant_;
 
   virtual double reactionRatConst(int);
