@@ -101,6 +101,7 @@ class Modify : protected Pointers {
 
   void add_fix(int, char **, char *suffix = NULL);
   void modify_fix(int, char **);
+  void update_fix(int, char **);
   void delete_fix(const char *,bool unfixflag = false); //NP modified C.K.
   int find_fix(const char *);
 

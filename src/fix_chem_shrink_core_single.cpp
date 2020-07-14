@@ -1022,3 +1022,8 @@ void FixChemShrinkCoreSingle::init_defaults()
     diffA = moleFracA = moleFracC = NULL;
     speciesA = speciesC = NULL;
 }
+
+void FixChemShrinkCoreSingle::update_fix(int narg, char **arg)
+{
+    setup(0);
+}

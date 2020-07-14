@@ -52,6 +52,7 @@ public:
   void init_defaults();
   virtual void setup(int);
   virtual void post_force(int);
+  virtual void update_fix(int, char **);
 
  protected:
 
