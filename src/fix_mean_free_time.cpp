@@ -157,7 +157,6 @@ void FixMeanFreeTime::end_of_step()
   double **x = atom->x;
   double *radius = atom->radius;
   int *mask = atom->mask;
-  int nlocal = atom->nlocal;
   bool contact = false;
 
   for (ii = 0; ii < inum; ii++) {
