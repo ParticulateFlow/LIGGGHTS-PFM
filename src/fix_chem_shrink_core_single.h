@@ -64,7 +64,7 @@ public:
   void getA(int);   // calculate chemical reaction resistance term
   void getB(int);   // calculate diffusion resistance term
   void getMassT(int);   // calculate gas film mass transfer resistance term
-  void reaction(int, double, const double);   // calculate chemical reaction rate
+  void reaction(int, double &, const double);   // calculate chemical reaction rate
   // update particle layers (relative radii, mass) depending on chemical reaction rate
   void update_atom_properties(int, const double);
   // update reactant and product gas masses depending on chemical reaction rate

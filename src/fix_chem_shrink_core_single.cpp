@@ -756,6 +756,7 @@ void FixChemShrinkCoreSingle::getXi(int i, double x0_eq_)
 // calculate A_[i] [s/m] - the chemical reaction resistance term of generalized Arrhenius form k0*T^n*exp(-T0/T)*...
 void FixChemShrinkCoreSingle::getA(int i)
 {
+
     double T = T_[i];
     Aterm[i] = k0_ * exp(-T0_ / T)
                         * cbrt((1.0 - fracRed_[i][0]) * (1.0 - fracRed_[i][0]))
@@ -783,7 +784,7 @@ void FixChemShrinkCoreSingle::getB(int i)
     // Calculate the effective molecular diffusion
     effDiffBinary[i] = molecularDiffusion_[i]*(porosity_[0]/tortuosity_) + SMALL;
 
-    // Calculate the knudsen diffusion
+    // Calculate the Knudsen diffusion
     effDiffKnud[i]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[0]/tortuosity_) + SMALL;
 
     // total effective diffusivity
@@ -797,7 +798,7 @@ void FixChemShrinkCoreSingle::getB(int i)
     }
     else
     {
-        // diffusion resistance through Fe
+        // diffusion resistance
         Bterm[i]   =   ((1-fracRedThird_)/fracRedThird_)*((radius_[i]/cg_)/(diffEff_));
     }
 }
@@ -809,7 +810,6 @@ void FixChemShrinkCoreSingle::getMassT(int i)
     // initialize sherwood & schmidt numbers for every particle
     double Sc_i = 0.;
     double Sh_i = 0.;
-
     // if molecular diffusion is around 0, overwrite to avoid numerical errors.
     if (molecularDiffusion_[i] < SMALL)
         molecularDiffusion_[i] += SMALL;
@@ -833,7 +833,7 @@ void FixChemShrinkCoreSingle::getMassT(int i)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCoreSingle::reaction(int i, double dmA_, const double x0_eq_)
+void FixChemShrinkCoreSingle::reaction(int i, double &dmA_, const double x0_eq_)
 {
 
     double p_eq_ = 0.;
@@ -846,7 +846,6 @@ void FixChemShrinkCoreSingle::reaction(int i, double dmA_, const double x0_eq_)
     {
         fprintf(screen, "p_eq_I: %f, p_A: %f \n", p_eq_,p_A);
     }
-
 
     // rate of chemical reaction for 1 active layer
     const double W = Aterm[i] + Bterm[i] + Massterm[i];
@@ -862,6 +861,7 @@ void FixChemShrinkCoreSingle::reaction(int i, double dmA_, const double x0_eq_)
     dmA_ =   dY[i] * (1.0 / (Runiv * T_[i])) * molMass_A_
                * (MY_4PI * ((radius_[i] * radius_[i]) / (cg_ * cg_)))
                * TimeStep * nevery;
+
     // fix property added so values are otuputted to file
     dmA_f_[i] = dmA_;
 }
@@ -894,7 +894,6 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
 
     dmL_[0] = dmL_[1] * rhoeff_[i][0] * porosity_[0] / (rhoeff_[i][1] * porosity_[1]);
     massLayer_[i][0] += dmL_[0]*scale_reduction_rate;
-
 ///
     for (int j = 0; j <= 1; j++)
     {
@@ -977,6 +976,8 @@ void FixChemShrinkCoreSingle::init_defaults()
     xA_ = xC_ = NULL;
     scale_reduction_rate = 1.;
     layerDensities_ = NULL;
+
+    nu_A_ = nu_B_ = nu_C_ = 1;
 
     // particle properties total
     radius_ = pmass_ = pdensity_ = NULL;
