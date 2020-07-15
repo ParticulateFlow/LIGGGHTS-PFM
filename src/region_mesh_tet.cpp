@@ -111,7 +111,6 @@ void RegTetMesh::rebuild()
       compDouble(domain->subhi[2],domain_subhi[2]))
     return;
 
-  if (screen) fprintf(screen, "[%d] --> rebuilding tree\n", comm->me);
   build_tree();
 }
 
