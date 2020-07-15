@@ -47,6 +47,7 @@ class RegTetMesh : public Region {
   int inside(double, double, double);
   int surface_interior(double *, double);
   int surface_exterior(double *, double);
+  void rebuild();
 
   void add_tet(double **n);
   int n_tet();
@@ -81,7 +82,7 @@ class RegTetMesh : public Region {
    double *volume;
    double *acc_volume;
    std::vector<BoundingBox> tet_bbox;
-   
+
   // icosaedron coordinates for surface_interior and surface_exterior
   double **ico_points;
   static double const phi;
@@ -97,16 +98,16 @@ class RegTetMesh : public Region {
 #define TREE_MIN_ELEMENTS_PER_NODE 50
 
   typedef std::set<int> TreeBin;
-  
+
   std::vector<TreeBin> tree_data;
   std::vector<BoundingBox> tree_key;
 
   int tree_max_depth;
-  
+
   void build_tree();
   void tree_populate_node(int iTreeNode);
   void extend_bb(BoundingBox &box, TreeBin const &data);
-  
+
   BoundingBox split_bbox_largest_extent(BoundingBox &orig,bool lower);
   void tree_create_children(int current);
 
@@ -114,7 +115,7 @@ class RegTetMesh : public Region {
 
   bool tree_is_inside(double *x);
   int tree_is_inside(double *x, double r);
-  
+
   int tree_left(int const i) {return 2*i+1;}
   int tree_right(int const i) {return 2*i+2;}
   int tree_parent(int const i) {return (i-1)/2;}
@@ -129,8 +130,11 @@ class RegTetMesh : public Region {
   int tree_level(int i)
   { int level = 0; while(i>0){ i = i >> 1; level++; } return level; }
 
-  
+
 #include "region_mesh_tet_I.h"
+ private:
+  double domain_sublo[3];
+  double domain_subhi[3];
 };
 
 }
