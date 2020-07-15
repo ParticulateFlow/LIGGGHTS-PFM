@@ -64,6 +64,7 @@ Fixes :h1
    fix_limit_vel
    fix_lineforce
    fix_massflow_mesh
+   fix_mean_free_time
    fix_mesh_surface
    fix_mesh_surface_stress
    fix_mesh_surface_stress_6dof

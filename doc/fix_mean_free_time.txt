@@ -6,17 +6,17 @@
 
 :line
 
-fix mean free time command :h3
+fix meanfreetime command :h3
 
 [Syntax:]
 
-fix ID group-ID meanfreetime :pre
+fix ID group-ID meanfreetime keyword values :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 meanfreetime = style name of this fix command :l
 zero or more keyword/value pairs may be appended to args :l
 keyword = {check_every} or {t_start} :l
-  {check_every} value = evaluate collisional state every Nth step :pre
+  {check_every} value = evaluate collisional state every Nth step
   {t_start} value = start sampling at this time :pre
 :ule
 
