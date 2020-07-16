@@ -61,6 +61,8 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   fix_partReynolds_(0),
   fix_molarfraction_(0),
   fix_partPressure_(0),
+  fix_relLayerRadii_(0),
+  init_layer_radii_(false),
   use_reactant_(false)
 {
     num_species = 0;
@@ -143,6 +145,20 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
                 use_reactant_ = false;
             else
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_reactant'");
+            iarg_++;
+            hasargs = true;
+        }
+        else if(strcmp(arg[iarg_],"init_layer_radii") == 0)
+        {
+            if(narg < iarg_+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'init_layer_radii'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"yes") == 0)
+                init_layer_radii_ = true;
+            else if(strcmp(arg[iarg_],"no") == 0)
+                init_layer_radii_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'init_layer_radii'");
             iarg_++;
             hasargs = true;
         }
@@ -416,6 +432,15 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[8]="0.";
         fix_partPressure_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
+
+    if (init_layer_radii_)
+    {
+        fix_relLayerRadii_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii","property/atom","vector",0,0,style,false));
+        if (!fix_relLayerRadii_)
+        {
+            error->fix_error(FLERR,this,"Fix couple/cfd/chemistry could not find fix for relative layer radii with name 'relRadii'");
+        }
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -444,8 +469,8 @@ void FixCfdCouplingChemistry::init()
     for (int j = 0; j < num_diffusant; ++j)
         fix_coupling_->add_pull_property(diffusant_names_[j],"scalar-atom");
 
-
-    if(use_reactant_) fix_coupling_->add_pull_property("reactantPerParticle","scalar-atom");
+    if (init_layer_radii_) fix_coupling_->add_pull_property("relRadii","vector-atom");
+    if (use_reactant_) fix_coupling_->add_pull_property("reactantPerParticle","scalar-atom");
 
     //  values to be transfered to OF
     fix_coupling_->add_push_property("reactionHeat","scalar-atom");
