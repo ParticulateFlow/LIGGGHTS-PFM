@@ -56,11 +56,13 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     layers_(1),
     minMolarFrac_(1e-3),
     rmin_(1e-5),      //  [m]
+    reactionHeat_(false),
+    reactionHeatIndex_(-1),
+    KeqIndex_(0),
     k0_(-1.0),
     T0_(-1.0),
     Tmin_(0.0),
-    nPreFactor_(0),
-    created_fix_porosity_(false)
+    nPreFactor_(0)
 {
     if ((strncmp(style, "chem/shrink/core/single", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core/single needs per particle radius and mass");
@@ -148,6 +150,15 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
                 error -> fix_error(FLERR, this, "nuB is not well-defined");
             hasargs = true;
             iarg_ +=2;
+        }
+        else if (strcmp(arg[iarg_],"reactionHeat") == 0)
+        {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) reactionHeat_ = true;
+            else if (strcmp(arg[iarg_+1],"no") == 0) reactionHeat_ = false;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+            hasargs = true;
         }
         else if (strcmp(arg[iarg_],"k") == 0)
         {
@@ -237,6 +248,17 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     {
         error->fix_error(FLERR,this,"specify positive values for k0 and T0");
     }
+
+    // check if one of the predefined reaction enthalpies matches current reaction
+    if (reactionHeat_)
+    {
+        if (strcmp(speciesA,"O2") == 0 && strcmp(speciesC,"CO")) reactionHeatIndex_ = 0;
+        else if (strcmp(speciesA,"CO2") == 0 && strcmp(speciesC,"CO")) reactionHeatIndex_ = 1;
+        else error->fix_error(FLERR,this,"trying to use reaction heat for unknown reaction");
+    }
+    // check if current reaction has a non-trivial, predefined equilibrium constant
+    if (strcmp(speciesA,"CO2") == 0 && strcmp(speciesC,"CO")) KeqIndex_ = 1;
+
 
     // define changed species mass A
     massA = new char [strlen("Modified_")+strlen(speciesA)+1];
@@ -423,12 +445,6 @@ void FixChemShrinkCoreSingle::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
-        if (fix_porosity_ && created_fix_porosity_) { modify->delete_fix(fix_porosity_->id); porosity_ = NULL; }
-#ifdef NO_CFD_COUPLING
-        if (fix_changeOfA_)     { modify->delete_fix(fix_changeOfA_->id); changeOfA_ = NULL; }
-        if (fix_changeOfC_)     { modify->delete_fix(fix_changeOfC_->id); changeOfC_ = NULL; }
-        if (fix_reactionHeat_)  { modify->delete_fix(fix_reactionHeat_->id); reactionHeat_ = NULL; }
-#endif
     }
 }
 
@@ -462,7 +478,7 @@ void FixChemShrinkCoreSingle::updatePtrs()
     changeOfA_      =   fix_changeOfA_      ->  vector_atom;
     changeOfC_      =   fix_changeOfC_      ->  vector_atom;
     T_              =   fix_tgas_           ->  vector_atom;
-    reactionHeat_   =   fix_reactionHeat_   ->  vector_atom;
+    heatFlux_       =   fix_heatFlux_       ->  vector_atom;
     molecularDiffusion_  = fix_diffcoeff_   ->  vector_atom;
     nuf_            =   fix_nuField_        ->  vector_atom;
     Rep_            =   fix_partRe_         ->  vector_atom;
@@ -527,7 +543,7 @@ void FixChemShrinkCoreSingle::init()
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style));
     fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style));
-    fix_reactionHeat_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
+    fix_heatFlux_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("heatFlux", "property/atom", "scalar", 0, 0, style));
     fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, style));
     fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style));
     fix_partRe_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partRe", "property/atom", "scalar", 0, 0, style));
@@ -735,7 +751,13 @@ void FixChemShrinkCoreSingle::calcMassLayer(int i)
 
 double FixChemShrinkCoreSingle::K_eq(int i)
 {
-    double Keq_ = 1e6;
+    double Keq_ = 1e9; // simple forward reaction
+    double T = T_[i];
+    if (KeqIndex_ == 1) // CO2 + C -> 2CO
+    {
+        double exp = 9141/T + 0.000224*T - 9.595;
+        Keq_ = 1.0/pow(10,exp);
+    }
     return Keq_;
 }
 
@@ -756,7 +778,6 @@ void FixChemShrinkCoreSingle::getXi(int i, double x0_eq_)
 // calculate A_[i] [s/m] - the chemical reaction resistance term of generalized Arrhenius form k0*T^n*exp(-T0/T)*...
 void FixChemShrinkCoreSingle::getA(int i)
 {
-
     double T = T_[i];
     Aterm[i] = k0_ * exp(-T0_ / T)
                         * cbrt((1.0 - fracRed_[i][0]) * (1.0 - fracRed_[i][0]))
@@ -922,9 +943,6 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
     relRadii_[i][1] = rad[1]/rad[0];
     relRadii_[i][1] = std::min(0.9999, relRadii_[i][1]);
 
-    // total particle effective density
-    // pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
-
     if (screenflag_ && screen)
         fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[0], pmass_[0], pdensity_[0]);
 }
@@ -960,7 +978,91 @@ void FixChemShrinkCoreSingle::FractionalReduction(int i)
 /* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
 void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
 {
- 
+    if (!reactionHeat_) return;
+
+    // calculate reaction enthalpy using the Shomate equation and data from https://webbook.nist.gov
+    double T = T_[i];
+    double dH = 0.0;
+    double dHcoeffs[5] = {0.0};
+
+    if (reactionHeatIndex_ == 0)  // O2 + 2C -> 2C0
+    {
+        if (T<700)
+        {
+            dHcoeffs[0] = 19.8;
+            dHcoeffs[1] = 32.44;
+            dHcoeffs[2] = -49.77;
+            dHcoeffs[3] = 31.17;
+            dHcoeffs[4] = 0.26;
+            dHcoeffs[5] = -227.12;
+        }
+        else if (T<1300)
+        {
+            dHcoeffs[0] = 21.09;
+            dHcoeffs[1] = 3.43;
+            dHcoeffs[2] = 12.09;
+            dHcoeffs[3] = -6.13;
+            dHcoeffs[4] = 1.0;
+            dHcoeffs[5] = -224.7;
+        }
+        else if (T<2000)
+        {
+            dHcoeffs[0] = 40.27;
+            dHcoeffs[1] = -6.17;
+            dHcoeffs[2] = 3.57;
+            dHcoeffs[3] = -0.77;
+            dHcoeffs[4] = -5.82;
+            dHcoeffs[5] = -244.36;
+        }
+        else
+        {
+            dHcoeffs[0] = 49.39;
+            dHcoeffs[1] = -8.12;
+            dHcoeffs[2] = 1.6;
+            dHcoeffs[3] = -0.13;
+            dHcoeffs[4] = -15.81;
+            dHcoeffs[5] = -261.02;
+        }
+    }
+    else if (reactionHeatIndex_ == 1) // CO2 + C -> 2CO
+    {
+        if (T<1200)
+        {
+            dHcoeffs[0] = 26.12;
+            dHcoeffs[1] = -42.99;
+            dHcoeffs[2] = 41.79;
+            dHcoeffs[3] = -13.29;
+            dHcoeffs[4] = 0.4;
+            dHcoeffs[5] = 167.59;
+        }
+        else if (T<1300)
+        {
+            dHcoeffs[0] = -7.05;
+            dHcoeffs[1] = 9.48;
+            dHcoeffs[2] = 8.59;
+            dHcoeffs[3] = -5.38;
+            dHcoeffs[4] = 6.71;
+            dHcoeffs[5] = 189.9;
+        }
+        else
+        {
+            dHcoeffs[0] = 12.13;
+            dHcoeffs[1] = -0.12;
+            dHcoeffs[2] = 0.07;
+            dHcoeffs[3] = -0.02;
+            dHcoeffs[4] = -0.11;
+            dHcoeffs[5] = 170.24;
+        }
+    }
+
+    T *= 0.001;
+    // reaction enthalpy in kJ/mol
+    dH = dHcoeffs[0]*T + 0.5*dHcoeffs[1]*T*T + 0.333*dHcoeffs[2]*T*T*T;
+    dH += 0.25*dHcoeffs[3]*T*T*T*T - dHcoeffs[4]/T + dHcoeffs[5];
+    // reaction enthalpy in J/mol
+    dH *= 1000;
+
+    heatFlux_[i] -= dmA_ / molMass_A_ * dH;
 }
 
 
@@ -968,7 +1070,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
 
 void FixChemShrinkCoreSingle::init_defaults()
 {
-    molMass_A_ = molMass_C_ = 0.0;
+    molMass_A_ = molMass_B_ = molMass_C_ = 0.0;
     rhoeff_ = NULL;
     porosity_ = NULL;
     pore_diameter_ = tortuosity_ = 0.0;
@@ -983,7 +1085,7 @@ void FixChemShrinkCoreSingle::init_defaults()
     radius_ = pmass_ = pdensity_ = NULL;
 
     // initialise fix handles
-    changeOfA_ = changeOfC_ = T_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = reactionHeat_ = NULL;
+    changeOfA_ = changeOfC_ = T_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = heatFlux_ = NULL;
     Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
     fracRed_ = NULL;
 
@@ -994,7 +1096,7 @@ void FixChemShrinkCoreSingle::init_defaults()
     fix_changeOfA_ = NULL;
     fix_changeOfC_ = NULL;
     fix_tgas_ = NULL;       // [K]
-    fix_reactionHeat_= NULL;
+    fix_heatFlux_= NULL;
     fix_diffcoeff_ = NULL;  // [m^2/s]
     fix_nuField_ = NULL;    // [m^2/s]
     fix_partRe_ = NULL;

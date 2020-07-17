@@ -91,6 +91,9 @@ public:
   double minMolarFrac_;
   double rmin_;   // radius below which layers are neglected
   char *speciesA, *speciesC;
+  bool reactionHeat_;
+  int reactionHeatIndex_;
+  int KeqIndex_;
 
   // particle-layer variable values
   double **rhoeff_;
@@ -117,7 +120,7 @@ public:
   double *nuf_;
   double *Rep_;
   double *partP_;
-  double *reactionHeat_;    // heat of reaction
+  double *heatFlux_;       // heat flux to/from grain
   double *Massterm;         // mass transfer resistance
   double *Aterm;           // reaction resistance
   double *Bterm;           // diffusion resistance
@@ -136,7 +139,7 @@ public:
   class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]
-  class FixPropertyAtom *fix_reactionHeat_; // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_heatFlux_;     // [cfd/coupling/convection]
   class FixPropertyAtom *fix_diffcoeff_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_nuField_;      // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_partRe_;       // [cfd/coupling/chemistry]
@@ -166,14 +169,10 @@ public:
 
   class FixPropertyAtomPolydispParcel *fix_polydisp_;
 
-  class FixPropertyAtom *fix_k0_;           // [script]
-  class FixPropertyAtom *fix_Ea_;           // [script]
   class FixPropertyAtom *fix_rhoeff_;       // [script]
   class FixPropertyGlobal *fix_porosity_;     // [script/internal]
   class FixPropertyGlobal *fix_tortuosity_; // [script]
   class FixPropertyGlobal *fix_pore_diameter_; // [script]
-
-  bool created_fix_porosity_;
 
   class FixPropertyAtom *fix_dY_; // [internal]
   double *dY;
