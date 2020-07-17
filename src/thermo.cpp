@@ -77,8 +77,6 @@ enum{ONELINE,MULTILINE};
 enum{INT,FLOAT,BIGINT};
 enum{SCALAR,VECTOR,ARRAY};
 
-#define DELTA 8
-
 /* ---------------------------------------------------------------------- */
 
 Thermo::Thermo(LAMMPS *lmp, int narg, char **arg) : Pointers(lmp)

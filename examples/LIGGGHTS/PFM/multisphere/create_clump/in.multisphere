@@ -1,0 +1,69 @@
+# Multisphere example using 2 different clumps
+
+atom_style  sphere
+atom_modify map array sort 0 0
+boundary    f f f
+newton      off
+
+communicate single vel yes
+processors  * * 1
+
+units       si
+
+region      reg block -0.35 0.35 -0.35 0.35 0.0 0.5 units box
+create_box  1 reg
+
+neighbor    0.004 bin
+neigh_modify    delay 0
+
+# material properties required for granular pair styles
+fix m1 all property/global youngsModulus peratomtype 1.e7
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.5
+
+# pair style
+pair_style gran model hertz tangential history
+pair_coeff * *
+
+timestep 0.00001
+
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix zwalls all wall/gran model hertz tangential history primitive type 1 zplane 0.0
+
+# templates and distribution for insertion
+fix pts1 all particletemplate/multisphere 1272435 atom_type 1 density constant 2500 &
+    nspheres 104 ntry 1000000 spheres file data/clump1.dat scale 1.0 type 1
+
+fix pts2 all particletemplate/multisphere 4573687 atom_type 1 density constant 2500 &
+    nspheres 150 ntry 1000000 spheres file data/clump2.dat scale 1.0 type 2
+
+fix pdd1 all particledistribution/discrete 521451 2 pts1 0.5 pts2 0.5
+
+# region and insertion
+region  bc cylinder z 0.0 0.0 0.15 0.05 0.45 units box
+
+fix ins all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. -1.0 &
+    orientation random omega constant 5.0 5.0 0.0 &
+    insert_every once overlapcheck yes region bc ntry_mc 1000 volumefraction_region 0.15
+
+# integrator for multisphere rigid bodies
+fix integr all multisphere
+
+fix     ts all check/timestep/gran 1000 0.1 0.1
+
+# output settings
+compute rke all erotate/multisphere
+thermo_style    custom step atoms ke c_rke
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+# insert the particles so that dump is not empty
+run     1
+
+dump    dmp all custom/vtk 500 post/msclump*.vtk id type mol x y z vx vy vz fx fy fz omegax omegay omegaz radius
+
+run     50000 upto
+

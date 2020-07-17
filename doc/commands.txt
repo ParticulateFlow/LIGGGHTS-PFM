@@ -22,6 +22,7 @@ Commands :h1
    compute_modify
    create_atoms
    create_box
+   create_multisphere_clump
    delete_atoms
    delete_bonds
    dielectric

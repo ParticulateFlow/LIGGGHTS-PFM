@@ -37,8 +37,6 @@
 using namespace LAMMPS_NS;
 using namespace std;
 
-#define DELTA 10000
-
 /* ---------------------------------------------------------------------- */
 
 CfdDatacouplingMPI::CfdDatacouplingMPI(LAMMPS *lmp,int iarg, int narg, char **arg,FixCfdCoupling* fc) :

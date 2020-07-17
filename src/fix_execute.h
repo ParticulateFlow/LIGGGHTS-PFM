@@ -38,6 +38,8 @@ class FixExecute : public Fix {
 
   // conditional execution
   bool conditional;
+  // execute whole input file
+  bool file;
   // variable used to identify if insertion should take place
   char *var;
   double var_valid;

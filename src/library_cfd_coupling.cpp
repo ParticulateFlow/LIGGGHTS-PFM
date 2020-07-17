@@ -38,6 +38,7 @@
 #include "memory.h"
 #include "error.h"
 #include "comm.h"
+#include "variable.h"
 #include "cfd_datacoupling.h"
 #include "cfd_datacoupling_one2one.h"
 #include "universe.h"
@@ -107,6 +108,22 @@ double* liggghts_get_vclump_ms(void *ptr, int iworld)
   if(!fix_ms) return 0;
   if (lmp->universe->existflag == 1) lmp->error->all(FLERR,"Not implemented for universe");
   return fix_ms->vclump();
+}
+
+/* ---------------------------------------------------------------------- */
+
+double liggghts_get_variable(void *ptr, const char *variablename)
+{
+    LAMMPS *lmp = (LAMMPS *) ptr;
+    int var = lmp->input->variable->find(variablename);
+    if (var < 0)
+    {
+      std::stringstream ss;
+      ss << "Could not find DEM variable '" << variablename << "' required by OF, aborting.";
+      std::string error_message = ss.str();
+      lmp->error->all(FLERR,error_message.c_str());
+    }
+    return lmp->input->variable->compute_equal(var);
 }
 
 /* ---------------------------------------------------------------------- */

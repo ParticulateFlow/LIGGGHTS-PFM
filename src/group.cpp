@@ -192,6 +192,8 @@ void Group::assign(int narg, char **arg)
 
   // style = type, molecule, id
 
+  } else if (strcmp(arg[1],"empty") == 0) {
+  // don't do anything
   } else if (strcmp(arg[1],"type") == 0 || strcmp(arg[1],"molecule") == 0 ||
              strcmp(arg[1],"id") == 0) {
 
