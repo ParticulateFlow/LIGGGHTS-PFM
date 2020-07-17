@@ -25,8 +25,6 @@
 */
 
 #include <mpi.h>
-#include <string>
-#include <sstream>
 
 /* ifdefs allow this file to be included in a C program - DROPPED*/
 
