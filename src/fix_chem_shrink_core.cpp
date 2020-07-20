@@ -1232,7 +1232,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     // pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
 
     if (screenflag_ && screen)
-        fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[0], pmass_[0], pdensity_[0]);
+        fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[i], pmass_[i], pdensity_[i]);
 }
 
 /* ---------------------------------------------------------------------- */
