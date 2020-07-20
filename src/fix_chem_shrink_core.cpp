@@ -1229,7 +1229,11 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     relRadii_[i][3] = std::min(0.9997, relRadii_[i][3]);
 
     // total particle effective density
-    // pdensity_[i]    =   0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+    pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+    if (fix_polydisp_)
+    {
+        pdensity_[i] /= effvolfactors_[i];
+    }
 
     if (screenflag_ && screen)
         fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[i], pmass_[i], pdensity_[i]);
@@ -1241,20 +1245,21 @@ void FixChemShrinkCore::update_gas_properties(int i, const double *dmA_)
 {
     /*double kch2_ = 0.0;
     kch2_ = xA_[i] + xC_[i];*/
-
+    double dmA = 0.0;
     // based on material change: update gas-phase source terms for mass and heat
 #ifdef PSEUDO_THREE_LAYERS
     for (int j = (T_[i]<SWITCH_LOW_HIGH_TEMPERATURE)?1:0; j < MAX_LAYERS; j++)
 #else
     for (int j = 0; j < MAX_LAYERS; j++)
 #endif
-    {
+    {   
+        dmA = dmA_[j]*cg_*cg_*cg_;
         // Reactant gas mass change
-        changeOfA_[i]   -=  dmA_[j];
+        changeOfA_[i]   -=  dmA;
         // Limit maximum reactant gas
         if (changeOfA_[i] > 0.0) changeOfA_[i] = 0.0;
         // Product gas mass change
-        changeOfC_[i]   +=  dmA_[j]*molMass_C_/molMass_A_;
+        changeOfC_[i]   +=  dmA*molMass_C_/molMass_A_;
     }
 
     // Limit product gas to the total amount of carbon or hydrogen content
@@ -1601,7 +1606,7 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
         // mass flow rate for reactant gas species
         // dmA is a positive value
         dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
-        // fix property added so values are otuputted to file
+        // fix property added so values are outputted to file
         dmA_f_[i][j] = dmA_[j];
     }
 

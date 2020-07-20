@@ -496,10 +496,8 @@ void FixChemShrinkCoreSingle::updatePtrs()
 
     porosity_       =   fix_porosity_       ->  values;
     rhoeff_         =   fix_rhoeff_         ->  array_atom;
-    //
     tortuosity_     =   fix_tortuosity_     ->  compute_scalar();
     pore_diameter_  =   fix_pore_diameter_  ->  compute_scalar();
-    //
     fracRed_        =   fix_fracRed         ->  array_atom;
     Aterm           =   fix_Aterm           ->  vector_atom;
     Bterm           =   fix_Bterm           ->  vector_atom;
@@ -550,7 +548,6 @@ void FixChemShrinkCoreSingle::init()
     fix_moleFractionA_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracA, "property/atom", "scalar", 0, 0, style));
     fix_moleFractionC_  =   static_cast<FixPropertyAtom*>(modify->find_fix_property(moleFracC, "property/atom", "scalar", 0, 0, style));
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style));
-
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
     fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
@@ -632,21 +629,24 @@ void FixChemShrinkCoreSingle::init()
 void FixChemShrinkCoreSingle::setup(int)
 {
     updatePtrs();
-
+    int *mask   =   atom->mask;
     // set initial values for rhoeff, and use them to calculate mass of layers
     for (int i = 0; i < atom->nlocal; ++i)
     {
-        active_layers(i);
-
-        for (int layer=0; layer <= layers_; layer++)
+        if (mask[i] & groupbit)
         {
+            active_layers(i);
+
+            for (int layer=0; layer <= layers_; layer++)
+            {
 #ifdef PER_ATOM_LAYER_DENSITIES
-            rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[i][layer];
+                rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[i][layer];
 #else
-            rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[layer];
+                rhoeff_[i][layer] = (1.0 - porosity_[layer])*layerDensities_[layer];
 #endif
+            }
+            calcMassLayer(i);
         }
-        calcMassLayer(i);
     }
 }
 
@@ -915,7 +915,7 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
 
     dmL_[0] = dmL_[1] * rhoeff_[i][0] * porosity_[0] / (rhoeff_[i][1] * porosity_[1]);
     massLayer_[i][0] += dmL_[0]*scale_reduction_rate;
-///
+
     for (int j = 0; j <= 1; j++)
     {
         // calculate total mass of particle
@@ -943,8 +943,15 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
     relRadii_[i][1] = rad[1]/rad[0];
     relRadii_[i][1] = std::min(0.9999, relRadii_[i][1]);
 
+    // total particle effective density
+    pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+    if (fix_polydisp_)
+    {
+        pdensity_[i] /= effvolfactors_[i];
+    }
+
     if (screenflag_ && screen)
-        fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[0], pmass_[0], pdensity_[0]);
+        fprintf(screen, "radius_: %f, pmass_: %f, pdensity_: %f\n ", radius_[i], pmass_[i], pdensity_[i]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -955,13 +962,13 @@ void FixChemShrinkCoreSingle::update_gas_properties(int i, const double dmA_)
     kch2_ = xA_[i] + xC_[i];*/
 
     // based on material change: update gas-phase source terms for mass and heat
-
+    double dmA = dmA_*cg_*cg_*cg_;
     // Reactant gas mass change
-    changeOfA_[i]   -=  dmA_;
+    changeOfA_[i]   -=  dmA;
     // Limit maximum reactant gas
     if (changeOfA_[i] > 0.0) changeOfA_[i] = 0.0;
     // Product gas mass change
-    changeOfC_[i]   +=  dmA_*nu_C_*molMass_C_/molMass_A_;
+    changeOfC_[i]   +=  dmA*nu_C_*molMass_C_/molMass_A_;
 }
 
 /* ---------------------------------------------------------------------- */
