@@ -328,53 +328,56 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
     MPI_Comm_split(universe->uworld,universe->iworld,0,&world);
     MPI_Comm_rank(world,&me);
 
-    if (me == 0)
-      if (partscreenflag == 0)
-       if (screenflag == 0) {
-         char str[32];
-         sprintf(str,"screen.%d",universe->iworld);
-         screen = fopen(str,"w");
-         if (screen == NULL) error->one(FLERR,"Cannot open screen file");
-       } else if (strcmp(arg[screenflag],"none") == 0)
-         screen = NULL;
-       else {
-         char str[128];
-         sprintf(str,"%s.%d",arg[screenflag],universe->iworld);
-         screen = fopen(str,"w");
-         if (screen == NULL) error->one(FLERR,"Cannot open screen file");
-       }
-      else if (strcmp(arg[partscreenflag],"none") == 0)
+    if (me == 0) {
+      if (partscreenflag == 0) {
+        if (screenflag == 0) {
+          char str[32];
+          sprintf(str,"screen.%d",universe->iworld);
+          screen = fopen(str,"w");
+          if (screen == NULL) error->one(FLERR,"Cannot open screen file");
+        } else if (strcmp(arg[screenflag],"none") == 0) {
+          screen = NULL;
+        } else {
+          char str[128];
+          sprintf(str,"%s.%d",arg[screenflag],universe->iworld);
+          screen = fopen(str,"w");
+          if (screen == NULL) error->one(FLERR,"Cannot open screen file");
+        }
+      } else if (strcmp(arg[partscreenflag],"none") == 0) {
         screen = NULL;
-      else {
+      } else {
         char str[128];
         sprintf(str,"%s.%d",arg[partscreenflag],universe->iworld);
         screen = fopen(str,"w");
         if (screen == NULL) error->one(FLERR,"Cannot open screen file");
-      } else screen = NULL;
+      }
+    } else {
+      screen = NULL;
+    }
 
-    if (me == 0)
-      if (partlogflag == 0)
-       if (logflag == 0) {
-         char str[128];
-         sprintf(str,"log.liggghts.%d",universe->iworld); //NP modified C.K.
-         logfile = fopen(str,"w");
-         if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
-         sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
-         if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
-         if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
-       } else if (strcmp(arg[logflag],"none") == 0) {
-         logfile = NULL;
-         thermofile = NULL; //NP modified C.K.
-       } else {
-         char str[128];
-         sprintf(str,"%s.%d",arg[logflag],universe->iworld);
-         logfile = fopen(str,"w");
-         if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
-         sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
-         if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
-         if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
-       }
-      else if (strcmp(arg[partlogflag],"none") == 0) {
+    if (me == 0) {
+      if (partlogflag == 0) {
+        if (logflag == 0) {
+          char str[128];
+          sprintf(str,"log.liggghts.%d",universe->iworld); //NP modified C.K.
+          logfile = fopen(str,"w");
+          if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
+          sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
+          if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
+          if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
+        } else if (strcmp(arg[logflag],"none") == 0) {
+          logfile = NULL;
+          thermofile = NULL; //NP modified C.K.
+        } else {
+          char str[128];
+          sprintf(str,"%s.%d",arg[logflag],universe->iworld);
+          logfile = fopen(str,"w");
+          if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
+          sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
+          if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
+          if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
+        }
+      } else if (strcmp(arg[partlogflag],"none") == 0) {
         logfile = NULL;
         thermofile = NULL; //NP modified C.K.
       } else {
@@ -385,10 +388,11 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
         sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
         if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
         if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
-      } else {
-        logfile = NULL;
-        thermofile = NULL;
       }
+    } else {
+      logfile = NULL;
+      thermofile = NULL;
+    }
 
     if (me == 0) {
       infile = fopen(arg[inflag],"r");
@@ -397,7 +401,9 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
         sprintf(str,"Cannot open input script %s",arg[inflag]);
         error->one(FLERR,str);
       }
-    } else infile = NULL;
+    } else {
+      infile = NULL;
+    }
 
     // screen and logfile messages for universe and world
 
