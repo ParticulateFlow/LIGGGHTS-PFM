@@ -78,6 +78,7 @@ FixAveEulerRegionUniverse::FixAveEulerRegionUniverse(LAMMPS *lmp, int narg, char
 
 FixAveEulerRegionUniverse::~FixAveEulerRegionUniverse()
 {
+  // TODO: conflicts with OpenFOAM UPstream class
   int size;
   void *ptr;
   MPI_Buffer_detach(&ptr, &size);
