@@ -238,7 +238,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
 
   // universe cannot use stdin for input file
 
-  if (universe->existflag && inflag == 0)
+  if (universe->existflag && inflag == 0 && !(strcmp("cfdemcoupling", arg[0]) == 0))
     error->universe_all(FLERR,"Must use -in switch with multiple partitions");
 
   // if no partition command-line switch, cannot use -pscreen option
@@ -394,7 +394,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
       thermofile = NULL;
     }
 
-    if (me == 0) {
+    if (me == 0 && inflag) {
       infile = fopen(arg[inflag],"r");
       if (infile == NULL) {
         char str[128];
