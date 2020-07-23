@@ -56,6 +56,7 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     layers_(1),
     minMolarFrac_(1e-3),
     rmin_(1e-5),      //  [m]
+    layerDiffusion_(true),
     reactionHeat_(false),
     reactionHeatIndex_(-1),
     KeqIndex_(0),
@@ -156,6 +157,15 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
             if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
             if (strcmp(arg[iarg_+1],"yes") == 0) reactionHeat_ = true;
             else if (strcmp(arg[iarg_+1],"no") == 0) reactionHeat_ = false;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"layerDiffusion") == 0)
+        {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) layerDiffusion_ = true;
+            else if (strcmp(arg[iarg_+1],"no") == 0) layerDiffusion_ = false;
             else error->all(FLERR,"Illegal fix/chem/shrink command");
             iarg_ += 2;
             hasargs = true;
@@ -792,15 +802,21 @@ void FixChemShrinkCoreSingle::getA(int i)
 /* ---------------------------------------------------------------------- */
 
 // Calculate B [s/m] - the diffusion resistance term
-// Use binary diffusion for mixture, and knudsen diffusion to determine the effective diffusion term
+// Use binary diffusion for mixture, and Knudsen diffusion to determine the effective diffusion term
 void FixChemShrinkCoreSingle::getB(int i)
 {
-    double fracRedThird_ = 0.;
-    double diffEff_ = 0.;
+    if (!layerDiffusion_)
+    {
+        Bterm[i]= 0.0;
+        return;
+    }
+
+    double fracRedThird = 0.;
+    double diffEff = 0.;
 
 
     // calculate fractional reduction to the power of 1/3 for simpler use
-    fracRedThird_ = cbrt(1.0-fracRed_[i][0]);
+    fracRedThird = cbrt(1.0-fracRed_[i][0]);
 
     // Calculate the effective molecular diffusion
     effDiffBinary[i] = molecularDiffusion_[i]*(porosity_[0]/tortuosity_) + SMALL;
@@ -809,7 +825,7 @@ void FixChemShrinkCoreSingle::getB(int i)
     effDiffKnud[i]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[0]/tortuosity_) + SMALL;
 
     // total effective diffusivity
-    diffEff_ =   effDiffKnud[i]*effDiffBinary[i]/(effDiffBinary[i]+effDiffKnud[i]) + SMALL;
+    diffEff =   effDiffKnud[i]*effDiffBinary[i]/(effDiffBinary[i]+effDiffKnud[i]) + SMALL;
 
 
     // calculation of diffusion term
@@ -820,7 +836,7 @@ void FixChemShrinkCoreSingle::getB(int i)
     else
     {
         // diffusion resistance
-        Bterm[i]   =   ((1-fracRedThird_)/fracRedThird_)*((radius_[i]/cg_)/(diffEff_));
+        Bterm[i]   =   ((1-fracRedThird)/fracRedThird)*((radius_[i]/cg_)/(diffEff));
     }
 }
 

@@ -91,6 +91,7 @@ public:
   double minMolarFrac_;
   double rmin_;   // radius below which layers are neglected
   char *speciesA, *speciesC;
+  bool layerDiffusion_;
   bool reactionHeat_;
   int reactionHeatIndex_;
   int KeqIndex_;
