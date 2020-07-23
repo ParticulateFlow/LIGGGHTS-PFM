@@ -1006,7 +1006,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     // calculate reaction enthalpy using the Shomate equation and data from https://webbook.nist.gov
     double T = T_[i];
     double dH = 0.0;
-    double dHcoeffs[5] = {0.0};
+    double dHcoeffs[6] = {0.0};
 
     if (reactionHeatIndex_ == 0)  // O2 + 2C -> 2C0
     {
