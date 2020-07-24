@@ -185,6 +185,7 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
             T0_ = atof(arg[iarg_+1]);
             if (T0_ <= 0.)
                 error -> fix_error(FLERR, this, "T is not (well-)defined");
+            hasargs = true;
             iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"Tmin") == 0)
@@ -194,6 +195,7 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
             Tmin_ = atof(arg[iarg_+1]);
             if (Tmin_ <= 0.)
                 error -> fix_error(FLERR, this, "Tmin is not (well-)defined");
+            hasargs = true;
             iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"nPreFactor") == 0)
@@ -203,6 +205,7 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
             nPreFactor_ = atoi(arg[iarg_+1]);
             if (nPreFactor_ < 0)
                 error -> fix_error(FLERR, this, "nPreFactor is not (well-)defined");
+            hasargs = true;
             iarg_ +=2;
         }
         else if (strcmp(arg[iarg_],"rmin") == 0)
@@ -262,12 +265,12 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     // check if one of the predefined reaction enthalpies matches current reaction
     if (reactionHeat_)
     {
-        if (strcmp(speciesA,"O2") == 0 && strcmp(speciesC,"CO")) reactionHeatIndex_ = 0;
-        else if (strcmp(speciesA,"CO2") == 0 && strcmp(speciesC,"CO")) reactionHeatIndex_ = 1;
+        if (strcmp(speciesA,"O2") == 0 && strcmp(speciesC,"CO") == 0) reactionHeatIndex_ = 0;
+        else if (strcmp(speciesA,"CO2") == 0 && strcmp(speciesC,"CO") == 0) reactionHeatIndex_ = 1;
         else error->fix_error(FLERR,this,"trying to use reaction heat for unknown reaction");
     }
     // check if current reaction has a non-trivial, predefined equilibrium constant
-    if (strcmp(speciesA,"CO2") == 0 && strcmp(speciesC,"CO")) KeqIndex_ = 1;
+    if (strcmp(speciesA,"CO2") == 0 && strcmp(speciesC,"CO") == 0) KeqIndex_ = 1;
 
 
     // define changed species mass A
@@ -998,12 +1001,11 @@ void FixChemShrinkCoreSingle::FractionalReduction(int i)
 
 /* ---------------------------------------------------------------------- */
 
-/* Heat of Reaction Calcualtion Depending on JANAF thermochemical tables */
+/* heat of reaction calcualtion using the Shomate equation and data from https://webbook.nist.gov */
 void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
 {
     if (!reactionHeat_) return;
 
-    // calculate reaction enthalpy using the Shomate equation and data from https://webbook.nist.gov
     double T = T_[i];
     double dH = 0.0;
     double dHcoeffs[6] = {0.0};
@@ -1085,7 +1087,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     // reaction enthalpy in J/mol
     dH *= 1000;
 
-    heatFlux_[i] -= dmA_ / molMass_A_ * dH;
+    heatFlux_[i] -= dmA_ / molMass_A_ * dH * nevery;
 }
 
 
