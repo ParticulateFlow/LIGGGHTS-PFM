@@ -151,6 +151,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   // force reneighboring in next timestep
   force_reneighbor = 1;
   next_reneighbor = update->ntimestep+1;
+  most_recent_ins_step = -1;
 
   maxrad = fix_distribution->max_rad()*radius_factor;
 
@@ -221,12 +222,15 @@ void FixInsertPackDense::post_create()
 void FixInsertPackDense::pre_exchange()
 {
   // various checks if insertion should take place
-  // 1. periodic insertion and time to insert?
-  // 2. insertion once?
+  // 1. time to insert?
+  // 2. periodic insertion?
   // 3. insertion according to external variable
 
-  if (insert_every > 0 && update->ntimestep % insert_every != 0) return;
-  if (insertion_done && insert_every <= 0) return;
+  if (next_reneighbor != update->ntimestep || most_recent_ins_step == update->ntimestep) return;
+  most_recent_ins_step = update->ntimestep;
+
+  if (insert_every > 0) next_reneighbor += insert_every;
+  else if (insertion_done) return;
 
   if (var)
   {
