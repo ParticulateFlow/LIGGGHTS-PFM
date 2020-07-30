@@ -100,7 +100,7 @@ protected:
   int insert_every, most_recent_ins_step;
   double radius_factor;
 
-  void prepare_insertion();
+  bool prepare_insertion();
 
   void insert_first_particles();
   bool insert_next_particle(); // returns false if no insertion possible

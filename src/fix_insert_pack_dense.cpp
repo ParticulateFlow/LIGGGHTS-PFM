@@ -245,7 +245,7 @@ void FixInsertPackDense::pre_exchange()
   n_inserted = 0;
   n_inserted_local = 0;
 
-  prepare_insertion();
+  bool prepared = prepare_insertion();
 
   if (screen) {
     // only proc 0 writes general output
@@ -261,7 +261,7 @@ void FixInsertPackDense::pre_exchange()
   }
 
   // insert first three particles to initialize the algorithm
-  if (is_inserter) {
+  if (prepared && is_inserter) {
     insert_first_particles();
 
     // insert_next_particle() returns false
@@ -313,7 +313,7 @@ void FixInsertPackDense::pre_exchange()
 
 /* ---------------------------------------------------------------------- */
 
-void FixInsertPackDense::prepare_insertion()
+bool FixInsertPackDense::prepare_insertion()
 {
   /*
    * would need type exclusion here
@@ -363,7 +363,7 @@ void FixInsertPackDense::prepare_insertion()
 
   if (!is_inserter) {
     n_insert_estim_local = 0;
-    return;
+    return false;
   }
 
   n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/v_part_ave);
@@ -379,14 +379,17 @@ void FixInsertPackDense::prepare_insertion()
         break;
     }
     if (nAttempt == nAttemptMax) {
-      char errmsg[500];
-      sprintf(errmsg,"could not find suitable point to start insertion on processor %d",comm->me);
-      error->one(FLERR,errmsg);
+      char errmsg[500] = {0};
+      snprintf(errmsg, 499,"fix '%s' failed to find suitable starting point for insertion on process %d",id,comm->me);
+      error->warning(FLERR,errmsg);
+      return false;
     }
   }
 
   // calculate distance field
   distfield.build(ins_region,ins_bbox,fix_distribution->max_rad()*radius_factor);
+
+  return true;
 }
 
 /* ---------------------------------------------------------------------- */
