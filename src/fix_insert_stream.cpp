@@ -256,7 +256,7 @@ void FixInsertStream::calc_insertion_properties()
 
         // flip normal vector so dot product with v_insert is > 0
         dot = vectorDot3D(v_insert,normalvec);
-        if(dot < 0) vectorScalarMult3D(normalvec,-1.);
+        if(dot < 0) vectorFlip3D(normalvec);
 
         // calc v normal
         dot = vectorDot3D(v_insert,normalvec);
