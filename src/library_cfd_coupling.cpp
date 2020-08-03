@@ -25,6 +25,7 @@
 
 #include <mpi.h>
 #include <string.h>
+#include <stdio.h>
 #include "library_cfd_coupling.h"
 #include "lammps.h"
 #include "input.h"
@@ -118,10 +119,9 @@ double liggghts_get_variable(void *ptr, const char *variablename)
     int var = lmp->input->variable->find(variablename);
     if (var < 0)
     {
-      std::stringstream ss;
-      ss << "Could not find DEM variable '" << variablename << "' required by OF, aborting.";
-      std::string error_message = ss.str();
-      lmp->error->all(FLERR,error_message.c_str());
+      char error_message[128] = {0};
+      snprintf(error_message, 127,"Failed to find DEM variable '%s' requested by OF, aborting.\n",variablename);
+      lmp->error->all(FLERR,error_message);
     }
     return lmp->input->variable->compute_equal(var);
 }

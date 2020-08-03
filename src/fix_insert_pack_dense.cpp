@@ -170,6 +170,7 @@ FixInsertPackDense::FixInsertPackDense(LAMMPS *lmp, int narg, char **arg) :
   // force reneighboring in next timestep
   force_reneighbor = 1;
   next_reneighbor = update->ntimestep+1;
+  most_recent_ins_step = -1;
 
   maxrad = fix_distribution->max_rad()*radius_factor;
 
@@ -281,12 +282,15 @@ void FixInsertPackDense::init()
 void FixInsertPackDense::pre_exchange()
 {
   // various checks if insertion should take place
-  // 1. periodic insertion and time to insert?
-  // 2. insertion once?
+  // 1. time to insert?
+  // 2. periodic insertion?
   // 3. insertion according to external variable
 
-  if (insert_every > 0 && update->ntimestep % insert_every != 0) return;
-  if (insertion_done && insert_every <= 0) return;
+  if (next_reneighbor != update->ntimestep || most_recent_ins_step == update->ntimestep) return;
+  most_recent_ins_step = update->ntimestep;
+
+  if (insert_every > 0) next_reneighbor += insert_every;
+  else if (insertion_done) return;
 
   if (var)
   {
@@ -301,7 +305,7 @@ void FixInsertPackDense::pre_exchange()
   n_inserted = 0;
   n_inserted_local = 0;
 
-  prepare_insertion();
+  bool prepared = prepare_insertion();
 
   if (screen) {
     // only proc 0 writes general output
@@ -317,11 +321,8 @@ void FixInsertPackDense::pre_exchange()
   }
 
   // insert first three particles to initialize the algorithm
-  if (is_inserter) {
-    insert_first_particles();
+  if (prepared && is_inserter && insert_first_particles()) {
 
-    // insert_next_particle() returns false
-    // if algorithm terminates
     while(!frontSpheres.empty()) {
       if (screen && !(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local))) {
         fprintf(screen, "pti_list.size() %lu | n_inserted_local %d\n",fix_distribution->pti_list.size(),n_inserted_local);
@@ -370,7 +371,7 @@ void FixInsertPackDense::pre_exchange()
 
 /* ---------------------------------------------------------------------- */
 
-void FixInsertPackDense::prepare_insertion()
+bool FixInsertPackDense::prepare_insertion()
 {
   // need to iterate twice: first time to find largest radius, second
   // time to compute volume and actually insert already present
@@ -416,18 +417,20 @@ void FixInsertPackDense::prepare_insertion()
 
   if (!is_inserter) {
     n_insert_estim_local = 0;
-    return;
+    return false;
   }
 
   n_insert_estim_local = floor((region_volume_local-volume_present_local)*target_volfrac/vol_part_ave);
 
   // calculate distance field
   distfield.build(ins_region,ins_bbox,fix_distribution->max_rad()*radius_factor);
+
+  return true;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixInsertPackDense::insert_first_particles()
+bool FixInsertPackDense::insert_first_particles()
 {
   ParticleToInsert *pti1 = fix_distribution->get_random_particle(groupbit);
   ParticleToInsert *pti2 = fix_distribution->get_random_particle(groupbit);
@@ -448,9 +451,10 @@ void FixInsertPackDense::insert_first_particles()
         break;
     }
     if (nAttempt == nAttemptMax) {
-      char errmsg[500];
-      sprintf(errmsg,"could not find suitable point to start insertion on processor %d",comm->me);
-      error->one(FLERR,errmsg);
+      char errmsg[500] = {0};
+      snprintf(errmsg, 499,"fix '%s' failed to find suitable starting point for insertion on process %d",id,comm->me);
+      error->warning(FLERR,errmsg);
+      return false;
     }
   }
 
@@ -477,6 +481,8 @@ void FixInsertPackDense::insert_first_particles()
   frontSpheres.push(p3);
 
   n_inserted_local += 3;
+
+  return true;
 }
 
 /* ---------------------------------------------------------------------- */
