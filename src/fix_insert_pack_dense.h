@@ -34,7 +34,7 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 
 #include "fix.h"
 
-#include <list>
+#include <queue>
 
 #include "region_neighbor_list.h"
 #include "region_distance_field.h"
@@ -66,18 +66,24 @@ protected:
   class Region *ins_region;
   char *idregion;
 
+  // variable used to identify if insertion should take place
+  char *var;
+  double var_insvalid;
+  double var_threshold;
+
   //particle distribution
   class FixParticledistributionDiscrete *fix_distribution;
 
   static const double max_volfrac;
   double target_volfrac;
-  typedef std::list<Particle> ParticleList;
-  typedef std::list<class ParticleToInsert*> PTIList;
+  typedef std::vector<Particle> ParticleVector;
+  typedef std::queue<Particle> ParticleQueue;
+  typedef std::queue<class ParticleToInsert*> PTIList;
 
-  ParticleList frontSpheres;
+  ParticleQueue frontSpheres;
   PTIList rejectedSpheres;
 
-  ParticleList candidatePoints;
+  ParticleVector candidatePoints;
 
   class RanPark *random;
   int seed;
@@ -91,9 +97,10 @@ protected:
   bool is_inserter; // indicates if proc inserts
   double region_volume, region_volume_local;
   int n_insert_estim, n_insert_estim_local;
+  int insert_every, most_recent_ins_step;
   double radius_factor;
 
-  void prepare_insertion();
+  bool prepare_insertion();
 
   void insert_first_particles();
   bool insert_next_particle(); // returns false if no insertion possible

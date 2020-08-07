@@ -18,11 +18,11 @@ ID = atom ID range or type range or mol ID range or group ID or region ID :l
 one or more keyword/value pairs may be appended :l
 keyword = {type} or {type/fraction} or {mol} or {x} or {y} or {z} or \
           {charge} or {dipole} or {dipole/random} or {quat} or \
-	  {quat/random} or {diameter} or {shape} or \
-	  {length} or {tri} or {theta} or {angmom} or \
-	  {mass} or {density} or {volume} or {image} or
-	  {bond} or {angle} or {dihedral} or {improper} or
-	  {meso_e} or {meso_cv} or {meso_rho} or {property/atom} :l
+          {quat/random} or {diameter} or {shape} or \
+          {length} or {tri} or {theta} or {angmom} or \
+          {mass} or {density} or {volume} or {image} or
+          {bond} or {angle} or {dihedral} or {improper} or
+          {meso_e} or {meso_cv} or {meso_rho} or {property/atom} :l
   {type} value = atom type
     value can be an atom-style variable (see below)
   {type/fraction} values = type fraction seed
@@ -102,7 +102,7 @@ set type 1*3 charge 0.5
 set atom 100*200 x 0.5 y 1.0
 set atom 1492 type 3 
 set region reg add yes until 1000 property/atom liqOnParticle 5e-5 
-set property/atom Temp 273.15 :pre
+set group all property/atom Temp 273.15 :pre
 
 [LIGGGHTS vs. LAMMPS Info:]
 
@@ -357,7 +357,7 @@ header of the data file read by the "read_data"_read_data.html
 command.  These keywords do not allow use of an atom-style variable.
 
 Keywords {meso_e}, {meso_cv}, and {meso_rho} set the energy, heat
-capacity, and density of smmothed particle hydrodynamics (SPH)
+capacity, and density of smoothed particle hydrodynamics (SPH)
 particles.  See "this PDF guide"_USER/sph/SPH_LAMMPS_userguide.pdf to
 using SPH in LAMMPS.
 

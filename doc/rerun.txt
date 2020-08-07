@@ -15,7 +15,7 @@ rerun file1 file2 ... keyword args ... :pre
 file1,file2,... = dump file(s) to read :ulb,l
 one or more keywords may be appended, keyword {dump} must appear and be last :l
 keyword = {first} or {last} or {every} or {skip} or {start} or {stop} or {dump}
- {first} args = Nfirts
+ {first} args = Nfirst
    Nfirst = dump timestep to start on
  {last} args = Nlast
    Nlast = dumptimestep to stop on
@@ -40,7 +40,7 @@ rerun ../run7/dump.file.gz skip 2 dump x y z box yes :pre
 
 [Description:]
 
-Perform a psuedo simulation run where atom information is read one
+Perform a pseudo simulation run where atom information is read one
 snapshot at a time from a dump file(s), and energies and forces are
 computed on the shapshot to produce thermodynamic or other output.
 
@@ -53,7 +53,7 @@ Compute the energy and forces of snaphots using a different potential.
 Calculate one or more diagnostic quantities on the snapshots that
 weren't computed in the initial run.  These can also be computed with
 settings not used in the initial run, e.g. computing an RDF via the
-"compute rdf"_compute.rdf.html command with a longer cutoff than was
+"compute rdf"_compute_rdf.html command with a longer cutoff than was
 used initially. :l
 
 Calculate the portion of per-atom forces resulting from a subset of
@@ -119,7 +119,7 @@ doc page for individual fixes to see which ones can be used with the
 {start}/{stop} or {first}/{last} keywords, then LAMMPS treats the
 pseudo run as going from 0 to a huge value (effectively infinity).
 This means that any quantity that a fix scales as a fraction of
-elapsed time in the run, will essentially remain at its intiial value.
+elapsed time in the run, will essentially remain at its initial value.
 
 The {dump} keyword is required and must be the last keyword specified.
 Its arguments are passed internally to the "read_dump"_read_dump.html
@@ -173,7 +173,7 @@ a timestep it expects to be, LAMMPS will flag an error.
 The various forms of LAMMPS output, as defined by the
 "thermo_style"_thermo_style.html, "thermo"_thermo.html,
 "dump"_dump.html, and "restart"_restart.html commands occur on
-specific timesteps.  If successvive dump snapshots skip those
+specific timesteps.  If successive dump snapshots skip those
 timesteps, then no output will be produced.  E.g. if you request
 thermodynamic output every 100 steps, but the dump file snapshots are
 every 1000 steps, then you will only see thermodynamic output every

@@ -25,6 +25,7 @@
 
 #include <mpi.h>
 #include <string.h>
+#include <stdio.h>
 #include "library_cfd_coupling.h"
 #include "lammps.h"
 #include "input.h"
@@ -38,7 +39,9 @@
 #include "memory.h"
 #include "error.h"
 #include "comm.h"
+#include "variable.h"
 #include "cfd_datacoupling.h"
+#include "cfd_datacoupling_one2one.h"
 
 using namespace LAMMPS_NS;
 
@@ -90,6 +93,21 @@ double* liggghts_get_vclump_ms(void *ptr)
   FixMultisphere *fix_ms = static_cast<FixMultisphere*>(lmp->modify->find_fix_style_strict("multisphere",0));
   if(!fix_ms) return 0;
   return fix_ms->vclump();
+}
+
+/* ---------------------------------------------------------------------- */
+
+double liggghts_get_variable(void *ptr, const char *variablename)
+{
+    LAMMPS *lmp = (LAMMPS *) ptr;
+    int var = lmp->input->variable->find(variablename);
+    if (var < 0)
+    {
+      char error_message[128] = {0};
+      snprintf(error_message, 127,"Failed to find DEM variable '%s' requested by OF, aborting.\n",variablename);
+      lmp->error->all(FLERR,error_message);
+    }
+    return lmp->input->variable->compute_equal(var);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -185,3 +203,39 @@ void check_datatransfer(void *ptr)
     FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
     fcfd->get_dc()->check_datatransfer();
 }
+
+/* ---------------------------------------------------------------------- */
+
+double** o2o_liggghts_get_boundingbox(void *ptr)
+{
+    LAMMPS *lmp = (LAMMPS *) ptr;
+    double** bbox = new double*[2];
+    bbox[0] = lmp->domain->sublo;
+    bbox[1] = lmp->domain->subhi;
+    return bbox;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void o2o_data_of_to_liggghts
+(
+    const char *name,
+    const char *type,
+    void *ptr,
+    void *data,
+    const char* datatype,
+    const int* ids,
+    const int ncollected
+)
+{
+    FixCfdCoupling* fcfd = (FixCfdCoupling*)locate_coupling_fix(ptr);
+    CfdDatacouplingOne2One* dc = static_cast<CfdDatacouplingOne2One*>(fcfd->get_dc());
+
+    if(strcmp(datatype,"double") == 0)
+        dc->pull_mpi<double>(name, type, data, ids, ncollected);
+    else if(strcmp(datatype,"int") == 0)
+        dc->pull_mpi<int>(name, type, data, ids, ncollected);
+ //   else error->one(FLERR,"Illegal call to CfdDatacouplingOne2One::pull, valid datatypes are 'int' and double'");
+
+}
+

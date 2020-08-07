@@ -192,6 +192,8 @@ void Group::assign(int narg, char **arg)
 
   // style = type, molecule, id
 
+  } else if (strcmp(arg[1],"empty") == 0) {
+  // don't do anything
   } else if (strcmp(arg[1],"type") == 0 || strcmp(arg[1],"molecule") == 0 ||
              strcmp(arg[1],"id") == 0) {
 
@@ -969,6 +971,77 @@ void Group::bounds(int igroup, double *minmax, int iregion)
   minmax[0] = -minmax[0];
   minmax[2] = -minmax[2];
   minmax[4] = -minmax[4];
+}
+
+/* ----------------------------------------------------------------------
+   compute the id bounds of the group of atoms
+------------------------------------------------------------------------- */
+
+void Group::idbounds(int igroup, int *minmax)
+{
+  int groupbit = bitmask[igroup];
+
+  int extent[2];
+  extent[0] = INT_MAX;
+  extent[1] = -INT_MAX;
+
+  int *id = atom->tag;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) {
+      extent[0] = MIN(extent[0],id[i]);
+      extent[1] = MAX(extent[1],id[i]);
+
+    }
+  }
+
+  // compute extent across all procs
+  // flip sign of MIN to do it in one Allreduce MAX
+
+  extent[0] = -extent[0];
+
+  MPI_Allreduce(extent,minmax,2,MPI_INT,MPI_MAX,world);
+
+  minmax[0] = -minmax[0];
+}
+
+/* ----------------------------------------------------------------------
+   compute the id bounds of the group of atoms in region
+------------------------------------------------------------------------- */
+
+void Group::idbounds(int igroup, int *minmax, int iregion)
+{
+  int groupbit = bitmask[igroup];
+  Region *region = domain->regions[iregion];
+  region->prematch();
+
+  int extent[2];
+  extent[0] = INT_MAX;
+  extent[1] = -INT_MAX;
+
+  double **x = atom->x;
+  int *id = atom->tag;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit && region->match(x[i][0],x[i][1],x[i][2])) {
+      extent[0] = MIN(extent[0],id[i]);
+      extent[1] = MAX(extent[1],id[i]);
+
+    }
+  }
+
+  // compute extent across all procs
+  // flip sign of MIN to do it in one Allreduce MAX
+
+  extent[0] = -extent[0];
+
+  MPI_Allreduce(extent,minmax,2,MPI_INT,MPI_MAX,world);
+
+  minmax[0] = -minmax[0];
 }
 
 /* ----------------------------------------------------------------------

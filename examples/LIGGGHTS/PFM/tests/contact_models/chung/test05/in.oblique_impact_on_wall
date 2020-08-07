@@ -1,0 +1,180 @@
+################################################################################
+# brief: Oblique impact of a sphere with a rigid plane with a constant         #
+# normal velocity but at different tangential velocities                       #
+#                                                                              #
+# Check the tangential force calculation between a sphere and a plane          #
+# Cf. Test No.5 by Chung and Ooi, Granul. Matter 13, 643–656 (2011)            #
+# The sphere has an inital normal velocity of 5.0 m/s, an initial tangential   #
+# velocity [0.1,21] m/s and no initial angular velocity                        #
+#                                                                              #
+# The simulation outputs the normalized rebound angle, normalized rebound      #
+# angular velocity for varying tangential velocities as a function of the      #
+# normalized incident angle.                                                   #
+# The script accepts:                                                          #
+# the normal model in the input variable NORMALMODEL,                          #
+# the tangential model in                TANGENTIALMODEL,                      #
+# an optional model option in            MODELOPTION,                          #
+# with model option setting in           MODELOPTIONSETTING,                   #
+# the Young's modulus in                 YOUNG                                 #
+# the Poisson's ratio in                 POISSON                               #
+# the particle density in                DENSITY                               #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Aug 2019                                                               #
+# copyright: 2019- JKU Linz                                                    #
+################################################################################
+
+variable NORMALMODEL        index hertz
+variable TANGENTIALMODEL    index incremental_history
+variable MODELOPTION        index limitForce
+variable MODELOPTIONSETTING index off
+# steel # polyethylene
+# Note: a perfectly rigid plane is assumed in this test which means that the
+#       plane has an infinite Young's modulus; for proper calculation of the
+#       _effective_ Young's modulus of the contact, we instead use twice the
+#       reference value of the Young's modulus and the same Poisson's ratio
+#       for the sphere and the plane!
+variable YOUNG              index 4.16e11 # 2.0e9 # ref. values: 2.08e11, 1.0e9
+variable POISSON            index 0.30    # 0.40
+variable DENSITY            index 7850    # 1400
+
+# remove old output file
+shell rm -f post/${NORMALMODEL}_rebound_properties.txt
+
+label startloop
+# tangential velocities
+variable vyvariations uloop 21
+variable vy universe 0.100 0.30 0.45 0.60 0.90 1.2 1.5 1.8 2.25 2.7 3.0 3.75 &
+                     4.5 5.25 6.0 7.5 9.0 12.0 15.0 18.0 21.0
+
+# define the attributes associated with the particles,
+# 'granular' (or 'sphere') style uses diameter, mass and angular velocity
+atom_style      granular
+
+# use an array to map particle IDs to local storage index,
+# do not sort atoms spatially
+atom_modify     map array sort 0 0
+
+# set simulation domain to be fixed in x y z
+boundary        f f f
+
+# save communication by turning off Newton's 3rd law for pairwise interaction,
+# note: this setting only influences communication between procs, Newton's
+# 3rd law is still used for contact force calculations
+newton          off
+
+# use a single value for ghost particle cutoff distance and
+# enable velocity to be communicated with ghost particles
+communicate     single vel yes
+
+# set unit system to SI
+units           si
+
+# define the region used as simulation domain (min/max X, min/max Y, min/max Z)
+region          domain block -0.1 0.1 -0.1 0.1 -0.1 0.1 units box
+
+# create the simulation domain and 1 material type for particles and walls
+create_box      1 domain
+
+# specify the skin distance for neighbor list generation
+neighbor        0.001 bin
+neigh_modify    delay 0
+
+variable deg2rad         equal  PI/180. # factor to convert degrees to radians
+variable vely            equal  ${vy}   # tangential velocity
+variable velz            equal -5.0     # normal velocity
+variable vel             equal  5.0     # impact velocity (m/s)
+
+variable normalModel     string ${NORMALMODEL}
+variable tangentialModel string ${TANGENTIALMODEL}
+
+# particle size and density
+variable rad             equal  0.00001 # 0.01 mm
+variable dia             equal  2*${rad}
+variable dens            equal  ${DENSITY} # kg/m3
+
+# define the material properties required for granular pair styles
+variable Young           equal  ${YOUNG} # N/m2
+variable Poisson         equal  ${POISSON}
+variable coeffRes        equal  1.0
+variable coeffFric       equal  0.3
+
+fix     m1 all property/global youngsModulus peratomtype ${Young}
+fix     m2 all property/global poissonsRatio peratomtype ${Poisson}
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${coeffRes}
+fix     m4 all property/global coefficientFriction peratomtypepair 1 ${coeffFric}
+fix     m5 all property/global characteristicVelocity scalar ${vel}
+
+# specify contact model to use
+pair_style gran model ${normalModel} tangential ${tangentialModel} ${MODELOPTION} ${MODELOPTIONSETTING}
+pair_coeff * *
+
+# set the time step to ~1% of Rayleigh time
+variable    dt equal 1e-10
+timestep    ${dt}
+print "timestep ${dt}"
+
+# create a single particle of type 1 at the given position
+# by default particles are assigned to a group named 'all'
+create_atoms    1 single -0.001 -0.001 0.00001 units box
+# set diameter, density and initial velocity of created particle
+set             atom 1 diameter ${dia} density ${dens} vy ${vely} vz ${velz}
+
+# define the meshes used for walls
+# note that meshes must not exceed the domain boundaries
+fix mesh_bottom all mesh/surface file meshes/zplane.stl type 1
+
+# use the mesh defined above as wall; note that specifying the wall contact
+# model is analogous to the pair_style command; there can only be a single fix
+# of style 'wall/gran' for mesh based walls
+fix mesh_walls all wall/gran model ${normalModel} tangential ${tangentialModel} &
+    mesh n_meshes 1 meshes mesh_bottom ${MODELOPTION} ${MODELOPTIONSETTING}
+
+# use constant NVE integration to update position, velocity and angular velocity
+fix integr all nve/sphere
+
+# check time step size
+fix ts_check all check/timestep/gran 1 0.1 0.1
+
+# compute rotational kinetic energy
+compute rke all erotate/sphere
+
+# output settings, include kinetic energy
+thermo_style    custom step atoms ke c_rke
+
+# set frequency of output
+thermo          100
+
+# ignore particles leaving the simulation domain,
+# do not normalize thermodynamic output values by the number of atoms
+thermo_modify   lost ignore norm no
+
+# set dynamic 'to' no as number of particles does not change
+# for a single particle we need to set extra dof to 0 to obtain correct ke
+compute_modify  thermo_temp dynamic no extra 0
+
+run     1
+unfix   ts_check
+
+# run 2000 time steps
+run     2000
+
+# normalized incident angle
+variable nia equal -${vely}/(${coeffFric}*${velz})
+# normalized rebound angle
+variable nra equal (vy[1]+${rad}*omegax[1])/(${coeffFric}*vz[1])
+# normalized rebound angle lower bound
+variable nralimit equal -${vely}/(${coeffFric}*${velz})-7
+# normalized rebound angular velocity
+variable nrav equal -${rad}*omegax[1]/(${coeffFric}*${velz})
+# normalized rebound angular velocity lower bound
+variable nravlimit equal -5.0
+
+fix     output all print 1 "${nia} ${nra} ${nralimit} ${nrav} ${nravlimit}" title "none" &
+        append post/${NORMALMODEL}_rebound_properties.txt
+run     1
+
+next    vyvariations vy
+clear
+jump    SELF startloop
+

@@ -400,6 +400,24 @@ void FixPropertyAtom::set_all(double value)
 }
 
 /* ----------------------------------------------------------------------
+   set array value m of atom i to value
+------------------------------------------------------------------------- */
+
+void FixPropertyAtom::set_array(int i, int m, double value)
+{
+    array_atom[i][m] = value;
+}
+
+/* ----------------------------------------------------------------------
+   set value of atom i to value
+------------------------------------------------------------------------- */
+
+void FixPropertyAtom::set_vector(int i, double value)
+{
+    vector_atom[i] = value;
+}
+
+/* ----------------------------------------------------------------------
    pack values in local atom-based arrays for exchange with another proc
 ------------------------------------------------------------------------- */
 
@@ -582,4 +600,27 @@ double FixPropertyAtom::compute_vector(int n)
 
   MPI_Sum_Scalar(value,world);
   return value;
+}
+
+/* ----------------------------------------------------------------------
+   return number of default values
+------------------------------------------------------------------------- */
+
+int FixPropertyAtom::num_defaultvalues()
+{
+    return nvalues;
+}
+
+/* ----------------------------------------------------------------------
+   return default value of type n
+------------------------------------------------------------------------- */
+
+double FixPropertyAtom::defaultvalue(int n)
+{
+    if(n<0 || n>=nvalues)
+    {
+        error->fix_error(FLERR,this,"request non-existent default value");
+    }
+
+    return defaultvalues[n];
 }

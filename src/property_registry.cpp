@@ -57,9 +57,9 @@ LAMMPS * PropertyRegistry::getLAMMPS()
   return lmp;
 }
 
-FixPropertyGlobal* PropertyRegistry::getGlobalProperty(const char *varname, const char *style, const char *svmstyle, int len1, int len2, const char *caller)
+FixPropertyGlobal* PropertyRegistry::getGlobalProperty(const char *varname, const char *style, const char *svmstyle, int len1, int len2, const char *caller, bool errflag)
 {
-  return static_cast<FixPropertyGlobal*>(modify->find_fix_property(varname, style, svmstyle, len1, len2, caller));
+  return static_cast<FixPropertyGlobal*>(modify->find_fix_property(varname, style, svmstyle, len1, len2, caller, errflag));
 }
 
 ScalarProperty * PropertyRegistry::getScalarProperty(string varname,const char *caller)

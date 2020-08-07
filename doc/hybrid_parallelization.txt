@@ -82,7 +82,7 @@ By default, the partitioner uses the following options:
 
 DEBUG_LEVEL: 0: Controls Debug output
 LB_METHOD: RCB: Selection of RCB as partitioning algorithm
-NUM_GID_ENTRIES: 1: number of global ids per lement [DO NOT CHANGE]
+NUM_GID_ENTRIES: 1: number of global ids per element [DO NOT CHANGE]
 NUM_LID_ENTRIES: 1: number of local ids per element [DO NOT CHANGE]
 NUM_LOCAL_PARTS: {NUM_THREADS}: number of partitions generated. this should always be equal to the number of threads. This is done by default, therefore [DO NOT CHANGE]
 RETURN_LISTS: PARTS: tells Zoltan to return a list containing the mapping of particles to parts [DO NOT CHANGE]

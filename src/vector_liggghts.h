@@ -27,6 +27,8 @@
 
 namespace LAMMPS_NS {
 
+#define TOLERANCE_NORM 1e-10
+
 //================================================
 //SOME VERY SIMPLE VECTOR OPERATIONS
 //================================================
@@ -80,6 +82,11 @@ inline double vectorMag3DSquared(const double *v)
 inline double vectorMag4D(const double *v)
 {
   return (  sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]+v[3]*v[3])  );
+}
+
+inline bool vectorIsNormalized3D(const double *v)
+{
+  return fabs(vectorMag3DSquared(v) - 1.) < TOLERANCE_NORM;
 }
 
 inline double pointDistance(const double *point1, const double *point2)
@@ -216,7 +223,7 @@ inline T vectorMinN(const T *v, const int n)
     return min;
 }
 
-inline void vectorComponentMin3D(double const*v1,double const*v2,double *min)
+inline void vectorComponentMin3D(const double *v1,const double *v2,double *min)
 {
     if(v1[0] > v2[0])
         min[0] = v2[0];
@@ -234,7 +241,7 @@ inline void vectorComponentMin3D(double const*v1,double const*v2,double *min)
         min[2] = v1[2];
 }
 
-inline void vectorComponentMax3D(double const*v1,double const*v2,double *max)
+inline void vectorComponentMax3D(const double *v1,const double *v2,double *max)
 {
     if(v1[0] > v2[0])
         max[0] = v1[0];
@@ -273,7 +280,7 @@ inline void vectorScalarMult3D(double *v, double s)
   v[2]=s*v[2];
 }
 
-inline void vectorScalarMult3D(double *v, double s, double *result)
+inline void vectorScalarMult3D(const double *v, double s, double *result)
 {
   result[0]=s*v[0];
   result[1]=s*v[1];
@@ -303,19 +310,19 @@ inline void vectorScalarSubtract3D(double *v, double s)
 }
 
   // returns v1+s*v2 to res
-inline void vectorAddMultiply3D(double *v1, double *v2, double s, double *res)
+inline void vectorAddMultiply3D(const double *v1, const double *v2, double s, double *res)
 {
   for(int i=0;i<3;i++)
     res[i] = v1[i]+v2[i]*s;
 }
 
-inline void vectorAddMultiply2D(const double *v1, const double *v2, const double s, double *res)
+inline void vectorAddMultiply2D(const double *v1, const double *v2, double s, double *res)
 {
   for(int i=0;i<2;i++)
     res[i] = v1[i]+v2[i]*s;
 }
 
-inline void vectorNegate3D(double *v, double *result)
+inline void vectorNegate3D(const double *v, double *result)
 {
   result[0]=-v[0];
   result[1]=-v[1];
@@ -329,7 +336,7 @@ inline void vectorNegate3D(double *v)
   v[2]=-v[2];
 }
 
-inline void vectorScalarDiv3D(double *v, double s, double *result)
+inline void vectorScalarDiv3D(const double *v, double s, double *result)
 {
   double sinv = 1./s;
   result[0]=sinv*v[0];
@@ -434,7 +441,7 @@ inline void vectorInitializeN(int *v,int n,int init)
      v[i]=init;
 }
 
-inline double vectorSumN(double *v,int n)
+inline double vectorSumN(const double *v,int n)
 {
   double sum = 0.;
   for(int i = 0; i < n; i++)
@@ -450,7 +457,7 @@ inline void quatUnitize4D(double *q)
   q[3]=0.;
 }
 
-inline bool isUnitQuat4D(double *q)
+inline bool isUnitQuat4D(const double *q)
 {
     return
     (
@@ -469,21 +476,21 @@ inline void normalize_bary(double *v)
   v[2]/=mag;
 }
 
-inline void vectorToBuf3D(double *vec,double *buf,int &m)
+inline void vectorToBuf3D(const double *vec,double *buf,int &m)
 {
   buf[m++] = vec[0];
   buf[m++] = vec[1];
   buf[m++] = vec[2];
 }
 
-inline void bufToVector3D(double *vec,double *buf,int &m)
+inline void bufToVector3D(double *vec,const double *buf,int &m)
 {
   vec[0] = buf[m++];
   vec[1] = buf[m++];
   vec[2] = buf[m++];
 }
 
-inline void vectorToBuf4D(double *vec,double *buf,int &m)
+inline void vectorToBuf4D(const double *vec,double *buf,int &m)
 {
   buf[m++] = vec[0];
   buf[m++] = vec[1];
@@ -491,7 +498,7 @@ inline void vectorToBuf4D(double *vec,double *buf,int &m)
   buf[m++] = vec[3];
 }
 
-inline void bufToVector4D(double *vec,double *buf,int &m)
+inline void bufToVector4D(double *vec,const double *buf,int &m)
 {
   vec[0] = buf[m++];
   vec[1] = buf[m++];
@@ -499,55 +506,55 @@ inline void bufToVector4D(double *vec,double *buf,int &m)
   vec[3] = buf[m++];
 }
 
-inline void vectorToBufN(double *vec,double *buf,int &m, int nvalues)
+inline void vectorToBufN(const double *vec,double *buf,int &m, int nvalues)
 {
   for(int i = 0; i < nvalues; i++)
     buf[m++] = vec[i];
 }
 
-inline void bufToVectorN(double *vec,double *buf,int &m, int nvalues)
+inline void bufToVectorN(double *vec,const double *buf,int &m, int nvalues)
 {
   for(int i = 0; i < nvalues; i++)
     vec[i] = buf[m++];
 }
 
-inline void printVec2D(FILE *out, const char *name, double *vec)
+inline void printVec2D(FILE *out, const char *name, const double *vec)
 {
     fprintf(out," vector %s: %e %e\n",name,vec[0],vec[1]);
 }
 
-inline void printVec3D(FILE *out, const char *name, double *vec)
+inline void printVec3D(FILE *out, const char *name, const double *vec)
 {
     fprintf(out," vector %s: %e %e %e\n",name,vec[0],vec[1],vec[2]);
 }
 
-inline void printVec3D(FILE *out, const char *name, int *vec)
+inline void printVec3D(FILE *out, const char *name, const int *vec)
 {
     fprintf(out," vector %s: %d %d %d\n",name,vec[0],vec[1],vec[2]);
 }
 
-inline void printVec4D(FILE *out, const char *name, double *vec)
+inline void printVec4D(FILE *out, const char *name, const double *vec)
 {
     fprintf(out," vector %s: %e %e %e %e\n",name,vec[0],vec[1],vec[2],vec[3]);
 }
 
-inline void printVecN(FILE *out, const char *name, double *vec, int n)
+inline void printVecN(FILE *out, const char *name, const double *vec, int n)
 {
     fprintf(out," vector %s:",name);
     for(int i = 0; i < n; i++)
-        fprintf(out,"%f ",vec[i]);
+        fprintf(out," %f",vec[i]);
     fprintf(out,"\n");
 }
 
-inline void printVecN(FILE *out, const char *name, int *vec, int n)
+inline void printVecN(FILE *out, const char *name, const int *vec, int n)
 {
     fprintf(out," vector %s:",name);
     for(int i = 0; i < n; i++)
-        fprintf(out,"%d ",vec[i]);
+        fprintf(out," %d",vec[i]);
     fprintf(out,"\n");
 }
 
-inline void printMat33(FILE *out, const char *name, double **mat)
+inline void printMat33(FILE *out, const char *name, const double **mat)
 {
     fprintf(out," matrix %s: %f %f %f\n",name,mat[0][0],mat[0][1],mat[0][2]);
     fprintf(out,"        %s: %f %f %f\n",name,mat[1][0],mat[1][1],mat[1][2]);

@@ -34,6 +34,9 @@ ROLLING_MODEL(ROLLING_EPSD,epsd,2)
 #include <math.h>
 #include "domain.h"
 #include "math_extra_liggghts.h"
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+#include "math_extra_liggghts_nonspherical.h"
+#endif
 
 namespace LIGGGHTS {
 namespace ContactModels
@@ -75,17 +78,54 @@ namespace ContactModels
 
       if(cdata.touch) *cdata.touch |= TOUCH_ROLLING_MODEL;
 
+      const double radi = cdata.radi;
+      const double radj = cdata.radj;
+      double reff = cdata.is_wall ? radi : (radi*radj/(radi+radj));
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if(cdata.is_non_spherical && atom->superquadric_flag) {
+        reff = cdata.reff;
+      }
+#endif
       if(cdata.is_wall) {
         const double wr1 = cdata.wr1;
         const double wr2 = cdata.wr2;
         const double wr3 = cdata.wr3;
-        const double radius = cdata.radi;
 
-        double r_inertia;
-        if (domain->dimension == 2) r_inertia = 1.5*cdata.mi*radius*radius;
-        else  r_inertia = 1.4*cdata.mi*radius*radius;
+        double r_inertia = 0.0;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        if(cdata.is_non_spherical) {
+          const double rii = pointDistance(cdata.contact_point, atom->x[cdata.i]);
+          const double omega_mag = sqrt(wr1*wr1 + wr2*wr2 + wr3*wr3); // TODO move sqrt after if
+          if(omega_mag != 0.0) {
+            const int i = cdata.i;
+            double er[3];
+            er[0] = wr1 / omega_mag;
+            er[1] = wr2 / omega_mag;
+            er[2] = wr3 / omega_mag;
+            const double Ix = atom->inertia[i][0];
+            const double Iy = atom->inertia[i][1];
+            const double Iz = atom->inertia[i][2];
+            double inertia_tensor[9];
+            double inertia_tensor_local[9] = { Ix, 0.0, 0.0,
+                                               0.0, Iy, 0.0,
+                                               0.0, 0.0, Iz };
+            MathExtraLiggghtsNonspherical::tensor_quat_rotate(inertia_tensor_local, atom->quaternion[cdata.i], inertia_tensor);
+            double temp[3];
+            MathExtraLiggghtsNonspherical::matvec(inertia_tensor, er, temp);
+            double Ii = MathExtra::dot3(temp, er);
+            r_inertia = Ii + cdata.mi*rii*rii;
+          }
+        } else {
+          if (domain->dimension == 2) r_inertia = 1.5*cdata.mi*reff*reff;
+          else  r_inertia = 1.4*cdata.mi*reff*reff;
+        }
+#else
+        if (domain->dimension == 2) r_inertia = 1.5*cdata.mi*reff*reff;
+        else  r_inertia = 1.4*cdata.mi*reff*reff;
+#endif
 
-        calcRollTorque(r_torque,cdata,radius,wr1,wr2,wr3,r_inertia);
+        calcRollTorque(r_torque,cdata,reff,wr1,wr2,wr3,r_inertia);
 
 
       } else {
@@ -94,19 +134,62 @@ namespace ContactModels
         const int i = cdata.i;
         const int j = cdata.j;
 
-        const double radi = cdata.radi;
-        const double radj = cdata.radj;
-        const double reff = cdata.is_wall ? radi : (radi*radj/(radi+radj));
         const double * const * const omega = atom->omega;
+        // relative rotational velocity
+        vectorSubtract3D(omega[i],omega[j],wr_roll);
 
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        double r_inertia_red_i, r_inertia_red_j;
+        double r_inertia = 0.0;
+        if (cdata.is_non_spherical) {
+          const double rii = pointDistance(cdata.contact_point, atom->x[i]);
+          const double rjj = pointDistance(cdata.contact_point, atom->x[j]);
+          const double omega_mag = vectorMag3D(wr_roll);
+          if (omega_mag != 0.0) {
+            double er[3];
+            er[0] = wr_roll[0] / omega_mag;
+            er[1] = wr_roll[1] / omega_mag;
+            er[2] = wr_roll[2] / omega_mag;
+            const double Ix_i = atom->inertia[i][0];
+            const double Iy_i = atom->inertia[i][1];
+            const double Iz_i = atom->inertia[i][2];
+
+            const double Ix_j = atom->inertia[j][0];
+            const double Iy_j = atom->inertia[j][1];
+            const double Iz_j = atom->inertia[j][2];
+
+            double inertia_tensor_i[9];
+            double inertia_tensor_local_i[9] = { Ix_i, 0.0, 0.0,
+                                                 0.0, Iy_i, 0.0,
+                                                 0.0, 0.0, Iz_i };
+            double inertia_tensor_j[9];
+            double inertia_tensor_local_j[9] = { Ix_j, 0.0, 0.0,
+                                                 0.0, Iy_j, 0.0,
+                                                 0.0, 0.0, Iz_j };
+            MathExtraLiggghtsNonspherical::tensor_quat_rotate(inertia_tensor_local_i, atom->quaternion[i], inertia_tensor_i);
+            MathExtraLiggghtsNonspherical::tensor_quat_rotate(inertia_tensor_local_j, atom->quaternion[j], inertia_tensor_j);
+            double temp[3];
+            MathExtraLiggghtsNonspherical::matvec(inertia_tensor_i, er, temp);
+            double Ii = MathExtra::dot3(temp, er);
+            MathExtraLiggghtsNonspherical::matvec(inertia_tensor_j, er, temp);
+            double Ij = MathExtra::dot3(temp, er);
+            r_inertia_red_i = Ii + cdata.mi*rii*rii;
+            r_inertia_red_j = Ij + cdata.mj*rjj*rjj;
+            r_inertia = r_inertia_red_i*r_inertia_red_j / (r_inertia_red_i + r_inertia_red_j);
+          }
+        } else {
+          r_inertia_red_i = cdata.mi*radi*radi;
+          r_inertia_red_j = cdata.mj*radj*radj;
+          if (domain->dimension == 2) r_inertia = 1.5 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
+          else  r_inertia = 1.4 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
+        }
+#else
         const double r_inertia_red_i = cdata.mi*radi*radi;
         const double r_inertia_red_j = cdata.mj*radj*radj;
         double r_inertia;
         if (domain->dimension == 2) r_inertia = 1.5 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
         else  r_inertia = 1.4 * r_inertia_red_i * r_inertia_red_j/(r_inertia_red_i + r_inertia_red_j);
-
-        // relative rotational velocity
-        vectorSubtract3D(omega[i],omega[j],wr_roll);
+#endif
 
         calcRollTorque(r_torque,cdata,reff,wr_roll[0],wr_roll[1],wr_roll[2],r_inertia);
       }
@@ -184,17 +267,21 @@ namespace ContactModels
         r_torque[2] *= factor;
 
         // save rolling torque due to spring
-        c_history[0] = r_torque[0];
-        c_history[1] = r_torque[1];
-        c_history[2] = r_torque[2];
+        if (cdata.shearupdate && cdata.computeflag) {
+          c_history[0] = r_torque[0];
+          c_history[1] = r_torque[1];
+          c_history[2] = r_torque[2];
+        }
 
         // no damping / no dashpot in case of full mobilisation rolling angle
 
       } else {
         // save rolling torque due to spring before adding damping torque
-        c_history[0] = r_torque[0];
-        c_history[1] = r_torque[1];
-        c_history[2] = r_torque[2];
+        if (cdata.shearupdate && cdata.computeflag) {
+          c_history[0] = r_torque[0];
+          c_history[1] = r_torque[1];
+          c_history[2] = r_torque[2];
+        }
 
         // dashpot
         /*NL*/ //if (screen) fprintf(screen,"Calc r_coef for types %i %i with coef= %e, r_inertia=%e and kr=%e\n",itype,jtype,coeffRollVisc[itype][jtype],r_inertia,kr);

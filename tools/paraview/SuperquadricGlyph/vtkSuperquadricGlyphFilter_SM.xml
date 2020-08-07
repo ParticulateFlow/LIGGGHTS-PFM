@@ -1,0 +1,360 @@
+<ServerManagerConfiguration>
+  <ProxyGroup name="filters">
+    <SourceProxy name="SuperquadricGlyphFilter" class="vtkSuperquadricGlyphFilter" label="Superquadric Glyphs">
+
+      <Documentation
+         long_help="This filter generates a superquadric glyph at each point of the input data set. The glyphs are shaped, oriented and scaled according to the input data set."
+         short_help="Generate a superquadric glyph symbol at each point of the input data set.">
+        The Superquadric Glyph filter generates a superquadric glyph at every point in the input data set. The glyphs are oriented and scaled according to the input data set.
+        By default a different glyph is used per point. By setting FixedThetaPhiRoundness to true fixed theta and phi roundness values for all points can be chosen.
+        Set theta and phi roundness to 0.0 to get rectangular glyphs, set them to 1.0 to get ellipsoidal glyphs, set theta roundness to 1.0 and phi roundness to 0.0 to get cylindrical glyphs.
+        The Superquadric Glyph filter operates on any type of data set. Its output is polygonal.
+      </Documentation>
+
+      <InputProperty
+         name="Input"
+         command="SetInputConnection">
+        <ProxyGroupDomain name="groups">
+          <Group name="sources"/>
+          <Group name="filters"/>
+        </ProxyGroupDomain>
+        <DataTypeDomain name="input_type">
+          <DataType value="vtkDataSet"/>
+        </DataTypeDomain>
+        <InputArrayDomain name="input_array0"/>
+        <InputArrayDomain name="input_array1" attribute_type="point"
+                          number_of_components="1" optional="1" />
+        <InputArrayDomain name="input_array2" attribute_type="point"
+                          number_of_components="3" optional="1"/>
+        <InputArrayDomain name="input_array3" attribute_type="point"
+                          number_of_components="9" optional="1"/>
+
+        <Documentation>
+          This property specifies the input to the Glyph filter.
+        </Documentation>
+      </InputProperty>
+
+      <IntVectorProperty
+         name="ThetaResolution"
+         command="SetThetaResolution"
+         number_of_elements="1"
+         animateable="1"
+         default_values="16" >
+        <IntRangeDomain name="range" min="8" max="1024" />
+        <Documentation>
+          The value of this property represents the number of divisions in the theta (longitudinal) direction.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+         name="PhiResolution"
+         command="SetPhiResolution"
+         number_of_elements="1"
+         animateable="1"
+         default_values="16">
+        <IntRangeDomain name="range" min="4" max="1024" />
+        <Documentation>
+          The value of this property represents the number of divisions in the phi (latitudinal) direction.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty name="FixedThetaPhiRoundness"
+                         command="SetFixedThetaPhiRoundness"
+                         number_of_elements="1"
+                         animateable="0"
+                         default_values="0"
+                         label="Use fixed roundness for all tensors">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          Toggle whether to vary roundness values per tensor or to use fixed theta and phi roundness settings for all tensors.
+        </Documentation>
+      </IntVectorProperty>
+
+      <DoubleVectorProperty
+         name="ThetaRoundness"
+         command="SetThetaRoundness"
+         number_of_elements="1"
+         animateable="1"
+         default_values="0.3">
+        <DoubleRangeDomain name="range" min="0.01" />
+        <Documentation>
+          This property defines the roundness of the superquadric in the theta (longitudinal) direction. A value of 0 represents a rectangular shape, a value of 1 represents a circular shape, and values greater than 1 produce higher order shapes. For rectangular glyphs set theta = phi = 0, for ellipsoidal glyphs theta = phi = 1 and for cylindrical glyphs theta = 1, phi = 0.
+        </Documentation>
+      </DoubleVectorProperty>
+
+      <DoubleVectorProperty
+         name="PhiRoundness"
+         command="SetPhiRoundness"
+         number_of_elements="1"
+         animateable="1"
+         default_values="0.3">
+        <DoubleRangeDomain name="range" min="0.01" />
+        <Documentation>
+          This property defines the roundness in the phi (latitudinal) direction. A value of 0 represents a rectangular shape, a value of 1 represents a circular shape, and values greater than 1 produce higher order shapes. For rectangular glyphs set theta = phi = 0, for ellipsoidal glyphs theta = phi = 1 and for cylindrical glyphs theta = 1, phi = 0.
+        </Documentation>
+      </DoubleVectorProperty>
+
+      <IntVectorProperty name="HalfAxisVector"
+                         command="SetHalfAxisVector"
+                         number_of_elements="1"
+                         animateable="0"
+                         default_values="1"
+                         label="Use vector to scale half axes">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          Toggle whether to set size values via vector or to use 3 separate scalars.
+        </Documentation>
+      </IntVectorProperty>
+
+      <StringVectorProperty
+        name="HalfAxisVectorArray"
+        command="SetHalfAxisVectorArray"
+        number_of_elements="1"
+        animateable="0"
+        default_values="shape"
+        label="Half-Axes">
+        <ArrayListDomain
+          name="vectors"
+          attribute_type="Vectors"
+          none_string="None"
+          input_domain_name="input_array2">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          This property indicates the name of the Half Axis array.
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="HalfAxisXArray"
+        command="SetHalfAxisXArray"
+        number_of_elements="1"
+        animateable="0"
+        default_values="shapex"
+        label="Half-Axis X">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for Half Axis X
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="HalfAxisYArray"
+        command="SetHalfAxisYArray"
+        number_of_elements="1"
+        animateable="0"
+        default_values="shapey"
+        label="Half-Axis Y">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for Half Axis Y
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="HalfAxisZArray"
+        command="SetHalfAxisZArray"
+        number_of_elements="1"
+        animateable="0"
+        default_values="shapez"
+        label="Half-Axis Z">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for Half Axis Z
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="Blockiness1Array"
+        command="SetBlockiness1Array"
+        number_of_elements="1"
+        animateable="0"
+        default_values="blockiness1"
+        label="Blockiness 1">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for Blockiness 1
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="Blockiness2Array"
+        command="SetBlockiness2Array"
+        number_of_elements="1"
+        animateable="0"
+        default_values="blockiness2"
+        label="Blockiness 2">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for Blockiness 2
+        </Documentation>
+      </StringVectorProperty>
+
+      <IntVectorProperty name="QuatOrientation"
+                         command="SetQuatOrientation"
+                         number_of_elements="1"
+                         animateable="0"
+                         default_values="1"
+                         label="Use quaternion to orient glyphs">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          Toggle whether to set orientation via quaternion or to use a rotation matrix.
+        </Documentation>
+      </IntVectorProperty>
+
+      <StringVectorProperty
+        name="Quat1Array"
+        command="SetQuat1Array"
+        number_of_elements="1"
+        animateable="0"
+        default_values="quat1"
+        label="Quaternion W">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for quaternion w
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="Quat2Array"
+        command="SetQuat2Array"
+        number_of_elements="1"
+        animateable="0"
+        default_values="quat2"
+        label="Quaternion X">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for quaternion x
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="Quat3Array"
+        command="SetQuat3Array"
+        number_of_elements="1"
+        animateable="0"
+        default_values="quat3"
+        label="Quaternion Y">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for quaternion y
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="Quat4Array"
+        command="SetQuat4Array"
+        number_of_elements="1"
+        animateable="0"
+        default_values="quat4"
+        label="Quaternion Z">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Scalars"
+          input_domain_name="input_array1">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for quaternion z
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+        name="RotationMatrixArray"
+        command="SetRotationMatrixArray"
+        number_of_elements="1"
+        animateable="0"
+        default_values="TENSOR"
+        label="Rotation Matrix">
+        <ArrayListDomain
+          name="any"
+          none_string="None"
+          attribute_type="Tensors"
+          input_domain_name="input_array3">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          The array to use for orienting the glyphs
+        </Documentation>
+      </StringVectorProperty>
+
+      <Hints>
+            <ShowInMenu category="Custom Glyph" />
+      </Hints>
+
+    </SourceProxy>
+
+  </ProxyGroup>
+
+</ServerManagerConfiguration>

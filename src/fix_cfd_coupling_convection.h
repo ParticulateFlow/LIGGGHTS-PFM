@@ -46,9 +46,11 @@ class FixCfdCouplingConvection : public Fix {
 
  protected:
   class FixCfdCoupling* fix_coupling;
+  class FixPropertyAtom* fix_conductiveFlux;
   class FixPropertyAtom* fix_convectiveFlux;
   class FixPropertyAtom* fix_heatFlux;
   double T0;
+  bool gran_field_conduction;
 };
 
 }

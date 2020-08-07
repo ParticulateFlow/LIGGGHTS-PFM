@@ -49,7 +49,10 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
     use_dens_(false),
     use_type_(false),
     use_property_(false),
-    use_molecule_(false)
+    use_molecule_(false),
+// superquadric start
+    use_superquadric_(false)
+// superquadric end
 {
     int iarg = 3;
 
@@ -70,7 +73,21 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_density'");
             iarg++;
             hasargs = true;
-        } 
+        }
+        else if(strcmp(arg[iarg],"transfer_force") == 0)
+        {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_force'");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                use_force_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                use_force_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_force'");
+            iarg++;
+            hasargs = true;
+        }
         else if(strcmp(arg[iarg],"transfer_torque") == 0)
         {
             if(narg < iarg+2)
@@ -85,7 +102,7 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
             iarg++;
             hasargs = true;
         }
-        else if(strcmp(arg[iarg],"transfer_type") == 0) 
+        else if(strcmp(arg[iarg],"transfer_type") == 0)
         {
             if(narg < iarg+2)
                 error->fix_error(FLERR,this,"not enough arguments for 'transfer_type'");
@@ -123,6 +140,24 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_molecule'");
             iarg++;
             hasargs = true;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        } else if(strcmp(arg[iarg],"transfer_superquadric") == 0) {
+            if(narg < iarg+2)
+              error->fix_error(FLERR,this,"not enough arguments for 'transfer_superquadric'");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0) {
+              use_superquadric_ = true;
+              use_torque_ = true;
+              use_force_ = true;
+            }
+            else if(strcmp(arg[iarg],"no") == 0) {
+              use_superquadric_ = false;
+            }
+            else
+              error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_superquadric'");
+            iarg++;
+            hasargs = true;
+#endif
         } else if (strcmp(this->style,"couple/cfd/force") == 0) {
             error->fix_error(FLERR,this,"unknown keyword");
         }
@@ -239,6 +274,15 @@ void FixCfdCouplingForce::init()
     fix_coupling_->add_push_property("radius","scalar-atom");
     if(use_molecule_) fix_coupling_->add_push_property("x_mol","vector-atom");
     if(use_molecule_) fix_coupling_->add_push_property("v_mol","vector-atom");
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+    if(use_superquadric_) {
+      fix_coupling_->add_push_property("volume","scalar-atom");
+      fix_coupling_->add_push_property("area","scalar-atom");
+      fix_coupling_->add_push_property("shape","vector-atom");
+      fix_coupling_->add_push_property("blockiness","vector2D-atom");
+      fix_coupling_->add_push_property("quaternion","quaternion-atom");
+    }
+#endif
     if(use_type_) fix_coupling_->add_push_property("type","scalar-atom");
     if(use_dens_) fix_coupling_->add_push_property("density","scalar-atom");
     if(use_torque_) fix_coupling_->add_push_property("omega","vector-atom");
@@ -252,32 +296,45 @@ void FixCfdCouplingForce::init()
 
 
     vectorZeroize3D(dragforce_total);
+    vectorZeroize3D(hdtorque_total);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixCfdCouplingForce::post_force(int)
 {
-  double **f = atom->f;
-  double **torque = atom->torque;
-  int *mask = atom->mask;
-  int nlocal = atom->nlocal;
-  double **dragforce = fix_dragforce_->array_atom;
-  double **hdtorque = fix_hdtorque_->array_atom;
+    double **f = atom->f;
+    double **torque = atom->torque;
+    int *mask = atom->mask;
+    int nlocal = atom->nlocal;
 
-  vectorZeroize3D(dragforce_total);
-
-  // add dragforce to force vector
-  //NP no allreduce here, is done in compute_vector
-  for (int i = 0; i < nlocal; i++)
-  {
-    if (mask[i] & groupbit)
+    if(use_force_)
     {
-        if(use_force_) vectorAdd3D(f[i],dragforce[i],f[i]);
-        if(use_torque_) vectorAdd3D(torque[i],hdtorque[i],torque[i]);
-        vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
+        double **dragforce = fix_dragforce_->array_atom;
+        vectorZeroize3D(dragforce_total);
+        for (int i = 0; i < nlocal; i++)
+        {
+            if (mask[i] & groupbit)
+            {
+                vectorAdd3D(f[i],dragforce[i],f[i]);
+                vectorAdd3D(dragforce_total,dragforce[i],dragforce_total);
+            }
+        }
     }
-  }
+
+    if(use_torque_)
+    {
+        double **hdtorque = fix_hdtorque_->array_atom;
+        vectorZeroize3D(hdtorque_total);
+        for (int i = 0; i < nlocal; i++)
+        {
+            if (mask[i] & groupbit)
+            {
+                vectorAdd3D(torque[i],hdtorque[i],torque[i]);
+            }
+        }
+    }
+
 }
 
 /* ----------------------------------------------------------------------

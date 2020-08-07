@@ -55,6 +55,10 @@ private:
   int boxflag;             // overwrite simulation with dump file box params
   int replaceflag,addflag; // flags for processing dump snapshot atoms
   int trimflag,purgeflag;
+  int bruteaddflag;
+  int exactflag;           // user 0/1 if using close/exact timestep from dump
+
+  int retainstepflag;	   // retain current time step
   int scaleflag;           // user 0/1 if dump file coords are unscaled/scaled
   int wrapflag;            // user 0/1 if dump file coords are unwrapped/wrapped
   char *readerstyle;       // style of dump files to read
@@ -72,6 +76,7 @@ private:
   double xprd,yprd,zprd;
 
   bigint nsnapatoms;        // # of atoms in dump file shapshot
+  int nlocal_orig;          // # of local atoms when starting processing
 
   int npurge,nreplace,ntrim,nadd;     // stats on processed atoms
   int addproc;                        // proc that should add next atom

@@ -51,7 +51,7 @@ thermo          1000
 thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic yes extra 0
 
-dump    dmpmesh all mesh/gran/VTK 1 post/cone*.vtk id cone
+dump    dmpmesh all mesh/vtk 1 post/cone*.vtk id cone
 run     1
 undump  dmpmesh
 run     20000 upto

@@ -96,7 +96,7 @@ namespace ContactModels
     {
       const int itype = cdata.itype;
       const int jtype = cdata.jtype;
-      double meff=cdata.meff;
+      const double meff = cdata.meff;
 
       double kn = k_n[itype][jtype];
       double kt = k_t[itype][jtype];
@@ -128,9 +128,9 @@ namespace ContactModels
       kn /= force->nktv2p;
       kt /= force->nktv2p;
 
-      const double Fn_damping = -gamman*cdata.vn;    //NP modified C.K.
-      const double Fn_contact = kn*(cdata.radsum-cdata.r);
-      double Fn                       = Fn_damping + Fn_contact;
+      const double Fn_damping = -gamman*cdata.vn;
+      const double Fn_contact = kn*cdata.deltan;
+      double Fn = Fn_damping + Fn_contact;
 
       //limit force to avoid the artefact of negative repulsion force
       if(limitForce && (Fn<0.0) )
@@ -145,12 +145,30 @@ namespace ContactModels
       cdata.gamman = gamman;
       cdata.gammat = gammat;
 
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+      double Fn_i[3] = { Fn * cdata.en[0], Fn * cdata.en[1], Fn * cdata.en[2] };
+      double torque_i[3] = { 0.0, 0.0, 0.0 };
+      if(cdata.is_non_spherical) {
+        double xci[3];
+        vectorSubtract3D(cdata.contact_point, atom->x[cdata.i], xci);
+        vectorCross3D(xci, Fn_i, torque_i);
+      }
+#endif
       // apply normal force
       if(cdata.is_wall) {
         const double Fn_ = Fn * cdata.area_ratio;
         i_forces.delta_F[0] = Fn_ * cdata.en[0];
         i_forces.delta_F[1] = Fn_ * cdata.en[1];
         i_forces.delta_F[2] = Fn_ * cdata.en[2];
+
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+        if(cdata.is_non_spherical) {
+          // for non-spherical particles normal force can produce torque!
+          i_forces.delta_torque[0] += torque_i[0];
+          i_forces.delta_torque[1] += torque_i[1];
+          i_forces.delta_torque[2] += torque_i[2];
+        }
+#endif
       } else {
         i_forces.delta_F[0] = cdata.Fn * cdata.en[0];
         i_forces.delta_F[1] = cdata.Fn * cdata.en[1];
@@ -159,6 +177,24 @@ namespace ContactModels
         j_forces.delta_F[0] = -i_forces.delta_F[0];
         j_forces.delta_F[1] = -i_forces.delta_F[1];
         j_forces.delta_F[2] = -i_forces.delta_F[2];
+
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+        if(cdata.is_non_spherical) {
+          // for non-spherical particles normal force can produce torque!
+          double xcj[3], torque_j[3];
+          double Fn_j[3] = { -Fn_i[0], -Fn_i[1], -Fn_i[2] };
+          vectorSubtract3D(cdata.contact_point, atom->x[cdata.j], xcj);
+          vectorCross3D(xcj, Fn_j, torque_j);
+
+          i_forces.delta_torque[0] += torque_i[0];
+          i_forces.delta_torque[1] += torque_i[1];
+          i_forces.delta_torque[2] += torque_i[2];
+
+          j_forces.delta_torque[0] += torque_j[0];
+          j_forces.delta_torque[1] += torque_j[1];
+          j_forces.delta_torque[2] += torque_j[2];
+        }
+#endif
       }
     }
 

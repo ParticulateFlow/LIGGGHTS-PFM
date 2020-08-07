@@ -51,6 +51,7 @@ class FixCfdCouplingForce : public Fix  {
   { use_force_ = false; }
 
   double dragforce_total[3];
+  double hdtorque_total[3]; // superquadric
   class FixCfdCoupling* fix_coupling_;
   class FixPropertyAtom* fix_dragforce_;
   class FixPropertyAtom* fix_hdtorque_; // hdtorque = hydrodynamic torque
@@ -58,6 +59,9 @@ class FixCfdCouplingForce : public Fix  {
 
  private:
   bool use_force_, use_torque_, use_dens_, use_type_, use_property_, use_molecule_;
+// superquadric start
+  bool use_superquadric_;
+// superquadric end
 
   char property_name[200];
   char property_type[200];

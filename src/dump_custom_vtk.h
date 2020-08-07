@@ -240,6 +240,21 @@ class DumpCustomVTK : public Dump {
   void pack_ervel(int);
   void pack_erforce(int);
 
+// superquadric start
+  void pack_shapex(int); 
+  void pack_shapey(int);
+  void pack_shapez(int);
+  void pack_quat1(int);
+  void pack_quat2(int);
+  void pack_quat3(int);
+  void pack_quat4(int);
+  void pack_blockiness1(int);
+  void pack_blockiness2(int);
+  void pack_inertiax(int);
+  void pack_inertiay(int);
+  void pack_inertiaz(int);
+// superquadric end
+
   void pack_thread(int); //NP modified R.B.
 };
 

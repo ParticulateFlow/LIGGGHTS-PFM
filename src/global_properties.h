@@ -46,6 +46,7 @@ namespace MODEL_PARAMS
    * ----------------------------------------------------------------------- */
 
   ScalarProperty* createCharacteristicVelocity(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  ScalarProperty* createStiffnessRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCohesionEnergyDensity(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   VectorProperty* createYoungsModulus(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   VectorProperty* createPoissonsRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks);

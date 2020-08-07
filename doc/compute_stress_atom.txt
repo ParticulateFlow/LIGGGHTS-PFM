@@ -51,7 +51,7 @@ interactions, if defined.  Finally, there is a term for the {Nf}
 Currently, only the "fix shake"_fix_shake.html and "fix
 rigid"_fix_rigid.html commands contribute to this term.
 
-IMPORTANT NOTE: For granular systems, this formular neglects the 
+IMPORTANT NOTE: For granular systems, this formula neglects the 
 contribution of average velocity in the kinetic energy contribution.
 This is corrected in the compute ave/euler command (currently no doc
 available).
@@ -81,7 +81,7 @@ The KSpace contribution is calculated using the method in
 "(Heyes)"_#Heyes for the Ewald method and by the methodology described
 in "(Sirk)"_#Sirk for PPPM.  The choice of KSpace solver is specified
 by the "kspace_style pppm"_kspace_style.html command.  Note that for
-PPPM, the calcluation requires 6 extra FFTs each timestep that
+PPPM, the calculation requires 6 extra FFTs each timestep that
 per-atom stress is calculated.  Thus it can significantly increase the
 cost of the PPPM calculation if it is needed on a large fraction of
 the simulation timesteps.
@@ -100,10 +100,10 @@ d = dimension and V is the volume of the system, the result should be
 These lines in an input script for a 3d system should yield that
 result.  I.e. the last 2 columns of thermo output will be the same:
 
-compute		peratom all stress/atom
-compute		p all reduce sum c_peratom\[1\] c_peratom\[2\] c_peratom\[3\]
-variable	press equal -(c_p\[1\]+c_p\[2\]+c_p\[3\])/(3*vol)
-thermo_style	custom step temp etotal press v_press :pre
+compute         peratom all stress/atom
+compute         p all reduce sum c_peratom\[1\] c_peratom\[2\] c_peratom\[3\]
+variable        press equal -(c_p\[1\]+c_p\[2\]+c_p\[3\])/(3*vol)
+thermo_style    custom step temp etotal press v_press :pre
 
 [Output info:]
 

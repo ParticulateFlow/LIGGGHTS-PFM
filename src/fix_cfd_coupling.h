@@ -55,12 +55,22 @@ class FixCfdCoupling : public Fix {
   //void push(char *name,char *type,void *&ptr);
   void add_push_property(const char *name, const char *type);
   void add_pull_property(const char *name, const char *type);
+
+  bigint latestpush(const char *name);
+  bigint latestpull(const char *name);
+
   void check_datatransfer();
 
   int coupleThis() {return couple_this_;}
 
   class CfdDatacoupling* get_dc(){return dc_;}
   //NP inline class FixMultisphere* fix_ms() {return dc_->frm_;}
+
+  bigint ts;
+
+  // couple every couple_nevery_ timesteps
+  // not used in case of MPI coupling
+  int couple_nevery_,ts_create_;
 
  protected:
 
@@ -72,10 +82,6 @@ class FixCfdCoupling : public Fix {
  private:
 
   int couple_this_;
-
-  // couple every couple_nevery_ timesteps
-  // not used in case of MPI coupling
-  int couple_nevery_,ts_create_;
 
   // regionmodels
   class CfdRegionmodel *rm_;

@@ -36,7 +36,7 @@ compute nparticles all nparticles/tracer/region region_count count tracer tr per
 [Description:]
 
 Define a computation that calculates the number and mass of marked and un-marked particles
-that are in the region speficied via the {region_count} keyword. Particles have
+that are in the region specified via the {region_count} keyword. Particles have
 to be in the group "group-ID" to be counted.
 
 Note that only particles marked by a "fix property/atom/tracer"_fix_property_atom_tracer.html
@@ -71,10 +71,12 @@ is used multiple times, the last setting will be applied.
 This this compute calculates a global vector containing the following information 
 (the number in brackets corresponds to the vector id): 
 
+:ulb
 [(1)] total number of (marked + un-marked) particles in region :l
 [(2)] number of marked particles in region :l
 [(3)] total mass of (marked + un-marked) particles in region :l
 [(4)] mass of marked particles in region :l
+:ule
 
 See "this section"_Section_howto.html#howto_15 for an overview of LAMMPS output
 options.

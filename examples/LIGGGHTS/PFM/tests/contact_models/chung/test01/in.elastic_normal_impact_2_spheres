@@ -1,0 +1,139 @@
+################################################################################
+# brief: Elastic normal impact of two identical spheres                        #
+#                                                                              #
+# Check the elastic normal contact between two spheres                         #
+# Cf. Test No.1 by Chung and Ooi, Granul. Matter 13, 643–656 (2011)            #
+# The spheres have an inital velocity of 10 m/s, no initial angular velocity   #
+#                                                                              #
+# The simulation outputs the normal contact force and overlap.                 #
+# Run processData.m to generate force-displacement and force-time data files   #
+# The script accepts:                                                          #
+# the normal model in the input variable NORMALMODEL,                          #
+# the tangential model in                TANGENTIALMODEL,                      #
+# an optional model option in            MODELOPTION,                          #
+# with model option setting in           MODELOPTIONSETTING,                   #
+# the Young's modulus in                 YOUNG                                 #
+# the Poisson's ratio in                 POISSON                               #
+# the particle density in                DENSITY                               #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Aug 2019                                                               #
+# copyright: 2019- JKU Linz                                                    #
+################################################################################
+
+variable NORMALMODEL        index hertz
+variable TANGENTIALMODEL    index incremental_history
+variable MODELOPTION        index limitForce
+variable MODELOPTIONSETTING index on
+# glass #limestone
+variable YOUNG              index 4.8e10 # 2.0e10
+variable POISSON            index 0.20   # 0.25
+variable DENSITY            index 2800   # 2500
+
+# define the attributes associated with the particles,
+# 'granular' (or 'sphere') style uses diameter, mass and angular velocity
+atom_style      granular
+
+# use an array to map particle IDs to local storage index,
+# do not sort atoms spatially
+atom_modify     map array sort 0 0
+
+# set simulation domain to be fixed in x y z
+boundary        f f f
+
+# save communication by turning off Newton's 3rd law for pairwise interaction,
+# note: this setting only influences communication between procs, Newton's
+# 3rd law is still used for contact force calculations
+newton          off
+
+# use a single value for ghost particle cutoff distance and
+# enable velocity to be communicated with ghost particles
+communicate     single vel yes
+
+# set unit system to SI
+units           si
+
+# define the region used as simulation domain (min/max X, min/max Y, min/max Z)
+region          domain block -0.1 0.1 -0.1 0.1 -0.1 0.1 units box
+
+# create the simulation domain and 1 material type for particles and walls
+create_box      1 domain
+
+# specify the skin distance for neighbor list generation
+neighbor        0.001 bin
+neigh_modify    delay 0
+
+variable deg2rad         equal  PI/180. # factor to convert degrees to radians
+variable vel1            equal  10.0 # (m/s)
+variable vel2            equal -10.0 # (m/s)
+variable velchar         equal  20.0 # impact velocity (m/s)
+
+variable normalModel     string ${NORMALMODEL}
+variable tangentialModel string ${TANGENTIALMODEL}
+
+# particle size and density
+variable rad             equal  0.01 # 10 mm
+variable dia             equal  2*${rad}
+variable dens            equal  ${DENSITY} # kg/m3
+
+# define the material properties required for granular pair styles
+variable Young           equal  ${YOUNG} # N/m2
+variable Poisson         equal  ${POISSON}
+variable coeffRes        equal  1.0
+variable coeffFric       equal  0.35
+
+fix     m1 all property/global youngsModulus peratomtype ${Young}
+fix     m2 all property/global poissonsRatio peratomtype ${Poisson}
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${coeffRes}
+fix     m4 all property/global coefficientFriction peratomtypepair 1 ${coeffFric}
+fix     m5 all property/global characteristicVelocity scalar ${velchar}
+
+# specify contact model to use
+pair_style gran model ${normalModel} tangential ${tangentialModel} ${MODELOPTION} ${MODELOPTIONSETTING}
+pair_coeff * *
+
+# set the time step to ~1% of Rayleigh time
+variable    dt equal 0.0000001
+timestep    ${dt}
+print "timestep ${dt}"
+
+# create two particles of type 1 at the given positions
+# by default particles are assigned to a group named 'all'
+create_atoms    1 single -0.01 0.0 0.0 units box
+create_atoms    1 single  0.01 0.0 0.0 units box
+# set diameter, density and initial velocity of created particles
+set             atom 1 diameter ${dia} density ${dens} vx ${vel1}
+set             atom 2 diameter ${dia} density ${dens} vx ${vel2}
+
+# use constant NVE integration to update position, velocity and angular velocity
+fix integr all nve/sphere
+
+# check time step size
+fix ts_check all check/timestep/gran 1 0.1 0.1
+
+# compute rotational kinetic energy
+compute rke all erotate/sphere
+
+# output settings, include kinetic energy
+thermo_style    custom step atoms ke c_rke
+
+# set frequency of output
+thermo          10
+
+# ignore particles leaving the simulation domain,
+# do not normalize thermodynamic output values by the number of atoms
+thermo_modify   lost ignore norm no
+
+# set dynamic 'to' no as number of particles does not change
+compute_modify  thermo_temp dynamic no
+
+# compute normal force and overlap (delta)
+compute pgl all pair/gran/local force_normal delta
+
+# output normal force and overlap (delta)
+dump dmpdisp all local 10 post/displacement*.txt c_pgl[1] c_pgl[2] c_pgl[3] c_pgl[4]
+dump_modify dmpdisp pad 3
+
+# run 600 time steps
+run     600
+

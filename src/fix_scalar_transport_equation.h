@@ -74,6 +74,7 @@ class FixScalarTransportEquation : public Fix {
   double *quantity;   //NP particle Temperature
   double *flux;       //NP heat flux from/to the particle
   double *source;     //NP heat source
+  double cg_;
 
   // flag if integrate quantity or not
   bool int_flag;

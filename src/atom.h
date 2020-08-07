@@ -55,7 +55,7 @@ class Atom : protected Pointers {
   double **v_mol;               // variable to store velocity of com of molecule as per-atom property - A.N.
 
   int *molecule;
-  double *q,**mu;
+  double *q,**mu; // charge, orientation of dipole moment
   double **omega,**angmom,**torque;
   double *radius,*rmass,*vfrac,*s0;
   double *density; //NP modified C.K.
@@ -70,6 +70,12 @@ class Atom : protected Pointers {
   double *e, *de;
   double **vest;
   double *cv;
+
+// Superquadric bonus-----------------------------------
+  double **shape, **blockiness; //half axes and blockiness parameters
+  double **inertia, *volume, *area; //components Ix, Iy, Iz
+  double **quaternion; //quaternion of current orientation
+//------------------------------------------------------
 
   int **nspecial;               // 0,1,2 = cummulative # of 1-2,1-3,1-4 neighs
   int **special;                // IDs of 1-2,1-3,1-4 neighs of each atom
@@ -108,6 +114,7 @@ class Atom : protected Pointers {
   // customize by adding new flag
 
   int sphere_flag,ellipsoid_flag,line_flag,tri_flag,body_flag;
+  int superquadric_flag; // superquadric
   int peri_flag,electron_flag;
   int ecp_flag;
   int wavepacket_flag,sph_flag;

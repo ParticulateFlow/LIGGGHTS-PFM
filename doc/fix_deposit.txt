@@ -52,7 +52,7 @@ keyword = {region} or {id} or {global} or {local} or {near} or {attempt} or {rat
 [Examples:]
 
 fix 3 all deposit 1000 2 100 29494 region myblock local 1.0 1.0 1.0 units box
-fix 2 newatoms deposit 10000 1 500 12345 region disk near 2.0 vz -1.0 -0.8 :pre
+fix 2 newatoms deposit 10000 1 500 12345 region disk near 2.0 vz -1.0 -0.8
 fix 4 sputter deposit 1000 2 500 12235 region sphere vz -1.0 -1.0 target 5.0 5.0 0.0 units lattice :pre
 
 [Description:]
@@ -167,7 +167,7 @@ defined by the "region"_region.html command.
 
 [Related commands:]
 
-"fix_pour"_fix_pour.html, "region"_region.html
+"fix pour"_fix_pour.html, "region"_region.html
 
 [Default:]
 

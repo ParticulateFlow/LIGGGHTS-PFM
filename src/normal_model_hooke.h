@@ -23,6 +23,7 @@
    Contributing authors:
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Richard Berger (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 #ifdef NORMAL_MODEL
 NORMAL_MODEL(HOOKE,hooke,0)
@@ -52,6 +53,7 @@ namespace ContactModels
       coeffMu(NULL),
       coeffStc(NULL),
       charVel(0.0),
+      kappa(2./7.), // Landry et al., Phys. Rev. E 67 (041303), 1-9 (2003)
       viscous(false),
       tangential_damping(false),
       limitForce(false),
@@ -93,6 +95,10 @@ namespace ContactModels
         registry.connect("coeffRestLog", coeffRestLog,"model hooke viscous");
       }
 
+      if(ktToKn) {
+        registry.registerProperty("stiffnessRatio", &MODEL_PARAMS::createStiffnessRatio);
+        registry.connect("stiffnessRatio", kappa,"model hooke");
+      }
       //NP modified C.K.
       // error checks on coarsegraining
       if(force->cg_active())
@@ -113,9 +119,12 @@ namespace ContactModels
       double ri = cdata.radi;
       double rj = cdata.radj;
       double reff=cdata.is_wall ? ri : (ri*rj/(ri+rj));
-      double meff=cdata.meff;
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if(cdata.is_non_spherical && atom->superquadric_flag)
+        reff = cdata.reff;
+#endif
+      const double meff = cdata.meff;
       double coeffRestLogChosen;
-
       const double sqrtval = sqrt(reff);
 
       if(!displayedSettings)
@@ -124,7 +133,7 @@ namespace ContactModels
         /*
         if (comm->me == 0 && screen) {
           if(ktToKn)
-              fprintf(screen," NormalModel<HOOKE>: will use user-modified ktToKn of 2/7.\n");
+              fprintf(screen," NormalModel<HOOKE>: will use user-modified ktToKn of %f.\n",kappa);
           if(tangential_damping)
               fprintf(screen," NormalModel<HOOKE>: will apply tangential damping.\n");
           if(viscous)
@@ -136,17 +145,19 @@ namespace ContactModels
       }
       if (viscous)  {
          // Stokes Number from MW Schmeeckle (2001)
-         const double stokes=cdata.meff*cdata.vn/(6.0*M_PI*coeffMu[itype][jtype]*reff*reff);
+         const double stokes = meff*cdata.vn/(6.0*M_PI*coeffMu[itype][jtype]*reff*reff);
          // Empirical from Legendre (2006)
-         coeffRestLogChosen=log(coeffRestMax[itype][jtype])+coeffStc[itype][jtype]/stokes;
+         coeffRestLogChosen = log(coeffRestMax[itype][jtype])+coeffStc[itype][jtype]/stokes;
       } else {
-         coeffRestLogChosen=coeffRestLog[itype][jtype];
+         coeffRestLogChosen = coeffRestLog[itype][jtype];
       }
 
-      double kn = 16./15.*sqrtval*(Yeff[itype][jtype])*pow(15.*meff*charVel*charVel/(16.*sqrtval*Yeff[itype][jtype]),0.2);
+      const double k = (16./15.)*sqrtval*(Yeff[itype][jtype]);
+      double kn = k*pow(meff*charVel*charVel/k,0.2);
       double kt = kn;
-      if(ktToKn) kt *= 0.285714286; //2/7
-      const double gamman=sqrt(4.*meff*kn/(1.+(M_PI/coeffRestLogChosen)*(M_PI/coeffRestLogChosen)));
+      if(ktToKn) kt *= kappa;
+      const double coeffRestLogChosenSq = coeffRestLogChosen*coeffRestLogChosen;
+      const double gamman = sqrt(4.*meff*kn*coeffRestLogChosenSq/(coeffRestLogChosenSq+M_PI*M_PI));
       const double gammat = tangential_damping ? gamman : 0.0;
 
       // convert Kn and Kt from pressure units to force/distance^2
@@ -154,8 +165,8 @@ namespace ContactModels
       kt /= force->nktv2p;
 
       const double Fn_damping = -gamman*cdata.vn;
-      const double Fn_contact = kn*(cdata.radsum-cdata.r);
-      double Fn                         = Fn_damping + Fn_contact;
+      const double Fn_contact = kn*cdata.deltan;
+      double Fn = Fn_damping + Fn_contact;
 
       //limit force to avoid the artefact of negative repulsion force
       if(limitForce && (Fn<0.0) )
@@ -169,12 +180,31 @@ namespace ContactModels
       cdata.gamman = gamman;
       cdata.gammat = gammat;
 
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+      double torque_i[3] = { 0., 0., 0. };
+      double Fn_i[3] = { Fn * cdata.en[0], Fn * cdata.en[1], Fn * cdata.en[2] };
+      if(cdata.is_non_spherical) {
+        double xci[3];
+        vectorSubtract3D(cdata.contact_point, atom->x[cdata.i], xci);
+        vectorCross3D(xci, Fn_i, torque_i);
+      }
+#endif
+
       // apply normal force
       if(cdata.is_wall) {
         const double Fn_ = Fn * cdata.area_ratio;
         i_forces.delta_F[0] = Fn_ * cdata.en[0];
         i_forces.delta_F[1] = Fn_ * cdata.en[1];
         i_forces.delta_F[2] = Fn_ * cdata.en[2];
+
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+        if(cdata.is_non_spherical) {
+          // for non-spherical particles normal force can produce torque!
+          i_forces.delta_torque[0] += torque_i[0];
+          i_forces.delta_torque[1] += torque_i[1];
+          i_forces.delta_torque[2] += torque_i[2];
+        }
+#endif
       } else {
         const double fx = cdata.Fn * cdata.en[0];
         const double fy = cdata.Fn * cdata.en[1];
@@ -187,6 +217,24 @@ namespace ContactModels
         j_forces.delta_F[0] = -fx;
         j_forces.delta_F[1] = -fy;
         j_forces.delta_F[2] = -fz;
+
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+        if(cdata.is_non_spherical) {
+          // for non-spherical particles normal force can produce torque!
+          double xcj[3], torque_j[3];
+          double Fn_j[3] = { -Fn_i[0], -Fn_i[1], -Fn_i[2] };
+          vectorSubtract3D(cdata.contact_point, atom->x[cdata.j], xcj);
+          vectorCross3D(xcj, Fn_j, torque_j);
+
+          i_forces.delta_torque[0] += torque_i[0];
+          i_forces.delta_torque[1] += torque_i[1];
+          i_forces.delta_torque[2] += torque_i[2];
+
+          j_forces.delta_torque[0] += torque_j[0];
+          j_forces.delta_torque[1] += torque_j[1];
+          j_forces.delta_torque[2] += torque_j[2];
+        }
+#endif
       }
     }
 
@@ -202,6 +250,7 @@ namespace ContactModels
     double ** coeffMu;
     double ** coeffStc;
     double charVel;
+    double kappa;
 
     bool viscous;
     bool tangential_damping;

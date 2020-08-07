@@ -80,7 +80,7 @@ stream_keywords = {duration} or {parallel} or {insertion_face} or {extrude_lengt
 
 [Examples:]
 
-fix ins all insert/stream seed 1001 distributiontemplate pdd1 nparticles 5000 vel constant 0. -0.5 -2. particlerate 1000 overlapcheck yes insertion_face ins_mesh extrude_length 0.6
+fix ins all insert/stream seed 1001 distributiontemplate pdd1 nparticles 5000 vel constant 0. -0.5 -2. particlerate 1000 overlapcheck yes insertion_face ins_mesh extrude_length 0.6 :pre
 
 [Description:]
 
@@ -88,7 +88,7 @@ Insert particles into a granular run either once or every few timesteps
 within a specified region until either np particles have been inserted
 or the desired particle mass (mp) has been reached.
 
-The {verbose} keyword controlls whether statistics about particle
+The {verbose} keyword controls whether statistics about particle
 insertion is output to the screen each time particles are inserted.
 
 Each timestep particles are inserted, they are placed randomly inside
@@ -177,7 +177,7 @@ face of style "fix mesh/surface/planar"_fix_mesh_surface.html
 NOTE: You also have to use "fix mesh/surface/planar"_fix_mesh_surface.html 
 if there is a "run"_run.html command between the definition of the 
 insertion face and the fix insert/stream command. Otherwise, a 
-"fix mesh/surface/planar"_fix_mesh_surface.html will do.
+"fix mesh/surface"_fix_mesh_surface.html will do.
 
 Keyword {random_distribute} controls how the number of particles to
 be inserted is distributed among parallel processors and among the
@@ -220,7 +220,7 @@ insertion operation.
 
 None of the "fix_modify"_fix_modify.html options are relevant to this
 fix. A global vector is stored by this fix for access by various "output
-commands"_Section_howto.html#4_15. The first component of the vector is the
+commands"_Section_howto.html#howto_15. The first component of the vector is the
 number of particles already inserted, the second component is the mass
 of particles already inserted. No parameter of this fix can be
 used with the {start/stop} keywords of the "run"_run.html command.
@@ -233,8 +233,8 @@ The insertion face cannot move.
 
 [Related commands:]
 
-"fix_insert_pack"_fix_insert_pack.html, "fix_insert_rate_region"_fix_insert_rate_region.html,
-"fix_deposit"_fix_deposit.html, "fix_pour_dev"_fix_pour_dev.html, "fix_pour"_fix_pour.html
+"fix insert/pack"_fix_insert_pack.html, "fix insert/rate/region"_fix_insert_rate_region.html,
+"fix deposit"_fix_deposit.html, "fix pour/legacy"_fix_pour.html
 
 [Default:]
 

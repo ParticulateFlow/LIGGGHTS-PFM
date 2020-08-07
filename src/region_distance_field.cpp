@@ -2,7 +2,7 @@
    LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
 
-   Copyright 2014-     JKU Linz
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -20,6 +20,7 @@
 /* ----------------------------------------------------------------------
    Contributing author:
    Philippe Seil (JKU)
+   Daniel Queteschiner (JKU)
 ------------------------------------------------------------------------- */
 
 
@@ -31,6 +32,9 @@
 #include "region.h"
 #include "vector_liggghts.h"
 
+#ifdef DEBUG_REGIONDISTFIELD
+#include <mpi.h>
+#endif
 
 
 namespace LIGGGHTS {
@@ -50,11 +54,16 @@ namespace LIGGGHTS {
     reg_bbox.getExtent(bbox_extent);
 
     dx = 2.*rmax;
-    test_rad = sqrt(3.01)*rmax;
-    
-    nx = bbox_extent[0]/dx;
-    ny = bbox_extent[1]/dx;
-    nz = bbox_extent[2]/dx;
+    oneoverdx = 1./dx;
+    // Note: test_rad = bounding sphere of bin plus particle radius
+    // if the sphere with test_rad radius is completely inside the
+    // insertion region, any particle center inside the corresponding
+    // bin is also completely inside the insertion region
+    test_rad = sqrt(3.0)*rmax+rmax;
+
+    nx = bbox_extent[0]*oneoverdx;
+    ny = bbox_extent[1]*oneoverdx;
+    nz = bbox_extent[2]*oneoverdx;
 
     double const x_over = bbox_extent[0] - dx*static_cast<double>(nx);
     x0[0] = bbox_xlo[0] + 0.5*x_over - 0.5*dx;
@@ -69,21 +78,32 @@ namespace LIGGGHTS {
 
     double pos_tmp[3];
     for(int i=0;i<nx;i++){
-      for(int j=0;i<ny;i++){
-        for(int k=0;i<nz;i++){
-          int const index = index3ToIndex1(i,j,k);
-          indexToPos(index,pos_tmp);
+      for(int j=0;j<ny;j++){
+        for(int k=0;k<nz;k++){
+          index3ToPos(i,j,k,pos_tmp);
+          pos_tmp[0] += 0.5*dx;
+          pos_tmp[1] += 0.5*dx;
+          pos_tmp[2] += 0.5*dx;
 
-          if(!region->inside(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
+          if(!region->match(pos_tmp[0],pos_tmp[1],pos_tmp[2]))
             continue;
 
-          if(region->surface_interior(pos_tmp,test_rad))
-            data[index] = BOUNDARY;
-          else
+          int const index = index3ToIndex1(i,j,k);
+
+          if(region->match_shrinkby_cut(pos_tmp,test_rad))
             data[index] = INSIDE;
+          else
+            data[index] = BOUNDARY;
         }
       }
     }
+
+    dump();
+  }
+
+  void RegionDistanceField::reset()
+  {
+    data.clear();
   }
 
   bool RegionDistanceField::isInside(double *x)
@@ -93,9 +113,19 @@ namespace LIGGGHTS {
     if(index<0)
       return false;
 
-    return data[index] != OUTSIDE;
+    return data[index] == INSIDE;
   }
-  
+
+  bool RegionDistanceField::isOutside(double *x)
+  {
+    int const index = posToIndex(x);
+
+    if(index<0)
+      return false;
+
+    return data[index] == OUTSIDE;
+  }
+
   bool RegionDistanceField::isInBoundary(double *x)
   {
     int const index = posToIndex(x);
@@ -105,8 +135,8 @@ namespace LIGGGHTS {
 
     return data[index] == BOUNDARY;
   }
-  
-  
+
+
   int RegionDistanceField::index3ToIndex1(int const ix, int const iy, int const iz)
   {
     return (ix + nx*iy + nx*ny*iz);
@@ -116,13 +146,13 @@ namespace LIGGGHTS {
   {
     if(!bbox.isInside(x)) return -1;
 
-    int const ix = (x[0]-x0[0])/dx;
+    int const ix = (x[0]-x0[0])*oneoverdx;
     if(ix < 0 || ix > nx-1) return -1;
 
-    int const iy = (x[1]-x0[1])/dx;
+    int const iy = (x[1]-x0[1])*oneoverdx;
     if(iy < 0 || iy > ny-1) return -1;
 
-    int const iz = (x[2]-x0[2])/dx;
+    int const iz = (x[2]-x0[2])*oneoverdx;
     if(iz < 0 || iz > nz-1) return -1;
 
     return index3ToIndex1(ix,iy,iz);
@@ -130,8 +160,6 @@ namespace LIGGGHTS {
 
   void RegionDistanceField::indexToPos(int index, double *x)
   {
-    if(!bbox.isInside(x)) return;
-    
     LAMMPS_NS::vectorCopy3D(x0,x);
 
     int const iz = index / (nx*ny);
@@ -145,5 +173,50 @@ namespace LIGGGHTS {
     x[2] += static_cast<double>(iz)*dx;
   }
 
+  void RegionDistanceField::index3ToPos(int ix, int iy, int iz, double *x)
+  {
+    x[0] = x0[0] + static_cast<double>(ix)*dx;
+    x[1] = x0[1] + static_cast<double>(iy)*dx;
+    x[2] = x0[2] + static_cast<double>(iz)*dx;
+  }
+
+  void RegionDistanceField::dump()
+  {
+#ifdef DEBUG_REGIONDISTFIELD
+    int me = -1;
+    MPI_Comm_rank(MPI_COMM_WORLD,&me);
+
+    char filename[16]={};
+    sprintf(filename,"distfield%d.vtk",me);
+
+    FILE *out=fopen(filename, "wt");
+    if(out){
+      const int nbins = nx*ny*nz;
+      fprintf(out,"# vtk DataFile Version 3.0\n");
+      fprintf(out,"LIGGGHTS grid/mesh\n");
+      fprintf(out,"ASCII\n");
+      fprintf(out,"DATASET STRUCTURED_GRID\n");
+      fprintf(out,"DIMENSIONS %d %d %d\n",nx+1,ny+1,nz+1);
+      fprintf(out,"POINTS %d float\n",((nx+1)*(ny+1)*(nz+1)));
+
+      double pos_tmp[3] = {};
+      for(int k=0;k<=nz;++k){
+        for(int j=0;j<=ny;++j){
+          for(int i=0;i<=nx;++i){
+            index3ToPos(i,j,k,pos_tmp);
+            fprintf(out,"%f %f %f\n",pos_tmp[0],pos_tmp[1],pos_tmp[2]);
+          }
+        }
+      }
+
+      fprintf(out,"CELL_DATA %d\n",nbins);
+      fprintf(out,"SCALARS cell_type int\nLOOKUP_TABLE default\n");
+      for(int i=0;i<nbins;++i)
+        fprintf(out,"%d\n",data[i]);
+
+      fclose(out);
+    }
+#endif
+  }
 
 } // namespace LIGGGHTS

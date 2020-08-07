@@ -164,7 +164,9 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
     const double tor1 = i_forces.delta_torque[0]*cdata.area_ratio;
     const double tor2 = i_forces.delta_torque[1]*cdata.area_ratio;
     const double tor3 = i_forces.delta_torque[2]*cdata.area_ratio;
-    cwl_->add_wall_2(cdata.i,fx,fy,fz,tor1,tor2,tor3,cdata.contact_history,cdata.rsq);
+    double normal[3];
+    vectorNegate3D(cdata.en,normal);
+    cwl_->add_wall_2(cdata.i,fx,fy,fz,tor1,tor2,tor3,cdata.contact_history,cdata.rsq,normal);
   }
 
  protected:
@@ -186,6 +188,10 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
   // class variables for atom properties
   int nlocal_;
   double **x_, **f_, *radius_, *rmass_, **wallforce_, r0_;
+
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+  double **quat_, **shape_, **blockiness_;
+#endif
 
   void set_r0(double _r0)
   { r0_ = _r0; }
@@ -272,7 +278,7 @@ class FixWallGran : public Fix, public LIGGGHTS::IContactHistorySetup {
 
   virtual void post_force_wall(int vflag);
 
-  inline void post_force_eval_contact(LCM::CollisionData & cdata, double * v_wall, int iMesh = -1, FixMeshSurface *fix_mesh = 0, TriMesh *mesh = 0, int iTri = 0);
+  inline void post_force_eval_contact(LCM::CollisionData & cdata, bool intersectflag, double * v_wall, int iMesh = -1, FixMeshSurface *fix_mesh = 0, TriMesh *mesh = 0, int iTri = 0);
 };
 
 }

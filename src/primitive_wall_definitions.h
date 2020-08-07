@@ -572,7 +572,7 @@ namespace LAMMPS_NS
         return Cylinder<0>::calcRadialDistance(pos,param,dy,dz);
       case YCYLINDER:
         dy = 0.;
-        return Cylinder<1>::calcRadialDistance(pos,param,dx,dz);
+        return Cylinder<1>::calcRadialDistance(pos,param,dz,dx);
       case ZCYLINDER:
         dz = 0.;
         return Cylinder<2>::calcRadialDistance(pos,param,dx,dy);

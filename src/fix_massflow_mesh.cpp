@@ -229,7 +229,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
     if(fabs(dot) < 1e-6 && !havePointAtOutlet_ )
         error->fix_error(FLERR,this,"need to change 'vec_side', it is currently in or to close to the mesh plane");
     else if(dot < 0.)
-        vectorScalarMult3D(nvec_,-1.);
+        vectorFlip3D(nvec_);
 
     restart_global = 1;
 

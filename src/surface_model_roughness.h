@@ -76,6 +76,14 @@ namespace ContactModels
       fix_roughness_ = static_cast<FixRoughness*>(modify->fix[i]);
     }
 
+    inline bool checkSurfaceIntersect(CollisionData & cdata)
+    {
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+        cdata.is_non_spherical = false;
+#endif
+        return true;
+    }
+
     inline void collision(CollisionData & cdata, ForceData&, ForceData&)
     {
       static const double piHalf = M_PI / 2.0;

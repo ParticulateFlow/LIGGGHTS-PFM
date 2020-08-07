@@ -231,8 +231,7 @@ nbrhood_cutoff: Denotes the near neighbors cutoff (in Angstroms)
 regarding the bonded interactions. (default value = 5.0)
 
 hbond_cutoff: Denotes the cutoff distance (in Angstroms) for hydrogen
-bond interactions.(default value = 7.5. Value of 0.0 turns off hydrogen 
-		bonds)
+bond interactions.(default value = 7.5. Value of 0.0 turns off hydrogen bonds)
 
 bond_graph_cutoff: is the threshold used in determining what is a
 physical bond, what is not. Bonds and angles reported in the
@@ -244,11 +243,9 @@ three body interactions. (default value = 0.001)
 thb_cutoff_sq: cutoff value for the strength of bond order products 
 to be considered in three body interactions. (default value = 0.00001)
 
-write_freq: Frequency of writes into the trajectory file. (default
-value = 0)
+write_freq: Frequency of writes into the trajectory file. (default value = 0)
 
-traj_title: Title of the trajectory - not the name of the trajectory
-file.
+traj_title: Title of the trajectory - not the name of the trajectory file.
 
 atom_info: 1 means print only atomic positions + charge (default = 0)
 

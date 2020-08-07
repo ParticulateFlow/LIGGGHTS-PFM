@@ -68,6 +68,15 @@ class FixCfdCouplingRecurrence : public Fix  {
   bool use_property_;
   char property_name[200];
   char property_type[200];
+
+  bool limit_fluc;
+  bool relative_limit;
+  double maxvfluc;
+
+  int iregion;
+  char *idregion;
+
+  void limit_vfluc(double*, double*, double);
 };
 
 }

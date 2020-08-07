@@ -207,8 +207,8 @@ void PairGran::init_style()
   if(strcmp(update->unit_style,"metal") ==0 || strcmp(update->unit_style,"real") == 0)
     error->all(FLERR,"Cannot use a non-consistent unit system with pair gran. Please use si,cgs or lj.");
 
-  if (!atom->sphere_flag)
-    error->all(FLERR,"Pair granular requires atom style sphere");
+  if (!atom->sphere_flag && !atom->superquadric_flag)
+    error->all(FLERR,"Pair granular requires atom style sphere or superquadric");
   if (comm->ghost_velocity == 0)
     error->all(FLERR,"Pair granular requires ghost atoms store velocity");
 
