@@ -301,6 +301,7 @@ void BondGran::compute(int eflag, int vflag)
     Kt = St[type]*A/bondLength;
     K_tor = S_tor[type]*Ip/bondLength;
     K_ben = S_ben[type]*I/bondLength;
+
 #endif
 
     // relative translational velocity
@@ -362,7 +363,8 @@ void BondGran::compute(int eflag, int vflag)
     // calc change in normal forces
 #ifdef FLEXIBLE_BONDS
     double eps = (r-bondLength)*rinv;
-    sndt = Kn * bn[type] * eps * exp(bn[type]*eps);   // F = k * change in length
+    double nl = 1/(1 - bondLength/bn[type]);
+    sndt = Kn * eps * (1/(nl*(1-(r/bn[type]))));//exp(bn[type]*eps);   // F = k * change in length
 
     fn_bond[0] = - sndt*delx;           // To get the components F = k * change in lenth * change in the given co-ordinate / new bond length
     fn_bond[1] = - sndt*dely;
@@ -377,7 +379,7 @@ void BondGran::compute(int eflag, int vflag)
 
     // calc change in shear forces
 #ifdef FLEXIBLE_BONDS
-    stdt = Kt*dt*pow((bondLength*rinv),bt[type]);
+    stdt = Kt*dt; //*pow((bondLength*rinv),bt[type]);
 #else
     stdt = St[type] * A * dt;
 #endif
