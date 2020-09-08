@@ -122,8 +122,12 @@ void FixShearHistory::allocate_pages()
     ipage = new MyPage<int>[nmypage];
     dpage = new MyPage<double[3]>[nmypage];
     for (int i = 0; i < nmypage; i++) {
-      ipage[i].init(oneatom,pgsize);
-      dpage[i].init(oneatom,pgsize);
+      if (ipage[i].init(oneatom,pgsize) != 0) {
+        error->fix_error(FLERR, this, "bad ipage initialization");
+      }
+      if (dpage[i].init(oneatom,pgsize) != 0) {
+        error->fix_error(FLERR, this, "bad dpage initialization");
+      }
     }
   }
 }
@@ -305,7 +309,7 @@ void FixShearHistory::grow_arrays(int nmax)
   partner = (int **) memory->srealloc(partner,nmax*sizeof(int *),
                                       "shear_history:partner");
   typedef double (*sptype)[3];
-  shearpartner = (sptype *) 
+  shearpartner = (sptype *)
     memory->srealloc(shearpartner,nmax*sizeof(sptype),
                      "shear_history:shearpartner");
 }
