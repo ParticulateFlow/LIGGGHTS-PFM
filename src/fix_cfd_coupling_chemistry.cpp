@@ -501,4 +501,13 @@ void FixCfdCouplingChemistry::initial_integrate(int)
             }
         }
     }
+
+    if (prev_time == fix_coupling_->latestpush("reactionHeat"))
+    {
+        for (int i = 0; i < nlocal; ++i)
+        {
+            if (mask[i] & groupbit)
+                fix_reactionheat_->vector_atom[i] = 0.;
+        }
+    }
 }
