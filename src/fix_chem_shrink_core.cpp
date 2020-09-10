@@ -832,6 +832,19 @@ void FixChemShrinkCore::calcMassLayer(int i)
             massLayer_[i][layer] *= effvolfactors_[i];
         }
     }
+
+    double m = 0.0;
+    for (int layer = 0 ; layer <= layers_; layer++)
+    {
+        m += massLayer_[i][layer];
+    }
+
+    pmass_[i] = m*cg_*cg_*cg_;
+    pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+    if (fix_polydisp_)
+    {
+        pdensity_[i] /= effvolfactors_[i];
+    }
 }
 
 /* ---------------------------------------------------------------------- */
