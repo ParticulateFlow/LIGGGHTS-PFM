@@ -502,6 +502,7 @@ int FixChemShrinkCore::setmask()
 {
   int mask = 0;
   mask |= POST_FORCE;
+  mask |= PRE_NEIGHBOR;
   return mask;
 }
 
@@ -699,6 +700,13 @@ void FixChemShrinkCore::setup(int)
             calcMassLayer(i);
         }
     }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixChemShrinkCore::pre_neighbor()
+{
+    setup(0);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1254,7 +1262,7 @@ void FixChemShrinkCore::update_gas_properties(int i, const double *dmA_)
 #else
     for (int j = 0; j < MAX_LAYERS; j++)
 #endif
-    {   
+    {
         dmA = dmA_[j]*cg_*cg_*cg_;
         // Reactant gas mass change
         changeOfA_[i]   -=  dmA;

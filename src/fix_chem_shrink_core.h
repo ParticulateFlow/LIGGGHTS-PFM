@@ -51,6 +51,7 @@ public:
   virtual void init();
   void init_defaults();
   virtual void setup(int);
+  virtual void pre_neighbor();
   virtual void post_force(int);
   virtual void update_fix(int, char **);
 
