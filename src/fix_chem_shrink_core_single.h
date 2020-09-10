@@ -59,7 +59,7 @@ public:
   int active_layers(int);   // calculate number of active layers per-particle
   void calcMassLayer(int);  // calculate mass of layers per-particle
   void FractionalReduction(int); // calculate fractional reduction per-layer depending on layer radius
-  void getXi(int, double);    // calculate molar equilibrium constant of reacting gas
+  void getXi(int, double &);    // calculate molar equilibrium constant of reacting gas
   double K_eq(int); // calculate equilibrium constant
   void getA(int);   // calculate chemical reaction resistance term
   void getB(int);   // calculate diffusion resistance term
@@ -92,7 +92,10 @@ public:
   double rmin_;   // radius below which layers are neglected
   char *speciesA, *speciesC;
   bool layerDiffusion_;
-  bool reactionHeat_;
+  bool heatToFluid_;
+  bool heatToParticle_;
+  bool shrink_;
+
   int reactionHeatIndex_;
   int KeqIndex_;
 
@@ -180,6 +183,9 @@ public:
 
   class FixPropertyAtom *fix_dmA_; // [internal]
   double *dmA_f_;
+
+  class FixPropertyAtom *fix_reactionheat;
+  double *reactionheat_;
 
 };
 }

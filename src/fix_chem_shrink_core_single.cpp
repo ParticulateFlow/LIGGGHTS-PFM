@@ -57,7 +57,9 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     minMolarFrac_(1e-3),
     rmin_(1e-5),      //  [m]
     layerDiffusion_(true),
-    reactionHeat_(false),
+    heatToFluid_(false),
+    heatToParticle_(false),
+    shrink_(true),
     reactionHeatIndex_(-1),
     KeqIndex_(0),
     k0_(-1.0),
@@ -152,20 +154,38 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
             hasargs = true;
             iarg_ +=2;
         }
-        else if (strcmp(arg[iarg_],"reactionHeat") == 0)
-        {
-            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
-            if (strcmp(arg[iarg_+1],"yes") == 0) reactionHeat_ = true;
-            else if (strcmp(arg[iarg_+1],"no") == 0) reactionHeat_ = false;
-            else error->all(FLERR,"Illegal fix/chem/shrink command");
-            iarg_ += 2;
-            hasargs = true;
-        }
         else if (strcmp(arg[iarg_],"layerDiffusion") == 0)
         {
             if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
             if (strcmp(arg[iarg_+1],"yes") == 0) layerDiffusion_ = true;
             else if (strcmp(arg[iarg_+1],"no") == 0) layerDiffusion_ = false;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"heatToParticle") == 0)
+        {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) heatToParticle_ = true;
+            else if (strcmp(arg[iarg_+1],"no") == 0) heatToParticle_ = false;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"heatToFluid") == 0)
+        {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) heatToFluid_ = true;
+            else if (strcmp(arg[iarg_+1],"no") == 0) heatToFluid_ = false;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"shrink") == 0)
+        {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) shrink_ = true;
+            else if (strcmp(arg[iarg_+1],"no") == 0) shrink_ = false;
             else error->all(FLERR,"Illegal fix/chem/shrink command");
             iarg_ += 2;
             hasargs = true;
@@ -262,8 +282,13 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
         error->fix_error(FLERR,this,"specify positive values for k0 and T0");
     }
 
+    if (heatToParticle_ && heatToFluid_)
+    {
+        error->fix_error(FLERR,this,"trying to apply reaction heat to both particles and fluid");
+    }
+
     // check if one of the predefined reaction enthalpies matches current reaction
-    if (reactionHeat_)
+    if (heatToParticle_ || heatToFluid_)
     {
         if (strcmp(speciesA,"O2") == 0 && strcmp(speciesC,"CO") == 0) reactionHeatIndex_ = 0;
         else if (strcmp(speciesA,"CO2") == 0 && strcmp(speciesC,"CO") == 0) reactionHeatIndex_ = 1;
@@ -526,6 +551,7 @@ void FixChemShrinkCoreSingle::updatePtrs()
 
     dY          =   fix_dY_         ->  vector_atom;
     dmA_f_      =   fix_dmA_ -> vector_atom;
+    reactionheat_ = fix_reactionheat -> vector_atom;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -635,6 +661,7 @@ void FixChemShrinkCoreSingle::init()
     delete [] propertyname;
 
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
+    fix_reactionheat   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -758,6 +785,13 @@ void FixChemShrinkCoreSingle::calcMassLayer(int i)
         massLayer_[i][1] *= effvolfactors_[i];
         massLayer_[i][0] *= effvolfactors_[i];
     }
+
+    pmass_[i] = (massLayer_[i][0] + massLayer_[i][1])*cg_*cg_*cg_;
+    pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+    if (fix_polydisp_)
+    {
+        pdensity_[i] /= effvolfactors_[i];
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -776,7 +810,7 @@ double FixChemShrinkCoreSingle::K_eq(int i)
 
 /* ---------------------------------------------------------------------- */
 
-void FixChemShrinkCoreSingle::getXi(int i, double x0_eq_)
+void FixChemShrinkCoreSingle::getXi(int i, double &x0_eq_)
 {
     const double kch2_ = xA_[i] + xC_[i];
 
@@ -910,6 +944,7 @@ void FixChemShrinkCoreSingle::reaction(int i, double &dmA_, const double x0_eq_)
 
 void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
 {
+    if (!shrink_) return;
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
 
@@ -1004,7 +1039,7 @@ void FixChemShrinkCoreSingle::FractionalReduction(int i)
 /* heat of reaction calcualtion using the Shomate equation and data from https://webbook.nist.gov */
 void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
 {
-    if (!reactionHeat_) return;
+    if (!heatToParticle_ && !heatToFluid_) return;
 
     double T = T_[i];
     double dH = 0.0;
@@ -1087,7 +1122,17 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     // reaction enthalpy in J/mol
     dH *= 1000;
 
-    heatFlux_[i] -= dmA_ / molMass_A_ * dH * nevery;
+    if (heatToParticle_)
+    {
+        // heat flux = released heat / (nevery * dt), but it is reset to 0 in scalar transport equation
+        // at the beginning of each step, hence an additional factor nevery which cancels that in the denominator 
+        heatFlux_[i] -= dmA_ / molMass_A_ * dH / TimeStep;
+    }
+    else
+    {
+        // CFDEM takes accumulated heat, resets it after pull, and divides by time since last pull
+        reactionheat_[i] -= dmA_ / molMass_A_ * dH;
+    }
 }
 
 
@@ -1145,6 +1190,8 @@ void FixChemShrinkCoreSingle::init_defaults()
     fix_pore_diameter_ = NULL;  // [m]
     fix_dY_ = NULL;
     fix_dmA_ = NULL;
+
+    fix_reactionheat = NULL;
 
     massA = massC = NULL;
     diffA = moleFracA = moleFracC = NULL;
