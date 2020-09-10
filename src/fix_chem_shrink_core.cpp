@@ -97,9 +97,9 @@ const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.231532, 0.1596
 #else
 #define MAX_LAYERS 3
 #define PSEUDO_THREE_LAYERS
-#ifdef PSEUDO_THREE_LAYERS // treat wustite layer as if it were iron; TODO! beware of CO transformation!!!
-const double FixChemShrinkCore::v_reac_low_[] = { 1.0, 0.25, 3.0 };  // reaction of Fe, m, h
-const double FixChemShrinkCore::v_prod_low_[] = { 0.055845/0.071844, 0.75, 2.0 }; // production of Fe, Fe, m
+#ifdef PSEUDO_THREE_LAYERS // ignore wustite layer; TODO! beware of CO transformation!!!
+const double FixChemShrinkCore::v_reac_low_[] = { 0.0, 0.25, 3.0 };  // reaction of Fe, m, h
+const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 0.0, 2.0 }; // production of Fe, Fe, m
 const double FixChemShrinkCore::k0_low_CO[] = { 150., 150., 150. };
 const double FixChemShrinkCore::k0_low_H2[] = {  50.,  50.,  25. };
 const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 70000., 75000. };
@@ -1188,6 +1188,8 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     // Fe
     dmL_[0] = -dmA_[0] * v_prod[0] * (layerMolMasses_[0] / molMass_A_);
 
+    // slow decay of 4FeO -> Fe + Fe3O4 at low temperatures could be incorporated at this point
+
     // New layer masses
     for (int j = 0; j <= layers_; j++)
     {
@@ -1348,13 +1350,19 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
         conv_h[5] = conv_enthalpy(a_coeff_nasa_H2O,molMass_C_,i)*molMass_C_;
     }
 
+    // enthalpy changes due to iron oxides
+    for (int j = 0; j < layers_; j++)
+    {
+        delta_h[j] = v_prod[j] * conv_h[j] - v_reac[j] * conv_h[j+1];
+    }
+    // enthalpy changes due to reaction agent
 #ifdef PSEUDO_THREE_LAYERS
     for (int j = (T_[i]<SWITCH_LOW_HIGH_TEMPERATURE)?1:0; j < layers_; j++)
 #else
     for (int j = 0; j < layers_; j++)
 #endif
     {
-        delta_h[j] = (v_prod[j] * conv_h[j] + conv_h[5]) - (v_reac[j] * conv_h[j+1] + conv_h[4]);
+        delta_h[j] += conv_h[5] - conv_h[4];
     }
 
     if (screenflag_ && screen) {
