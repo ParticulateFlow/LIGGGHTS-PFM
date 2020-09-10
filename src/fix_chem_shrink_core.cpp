@@ -832,19 +832,6 @@ void FixChemShrinkCore::calcMassLayer(int i)
             massLayer_[i][layer] *= effvolfactors_[i];
         }
     }
-
-    double m = 0.0;
-    for (int layer = 0 ; layer <= layers_; layer++)
-    {
-        m += massLayer_[i][layer];
-    }
-
-    pmass_[i] = m*cg_*cg_*cg_;
-    pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
-    if (fix_polydisp_)
-    {
-        pdensity_[i] /= effvolfactors_[i];
-    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1315,54 +1302,45 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
     double delta_h[MAX_LAYERS] = {0.};
     // conventional enthalpy
     double conv_h[6] = {0.};
+    double conv_h54 = 0.0;
 
     {
 #ifdef TWO_LAYERS
-        conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,   layerMolMasses_[0],i) * layerMolMasses_[0];
-        conv_h[1] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[1],i) * layerMolMasses_[1];
-        conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[2],i) * layerMolMasses_[2];
+        conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe,i);
+        conv_h[1] = conv_enthalpy(a_coeff_nasa_Fe3O4,i);
+        conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe2O3,i);
 #else
-#ifdef PSEUDO_THREE_LAYERS
-        if (T_[i] < SWITCH_LOW_HIGH_TEMPERATURE)
-        {
-            conv_h[1] = conv_enthalpy(a_coeff_nasa_Fe, layerMolMasses_[0],i) * layerMolMasses_[0];
-        }
-        else
-#endif
-        {
-            conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe, layerMolMasses_[0],i) * layerMolMasses_[0];
-            conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,layerMolMasses_[1],i) * layerMolMasses_[1];
-        }
-
-        conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,layerMolMasses_[2],i) * layerMolMasses_[2];
-        conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,layerMolMasses_[3],i) * layerMolMasses_[3];
+        conv_h[0] = conv_enthalpy(a_coeff_nasa_Fe, i);
+        conv_h[1] = conv_enthalpy(a_coeff_nasa_FeO,i);
+        conv_h[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,i);
+        conv_h[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,i);
 #endif
     }
 
     if (strcmp(speciesA, "CO") == 0)
     {
-        conv_h[4] = conv_enthalpy(a_coeff_nasa_CO, molMass_A_,i)*molMass_A_;
-        conv_h[5] = conv_enthalpy(a_coeff_nasa_CO2,molMass_C_,i)*molMass_C_;
+        conv_h[4] = conv_enthalpy(a_coeff_nasa_CO,i);
+        conv_h[5] = conv_enthalpy(a_coeff_nasa_CO2,i);
     }
     else if (strcmp(speciesA,"H2")==0)
     {
-        conv_h[4] = conv_enthalpy(a_coeff_nasa_H2, molMass_A_,i)*molMass_A_;
-        conv_h[5] = conv_enthalpy(a_coeff_nasa_H2O,molMass_C_,i)*molMass_C_;
+        conv_h[4] = conv_enthalpy(a_coeff_nasa_H2,i);
+        conv_h[5] = conv_enthalpy(a_coeff_nasa_H2O,i);
     }
+    conv_h54 = conv_h[5] - conv_h[4];
 
     // enthalpy changes due to iron oxides
     for (int j = 0; j < layers_; j++)
     {
         delta_h[j] = v_prod[j] * conv_h[j] - v_reac[j] * conv_h[j+1];
     }
-    // enthalpy changes due to reaction agent
-#ifdef PSEUDO_THREE_LAYERS
-    for (int j = (T_[i]<SWITCH_LOW_HIGH_TEMPERATURE)?1:0; j < layers_; j++)
-#else
+    // enthalpy changes due to reduction agent
     for (int j = 0; j < layers_; j++)
-#endif
     {
-        delta_h[j] += conv_h[5] - conv_h[4];
+#ifdef PSEUDO_THREE_LAYERS
+        if (T_[i]<SWITCH_LOW_HIGH_TEMPERATURE && j == 1) continue;
+#endif
+        delta_h[j] += conv_h54;
     }
 
     if (screenflag_ && screen) {
@@ -1395,7 +1373,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
 
 /* Calculate conventional enthalpies of species */
 
-double FixChemShrinkCore::conv_enthalpy (const double *a, double Mw, int i)
+double FixChemShrinkCore::conv_enthalpy (const double *a, int i)
 {
     double value = 0.;
 
@@ -1444,7 +1422,7 @@ double FixChemShrinkCore::conv_enthalpy (const double *a, double Mw, int i)
                 + a[8];
     }
 
-    return value*Runiv/Mw;
+    return value*Runiv;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1761,4 +1739,26 @@ void FixChemShrinkCore::init_defaults()
 void FixChemShrinkCore::update_fix(int narg, char **arg)
 {
     setup(0);
+    int nlocal = atom->nlocal;
+    int *mask  = atom->mask;
+
+    for (int i = 0; i < nlocal; ++i)
+    {
+        if (mask[i] & groupbit)
+        {
+            active_layers(i);
+            double m = 0.0;
+            for (int layer = 0 ; layer <= layers_; layer++)
+            {
+                m += massLayer_[i][layer];
+            }
+
+            pmass_[i] = m*cg_*cg_*cg_;
+            pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+            if (fix_polydisp_)
+            {
+                pdensity_[i] /= effvolfactors_[i];
+            }
+        }
+    }
 }

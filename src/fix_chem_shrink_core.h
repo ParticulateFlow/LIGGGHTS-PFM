@@ -70,7 +70,7 @@ public:
   // update reactant and product gas masses depending on chemical reaction rate
   void update_gas_properties(int, const double *);
   void heat_of_reaction(int, const double *, const double *, const double *);
-  double conv_enthalpy(const double *, double , int);
+  double conv_enthalpy(const double *, int);
   double K_eq_low(int, int);
   void reaction_low(int, double *, const double *);
   void FractionalReduction_low(int);

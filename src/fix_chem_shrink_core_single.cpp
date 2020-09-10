@@ -785,13 +785,6 @@ void FixChemShrinkCoreSingle::calcMassLayer(int i)
         massLayer_[i][1] *= effvolfactors_[i];
         massLayer_[i][0] *= effvolfactors_[i];
     }
-
-    pmass_[i] = (massLayer_[i][0] + massLayer_[i][1])*cg_*cg_*cg_;
-    pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
-    if (fix_polydisp_)
-    {
-        pdensity_[i] /= effvolfactors_[i];
-    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1201,4 +1194,18 @@ void FixChemShrinkCoreSingle::init_defaults()
 void FixChemShrinkCoreSingle::update_fix(int narg, char **arg)
 {
     setup(0);
+    int nlocal = atom->nlocal;
+    int *mask   =   atom->mask;
+    for (int i = 0; i < nlocal; ++i)
+    {
+        if (mask[i] & groupbit)
+        {
+            pmass_[i] = (massLayer_[i][0] + massLayer_[i][1])*cg_*cg_*cg_;
+            pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
+            if (fix_polydisp_)
+            {
+            pdensity_[i] /= effvolfactors_[i];
+            }
+        }
+    }
 }
