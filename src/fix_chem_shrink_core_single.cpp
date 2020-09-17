@@ -1115,16 +1115,18 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     // reaction enthalpy in J/mol
     dH *= 1000;
 
+    double cg3 = cg_ * cg_ * cg_;
+
     if (heatToParticle_)
     {
         // heat flux = released heat / (nevery * dt), but it is reset to 0 in scalar transport equation
         // at the beginning of each step, hence an additional factor nevery which cancels that in the denominator 
-        heatFlux_[i] -= dmA_ / molMass_A_ * dH / TimeStep;
+        heatFlux_[i] -= dmA_ / molMass_A_ * dH / TimeStep * cg3;
     }
     else
     {
         // CFDEM takes accumulated heat, resets it after pull, and divides by time since last pull
-        reactionheat_[i] -= dmA_ / molMass_A_ * dH;
+        reactionheat_[i] -= dmA_ / molMass_A_ * dH * cg3;
     }
 }
 
