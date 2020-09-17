@@ -106,6 +106,7 @@ class Input : protected Pointers {
   void dump_modify();
   void fix();
   void fix_modify();
+  void fix_update();
   void group_command();
   void improper_coeff();
   void improper_style();

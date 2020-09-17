@@ -26,22 +26,22 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(chem/shrink/core,FixChemShrinkCore)
+FixStyle(chem/shrink/core/single,FixChemShrinkCoreSingle)
 
 #else
 
-#ifndef LMP_FIX_CHEM_SHRINKCORE_H
-#define LMP_FIX_CHEM_SHRINKCORE_H
+#ifndef LMP_FIX_CHEM_SHRINKCORESINGLE_H
+#define LMP_FIX_CHEM_SHRINKCORESINGLE_H
 
 #include "fix.h"
 
 namespace LAMMPS_NS {
 
-class FixChemShrinkCore : public Fix  {
+class FixChemShrinkCoreSingle : public Fix  {
 
 public:
-  FixChemShrinkCore(class LAMMPS *, int, char **);
-  ~FixChemShrinkCore();
+  FixChemShrinkCoreSingle(class LAMMPS *, int, char **);
+  ~FixChemShrinkCoreSingle();
 
   void post_create();
   void pre_delete(bool unfixflag);
@@ -51,7 +51,6 @@ public:
   virtual void init();
   void init_defaults();
   virtual void setup(int);
-  virtual void pre_neighbor();
   virtual void post_force(int);
   virtual void update_fix(int, char **);
 
@@ -60,53 +59,29 @@ public:
   int active_layers(int);   // calculate number of active layers per-particle
   void calcMassLayer(int);  // calculate mass of layers per-particle
   void FractionalReduction(int); // calculate fractional reduction per-layer depending on layer radius
-  void getXi(int, double *);    // calculate molar equilibrium constant of reacting gas
-  double K_eq(int, int); // calculate equilibrium constant based on the work of Valipour 2009
+  void getXi(int, double &);    // calculate molar equilibrium constant of reacting gas
+  double K_eq(int); // calculate equilibrium constant
   void getA(int);   // calculate chemical reaction resistance term
   void getB(int);   // calculate diffusion resistance term
   void getMassT(int);   // calculate gas film mass transfer resistance term
-  void reaction(int, double *, const double *);   // calculate chemical reaction rate
+  void reaction(int, double &, const double);   // calculate chemical reaction rate
   // update particle layers (relative radii, mass) depending on chemical reaction rate
-  void update_atom_properties(int, const double *, const double *, const double *);
+  void update_atom_properties(int, const double);
   // update reactant and product gas masses depending on chemical reaction rate
-  void update_gas_properties(int, const double *);
-  void heat_of_reaction(int, const double *, const double *, const double *);
-  double conv_enthalpy(const double *, int);
-  double K_eq_low(int, int);
-  void reaction_low(int, double *, const double *);
-  void FractionalReduction_low(int);
-  void getXi_low(int, double *);
-  void getA_low(int);
+  void update_gas_properties(int, const double);
+  void heat_of_reaction(int, const double);
 
   // pre-defined variables for reduction process
+//  int const nmaxlayers_;
   static double const Runiv; // universal gas constant
-  static const double k0_low_CO[];
-  static const double k0_low_H2[];
-  static const double Ea_low_CO[];
-  static const double Ea_low_H2[];
-  static const double a_coeff_nasa_Fe2O3[];
-  static const double a_coeff_nasa_Fe3O4[];
-  static const double a_coeff_nasa_FeO[];
-  static const double a_coeff_nasa_Fe[];
-  static const double a_coeff_nasa_CO[];
-  static const double a_coeff_nasa_CO2[];
-  static const double a_coeff_nasa_H2[];
-  static const double a_coeff_nasa_H2O[];
-
-  // stoichiometric coefficients of reactions
-  static const double v_reac_[];
-  static const double v_prod_[];
-  static const double v_reac_low_[];
-  static const double v_prod_low_[];
-
-  static const double layerMolMasses_[];
 
   // variables
   bool screenflag_;
   double TimeStep;
   char* massA, *massC;
 
-  double molMass_A_, molMass_C_;
+  double molMass_A_, molMass_B_, molMass_C_;
+  int nu_A_, nu_B_, nu_C_;   
   double scale_reduction_rate;
 
   char *diffA;
@@ -114,8 +89,15 @@ public:
 
   int layers_;          // current active layers
   double minMolarFrac_;
-  const double rmin_;   // radius below which layers are neglected
+  double rmin_;   // radius below which layers are neglected
   char *speciesA, *speciesC;
+  bool layerDiffusion_;
+  bool heatToFluid_;
+  bool heatToParticle_;
+  bool shrink_;
+
+  int reactionHeatIndex_;
+  int KeqIndex_;
 
   // particle-layer variable values
   double **rhoeff_;
@@ -125,9 +107,10 @@ public:
   double **relRadii_; // relative radii of individual layers
   double **massLayer_; // mass of individual layers
   double *effvolfactors_;
-  double *Ea_; // activation energy
-  double *k0_; // frequency factor
-
+  double k0_; // frequency factor
+  double T0_; // activation temperature
+  double Tmin_; // minimum temperature for reaction
+  int nPreFactor_;
 
   // particle propertis
   double *radius_;
@@ -141,12 +124,12 @@ public:
   double *nuf_;
   double *Rep_;
   double *partP_;
-  double *reactionHeat_;    // heat of reaction
+  double *heatFlux_;       // heat flux to/from grain
   double *Massterm;         // mass transfer resistance
-  double **Aterm;           // reaction resistance
-  double **Bterm;           // diffusion resistance
-  double **effDiffBinary;   // effective binary diffusion coefficient
-  double **effDiffKnud;     // effective Knudsen diffusion coefficient
+  double *Aterm;           // reaction resistance
+  double *Bterm;           // diffusion resistance
+  double *effDiffBinary;   // effective binary diffusion coefficient
+  double *effDiffKnud;     // effective Knudsen diffusion coefficient
   double **fracRed_;        // fractional reduction
 #ifdef PER_ATOM_LAYER_DENSITIES
   double **layerDensities_;
@@ -160,7 +143,7 @@ public:
   class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]
-  class FixPropertyAtom *fix_reactionHeat_; // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_heatFlux_;     // [cfd/coupling/convection]
   class FixPropertyAtom *fix_diffcoeff_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_nuField_;      // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_partRe_;       // [cfd/coupling/chemistry]
@@ -169,7 +152,7 @@ public:
   class FixPropertyAtom *fix_moleFractionC_; // [cfd/coupling/chemistry]
   double *xA_, *xC_;
 
-  class FixPropertyAtom *fix_fracRed;       // [internal]
+  class FixPropertyAtom *fix_fracRed;       // [script]
   class FixPropertyAtom *fix_Aterm;         // [internal]
   class FixPropertyAtom *fix_Bterm;         // [internal]
   class FixPropertyAtom *fix_Massterm;      // [internal]
@@ -180,8 +163,7 @@ public:
 
   // particle properties
   class FixPropertyAtom *fix_layerRelRad_;  // [script]
-  class FixPropertyAtom *fix_layerMass_;    // [internal]
-  class FixPropertyAtom *fix_rhoeff_;       // [internal]
+  class FixPropertyAtom *fix_layerMass_;    // [script]
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
@@ -190,21 +172,20 @@ public:
 #endif
 
   class FixPropertyAtomPolydispParcel *fix_polydisp_;
-  class FixPropertyGlobal *fix_k0_;         // [script]
-  class FixPropertyGlobal *fix_Ea_;         // [script]
-  class FixPropertyGlobal *fix_porosity_;   // [script]
+
+  class FixPropertyAtom *fix_rhoeff_;       // [script]
+  class FixPropertyGlobal *fix_porosity_;     // [script/internal]
   class FixPropertyGlobal *fix_tortuosity_; // [script]
   class FixPropertyGlobal *fix_pore_diameter_; // [script]
 
-  bool created_fix_layerMass_;
-  bool created_fix_rhoeff_;
-  bool created_fix_fracRed;
-
   class FixPropertyAtom *fix_dY_; // [internal]
-  double **dY;
+  double *dY;
 
   class FixPropertyAtom *fix_dmA_; // [internal]
-  double **dmA_f_;
+  double *dmA_f_;
+
+  class FixPropertyAtom *fix_reactionheat;
+  double *reactionheat_;
 
 };
 }

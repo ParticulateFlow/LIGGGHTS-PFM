@@ -65,10 +65,10 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     nuf_(NULL),
     Rep_(NULL),
     iarg_(3),
-    k0(0),
-    molMass_A_(0),
-    molMass_B_(0),
-    molMass_C_(0),
+    k0(-1.0),
+    molMass_A_(-1.0),
+    molMass_B_(-1.0),
+    molMass_C_(-1.0),
     relaxFac_(0.5),
     nu_A_(1),
     nu_B_(1),
@@ -88,6 +88,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     spcC(0),
     TimeStep(0.0),
     current_timestep(0),
+    shrink_(true),
     use_reactant_(false)
 {
     if ((strncmp(style,"chem/shrink",11) == 0) && (!atom->radius_flag||!atom->rmass_flag))
@@ -95,12 +96,9 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
 
     bool hasargs = true;
 
-    if (narg < 24) error -> all (FLERR,"Fix chem/shrink: Wrong number of arguments");
-
     while (iarg_ < narg && hasargs)
     {
         hasargs = false;
-
         if (strcmp(arg[iarg_],"speciesA") == 0)
         {
             if (narg < iarg_ + 2)
@@ -116,8 +114,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_A_ = atof(arg[iarg_+1]);
-            if (molMass_A_ < 0)
-                error -> fix_error(FLERR, this, "molar mass of A is not defined");
             hasargs = true;
             iarg_ +=2;
         }
@@ -125,7 +121,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
         {
             nu_A_ = atoi(arg[iarg_+1]);
             if (nu_A_ < 1)
-                error -> fix_error(FLERR, this, "nuA is not defined");
+                error -> fix_error(FLERR, this, "nuA is not well-defined");
             hasargs = true;
             iarg_ +=2;
         }
@@ -146,8 +142,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_C_ = atof(arg[iarg_+1]);
-            if (molMass_C_ < 0)
-                error -> fix_error(FLERR, this, "molMassC > 0 is required");
             hasargs = true;
             iarg_ +=2;
         }
@@ -155,7 +149,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
         {
             nu_C_ = atoi(arg[iarg_+1]);
             if (nu_C_ < 1)
-                error -> fix_error(FLERR, this, "nuC is not defined");
+                error -> fix_error(FLERR, this, "nuC is not well-defined");
             hasargs = true;
             iarg_ +=2;
         }
@@ -164,8 +158,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             molMass_B_ = atof(arg[iarg_+1]);
-            if (molMass_B_ < 0)
-                error -> fix_error(FLERR, this, "molMassB > 0 is required");
             hasargs = true;
             iarg_ +=2;
         }
@@ -173,7 +165,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
         {
             nu_B_ = atoi(arg[iarg_+1]);
             if (nu_B_ < 1)
-                error -> fix_error(FLERR, this, "nuB is not defined");
+                error -> fix_error(FLERR, this, "nuB is not well-defined");
             hasargs = true;
             iarg_ +=2;
         }
@@ -182,8 +174,6 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             k0 = atof(arg[iarg_+1]);
-            if (k0 <= 0)
-                error -> fix_error(FLERR, this, "k is not (well-)defined");
             hasargs = true;
             iarg_ +=2;
         }
@@ -192,8 +182,8 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             if (iarg_ + 2 > narg)
                 error -> fix_error(FLERR, this, "Wrong number of arguments");
             rmin = atof(arg[iarg_+1]);
-            if (rmin == 0)
-                error -> fix_error(FLERR, this, "rmin is not defined");
+            if (rmin < 1e-10)
+                error -> fix_error(FLERR, this, "rmin is not well-defined");
             hasargs = true;
             iarg_+=2;
         }
@@ -235,11 +225,31 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             iarg_ += 2;
             hasargs = true;
         }
+        else if (strcmp(arg[iarg_],"shrink") == 0)
+        {
+            if (iarg_+2 > narg) error->all(FLERR,"Illegal fix/chem/shrink command");
+            if (strcmp(arg[iarg_+1],"yes") == 0) shrink_ = true;
+            else if (strcmp(arg[iarg_+1],"no") == 0) shrink_ = false;
+            else error->all(FLERR,"Illegal fix/chem/shrink command");
+            iarg_ += 2;
+            hasargs = true;
+        }
+
         else if (strcmp(this->style,"chem/shrink") == 0)
         {
             error->fix_error(FLERR,this,"necessary keyword is missing");
         }
     }
+
+
+    if (molMass_A_ < 0)
+        error -> fix_error(FLERR, this, "molar mass of A is not well-defined");
+    if (molMass_B_ < 0)
+        error -> fix_error(FLERR, this, "molar mass of B is not well-defined");
+    if (molMass_C_ < 0)
+        error -> fix_error(FLERR, this, "molar mass of C is not well-defined");
+    if (k0 <= 0)
+        error -> fix_error(FLERR, this, "k is not well-defined");
 
     // define changed species mass A
     massA = new char [strlen("Modified_")+strlen(speciesA)+1];
@@ -384,20 +394,22 @@ void FixChemShrink::reaction()
             // total rate of change for species C
             changeOfC_[i]       +=  dC;
 
-            // Mass of single particle
-            // never remove more than half the particle's mass at once
-            if(-dB > 0.5*pmass_[i])
+            if (shrink_)
             {
-                pmass_[i] *= 0.5;
-            }
-            else
-            {
-                pmass_[i] += dB;
-            }
+                double mass_old = pmass_[i];
+                double radius_old = radius_[i];
+                // never remove more than half the particle's mass at once
+                if(-dB > 0.5*pmass_[i])
+                {
+                    pmass_[i] *= 0.5;
+                }
+                else
+                {
+                    pmass_[i] += dB;
+                }
 
-
-            // change of radius of particle -assumption: density of particle is constant
-            radius_[i]           =   cbrt(0.75*pmass_[i]/(M_PI*pdensity_[i]));
+                radius_[i] = radius_old * cbrt(pmass_[i]/mass_old);
+            }
 
             // uncomment if postproc (verification)
             if (screenflag_ && screen)

@@ -164,7 +164,8 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
        if(fix)
        {
            len1 = atom->tag_max();
-           len2 = 3;
+           len2 = static_cast<FixPropertyAtom*>(fix)->num_defaultvalues();
+//           len2 = 3;
            return (void*) static_cast<FixPropertyAtom*>(fix)->array_atom;
        }
     }
