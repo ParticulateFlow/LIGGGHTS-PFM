@@ -7,7 +7,7 @@
 ################################################################################
 
 log             log.liggghts_2g
-thermo_log      post/thermo_2g.txt
+thermo_log      post/thermo.txt
 
 atom_style      granular
 atom_modify     map array
