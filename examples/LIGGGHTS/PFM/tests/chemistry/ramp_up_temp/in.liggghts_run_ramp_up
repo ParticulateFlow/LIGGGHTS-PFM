@@ -243,6 +243,10 @@ dump    dmp all custom 1000 post/dump*.liggghts_run id type x y z vx vy vz &
         f_partNu f_partRe f_partP f_partTemp f_CO_diffCoeff
 
 variable rampT equal 600+step*0.001
+
+fix printT all print ${WI} "${time} ${rampT}" &
+    file post/T.dat title "#time T" screen no
+
 run     600000 every 5000 "set group all property/atom partTemp ${rampT}"
 
 
