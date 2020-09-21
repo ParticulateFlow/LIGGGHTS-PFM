@@ -199,6 +199,7 @@ void Replicate::command(int narg, char **arg)
   domain->set_global_box();
   comm->set_proc_grid();
   domain->set_local_box();
+  domain->update_all_regions();
 
   // copy type arrays to new atom class
 

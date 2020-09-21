@@ -242,6 +242,7 @@ void ReadData::command(int narg, char **arg)
       domain->set_global_box();
       comm->set_proc_grid();
       domain->set_local_box();
+      domain->update_all_regions();
   }
 
   /*NL*/ if(DEBUG_READ_DATA && screen) fprintf(screen,"READ_DATA 4\n");

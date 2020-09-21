@@ -134,6 +134,7 @@ class Domain : protected Pointers {
   void add_region(int, char **);
   void delete_region(int, char **);
   int find_region(const char *);
+  void update_all_regions();
   virtual void set_boundary(int, char **, int); //NP modified C.K.
   void set_box(int, char **);
   virtual void print_box(const char *); //NP modified C.K.

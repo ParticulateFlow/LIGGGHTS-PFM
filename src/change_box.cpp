@@ -219,6 +219,7 @@ void ChangeBox::command(int narg, char **arg)
         domain->set_initial_box();
         domain->set_global_box();
         domain->set_local_box();
+        domain->update_all_regions();
         domain->print_box("  ");
 
       } else if (ops[m].flavor == DELTA) {
@@ -229,6 +230,7 @@ void ChangeBox::command(int narg, char **arg)
         domain->set_initial_box();
         domain->set_global_box();
         domain->set_local_box();
+        domain->update_all_regions();
         domain->print_box("  ");
 
       } else if (ops[m].flavor == SCALE) {
@@ -243,6 +245,7 @@ void ChangeBox::command(int narg, char **arg)
         domain->set_initial_box();
         domain->set_global_box();
         domain->set_local_box();
+        domain->update_all_regions();
         domain->print_box("  ");
       }
 
@@ -257,6 +260,7 @@ void ChangeBox::command(int narg, char **arg)
         domain->set_initial_box();
         domain->set_global_box();
         domain->set_local_box();
+        domain->update_all_regions();
         domain->print_box("  ");
 
       } else if (ops[m].flavor == DELTA) {
@@ -266,6 +270,7 @@ void ChangeBox::command(int narg, char **arg)
         domain->set_initial_box();
         domain->set_global_box();
         domain->set_local_box();
+        domain->update_all_regions();
         domain->print_box("  ");
       }
 
