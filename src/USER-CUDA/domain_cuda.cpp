@@ -284,6 +284,10 @@ void DomainCuda::reset_box()
     x2lamda(atom->nlocal);
     pbc();
   }
+
+  // if shrink-wrapped, update regions (e.g. local search trees)
+  // external box updates need to explicitly take care of region updates!
+  if (nonperiodic == 2) update_all_regions();
 }
 
 /* ----------------------------------------------------------------------
