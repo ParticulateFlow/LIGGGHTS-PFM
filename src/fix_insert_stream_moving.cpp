@@ -250,7 +250,10 @@ void FixInsertStreamMoving::end_of_step()
             r_step = static_cast<int>(release_data[i][6]+FIX_INSERT_STREAM_TINY);
             vectorCopy3D(&release_data[i][7],v_integrate);
 
-            if(step > r_step) continue;
+            if(step > r_step)
+            {
+                continue;
+            }
             else if (r_step == step)
             {
                 //NP dont do this for multisphere, skip to next i in for loop
