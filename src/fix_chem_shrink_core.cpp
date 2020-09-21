@@ -1361,7 +1361,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
 
     for (int k = 0; k < layers_; k++)
     {
-        HR[k] = delta_h[k]*dmA_[k]/molMass_A_;
+        HR[k] = delta_h[k]*dmA_[k]/molMass_A_*cg_*cg_*cg_;
     }
 
     if (screenflag_ && screen) {
