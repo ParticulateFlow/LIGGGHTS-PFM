@@ -86,8 +86,8 @@ BondGran::BondGran(LAMMPS *lmp) : Bond(lmp)
     // bond.cpp:               void Bond::n_granhistory(int nhist) {ngranhistory = nhist; atom->n_bondhist = ngranhistory; if(){FLERR}}
     // atom_vec_bond_gran.cpp: memory->grow(atom->bond_hist,nmax,atom->bond_per_atom,atom->n_bondhist,"atom:bond_hist");
 
-    if(!atom->style_match("bond/gran") && !atom->style_match("angle/gran"))
-        error->all(FLERR,"A granular bond style can only be used together with atom style bond/gran or angle/gran");
+    if(!atom->style_match("bond/gran"))
+        error->all(FLERR,"A granular bond style can only be used together with atom style bond/gran");
     if(comm->me == 0)
         error->warning(FLERR,"Bond granular: This is a beta version - be careful!");
     fix_Temp = NULL;
