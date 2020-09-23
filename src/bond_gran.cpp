@@ -674,7 +674,7 @@ void BondGran::allocate()
 void BondGran::coeff(int narg, char **arg)
 {
 #ifdef FLEXIBLE_BONDS
-  if(narg < 11) error->all(FLERR,"Incorrect args for bond coefficients (ro, ri, lb, sn, st, s_ben, s_tor, damp, bn, bt, b_density)"); // Matt Schramm
+  if(narg < 11) error->all(FLERR,"Incorrect args for bond coefficients (ro, ri, lb, sn, st, s_ben, s_tor, damp, bn, bt)");
 #else
   if(narg < 4) error->all(FLERR,"Incorrect args for bond coefficients");
 #endif
