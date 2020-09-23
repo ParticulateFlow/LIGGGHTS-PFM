@@ -64,7 +64,7 @@ variable Y_bond equal $Y
 variable G_bond equal $G
 
 
-bond_coeff 1 ${ro} ${ri} ${lb} ${Y_bond} ${G_bond} ${bond_damp_val} 1 1.0e32 1.0e32
+bond_coeff 1 ${ro} ${ri} ${lb} ${Y_bond} ${G_bond} ${Y_bond} ${G_bond} ${bond_damp_val} 0.00566 0 1 1.0e32 1.0e32
 
 #Material properties required for granular pair styles
 
