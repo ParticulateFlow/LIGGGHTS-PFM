@@ -106,13 +106,13 @@ BondGran::~BondGran()
     memory->destroy(damp);
     memory->destroy(bn);
     memory->destroy(bt);
+    memory->destroy(S_ben);
+    memory->destroy(S_tor);
 #else
     memory->destroy(rb);
 #endif
     memory->destroy(Sn);
     memory->destroy(St);
-    memory->destroy(S_ben);
-    memory->destroy(S_tor);
     memory->destroy(r_break);
     memory->destroy(sigman_break);
     memory->destroy(tau_break);
@@ -510,12 +510,12 @@ void BondGran::compute(int eflag, int vflag)
 #endif
 
     //increment normal and tangential force and torque
-    // const double dissipate = 1.0;
 #ifdef FLEXIBLE_BONDS
     bondhistlist[n][0] = fn_bond[0];
     bondhistlist[n][1] = fn_bond[1];
     bondhistlist[n][2] = fn_bond[2];
 #else
+    const double dissipate = 1.0;
     bondhistlist[n][0] = dissipate * bondhistlist[n][0] + dnforce[0];
     bondhistlist[n][1] = dissipate * bondhistlist[n][1] + dnforce[1];
     bondhistlist[n][2] = dissipate * bondhistlist[n][2] + dnforce[2];
@@ -649,13 +649,13 @@ void BondGran::allocate()
   memory->create(damp,n+1,"bond:damp");
   memory->create(bn,n+1,"bond:bn");
   memory->create(bt,n+1,"bond:bt");
+  memory->create(S_ben,n+1,"bond:S_ben");
+  memory->create(S_tor,n+1,"bond:S_tor");
 #else
   memory->create(rb,n+1,"bond:rb");
 #endif
   memory->create(Sn,n+1,"bond:Sn");
   memory->create(St,n+1,"bond:St");
-  memory->create(S_ben,n+1,"bond:S_ben");
-  memory->create(S_tor,n+1,"bond:S_tor");
 
   memory->create(r_break,(n+1),"bond:r_break");
   memory->create(sigman_break,(n+1),"bond:sigman_break");
@@ -754,13 +754,13 @@ void BondGran::coeff(int narg, char **arg)
     damp[i] = damp_one;
     bn[i] = bn_one;
     bt[i] = bt_one;
+    S_ben[i] = Sben_one;
+    S_tor[i] = Stor_one;
 #else
     rb[i] = rb_one;
 #endif
     Sn[i] = Sn_one;
     St[i] = St_one;
-    S_ben[i] = Sben_one;
-    S_tor[i] = Stor_one;
 
     if(breakmode == BREAKSTYLE_SIMPLE) r_break[i] = r_break_one;
     else
@@ -805,9 +805,9 @@ void BondGran::write_restart(FILE *fp)
 #endif
   fwrite(&Sn[1],sizeof(double),atom->nbondtypes,fp);
   fwrite(&St[1],sizeof(double),atom->nbondtypes,fp);
+#ifdef FLEXIBLE_BONDS
   fwrite(&S_ben[1],sizeof(double),atom->nbondtypes,fp);
   fwrite(&S_tor[1],sizeof(double),atom->nbondtypes,fp);
-#ifdef FLEXIBLE_BONDS
   fwrite(&damp[1],sizeof(double),atom->nbondtypes,fp);
 #endif
 }
@@ -832,9 +832,9 @@ void BondGran::read_restart(FILE *fp)
 #endif
     fread(&Sn[1],sizeof(double),atom->nbondtypes,fp);
     fread(&St[1],sizeof(double),atom->nbondtypes,fp);
+#ifdef FLEXIBLE_BONDS
     fread(&S_ben[1],sizeof(double),atom->nbondtypes,fp);
     fread(&S_tor[1],sizeof(double),atom->nbondtypes,fp);
-#ifdef FLEXIBLE_BONDS
     fread(&damp[1],sizeof(double),atom->nbondtypes,fp); //MS
 #endif
   }
@@ -849,9 +849,9 @@ void BondGran::read_restart(FILE *fp)
 #endif
   MPI_Bcast(&Sn[1],atom->nbondtypes,MPI_DOUBLE,0,world);
   MPI_Bcast(&St[1],atom->nbondtypes,MPI_DOUBLE,0,world);
+#ifdef FLEXIBLE_BONDS
   MPI_Bcast(&S_ben[1],atom->nbondtypes,MPI_DOUBLE,0,world);
   MPI_Bcast(&S_tor[1],atom->nbondtypes,MPI_DOUBLE,0,world);
-#ifdef FLEXIBLE_BONDS
   MPI_Bcast(&damp[1],atom->nbondtypes,MPI_DOUBLE,0,world); //MS
 #endif
 
