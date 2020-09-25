@@ -1,6 +1,6 @@
 ## Set Simulation Variables
 variable dt equal 2e-8
-variable cool_down_time equal ceil(5.0e-3/${dt})
+variable cool_down_time equal ceil(5.0e-2/${dt})
 variable thermo_write equal ceil(5.0e-5/${dt})
 variable dump_write equal ceil(1.0e-4/${dt})
 
@@ -55,7 +55,7 @@ variable Y_bond equal ${Young}
 variable G_bond equal ${Young}/(2.0*(1+${poiso}))
 
 bond_style      gran
-bond_coeff      1 ${ro} ${ri} ${lb} ${Y_bond} ${G_bond} 0 0 ${bond_damp} 0.001415 0 1 1.0e32 1.0e32
+bond_coeff      1 ${ro} ${ri} ${lb} ${Y_bond} ${G_bond} ${Y_bond} ${G_bond} ${bond_damp} 0.001415 0 1 1.0e32 1.0e32
 
 fix             drum all mesh/surface/stress file meshes/drum.stl type 2 scale 0.001 move 0.0 0.0 0.0
 fix             w1 all wall/gran model hertz tangential history primitive type 2 zplane 0.15

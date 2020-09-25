@@ -1,6 +1,6 @@
-### Set Simulation Variables
+## Set Simulation Variables
 variable dt equal 2e-8
-variable cool_down_time equal ceil(5.0e-3/${dt})
+variable cool_down_time equal ceil(5.0e-2/${dt})
 variable thermo_write equal ceil(5.0e-5/${dt})
 variable dump_write equal ceil(1.0e-4/${dt})
 
