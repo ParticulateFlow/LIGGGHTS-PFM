@@ -1,52 +1,50 @@
-#bond
+# bonded sphere breakage
 
 atom_style      hybrid granular bond/gran n_bondtypes 1 bonds_per_atom 6
 atom_modify     map array
 boundary        f f f
 newton          off
 
-#processors  2 1 1
-
 communicate     single vel yes
 
 units           si
 
 region          reg block 0 2 0 2 0 2 units box
-create_box      1 reg #bonds 1 6
+create_box      1 reg
 
 neighbor        0.002 bin
 neigh_modify    delay 0
 
-#pair style
+# pair style
 pair_style      gran model hertz tangential history
 pair_coeff      * *
 
-#bond
+# bond style
 bond_style      gran
 
 variable        simplebreak equal 0
 variable        stressbreak equal 1
 
-#fix             boxwalls_x1 all wall/gran model hertz tangential history primitive type 1 xplane 0
-#fix             boxwalls_x2 all wall/gran model hertz tangential history primitive type 1 xplane 2
-#fix             boxwalls_y1 all wall/gran model hertz tangential history primitive type 1 yplane 0
-#fix             boxwalls_y2 all wall/gran model hertz tangential history primitive type 1 yplane 2
-#fix             boxwalls_z1 all wall/gran model hertz tangential history primitive type 1 zplane 0
-#fix             boxwalls_z2 all wall/gran model hertz tangential history primitive type 1 zplane 2
-
-#for simplebreak
-#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break
-#bond_coeff     1 0.0025 0.0 1.0 10000000000 10000000000 0 ${simplebreak} 0.002501
+# for simplebreak
+# FLEXIBLE_BONDS (cf. bond_gran.cpp)
+# N ro ri lb Sn_bond St_bond s_bend s_tor damp  bn bt TYPE_OF_BOND r_break
+#bond_coeff     1 0.25 0.0 1.0 5e7 5e7 5e7 5e7 0.0 0.001 0.0 ${simplebreak} 0.00251
+# NON_FLEXIBLE_BONDS
+# N rb Sn_bond St_bond TYPE_OF_BOND r_break
+#bond_coeff     1 0.25 1e9 1e9 ${simplebreak} 0.00253
 
 
-#for stressbreak
-#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND sigma_break tau_break
-bond_coeff      1 1.0 0.0 1.0 1e8 1e8 0 ${stressbreak} 1e4 1e4
+# for stressbreak
+# FLEXIBLE_BONDS (cf. bond_gran.cpp)
+# N ro ri lb Sn_bond St_bond s_bend s_tor damp bn bt TYPE_OF_BOND sigma_break tau_break
+bond_coeff      1 1.0 0.0 1.0 5e7 5e7 5e7 5e7 0.0 0.001 0.0 ${stressbreak} 1e5 1e5
+# NON_FLEXIBLE_BONDS
+# N rb Sn_bond St_bond TYPE_OF_BOND sigma_break tau_break
+#bond_coeff     1 1.0 1e8 1e8 ${stressbreak} 1e4 1e4
 
 # ==============================================================
 # create particles IN A DEFINED REGION to collide against a wall
 # ==============================================================
-#region          bc mesh/tet file meshes/sphere_fine.vtk scale 0.05 move 1 1 1 rotate 0. 0. 0. units box #scale 0.05 move 0.05 0.05 0.05 rotate 0. 0. 0. units box
 region          bc sphere 0.1 0.1 0.1 0.05 units box
 lattice         sc 0.005
 create_atoms    1 region bc
@@ -54,10 +52,7 @@ group           bonded region bc
 set             group all density 2500 diameter 0.005
 set             group all vz 0 vx 0
 
-###TODO blow the particles up (see examples/LIGGGHTS/Tutorial_Public/packing/###
-
-#Material properties required for granular pair styles
-
+# material properties required for granular pair styles
 fix             m1 all property/global youngsModulus peratomtype 1.e7
 fix             m2 all property/global poissonsRatio peratomtype 0.3
 fix             m3 all property/global coefficientRestitution peratomtypepair 1 0.2
@@ -71,19 +66,14 @@ timestep        0.00001
 
 fix             gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
+fix             top    all mesh/surface file meshes/top.stl    type 1
+fix             bottom all mesh/surface file meshes/bottom.stl type 1
+fix             walls  all wall/gran model hertz tangential history mesh n_meshes 2 meshes top bottom
 
-fix             top    all mesh/surface file meshes/top.stl    type 1     #move 0.05 0.05 0.2
-fix             bottom all mesh/surface file meshes/bottom.stl type 1     #move 0.05 0.05 0.05
-fix             walls all wall/gran model hertz tangential history mesh n_meshes 2 meshes top bottom
+# apply nve integration
+fix             integr all nve/sphere
 
-#region and insertion
-
-group           nve_group region reg
-
-#apply nve integration
-fix             integr nve_group nve/sphere
-
-#output settings, include total thermal energy
+# output settings
 compute         rke all erotate/sphere
 variable        etotal equal ke+c_rke
 thermo_style    custom step atoms numbond
@@ -97,17 +87,9 @@ dump            dumpstl all mesh/stl 100 post/dump*.stl
 compute b1 all property/local batom1x batom1y batom1z batom2x batom2y batom2z batom1 batom2 btype
 dump    bnd all local 100 post/bonds*.bond c_b1[1] c_b1[2] c_b1[3] c_b1[4] c_b1[5] c_b1[6] c_b1[7] c_b1[8] c_b1[9]
 
-#insert particles
+# insert particles
 run             1
 fix_modify      bondcr every 0
-
-# ================================================
-# after the bonds are formed,
-# exclude pairwise interaction ?
-# ================================================
-#neigh_modify    exclude group bonded bonded
-
-#run
 
 fix             movecad1 all move/mesh mesh top  linear 0 0 -0.5
 
@@ -116,3 +98,4 @@ run             10000 upto
 unfix           movecad1
 
 run             20000
+

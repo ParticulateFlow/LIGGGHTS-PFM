@@ -1,27 +1,25 @@
-#bond
+# bonded sphere breakage
 
 atom_style      hybrid granular bond/gran n_bondtypes 1 bonds_per_atom 6
 atom_modify     map array
 boundary        f f f
 newton          off
 
-#processors  2 1 1
-
 communicate     single vel yes
 
 units           si
 
 region          reg block -1 1 -1 1 -1 1 units box
-create_box      1 reg #bonds 1 6
+create_box      1 reg
 
 neighbor        0.002 bin
 neigh_modify    delay 0
 
-#pair style
+# pair style
 pair_style      gran model hertz tangential history
 pair_coeff      * *
 
-#bond
+# bond style
 bond_style      gran
 
 variable        simplebreak equal 0
@@ -34,14 +32,21 @@ fix             walls4 all wall/gran model hertz tangential history primitive ty
 fix             walls5 all wall/gran model hertz tangential history primitive type 1 yplane -1
 fix             walls6 all wall/gran model hertz tangential history primitive type 1 yplane  1
 
-#for simplebreak
-#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break
-#bond_coeff     1 0.0025 0.0 1.0 10000000000 10000000000 0 ${simplebreak} 0.002501
+# for simplebreak
+# FLEXIBLE_BONDS (cf. bond_gran.cpp)
+# N ro ri lb Sn_bond St_bond s_bend s_tor damp  bn bt TYPE_OF_BOND r_break
+#bond_coeff     1 0.25 0.0 1.0 5e7 5e7 5e7 5e7 0.0 0.001 0.0 ${simplebreak} 0.00255
+# NON_FLEXIBLE_BONDS
+# N rb Sn_bond St_bond TYPE_OF_BOND r_break
+#bond_coeff     1 0.25 1e10 1e10 ${simplebreak} 0.00255
 
-
-#for stressbreak
-#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND sigma_break tau_break
-bond_coeff      1 0.8 0.0 1.0 10000000000 10000000000 0 ${stressbreak} 1e6 1e6
+# for stressbreak
+# FLEXIBLE_BONDS (cf. bond_gran.cpp)
+# N ro ri lb Sn_bond St_bond s_bend s_tor damp bn bt TYPE_OF_BOND sigma_break tau_break
+bond_coeff      1 0.25 0.0 1.0 5e7 5e7 5e7 5e7 0.0 0.001 0.0 ${stressbreak} 3e6 3e6
+# NON_FLEXIBLE_BONDS
+# N rb Sn_bond St_bond TYPE_OF_BOND sigma_break tau_break
+#bond_coeff     1 0.25 1e10 1e10 ${stressbreak} 2.2e6 2.2e6
 
 # ==============================================================
 # create particles IN A DEFINED REGION to collide against a wall
@@ -53,10 +58,7 @@ group           bonded region bc
 set             group all density 2500 diameter 0.005
 set             group all vz 0 vx 0
 
-###TODO blow the particles up (see examples/LIGGGHTS/Tutorial_Public/packing/###
-
-#Material properties required for granular pair styles
-
+# material properties required for granular pair styles
 fix             m1 all property/global youngsModulus peratomtype 5.e6
 fix             m2 all property/global poissonsRatio peratomtype 0.45
 fix             m3 all property/global coefficientRestitution peratomtypepair 1 0.5
@@ -70,19 +72,14 @@ timestep        0.00001
 
 fix             gravi all gravity 9.81 vector 0.0 0.0 -1.0
 
-#fix             zwalls all wall/gran/hertz/history primitive type 1 zplane -0.05
 fix             top    all mesh/surface file meshes/top.stl    type 1
 fix             bottom all mesh/surface file meshes/bottom.stl type 1
 fix             walls all wall/gran model hertz tangential history mesh n_meshes 2 meshes top bottom
 
-#region and insertion
+# apply nve integration
+fix             integr all nve/sphere
 
-group           nve_group region reg
-
-#apply nve integration
-fix             integr nve_group nve/sphere
-
-#output settings, include total thermal energy
+# output settings
 compute         rke all erotate/sphere
 variable        etotal equal ke+c_rke
 thermo_style    custom step atoms numbond
@@ -95,16 +92,9 @@ dump            dumpstl all mesh/stl 100 post/dump*.stl
 compute         b1 all property/local batom1x batom1y batom1z batom2x batom2y batom2z batom1 batom2 btype
 dump            bnd all local 100 post/bonds*.bond c_b1[1] c_b1[2] c_b1[3] c_b1[4] c_b1[5] c_b1[6] c_b1[7] c_b1[8] c_b1[9]
 
-#insert particles
+# insert particles
 run             10
 fix_modify      bondcr every 0
 
-# ================================================
-# after the bonds are formed,
-# exclude pairwise interaction ?
-# ================================================
-#neigh_modify    exclude group bonded bonded
-
-#run
-
 run             50000 upto
+
