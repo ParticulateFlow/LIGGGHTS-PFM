@@ -6,12 +6,12 @@ variable runstep equal 10/${dt}
 variable filestep equal 0.01/${dt}
 ##################################
 
-variable rp equal 10*0.0254   #particle radius
+variable rp equal 10*0.0254   # particle radius
 variable d  equal 2*${rp}
 variable sc equal $d-0.000000001
 variable c  equal ${d}+0.1
 variable rb equal 0.8
-variable L  equal 200*0.0254+${rp}          #INCH !
+variable L  equal 200*0.0254+${rp}          # INCH !
 
 atom_style      hybrid granular bond/gran n_bondtypes 1 bonds_per_atom 6
 atom_modify     map array
@@ -30,46 +30,42 @@ create_box      2 reg
 neighbor        0.225 bin
 neigh_modify    delay 0
 
-#pair style
+# pair style
 pair_style      gran model hertz tangential history
 pair_coeff      * *
 
-#bond
+# bond style
 bond_style      gran
 
-#for stressbreak
+# for stressbreak
 variable Y  equal 6894.75729*1000*1e4
 
 variable p equal 0.3
-variable G equal 3759.4*6894.75729*1000 #$Y/(2*(1+$p))
+variable G equal 3759.4*6894.75729*1000
 print "Y = $Y"
 print "G = $G"
-
-#double kn = E/lenght;                          //ZUG - Druck
-#double ks = 12*I*E/(A*lenght*lenght*lenght);   //A*G/lenght; //Schub
 
 variable I equal 0.25*PI*${rb}*${rb}*${rb}*${rb}
 variable A equal PI*${rb}*${rb}
 
-variable kn equal 2*$Y/$d                #grain behavior ?
-variable ks equal 12*$I*$Y/($A*$d*$d*$d) #${kn}/2.5
+variable kn equal 2*$Y/$d                # grain behavior ?
+variable ks equal 12*$I*$Y/($A*$d*$d*$d) # ${kn}/2.5
 
 print "I = $I"
 print "A = $A"
 print "kn = ${kn}"
 print "ks = ${ks}"
-#N ri ro lb Sn_bond St_bond damp TYPE_OF_BOND r_break|sigma_break tau_break (temp)
-bond_coeff      1 ${rb} 0.0 1.0 ${kn} ${ks} 0 1 1e10 1e10
+# N ro ri lb Sn_bond St_bond s_bend s_tor damp bn bt TYPE_OF_BOND (r_break)|(sigma_break tau_break [temp])
+bond_coeff      1 ${rb} 0.0 1.0 ${kn} ${ks} ${kn} ${ks} 0.0 0.1 0.0 1 1e10 1e10
 
-#Material properties required for granular pair styles
-
+# material properties required for granular pair styles
 fix             m1 all property/global youngsModulus peratomtype $Y $Y
 fix             m2 all property/global poissonsRatio peratomtype $p $p
 fix             m3 all property/global coefficientRestitution peratomtypepair 2 0.2 0.2 0.2 0.2
 fix             m4 all property/global coefficientFriction peratomtypepair 2 0.3 0.3 0.3 0.3
 
-mass            1 1.0 #dummy
-mass            2 1.0 #dummy
+mass            1 1.0 # dummy
+mass            2 1.0 # dummy
 
 # ================================================
 # create just 11 particles in a zylinder
@@ -89,23 +85,16 @@ group           freezed id == 1
 group           tipball id == ${lastone}
 
 run             1
-fix             f1 freezed freeze #fixed bearing
+fix             f1 freezed freeze # fixed bearing
 
-fix             bondcr all bond/create/gran 1 1 1 0.51 1 6 #every itype jtype cutoff btype newperts
+fix             bondcr all bond/create/gran 1 1 1 0.51 1 6 # every itype jtype cutoff btype newperts
 
 timestep        ${dt}
 
-#fix             gravi all gravity 9.81 vector 0.0 0.0 -1.0
+# apply nve integration
+fix             integr all nve/sphere
 
-#fix             zwalls all wall/gran/hertz/history primitive type 1 zplane 0.0
-
-
-group           nve_group region reg
-
-#apply nve integration
-fix             integr nve_group nve/sphere
-
-#output settings, include total thermal energyg
+# output settings
 thermo_style    custom step atoms numbond
 thermo          100
 thermo_modify   lost ignore norm no
@@ -114,9 +103,9 @@ compute_modify  thermo_temp dynamic yes
 dump            dmp all custom  ${filestep} post/dump*.liggghts id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
 compute         b1 all property/local batom1x batom1y batom1z batom2x batom2y batom2z batom1 batom2 btype
-dump            bnd all local ${filestep} post/bonds*.bond c_b1[1] c_b1[2] c_b1[3] c_b1[4] c_b1[5] c_b1[6] c_b1[7] c_b1[8] c_b1[9]  #x1 y1 z1 x2 y2 z2 id1 id2 typeofbond BSD
+dump            bnd all local ${filestep} post/bonds*.bond c_b1[1] c_b1[2] c_b1[3] c_b1[4] c_b1[5] c_b1[6] c_b1[7] c_b1[8] c_b1[9]  # x1 y1 z1 x2 y2 z2 id1 id2 typeofbond BSD
 
-#get coordinates of last particle
+# get coordinates of last particle
 variable time equal step*dt
 variable px equal x[${lastone}]
 variable py equal y[${lastone}]
@@ -124,20 +113,19 @@ variable pz equal z[${lastone}]
 
 fix outfile all print ${filestep} "${time};${px};${py};${pz}" file post/beam.csv screen no title "t;x;y;z"
 
-#insert particles
-run             1               #run one step
-fix_modify      bondcr every 0  #do not create new bonds after this line
-variable KIP  equal 4448.2216   #N
-variable inch equal 0.0254      #mm
+run             1               # run one step
+fix_modify      bondcr every 0  # do not create new bonds after this line
+variable KIP  equal 4448.2216   # N
+variable inch equal 0.0254      # mm
 
 variable M equal 100*${KIP}/${inch}
-variable F equal 100*${KIP}     #N
+variable F equal 100*${KIP}     # N
 
-fix             tipF tipball addforce  0 0 -$F    #1kip=4.4482216kN
-#fix             tipM tipball addtorque 0 $M  0    #not possible
+fix             tipF tipball addforce  0 0 -$F    # 1kip=4.4482216kN
+#fix             tipM tipball addtorque 0 $M  0    # not possible
 
 #quit
-variable t equal 1/dt   #run 1 second
+variable t equal 1.0/dt   # run 1 second
 run $t
 
 write_restart post/restart/beam.restart
