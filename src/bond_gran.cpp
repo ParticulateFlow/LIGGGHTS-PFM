@@ -71,10 +71,11 @@ enum{
 
 BondGran::BondGran(LAMMPS *lmp) : Bond(lmp)
 {
-    // we need 12 history values - the 6 forces and 6 torques from the last time-step
 #ifdef FLEXIBLE_BONDS
+    // we need 13 history values - the 6 forces and 6 torques from the last time-step and 1 for initial bond length
     n_granhistory(13);
 #else
+    // we need 12 history values - the 6 forces and 6 torques from the last time-step
     n_granhistory(12);
 #endif
     // number of entries in bondhistlist. bondhistlist[number of bond][number of value (from 0 to number given here)]
@@ -676,7 +677,7 @@ void BondGran::coeff(int narg, char **arg)
 #ifdef FLEXIBLE_BONDS
   if(narg < 11) error->all(FLERR,"Incorrect args for bond coefficients (ro, ri, lb, sn, st, s_ben, s_tor, damp, bn, bt)");
 #else
-  if(narg < 4) error->all(FLERR,"Incorrect args for bond coefficients");
+  if(narg < 4) error->all(FLERR,"Incorrect args for bond coefficients (rb, sn, st)");
 #endif
 
 #ifdef FLEXIBLE_BONDS
