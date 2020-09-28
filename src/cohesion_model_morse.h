@@ -83,9 +83,6 @@ namespace ContactModels {
 
     void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces) //NP modified C.K.
     {
-      // since the particles are in contact:
-      //     * the maximum cohesive force acts between the particles
-      //     * the calculation of the displacement (hIJ) is not required (no cdata.r)
       const double r = sqrt(cdata.rsq);
       const double ri = cdata.radi;
       const double rj = cdata.radj;
@@ -93,8 +90,6 @@ namespace ContactModels {
       const int itype = cdata.itype;
       const int jtype = cdata.jtype;
 
-      // since the particles are in contact, the maximum cohesive force acts
-      // using the equation directly without function call may be faster, since you can skip one if-statement
       const double Fn_coh = calcCohesiveForce(cdata, dist, r, itype, jtype);
 
       cdata.Fn += Fn_coh;
