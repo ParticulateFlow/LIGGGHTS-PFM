@@ -205,10 +205,9 @@ void ComputeCOMMolecule::compute_array()
 
 double ComputeCOMMolecule::memory_usage()
 {
-  double bytes = 2*nmolecules * sizeof(double);
+  double bytes = 2*nmolecules * sizeof(double); // massproc, masstotal
   if (molmap) bytes += (idhi-idlo+1) * sizeof(int);
-  bytes += 2*nmolecules*6 * sizeof(double);
-  int bytes_int = 2*nmolecules * sizeof(int);
+  bytes += 2*nmolecules*6 * sizeof(double); // com, comall
+  bytes += 2*nmolecules * sizeof(int); // localMol, globalMol
   return bytes;
-  return bytes_int;
 }
