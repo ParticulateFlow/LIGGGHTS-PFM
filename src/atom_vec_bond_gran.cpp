@@ -238,9 +238,9 @@ int AtomVecBondGran::pack_comm(int n, int *list, double *buf,
       buf[m++] = x_mol[j][0];
       buf[m++] = x_mol[j][1];
       buf[m++] = x_mol[j][2];
-      buf[m++]=v_mol[j][0];
-      buf[m++]=v_mol[j][1];
-      buf[m++]=v_mol[j][2];
+      buf[m++] = v_mol[j][0];
+      buf[m++] = v_mol[j][1];
+      buf[m++] = v_mol[j][2];
     }
   } else {
     if (domain->triclinic == 0) {
@@ -260,9 +260,9 @@ int AtomVecBondGran::pack_comm(int n, int *list, double *buf,
       buf[m++] = x_mol[j][0];
       buf[m++] = x_mol[j][1];
       buf[m++] = x_mol[j][2];
-      buf[m++]=v_mol[j][0];
-      buf[m++]=v_mol[j][1];
-      buf[m++]=v_mol[j][2];
+      buf[m++] = v_mol[j][0];
+      buf[m++] = v_mol[j][1];
+      buf[m++] = v_mol[j][2];
     }
   }
   return m;
@@ -1132,10 +1132,10 @@ bigint AtomVecBondGran::memory_usage()
   if (atom->memcheck("num_bond")) bytes += memory->usage(num_bond,nmax);
   if (atom->memcheck("bond_type")) bytes += memory->usage(bond_type,nmax,atom->bond_per_atom);
   if (atom->memcheck("bond_atom")) bytes += memory->usage(bond_atom,nmax,atom->bond_per_atom);
-  if(atom->memcheck("x_mol")) bytes += memory->usage(x_mol,nmax,3); // mod A.N
-  if(atom->memcheck("v_mol")) bytes += memory->usage(v_mol,nmax,3); // mod A.N
+  if (atom->memcheck("x_mol")) bytes += memory->usage(x_mol,nmax,3); // mod A.N
+  if (atom->memcheck("v_mol")) bytes += memory->usage(v_mol,nmax,3); // mod A.N
 // P.F. not too sure about atom->n_bondhist
-  if(atom->n_bondhist) bytes += nmax*sizeof(int);
+  if (atom->n_bondhist) bytes += nmax*sizeof(int);
 
-return bytes;
+  return bytes;
 }
