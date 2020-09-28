@@ -78,7 +78,7 @@ namespace ContactModels {
 
       // error checks on coarsegraining
       if(force->cg_active())
-        error->cg(FLERR,"cohesion model hamaker");
+        error->cg(FLERR,"cohesion model morse");
     }
 
     void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces) //NP modified C.K.
@@ -87,10 +87,8 @@ namespace ContactModels {
       //     * the maximum cohesive force acts between the particles
       //     * the calculation of the displacement (hIJ) is not required (no cdata.r)
       const double r = sqrt(cdata.rsq);
-      const double rinv = 1.0/r;
       const double ri = cdata.radi;
       const double rj = cdata.radj;
-      const double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
       const double dist = cdata.is_wall ? (r-ri) : (r-ri-rj);
       const int itype = cdata.itype;
       const int jtype = cdata.jtype;
@@ -140,7 +138,6 @@ namespace ContactModels {
       const int itype = atom->type[cdata.i];
       const int jtype = atom->type[cdata.j];
 
-      const double reff = cdata.is_wall ? ri : (ri*rj/(ri+rj));
       const double dist = cdata.is_wall ? (r-ri) : (r-ri-rj);
 
       const double Fn_coh = calcCohesiveForce(cdata, dist, r, itype, jtype);
