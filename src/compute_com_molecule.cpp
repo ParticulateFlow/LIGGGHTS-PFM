@@ -30,8 +30,22 @@ ComputeCOMMolecule::ComputeCOMMolecule(LAMMPS *lmp, int narg, char **arg) :
   if (atom->molecular == 0)
     error->all(FLERR,"Compute com/molecule requires molecular atom style");
 
+  unwrapflag = true;
+  if (narg > 3)
+  {
+      if (narg < 5) error->all(FLERR,"Illegal compute com/molecule command");
+      if (strcmp("unwrap",arg[3]) != 0) error->all(FLERR,"Illegal compute com/molecule command, expecting keyword 'unwrap'");
+
+      if(strcmp(arg[4],"yes") == 0)
+        unwrapflag = true;
+      else if(strcmp(arg[4],"no") == 0)
+        unwrapflag = false;
+      else
+        error->all(FLERR,"expecting 'yes' or 'no' after 'unwrap'");
+  }
+
   array_flag = 1;
-  size_array_cols = 6;
+  size_array_cols = 6; // xcom, vcom
   extarray = 0;
 
   // setup molecule-based data
@@ -129,9 +143,9 @@ void ComputeCOMMolecule::compute_array()
       if (molmap) imol = molmap[imol-idlo];
       else imol--;
       domain->unmap(x[i],image[i],unwrap);
-      com[imol][0] += x[i][0] * massone;// unwrap[0] * massone;
-      com[imol][1] += x[i][1] * massone;// unwrap[1] * massone;
-      com[imol][2] += x[i][2] * massone;// unwrap[2] * massone;
+      com[imol][0] += unwrap[0] * massone;
+      com[imol][1] += unwrap[1] * massone;
+      com[imol][2] += unwrap[2] * massone;
       com[imol][3] += v[i][0] * massone;
       com[imol][4] += v[i][1] * massone;
       com[imol][5] += v[i][2] * massone;
@@ -142,31 +156,46 @@ void ComputeCOMMolecule::compute_array()
                 MPI_DOUBLE,MPI_SUM,world);
   MPI_Allreduce(localMol,globalMol,nmolecules,MPI_INT,MPI_MAX,world);
 
-  for (i = 0; i < nmolecules; i++) {
-    if (masstotal[i] > 0.0) {
-      comall[i][0] /= masstotal[i];
-      comall[i][1] /= masstotal[i];
-      comall[i][2] /= masstotal[i];
-      comall[i][3] /= masstotal[i];
-      comall[i][4] /= masstotal[i];
-      comall[i][5] /= masstotal[i];
+  if (unwrapflag) {
+    for (i = 0; i < nmolecules; i++) {
+      if (masstotal[i] > 0.0) {
+        comall[i][0] /= masstotal[i];
+        comall[i][1] /= masstotal[i];
+        comall[i][2] /= masstotal[i];
+        comall[i][3] /= masstotal[i];
+        comall[i][4] /= masstotal[i];
+        comall[i][5] /= masstotal[i];
+      }
+    }
+  } else {
+    for (i = 0; i < nmolecules; i++) {
+      if (masstotal[i] > 0.0) {
+        comall[i][0] /= masstotal[i];
+        comall[i][1] /= masstotal[i];
+        comall[i][2] /= masstotal[i];
+        domain->remap(comall[i]);
+        comall[i][3] /= masstotal[i];
+        comall[i][4] /= masstotal[i];
+        comall[i][5] /= masstotal[i];
+      }
     }
   }
 
   // Modified by A.N. - adding compute values as per-atom properties
-  for (int i = 0; i < nlocal; i++)
+  for (int i = 0; i < nlocal; i++) {
     if (mask[i] & groupbit) {
-        for (int j = 0; j < nmolecules; j++) {
-            if(molecule[i] == globalMol[j]) {
-                x_mol[i][0] = comall[j][0];
-                x_mol[i][1] = comall[j][1];
-                x_mol[i][2] = comall[j][2];
-                v_mol[i][0] = v[i][0] - comall[j][3];
-                v_mol[i][1] = v[i][1] - comall[j][4];
-                v_mol[i][2] = v[i][2] - comall[j][5];
-            }
+      for (int j = 0; j < nmolecules; j++) {
+        if(molecule[i] == globalMol[j]) {
+          x_mol[i][0] = comall[j][0];
+          x_mol[i][1] = comall[j][1];
+          x_mol[i][2] = comall[j][2];
+          v_mol[i][0] = v[i][0] - comall[j][3];
+          v_mol[i][1] = v[i][1] - comall[j][4];
+          v_mol[i][2] = v[i][2] - comall[j][5];
         }
+      }
     }
+  }
 }
 
 

@@ -39,6 +39,7 @@ class ComputeCOMMolecule : public Compute {
   double *massproc,*masstotal;
   double **com,**comall;
   int *localMol,*globalMol;
+  bool unwrapflag;
 };
 
 }
