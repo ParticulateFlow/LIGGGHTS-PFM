@@ -168,10 +168,10 @@ namespace ContactModels {
   private:
     inline double calcCohesiveForce(ContactData& cdata,const double dist, const double r, const int itype, const int jtype)
     {
-        double dr = dist - cutoff[itype][jtype];
-        double dexp = exp(-beta[itype][jtype]*dr);
+        const double dr = dist - cutoff[itype][jtype];
+        const double dexp = exp(-beta[itype][jtype]*dr);
 
-        double f_coh = morse[itype][jtype] * (dexp*dexp - dexp)/r;
+        const double f_coh = morse[itype][jtype] * (dexp*dexp - dexp)/r;
 
         return f_coh;
     }
