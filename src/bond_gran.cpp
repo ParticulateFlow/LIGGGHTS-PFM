@@ -25,6 +25,7 @@
    Patrick Fodor (JKU Linz)
    Christian Richter (Otto-von-Guericke-University Magdeburg)
    Matthew Schramm (Iowa State University)
+   Achuth Balachandran Nair (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include <math.h>

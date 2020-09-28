@@ -5,9 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Department of Particulate Flow Modelling
+   Copyright 2020- JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -21,8 +20,7 @@
 
 /* ----------------------------------------------------------------------
    Contributing authors:
-   Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
-   Richard Berger (JKU Linz)
+   Achuth Balachandran Nair (JKU Linz)
 ------------------------------------------------------------------------- */
 #ifdef COHESION_MODEL
 COHESION_MODEL(COHESION_MORSE,morse,5)
@@ -78,7 +76,6 @@ namespace ContactModels {
       registry.connect("betaConstant", beta,"cohesion_model morse");
       registry.connect("cutoffDist", cutoff,"cohesion_model morse");
 
-      //NP modified C.K.
       // error checks on coarsegraining
       if(force->cg_active())
         error->cg(FLERR,"cohesion model hamaker");
