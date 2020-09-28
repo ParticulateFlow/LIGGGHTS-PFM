@@ -113,7 +113,7 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
       else error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'warn_region'");
       iarg += 2;
       hasargs = true;
-    } else if (strcmp(arg[iarg],"pos") == 0) {
+    } else if (strcmp(arg[iarg],"pos") == 0) { // NOTE: this option is a temporary work-around
       if (iarg+4 > narg) error->fix_error(FLERR,this,"expecting position vector");
       px_ = atof(arg[iarg+1]);
       py_ = atof(arg[iarg+2]);
@@ -121,9 +121,9 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
       insert_at = true;
       iarg+=4;
       hasargs = true;
-    }
-      else if(strcmp(style,"insert/pack") == 0)
+    } else if(strcmp(style,"insert/pack") == 0) {
       error->fix_error(FLERR,this,"unknown keyword");
+    }
   }
 
   // no fixed total number of particles inserted by this fix exists
@@ -471,13 +471,15 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             do
             {
                 //NP generate a point in my subdomain
-                if(all_in_flag) ins_region->generate_random_shrinkby_cut(pos,rbound,true);
-                else if (insert_at) {
+                if(all_in_flag) {
+                    ins_region->generate_random_shrinkby_cut(pos,rbound,true);
+                } else if (insert_at) {
                     pos[0] = px_;
                     pos[1] = py_;
                     pos[2] = pz_;
+                } else {
+                    ins_region->generate_random(pos,true);
                 }
-                else ins_region->generate_random(pos,true);
                 ntry++;
             }
             while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
@@ -523,13 +525,15 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
                 do
                 {
                     //NP generate a point in my subdomain
-                    if(all_in_flag) ins_region->generate_random_shrinkby_cut(pos,rbound,true);
-                    else if (insert_at) {
+                    if(all_in_flag) {
+                        ins_region->generate_random_shrinkby_cut(pos,rbound,true);
+                    } else if (insert_at) {
                         pos[0] = px_;
                         pos[1] = py_;
                         pos[2] = pz_;
+                    } else {
+                        ins_region->generate_random(pos,true);
                     }
-                    else ins_region->generate_random(pos,true);
                     ntry++;
                 }
 
