@@ -43,9 +43,9 @@ namespace MODEL_PARAMS
     return createPerTypePairProperty(registry, "betaConstant", caller);
   }
 
-  static MatrixProperty* createCutOffDistance(PropertyRegistry & registry, const char * caller, bool)
+  static MatrixProperty* createEquilibriumDistance(PropertyRegistry & registry, const char * caller, bool)
   {
-    return createPerTypePairProperty(registry, "cutoffDist", caller);
+    return createPerTypePairProperty(registry, "equilibriumDist", caller);
   }
 }
 
@@ -58,7 +58,7 @@ namespace ContactModels {
   public:
     static const int MASK = CM_CONNECT_TO_PROPERTIES | CM_COLLISION | CM_NO_COLLISION;
 
-    CohesionModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), morse(NULL), beta(NULL), cutoff(NULL)
+    CohesionModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp), morse(NULL), beta(NULL), r0(NULL)
     {
       if(domain->dimension!=3)
           error->all(FLERR,"Cohesion model valid for 3d simulations only");
@@ -70,11 +70,11 @@ namespace ContactModels {
     void connectToProperties(PropertyRegistry & registry) {
       registry.registerProperty("morseConstant", &MODEL_PARAMS::createMorseConstant);
       registry.registerProperty("betaConstant", &MODEL_PARAMS::createBetaConstant);
-      registry.registerProperty("cutoffDist", &MODEL_PARAMS::createCutOffDistance);
+      registry.registerProperty("equilibriumDist", &MODEL_PARAMS::createEquilibriumDistance);
 
       registry.connect("morseConstant", morse,"cohesion_model morse");
       registry.connect("betaConstant", beta,"cohesion_model morse");
-      registry.connect("cutoffDist", cutoff,"cohesion_model morse");
+      registry.connect("equilibriumDist", r0,"cohesion_model morse");
 
       // error checks on coarsegraining
       if(force->cg_active())
@@ -168,7 +168,7 @@ namespace ContactModels {
   private:
     inline double calcCohesiveForce(ContactData& cdata,const double dist, const double r, const int itype, const int jtype)
     {
-        const double dr = dist - cutoff[itype][jtype];
+        const double dr = dist - r0[itype][jtype];
         const double dexp = exp(-beta[itype][jtype]*dr);
 
         const double f_coh = morse[itype][jtype] * (dexp*dexp - dexp)/r;
@@ -178,7 +178,7 @@ namespace ContactModels {
 
     double **morse;
     double **beta;
-    double **cutoff;
+    double **r0;
   };
 }
 }
