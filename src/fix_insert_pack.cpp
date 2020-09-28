@@ -284,47 +284,47 @@ int FixInsertPack::calc_ninsert_this()
   }
   else
   {
-  for(int i = 0; i < nlocal; i++)
-  {
-      //NP only count single particles
-      if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0) continue;
-      if(ins_region->match(x[i][0],x[i][1],x[i][2]))
-        //NP OLD - had problems with particles just slightly leaving shinked body
-        //NP e.g. if due ot particle-wall overlap if insertion box = wall
-        /*NP ((!all_in_flag) && ins_region->match(x[i][0],x[i][1],x[i][2]))    ||
-             (( all_in_flag) && ins_region->match_shrinkby_cut(x[i],radius[i]))*/
+      for(int i = 0; i < nlocal; i++)
       {
-          np_region++;
-          vol_region += _4Pi3*radius[i]*radius[i]*radius[i];
-          mass_region += rmass[i];
-      }
-  }
-
-  //NP count bodies for multisphere
-  if(multisphere)
-  {
-      int nbody = multisphere->n_body();
-      double x_bound_body[3], mass_body, density_body;
-
-      for(int ibody = 0; ibody < nbody; ibody++)
-      {
-          multisphere->x_bound(x_bound_body,ibody);
-          //r_bound_body = multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
-          multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
-          if(ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]))
+          //NP only count single particles
+          if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0) continue;
+          if(ins_region->match(x[i][0],x[i][1],x[i][2]))
             //NP OLD - had problems with particles just slightly leaving shinked body
             //NP e.g. if due ot particle-wall overlap if insertion box = wall
-            /*NP (!all_in_flag) && ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]) ||
-                  (all_in_flag) && ins_region->match_shrinkby_cut(x_bound_body,r_bound_body)*/
+            /*NP ((!all_in_flag) && ins_region->match(x[i][0],x[i][1],x[i][2]))    ||
+                 (( all_in_flag) && ins_region->match_shrinkby_cut(x[i],radius[i]))*/
           {
               np_region++;
-              mass_body = multisphere->mass(ibody);
-              density_body = multisphere->density(ibody);
-              vol_region += mass_body/density_body;
-              mass_region += mass_body;
+              vol_region += _4Pi3*radius[i]*radius[i]*radius[i];
+              mass_region += rmass[i];
           }
       }
-  }
+
+      //NP count bodies for multisphere
+      if(multisphere)
+      {
+          int nbody = multisphere->n_body();
+          double x_bound_body[3], mass_body, density_body;
+
+          for(int ibody = 0; ibody < nbody; ibody++)
+          {
+              multisphere->x_bound(x_bound_body,ibody);
+              //r_bound_body = multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
+              multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
+              if(ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]))
+                //NP OLD - had problems with particles just slightly leaving shinked body
+                //NP e.g. if due ot particle-wall overlap if insertion box = wall
+                /*NP (!all_in_flag) && ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]) ||
+                      (all_in_flag) && ins_region->match_shrinkby_cut(x_bound_body,r_bound_body)*/
+              {
+                  np_region++;
+                  mass_body = multisphere->mass(ibody);
+                  density_body = multisphere->density(ibody);
+                  vol_region += mass_body/density_body;
+                  mass_region += mass_body;
+              }
+          }
+      }
   }
 
   // calculate and return number of particles that is missing
