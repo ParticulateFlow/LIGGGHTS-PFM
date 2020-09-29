@@ -230,19 +230,19 @@ void FixHeatGranRad::post_force(int vflag)
   int nlocal, nghost;
 
   //NP ray data
-  double *hitp = new double[3]; //NP the point where a ray hit a particle
   double hitEmis;            //NP emissivity of hit particle
   int hitId;                 //NP index of particle that was hit by ray
   int hitBin;                //NP no of bin where particle has been hit by ray
-  double *nextO = new double[3];
-  double *nextNormal = new double[3];
+  double hitp[3]; //NP the point where a ray hit a particle
+  double nextO[3];
+  double nextNormal[3];
 
-  double *buffer3 = new double[3]; //NP buffer for computations in intersectRaySphere
   double *ci;                //NP center of one particle
-  double *d = new double[3]; //NP direction of ray
-  double *o = new double[3]; //NP origin of ray
   double flux;               //NP energy of ray
   double sendflux;           //NP flux that is sent in a particular ray
+  double buffer3[3]; //NP buffer for computations in intersectRaySphere
+  double d[3]; //NP direction of ray
+  double o[3]; //NP origin of ray
 
   //NP individual particle data
   double areai; //NP area
@@ -317,13 +317,6 @@ void FixHeatGranRad::post_force(int vflag)
       heatFlux[i] += (areai * emisi * Sigma * TB * TB * TB * TB);
     }
   }
-
-  delete [] buffer3;
-  delete [] d;
-  delete [] hitp;
-  delete [] nextNormal;
-  delete [] nextO;
-  delete [] o;
 }
 
 /* ----------------------------------------------------------------------
@@ -355,13 +348,13 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, 
   sendflux = influx;
 
   // shoot rays.
-  double **x         = atom->x;
-  double *radius     = atom->radius;
-  double *dd         = new double[3];
-  double *hitp       = new double[3];
-  double *nextNormal = new double[3];
-  double *nextO      = new double[3];
-  int *type          = atom->type;
+  double **x = atom->x;
+  double *radius = atom->radius;
+  double dd[3];
+  double hitp[3];
+  double nextNormal[3];
+  double nextO[3];
+  int *type = atom->type;
 
   double radArea, radRad, radEmis;
 
@@ -397,12 +390,6 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, 
     //NP TODO ERROR DEBUG
     heatFlux[radID] += (radArea * radEmis * accum_eps * Sigma * TB * TB * TB * TB);
   }
-
-  delete [] dd;
-  delete [] hitp;
-  delete [] nextNormal;
-  delete [] nextO;
-
 }
 
 /* ---------------------------------------------------------------------- */
