@@ -332,9 +332,9 @@ radID ... id of particle that originally radiated (source of energy)
 orig_id ... id of particle whereupon the ray was reflected (source of ray)
 
 ---------------------------------------------------------------------- */
-void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, double *o, double *d,
-  double flux, double accum_eps, int n, double *buffer3){
-
+void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, const double *d,
+  double flux, double accum_eps, int n, double *buffer3)
+{
   double sendflux;
   double hitEmis;
   double influx = flux * accum_eps;
@@ -575,9 +575,8 @@ void FixHeatGranRad::createStencils()
   return value:
   particle id that has been hit, or -1
 */
-int FixHeatGranRad::trace(int orig_id, int ibin, double *o, double *d, double *buffer3, double *hitp){
-
-
+int FixHeatGranRad::trace(int orig_id, int ibin, const double *o, const double *d, double *buffer3, double *hitp)
+{
   int *binhead = neighbor->binhead;
   int *bins = neighbor->bins;
   int stencilbin, stbX, stbY, stbZ;
@@ -729,7 +728,8 @@ dx ... bin hopped in x direction? (-1/0/1)
 dy ... bin hopped in y direction? (-1/0/1)
 dz ... bin hopped in z direction? (-1/0/1)
 */
-int FixHeatGranRad::nextBin(int ibin, double *o, double *d, double *p, int &dx, int &dy, int &dz){
+int FixHeatGranRad::nextBin(int ibin, const double *o, const double *d, double *p, int &dx, int &dy, int &dz)
+{
   double s;
   double smax = 0.0;
   double xlo, xhi, ylo, yhi, zlo, zhi;
@@ -879,8 +879,8 @@ if a ray originates from within a sphere its intersection point is the point on
 the sphere, where the ray's parameter is negative!
 */
 //NP unit tested
-bool FixHeatGranRad::intersectRaySphere(double *o, double *d, double *center, double radius, double &t, double *buffer3){
-
+bool FixHeatGranRad::intersectRaySphere(const double *o, const double *d, const double *center, double radius, double &t, double *buffer3)
+{
   double A, B, C;
   double discr, q;
   double t0, t1, ttemp;
@@ -953,7 +953,8 @@ ansD ... return value - direction vector that points out of the sphere
  * 326.
  * see http://fossies.org/dox/gsl-2.6/sphere_8c_source.html#l00066
 */
- void FixHeatGranRad::randOnSphere(double *c, double r, double *ansP, double *ansD){
+void FixHeatGranRad::randOnSphere(const double *c, double r, double *ansP, double *ansD)
+{
   double s, a;
 
   // generate random direction
@@ -992,7 +993,8 @@ ansD ... return value - direction vector that points out of the sphere
 * 326.
 * see http://fossies.org/dox/gsl-2.6/sphere_8c_source.html#l00066
 */
-void FixHeatGranRad::randDir(double *n, double *d){
+void FixHeatGranRad::randDir(const double *n, double *d)
+{
   double side, s, a;
 
   do
