@@ -578,7 +578,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, const double *o, const double *
   double rad; // radius of particle i
 
   // individual ray data
-  double dist, distx, disty, distz;
+  double distsq, distx, disty, distz;
   bool hit;
   double t;
 
@@ -690,8 +690,8 @@ int FixHeatGranRad::trace(int orig_id, int ibin, const double *o, const double *
     distx = raypoint[0] - o[0];
     disty = raypoint[1] - o[1];
     distz = raypoint[2] - o[2];
-    dist = distx*distx + disty*disty + distz*distz;
-    if (dist >= cutGhostsq){
+    distsq = distx*distx + disty*disty + distz*distz;
+    if (distsq >= cutGhostsq){
       return -1;
     }
   }
