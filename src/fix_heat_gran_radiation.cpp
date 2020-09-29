@@ -42,12 +42,7 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 
 using MathConst::MY_4PI;
-using MathExtra::add3;
-using MathExtra::dot3;
-using MathExtra::lensq3;
-using MathExtra::normalize3;
-using MathExtra::snormalize3;
-using MathExtra::sub3;
+using namespace MathExtra;
 
 /* ---------------------------------------------------------------------- */
 
@@ -648,8 +643,7 @@ int FixHeatGranRad::trace(int orig_id, int ibin, const double *o, const double *
 
     if (hitFlag){
       // calculate hit point 'hitp'
-      snormalize3(hitT, d, buffer3);
-      add3(o, buffer3, hitp);
+      addscaled3(o,d,hitT,hitp);
       return hitId;
     }
 
@@ -958,11 +952,7 @@ void FixHeatGranRad::randOnSphere(const double *c, double r, double *ansP, doubl
   ansD[1] *= a;
 
   // calculate corresponding point on surface
-  snormalize3(r, ansD, ansP);
-
-  ansP[0] += c[0];
-  ansP[1] += c[1];
-  ansP[2] += c[2];
+  addscaled3(c,ansD,r,ansP);
 
 }
 
