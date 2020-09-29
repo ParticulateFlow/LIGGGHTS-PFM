@@ -233,7 +233,6 @@ void FixHeatGranRad::post_force(int vflag)
 
   double *ci;                //NP center of one particle
   double flux;               //NP energy of ray
-  double sendflux;           //NP flux that is sent in a particular ray
   double buffer3[3]; //NP buffer for computations in intersectRaySphere
   double d[3]; //NP direction of ray
   double o[3]; //NP origin of ray
@@ -274,8 +273,6 @@ void FixHeatGranRad::post_force(int vflag)
     areai = MY_4PI * radi * radi;
     flux  = areai * emisi * Sigma * tempi * tempi * tempi * tempi;
 
-    sendflux = flux;
-
     // let this particle radiate (flux is reduced)
     heatFlux[i] -= flux;
 
@@ -291,6 +288,7 @@ void FixHeatGranRad::post_force(int vflag)
     if (hitId != -1){ // the ray hit a particle: reflect from hit particle
 
       // update heatflux of particle j
+      const double& sendflux = flux;
       hitEmis = emissivity[type[hitId]-1];
       heatFlux[hitId] += hitEmis * sendflux;
 
@@ -312,6 +310,7 @@ void FixHeatGranRad::post_force(int vflag)
 
 /* ----------------------------------------------------------------------
 
+// recursive method!
 radID ... id of particle that originally radiated (source of energy)
 orig_id ... id of particle whereupon the ray was reflected (source of ray)
 
@@ -319,10 +318,7 @@ orig_id ... id of particle whereupon the ray was reflected (source of ray)
 void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, const double *d,
   double flux, double accum_eps, int n, double *buffer3)
 {
-  double sendflux;
-  double hitEmis;
-  double influx = flux * accum_eps;
-  int hitId, hitBin;
+  const double influx = flux * accum_eps;
 
   // base case
   if (n == 0){
@@ -336,32 +332,37 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, 
     return;
   }
 
-  sendflux = influx;
-
   // shoot rays.
-  double **x = atom->x;
-  double dd[3];
   double hitp[3];
-  double nextNormal[3];
+  int hitId;
+
+  {
+    double dd[3];
+    // generate random (diffuse) direction
+    randDir(d, dd);
+
+    hitId = trace(orig_id, ibin, o, dd, buffer3, hitp);
+  }
+
   int *type = atom->type;
-
-  // generate random (diffuse) direction
-  randDir(d, dd);
-
-  hitId = trace(orig_id, ibin, o, dd, buffer3, hitp);
 
   if (hitId != -1){ // ray hit a particle
 
+    double **x = atom->x;
+    const double& sendflux = influx;
+    const double hitEmis = emissivity[type[hitId]-1];
+
     // update heat flux for particle
-    hitEmis = emissivity[type[hitId]-1];
     heatFlux[hitId] += hitEmis * sendflux;
 
     // calculate new starting point for reflected ray
-    hitBin = neighbor->coord2bin(x[hitId]);
+    int hitBin = neighbor->coord2bin(x[hitId]);
+
+    double nextNormal[3];
 
     // calculate new normal vector of reflection for reflected ray
-    sub3(hitp, x[hitId], buffer3);
-    normalize3(buffer3, nextNormal);
+    sub3(hitp, x[hitId], nextNormal);
+    norm3(nextNormal);
 
     // reflect ray at the hitpoint.
     reflect(radID, hitId, hitBin, hitp, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
@@ -915,7 +916,7 @@ ansD ... return value - direction vector that points out of the sphere
 */
 void FixHeatGranRad::randOnSphere(const double *c, double r, double *ansP, double *ansD)
 {
-  double s, a;
+  double s;
 
   // generate random direction
   do
@@ -927,7 +928,7 @@ void FixHeatGranRad::randOnSphere(const double *c, double r, double *ansP, doubl
   } while (s > 1.0);
 
   ansD[2] = 2.0*s - 1.0;
-  a = 2.0 * sqrt(1.0 - s);
+  const double a = 2.0 * sqrt(1.0 - s);
 
   ansD[0] *= a;
   ansD[1] *= a;
@@ -951,7 +952,7 @@ void FixHeatGranRad::randOnSphere(const double *c, double r, double *ansP, doubl
 */
 void FixHeatGranRad::randDir(const double *n, double *d)
 {
-  double side, s, a;
+  double s;
 
   do
   {
@@ -962,13 +963,13 @@ void FixHeatGranRad::randDir(const double *n, double *d)
   } while (s > 1.0);
 
   d[2] = 2.0*s - 1.0;
-  a = 2.0 * sqrt(1.0 - s);
+  const double a = 2.0 * sqrt(1.0 - s);
 
   d[0] *= a;
   d[1] *= a;
 
   // adjust direction, if it points to the wrong side
-  side = dot3(d, n);
+  const double side = dot3(d, n);
   if (side < 0.0){
     d[0] = -d[0];
     d[1] = -d[1];
