@@ -340,13 +340,10 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, 
 
   // shoot rays.
   double **x = atom->x;
-  double *radius = atom->radius;
   double dd[3];
   double hitp[3];
   double nextNormal[3];
   int *type = atom->type;
-
-  double radArea, radRad, radEmis;
 
   // generate random (diffuse) direction
   randDir(d, dd);
@@ -370,10 +367,10 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, 
     reflect(radID, hitId, hitBin, hitp, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
   }
   else {
-
-    radRad  = radius[radID];
-    radArea = MY_4PI * radRad * radRad;
-    radEmis = emissivity[type[radID]-1];
+    const double *radius = atom->radius;
+    const double radRad  = radius[radID];
+    const double radArea = MY_4PI * radRad * radRad;
+    const double radEmis = emissivity[type[radID]-1];
     //NP TODO ERROR DEBUG
     heatFlux[radID] += (radArea * radEmis * accum_eps * Sigma * TB * TB * TB * TB);
   }
