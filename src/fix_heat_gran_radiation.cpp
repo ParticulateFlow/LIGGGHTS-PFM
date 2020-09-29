@@ -568,10 +568,6 @@ int FixHeatGranRad::trace(int orig_id, int ibin, const double *o, const double *
   int sz = neighbor->sz;
   int mbins = neighbor->mbins;
 
-  // individual particle data
-  double *c;  // center of particle i
-  double rad; // radius of particle i
-
   // individual ray data
   double distsq, distx, disty, distz;
   bool hit;
@@ -625,12 +621,8 @@ int FixHeatGranRad::trace(int orig_id, int ibin, const double *o, const double *
           continue;
         }
 
-        // center and radius
-        c = x[i];
-        rad = radius[i];
-
         // check if atom intersects ray
-        hit = intersectRaySphere(o, d, c, rad, t, buffer3);
+        hit = intersectRaySphere(o, d, x[i], radius[i], t, buffer3);
         if (hit){
           hitFlag = true;
           if (t < hitT){
