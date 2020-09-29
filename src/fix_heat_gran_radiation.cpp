@@ -602,12 +602,10 @@ int FixHeatGranRad::trace(int orig_id, int ibin, const double *o, const double *
   int nstencil = pair_gran->list->nstencil;
   int nstencil2D = 0;
 
-  int *currentStencil;
-
+  int *currentStencil = stencil;
 
   // at first iteration all bins of the full stencil need to be checked
   bool check_boundary_only = false;
-  currentStencil = stencil;
 
   while ((currentBin != -1) && (hitFlag == false)){
 
@@ -1001,8 +999,8 @@ void FixHeatGranRad::randDir(const double *n, double *d)
   // adjust direction, if it points to the wrong side
   side = dot3(d, n);
   if (side < 0.0){
-    d[0] *= -1.0;
-    d[1] *= -1.0;
-    d[2] *= -1.0;
+    d[0] = -d[0];
+    d[1] = -d[1];
+    d[2] = -d[2];
   }
 }
