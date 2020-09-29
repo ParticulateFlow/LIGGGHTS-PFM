@@ -229,7 +229,6 @@ void FixHeatGranRad::post_force(int vflag)
   int hitId;                 //NP index of particle that was hit by ray
   int hitBin;                //NP no of bin where particle has been hit by ray
   double hitp[3]; //NP the point where a ray hit a particle
-  double nextO[3];
   double nextNormal[3];
 
   double *ci;                //NP center of one particle
@@ -296,16 +295,13 @@ void FixHeatGranRad::post_force(int vflag)
       heatFlux[hitId] += hitEmis * sendflux;
 
       hitBin   = neighbor->coord2bin(x[hitId]);
-      nextO[0] = hitp[0];
-      nextO[1] = hitp[1];
-      nextO[2] = hitp[2];
 
       // calculate new normal vector of reflection for reflected ray
       sub3(hitp, x[hitId], buffer3);
       normalize3(buffer3, nextNormal);
 
       // reflect ray at the hitpoint.
-      reflect(i, hitId, hitBin, nextO, nextNormal, sendflux, 1.0-hitEmis, maxBounces, buffer3);
+      reflect(i, hitId, hitBin, hitp, nextNormal, sendflux, 1.0-hitEmis, maxBounces, buffer3);
 
     } else { // if a ray does not hit a particle we assume radiation from the background
       //NP TODO DEBUG ERROR
@@ -348,7 +344,6 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, 
   double dd[3];
   double hitp[3];
   double nextNormal[3];
-  double nextO[3];
   int *type = atom->type;
 
   double radArea, radRad, radEmis;
@@ -366,16 +361,13 @@ void FixHeatGranRad::reflect(int radID, int orig_id, int ibin, const double *o, 
 
     // calculate new starting point for reflected ray
     hitBin = neighbor->coord2bin(x[hitId]);
-    nextO[0] = hitp[0];
-    nextO[1] = hitp[1];
-    nextO[2] = hitp[2];
 
     // calculate new normal vector of reflection for reflected ray
     sub3(hitp, x[hitId], buffer3);
     normalize3(buffer3, nextNormal);
 
     // reflect ray at the hitpoint.
-    reflect(radID, hitId, hitBin, nextO, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
+    reflect(radID, hitId, hitBin, hitp, nextNormal, flux, (1.0-hitEmis) * accum_eps, n-1, buffer3);
   }
   else {
 
