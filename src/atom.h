@@ -51,6 +51,9 @@ class Atom : protected Pointers {
   double **x,**v,**f;
   int * thread;
 
+  double **x_mol;               // variable to store molecule com as per-atom property - A.N.
+  double **v_mol;               // variable to store velocity of com of molecule as per-atom property - A.N.
+
   int *molecule;
   double *q,**mu; // charge, orientation of dipole moment
   double **omega,**angmom,**torque;
@@ -171,6 +174,7 @@ class Atom : protected Pointers {
   void tag_extend();
   int tag_consecutive();
   int tag_max(); //NP modified C.K.
+  void mol_extend();
 
   int parse_data(const char *);
   int count_words(const char *);

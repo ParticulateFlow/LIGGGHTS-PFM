@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <set>
 #include "fix_insert_pack.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -112,8 +113,17 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
       else error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'warn_region'");
       iarg += 2;
       hasargs = true;
-    } else if(strcmp(style,"insert/pack") == 0)
-        error->fix_error(FLERR,this,"unknown keyword");
+    } else if (strcmp(arg[iarg],"pos") == 0) { // NOTE: this option is a temporary work-around
+      if (iarg+4 > narg) error->fix_error(FLERR,this,"expecting position vector");
+      px_ = atof(arg[iarg+1]);
+      py_ = atof(arg[iarg+2]);
+      pz_ = atof(arg[iarg+3]);
+      insert_at = true;
+      iarg+=4;
+      hasargs = true;
+    } else if(strcmp(style,"insert/pack") == 0) {
+      error->fix_error(FLERR,this,"unknown keyword");
+    }
   }
 
   // no fixed total number of particles inserted by this fix exists
@@ -151,6 +161,7 @@ void FixInsertPack::init_defaults()
       insertion_ratio = 0.;
 
       warn_region = true;
+      insert_at = false;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -255,45 +266,63 @@ int FixInsertPack::calc_ninsert_this()
   int np_region = 0;
   double vol_region = 0., mass_region = 0.;
   double _4Pi3 = 4.*M_PI/3.;
-  for(int i = 0; i < nlocal; i++)
+
+  if(atom->molecular && atom->molecule_flag)
   {
-      //NP only count single particles
-      if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0) continue;
-      if(ins_region->match(x[i][0],x[i][1],x[i][2]))
-        //NP OLD - had problems with particles just slightly leaving shinked body
-        //NP e.g. if due ot particle-wall overlap if insertion box = wall
-        /*NP ((!all_in_flag) && ins_region->match(x[i][0],x[i][1],x[i][2]))    ||
-             (( all_in_flag) && ins_region->match_shrinkby_cut(x[i],radius[i]))*/
+      std::set<int> uniquemol;
+      int *molecule = atom->molecule;
+      for(int i = 0; i < nlocal; i++)
       {
-          np_region++;
-          vol_region += _4Pi3*radius[i]*radius[i]*radius[i];
-          mass_region += rmass[i];
+          if(ins_region->match(x[i][0],x[i][1],x[i][2]))
+          {
+              uniquemol.insert(molecule[i]);
+              vol_region += _4Pi3*radius[i]*radius[i]*radius[i];
+              mass_region += rmass[i];
+          }
       }
+      np_region = uniquemol.size();
   }
-
-  //NP count bodies for multisphere
-  int nbody;
-  double x_bound_body[3], mass_body, density_body;
-  if(multisphere)
+  else
   {
-      nbody = multisphere->n_body();
-
-      for(int ibody = 0; ibody < nbody; ibody++)
+      for(int i = 0; i < nlocal; i++)
       {
-          multisphere->x_bound(x_bound_body,ibody);
-          //r_bound_body = multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
-          multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
-          if(ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]))
+          //NP only count single particles
+          if(fix_multisphere && fix_multisphere->belongs_to(i) >= 0) continue;
+          if(ins_region->match(x[i][0],x[i][1],x[i][2]))
             //NP OLD - had problems with particles just slightly leaving shinked body
             //NP e.g. if due ot particle-wall overlap if insertion box = wall
-            /*NP (!all_in_flag) && ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]) ||
-                  (all_in_flag) && ins_region->match_shrinkby_cut(x_bound_body,r_bound_body)*/
+            /*NP ((!all_in_flag) && ins_region->match(x[i][0],x[i][1],x[i][2]))    ||
+                 (( all_in_flag) && ins_region->match_shrinkby_cut(x[i],radius[i]))*/
           {
               np_region++;
-              mass_body = multisphere->mass(ibody);
-              density_body = multisphere->density(ibody);
-              vol_region += mass_body/density_body;
-              mass_region += mass_body;
+              vol_region += _4Pi3*radius[i]*radius[i]*radius[i];
+              mass_region += rmass[i];
+          }
+      }
+
+      //NP count bodies for multisphere
+      if(multisphere)
+      {
+          int nbody = multisphere->n_body();
+          double x_bound_body[3], mass_body, density_body;
+
+          for(int ibody = 0; ibody < nbody; ibody++)
+          {
+              multisphere->x_bound(x_bound_body,ibody);
+              //r_bound_body = multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
+              multisphere->r_bound(ibody); // DEAD CODE? Side Effects?
+              if(ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]))
+                //NP OLD - had problems with particles just slightly leaving shinked body
+                //NP e.g. if due ot particle-wall overlap if insertion box = wall
+                /*NP (!all_in_flag) && ins_region->match(x_bound_body[0],x_bound_body[1],x_bound_body[2]) ||
+                      (all_in_flag) && ins_region->match_shrinkby_cut(x_bound_body,r_bound_body)*/
+              {
+                  np_region++;
+                  mass_body = multisphere->mass(ibody);
+                  density_body = multisphere->density(ibody);
+                  vol_region += mass_body/density_body;
+                  mass_region += mass_body;
+              }
           }
       }
   }
@@ -442,8 +471,15 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
             do
             {
                 //NP generate a point in my subdomain
-                if(all_in_flag) ins_region->generate_random_shrinkby_cut(pos,rbound,true);
-                else ins_region->generate_random(pos,true);
+                if(all_in_flag) {
+                    ins_region->generate_random_shrinkby_cut(pos,rbound,true);
+                } else if (insert_at) {
+                    pos[0] = px_;
+                    pos[1] = py_;
+                    pos[2] = pz_;
+                } else {
+                    ins_region->generate_random(pos,true);
+                }
                 ntry++;
             }
             while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
@@ -489,10 +525,18 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
                 do
                 {
                     //NP generate a point in my subdomain
-                    if(all_in_flag) ins_region->generate_random_shrinkby_cut(pos,rbound,true);
-                    else ins_region->generate_random(pos,true);
+                    if(all_in_flag) {
+                        ins_region->generate_random_shrinkby_cut(pos,rbound,true);
+                    } else if (insert_at) {
+                        pos[0] = px_;
+                        pos[1] = py_;
+                        pos[2] = pz_;
+                    } else {
+                        ins_region->generate_random(pos,true);
+                    }
                     ntry++;
                 }
+
                 while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
 
                 if(ntry == maxtry) break;
