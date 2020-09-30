@@ -39,7 +39,7 @@ opt_keyword = {mass} or {inertia_tensor} or {use_volume} or {use_density} :l
 
 [Examples:]
 
-fix pts1 all particletemplate/multisphere 57461 atom_type 1 density constant 2500 nspheres 3 ntry 1000000 spheres 0. 0. 0. 0.005   0.005 0. 0. 0.005   0.01 0. 0. 0.005  
+fix pts1 all particletemplate/multisphere 57461 atom_type 1 density constant 2500 nspheres 3 ntry 1000000 spheres 0. 0. 0. 0.005   0.005 0. 0. 0.005   0.01 0. 0. 0.005 type 1
 fix pts2 all particletemplate/multisphere 31967 atom_type 1 density constant 2500 nspheres 30 ntry 1000000 spheres file spherefile.txt scale 1.0 type 1 :pre
 
 [LIGGGHTS vs. LAMMPS Info:]
