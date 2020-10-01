@@ -58,12 +58,11 @@ class FixCfdCouplingForce : public Fix  {
   class FixPropertyAtom* fix_volumeweight_;
 
  private:
-  bool use_force_, use_torque_, use_dens_, use_type_;
+  bool use_force_, use_torque_, use_dens_, use_type_, use_property_, use_molecule_;
 // superquadric start
   bool use_superquadric_;
 // superquadric end
 
-  bool use_property_;
   char property_name[200];
   char property_type[200];
 };

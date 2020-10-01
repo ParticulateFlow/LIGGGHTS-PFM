@@ -140,6 +140,7 @@ void ReadRestart::command(int narg, char **arg)
   domain->set_global_box();
   comm->set_proc_grid();
   domain->set_local_box();
+  domain->update_all_regions();
 
   // read groups, ntype-length arrays, force field, fix info from file
   // nextra = max # of extra quantities stored with each atom

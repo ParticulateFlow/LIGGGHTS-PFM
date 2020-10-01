@@ -64,6 +64,7 @@ Fixes :h1
    fix_limit_vel
    fix_lineforce
    fix_massflow_mesh
+   fix_mean_free_time
    fix_mesh_surface
    fix_mesh_surface_stress
    fix_mesh_surface_stress_6dof
@@ -102,6 +103,7 @@ Fixes :h1
    fix_orient_fcc
    fix_particledistribution_discrete
    fix_particletemplate_fragments
+   fix_particletemplate_multiplespheres
    fix_particletemplate_multisphere
    fix_particletemplate_sphere
    fix_particletemplate_superquadric

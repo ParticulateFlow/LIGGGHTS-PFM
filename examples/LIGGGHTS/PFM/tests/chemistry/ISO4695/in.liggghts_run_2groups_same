@@ -1,0 +1,299 @@
+################################################################################
+# chemistry test case (unreacted shrinking core model)
+# reduction of two particles under ISO 4695 conditions without CFD coupling
+# whereby the second particle is added after 6000 s
+# the particles have the same reaction properties but belong to different groups
+# and are reduced by different fixes
+################################################################################
+
+log             log.liggghts_2g
+thermo_log      post/thermo.txt
+
+atom_style      granular
+atom_modify     map array
+communicate     single vel yes
+
+boundary        f f f
+newton          off
+
+units           si
+processors      * 1 1
+
+# read the restart file
+read_restart    post/restart/liggghts.restart
+
+neighbor        0.0005 bin
+neigh_modify    delay 0
+
+################################################################################
+# material properties required for granular pair styles
+fix         m1 all property/global youngsModulus peratomtype 5.e6
+fix         m2 all property/global poissonsRatio peratomtype 0.45
+fix         m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix         m4 all property/global coefficientFriction peratomtypepair 1 0.5
+
+# pair style
+pair_style  gran model hertz tangential history
+pair_coeff  * *
+
+# timestep
+timestep    0.02
+
+################################################################################
+# thermal properties
+fix     ftco all property/global thermalConductivity peratomtype 1.4
+fix     ftca all property/global thermalCapacity peratomtype 3000
+
+################################################################################
+# chemistry
+# input fixes for fix chem/shrink/core that would otherwise be provided by fix
+# couple/cfd/chemistry
+fix     partTemp all property/atom partTemp scalar yes no no 1223.15 # Kelvin
+fix     partNu   all property/atom partNu   scalar yes no no 0.00004125
+fix     partRe   all property/atom partRe   scalar yes no no 2.7500
+fix     partP    all property/atom partP    scalar yes no no 101325
+# molar fractions
+fix     X_CO     all property/atom X_CO  scalar yes no no 0.4
+fix     X_CO2    all property/atom X_CO2 scalar yes no no 0.0
+fix     X_N2     all property/atom X_N2  scalar yes no no 0.6
+# molecular diffusion coefficient
+fix     CO_diffCoeff all property/atom CO_diffCoeff scalar yes no no 0.00023
+# output fixes for fix chem/shrink/core that would otherwise be provided by fix
+# couple/cfd/chemistry
+fix     Modified_CO  all property/atom Modified_CO  scalar yes yes no 0.0
+fix     Modified_CO2 all property/atom Modified_CO2 scalar yes yes no 0.0
+fix     reactionHeat all property/atom reactionHeat scalar yes no  no 0.0
+
+################################################################################
+# activate 3-layer unreacted shrinking core model for group 1
+group group1 id 1
+
+fix     chem1 group1 chem/shrink/core speciesA CO molMassA 0.02801 &
+        speciesC CO2 molMassC 0.04401 &
+        scale_reduction_rate 2.0 nevery 25 #screen yes
+
+# chemical properties for unreacted shrinking core model
+#                                                w->Fe  m->w   h->m
+fix     k0_CO_1 all property/global k0_chem1 vector    17    25   2700
+fix     Ea_CO_1 all property/global Ea_chem1 vector 69488 73674 113859
+
+# particle porosity/tortuosity/pore diameter
+fix     porosity1        all property/global porosity_group1      vector 0.61 0.31 0.16 0.15
+fix     tortuosity1      all property/global tortuosity_group1    scalar 3
+fix     pore_diameter1   all property/global pore_diameter_group1 scalar 5.5e-7
+
+# define fix for layer densities
+fix     LayerDensities1  all property/global density_group1 vector 7870. 5740. 5170. 5240.
+
+# define layer properties
+fix     LayerRelRadii   all property/atom relRadii vector yes no no  1.0 0.998 0.995 0.98
+
+################################################################################
+# write data into files for post-processing
+variable WI     equal 200
+variable time   equal time
+variable m1     equal mass[1]
+variable rp     equal radius[1]
+variable rho1   equal mass[1]/((4./3.)*PI*radius[1]*radius[1]*radius[1])
+
+fix printmass all print ${WI} "${time} ${m1} ${rp}" &
+    file post/mass_rad_g1.dat title "#time mass radius" screen no
+fix printrho all print ${WI} "${time} ${rho1}" &
+    file post/rho_g1.dat title "#time \rho" screen no
+
+# specific resistance terms depending on reacting gases
+compute ACOd1 group1 reduce sum f_Aterm_chem1[1] f_Aterm_chem1[2] f_Aterm_chem1[3]
+fix     ACOd1 group1 ave/time 1 1 1 c_ACOd1[1] c_ACOd1[2] c_ACOd1[3]
+variable a_CO_1 equal f_ACOd1[1]
+variable a_CO_2 equal f_ACOd1[2]
+variable a_CO_3 equal f_ACOd1[3]
+
+compute BCOd1 group1 reduce sum f_Bterm_chem1[1] f_Bterm_chem1[2] f_Bterm_chem1[3]
+fix     BCOd1 group1 ave/time 10 1 10 c_BCOd1[1] c_BCOd1[2] c_BCOd1[3]
+variable b_CO_1 equal f_BCOd1[1]
+variable b_CO_2 equal f_BCOd1[2]
+variable b_CO_3 equal f_BCOd1[3]
+
+compute MCOd1 group1 reduce sum f_Massterm_chem1
+fix     MTCOd1 group1 ave/time 10 1 10 c_MCOd1
+variable mt_CO equal f_MTCOd1
+
+# chemical reaction resistance
+fix printAterm all print ${WI} "${time} ${a_CO_1} ${a_CO_2} ${a_CO_3}" &
+    file post/Aterm_g1.dat title "#time A1_{CO}(w->Fe) A2_{CO}(m->w) A3_{CO}(h->m)" screen no
+
+# diffusion resistance
+fix printBterm all print ${WI} "${time} ${b_CO_1} ${b_CO_2} ${b_CO_3}" &
+    file post/Bterm_g1.dat title "#time B1_{CO}(Fe) B2_{CO}(w) B3_{CO}(m)" screen no
+
+# mass transfer resistance
+fix printMassTerm all print ${WI} "${time} ${mt_CO}" &
+    file post/MassTerm_g1.dat title "#time mt_{CO}" screen no
+
+# rate change of mass for gaseous reactant
+compute dmdot group1 reduce sum f_dmA_chem1[1] f_dmA_chem1[2] f_dmA_chem1[3]
+fix     dmA_val group1 ave/time 1 1 1 c_dmdot[1] c_dmdot[2] c_dmdot[3]
+variable dmdot_1 equal f_dmA_val[1]
+variable dmdot_2 equal f_dmA_val[2]
+variable dmdot_3 equal f_dmA_val[3]
+
+fix printdmdot all print ${WI} "${time} ${dmdot_1} ${dmdot_2} ${dmdot_3}" &
+    file post/dmdot_g1.dat title "#time dmdot_1 dmdot_2 dmdot_3" screen no
+
+# fractional reduction for specific diameter ranges as well as total fractional reduction
+compute fr_1 group1 reduce sum f_fracRed[1] f_fracRed[2] f_fracRed[3]
+fix     fr_d1 group1 ave/time 1 1 1 c_fr_1[1] c_fr_1[2] c_fr_1[3]
+variable fr_d1_1 equal f_fr_d1[1]
+variable fr_d1_2 equal f_fr_d1[2]
+variable fr_d1_3 equal f_fr_d1[3]
+
+# calculate total fractional reduction
+variable frOV_d1 equal 1./9.*(f_fr_d1[3])+2./9.*(f_fr_d1[2])+6./9.*(f_fr_d1[1])
+
+fix printfr1 all print ${WI} "${time} ${fr_d1_1} ${fr_d1_2} ${fr_d1_3} ${frOV_d1}" &
+    file post/fr_d1_g1.dat title "#time fr_{w->Fe} fr_{m->w} fr_{h->m} fr_{overall}" screen no
+
+# layer radii
+compute layerRad1 group1 reduce sum f_LayerRelRadii[1]
+fix     redRad1 group1 ave/time 1 1 1 c_layerRad1
+variable rr1 equal f_redRad1
+
+compute layerRad2 group1 reduce sum f_LayerRelRadii[2]
+fix     redRad2 group1 ave/time 1 1 1 c_layerRad2
+variable rr2 equal f_redRad2
+
+compute layerRad3 group1 reduce sum f_LayerRelRadii[3]
+fix     redRad3 group1 ave/time 1 1 1 c_layerRad3
+variable rr3 equal f_redRad3
+
+compute layerRad4 group1 reduce sum f_LayerRelRadii[4]
+fix     redRad4 group1 ave/time 1 1 1 c_layerRad4
+variable rr4 equal f_redRad4
+
+fix printRelRadii all print ${WI} "${time} ${rr1} ${rr2} ${rr3} ${rr4}" &
+    file post/relRadii_g1.dat title "#time relRad_{Fe} relRad_{w} relRad_{m} relRad_{h}" screen no
+
+################################################################################
+
+# screen output
+thermo_style    custom step atoms vol
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes extra 0
+
+dump    dmp all custom 1000 post/dump2_*.liggghts_run_g2 id type x y z vx vy vz &
+        fx fy fz radius mass f_fracRed[1] f_fracRed[2] f_fracRed[3] &
+        f_partNu f_partRe f_partP f_partTemp f_CO_diffCoeff
+
+run     300000
+
+################################################################################
+# create second atom under same conditions
+create_atoms 1 single 0.25 0.25 0.25 units box
+set atom 2 diameter 0.01106028 density 4300 vx 0 vy 0 vz 0
+
+################################################################################
+# activate 3-layer unreacted shrinking core model for group 1
+group group2 id 2
+
+fix     chem2 group2 chem/shrink/core speciesA CO molMassA 0.02801 &
+        speciesC CO2 molMassC 0.04401 &
+        scale_reduction_rate 2.0 nevery 25 #screen yes
+
+# chemical properties for unreacted shrinking core model
+#                                                w->Fe  m->w   h->m
+fix     k0_CO_2 all property/global k0_chem2 vector    17    25   2700
+fix     Ea_CO_2 all property/global Ea_chem2 vector 69488 73674 113859
+
+# particle porosity/tortuosity/pore diameter
+fix     porosity2        all property/global porosity_group2      vector 0.61 0.31 0.16 0.15
+fix     tortuosity2      all property/global tortuosity_group2    scalar 3
+fix     pore_diameter2   all property/global pore_diameter_group2 scalar 5.5e-7
+
+# define fix for layer densities
+fix     LayerDensities2  all property/global density_group2 vector 7870. 5740. 5170. 5240.
+
+################################################################################
+# write data into files for post-processing
+variable m2     equal mass[2]
+variable rp2    equal radius[2]
+variable rho2   equal mass[2]/((4./3.)*PI*radius[2]*radius[2]*radius[2])
+
+fix printmass_2 all print ${WI} "${time} ${m2} ${rp2}" &
+    file post/mass_rad_g2.dat title "#time mass radius" screen no
+fix printrho_2 all print ${WI} "${time} ${rho2}" &
+    file post/rho_g2.dat title "#time \rho" screen no
+
+# specific resistance terms depending on reacting gases
+compute ACOd1_2 group2 reduce sum f_Aterm_chem2[1] f_Aterm_chem2[2] f_Aterm_chem2[3]
+fix     ACOd1_2 group2 ave/time 1 1 1 c_ACOd1_2[1] c_ACOd1_2[2] c_ACOd1_2[3]
+variable a_CO_1_2 equal f_ACOd1_2[1]
+variable a_CO_2_2 equal f_ACOd1_2[2]
+variable a_CO_3_2 equal f_ACOd1_2[3]
+
+compute BCOd1_2 group2 reduce sum f_Bterm_chem2[1] f_Bterm_chem2[2] f_Bterm_chem2[3]
+fix     BCOd1_2 group2 ave/time 10 1 10 c_BCOd1_2[1] c_BCOd1_2[2] c_BCOd1_2[3]
+variable b_CO_1_2 equal f_BCOd1_2[1]
+variable b_CO_2_2 equal f_BCOd1_2[2]
+variable b_CO_3_2 equal f_BCOd1_2[3]
+
+compute MCOd1_2 group2 reduce sum f_Massterm_chem2
+fix     MTCOd1_2 group2 ave/time 10 1 10 c_MCOd1_2
+variable mt_CO_2 equal f_MTCOd1_2
+
+fix printAterm_2 all print ${WI} "${time} ${a_CO_1_2} ${a_CO_2_2} ${a_CO_3_2}" &
+    file post/Aterm_g2.dat title "#time A1_{CO}(w->Fe) A2_{CO}(m->w) A3_{CO}(h->m)" screen no
+
+fix printBterm_2 all print ${WI} "${time} ${b_CO_1_2} ${b_CO_2_2} ${b_CO_3_2}" &
+    file post/Bterm_g2.dat title "#time B1_{CO}(Fe) B2_{CO}(w) B3_{CO}(m)" screen no
+
+fix printMassTerm_2 all print ${WI} "${time} ${mt_CO_2}" &
+    file post/MassTerm_g2.dat title "#time mt_{CO}" screen no
+
+# rate change of mass for gaseous reactant
+compute dmdot_2 group2 reduce sum f_dmA_chem2[1] f_dmA_chem2[2] f_dmA_chem2[3]
+fix     dmA_val_2 group2 ave/time 1 1 1 c_dmdot_2[1] c_dmdot_2[2] c_dmdot_2[3]
+variable dmdot_1_2 equal f_dmA_val_2[1]
+variable dmdot_2_2 equal f_dmA_val_2[2]
+variable dmdot_3_2 equal f_dmA_val_2[3]
+
+fix printdmdot_2 all print ${WI} "${time} ${dmdot_1_2} ${dmdot_2_2} ${dmdot_3_2}" &
+    file post/dmdot_g2.dat title "#time dmdot_1 dmdot_2 dmdot_3" screen no
+
+# fractional reduction for specific diameter ranges as well as total fractional reduction
+compute fr_1_2 group2 reduce sum f_fracRed[1] f_fracRed[2] f_fracRed[3]
+fix     fr_d1_2 group2 ave/time 1 1 1 c_fr_1_2[1] c_fr_1_2[2] c_fr_1_2[3]
+variable fr_d1_1_2 equal f_fr_d1_2[1]
+variable fr_d1_2_2 equal f_fr_d1_2[2]
+variable fr_d1_3_2 equal f_fr_d1_2[3]
+
+# total fractional reduction
+variable frOV_d1_2 equal 1./9.*(f_fr_d1_2[3])+2./9.*(f_fr_d1_2[2])+6./9.*(f_fr_d1_2[1])
+
+fix printfr1_2 all print ${WI} "${time} ${fr_d1_1_2} ${fr_d1_2_2} ${fr_d1_3_2} ${frOV_d1_2}" &
+    file post/fr_d1_g2.dat title "#time fr_{w->Fe} fr_{m->w} fr_{h->m} fr_{overall}" screen no
+
+# relative layer radii
+compute layerRad1_2 group2 reduce sum f_LayerRelRadii[1]
+fix     redRad1_2 group2 ave/time 1 1 1 c_layerRad1_2
+variable rr1_2 equal f_redRad1_2
+
+compute layerRad2_2 group2 reduce sum f_LayerRelRadii[2]
+fix     redRad2_2 group2 ave/time 1 1 1 c_layerRad2_2
+variable rr2_2 equal f_redRad2_2
+
+compute layerRad3_2 group2 reduce sum f_LayerRelRadii[3]
+fix     redRad3_2 group2 ave/time 1 1 1 c_layerRad3_2
+variable rr3_2 equal f_redRad3_2
+
+compute layerRad4_2 group2 reduce sum f_LayerRelRadii[4]
+fix     redRad4_2 group2 ave/time 1 1 1 c_layerRad4_2
+variable rr4_2 equal f_redRad4_2
+
+fix printRelRadii_2 all print ${WI} "${time} ${rr1_2} ${rr2_2} ${rr3_2} ${rr4_2}" &
+    file post/relRadii_g2.dat title "#time relRad_{Fe} relRad_{w} relRad_{m} relRad_{h}" screen no
+
+################################################################################
+
+run     600000
+

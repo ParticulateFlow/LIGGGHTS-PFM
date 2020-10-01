@@ -221,8 +221,12 @@ void FixContactHistory::allocate_pages()
     ipage_ = new MyPage<int>[nmypage];
     dpage_ = new MyPage<double>[nmypage];
     for (int i = 0; i < nmypage; i++) {
-      ipage_[i].init(oneatom_,pgsize_);
-      dpage_[i].init(oneatom_*MathExtraLiggghts::max(1,dnum_),pgsize_);
+      if (ipage_[i].init(oneatom_,pgsize_) != 0) {
+        error->fix_error(FLERR, this, "bad ipage initialization");
+      }
+      if (dpage_[i].init(oneatom_*MathExtraLiggghts::max(1,dnum_),pgsize_) != 0) {
+        error->fix_error(FLERR, this, "bad dpage initialization");
+      }
     }
   }
 }

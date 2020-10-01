@@ -288,7 +288,7 @@ void FixBondCreateGran::setup(int vflag)
 
   for (i = 0; i < nall; i++) bondcount[i] = 0;
 
-  for (i = 0; i < nlocal; i++)
+  for (i = 0; i < nlocal; i++) {
     for (j = 0; j < num_bond[i]; j++) {
       if (bond_type[i][j] == btype) {
         bondcount[i]++;
@@ -300,6 +300,7 @@ void FixBondCreateGran::setup(int vflag)
         }
       }
     }
+  }
 
   // if newton_bond is set, need to sum bondcount
 

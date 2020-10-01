@@ -119,7 +119,25 @@ ComputePropertyLocal::ComputePropertyLocal(LAMMPS *lmp, int narg, char **arg) :
                    "Compute property/local cannot use these inputs together");
       kindflag = BOND;
 
-    } else if (strcmp(arg[iarg],"aatom1") == 0) {
+    } else if (strcmp(arg[iarg],"batom1x") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_batom1x;
+      else if (strcmp(arg[iarg],"batom1y") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_batom1y;
+      else if (strcmp(arg[iarg],"batom1z") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_batom1z;
+      else if (strcmp(arg[iarg],"batom2x") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_batom2x;
+      else if (strcmp(arg[iarg],"batom2y") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_batom2y;
+      else if (strcmp(arg[iarg],"batom2z") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_batom2z;
+      else if (strcmp(arg[iarg],"bforceX") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_bforceX;
+      else if (strcmp(arg[iarg],"bforceY") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_bforceY;
+      else if (strcmp(arg[iarg],"bforceZ") == 0)
+      pack_choice[i] = &ComputePropertyLocal::pack_bforceZ;
+      else if (strcmp(arg[iarg],"aatom1") == 0) {
       pack_choice[i] = &ComputePropertyLocal::pack_aatom1;
       if (kindflag != NONE && kindflag != ANGLE)
         error->all(FLERR,
@@ -697,6 +715,181 @@ void ComputePropertyLocal::pack_btype(int n)
     i = indices[m][0];
     j = indices[m][1];
     buf[n] = bond_type[i][j];
+    n += nvalues;
+  }
+}
+
+// compute atom-position of bonded atoms (contribution: C. Richter IBAF GmbH, 2015)
+void ComputePropertyLocal::pack_batom1x(int n)
+{
+  int i;
+  double **pos = atom->x;
+
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    buf[n] = pos[i][0]; // id
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_batom1y(int n)
+{
+  int i;
+  double **pos = atom->x;
+
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    buf[n] = pos[i][1]; // id
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_batom1z(int n)
+{
+  int i;
+  double **pos = atom->x;
+
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    buf[n] = pos[i][2]; // id
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_batom2x(int n)
+{
+  int i,j;
+  double **pos = atom->x;
+  int **bond_atom = atom->bond_atom;
+  int partner = -1;
+
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    j = indices[m][1];
+    partner = bond_atom[i][j]; // ID !
+    buf[n] = pos[atom->map(partner)][0]; // index
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_batom2y(int n)
+{
+  int i,j;
+  double **pos = atom->x;
+  int **bond_atom = atom->bond_atom;
+  int partner = -1;
+
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    j = indices[m][1];
+    partner = bond_atom[i][j]; // ID !
+    buf[n] = pos[atom->map(partner)][1]; // index
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_batom2z(int n)
+{
+  int i,j;
+  double **pos = atom->x;
+  int **bond_atom = atom->bond_atom;
+  int partner = -1;
+
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    j = indices[m][1];
+    partner = bond_atom[i][j]; // ID !
+    buf[n] = pos[atom->map(partner)][2]; // index
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_bforceX(int n)
+{
+  int i,j,k,i1,j1,atom1,atom2;
+  double f = 0.;
+  int nbondlist = neighbor->nbondlist;
+  int **bondlist = neighbor->bondlist;
+  double **bondhistlist = neighbor->bondhistlist;
+
+  //search for every pair i,j in bondlist
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    j = indices[m][1];
+    atom1=i;                                 //intern index of selected atom
+    atom2=atom->map(atom->bond_atom[i][j]);  //mapped index of bond-partner
+    if (atom2<0) continue; //is not on this proc, no Idea how to handle this ..
+
+     for (k = 0; k < nbondlist; k++) {
+        i1 = bondlist[k][0];
+        j1 = bondlist[k][1];
+        //printf("|-> i1=%d,j1=%d",atom1,atom2);
+        if (((atom1==i1) && (atom2==j1)) || ((atom1==j1) && (atom2==i1))) {
+            f=bondhistlist[k][0] + bondhistlist[k][3];
+            break;
+        }
+     }
+    buf[n] = f;
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_bforceY(int n)
+{
+  int i,j,k,i1,j1,atom1,atom2;
+  double f = 0.;
+  int nbondlist = neighbor->nbondlist;
+  int **bondlist = neighbor->bondlist;
+  double **bondhistlist = neighbor->bondhistlist;
+
+  //search for every pair i,j in bondlist
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    j = indices[m][1];
+    atom1=i;                                 //intern index of selected atom
+    atom2=atom->map(atom->bond_atom[i][j]);  //mapped index of bond-partner
+    if (atom2<0) continue; //is not on this proc, no Idea how to handle this ..
+
+     for (k = 0; k < nbondlist; k++) {
+        i1 = bondlist[k][0];
+        j1 = bondlist[k][1];
+        //printf("|-> i1=%d,j1=%d",atom1,atom2);
+        if (((atom1==i1) && (atom2==j1)) || ((atom1==j1) && (atom2==i1))) {
+            f=bondhistlist[k][1] + bondhistlist[k][4];
+            break;
+        }
+     }
+    buf[n] = f;
+    n += nvalues;
+  }
+}
+
+void ComputePropertyLocal::pack_bforceZ(int n)
+{
+  int i,j,k,i1,j1,atom1,atom2;
+  double f = 0.;
+  int nbondlist = neighbor->nbondlist;
+  int **bondlist = neighbor->bondlist;
+  double **bondhistlist = neighbor->bondhistlist;
+
+  //search for every pair i,j in bondlist
+  for (int m = 0; m < ncount; m++) {
+    i = indices[m][0];
+    j = indices[m][1];
+    atom1=i;                                 //intern index of selected atom
+    atom2=atom->map(atom->bond_atom[i][j]);  //mapped index of bond-partner
+    if (atom2<0) continue; //is not on this proc, no Idea how to handle this ..
+
+     for (k = 0; k < nbondlist; k++) {
+        i1 = bondlist[k][0];
+        j1 = bondlist[k][1];
+        //printf("|-> i1=%d,j1=%d",atom1,atom2);
+        if (((atom1==i1) && (atom2==j1)) || ((atom1==j1) && (atom2==i1))) {
+            f=bondhistlist[k][2] + bondhistlist[k][5];
+            break;
+        }
+     }
+    buf[n] = f;
     n += nvalues;
   }
 }

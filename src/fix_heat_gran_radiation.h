@@ -47,13 +47,12 @@ namespace LAMMPS_NS {
     void setup(int);
 
   private:
-    bool intersectRaySphere(double *, double *, double *, double, double &, double *);
-    bool trace(int, int, double *, double *, double, int, double *);
-    int nextBin(int, double *, double *, double *, int &, int &, int &);
-    int trace(int, int, double *, double *, double *, double *);
-    void randDir(double *, double *);
-    void randOnSphere(double *, double, double *, double *);
-    void reflect(int, int, int, double *, double *, double, double, int, double *);
+    bool intersectRaySphere(const double *, const double *, const double *, double, double &, double *);
+    int nextBin(int, const double *, const double *, double *, int &, int &, int &);
+    int trace(int, int, const double *, const double *, double *, double *);
+    void randDir(const double *, double *);
+    void randOnSphere(const double *, double, double *, double *);
+    void reflect(int, int, int, const double *, const double *, double, double, int, double *);
     void updateQr();
     void createStencils();
 

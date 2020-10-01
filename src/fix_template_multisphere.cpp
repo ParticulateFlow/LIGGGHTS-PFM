@@ -408,7 +408,7 @@ void FixTemplateMultisphere::calc_eigensystem()
   double ez[3];
   vectorCross3D(ex_space_,ey_space_,ez);
   double dot = vectorDot3D(ez,ez_space_);
-  if (dot < 0.) vectorScalarMult3D(ez_space_,-1.);
+  if (dot < 0.) vectorFlip3D(ez_space_);
 
   //NP test for valid principal moments & axes like in fix_rigid.cpp init() omitted here
 }

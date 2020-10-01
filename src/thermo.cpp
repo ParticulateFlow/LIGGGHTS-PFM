@@ -660,6 +660,8 @@ void Thermo::parse_fields(char *str)
       addfield("Elaplong",&Thermo::compute_elapsed_long,BIGINT);
     } else if (strcmp(word,"dt") == 0) {
       addfield("Dt",&Thermo::compute_dt,FLOAT);
+    } else if (strcmp(word,"numbond") == 0) {
+      addfield("numbond",&Thermo::compute_numbond,BIGINT);
     } else if (strcmp(word,"time") == 0) {
       addfield("Time",&Thermo::compute_time,FLOAT);
     } else if (strcmp(word,"cpu") == 0) {
@@ -1382,6 +1384,10 @@ int Thermo::evaluate_keyword(char *word, double *answer)
   else if (strcmp(word,"cellalpha") == 0) compute_cellalpha();
   else if (strcmp(word,"cellbeta") == 0) compute_cellbeta();
   else if (strcmp(word,"cellgamma") == 0) compute_cellgamma();
+  else if (strcmp(word,"numbonds") == 0) {
+    compute_numbond();
+    dvalue = bivalue;
+  }
 
   else return 1;
 
@@ -1966,6 +1972,21 @@ void Thermo::compute_fmax()
   double maxall;
   MPI_Allreduce(&max,&maxall,1,MPI_DOUBLE,MPI_MAX,world);
   dvalue = maxall;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void Thermo::compute_numbond()
+{
+  int nlocal = atom->nlocal;
+
+  bigint numbond = 0;
+  for (int i = 0; i < nlocal; i++)
+    numbond+=atom->num_bond[i];
+
+  bigint bondall;
+  MPI_Allreduce(&numbond,&bondall,1,MPI_LMP_BIGINT,MPI_SUM,world);
+  bivalue = bondall/2; //every bond is counted twice (for every partner-atom)
 }
 
 /* ---------------------------------------------------------------------- */

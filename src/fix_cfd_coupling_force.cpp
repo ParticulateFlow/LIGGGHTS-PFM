@@ -48,10 +48,11 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
     use_torque_(true),
     use_dens_(false),
     use_type_(false),
+    use_property_(false),
+    use_molecule_(false),
 // superquadric start
-    use_superquadric_(false),
+    use_superquadric_(false)
 // superquadric end
-    use_property_(false)
 {
     int iarg = 3;
 
@@ -116,7 +117,7 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
             hasargs = true;
         } else if(strcmp(arg[iarg],"transfer_property") == 0) {
             if(narg < iarg+5)
-                error->fix_error(FLERR,this,"not enough arguments for 'transfer_type'");
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_property'");
             iarg++;
             use_property_ = true;
             if(strcmp(arg[iarg++],"name"))
@@ -125,6 +126,18 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
             if(strcmp(arg[iarg++],"type"))
                 error->fix_error(FLERR,this,"expecting 'type' after property name");
             sprintf(property_type,"%s",arg[iarg++]);
+            iarg++;
+            hasargs = true;
+        } else if(strcmp(arg[iarg],"transfer_molecule") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'transfer_molecule");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                use_molecule_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                use_molecule_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_molecule'");
             iarg++;
             hasargs = true;
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
@@ -259,6 +272,8 @@ void FixCfdCouplingForce::init()
     fix_coupling_->add_push_property("x","vector-atom");
     fix_coupling_->add_push_property("v","vector-atom");
     fix_coupling_->add_push_property("radius","scalar-atom");
+    if(use_molecule_) fix_coupling_->add_push_property("x_mol","vector-atom");
+    if(use_molecule_) fix_coupling_->add_push_property("v_mol","vector-atom");
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
     if(use_superquadric_) {
       fix_coupling_->add_push_property("volume","scalar-atom");
