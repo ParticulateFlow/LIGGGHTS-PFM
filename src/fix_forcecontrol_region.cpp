@@ -449,6 +449,10 @@ void FixForceControlRegion::post_force(int vflag)
       xvalue[*it_cell] = (ctrl_op_[0] > 0.) ? (axis_[0] * ctrl_op_[0]) : 0.;
       yvalue[*it_cell] = (ctrl_op_[1] > 0.) ? (axis_[1] * ctrl_op_[1]) : 0.;
       zvalue[*it_cell] = (ctrl_op_[2] > 0.) ? (axis_[2] * ctrl_op_[2]) : 0.;
+      // anti-windup
+      if (ctrl_op_[0] <= 0.) sum_err_[*it_cell][0] -= err_[0] * dtv_;
+      if (ctrl_op_[1] <= 0.) sum_err_[*it_cell][1] -= err_[1] * dtv_;
+      if (ctrl_op_[2] <= 0.) sum_err_[*it_cell][2] -= err_[2] * dtv_;
     } else {
       xvalue[*it_cell] = ctrl_op_[0];
       yvalue[*it_cell] = ctrl_op_[1];
