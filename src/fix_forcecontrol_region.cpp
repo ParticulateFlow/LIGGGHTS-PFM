@@ -57,9 +57,12 @@ extern MPI_Op MPI_ABSMAX_OP;
 
 FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
+  cg_actual_(-1.0),
+  cg3_actual_(-1.0),
   cg_target_(1.0),
   cg3_target_(1.0),
   cg_ratio_(1.0),
+  cg3_ratio_(1.0),
   const_part_(1.0),
   sinesq_part_(0.0),
   used_part_(1.0),
@@ -161,9 +164,13 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
       if (strcmp(arg[iarg+1],"on") == 0)
         limit_velocity_ = true;
       iarg += 2;
-    } else if (strcmp(arg[iarg],"cg") == 0) {
+    } else if ((strcmp(arg[iarg],"cg") == 0) || (strcmp(arg[iarg],"target_cg") == 0)) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       cg_target_ = atof(arg[iarg+1]);
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"actual_cg") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
+      cg_actual_ = atof(arg[iarg+1]);
       iarg += 2;
     } else if (strcmp(style,"forcecontrol/region") == 0) {
       error->all(FLERR,"Illegal fix forcecontrol/region command");
@@ -201,8 +208,12 @@ FixForceControlRegion::~FixForceControlRegion()
 void FixForceControlRegion::post_create()
 {
   receive_post_create_data();
+  if (cg_actual_ < 1.0) // not set in input script
+      cg_actual_ = force->cg();
+  cg3_actual_ = cg_actual_*cg_actual_*cg_actual_;
   cg3_target_ = cg_target_*cg_target_*cg_target_;
-  cg_ratio_ = force->cg()/cg_target_;
+  cg_ratio_ = cg_actual_/cg_target_;
+  cg3_ratio_ = cg3_actual_/cg3_target_;
 
   // all cells active by default
   int ncells = actual_->ncells();
@@ -222,7 +233,7 @@ void FixForceControlRegion::post_create_stress_part()
 {
   double maxrd,minrd;
   modify->max_min_rad(maxrd,minrd);
-  used_part_ = (2.*maxrd/cg_target_)*1.4;
+  used_part_ = (2.*maxrd/force->cg()*cg_actual_)*1.4;
   const_part_ = used_part_ * CONST_TO_USED_PART_RATIO;
   sinesq_part_ = used_part_ - const_part_;
 }
@@ -344,17 +355,18 @@ void FixForceControlRegion::post_force(int vflag)
         const double vol_fr_mismatch_correction = actual_->cell_vol_fr(*it_cell)/target_cell_vol_fr(tcell);
         actual_->set_cell_weight(*it_cell, vol_fr_mismatch_correction);
         // calculate half average normal force per particle (half, because same force acting from 2 sides)
-        const double r_ave = actual_->cell_radius(*it_cell); // average fg radius (assume that in cg we get the same r_ave when scaled with 1/cg)
-        const double vol_cell = actual_->cell_volume(*it_cell); // equal for fg and cg
+        const double r_ave = actual_->cell_radius(*it_cell); // average radius (assume that in target we get the same r_ave when scaled with cg_ratio_)
+        const double vol_cell = actual_->cell_volume(*it_cell); // equal for actual and target
         const double pre_t = 0.5 * vol_cell / r_ave; // (along positive and negative axis -> * 2)
         const double pre_a = pre_t * vol_fr_mismatch_correction; // (along positive and negative axis -> * 2)
 
-        pv_vec_[0] = -(pre_a*actual_->cell_stress(*it_cell, 0)/actual_->cell_count(*it_cell)); // fg
-        pv_vec_[1] = -(pre_a*actual_->cell_stress(*it_cell, 1)/actual_->cell_count(*it_cell)); // fg
-        pv_vec_[2] = -(pre_a*actual_->cell_stress(*it_cell, 2)/actual_->cell_count(*it_cell)); // fg
-        sp_vec_[0] = -(pre_t*target_cell_stress_xx(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
-        sp_vec_[1] = -(pre_t*target_cell_stress_yy(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
-        sp_vec_[2] = -(pre_t*target_cell_stress_zz(tcell)/(target_cell_count(tcell)*cg3_target_));// cg
+        // create an average force per particle from stress values
+        pv_vec_[0] = -(pre_a*actual_->cell_stress(*it_cell, 0)/actual_->cell_count(*it_cell));
+        pv_vec_[1] = -(pre_a*actual_->cell_stress(*it_cell, 1)/actual_->cell_count(*it_cell));
+        pv_vec_[2] = -(pre_a*actual_->cell_stress(*it_cell, 2)/actual_->cell_count(*it_cell));
+        sp_vec_[0] = -(pre_t*target_cell_stress_xx(tcell)/(target_cell_count(tcell)/cg3_ratio_));
+        sp_vec_[1] = -(pre_t*target_cell_stress_yy(tcell)/(target_cell_count(tcell)/cg3_ratio_));
+        sp_vec_[2] = -(pre_t*target_cell_stress_zz(tcell)/(target_cell_count(tcell)/cg3_ratio_));
 
         // do nothing in case of negative pressure
         if(pv_vec_[0] < 0.) pv_vec_[0] = 0.;

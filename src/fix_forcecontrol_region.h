@@ -61,7 +61,7 @@ class FixForceControlRegion : public Fix {
   virtual void restart(char *buf);
 
  protected:
-  double cg_target_, cg3_target_, cg_ratio_;
+  double cg_actual_, cg3_actual_, cg_target_, cg3_target_, cg_ratio_, cg3_ratio_;
   double const_part_, sinesq_part_, used_part_;
 
  private:
