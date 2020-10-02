@@ -804,6 +804,7 @@ of each style or click on the style itself for a full description:
 "orient/fcc"_fix_orient_fcc.html,
 "particledistribution/discrete"_fix_particledistribution_discrete.html,
 "particletemplate/fragments"_fix_particletemplate_fragments.html,
+"particletemplate/multiplespheres"_fix_particletemplate_multiplespheres.html,
 "particletemplate/multisphere"_fix_particletemplate_multisphere.html,
 "particletemplate/sphere"_fix_particletemplate_sphere.html,
 "particletemplate/superquadric"_fix_particletemplate_superquadric.html,

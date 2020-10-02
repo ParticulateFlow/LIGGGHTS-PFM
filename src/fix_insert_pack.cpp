@@ -536,7 +536,6 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
                     }
                     ntry++;
                 }
-
                 while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
 
                 if(ntry == maxtry) break;
