@@ -104,6 +104,7 @@ class Fix : protected Pointers {
   Fix(class LAMMPS *, int, char **);
   virtual ~Fix();
   void modify_params(int, char **);
+  virtual void update_fix(int, char **) {}
 
   virtual int setmask() = 0;
 

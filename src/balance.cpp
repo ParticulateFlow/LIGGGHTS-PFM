@@ -313,6 +313,7 @@ void Balance::command(int narg, char **arg)
 
   if (domain->triclinic) domain->set_lamda_box();
   domain->set_local_box();
+  domain->update_all_regions();
 
   // move atoms to new processors via irregular()
 

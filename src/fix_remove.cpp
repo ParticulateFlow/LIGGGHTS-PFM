@@ -365,11 +365,11 @@ void FixRemove::pre_exchange()
     if(comm->me == 0)
     {
         if(verbose_ && screen)
-            fprintf(screen,"    Amount actually removed %f (#particles totally removed %d)\n",
-                    mass_removed_this,nremoved_this);
+            fprintf(screen,"    fix %s: this step: mass removed %f, #particles removed %d; accumulated: mass removed: %f\n",
+                    id,mass_removed_this,nremoved_this,mass_removed_);
         if(logfile)
-            fprintf(logfile,"    Amount actually removed %f (#particles totally removed %d)\n",
-                    mass_removed_this,nremoved_this);
+            fprintf(logfile,"    fix %s: this step: mass removed %f, #particles removed %d; accumulated: mass removed: %f\n",
+                    id,mass_removed_this,nremoved_this,mass_removed_);
     }
 
     //NP tags and maps

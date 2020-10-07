@@ -51,6 +51,7 @@ namespace LAMMPS_NS {
         int nspheres;
         int groupbit;
         int atom_type;
+        int bond_type;
         double density_ins;
         double volume_ins;
         double mass_ins;
@@ -75,19 +76,30 @@ namespace LAMMPS_NS {
         double omega_ins[3];
 
         // value of a fix property/atom at insertion
-        FixPropertyAtom *fix_property;
-        double fix_property_value;
+        std::vector<FixPropertyAtom*> fix_properties;
+        std::vector<std::vector<double> > fix_property_values;
+        double fix_property_dvalue;
         int fix_property_ivalue;
-        int property_index;
-        int property_iindex;
+        int property_index; // index into double properties
+        int property_iindex; // index into int properties
 
         virtual int insert();
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList);
+        // multiple spheres
+        virtual int check_near_set_x_v_omega_ms(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
+        virtual int check_near_set_x_v_omega_ms(double *x,double *v, double *omega, double *quat, LIGGGHTS::RegionNeighborList & neighList);
+
         virtual int set_x_v_omega(double *,double *,double *,double *);
 
         virtual void scale_pti(double r_scale);
         virtual int get_atom_type() { return atom_type_vector_flag ? atom_type_vector[0] : atom_type; }
+        int create_bonds(int *npartner=NULL, int **partner=NULL);
+      private:
+        int local_start;
+        bool needs_bonding;
+        int create_bond_partners(int *&npartner, int **&partner);
+        void destroy_bond_partners(int *npartner, int **partner);
     };
 
 }

@@ -157,20 +157,20 @@ void FixInsertStream::post_create()
         fixarg[5]="yes";    //NP restart yes
         fixarg[6]="yes";    //NP communicate ghost no
         fixarg[7]="no";    //NP communicate rev yes
-        fixarg[8]="0.";
-        fixarg[9]="0.";
-        fixarg[10]="0.";
-        fixarg[11]="0.";
-        fixarg[12]="0.";
-        fixarg[13]="0.";
-        fixarg[14]="0.";
-        fixarg[15]="0.";
-        fixarg[16]="0.";
-        fixarg[17]="0.";
-        fixarg[18]="0.";
-        fixarg[19]="0.";
-        fixarg[20]="0.";
-        fixarg[21]="0.";
+        fixarg[8]="0.";     // x
+        fixarg[9]="0.";     // y
+        fixarg[10]="0.";    // z
+        fixarg[11]="0.";    // insertion step
+        fixarg[12]="0.";    // release_step
+        fixarg[13]="0.";    // v_integrate_x
+        fixarg[14]="0.";    // v_integrate_y
+        fixarg[15]="0.";    // v_integrate_z
+        fixarg[16]="0.";    // v_insert_x
+        fixarg[17]="0.";    // v_insert_y
+        fixarg[18]="0.";    // v_insert_z
+        fixarg[19]="0.";    // omega_x
+        fixarg[20]="0.";    // omega_y
+        fixarg[21]="0.";    // omega_z
         modify->add_fix_property_atom(22,const_cast<char**>(fixarg),style);
   }
 }
@@ -256,7 +256,7 @@ void FixInsertStream::calc_insertion_properties()
 
         // flip normal vector so dot product with v_insert is > 0
         dot = vectorDot3D(v_insert,normalvec);
-        if(dot < 0) vectorScalarMult3D(normalvec,-1.);
+        if(dot < 0) vectorFlip3D(normalvec);
 
         // calc v normal
         dot = vectorDot3D(v_insert,normalvec);
@@ -758,6 +758,7 @@ void FixInsertStream::finalize_insertion(int ninserted_spheres_this_local)
         //NP calc_n_steps sets insertion step and velocity
         if(multisphere)
             n_steps = fix_multisphere->calc_n_steps(i,p_ref,normalvec,v_normal);
+
         if(!multisphere || n_steps == -1)
         {
             vectorSubtract3D(p_ref,x[i],pos_rel);
@@ -843,7 +844,10 @@ void FixInsertStream::end_of_step()
             r_step = static_cast<int>(release_data[i][4]+FIX_INSERT_STREAM_TINY);
             vectorCopy3D(&release_data[i][5],v_integrate);
 
-            if(step > r_step) continue;
+            if(step > r_step)
+            {
+                continue;
+            }
             else if (r_step == step)
             {
                 //NP dont do this for multisphere, skip to next i in for loop

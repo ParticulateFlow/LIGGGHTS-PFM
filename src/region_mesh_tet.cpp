@@ -39,6 +39,7 @@
 #define BIG 1.e20
 
 using namespace LAMMPS_NS;
+using namespace MathExtraLiggghts;
 
 /* ---------------------------------------------------------------------- */
 
@@ -100,6 +101,18 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
 
 }
 
+void RegTetMesh::rebuild()
+{
+  if (compDouble(domain->sublo[0],domain_sublo[0]) &&
+      compDouble(domain->sublo[1],domain_sublo[1]) &&
+      compDouble(domain->sublo[2],domain_sublo[2]) &&
+      compDouble(domain->subhi[0],domain_subhi[0]) &&
+      compDouble(domain->subhi[1],domain_subhi[1]) &&
+      compDouble(domain->subhi[2],domain_subhi[2]))
+    return;
+
+  build_tree();
+}
 
 void RegTetMesh::precalc_ico_points()
 {
@@ -439,12 +452,16 @@ inline int RegTetMesh::tet_rand_tri()
 
 void RegTetMesh::build_tree()
 {
+
   tree_key.clear();
   tree_data.clear();
 
   tree_key.push_back(BoundingBox(extent_xlo,extent_xhi,
                                  extent_ylo,extent_yhi,
                                  extent_zlo,extent_zhi));
+
+  vectorCopy3D(domain->sublo, domain_sublo);
+  vectorCopy3D(domain->subhi, domain_subhi);
 
   tree_key[0].shrinkToSubbox(domain->sublo,domain->subhi);
 

@@ -107,6 +107,7 @@ Fixes :h1
    fix_orient_fcc
    fix_particledistribution_discrete
    fix_particletemplate_fragments
+   fix_particletemplate_multiplespheres
    fix_particletemplate_multisphere
    fix_particletemplate_sphere
    fix_particletemplate_superquadric

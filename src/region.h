@@ -54,6 +54,7 @@ class Region : protected Pointers {
   virtual ~Region();
   virtual void init();
   virtual int dynamic_check();
+  virtual void rebuild() {}
 
   // called by other classes to check point versus region
 

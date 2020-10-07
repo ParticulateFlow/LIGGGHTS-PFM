@@ -653,6 +653,7 @@ void FixDeform::pre_exchange()
   domain->xy = set[5].tilt_target = set[5].tilt_flip;
   domain->set_global_box();
   domain->set_local_box();
+  domain->update_all_regions();
 
   domain->image_flip(flipxy,flipxz,flipyz);
 
@@ -931,6 +932,7 @@ void FixDeform::end_of_step()
 
   domain->set_global_box();
   domain->set_local_box();
+  domain->update_all_regions();
 
   // convert atoms and rigid bodies back to box coords
 

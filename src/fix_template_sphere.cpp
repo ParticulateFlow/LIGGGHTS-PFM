@@ -333,7 +333,10 @@ void FixTemplateSphere::randomize_single_pti(ParticleToInsert* &pti,int distribu
   vectorZeroize3D(pti->omega_ins);
 
   pti->groupbit = groupbit | distribution_groupbit; //NP also contains insert_groupbit
- }
+
+  pti->fix_properties.clear();
+  pti->fix_property_values.clear();
+}
 /* ----------------------------------------------------------------------*/
 
 double FixTemplateSphere::min_rad() const

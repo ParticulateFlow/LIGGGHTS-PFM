@@ -537,6 +537,7 @@ void ReadDump::atoms()
     domain->set_global_box();
     comm->set_proc_grid(0);
     domain->set_local_box();
+    domain->update_all_regions();
   }
 
   // move atoms back inside simulation box and to new processors

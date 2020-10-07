@@ -184,8 +184,9 @@ void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp,
       pti_list_type::iterator it_pti = it_face->begin();
       for(; it_pti!=it_face->end(); it_pti++)
       {
-        (*it_pti)->fix_property = fp;
-        (*it_pti)->fix_property_value = val;
+        (*it_pti)->fix_properties.push_back(fp);
+        std::vector<double> value(1,val);
+        (*it_pti)->fix_property_values.push_back(value);
       }
     }
   }
@@ -198,7 +199,7 @@ void FixParticledistributionDiscreteFace::pre_insert(int n, FixPropertyAtom *fp,
       for(; it_pti!=it_face->end(); it_pti++)
       {
         (*it_pti)->property_index = idx;
-        (*it_pti)->fix_property_value = val;
+        (*it_pti)->fix_property_dvalue = val;
       }
     }
   }

@@ -47,6 +47,7 @@ class RegTetMesh : public Region {
   int inside(double, double, double);
   int surface_interior(double *, double);
   int surface_exterior(double *, double);
+  void rebuild();
 
   void add_tet(double **n);
   int n_tet() const;
@@ -131,6 +132,9 @@ class RegTetMesh : public Region {
 
 
 #include "region_mesh_tet_I.h"
+ private:
+  double domain_sublo[3];
+  double domain_subhi[3];
 };
 
 }

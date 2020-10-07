@@ -177,7 +177,7 @@ face of style "fix mesh/surface/planar"_fix_mesh_surface.html
 NOTE: You also have to use "fix mesh/surface/planar"_fix_mesh_surface.html 
 if there is a "run"_run.html command between the definition of the 
 insertion face and the fix insert/stream command. Otherwise, a 
-"fix mesh/surface/planar"_fix_mesh_surface.html will do.
+"fix mesh/surface"_fix_mesh_surface.html will do.
 
 Keyword {random_distribute} controls how the number of particles to
 be inserted is distributed among parallel processors and among the
