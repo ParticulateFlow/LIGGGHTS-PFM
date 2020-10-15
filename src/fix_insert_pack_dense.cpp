@@ -342,7 +342,7 @@ void FixInsertPackDense::pre_exchange()
   }
 
   // actual insertion
-  fix_distribution->pre_insert(0,fix_property,fix_property_value,property_index,fix_property_ivalue,property_iindex);
+  fix_distribution->pre_insert(n_inserted_local,fix_property,fix_property_value,property_index,fix_property_ivalue,property_iindex);
 
   fix_distribution->insert(n_inserted_local);
 
