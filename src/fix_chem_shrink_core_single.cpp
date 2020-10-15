@@ -271,6 +271,28 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
             iarg_ += 2;
             hasargs = true;
         }
+        else if(strcmp(arg[iarg_],"limit_reactant_consumption") == 0)
+        {
+            if(narg < iarg_+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'limit_reactant_consumption'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"yes") == 0)
+                limit_reactant_consumption_ = true;
+            else if(strcmp(arg[iarg_],"no") == 0)
+                limit_reactant_consumption_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'limit_reactant_consumption'");
+            iarg_++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"maxReactantConsumptionFrac") == 0)
+        {
+            maxReactantConsumptionFrac_ = atof(arg[iarg_+1]);
+            if (maxReactantConsumptionFrac_ < 0)
+                error -> fix_error(FLERR, this, "maxReactantConsumptionFractor is not well-defined");
+            hasargs = true;
+            iarg_ +=2;
+        }
         else
         {
             error->fix_error(FLERR,this,"unknown keyword");
@@ -483,6 +505,7 @@ void FixChemShrinkCoreSingle::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
+        if (fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
     }
 }
 
@@ -552,6 +575,11 @@ void FixChemShrinkCoreSingle::updatePtrs()
     dY          =   fix_dY_         ->  vector_atom;
     dmA_f_      =   fix_dmA_ -> vector_atom;
     reactionheat_ = fix_reactionheat -> vector_atom;
+
+    if(limit_reactant_consumption_)
+    {
+        reactantPerParticle_ = fix_reactantPerParticle_ -> vector_atom;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -662,6 +690,11 @@ void FixChemShrinkCoreSingle::init()
 
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
     fix_reactionheat   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
+
+    if(limit_reactant_consumption_)
+    {
+        fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -929,6 +962,17 @@ void FixChemShrinkCoreSingle::reaction(int i, double &dmA_, const double x0_eq_)
                * (MY_4PI * ((radius_[i] * radius_[i]) / (cg_ * cg_)))
                * TimeStep * nevery;
 
+    // limit mass change - can't remove more than present in cell
+    // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor
+    if(limit_reactant_consumption_)
+    {
+        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+
+        double dAmax = p_A / (Runiv * T_[i]) * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
+
+        if(-dmA_ > dAmax) dmA_ = -dAmax;
+    }
+
     // fix property added so values are otuputted to file
     dmA_f_[i] = dmA_;
 }
@@ -1187,6 +1231,11 @@ void FixChemShrinkCoreSingle::init_defaults()
     fix_dmA_ = NULL;
 
     fix_reactionheat = NULL;
+
+    fix_reactantPerParticle_ = NULL;
+    reactantPerParticle_ = NULL;
+    limit_reactant_consumption_ = false;
+    maxReactantConsumptionFrac_ = 0.5;
 
     massA = massC = NULL;
     diffA = moleFracA = moleFracC = NULL;

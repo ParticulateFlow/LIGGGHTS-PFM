@@ -69,7 +69,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     molMass_A_(-1.0),
     molMass_B_(-1.0),
     molMass_C_(-1.0),
-    relaxFac_(0.5),
+    maxReactantConsumptionFrac_(0.5),
     nu_A_(1),
     nu_B_(1),
     nu_C_(1),
@@ -89,7 +89,7 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
     TimeStep(0.0),
     current_timestep(0),
     shrink_(true),
-    use_reactant_(false)
+    limit_reactant_consumption_(false)
 {
     if ((strncmp(style,"chem/shrink",11) == 0) && (!atom->radius_flag||!atom->rmass_flag))
             error -> all (FLERR,"Fix chem/shrink needs per particle radius and mass");
@@ -194,25 +194,25 @@ FixChemShrink::FixChemShrink(LAMMPS *lmp, int narg, char **arg) :
             hasargs = true;
             iarg_+=2;
         }
-        else if(strcmp(arg[iarg_],"use_reactant") == 0)
+        else if(strcmp(arg[iarg_],"limit_reactant_consumption") == 0)
         {
             if(narg < iarg_+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'use_reactant'");
+                error->fix_error(FLERR,this,"not enough arguments for 'limit_reactant_consumption'");
             iarg_++;
             if(strcmp(arg[iarg_],"yes") == 0)
-                use_reactant_ = true;
+                limit_reactant_consumption_ = true;
             else if(strcmp(arg[iarg_],"no") == 0)
-                use_reactant_ = false;
+                limit_reactant_consumption_ = false;
             else
-                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_reactant'");
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'limit_reactant_consumption'");
             iarg_++;
             hasargs = true;
         }
-        else if (strcmp(arg[iarg_],"relaxFactor") == 0)
+        else if (strcmp(arg[iarg_],"maxReactantConsumptionFrac") == 0)
         {
-            relaxFac_ = atof(arg[iarg_+1]);
-            if (relaxFac_ < 0)
-                error -> fix_error(FLERR, this, "relaxFactor is not well-defined");
+            maxReactantConsumptionFrac_ = atof(arg[iarg_+1]);
+            if (maxReactantConsumptionFrac_ < 0)
+                error -> fix_error(FLERR, this, "maxReactantConsumptionFractor is not well-defined");
             hasargs = true;
             iarg_ +=2;
         }
@@ -330,7 +330,7 @@ void FixChemShrink::updatePtrs()
     rhogas_     =   fix_rhogas      ->  vector_atom;
     molarConc_  =   fix_totalMole_  ->  vector_atom;
 
-    if(use_reactant_)
+    if(limit_reactant_consumption_)
     {
         reactantPerParticle_ = fix_reactantPerParticle_ -> vector_atom;
     }
@@ -374,12 +374,12 @@ void FixChemShrink::reaction()
             }
 
             // limit mass change - can't remove more than present in cell
-            // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor (0.8)
-            if(use_reactant_)
+            // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor
+            if(limit_reactant_consumption_)
             {
                 if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
 
-                double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * relaxFac_;
+                double dAmax = molarFrac * molarConc * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
 
                 if(-dA > dAmax) dA = -dAmax;
             }
@@ -460,7 +460,7 @@ void FixChemShrink::init()
     fix_reactionheat_   =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactionHeat","property/atom","scalar",0,0,style));
     fix_totalMole_      =   static_cast<FixPropertyAtom*>(modify -> find_fix_property("partMolarConc","property/atom","scalar",0,0,style));
 
-    if(use_reactant_)
+    if(limit_reactant_consumption_)
     {
         fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
     }

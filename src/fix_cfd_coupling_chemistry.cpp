@@ -61,7 +61,7 @@ FixCfdCouplingChemistry::FixCfdCouplingChemistry(LAMMPS *lmp, int narg, char **a
   fix_partReynolds_(0),
   fix_molarfraction_(0),
   fix_partPressure_(0),
-  fix_relLayerRadii_(0),
+  fix_relLayerRadii_(NULL),
   init_layer_radii_(false),
   use_reactant_(false)
 {
@@ -432,15 +432,6 @@ void FixCfdCouplingChemistry::post_create()
         fixarg[8]="0.";
         fix_partPressure_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
-
-    if (init_layer_radii_)
-    {
-        fix_relLayerRadii_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii","property/atom","vector",0,0,style,false));
-        if (!fix_relLayerRadii_)
-        {
-            error->fix_error(FLERR,this,"Fix couple/cfd/chemistry could not find fix for relative layer radii with name 'relRadii'");
-        }
-    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -469,7 +460,11 @@ void FixCfdCouplingChemistry::init()
     for (int j = 0; j < num_diffusant; ++j)
         fix_coupling_->add_pull_property(diffusant_names_[j],"scalar-atom");
 
-    if (init_layer_radii_) fix_coupling_->add_pull_property("relRadii","vector-atom");
+    if (init_layer_radii_)
+    {
+        // this assumes that a corresponding fix_property_atom is defined either in the run script or by the chemistry fixes
+        fix_coupling_->add_pull_property("relRadii","vector-atom");
+    }
     if (use_reactant_) fix_coupling_->add_pull_property("reactantPerParticle","scalar-atom");
 
     //  values to be transfered to OF

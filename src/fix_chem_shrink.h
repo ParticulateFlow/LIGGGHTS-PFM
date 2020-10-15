@@ -78,7 +78,7 @@ public:
   // values from user
   double k0;                                 // reaction rate coefficient
   double molMass_A_, molMass_B_, molMass_C_; // Molecular mass of species A, B and C
-  double relaxFac_;
+  double maxReactantConsumptionFrac_;
   int nu_A_, nu_B_, nu_C_;                   // stoichiometric coefficients
 
   // particle properties
@@ -108,7 +108,7 @@ public:
   bigint current_timestep;
 
   bool shrink_;
-  bool use_reactant_;
+  bool limit_reactant_consumption_;
 
   virtual double reactionRatConst(int);
 };

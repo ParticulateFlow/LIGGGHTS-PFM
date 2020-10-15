@@ -187,6 +187,11 @@ public:
   class FixPropertyAtom *fix_reactionheat;
   double *reactionheat_;
 
+  class FixPropertyAtom *fix_reactantPerParticle_;
+  double *reactantPerParticle_;
+  bool limit_reactant_consumption_;
+  double maxReactantConsumptionFrac_;
+
 };
 }
 
