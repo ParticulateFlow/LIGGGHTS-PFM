@@ -505,7 +505,6 @@ void FixChemShrinkCoreSingle::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
-        if (fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
     }
 }
 

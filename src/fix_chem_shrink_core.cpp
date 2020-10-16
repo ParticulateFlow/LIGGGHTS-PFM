@@ -501,7 +501,6 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_layerMass_ && created_fix_layerMass_)   { modify->delete_fix(fix_layerMass_->id); massLayer_ = NULL; }
         if (fix_rhoeff_    && created_fix_rhoeff_)      { modify->delete_fix(fix_rhoeff_->id); rhoeff_ = NULL; }
         if (fix_fracRed    && created_fix_fracRed)      { modify->delete_fix(fix_fracRed->id); fracRed_ = NULL; }
-        if (fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
     }
 }
 

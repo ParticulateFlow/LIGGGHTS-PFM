@@ -306,7 +306,6 @@ void FixChemShrink::pre_delete(bool unfixflag)
         if(fix_changeOfA_)           modify  ->  delete_fix(massA);
         if(fix_changeOfC_)           modify  ->  delete_fix(massC);
         if(fix_totalMole_)           modify  ->  delete_fix("partMolarConc");
-        if(fix_reactantPerParticle_) modify  ->  delete_fix("reactantPerParticle");
     }
 }
 
