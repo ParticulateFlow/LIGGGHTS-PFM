@@ -153,28 +153,54 @@ void FixNVESphere::initial_integrate(int vflag)
   // update v,x,omega for all particles
   // d_omega/dt = torque / inertia
 
-  for (int i = 0; i < nlocal; i++) {
-    if (mask[i] & groupbit) {
-      dtfm = dtf / rmass[i];
-      v[i][0] += dtfm * f[i][0];
-      v[i][1] += dtfm * f[i][1];
-      v[i][2] += dtfm * f[i][2];
-      if (implicitIntegration_)
+  if (implicitIntegration_)
+  {
+      for (int i = 0; i < nlocal; i++)
       {
-          invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
-          v[i][0] *= invImpDenom;
-          v[i][1] *= invImpDenom;
-          v[i][2] *= invImpDenom;
-      }
-      x[i][0] += dtv * v[i][0];
-      x[i][1] += dtv * v[i][1];
-      x[i][2] += dtv * v[i][2];
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
 
-      dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
-      omega[i][0] += dtirotate * torque[i][0];
-      omega[i][1] += dtirotate * torque[i][1];
-      omega[i][2] += dtirotate * torque[i][2];
-    }
+              invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
+              v[i][0] *= invImpDenom;
+              v[i][1] *= invImpDenom;
+              v[i][2] *= invImpDenom;
+
+              x[i][0] += dtv * v[i][0];
+              x[i][1] += dtv * v[i][1];
+              x[i][2] += dtv * v[i][2];
+
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
+  }
+  else
+  {
+      for (int i = 0; i < nlocal; i++)
+      {
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
+
+              x[i][0] += dtv * v[i][0];
+              x[i][1] += dtv * v[i][1];
+              x[i][2] += dtv * v[i][2];
+
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
   }
 
   // update mu for dipoles
@@ -226,23 +252,44 @@ void FixNVESphere::final_integrate()
   // update v,omega for all particles
   // d_omega/dt = torque / inertia
 
-  for (int i = 0; i < nlocal; i++)
-    if (mask[i] & groupbit) {
-      dtfm = dtf / rmass[i];
-      v[i][0] += dtfm * f[i][0];
-      v[i][1] += dtfm * f[i][1];
-      v[i][2] += dtfm * f[i][2];
-      if (implicitIntegration_)
+  if (implicitIntegration_)
+  {
+      for (int i = 0; i < nlocal; i++)
       {
-          invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
-          v[i][0] *= invImpDenom;
-          v[i][1] *= invImpDenom;
-          v[i][2] *= invImpDenom;
-      }
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
+              invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
+              v[i][0] *= invImpDenom;
+              v[i][1] *= invImpDenom;
+              v[i][2] *= invImpDenom;
 
-      dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
-      omega[i][0] += dtirotate * torque[i][0];
-      omega[i][1] += dtirotate * torque[i][1];
-      omega[i][2] += dtirotate * torque[i][2];
-    }
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
+  }
+  else
+  {
+      for (int i = 0; i < nlocal; i++)
+      {
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
+
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
+  }
 }
