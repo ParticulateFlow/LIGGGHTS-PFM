@@ -140,7 +140,7 @@ void FixNVESphere::initial_integrate(int vflag)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
-  double impDenom;
+  double invImpDenom;
   double *Ksl;
   if (implicitIntegration_) Ksl = fix_Ksl_->vector_atom;
 
@@ -161,10 +161,10 @@ void FixNVESphere::initial_integrate(int vflag)
       v[i][2] += dtfm * f[i][2];
       if (implicitIntegration_)
       {
-          impDenom = 1 + dtfm * Ksl[i];
-          v[i][0] /= impDenom;
-          v[i][1] /= impDenom;
-          v[i][2] /= impDenom;
+          invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
+          v[i][0] *= invImpDenom;
+          v[i][1] *= invImpDenom;
+          v[i][2] *= invImpDenom;
       }
       x[i][0] += dtv * v[i][0];
       x[i][1] += dtv * v[i][1];
@@ -213,7 +213,7 @@ void FixNVESphere::final_integrate()
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
-  double impDenom;
+  double invImpDenom;
   double *Ksl;
   if (implicitIntegration_) Ksl = fix_Ksl_->vector_atom;
 
@@ -234,10 +234,10 @@ void FixNVESphere::final_integrate()
       v[i][2] += dtfm * f[i][2];
       if (implicitIntegration_)
       {
-          impDenom = 1 + dtfm * Ksl[i];
-          v[i][0] /= impDenom;
-          v[i][1] /= impDenom;
-          v[i][2] /= impDenom;
+          invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
+          v[i][0] *= invImpDenom;
+          v[i][1] *= invImpDenom;
+          v[i][2] *= invImpDenom;
       }
 
       dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
