@@ -47,6 +47,7 @@ FixCfdCouplingForceImplicit::FixCfdCouplingForceImplicit(LAMMPS *lmp, int narg, 
     useAM_(false), // superquadric
     CAddRhoFluid_(0.0), // superquadric
     onePlusCAddRhoFluid_(1.0), // superquadric
+    implicitIntegration_(false),
     fix_Ksl_(0),
     fix_uf_(0),
     fix_KslRotation_(0), // superquadric
@@ -69,6 +70,20 @@ FixCfdCouplingForceImplicit::FixCfdCouplingForceImplicit(LAMMPS *lmp, int narg, 
             if(CNalpha_<0 || CNalpha_>1)
                 error->fix_error(FLERR,this,"incorrect choice for 'CrankNicholson': setting CNalpha_<0 or CNalpha_>1 is not appropriate");
             if (screen) fprintf(screen,"cfd_coupling_foce_implicit will use Crank-Nicholson scheme with %f\n", CNalpha_);
+            iarg++;
+            hasargs = true;
+        }
+        else if(strcmp(arg[iarg],"implicit_integration") == 0)
+        {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'implicit_integration'");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                implicitIntegration_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                implicitIntegration_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'implicit_integration'");
             iarg++;
             hasargs = true;
         }
@@ -254,7 +269,16 @@ void FixCfdCouplingForceImplicit::post_force(int)
         // calc force
         if(!useCN_)  //calculate drag force and add if not using Crank-Nicolson
         {
-            vectorSubtract3D(uf[i],v[i],frc);
+            if (implicitIntegration_)
+            {
+                frc[0] = uf[i][0];
+                frc[1] = uf[i][1];
+                frc[2] = uf[i][2];
+            }
+            else
+            {
+                vectorSubtract3D(uf[i],v[i],frc);
+            }
             vectorScalarMult3D(frc,Ksl[i]);
 
             vectorAdd3D(f[i],frc,f[i]);

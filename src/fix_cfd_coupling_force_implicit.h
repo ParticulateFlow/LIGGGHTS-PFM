@@ -44,6 +44,7 @@ class FixCfdCouplingForceImplicit : public FixCfdCouplingForce  {
   virtual void init();
   void post_force(int);
   void end_of_step();
+  bool implicitIntegration() {return implicitIntegration_;}
 
  protected:
   double deltaT_;
@@ -53,6 +54,8 @@ class FixCfdCouplingForceImplicit : public FixCfdCouplingForce  {
   bool   useAM_; // superquadric
   double CAddRhoFluid_;   // // superquadric: Added mass coefficient times relative fluid density (C_add*rhoFluid/rhoP)
   double onePlusCAddRhoFluid_; // superquadric
+
+  bool implicitIntegration_;
 
   class FixPropertyAtom* fix_Ksl_;
   class FixPropertyAtom* fix_uf_;

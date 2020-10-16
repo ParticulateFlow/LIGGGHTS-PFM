@@ -29,11 +29,16 @@ class FixNVESphere : public FixNVE {
   FixNVESphere(class LAMMPS *, int, char **);
   virtual ~FixNVESphere() {}
   void init();
+  void post_create();
   virtual void initial_integrate(int);
   virtual void final_integrate();
 
  protected:
   int extra;
+
+  bool implicitIntegration_;
+  class FixPropertyAtom* fix_Ksl_;
+  class FixCfdCouplingForceImplicit* fix_cfd_coupling_force_implicit_;
 };
 
 }
