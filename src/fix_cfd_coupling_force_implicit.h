@@ -56,6 +56,7 @@ class FixCfdCouplingForceImplicit : public FixCfdCouplingForce  {
   double onePlusCAddRhoFluid_; // superquadric
 
   bool implicitIntegration_;
+  class FixNVESphere* fix_nve_sphere_;
 
   class FixPropertyAtom* fix_Ksl_;
   class FixPropertyAtom* fix_uf_;

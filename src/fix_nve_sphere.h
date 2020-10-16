@@ -32,6 +32,7 @@ class FixNVESphere : public FixNVE {
   void post_create();
   virtual void initial_integrate(int);
   virtual void final_integrate();
+  bool implicitIntegration() {return implicitIntegration_;}
 
  protected:
   int extra;

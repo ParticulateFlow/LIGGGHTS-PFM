@@ -34,6 +34,7 @@
 #include "mpi_liggghts.h"
 #include "fix_cfd_coupling_force_implicit.h"
 #include "fix_property_atom.h"
+#include "fix_nve_sphere.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -243,6 +244,19 @@ void FixCfdCouplingForceImplicit::init()
 #endif
 
     deltaT_ = 0.5 * update->dt * force->ftm2v;
+
+    if (implicitIntegration_)
+    {
+        fix_nve_sphere_ = static_cast<FixNVESphere*>(modify->find_fix_style("nve/sphere",0));
+        if (!fix_nve_sphere_)
+        {
+            error->fix_error(FLERR,this,"Could not find fix ID 'nve/sphere' required for fully implicit treatment of the drag force.");
+        }
+        if (!fix_nve_sphere_->implicitIntegration())
+        {
+            error->fix_error(FLERR,this,"Fix 'nve/sphere' is not in mode for implicit integration.");
+        }
+    }
 }
 
 /* ---------------------------------------------------------------------- */
