@@ -315,7 +315,7 @@ void FixMassflowMeshFace::post_create()
     }
     else
     {
-        error->fix_error(FLERR,this,"Mesh element property 'face_id' required");
+        error->fix_error(FLERR,this,"Mesh element property 'face_id' (type int) required");
     }
 
     int nTriGlobal = nTriLocal;

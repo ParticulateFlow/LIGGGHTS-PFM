@@ -219,6 +219,9 @@ void FixInsertPackFace::init()
 
   if (strcmp(ins_region->style, "mesh/hex") == 0) {
     ins_region_mesh_hex = static_cast<RegHexMesh*>(ins_region);
+    if (!ins_region_mesh_hex->prop().getElementProperty<ScalarContainer<int> >("face_id")) {
+      error->fix_error(FLERR,this,"Mesh element property 'face_id' (type int) required");
+    }
   }
 }
 
@@ -379,6 +382,8 @@ double FixInsertPackFace::insertion_fraction_face(int face_id)
       // TEST cut???
       ++inside;
     }
+  } else {
+    error->fix_error(FLERR, this, "Failed to find hex cell by face_id!");
   }
 
   return static_cast<double>(inside)/static_cast<double>(ntry_mc);
