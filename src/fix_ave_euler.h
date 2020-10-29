@@ -62,6 +62,12 @@ class FixAveEuler : public Fix {
   inline int ncells() const
   { return ncells_; }
 
+  inline int ncells(int dim) const
+  { return ncells_dim_[dim]; }
+
+  inline double cell_size(int dim) const
+  { return cell_size_[dim]; }
+
   virtual double cell_volume(int) const
   { return cell_volume_; }
 
@@ -102,6 +108,13 @@ class FixAveEuler : public Fix {
 
   inline void set_cell_weight(int i, double w)
   { weight_[i] = w; }
+
+  inline bool is_parallel()
+  { return parallel_; }
+
+  virtual void cell_bounds(int i, double bounds[6]) const;
+
+  virtual void cell_points(int i, double points[24]) const;
 
  protected:
   inline int ntry_per_cell() const

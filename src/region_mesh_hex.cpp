@@ -733,6 +733,17 @@ void RegHexMesh::hex_bounds(int iHex, double bounds[6]) const
 
 /* ---------------------------------------------------------------------- */
 
+void RegHexMesh::hex_points(int iHex, double points[24]) const
+{
+  for(int i=0; i<8; ++i) {
+    for(int j=0; j<3; ++j) {
+      points[i*3+j] = node[iHex][i][j];
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+
 int RegHexMesh::get_hex(double *pos)
 {
   potential_cells.clear();

@@ -54,6 +54,7 @@ class RegHexMesh : public Region {
   double hex_vol(int i) const;
   double hex_acc_vol(int i) const;
   void hex_bounds(int iHex, double bounds[6]) const;
+  void hex_points(int iHex, double points[24]) const;
   const double* hex_center(int iHex) const
   { return center[iHex]; }
 

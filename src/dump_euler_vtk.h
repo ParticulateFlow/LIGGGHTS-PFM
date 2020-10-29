@@ -59,6 +59,7 @@ class DumpEulerVTK : public Dump {
   int n_all_, n_all_max_;
   double *buf_all_;
   char *fix_euler_name_;
+  bool cell_center;
 
 };
 

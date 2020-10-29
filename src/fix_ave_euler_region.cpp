@@ -515,7 +515,14 @@ double FixAveEulerRegion::cell_center(int i, int j) const
 
 void FixAveEulerRegion::cell_bounds(int i, double bounds[6]) const
 {
-  return region_grid_mesh_hex_->hex_bounds(i, bounds);
+  region_grid_mesh_hex_->hex_bounds(i, bounds);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixAveEulerRegion::cell_points(int i, double points[24]) const
+{
+  region_grid_mesh_hex_->hex_points(i, points);
 }
 
 /* ---------------------------------------------------------------------- */

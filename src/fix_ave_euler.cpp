@@ -88,6 +88,10 @@ FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
   // random number generator, seed is hardcoded
   random_ = new RanPark(lmp,15485863);
 
+  ncells_dim_[0] = ncells_dim_[1] = ncells_dim_[2] = 0;
+  cell_size_[0] = cell_size_[1] = cell_size_[2] = -1.0;
+
+  // don't parse arguments for derived classes
   if (strlen(style) > strlen("ave/euler")) return;
 
   // parse args
@@ -693,3 +697,55 @@ double FixAveEuler::compute_array(int i, int j)
   else if(j < 15) return radius_[i];
   else return 0.0;
 }
+
+/* ---------------------------------------------------------------------- */
+
+void FixAveEuler::cell_bounds(int i, double bounds[6]) const
+{
+  bounds[0] = center_[i][0]-0.5*cell_size_[0];
+  bounds[1] = center_[i][0]+0.5*cell_size_[0];
+  bounds[2] = center_[i][1]-0.5*cell_size_[1];
+  bounds[3] = center_[i][1]+0.5*cell_size_[1];
+  bounds[4] = center_[i][2]-0.5*cell_size_[2];
+  bounds[5] = center_[i][2]+0.5*cell_size_[2];
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixAveEuler::cell_points(int i, double points[24]) const
+{
+    // bottom
+    points[0]  = center_[i][0]-0.5*cell_size_[0];
+    points[1]  = center_[i][1]-0.5*cell_size_[1];
+    points[2]  = center_[i][2]-0.5*cell_size_[2];
+
+    points[3]  = center_[i][0]+0.5*cell_size_[0];
+    points[4]  = center_[i][1]-0.5*cell_size_[1];
+    points[5]  = center_[i][2]-0.5*cell_size_[2];
+
+    points[6]  = center_[i][0]+0.5*cell_size_[0];
+    points[7]  = center_[i][1]+0.5*cell_size_[1];
+    points[8]  = center_[i][2]-0.5*cell_size_[2];
+
+    points[9]  = center_[i][0]-0.5*cell_size_[0];
+    points[10] = center_[i][1]+0.5*cell_size_[1];
+    points[11] = center_[i][2]-0.5*cell_size_[2];
+
+    // top
+    points[12] = center_[i][0]-0.5*cell_size_[0];
+    points[13] = center_[i][1]-0.5*cell_size_[1];
+    points[14] = center_[i][2]+0.5*cell_size_[2];
+
+    points[15] = center_[i][0]+0.5*cell_size_[0];
+    points[16] = center_[i][1]-0.5*cell_size_[1];
+    points[17] = center_[i][2]+0.5*cell_size_[2];
+
+    points[18] = center_[i][0]+0.5*cell_size_[0];
+    points[19] = center_[i][1]+0.5*cell_size_[1];
+    points[20] = center_[i][2]+0.5*cell_size_[2];
+
+    points[21] = center_[i][0]-0.5*cell_size_[0];
+    points[22] = center_[i][1]+0.5*cell_size_[1];
+    points[23] = center_[i][2]+0.5*cell_size_[2];
+}
+
