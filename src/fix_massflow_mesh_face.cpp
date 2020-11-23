@@ -86,7 +86,11 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
   ms_(0),
   ms_counter_(0),
   cg_(1.),
-  cg3_(1.)
+  cg3_(1.),
+  temperature_flag(false),
+  fix_temp_(NULL),
+  chemistry_flag(false),
+  fix_layerRelRad_(NULL)
 {
     vectorZeroize3D(nvec_);
     vectorZeroize3D(pref_);
@@ -192,6 +196,22 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
             cg3_ = cg_*cg_*cg_;
             iarg += 2;
             hasargs = true;
+        } else if (strcmp(arg[iarg],"temperature") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"Illegal keyword entry");
+            if (strcmp(arg[iarg+1],"yes") == 0) temperature_flag = true;
+            else if (strcmp(arg[iarg+1],"no") == 0) temperature_flag = false;
+            else error->fix_error(FLERR,this,"Illegal temperature option");
+            iarg += 2;
+            hasargs = true;
+        } else if (strcmp(arg[iarg],"chemistry") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"Illegal keyword entry");
+            if (strcmp(arg[iarg+1],"yes") == 0) chemistry_flag = true;
+            else if (strcmp(arg[iarg+1],"no") == 0) chemistry_flag = false;
+            else error->fix_error(FLERR,this,"Illegal chemistry option");
+            iarg += 2;
+            hasargs = true;
         } else if(strcmp(style,"massflow/mesh/face") == 0) {
             error->fix_error(FLERR,this,"unknown keyword");
         } else {
@@ -222,7 +242,7 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
 
     array_flag = 1;
     size_array_rows = 1; // rows in global array
-    size_array_cols = 10; // columns in global array
+    size_array_cols = 17; // columns in global array
 }
 
 /* ---------------------------------------------------------------------- */
@@ -357,6 +377,14 @@ void FixMassflowMeshFace::post_create()
     average_omegax_face_out_.resize(nfaceids);
     average_omegay_face_out_.resize(nfaceids);
     average_omegaz_face_out_.resize(nfaceids);
+    if(temperature_flag) temperature_face_.resize(nfaceids);
+    if(chemistry_flag)
+    {
+        relRad1_face_.resize(nfaceids);
+        relRad2_face_.resize(nfaceids);
+        relRad3_face_.resize(nfaceids);
+    }
+
     mass_face_last_.resize(nfaceids);
     inertia_face_last_.resize(nfaceids);
     nparticles_face_last_.resize(nfaceids);
@@ -371,6 +399,14 @@ void FixMassflowMeshFace::post_create()
     std::fill_n(average_omegax_face_out_.begin(),  nfaceids, 0.);
     std::fill_n(average_omegay_face_out_.begin(),  nfaceids, 0.);
     std::fill_n(average_omegaz_face_out_.begin(),  nfaceids, 0.);
+    if(temperature_flag) std::fill_n(temperature_face_.begin(), nfaceids, 0.);
+    if(chemistry_flag)
+    {
+        std::fill_n(relRad1_face_.begin(), nfaceids, 0.);
+        std::fill_n(relRad2_face_.begin(), nfaceids, 0.);
+        std::fill_n(relRad3_face_.begin(), nfaceids, 0.);
+    }
+
     std::fill_n(mass_face_last_.begin(),       nfaceids, 0.);
     std::fill_n(inertia_face_last_.begin(),    nfaceids, 0.);
     std::fill_n(nparticles_face_last_.begin(), nfaceids, 0 );
@@ -387,6 +423,13 @@ void FixMassflowMeshFace::post_create()
     average_omegax_face_out_this.resize(nfaceids, 0.);
     average_omegay_face_out_this.resize(nfaceids, 0.);
     average_omegaz_face_out_this.resize(nfaceids, 0.);
+    if(temperature_flag) temperature_face_this.resize(nfaceids, 0.);
+    if(chemistry_flag)
+    {
+        relRad1_face_this.resize(nfaceids);
+        relRad2_face_this.resize(nfaceids);
+        relRad3_face_this.resize(nfaceids);
+    }
 
     nparticles_face_this_all.resize(nfaceids,0);
 
@@ -422,6 +465,20 @@ void FixMassflowMeshFace::init()
 
     if(!fix_ms_ && static_cast<FixMultisphere*>(modify->find_fix_style_strict("multisphere",0)))
         error->fix_error(FLERR,this,"fix multisphere must come before fix massflow/mesh in input script");
+
+    fix_temp_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style,false));
+    if(temperature_flag && !fix_temp_)
+    {
+        error->fix_warning(FLERR,this,"failed to find fix 'Temp' for temperature measurement");
+        temperature_flag = false;
+    }
+
+    fix_layerRelRad_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii","property/atom","vector",0,0,style,false));
+    if(chemistry_flag && !fix_layerRelRad_)
+    {
+        error->fix_warning(FLERR,this,"failed to find fix 'relRadii' for chemistry measurement");
+        chemistry_flag = false;
+    }
 
     if(property_check_name_)
     {
@@ -513,6 +570,10 @@ void FixMassflowMeshFace::post_integrate()
     double deltan;
     int *tag = atom->tag;
     double **prevx = fix_prevx_->array_atom;
+    double *temperature = NULL;
+    if(temperature_flag) temperature = fix_temp_->vector_atom;
+    double **relRadii = NULL;
+    if(chemistry_flag) relRadii = fix_layerRelRad_->array_atom;
 
     class FixPropertyAtom* fix_color=static_cast<FixPropertyAtom*>(modify->find_fix_property("color","property/atom","scalar",0,0,style,false));
     bool fixColFound = false;
@@ -546,6 +607,13 @@ void FixMassflowMeshFace::post_integrate()
         std::fill_n(average_omegax_face_out_.begin(),  nfaceids, 0.);
         std::fill_n(average_omegay_face_out_.begin(),  nfaceids, 0.);
         std::fill_n(average_omegaz_face_out_.begin(),  nfaceids, 0.);
+        if(temperature_flag) std::fill_n(temperature_face_.begin(), nfaceids, 0.);
+        if(chemistry_flag)
+        {
+            std::fill_n(relRad1_face_.begin(), nfaceids, 0.);
+            std::fill_n(relRad2_face_.begin(), nfaceids, 0.);
+            std::fill_n(relRad3_face_.begin(), nfaceids, 0.);
+        }
         nparticles_face_last_ = nparticles_face_;
         mass_face_last_ = mass_face_;
         inertia_face_last_ = inertia_face_;
@@ -568,6 +636,13 @@ void FixMassflowMeshFace::post_integrate()
     std::fill(average_omegax_face_out_this.begin(), average_omegax_face_out_this.end(), 0.);
     std::fill(average_omegay_face_out_this.begin(), average_omegay_face_out_this.end(), 0.);
     std::fill(average_omegaz_face_out_this.begin(), average_omegaz_face_out_this.end(), 0.);
+    if(temperature_flag) std::fill(temperature_face_this.begin(), temperature_face_this.end(), 0.);
+    if(chemistry_flag)
+    {
+        std::fill(relRad1_face_this.begin(), relRad1_face_this.end(), 0.);
+        std::fill(relRad2_face_this.begin(), relRad2_face_this.end(), 0.);
+        std::fill(relRad3_face_this.begin(), relRad3_face_this.end(), 0.);
+    }
 
     classified_particles_this.clear();
     crossing_particles_this.clear();
@@ -720,6 +795,13 @@ void FixMassflowMeshFace::post_integrate()
                     mass_face_this[faceIndex] += rmass[iPart]; // total mass crossing current face
                     double inertia = INERTIA*rmass[iPart]*radius[iPart]*radius[iPart];
                     inertia_face_this[faceIndex] += inertia;
+                    if(temperature_flag) temperature_face_this[faceIndex] += temperature[iPart]; // sum of T of particles crossing current face
+                    if(chemistry_flag)
+                    {
+                        relRad1_face_this[faceIndex] += relRadii[iPart][1];
+                        relRad2_face_this[faceIndex] += relRadii[iPart][2];
+                        relRad3_face_this[faceIndex] += relRadii[iPart][3];
+                    }
 
                     radius_dist_face_local_this  [faceIndex].push_back(radius[iPart]);
                     mass_dist_face_local_this    [faceIndex].push_back(rmass[iPart]);
@@ -934,6 +1016,13 @@ void FixMassflowMeshFace::post_integrate()
         MPI_Sum_Vector(&average_omegax_face_out_this[0],nfaceids,world);
         MPI_Sum_Vector(&average_omegay_face_out_this[0],nfaceids,world);
         MPI_Sum_Vector(&average_omegaz_face_out_this[0],nfaceids,world);
+        if(temperature_flag) MPI_Sum_Vector(&temperature_face_this[0],nfaceids,world);
+        if(chemistry_flag)
+        {
+            MPI_Sum_Vector(&relRad1_face_this[0],nfaceids,world);
+            MPI_Sum_Vector(&relRad2_face_this[0],nfaceids,world);
+            MPI_Sum_Vector(&relRad3_face_this[0],nfaceids,world);
+        }
 
         mass_ += mass_this;
         nparticles_ += nparticles_this; // total number of cg particles that crossed any mesh face since last inquiry
@@ -954,6 +1043,13 @@ void FixMassflowMeshFace::post_integrate()
             average_omegax_face_out_[i] += average_omegax_face_out_this[i];
             average_omegay_face_out_[i] += average_omegay_face_out_this[i];
             average_omegaz_face_out_[i] += average_omegaz_face_out_this[i];
+            if(temperature_flag) temperature_face_[i] += temperature_face_this[i];
+            if(chemistry_flag)
+            {
+                relRad1_face_[i] += relRad1_face_this[i];
+                relRad2_face_[i] += relRad2_face_this[i];
+                relRad3_face_[i] += relRad3_face_this[i];
+            }
         }
     }
 
@@ -1214,6 +1310,22 @@ double FixMassflowMeshFace::compute_array(int i, int j)
           return average_omegaz_face_out_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
 #endif
       return 0.;
+  case 13:
+      if (temperature_flag && nparticles_face_[i] > nparticles_face_last_[i])
+          return temperature_face_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+      return 0.;
+  case 14:
+      if (chemistry_flag && nparticles_face_[i] > nparticles_face_last_[i])
+          return relRad1_face_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+      return 0;
+  case 15:
+      if (chemistry_flag && nparticles_face_[i] > nparticles_face_last_[i])
+          return relRad2_face_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+      return 0;
+  case 16:
+      if (chemistry_flag && nparticles_face_[i] > nparticles_face_last_[i])
+          return relRad3_face_[i]/(nparticles_face_[i]-nparticles_face_last_[i]);
+      return 0;
   default:
       return 0.;
   }

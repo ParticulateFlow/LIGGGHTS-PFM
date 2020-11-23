@@ -117,6 +117,10 @@ class FixMassflowMeshFace : public Fix {
   std::vector<double> average_omegax_face_out_;
   std::vector<double> average_omegay_face_out_;
   std::vector<double> average_omegaz_face_out_;
+  std::vector<double> temperature_face_;
+  std::vector<double> relRad1_face_; // wuestite
+  std::vector<double> relRad2_face_; // magnetite
+  std::vector<double> relRad3_face_; // hematite
 
   // additional property to check
   char *property_check_name_;
@@ -163,6 +167,10 @@ class FixMassflowMeshFace : public Fix {
   std::vector<double> average_omegax_face_out_this;
   std::vector<double> average_omegay_face_out_this;
   std::vector<double> average_omegaz_face_out_this;
+  std::vector<double> temperature_face_this;
+  std::vector<double> relRad1_face_this; // wuestite
+  std::vector<double> relRad2_face_this; // magnetite
+  std::vector<double> relRad3_face_this; // hematite
 
   std::map<int, int> classified_particles_this;
   std::map<int, int> crossing_particles_this;
@@ -186,6 +194,10 @@ class FixMassflowMeshFace : public Fix {
 
   const std::vector<DiscreteParticleDistribution>& get_distributions()
   { return distributions_face_; }
+  bool temperature_flag;
+  class FixPropertyAtom* fix_temp_;
+  bool chemistry_flag;
+  class FixPropertyAtom *fix_layerRelRad_;
 
 }; //end class
 
