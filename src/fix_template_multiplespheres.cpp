@@ -577,6 +577,8 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
 
           pti->fix_properties.clear();
           pti->fix_property_values.clear();
+          pti->property_iindex = -1;
+          pti->property_index = -1;
 
           if(bonded && fix_bond_random_id)
           {

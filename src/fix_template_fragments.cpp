@@ -216,6 +216,8 @@ void FixTemplateFragments::randomize_ptilist(int n_random,int distribution_group
 
     pti->fix_properties.clear();
     pti->fix_property_values.clear();
+    pti->property_iindex = -1;
+    pti->property_index = -1;
   }
 }
 

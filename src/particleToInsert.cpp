@@ -143,11 +143,11 @@ int ParticleToInsert::insert()
                         }
                     }
                 }
-                else if(property_iindex >= 0)
+                if(property_iindex >= 0)
                 {
                     atom->ivector[property_iindex][m] = fix_property_ivalue;
                 }
-                else if(property_index >= 0)
+                if(property_index >= 0)
                 {
                     atom->dvector[property_index][m] = fix_property_dvalue;
                 }

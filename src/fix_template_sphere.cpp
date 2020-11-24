@@ -336,6 +336,8 @@ void FixTemplateSphere::randomize_single_pti(ParticleToInsert* &pti,int distribu
 
   pti->fix_properties.clear();
   pti->fix_property_values.clear();
+  pti->property_iindex = -1;
+  pti->property_index = -1;
 }
 /* ----------------------------------------------------------------------*/
 
