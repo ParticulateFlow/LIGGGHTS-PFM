@@ -118,6 +118,22 @@ FixInsertPackFace::FixInsertPackFace(LAMMPS *lmp, int narg, char **arg) :
       type_offset = atoi(arg[iarg+1]);
       iarg += 2;
       hasargs = true;
+    } else if (strcmp(arg[iarg],"temperature") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"Illegal keyword entry");
+      if (strcmp(arg[iarg+1],"yes") == 0) temperature_flag = true;
+      else if (strcmp(arg[iarg+1],"no") == 0) temperature_flag = false;
+      else error->fix_error(FLERR,this,"Illegal temperature option");
+      iarg += 2;
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"chemistry") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"Illegal keyword entry");
+      if (strcmp(arg[iarg+1],"yes") == 0) chemistry_flag = true;
+      else if (strcmp(arg[iarg+1],"no") == 0) chemistry_flag = false;
+      else error->fix_error(FLERR,this,"Illegal chemistry option");
+      iarg += 2;
+      hasargs = true;
     } else if (strcmp(style,"insert/pack/face") == 0) {
       error->fix_error(FLERR,this,"unknown keyword");
     }
@@ -202,6 +218,13 @@ void FixInsertPackFace::init_defaults()
   cg_ = 1.0;
   cg3_ = 1.0;
   type_offset = 0;
+
+  temperature_flag = false;
+  fix_temp_ = NULL;
+  temperature_.resize(1,-1.0);
+  chemistry_flag = false;
+  fix_layerRelRad_ = NULL;
+  relRadii_.resize(4,1.0);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -222,6 +245,18 @@ void FixInsertPackFace::init()
     if (!ins_region_mesh_hex->prop().getElementProperty<ScalarContainer<int> >("face_id")) {
       error->fix_error(FLERR,this,"Mesh element property 'face_id' (type int) required");
     }
+  }
+
+  fix_temp_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp","property/atom","scalar",0,0,style,false));
+  if (temperature_flag && !fix_temp_) {
+    error->fix_warning(FLERR,this,"failed to find fix 'Temp' for temperature settings");
+    temperature_flag = false;
+  }
+
+  fix_layerRelRad_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii","property/atom","vector",0,0,style,false));
+  if (chemistry_flag && !fix_layerRelRad_) {
+    error->fix_warning(FLERR,this,"failed to find fix 'relRadii' for chemistry settings");
+    chemistry_flag = false;
   }
 }
 
@@ -625,6 +660,14 @@ void FixInsertPackFace::x_v_omega(int ninsert_this_local,int &ninserted_this_loc
       omega_insert[0] = massflowface->compute_array_by_id(it->first, 10);
       omega_insert[1] = massflowface->compute_array_by_id(it->first, 11);
       omega_insert[2] = massflowface->compute_array_by_id(it->first, 12);
+      if (temperature_flag) {
+        temperature_[0] = massflowface->compute_array_by_id(it->first, 13);
+      }
+      if (chemistry_flag) {
+        relRadii_[1] = massflowface->compute_array_by_id(it->first, 14);
+        relRadii_[2] = massflowface->compute_array_by_id(it->first, 15);
+        relRadii_[3] = massflowface->compute_array_by_id(it->first, 16);
+      }
 
       while (ninserted_this_face_local < particle_this_face_local) {
         pti = fix_pddf->pti_list_face_local[iface][ninserted_this_face_local];
@@ -659,6 +702,14 @@ void FixInsertPackFace::x_v_omega(int ninsert_this_local,int &ninserted_this_loc
         }
 
         if (nins > 0) {
+          if (temperature_flag) {
+            pti->fix_properties.push_back(fix_temp_);
+            pti->fix_property_values.push_back(temperature_);
+          }
+          if (chemistry_flag) {
+            pti->fix_properties.push_back(fix_layerRelRad_);
+            pti->fix_property_values.push_back(relRadii_);
+          }
           ninserted_spheres_this_local += nins;
           mass_inserted_this_local += pti->mass_ins;
           ninserted_this_local++;

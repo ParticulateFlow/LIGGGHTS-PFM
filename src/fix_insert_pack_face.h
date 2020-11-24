@@ -91,6 +91,13 @@ class FixInsertPackFace : public FixInsert {
 
  private:
 
+  bool temperature_flag;
+  bool chemistry_flag;
+  class FixPropertyAtom* fix_temp_;
+  class FixPropertyAtom *fix_layerRelRad_;
+  std::vector<double> temperature_;
+  std::vector<double> relRadii_;
+
   virtual int distribute_ninsert_this(int);
   virtual void post_create_per_face_data();
   virtual void receive_ninsert_this(int&);
