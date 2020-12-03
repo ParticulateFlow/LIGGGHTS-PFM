@@ -89,14 +89,14 @@ class FixInsertPackFace : public FixInsert {
   std::vector<double> volume_face_absolut;
   std::deque<double> rounding_all;
 
- private:
-
   bool temperature_flag;
   bool chemistry_flag;
   class FixPropertyAtom* fix_temp_;
   class FixPropertyAtom *fix_layerRelRad_;
   std::vector<double> temperature_;
   std::vector<double> relRadii_;
+
+ private:
 
   virtual int distribute_ninsert_this(int);
   virtual void post_create_per_face_data();

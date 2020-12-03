@@ -184,6 +184,9 @@ class FixMassflowMeshFace : public Fix {
   std::vector<int> atomtype_dist_this_recv;
   std::vector<int> nparticles_face_this_all;
 
+  bool temperature_flag;
+  bool chemistry_flag;
+
  private:
 
   std::vector<DiscreteParticleDistribution> distributions_face_;
@@ -194,9 +197,7 @@ class FixMassflowMeshFace : public Fix {
 
   const std::vector<DiscreteParticleDistribution>& get_distributions()
   { return distributions_face_; }
-  bool temperature_flag;
   class FixPropertyAtom* fix_temp_;
-  bool chemistry_flag;
   class FixPropertyAtom *fix_layerRelRad_;
 
 }; //end class

@@ -88,8 +88,8 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
   cg_(1.),
   cg3_(1.),
   temperature_flag(false),
-  fix_temp_(NULL),
   chemistry_flag(false),
+  fix_temp_(NULL),
   fix_layerRelRad_(NULL)
 {
     vectorZeroize3D(nvec_);
