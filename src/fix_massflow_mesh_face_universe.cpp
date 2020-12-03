@@ -152,8 +152,9 @@ void FixMassflowMeshFaceUniverse::send_coupling_data()
                 send_data.resize(send_data_size);
 
                 // send # particles per face
-                std::transform (nparticles_face_.begin(), nparticles_face_.end(), nparticles_face_last_.begin(), send_data.begin(), std::minus<int>());
-                std::transform (send_data.begin(), send_data.end(), send_data.begin(), std::bind1st(std::multiplies<double>(),cg3_));
+                std::vector<int> nparticles_face_since_last_(faceid2index_.size(), 0.);
+                std::transform (nparticles_face_.begin(), nparticles_face_.end(), nparticles_face_last_.begin(), nparticles_face_since_last_.begin(), std::minus<int>());
+                std::transform (nparticles_face_since_last_.begin(), nparticles_face_since_last_.end(), send_data.begin(), std::bind1st(std::multiplies<double>(),cg3_));
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
 
                 std::vector<double> mass_face_since_last_(faceid2index_.size(), 0.);
@@ -187,6 +188,30 @@ void FixMassflowMeshFaceUniverse::send_coupling_data()
                 for (int i=0; i<send_data_size; ++i)
                     send_data[i] = (inertia_face_since_last_[i] > 0.) ? average_omegaz_face_out_[i]/inertia_face_since_last_[i] : 0.;
                 MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+
+                // send temperature per face
+                if (temperature_flag)
+                {
+                    for (int i=0; i<send_data_size; ++i)
+                        send_data[i] = (nparticles_face_since_last_[i] > 0.) ? temperature_face_[i]/(nparticles_face_since_last_[i]) : 0.;
+                    MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+                }
+
+                // send chemistry data per face
+                if (chemistry_flag)
+                {
+                    for (int i=0; i<send_data_size; ++i)
+                        send_data[i] = (nparticles_face_since_last_[i] > 0.) ? relRad1_face_[i]/(nparticles_face_since_last_[i]) : 0.;
+                    MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+
+                    for (int i=0; i<send_data_size; ++i)
+                        send_data[i] = (nparticles_face_since_last_[i] > 0.) ? relRad2_face_[i]/(nparticles_face_since_last_[i]) : 0.;
+                    MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+
+                    for (int i=0; i<send_data_size; ++i)
+                        send_data[i] = (nparticles_face_since_last_[i] > 0.) ? relRad3_face_[i]/(nparticles_face_since_last_[i]) : 0.;
+                    MPI_Send(&send_data[0], send_data_size, MPI_DOUBLE, universe->root_proc[send_to_world_], id_hash_, universe->uworld);
+                }
             }
         }
 

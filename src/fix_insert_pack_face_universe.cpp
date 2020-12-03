@@ -121,6 +121,14 @@ void FixInsertPackFaceUniverse::post_create_per_face_data()
     average_omegax_face_out_.resize(nfaces, 0.);
     average_omegay_face_out_.resize(nfaces, 0.);
     average_omegaz_face_out_.resize(nfaces, 0.);
+    if (temperature_flag) {
+      temperature_face_.resize(nfaces, 0.);
+    }
+    if (chemistry_flag) {
+      relRad1_face_.resize(nfaces, 0.);
+      relRad2_face_.resize(nfaces, 0.);
+      relRad3_face_.resize(nfaces, 0.);
+    }
 
     fraction_face_local.resize(nfaces);
     min_face_extent_local.resize(nfaces);
@@ -217,6 +225,14 @@ int FixInsertPackFaceUniverse::distribute_ninsert_this(int ninsert_this)
     std::fill(average_omegax_face_out_.begin(),average_omegax_face_out_.end(), 0.);
     std::fill(average_omegay_face_out_.begin(),average_omegay_face_out_.end(), 0.);
     std::fill(average_omegaz_face_out_.begin(),average_omegaz_face_out_.end(), 0.);
+    if (temperature_flag) {
+      std::fill(temperature_face_.begin(),temperature_face_.end(), 0.);
+    }
+    if (chemistry_flag) {
+      std::fill(relRad1_face_.begin(),relRad1_face_.end(), 0.);
+      std::fill(relRad2_face_.begin(),relRad2_face_.end(), 0.);
+      std::fill(relRad3_face_.begin(),relRad3_face_.end(), 0.);
+    }
   } else {
     // receive distribution data size
     int recv_data_size = 0;
@@ -257,6 +273,14 @@ int FixInsertPackFaceUniverse::distribute_ninsert_this(int ninsert_this)
       MPI_Recv(&average_omegax_face_out_[0], recv_data_size, MPI_DOUBLE, universe->root_proc[receive_from_world_], idmassflowface_hash, universe->uworld, MPI_STATUS_IGNORE);
       MPI_Recv(&average_omegay_face_out_[0], recv_data_size, MPI_DOUBLE, universe->root_proc[receive_from_world_], idmassflowface_hash, universe->uworld, MPI_STATUS_IGNORE);
       MPI_Recv(&average_omegaz_face_out_[0], recv_data_size, MPI_DOUBLE, universe->root_proc[receive_from_world_], idmassflowface_hash, universe->uworld, MPI_STATUS_IGNORE);
+      if (temperature_flag) {
+        MPI_Recv(&temperature_face_[0], recv_data_size, MPI_DOUBLE, universe->root_proc[receive_from_world_], idmassflowface_hash, universe->uworld, MPI_STATUS_IGNORE);
+      }
+      if (chemistry_flag) {
+        MPI_Recv(&relRad1_face_[0], recv_data_size, MPI_DOUBLE, universe->root_proc[receive_from_world_], idmassflowface_hash, universe->uworld, MPI_STATUS_IGNORE);
+        MPI_Recv(&relRad2_face_[0], recv_data_size, MPI_DOUBLE, universe->root_proc[receive_from_world_], idmassflowface_hash, universe->uworld, MPI_STATUS_IGNORE);
+        MPI_Recv(&relRad3_face_[0], recv_data_size, MPI_DOUBLE, universe->root_proc[receive_from_world_], idmassflowface_hash, universe->uworld, MPI_STATUS_IGNORE);
+      }
     }
     MPI_Bcast(&nparticles_face_[0], recv_data_size, MPI_DOUBLE, 0, world);
     MPI_Bcast(&average_vx_face_out_[0], recv_data_size, MPI_DOUBLE, 0, world);
@@ -265,6 +289,14 @@ int FixInsertPackFaceUniverse::distribute_ninsert_this(int ninsert_this)
     MPI_Bcast(&average_omegax_face_out_[0], recv_data_size, MPI_DOUBLE, 0, world);
     MPI_Bcast(&average_omegay_face_out_[0], recv_data_size, MPI_DOUBLE, 0, world);
     MPI_Bcast(&average_omegaz_face_out_[0], recv_data_size, MPI_DOUBLE, 0, world);
+    if (temperature_flag) {
+      MPI_Bcast(&temperature_face_[0], recv_data_size, MPI_DOUBLE, 0, world);
+    }
+    if (chemistry_flag) {
+      MPI_Bcast(&relRad1_face_[0], recv_data_size, MPI_DOUBLE, 0, world);
+      MPI_Bcast(&relRad2_face_[0], recv_data_size, MPI_DOUBLE, 0, world);
+      MPI_Bcast(&relRad3_face_[0], recv_data_size, MPI_DOUBLE, 0, world);
+    }
 
     // loop over faces
     for (int iface=0; iface<nfaces; ++iface) {
@@ -404,6 +436,14 @@ void FixInsertPackFaceUniverse::x_v_omega(int ninsert_this_local,int &ninserted_
       omega_insert[0] = average_omegax_face_out_[iface];
       omega_insert[1] = average_omegay_face_out_[iface];
       omega_insert[2] = average_omegaz_face_out_[iface];
+      if (temperature_flag) {
+        temperature_[0] = temperature_face_[iface];
+      }
+      if (chemistry_flag) {
+        relRadii_[1] = relRad1_face_[iface];
+        relRadii_[2] = relRad2_face_[iface];
+        relRadii_[3] = relRad3_face_[iface];
+      }
 
       while (ninserted_this_face_local < particle_this_face_local) {
         pti = fix_pddf->pti_list_face_local[iface][ninserted_this_face_local];
@@ -438,6 +478,14 @@ void FixInsertPackFaceUniverse::x_v_omega(int ninsert_this_local,int &ninserted_
         }
 
         if (nins > 0) {
+          if (temperature_flag) {
+            pti->fix_properties.push_back(fix_temp_);
+            pti->fix_property_values.push_back(temperature_);
+          }
+          if (chemistry_flag) {
+            pti->fix_properties.push_back(fix_layerRelRad_);
+            pti->fix_property_values.push_back(relRadii_);
+          }
           ninserted_spheres_this_local += nins;
           mass_inserted_this_local += pti->mass_ins;
           ninserted_this_local++;
