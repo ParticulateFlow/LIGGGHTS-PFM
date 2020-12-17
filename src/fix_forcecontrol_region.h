@@ -62,6 +62,7 @@ class FixForceControlRegion : public Fix {
 
  protected:
   double cg_actual_, cg3_actual_, cg_target_, cg3_target_, cg_ratio_, cg3_ratio_;
+  double cg_max_; // input only if single-partition, else equal to actual_cg
   double const_part_, sinesq_part_, used_part_;
 
  private:

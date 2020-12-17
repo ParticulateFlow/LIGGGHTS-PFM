@@ -63,6 +63,7 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   cg3_target_(1.0),
   cg_ratio_(1.0),
   cg3_ratio_(1.0),
+  cg_max_(-1.0),
   const_part_(1.0),
   sinesq_part_(0.0),
   used_part_(1.0),
@@ -172,6 +173,10 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
       cg_actual_ = atof(arg[iarg+1]);
       iarg += 2;
+    } else if (strcmp(arg[iarg],"max_cg") == 0) {
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
+      cg_max_ = atof(arg[iarg+1]);
+      iarg += 2;
     } else if (strcmp(style,"forcecontrol/region") == 0) {
       error->all(FLERR,"Illegal fix forcecontrol/region command");
     } else {
@@ -210,6 +215,8 @@ void FixForceControlRegion::post_create()
   receive_post_create_data();
   if (cg_actual_ < 1.0) // not set in input script
       cg_actual_ = force->cg();
+  if (cg_max_ < 1.0)
+      cg_max_ = cg_actual_;
   cg3_actual_ = cg_actual_*cg_actual_*cg_actual_;
   cg3_target_ = cg_target_*cg_target_*cg_target_;
   cg_ratio_ = cg_actual_/cg_target_;
@@ -233,7 +240,7 @@ void FixForceControlRegion::post_create_stress_part()
 {
   double maxrd,minrd;
   modify->max_min_rad(maxrd,minrd);
-  used_part_ = (2.*maxrd/force->cg()*cg_actual_)*1.4;
+  used_part_ = (2.*maxrd/cg_max_*cg_actual_)*1.4;
   const_part_ = used_part_ * CONST_TO_USED_PART_RATIO;
   sinesq_part_ = used_part_ - const_part_;
 }
