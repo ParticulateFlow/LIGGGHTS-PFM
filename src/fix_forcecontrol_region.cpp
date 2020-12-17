@@ -716,7 +716,8 @@ void FixForceControlRegion::post_force(int vflag)
     mass_ratio /= it->second.size();
 
     if (mass_ratio > 1.005) {
-      it->first->set_scale(std::max(cg_ratio_, it->first->get_scale() * 0.9999));
+      // minimum scaling factor <-> cg_actual_ particles have same size as cg_target_ particles
+      it->first->set_scale(std::max(1./cg_ratio_, it->first->get_scale() * 0.9999));
     } else if (mass_ratio < 0.995) {
       it->first->set_scale(std::min(1.0,it->first->get_scale() * 1.0001));
     }
