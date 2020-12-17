@@ -47,6 +47,7 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 
 enum{NONE,STRESS,VELOCITY};
+enum{VELOCITY_LIMIT_OFF,VELOCITY_LIMIT_RELATIVE,VELOCITY_LIMIT_ABSOLUTE};
 
 extern MPI_Op MPI_ABSMIN_OP;
 extern MPI_Op MPI_ABSMAX_OP;
@@ -87,9 +88,9 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   ncells_max_(0),
   old_pv_vec_(NULL),
   sum_err_(NULL),
-  acceptable_deviation_min(0.97),
-  acceptable_deviation_max(1.03),
-  limit_velocity_(false)
+  acceptable_deviation_min(0.80),
+  acceptable_deviation_max(1.20),
+  limit_velocity_(VELOCITY_LIMIT_OFF)
 {
   if (narg < 6) error->all(FLERR,"Illegal fix forcecontrol/region command");
 
@@ -113,7 +114,7 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
         ctrl_style_ = STRESS;
       } else if (strcmp(arg[iarg+1],"velocity") == 0) {
         ctrl_style_ = VELOCITY;
-        limit_velocity_ = true;
+        limit_velocity_ = VELOCITY_LIMIT_RELATIVE;
       }
       else error->fix_error(FLERR,this,"only 'stress' and 'velocity' are valid arguments for ctrlPV");
       iarg = iarg + 2;
@@ -162,8 +163,23 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
       iarg = iarg+2;
     } else if (strcmp(arg[iarg],"velocity_limit") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
-      if (strcmp(arg[iarg+1],"on") == 0)
-        limit_velocity_ = true;
+      if (strcmp(arg[iarg+1],"off") == 0)
+        limit_velocity_ = VELOCITY_LIMIT_OFF;
+      else if (strcmp(arg[iarg+1],"on") == 0)
+        limit_velocity_ = VELOCITY_LIMIT_RELATIVE;
+      else if (strcmp(arg[iarg+1],"relative") == 0) {
+        double deviation = force->numeric(FLERR,arg[iarg+2]);
+        acceptable_deviation_min = 1.0 - deviation;
+        acceptable_deviation_max = 1.0 + deviation;
+        limit_velocity_ = VELOCITY_LIMIT_RELATIVE;
+        iarg += 1;
+      } else if (strcmp(arg[iarg+1],"absolute") == 0) {
+        double deviation = force->numeric(FLERR,arg[iarg+2]);
+        acceptable_deviation_min = deviation;
+        acceptable_deviation_max = deviation;
+        limit_velocity_ = VELOCITY_LIMIT_ABSOLUTE;
+        iarg += 1;
+      }
       iarg += 2;
     } else if ((strcmp(arg[iarg],"cg") == 0) || (strcmp(arg[iarg],"target_cg") == 0)) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"not enough arguments");
@@ -471,10 +487,8 @@ void FixForceControlRegion::post_force(int vflag)
     force_flag = 0;
     ncontrolled_cell_[*it_cell] = 0;
 
-    if (xvalue[*it_cell]!=0. || yvalue[*it_cell]!=0. || zvalue[*it_cell]!=0.) {
-      double bounds[6];
-      actual_->cell_bounds(*it_cell, bounds);
 
+    if (limit_velocity_) {
       vel_min_[0] = target_cell_v_min_x(tcell);
       vel_min_[1] = target_cell_v_min_y(tcell);
       vel_min_[2] = target_cell_v_min_z(tcell);
@@ -483,12 +497,29 @@ void FixForceControlRegion::post_force(int vflag)
       vel_max_[2] = target_cell_v_max_z(tcell);
 
       // allow small deviation from min/max velocity
-      vel_min_[0] *= (vel_min_[0] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
-      vel_min_[1] *= (vel_min_[1] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
-      vel_min_[2] *= (vel_min_[2] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
-      vel_max_[0] *= (vel_max_[0] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
-      vel_max_[1] *= (vel_max_[1] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
-      vel_max_[2] *= (vel_max_[2] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
+      switch (limit_velocity_) {
+      case VELOCITY_LIMIT_RELATIVE:
+        vel_min_[0] *= (vel_min_[0] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
+        vel_min_[1] *= (vel_min_[1] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
+        vel_min_[2] *= (vel_min_[2] > 0.) ? acceptable_deviation_min : acceptable_deviation_max;
+        vel_max_[0] *= (vel_max_[0] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
+        vel_max_[1] *= (vel_max_[1] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
+        vel_max_[2] *= (vel_max_[2] > 0.) ? acceptable_deviation_max : acceptable_deviation_min;
+        break;
+      case VELOCITY_LIMIT_ABSOLUTE:
+        vel_min_[0] -= acceptable_deviation_min;
+        vel_min_[1] -= acceptable_deviation_min;
+        vel_min_[2] -= acceptable_deviation_min;
+        vel_max_[0] += acceptable_deviation_max;
+        vel_max_[1] += acceptable_deviation_max;
+        vel_max_[2] += acceptable_deviation_max;
+        break;
+      }
+    }
+
+    if (xvalue[*it_cell]!=0. || yvalue[*it_cell]!=0. || zvalue[*it_cell]!=0.) {
+      double bounds[6];
+      actual_->cell_bounds(*it_cell, bounds);
 
       for (int i = actual_->cell_head(*it_cell); i >= 0; i = actual_->cell_ptr(i)) {
         if (i >= nlocal)
@@ -647,7 +678,7 @@ void FixForceControlRegion::post_force(int vflag)
                 vatom[i][1] += pre*fabs(fy)*delta;
                 vatom[i][2] += pre*fabs(fz)*delta;
             }
-          } else {
+          } else { // don't limit velocity
             f[i][0] += fadex_ * xvalue[*it_cell];
             f[i][1] += fadey_ * yvalue[*it_cell];
             f[i][2] += fadez_ * zvalue[*it_cell];

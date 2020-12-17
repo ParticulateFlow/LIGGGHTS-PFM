@@ -98,9 +98,9 @@ class FixForceControlRegion : public Fix {
   std::set<int> active_; // set of active cells
   std::vector<bool> modifier_; // if true apply massflow corrections
   std::map<class FixScaleDiameter*, std::set<int> > modifier_scale_;
-  const double acceptable_deviation_min;
-  const double acceptable_deviation_max;
-  bool limit_velocity_;
+  double acceptable_deviation_min;
+  double acceptable_deviation_max;
+  char limit_velocity_;
   double limit[3];
 
  private:
