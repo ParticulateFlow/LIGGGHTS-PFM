@@ -50,6 +50,8 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
     use_type_(false),
     use_property_(false),
     use_molecule_(false),
+    apply_force_(true),
+    apply_torque_(true),
 // superquadric start
     use_superquadric_(false)
 // superquadric end
@@ -138,6 +140,30 @@ FixCfdCouplingForce::FixCfdCouplingForce(LAMMPS *lmp, int narg, char **arg) : Fi
                 use_molecule_ = false;
             else
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_molecule'");
+            iarg++;
+            hasargs = true;
+        } else if(strcmp(arg[iarg],"apply_force") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'apply_force");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                apply_force_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                apply_force_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'apply_force'");
+            iarg++;
+            hasargs = true;
+        } else if(strcmp(arg[iarg],"apply_torque") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'apply_torque");
+            iarg++;
+            if(strcmp(arg[iarg],"yes") == 0)
+                apply_torque_ = true;
+            else if(strcmp(arg[iarg],"no") == 0)
+                apply_torque_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'apply_torque'");
             iarg++;
             hasargs = true;
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
@@ -308,7 +334,7 @@ void FixCfdCouplingForce::post_force(int)
     int *mask = atom->mask;
     int nlocal = atom->nlocal;
 
-    if(use_force_)
+    if(use_force_ && apply_force_)
     {
         double **dragforce = fix_dragforce_->array_atom;
         vectorZeroize3D(dragforce_total);
@@ -322,7 +348,7 @@ void FixCfdCouplingForce::post_force(int)
         }
     }
 
-    if(use_torque_)
+    if(use_torque_ && apply_torque_)
     {
         double **hdtorque = fix_hdtorque_->array_atom;
         vectorZeroize3D(hdtorque_total);

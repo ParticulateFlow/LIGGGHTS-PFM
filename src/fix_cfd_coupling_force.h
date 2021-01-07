@@ -59,6 +59,7 @@ class FixCfdCouplingForce : public Fix  {
 
  private:
   bool use_force_, use_torque_, use_dens_, use_type_, use_property_, use_molecule_;
+  bool apply_force_, apply_torque_;
 // superquadric start
   bool use_superquadric_;
 // superquadric end
