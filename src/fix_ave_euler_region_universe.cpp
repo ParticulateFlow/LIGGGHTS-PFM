@@ -113,9 +113,9 @@ void FixAveEulerRegionUniverse::send_post_create_data()
 
     if (!synchronize_) {
       int s1, s2, size;
-      void *ptr;
-      MPI_Buffer_detach(&ptr, &size);
-      if(size > 0) free(ptr);
+      void *ptr = NULL;
+      int success = MPI_Buffer_detach(&ptr, &size);
+      if (success == MPI_SUCCESS && size > 0) free(ptr);
       MPI_Pack_size(ncells_, MPI_INT, universe->uworld, &s1);
       MPI_Pack_size((1+1+7+3+3+3)*ncells_, MPI_DOUBLE, universe->uworld, &s2);
       size += 1*(s1 + s2 + 2 * MPI_BSEND_OVERHEAD);
