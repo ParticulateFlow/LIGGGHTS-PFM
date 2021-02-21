@@ -323,6 +323,9 @@ void FixInsertPackDense::pre_exchange()
   // insert first three particles to initialize the algorithm
   if (prepared && is_inserter && insert_first_particles()) {
 
+    const int n_write = n_insert_estim_local/10;
+    int n_next_write = n_write;
+
     while(!frontSpheres.empty()) {
       if (screen && !(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local))) {
         fprintf(screen, "pti_list.size() %lu | n_inserted_local %d\n",fix_distribution->pti_list.size(),n_inserted_local);
@@ -330,8 +333,6 @@ void FixInsertPackDense::pre_exchange()
       assert(fix_distribution->pti_list.size() == static_cast<FixParticledistributionDiscrete::pti_list_type::size_type>(n_inserted_local));
       handle_next_front_sphere();
 
-      int const n_write = n_insert_estim_local/10;
-      int static n_next_write = n_write;
       if (n_inserted_local > n_next_write) {
         double percent = static_cast<double>(n_inserted_local)/static_cast<double>(n_insert_estim_local)*100;
         if (screen) fprintf(screen,"process %d : %2.0f%% done, inserted %d/%d particles\n",
