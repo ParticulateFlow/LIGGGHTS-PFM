@@ -356,7 +356,7 @@ void FixInsertPackDense::pre_exchange()
     }
   }
 
-  fix_distribution->finalize_insertion();
+  fix_distribution->finalize_insertion(true);
 
   n_inserted = n_inserted_local;
   MPI_Sum_Scalar(n_inserted,world);
