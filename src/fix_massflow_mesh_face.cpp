@@ -1225,6 +1225,7 @@ double FixMassflowMeshFace::compute_vector(int index)
     case 10:
         if(fix_property_)
             return property_sum_;
+        return 0.;
     default:
         return 0.;
     }
