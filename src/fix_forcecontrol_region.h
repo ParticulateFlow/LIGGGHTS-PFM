@@ -102,6 +102,7 @@ class FixForceControlRegion : public Fix {
   double acceptable_deviation_max;
   char limit_velocity_;
   double limit[3];
+  double force_limit_percentage_threshold_;
 
  private:
   class FixAveEulerRegion *target_;

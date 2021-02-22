@@ -5,7 +5,7 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Department for Particule Flow Modelling
+   Department of Particulate Flow Modelling
    Copyright 2016- JKU Linz
 
    LIGGGHTS is based on LAMMPS
@@ -53,6 +53,8 @@ extern MPI_Op MPI_ABSMIN_OP;
 extern MPI_Op MPI_ABSMAX_OP;
 
 #define CONST_TO_USED_PART_RATIO 0.875
+#define DEFAULT_FORCE_LIMIT_PERCENTAGE_THRESHOLD 0.0
+
 
 /* ---------------------------------------------------------------------- */
 
@@ -90,7 +92,8 @@ FixForceControlRegion::FixForceControlRegion(LAMMPS *lmp, int narg, char **arg) 
   sum_err_(NULL),
   acceptable_deviation_min(0.80),
   acceptable_deviation_max(1.20),
-  limit_velocity_(VELOCITY_LIMIT_OFF)
+  limit_velocity_(VELOCITY_LIMIT_OFF),
+  force_limit_percentage_threshold_(DEFAULT_FORCE_LIMIT_PERCENTAGE_THRESHOLD)
 {
   if (narg < 6) error->all(FLERR,"Illegal fix forcecontrol/region command");
 
@@ -372,11 +375,16 @@ void FixForceControlRegion::post_force(int vflag)
       continue;
     }
 
+    /// NOTE: we cannot early out on any proc-specific conditions
+    /// - e.g. no particles in a cell on a specific proc -
+    /// since we may have to do an MPI collective operation
+
     switch (ctrl_style_) {
     case STRESS:
       {
         const double vol_fr_mismatch_correction = actual_->cell_vol_fr(*it_cell)/target_cell_vol_fr(tcell);
         actual_->set_cell_weight(*it_cell, vol_fr_mismatch_correction);
+        // note: cg_ratio_ = cg_actual_/cg_target_
         // calculate half average normal force per particle (half, because same force acting from 2 sides)
         const double r_ave = actual_->cell_radius(*it_cell); // average radius (assume that in target we get the same r_ave when scaled with cg_ratio_)
         const double vol_cell = actual_->cell_volume(*it_cell); // equal for actual and target
@@ -434,6 +442,7 @@ void FixForceControlRegion::post_force(int vflag)
 
     // simple PID-controller
 
+    {
     // calc error and sum of the errors
     err_[0] = sp_vec_[0] - pv_vec_[0];
     err_[1] = sp_vec_[1] - pv_vec_[1];
@@ -452,39 +461,49 @@ void FixForceControlRegion::post_force(int vflag)
 
     // derivative term
     // force used instead of the error in order to avoid signal spikes in case of change of the set point
-    double dfdt[3];
-    dfdt[0] = -(pv_vec_[0] - old_pv_vec_[*it_cell][0])/dtv_;
-    dfdt[1] = -(pv_vec_[1] - old_pv_vec_[*it_cell][1])/dtv_;
-    dfdt[2] = -(pv_vec_[2] - old_pv_vec_[*it_cell][2])/dtv_;
+    double dfdt[3] = {};
 
-    // vel points opposite to force vector
+    if (kd_ > 0.0) {
+      dfdt[0] = -(pv_vec_[0] - old_pv_vec_[*it_cell][0])/dtv_;
+      dfdt[1] = -(pv_vec_[1] - old_pv_vec_[*it_cell][1])/dtv_;
+      dfdt[2] = -(pv_vec_[2] - old_pv_vec_[*it_cell][2])/dtv_;
+
+      // save process value for next timestep
+      old_pv_vec_[*it_cell][0] = pv_vec_[0];
+      old_pv_vec_[*it_cell][1] = pv_vec_[1];
+      old_pv_vec_[*it_cell][2] = pv_vec_[2];
+    }
+
+    // velocity points opposite to force vector
     ctrl_op_[0] = err_[0] * kp_ + sum_err_[*it_cell][0] * ki_ + dfdt[0] * kd_;
     ctrl_op_[1] = err_[1] * kp_ + sum_err_[*it_cell][1] * ki_ + dfdt[1] * kd_;
     ctrl_op_[2] = err_[2] * kp_ + sum_err_[*it_cell][2] * ki_ + dfdt[2] * kd_;
 
-    // save process value for next timestep
-    old_pv_vec_[*it_cell][0] = pv_vec_[0];
-    old_pv_vec_[*it_cell][1] = pv_vec_[1];
-    old_pv_vec_[*it_cell][2] = pv_vec_[2];
 
-    if (ctrl_style_ == STRESS) {
+    switch (ctrl_style_) {
+    case STRESS:
       // do not apply an outward force; particles should relax in that direction automatically
       xvalue[*it_cell] = (ctrl_op_[0] > 0.) ? (axis_[0] * ctrl_op_[0]) : 0.;
       yvalue[*it_cell] = (ctrl_op_[1] > 0.) ? (axis_[1] * ctrl_op_[1]) : 0.;
       zvalue[*it_cell] = (ctrl_op_[2] > 0.) ? (axis_[2] * ctrl_op_[2]) : 0.;
-      // anti-windup
-      if (ctrl_op_[0] <= 0.) sum_err_[*it_cell][0] -= err_[0] * dtv_;
-      if (ctrl_op_[1] <= 0.) sum_err_[*it_cell][1] -= err_[1] * dtv_;
-      if (ctrl_op_[2] <= 0.) sum_err_[*it_cell][2] -= err_[2] * dtv_;
-    } else {
+      // a priori anti-windup
+      if (ctrl_op_[0] < 0.) sum_err_[*it_cell][0] -= err_[0] * dtv_;
+      if (ctrl_op_[1] < 0.) sum_err_[*it_cell][1] -= err_[1] * dtv_;
+      if (ctrl_op_[2] < 0.) sum_err_[*it_cell][2] -= err_[2] * dtv_;
+      break;
+    case VELOCITY:
       xvalue[*it_cell] = ctrl_op_[0];
       yvalue[*it_cell] = ctrl_op_[1];
       zvalue[*it_cell] = ctrl_op_[2];
+      break;
     }
 
     // TODO: remove
     foriginal[0] = foriginal[1] = foriginal[2] = foriginal[3] = 0.0;
     force_flag = 0;
+    }
+
+    double applied[3] = {};
     ncontrolled_cell_[*it_cell] = 0;
 
 
@@ -530,6 +549,7 @@ void FixForceControlRegion::post_force(int vflag)
           // fade out factors
           if (ctrl_style_ == VELOCITY) {
 
+            // xvalue, yvalue, zvalue are differences in v; turning into a force:
             fadex_ = fadey_ = fadez_ = rmass[i]*dtv_inverse_;
 
           } else if (ctrl_style_ == STRESS  && sinesq_part_cell_[*it_cell] > 0.0) {
@@ -604,9 +624,7 @@ void FixForceControlRegion::post_force(int vflag)
 
             fx = fadex_ * xvalue[*it_cell];
 
-#define FORCE_LIMIT_PERCENTAGE_TRESHOLD 0.05
-
-            if (fabs(fx) > fabs(f[i][0]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
+            if (fabs(fx) > fabs(f[i][0]*force_limit_percentage_threshold_)) {
               vx = v[i][0] + dtfm * (f[i][0] + fx);
 
               if (vx > vel_max_[0]) {
@@ -626,7 +644,7 @@ void FixForceControlRegion::post_force(int vflag)
 
             fy = fadey_ * yvalue[*it_cell];
 
-            if (fabs(fy) > fabs(f[i][1]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
+            if (fabs(fy) > fabs(f[i][1]*force_limit_percentage_threshold_)) {
               vy = v[i][1] + dtfm * (f[i][1] + fy);
               if (vy > vel_max_[1]) {
                 if (vy - dtfm * fy < vel_max_[1]) {
@@ -645,15 +663,15 @@ void FixForceControlRegion::post_force(int vflag)
 
             fz = fadez_ * zvalue[*it_cell];
 
-            if (fabs(fz) > fabs(f[i][2]*FORCE_LIMIT_PERCENTAGE_TRESHOLD)) {
+            if (fabs(fz) > fabs(f[i][2]*force_limit_percentage_threshold_)) {
               vz = v[i][2] + dtfm * (f[i][2] + fz);
-              if (vz > vel_max_[2]) {
-                if (vz - dtfm * fz < vel_max_[2]) {
+              if (vz > vel_max_[2]) { // new vz would exceed upper limit
+                if (vz - dtfm * fz < vel_max_[2]) { // if velocity limit is exceeded solely by controller force
                   limit[2] = (vel_max_[2] - v[i][2] - dtfm * f[i][2])/(dtfm * fz);
                 } else if (fz > 0.) {
                   limit[2] = 0.;
                 }
-              } else if (vz < vel_min_[2]) {
+              } else if (vz < vel_min_[2]) { // new vz would fall below lower limit
                 if (vz - dtfm * fz > vel_min_[2]) {
                   limit[2] = (vel_min_[2] - v[i][2] - dtfm * f[i][2])/(dtfm * fz);
                 } else if (fz < 0.) {
@@ -662,21 +680,23 @@ void FixForceControlRegion::post_force(int vflag)
               }
             }
 
-            double a = std::min(limit[0], std::min(limit[1], limit[2]));
-            f[i][0] += a * fx;
-            f[i][1] += a * fy;
-            f[i][2] += a * fz;
+            f[i][0] += limit[0] * fx;
+            f[i][1] += limit[1] * fy;
+            f[i][2] += limit[2] * fz;
 
 #define DEBUG_EPS 0.0
-            if (fabs(a*fx) > DEBUG_EPS || fabs(a*fy) > DEBUG_EPS || fabs(a*fz) > DEBUG_EPS ) {
+            if (fabs(limit[0]*fx) > DEBUG_EPS || fabs(limit[1]*fy) > DEBUG_EPS || fabs(limit[2]*fz) > DEBUG_EPS ) {
+
+              applied[0] += limit[0] * fx;
+              applied[1] += limit[1] * fy;
+              applied[2] += limit[2] * fz;
               ++ncontrolled_cell_[*it_cell];
             }
             if (vflag) {
                 const double delta = 2.0*actual_->cell_radius(*it_cell);
-                const double pre = 0.5*a;
-                vatom[i][0] += pre*fabs(fx)*delta;
-                vatom[i][1] += pre*fabs(fy)*delta;
-                vatom[i][2] += pre*fabs(fz)*delta;
+                vatom[i][0] += 0.5*limit[0]*fabs(fx)*delta;
+                vatom[i][1] += 0.5*limit[1]*fabs(fy)*delta;
+                vatom[i][2] += 0.5*limit[2]*fabs(fz)*delta;
             }
           } else { // don't limit velocity
             f[i][0] += fadex_ * xvalue[*it_cell];
@@ -686,6 +706,9 @@ void FixForceControlRegion::post_force(int vflag)
             if (   fabs(fadex_ * xvalue[*it_cell]) > DEBUG_EPS
                 || fabs(fadey_ * yvalue[*it_cell]) > DEBUG_EPS
                 || fabs(fadez_ * zvalue[*it_cell]) > DEBUG_EPS ) {
+              applied[0] += fadex_ * xvalue[*it_cell];
+              applied[1] += fadey_ * yvalue[*it_cell];
+              applied[2] += fadez_ * zvalue[*it_cell];
               ++ncontrolled_cell_[*it_cell];
             }
             if (vflag) {
@@ -696,9 +719,27 @@ void FixForceControlRegion::post_force(int vflag)
             }
           }
         }
+      } // for each particle in cell
+
+    } // if controller force != 0
+
+
+    if (ctrl_style_ == STRESS && limit_velocity_) {
+      MPI_Allreduce(MPI_IN_PLACE, applied, 3, MPI_DOUBLE, MPI_SUM, world);
+      MPI_Allreduce(MPI_IN_PLACE, ncontrolled_cell_, ncells, MPI_INT, MPI_SUM, world);
+      // a posteriori anti-windup in case force gets limited a lot
+      if (ncontrolled_cell_[*it_cell] > 0) {
+        if (ctrl_op_[0] > 0. && err_[0] > 0. && fabs(applied[0]/ncontrolled_cell_[*it_cell]) < fabs(0.5*xvalue[*it_cell])) sum_err_[*it_cell][0] -= err_[0] * dtv_;
+        if (ctrl_op_[1] > 0. && err_[1] > 0. && fabs(applied[1]/ncontrolled_cell_[*it_cell]) < fabs(0.5*yvalue[*it_cell])) sum_err_[*it_cell][1] -= err_[1] * dtv_;
+        if (ctrl_op_[2] > 0. && err_[2] > 0. && fabs(applied[2]/ncontrolled_cell_[*it_cell]) < fabs(0.5*zvalue[*it_cell])) sum_err_[*it_cell][2] -= err_[2] * dtv_;
+      } else {
+        if (ctrl_op_[0] > 0. && err_[0] > 0.) sum_err_[*it_cell][0] -= err_[0] * dtv_;
+        if (ctrl_op_[1] > 0. && err_[1] > 0.) sum_err_[*it_cell][1] -= err_[1] * dtv_;
+        if (ctrl_op_[2] > 0. && err_[2] > 0.) sum_err_[*it_cell][2] -= err_[2] * dtv_;
       }
     }
-  }
+
+  } // end loop over active cells
 
   // apply scale modifier to correct volume fraction
   std::map<class FixScaleDiameter*, std::set<int> >::iterator it = modifier_scale_.begin();
@@ -716,6 +757,7 @@ void FixForceControlRegion::post_force(int vflag)
     mass_ratio /= it->second.size();
 
     if (mass_ratio > 1.005) {
+      // note: cg_ratio_ = cg_actual_/cg_target_
       // minimum scaling factor <-> cg_actual_ particles have same size as cg_target_ particles
       it->first->set_scale(std::max(1./cg_ratio_, it->first->get_scale() * 0.9999));
     } else if (mass_ratio < 0.995) {
