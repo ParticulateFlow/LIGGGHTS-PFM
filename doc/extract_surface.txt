@@ -10,16 +10,19 @@ extract_surface command :h3
 
 [Syntax:]
 
-extract inputfile file surfacefile extrusionfile extrude_length l min_rad r :pre
+extract_surface inputfile file surfacefile extrusionfile extrude_length l min_rad r mode :pre
 
-inputfile = filename of VTK grid data
-file = obligatory keyword
-surfacefile = filename to write surface VTK data
-extrusionfile = filename to write extruded surface VTK data
-extrude_length = obligatory keyword
-l = total height of extruded volume
-min_rad = obligatory keyword
-r = distance volume is extruded outwards :ul
+inputfile = filename of VTK grid data :ulb,l
+file = obligatory keyword :l
+surfacefile = filename to write surface VTK data :l
+optional extrusion args :l
+  extrusionfile = filename to write extruded surface VTK data
+  extrude_length = obligatory keyword
+  l = total height of extruded volume
+  min_rad = obligatory keyword
+  r = distance volume is extruded outwards :pre
+mode = output file mode {ascii} or {binary} (optional) :l
+:ule
 
 [Examples:]
 
@@ -31,13 +34,17 @@ Given an unstructured grid VTK file consisting of hexahedral cells,
 this command will extract and triangulate the surface and save it to
 an unstructured grid VTK file adding a unique ID for each cell face
 (i.e. typically two triangles). Furthermore, the surface thus obtained
-is used to create a shell geometry extruding the surface {l-r} distance
+may be used to create a shell geometry extruding the surface {l-r} distance
 units inwards and {r} distance units outwards. If used as insertion volume
-for adaptive resolution simulations, {r} should be set to the minimum
+for multi-level coarse-grain simulations, {r} should be set to the minimum
 particle radius occuring in the simulation. The total extrusion length {l}
 should be about 2 particle diameters but is ultimately determined by
 the insertion rate and the velocity of the particles.
 
-[Restrictions:] none
+[Restrictions:]
 
-[Default:] none
+none
+
+[Default:]
+
+mode = ascii

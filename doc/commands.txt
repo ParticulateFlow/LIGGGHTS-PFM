@@ -37,6 +37,7 @@ Commands :h1
    dump_custom_vtk
    echo
    extract_surface
+   extrude_surface
    fix
    fix_modify
    group
