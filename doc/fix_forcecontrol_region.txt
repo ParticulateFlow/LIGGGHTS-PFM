@@ -8,30 +8,42 @@
 :line
 
 fix forcecontrol/region command :h3
+fix forcecontrol/region/universe command :h3
 
 [Syntax:]
 
-fix ID group-ID forcecontrol/region control_keywords control_values :pre
+fix ID group-ID forcecontrol/region control_keywords control_values
+fix ID group-ID forcecontrol/region/universe control_keywords control_values ukeywords uvalues :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 forcecontrol/region = style name of this fix command :l
 control_keyword/value pairs :l
-control_keywords = {ctrlPV} (obligatory) or {actual_val} (obligatory) or {target_val} (obligatory) or {kp} or {ki} or {kd} or {cg} :l
+control_keywords = {ctrlPV} (obligatory) or {actual_val} (obligatory) or {target_val} (obligatory) or {velocity_limit} or {kp} or {ki} or {kd} or {actual_cg} or {target_cg} or {max_cg} :l
 {ctrlPV} values = stress or velocity
     stress = use stress as control process value
     velocity = use velocity as control process value
 {actual_val} values = fix-ID
-    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html command that holds the actual values for the controller
+    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html or "fix ave/euler/region/universe"_fix_ave_euler_region.html command that holds the actual values for the controller
 {target_val} values = fix-ID
-    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html command that holds the target values for the controller
+    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html or "fix ave/euler/region/universe"_fix_ave_euler_region.html command that holds the target values for the controller
 {kp} values = k
     k = proportional constant for PID controller 
 {ki} values = k
     k = integral constant for PID controller
 {kd} values = k
     k = differential constant for PID controller
-{cg} values = cg
-    cg = coarse grain ratio of the target particles :pre
+{actual_cg} values = cg
+    cg = coarse-grain ratio of the actual particles (N/A to universe version)
+{target_cg} values = cg
+    cg = coarse-grain ratio of the target particles  (N/A to universe version)
+{max_cg} values = cg
+    cg = maximum coarse-grain ratio in the simulation (N/A to universe version) :pre
+two ukeyword/uvalue pairs must be appended for the universe version of this command :l
+ukeywords = {receive_from_partition} and {couple_every} :l
+  {receive_from_partition} value = partition
+    partition = partition to receive data from in multi-partition simulations
+  {couple_every} value = interval
+    interval = time interval for receiving data :pre
 :ule
 
 [Examples:]
@@ -69,7 +81,7 @@ output = kp * error + ki * errorsum + kd * errorchange
 where 'error' is the current deviation of the control process value to the target value, 
 'errorsum' is the time integration (sum) of the error values and 'errorchange' its derivative.
 
-The {cg} parameter allows to specify the coarse grain ratio of the target particles
+The {target_cg} parameter allows to specify the coarse-grain ratio of the target particles
 in adaptive resolution simulations.
 
 [Restart, fix_modify, output, run start/stop, minimize info:]

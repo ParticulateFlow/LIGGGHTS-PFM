@@ -8,10 +8,12 @@
 :line
 
 fix ave/euler/region command :h3
+fix ave/euler/region/universe command :h3
 
 [Syntax:]
 
-fix ID group-ID ave/euler/region nevery N region reg-ID keywords values :pre
+fix ID group-ID ave/euler/region nevery N region reg-ID keywords values
+fix ID group-ID ave/euler/region/universe nevery N region reg-ID keywords values ukeywords uvalues :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 ave/euler/region = style name of this fix command :l
@@ -21,14 +23,20 @@ region = obligatory keyword :l
 reg-ID = ID of region with style mesh/hex defining the grid :l
 zero or more keyword/value pairs may be appended :l
 keyword = {basevolume_region} :l
-  {basevolume_region} values = reg-ID
-    region-ID = correct grid cell volume based on this region  :pre
-
+  {basevolume_region} value = region-ID
+    region-ID = correct grid cell volume based on this region :pre
+one or more ukeyword/uvalue pairs must be appended for the universe version of this command :l
+ukeywords = {send_to_partition} or {sync} :l
+  {send_to_partition} value = partition (obligatory)
+    partition = partition to send data to in multi-partition simulations
+  {sync} value = mode
+    mode = {yes} to use MPI_Ssend, {no} to use MPI_Bsend :pre
 :ule
 
 [Examples:]
 
-fix 1 all ave/euler/region nevery 10 region ave_reg :pre
+fix 1 all ave/euler/region nevery 10 region ave_reg
+fix 2 all ave/euler/region/universe nevery 10 region ave_reg send_to_partition 2 sync yes :pre
 
 [Description:]
 
