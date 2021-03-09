@@ -5,8 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Department for Particule Flow Modelling
-   Copyright 2017- JKU Linz
+   Department of Particulate Flow Modelling
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -21,6 +21,7 @@
 /* ----------------------------------------------------------------------
    Contributing authors:
    Philippe Seil (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
    ---------------------------------------------------------------------- */
 
 #ifdef FIX_CLASS
@@ -39,9 +40,9 @@ FixStyle(insert/pack/dense,FixInsertPackDense)
 #include "region_neighbor_list.h"
 #include "region_distance_field.h"
 
-using namespace LIGGGHTS;
-
 namespace LAMMPS_NS {
+
+class FixPropertyAtom;
 
 class FixInsertPackDense : public Fix {
  public:
@@ -54,6 +55,8 @@ class FixInsertPackDense : public Fix {
   virtual int setmask();
 
   virtual void post_create();
+
+  virtual void init();
 
   virtual void pre_exchange();
 protected:
@@ -76,8 +79,9 @@ protected:
 
   static const double max_volfrac;
   double target_volfrac;
-  typedef std::vector<Particle> ParticleVector;
-  typedef std::queue<Particle> ParticleQueue;
+
+  typedef std::vector<LIGGGHTS::Particle> ParticleVector;
+  typedef std::queue<LIGGGHTS::Particle> ParticleQueue;
   typedef std::queue<class ParticleToInsert*> PTIList;
 
   ParticleQueue frontSpheres;
@@ -88,8 +92,8 @@ protected:
   class RanPark *random;
   int seed;
 
-  RegionNeighborList neighlist;
-  RegionDistanceField distfield;
+  LIGGGHTS::RegionNeighborList neighlist;
+  LIGGGHTS::RegionDistanceField distfield;
 
   BoundingBox ins_bbox;
 
@@ -102,26 +106,34 @@ protected:
 
   bool prepare_insertion();
 
-  void insert_first_particles();
-  bool insert_next_particle(); // returns false if no insertion possible
+  bool insert_first_particles(); // returns false if no insertion possible
 
   void handle_next_front_sphere();
 
-  void compute_and_append_candidate_points(Particle const &p1,
-                                           Particle const &p2,
-                                           Particle const &p3,
-                                           double const r_insert);
+  void compute_and_append_candidate_points(LIGGGHTS::Particle const &p1,
+                                           LIGGGHTS::Particle const &p2,
+                                           LIGGGHTS::Particle const &p3,
+                                           double const r_insert,
+                                           double const type_insert);
   void generate_initial_config(class ParticleToInsert *&p1,
                                class ParticleToInsert *&p2,
                                class ParticleToInsert *&p3);
 
   class ParticleToInsert* get_next_pti();
 
-  Particle particle_from_pti(class ParticleToInsert *pti);
-  bool is_completely_in_subregion(Particle &p);
-  bool candidate_point_is_valid(Particle &p);
+  LIGGGHTS::Particle particle_from_pti(class ParticleToInsert *pti);
+  bool is_completely_in_subregion(LIGGGHTS::Particle &p);
+  bool candidate_point_is_valid(LIGGGHTS::Particle &p);
 
   int n_inserted, n_inserted_local;
+
+private:
+  char *property_name;
+  FixPropertyAtom *fix_property;
+  double fix_property_value;
+  int fix_property_ivalue;
+  int property_index;
+  int property_iindex;
 };
 
 }

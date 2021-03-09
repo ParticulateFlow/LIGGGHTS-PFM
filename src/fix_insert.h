@@ -39,11 +39,14 @@
 
 namespace LAMMPS_NS {
 
+class FixPropertyAtom;
+
 class FixInsert : public Fix {
  public:
   FixInsert(class LAMMPS *, int, char **);
   ~FixInsert();
 
+  virtual void post_create();
   virtual int setmask();
   virtual void init();
   virtual void setup_pre_exchange() {}
@@ -100,7 +103,7 @@ class FixInsert : public Fix {
   /*---INSERTION QUANTITIES---what, where and how exactly will we insert*/
 
   //particle distribution
-  class FixParticledistributionDiscrete *fix_distribution;
+  class FixParticledistribution *fix_distribution;
 
   // insert 'ninsert_per' particles every 'insert_every' steps
   // 'ninsert_per' is the default, actual # of inserted particles
@@ -185,12 +188,19 @@ class FixInsert : public Fix {
   virtual void x_v_omega(int,int&,int&,double&) = 0;
   virtual double insertion_fraction() = 0;
 
-  virtual void finalize_insertion(int){}
+  virtual void finalize_insertion(int) {}
 
  protected:
   void generate_random_velocity(double * velocity);
 
  private:
+
+  char *property_name;
+  FixPropertyAtom *fix_property;
+  double fix_property_value;
+  int fix_property_ivalue;
+  int property_index;
+  int property_iindex;
 
   bool setup_flag;
 

@@ -131,15 +131,16 @@
      return elementProperties_.getBasePointerById(_id);
   }
 
-  inline ContainerBase* CustomValueTracker::getElementPropertyBase(int i)
+  inline bool CustomValueTracker::hasElementProperty(const char *_id)
   {
-     return elementProperties_.getBasePointerByIndex(i);
+     return elementProperties_.hasId(_id);
   }
 
-  inline int CustomValueTracker::getElementPropertyIndex(const char *_id)
+  inline void  CustomValueTracker::setElementPropertyToDefault(int n)
   {
-     return elementProperties_.idToIndex(_id);
+      elementProperties_.setToDefault(n);
   }
+
 
   template<typename T>
   T* CustomValueTracker::getGlobalProperty(const char *_id)
@@ -259,7 +260,7 @@
    move element i
   ------------------------------------------------------------------------- */
 
-  void CustomValueTracker::moveElement(int i, double *delta)
+  void CustomValueTracker::moveElement(int i, const double *delta)
   {
       elementProperties_.moveElement(i,delta);
   }

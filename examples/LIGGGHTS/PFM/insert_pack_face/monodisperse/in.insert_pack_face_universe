@@ -1,0 +1,90 @@
+# measure mass flow through mesh surface and use it for insertion of particles with a different resolution
+# run with 2 partitions, e.g.: mpirun -np 4 lmp_ubuntuVTK -in in.insert_pack_face_universe -partition 2 2
+
+variable world_name        world root child
+variable world_partition   world 1 2
+variable world_send_recv   world 2 1
+variable world_timestep    world 0.00001 0.00001 # 0.00001 0.000005
+variable world_timesteps   world 60000 60000 # 60000 120000
+variable world_dumpfreq    world 1000 1000 #500 1000
+variable world_couplefreq  world 400 400 #400 800
+variable world_cg          world 4 2
+variable world_minx        world -1 -0.51
+variable world_maxx        world  1  0.51
+variable world_miny        world -1 -0.51
+variable world_maxy        world  1  0.51
+variable world_minz        world -0.5 -0.01
+variable world_maxz        world  1.5 1.01
+
+coarsegraining ${world_cg}
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block ${world_minx} ${world_maxx} ${world_miny} ${world_maxy} ${world_minz} ${world_maxz} units box
+create_box  2 reg
+
+neighbor    0.005 bin
+neigh_modify delay 0
+
+
+# material properties required for granular pair styles
+
+fix m1 all property/global youngsModulus peratomtype 5.e6 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 2 0.9 0.85 0.85 0.8
+fix m4 all property/global coefficientFriction peratomtypepair 2 0.05 0.05 0.05 0.05
+
+# pair style
+pair_style gran model hertz tangential history
+pair_coeff * *
+
+timestep   ${world_timestep}
+
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix pts1 all particletemplate/sphere 98531 atom_type 1 density constant 2000 radius constant 0.005
+fix pdd1 all particledistribution/discrete 746325 1 pts1 1.0
+
+# 1) generate surface with face ids and the insertion volume, can be removed if files already exist
+extract_surface meshes/test.vtk file meshes/testsurface.vtk meshes/testextrusion.vtk extrude_length 0.035 min_rad 0.01
+
+# cg 4 (partition 1):
+# region to insert particles
+# particle insertion
+# 2) load surface file with face ids (cell_data option)
+# 3) measure mass flow through face, specify partition to send data to
+partition yes 1 region insregioncg4 block -0.65 0.65 -0.65 0.65 1.1 1.3 units box
+partition yes 1 fix ins_cg4 all insert/pack seed 5330 distributiontemplate pdd1 maxattempt 200 insert_every once overlapcheck yes all_in yes vel constant 0. 0. 0. region insregioncg4 volumefraction_region 0.1
+partition yes 1 fix surface all mesh/surface file meshes/testsurface.vtk type 1 verbose yes cell_data yes
+partition yes 1 fix massflowcg4 all massflow/mesh/face/universe mesh surface count once inside_out send_to_partition ${world_send_recv} couple_every ${world_couplefreq}
+
+# cg 2 (partition 2):
+# 4) load volume file with face ids for insertion
+# 5) insert particles based on the massflow measured, specify partition to receive data from
+partition yes 2 region hexregion mesh/hex file meshes/testextrusion.vtk scale 1. move 0. 0. 0. rotate 0. 0. 0. cell_data yes units box
+partition yes 2 fix ins_cg2 all insert/pack/face/universe seed 7331 random_distribute exact maxattempt 250 insert_every ${world_couplefreq} &
+                overlapcheck yes all_in yes region hexregion ntry_mc 10000 massflow_face massflowcg4 receive_from_partition ${world_send_recv}
+
+# apply nve integration
+fix integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke vol
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes extra 0
+
+run 1
+
+dump dmp all custom/vtk ${world_dumpfreq} post/insert_${world_name}_*.vtk id type radius mass x y z vx vy vz fx fy fz
+
+run ${world_timesteps} upto
+

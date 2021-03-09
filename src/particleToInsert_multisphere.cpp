@@ -189,7 +189,7 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
 
     for(int j = 0; j < nspheres; j++)
     {
-        if(neighList.hasOverlap(x_ins[j], radius_ins[j])) {
+        if(neighList.hasOverlap(x_ins[j], radius_ins[j], atom_type)) {
             return 0;
         }
     }
@@ -209,7 +209,7 @@ int ParticleToInsertMultisphere::check_near_set_x_v_omega(double *x,double *v, d
     // add to neighList
     for(int j = 0; j < nspheres; j++)
     {
-       neighList.insert(x_ins[j], radius_ins[j]);
+       neighList.insert(x_ins[j], radius_ins[j], atom_type);
     }
 
     return nspheres;

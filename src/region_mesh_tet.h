@@ -50,10 +50,10 @@ class RegTetMesh : public Region {
   void rebuild();
 
   void add_tet(double **n);
-  int n_tet();
-  double total_vol();
-  double tet_vol(int i);
-  double tet_acc_vol(int i);
+  int n_tet() const;
+  double total_vol() const;
+  double tet_vol(int i) const;
+  double tet_acc_vol(int i) const;
 
  protected:
 
@@ -65,8 +65,8 @@ class RegTetMesh : public Region {
 
    void grow_arrays();
    void set_extent();
-   double volume_of_tet(double* v0, double* v1, double* v2, double* v3);
-   double volume_of_tet(int iTet);
+   double volume_of_tet(double* v0, double* v1, double* v2, double* v3) const;
+   double volume_of_tet(int iTet) const;
 
    void mesh_randpos(double *pos);
    int  tet_rand_tri();

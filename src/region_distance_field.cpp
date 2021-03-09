@@ -106,7 +106,7 @@ namespace LIGGGHTS {
     data.clear();
   }
 
-  bool RegionDistanceField::isInside(double *x)
+  bool RegionDistanceField::isInside(const double *x)
   {
     int const index = posToIndex(x);
 
@@ -116,7 +116,7 @@ namespace LIGGGHTS {
     return data[index] == INSIDE;
   }
 
-  bool RegionDistanceField::isOutside(double *x)
+  bool RegionDistanceField::isOutside(const double *x)
   {
     int const index = posToIndex(x);
 
@@ -126,7 +126,7 @@ namespace LIGGGHTS {
     return data[index] == OUTSIDE;
   }
 
-  bool RegionDistanceField::isInBoundary(double *x)
+  bool RegionDistanceField::isInBoundary(const double *x)
   {
     int const index = posToIndex(x);
 
@@ -142,7 +142,7 @@ namespace LIGGGHTS {
     return (ix + nx*iy + nx*ny*iz);
   }
 
-  int RegionDistanceField::posToIndex(double *x)
+  int RegionDistanceField::posToIndex(const double *x)
   {
     if(!bbox.isInside(x)) return -1;
 

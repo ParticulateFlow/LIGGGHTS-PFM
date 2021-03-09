@@ -439,7 +439,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::move(double *vecTotal, double *vecIncremental)
+  void MultiNodeMesh<NUM_NODES>::move(const double *vecTotal, const double *vecIncremental)
   {
     if(!isTranslating())
         this->error->all(FLERR,"Illegal call, need to register movement first");
@@ -472,7 +472,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::move(double *vecIncremental)
+  void MultiNodeMesh<NUM_NODES>::move(const double *vecIncremental)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
     const int n = sizeLocal() + sizeGhost();
@@ -492,7 +492,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::moveElement(int i,double *vecIncremental)
+  void MultiNodeMesh<NUM_NODES>::moveElement(int i, const double *vecIncremental)
   {
     for(int j = 0; j < NUM_NODES; j++)
             vectorAdd3D(node_(i)[j],vecIncremental,node_(i)[j]);
@@ -507,36 +507,36 @@
    assumes axis stays the same over time
   ------------------------------------------------------------------------- */
 
+  //public
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double totalAngle, double dAngle, double *axis, double *p)
+  void MultiNodeMesh<NUM_NODES>::rotate(double totalAngle, double dAngle, const double *axis, const double *p)
   {
-    double totalQ[4],dQ[4], axisNorm[3], origin[3];
+    /// assume axis is normalized
+    ///assert(vectorIsNormalized3D(axis));
+    double totalQ[4],dQ[4];
 
     // rotates around axis through p
 
-    // normalize axis
-    vectorCopy3D(axis,axisNorm);
-    vectorScalarDiv3D(axisNorm,vectorMag3D(axisNorm));
-
     // quat for total rotation from original position
     totalQ[0] = cos(totalAngle*0.5);
+    const double sin_halfTotalAngle = sin(totalAngle*0.5);
     for(int i=0;i<3;i++)
-      totalQ[i+1] = axis[i]*sin(totalAngle*0.5);
+      totalQ[i+1] = axis[i]*sin_halfTotalAngle;
 
     // quat for rotation since last time-step
     dQ[0] = cos(dAngle*0.5);
+    const double sin_halfDAngle = sin(dAngle*0.5);
     for(int i = 0; i < 3; i++)
-      dQ[i+1] = axis[i]*sin(dAngle*0.5);
-
-    vectorCopy3D(p,origin);
+      dQ[i+1] = axis[i]*sin_halfDAngle;
 
     // apply rotation around center axis + displacement
     // = rotation around axis through p
-    rotate(totalQ,dQ,origin);
+    rotate(totalQ,dQ,p);
   }
 
+  // protected
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double *totalQ, double *dQ,double *origin)
+  void MultiNodeMesh<NUM_NODES>::rotate(const double *totalQ, const double *dQ, const double *origin)
   {
     if(!isRotating())
         this->error->all(FLERR,"Illegal call, need to register movement first");
@@ -641,33 +641,31 @@
    rotate mesh interface, takes only dAngle
   ------------------------------------------------------------------------- */
 
+  // public
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double dAngle, double *axis, double *p)
+  void MultiNodeMesh<NUM_NODES>::rotate(double dAngle, const double *axis, const double *p)
   {
-    double dQ[4], axisNorm[3], origin[3];
+    /// assume axis is normalized
+    ///assert(vectorIsNormalized3D(axis));
+
+    double dQ[4];
 
     // rotates around axis through p
 
-    // normalize axis
-    vectorCopy3D(axis,axisNorm);
-    vectorScalarDiv3D(axisNorm,vectorMag3D(axisNorm));
-
-    /*NL*/ //if (this->screen) printVec3D(this->screen,"axisNorm",axisNorm);
-
     // quat for rotation since last time-step
     dQ[0] = cos(dAngle*0.5);
+    const double sin_halfDAngle = sin(dAngle*0.5);
     for(int i = 0; i < 3; i++)
-      dQ[i+1] = axisNorm[i]*sin(dAngle*0.5);
-
-    vectorCopy3D(p,origin);
+      dQ[i+1] = axis[i]*sin_halfDAngle;
 
     // apply rotation around center axis + displacement
     // = rotation around axis through p
-    rotate(dQ,origin);
+    rotate(dQ,p);
   }
 
+  // protected
   template<int NUM_NODES>
-  void MultiNodeMesh<NUM_NODES>::rotate(double *dQ, double *origin)
+  void MultiNodeMesh<NUM_NODES>::rotate(const double *dQ, const double *origin)
   {
     //NP copy sizeLocal() + sizeGhost() since cannot be inlined in this class
     const int n = sizeLocal() + sizeGhost();

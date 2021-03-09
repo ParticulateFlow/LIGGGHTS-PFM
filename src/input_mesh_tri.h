@@ -34,7 +34,9 @@ class InputMeshTri : protected Input
     InputMeshTri(class LAMMPS *, int, char **);
     ~InputMeshTri();
 
-    void meshtrifile(const char *,class TriMesh *,bool verbose,const int size_exclusion_list,int *exclusion_list);
+    void meshtrifile(const char *,class TriMesh *,bool verbose,
+                     const int size_exclusion_list,int *exclusion_list,
+                     bool read_cell_data=false, bool restart=false);
 
   private:
 
@@ -42,6 +44,8 @@ class InputMeshTri : protected Input
     int i_exclusion_list_;
     int size_exclusion_list_;
     int *exclusion_list_;
+    bool read_cell_data_;
+    bool restart_;
 
     void meshtrifile_vtk(class TriMesh *);
     void meshtrifile_stl(class TriMesh *);

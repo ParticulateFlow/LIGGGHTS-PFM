@@ -166,19 +166,19 @@ class Domain : protected Pointers {
   }
 
   //NP modified C.K in domain_I.h
-  int is_in_domain(double* pos); //NP modified C.K.
-  int is_in_subdomain(double* pos); //NP modified C.K.
-  int is_in_extended_subdomain(double* pos); //NP modified C.K.
-  double dist_subbox_borders(double* pos); //NP modified C.K.
+  int is_in_domain(const double* pos); //NP modified C.K.
+  int is_in_subdomain(const double* pos); //NP modified C.K.
+  int is_in_extended_subdomain(const double* pos); //NP modified C.K.
+  double dist_subbox_borders(const double* pos); //NP modified C.K.
   void min_subbox_extent(double &min_extent,int &dim); //NP modified C.K.
   int is_periodic_ghost(int i); //NP modified C.K.
   bool is_owned_or_first_ghost(int i); //NP modified C.K.
 
   //NP modified C.K for wedge
-  virtual int is_in_domain_wedge(double* pos) { UNUSED(pos); return 0; } //NP modified C.K.
-  virtual int is_in_subdomain_wedge(double* pos) { UNUSED(pos); return 0; } //NP modified C.K.
-  virtual int is_in_extended_subdomain_wedge(double* pos) { UNUSED(pos); return 0; } //NP modified C.K.
-  virtual double dist_subbox_borders_wedge(double* pos) { UNUSED(pos); return 0.; } //NP modified C.K.
+  virtual int is_in_domain_wedge(const double* pos) { UNUSED(pos); return 0; } //NP modified C.K.
+  virtual int is_in_subdomain_wedge(const double* pos) { UNUSED(pos); return 0; } //NP modified C.K.
+  virtual int is_in_extended_subdomain_wedge(const double* pos) { UNUSED(pos); return 0; } //NP modified C.K.
+  virtual double dist_subbox_borders_wedge(const double* pos) { UNUSED(pos); return 0.; } //NP modified C.K.
   virtual int is_periodic_ghost_wedge(int i) { UNUSED(i); return 0;} //NP modified C.K.
 
   bool is_wedge; //NP modified C.K.

@@ -1,0 +1,50 @@
+"LAMMPS WWW Site"_lws - "LAMMPS Documentation"_ld - "LAMMPS Commands"_lc :c
+
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+extract_surface command :h3
+
+[Syntax:]
+
+extract_surface inputfile file surfacefile extrusionfile extrude_length l min_rad r mode :pre
+
+inputfile = filename of VTK grid data :ulb,l
+file = obligatory keyword :l
+surfacefile = filename to write surface VTK data :l
+optional extrusion args :l
+  extrusionfile = filename to write extruded surface VTK data
+  extrude_length = obligatory keyword
+  l = total height of extruded volume
+  min_rad = obligatory keyword
+  r = distance volume is extruded outwards :pre
+mode = output file mode {ascii} or {binary} (optional) :l
+:ule
+
+[Examples:]
+
+extract_surface data/grid.vtk file data/surface.vtk data/extrusion.vtk extrude_length 0.1 min_rad 0.025 :pre
+
+[Description:]
+
+Given an unstructured grid VTK file consisting of hexahedral cells,
+this command will extract and triangulate the surface and save it to
+an unstructured grid VTK file adding a unique ID for each cell face
+(i.e. typically two triangles). Furthermore, the surface thus obtained
+may be used to create a shell geometry extruding the surface {l-r} distance
+units inwards and {r} distance units outwards. If used as insertion volume
+for multi-level coarse-grain simulations, {r} should be set to the minimum
+particle radius occuring in the simulation. The total extrusion length {l}
+should be about 2 particle diameters but is ultimately determined by
+the insertion rate and the velocity of the particles.
+
+[Restrictions:]
+
+none
+
+[Default:]
+
+mode = ascii

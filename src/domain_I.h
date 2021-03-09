@@ -31,7 +31,7 @@ using namespace LAMMPS_NS;
    inlined for performance
 ------------------------------------------------------------------------- */
 
-inline int Domain::is_in_domain(double* pos) //NP modified C.K.
+inline int Domain::is_in_domain(const double* pos) //NP modified C.K.
 {
     if(is_wedge)
         return is_in_domain_wedge(pos);
@@ -45,7 +45,7 @@ inline int Domain::is_in_domain(double* pos) //NP modified C.K.
     return 0;
 }
 
-inline int Domain::is_in_subdomain(double* pos) //NP modified C.K.
+inline int Domain::is_in_subdomain(const double* pos) //NP modified C.K.
 {
     if(is_wedge)
         return is_in_subdomain_wedge(pos);
@@ -77,7 +77,7 @@ inline int Domain::is_in_subdomain(double* pos) //NP modified C.K.
     return 0;
 }
 
-inline int Domain::is_in_extended_subdomain(double* pos) //NP modified C.K.
+inline int Domain::is_in_extended_subdomain(const double* pos) //NP modified C.K.
 {
     if(is_wedge)
         return is_in_extended_subdomain_wedge(pos);
@@ -114,7 +114,7 @@ inline int Domain::is_in_extended_subdomain(double* pos) //NP modified C.K.
    check distance from borders of subbox
 ------------------------------------------------------------------------- */
 
-inline double Domain::dist_subbox_borders(double* pos) //NP modified C.K.
+inline double Domain::dist_subbox_borders(const double* pos) //NP modified C.K.
 {
     if(is_wedge)
         return dist_subbox_borders_wedge(pos);

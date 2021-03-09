@@ -47,6 +47,37 @@ DumpEulerVTK::DumpEulerVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, 
   if (narg < 5)
     error->all(FLERR,"Illegal dump euler/vtk command");
 
+  fix_euler_name_ = NULL;
+  cell_center=true;
+
+  int iarg = 5;
+  while (iarg < narg) {
+    if (strcmp(arg[iarg], "ave_euler") == 0) {
+      if (iarg + 1 >= narg)
+        error->all(FLERR,"missing argument");
+      ++iarg;
+      int n = strlen(arg[iarg]) + 1;
+      fix_euler_name_ = new char[n];
+      strcpy(fix_euler_name_,arg[iarg]);
+      ++iarg;
+    } else if (strcmp(arg[iarg], "cell_center") == 0) {
+      if (iarg + 1 >= narg)
+        error->all(FLERR,"missing argument");
+      ++iarg;
+      if (strcmp(arg[iarg], "yes") == 0) {
+        cell_center = true;
+      } else if (strcmp(arg[iarg], "no") == 0) {
+        cell_center = false;
+      } else {
+        error->all(FLERR,"expecting 'yes' or 'no' after cell_center");;
+      }
+      ++iarg;
+    } else {
+      error->all(FLERR,"illegal argument");;
+    }
+
+  }
+
   // CURRENTLY ONLY PROC 0 writes
 
   format_default = NULL;
@@ -56,13 +87,20 @@ DumpEulerVTK::DumpEulerVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, 
 
 DumpEulerVTK::~DumpEulerVTK()
 {
+  delete fix_euler_name_;
 }
 
 /* ---------------------------------------------------------------------- */
 
 void DumpEulerVTK::init_style()
 {
-  fix_euler_ = static_cast<FixAveEuler*>(modify->find_fix_style("ave/euler",0));
+  if (fix_euler_name_) {
+    fix_euler_ = static_cast<FixAveEuler*>(modify->find_fix_id(fix_euler_name_));
+  }
+  if(!fix_euler_) {
+    if (fix_euler_name_) error->warning(FLERR, "dump euler/vtk failed to find named fix ave/euler*");
+    fix_euler_ = static_cast<FixAveEuler*>(modify->find_fix_style("ave/euler",0));
+  }
   if(!fix_euler_)
     error->all(FLERR,"Illegal dump euler/vtk command, need a fix ave/euler");
 
@@ -74,12 +112,27 @@ void DumpEulerVTK::init_style()
     error->all(FLERR,"Your 'dump euler/vtk' command is writing one file per processor, where all the files contain the same data");
 
 //  if (domain->triclinic == 1)
-//    error->all(FLERR,"Can not dump VTK files for triclinic box");
+//    error->all(FLERR,"Cannot dump VTK files for triclinic box");
   if (binary)
-    error->all(FLERR,"Can not dump VTK files in binary mode");
+    error->all(FLERR,"Cannot dump VTK files in binary mode");
 
-  // node center (3), av vel (3), volume fraction, radius, stress
-  size_one = 9;
+  if (cell_center) {
+    // node center (3), av vel (3), volume fraction, radius, pressure, normal and shear stresses (6)
+    size_one = 15;
+  } else {
+    if (fix_euler_->is_parallel())
+      error->all(FLERR,"Cannot dump cell information for fix ave/euler running parallel");
+
+    if (strcmp(fix_euler_->style,"ave/euler") == 0) {
+      // boxlo (3), av vel (3), volume fraction, radius, pressure, normal and shear stresses (6)
+      size_one = 15;
+    } else if (strcmp(fix_euler_->style,"ave/euler/region") == 0) {
+      // node points (24), av vel (3), volume fraction, radius, pressure, normal and shear stresses (6)
+      size_one = 36;
+    } else {
+      error->all(FLERR,"Unable to dump cells to VTK files");
+    }
+  }
 
   delete [] format;
 }
@@ -127,9 +180,25 @@ void DumpEulerVTK::pack(int *ids)
 
   for(int i = 0; i < ncells; i++)
   {
-    buf[m++] = fix_euler_->cell_center(i,0);
-    buf[m++] = fix_euler_->cell_center(i,1);
-    buf[m++] = fix_euler_->cell_center(i,2);
+    if (cell_center) {
+      buf[m++] = fix_euler_->cell_center(i,0);
+      buf[m++] = fix_euler_->cell_center(i,1);
+      buf[m++] = fix_euler_->cell_center(i,2);
+    } else {
+      if (strcmp(fix_euler_->style,"ave/euler") == 0) {
+        buf[m++] = fix_euler_->cell_center(i,0)-0.5*fix_euler_->cell_size(0);
+        buf[m++] = fix_euler_->cell_center(i,1)-0.5*fix_euler_->cell_size(1);
+        buf[m++] = fix_euler_->cell_center(i,2)-0.5*fix_euler_->cell_size(2);
+      } else if (strcmp(fix_euler_->style,"ave/euler/region") == 0) {
+        double points[24];
+        fix_euler_->cell_points(i,points);
+        for (int j=0; j < 24; ++j) {
+          buf[m++] = points[j];
+        }
+      } else {
+        error->all(FLERR,"Unable to dump cells to VTK files");
+      }
+    }
 
     buf[m++] = fix_euler_->cell_v_av(i,0);
     buf[m++] = fix_euler_->cell_v_av(i,1);
@@ -138,6 +207,13 @@ void DumpEulerVTK::pack(int *ids)
     buf[m++] = fix_euler_->cell_vol_fr(i);
     buf[m++] = fix_euler_->cell_radius(i);
     buf[m++] = fix_euler_->cell_pressure(i);
+
+    buf[m++] = fix_euler_->cell_stress(i,0);
+    buf[m++] = fix_euler_->cell_stress(i,1);
+    buf[m++] = fix_euler_->cell_stress(i,2);
+    buf[m++] = fix_euler_->cell_stress(i,3);
+    buf[m++] = fix_euler_->cell_stress(i,4);
+    buf[m++] = fix_euler_->cell_stress(i,5);
   }
   return ;
 }
@@ -178,25 +254,106 @@ void DumpEulerVTK::write_data_ascii(int n, double *mybuf)
   /*NL*///error->one(FLERR,"end");
 
   // write point data
-  fprintf(fp,"DATASET POLYDATA\nPOINTS %d float\n",n);
   m = 0;
   buf_pos = 0;
-  for (int i = 0; i < n; i++)
-  {
+  if (cell_center) {
+    fprintf(fp,"DATASET POLYDATA\nPOINTS %d float\n",n);
+    for (int i = 0; i < n; i++)
+    {
       fprintf(fp,"%f %f %f\n",mybuf[m],mybuf[m+1],mybuf[m+2]);
       m += size_one ;
-  }
-  buf_pos += 3;
+    }
+    buf_pos += 3;
 
-  // write polygon data
-  fprintf(fp,"VERTICES %d %d\n",n,2*n);
-  for (int i = 0; i < n; i++)
-  {
-      fprintf(fp,"%d %d\n",1,i);
-  }
+    // write polygon data
+    fprintf(fp,"VERTICES %d %d\n",n,2*n);
+    for (int i = 0; i < n; i++)
+    {
+        fprintf(fp,"%d %d\n",1,i);
+    }
 
-  // write point data header
-  fprintf(fp,"POINT_DATA %d\n",n);
+    // write point data header
+    fprintf(fp,"POINT_DATA %d\n",n);
+
+  } else {
+    if (strcmp(fix_euler_->style,"ave/euler") == 0) {
+      // dump a rectilinear grid of cuboidal cell
+      int nx = fix_euler_->ncells(0);
+      int ny = fix_euler_->ncells(1);
+      int nz = fix_euler_->ncells(2);
+
+      if (nx*ny*nz != n)
+        error->all(FLERR,"number of cells does not match nx*ny*nz != n");
+
+      fprintf(fp,"DATASET RECTILINEAR_GRID\nDIMENSIONS %d %d %d\n",nx+1,ny+1,nz+1);
+
+      // x coordinates
+      m = 0;
+      fprintf(fp,"X_COORDINATES %d float\n", nx+1);
+      for (int i = 0; i < nx; i++) {
+        fprintf(fp,"%f ",mybuf[m]);
+        m += size_one ;
+      }
+      fprintf(fp,"%f\n", mybuf[m-size_one]+fix_euler_->cell_size(0));
+
+      // y coordinates
+      m = 1;
+      fprintf(fp,"Y_COORDINATES %d float\n", ny+1);
+      for (int i = 0; i < ny; i++) {
+        fprintf(fp,"%f ",mybuf[m]);
+        m += nx*size_one ;
+      }
+      fprintf(fp,"%f\n", mybuf[m-nx*size_one]+fix_euler_->cell_size(1));
+
+      // z coordinates
+      m = 2;
+      fprintf(fp,"Z_COORDINATES %d float\n", nz+1);
+      for (int i = 0; i < nz; i++) {
+        fprintf(fp,"%f ",mybuf[m]);
+        m += nx*ny*size_one ;
+      }
+      fprintf(fp,"%f\n", mybuf[m-nx*ny*size_one]+fix_euler_->cell_size(2));
+
+      buf_pos += 3;
+      // write cell data header
+      fprintf(fp,"CELL_DATA %d\n",n);
+
+    } else if (strcmp(fix_euler_->style,"ave/euler/region") == 0) {
+      // dump an unstructured grid of hexahedral cells
+      fprintf(fp,"DATASET UNSTRUCTURED_GRID\nPOINTS %d float\n",n*8);
+
+      for (int i = 0; i < n; i++) {
+        fprintf(fp,"%f %f %f %f %f %f\n%f %f %f %f %f %f\n"
+                   "%f %f %f %f %f %f\n%f %f %f %f %f %f\n",
+                    mybuf[m],   mybuf[m+1], mybuf[m+2],
+                    mybuf[m+3], mybuf[m+4], mybuf[m+5],
+                    mybuf[m+6], mybuf[m+7], mybuf[m+8],
+                    mybuf[m+9], mybuf[m+10],mybuf[m+11],
+                    mybuf[m+12],mybuf[m+13],mybuf[m+14],
+                    mybuf[m+15],mybuf[m+16],mybuf[m+17],
+                    mybuf[m+18],mybuf[m+19],mybuf[m+20],
+                    mybuf[m+21],mybuf[m+22],mybuf[m+23]);
+        m += size_one ;
+      }
+
+      fprintf(fp,"CELLS %d %d\n",n,n*9);
+      for (int i = 0; i < n; i++) {
+        fprintf(fp,"8 %d %d %d %d %d %d %d %d\n",
+                i*8,i*8+1,i*8+2,i*8+3,i*8+4,i*8+5,i*8+6,i*8+7);
+      }
+
+      fprintf(fp,"CELL_TYPES %d\n",n);
+      for (int i = 0; i < n; i++) {
+        fprintf(fp,"12\n"); // hexahedron = 12
+      }
+
+      buf_pos += 24;
+      // write cell data header
+      fprintf(fp,"CELL_DATA %d\n",n);
+    } else {
+      error->all(FLERR,"Unable to dump cells to VTK files");
+    }
+  }
 
   // write cell data
 
@@ -236,6 +393,27 @@ void DumpEulerVTK::write_data_ascii(int n, double *mybuf)
   }
   buf_pos++;
 
+  fprintf(fp,"VECTORS sigma float\n");
+  m = buf_pos;
+  for (int i = 0; i < n; i++)
+  {
+      // normal stresses
+      fprintf(fp,"%f %f %f\n",mybuf[m],mybuf[m+1],mybuf[m+2]);
+      m += size_one;
+  }
+  buf_pos += 3;
+
+  fprintf(fp,"VECTORS tau float\n");
+  m = buf_pos;
+  for (int i = 0; i < n; i++)
+  {
+      // shear stresses
+      // note: internal order of stresses is (xx, yy, zz, xy, xz, yz)
+      //       Voigt notation is             (xx, yy, zz, yz, xz, xy)
+      fprintf(fp,"%f %f %f\n",mybuf[m],mybuf[m+1],mybuf[m+2]);
+      m += size_one;
+  }
+  buf_pos += 3;
   // footer not needed
   // if would be needed, would do like in dump stl
 }

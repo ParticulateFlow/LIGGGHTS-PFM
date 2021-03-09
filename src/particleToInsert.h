@@ -35,6 +35,8 @@
 using namespace LAMMPS_NS;
 
 namespace LAMMPS_NS {
+    class FixPropertyAtom;
+
     class ParticleToInsert : protected Pointers
     {
      public:
@@ -73,11 +75,13 @@ namespace LAMMPS_NS {
         double v_ins[3];
         double omega_ins[3];
 
-        // value of a fix property/atoms at insertion
-        class FixPropertyAtom **fix_property;
-        int n_fix_property;
-        int *fix_property_nentry;
-        double **fix_property_value;
+        // value of a fix property/atom at insertion
+        std::vector<FixPropertyAtom*> fix_properties;
+        std::vector<std::vector<double> > fix_property_values;
+        double fix_property_dvalue;
+        int fix_property_ivalue;
+        int property_index; // index into double properties
+        int property_iindex; // index into int properties
 
         virtual int insert();
         virtual int check_near_set_x_v_omega(double *x,double *v, double *omega, double *quat, double **xnear, int &nnear);
@@ -89,6 +93,7 @@ namespace LAMMPS_NS {
         virtual int set_x_v_omega(double *,double *,double *,double *);
 
         virtual void scale_pti(double r_scale);
+        virtual int get_atom_type() { return atom_type_vector_flag ? atom_type_vector[0] : atom_type; }
         int create_bonds(int *npartner=NULL, int **partner=NULL);
       private:
         int local_start;
