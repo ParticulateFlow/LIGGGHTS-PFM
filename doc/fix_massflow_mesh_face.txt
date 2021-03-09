@@ -8,10 +8,12 @@
 :line
 
 fix massflow/mesh/face command :h3
+fix massflow/mesh/face/universe command :h3
 
 [Syntax:]
 
-fix ID group-ID massflow/mesh mesh mesh-ID vec_side vx vy vz keyword value ... :pre
+fix ID group-ID massflow/mesh mesh mesh-ID vec_side vx vy vz keywords values
+fix ID group-ID massflow/mesh/universe mesh mesh-ID vec_side vx vy vz keywords values ukeywords uvalues :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 massflow/mesh/face = style name of this fix command   :l
@@ -24,20 +26,30 @@ keywords = {check_property} or {count} or {point_at_outlet} or {append} or {file
     value = reference atom property value to check against
   {count} value = {once} or {multiple}
     once = count particles only once
-    multiple = allow particles to be counted multiple times 
+    multiple = allow particles to be counted multiple times
   {point_at_outlet}  pointX pointY pointZ
-    pointX pointY pointZ = coordinates of point on the outlet side of the surface 
-  {inside_out}  
-    use this in connection with {point_at_outlet} to flip direction particle counting 
-  {file} value = filename 
-  {append} value = filename 
+    pointX pointY pointZ = coordinates of point on the outlet side of the surface
+  {inside_out}
+    use this in connection with {point_at_outlet} to flip direction particle counting
+  {file} value = filename
+  {append} value = filename
    filename = name of the file to print diameter, position and velocity values of the particles
-  {screen} value = {yes} or {no} 
-  {delete_atoms} value = {yes} or {no}  
+  {screen} value = {yes} or {no}
+  {delete_atoms} value = {yes} or {no}
     yes = to remove the particles that pass through the mesh surface
-  {cg} value
-    value = coarse grain ratio of measured particles :pre
+  {cg} value = cg
+    cg = coarse grain ratio of measured particles (N/A to universe version)
+  {temperature} value = {yes} or {no}
+    yes = to measure the temperature of the particles
+  {chemistry} value = {yes} or {no}
+    yes = to measure the reduction state of the particles :pre
 
+two ukeyword/uvalue pairs must be appended for the universe version of this command :l
+ukeywords = {send_to_partition} and {couple_every} :l
+  {send_to_partition} value = partition
+    partition = partition to send data to in multi-partition simulations
+  {couple_every} value = interval
+    interval = time interval for sending data :pre
 :ule
 
 [Examples:]
@@ -88,6 +100,15 @@ logfile can be turned on or off as desired.
 If the {delete_atoms} keyword is used then the particles passing through the mesh 
 surface are deleted at the next re-neighboring step.
 
+If LIGGGHTS is invoked in multi-partition mode (cf. "Command-line options"_Section_start.html#start_7),
+where each partition represents a separate coarse-graining level of the multi-level
+coarse-grain model, the universe version of this command needs to be used to
+provide input data for a fix of style {insert/pack/face/universe} on the
+coupled partition.
+The coupled partition must be specified via the {send_to_partition} option.
+Furthermore, in this mode the {couple_every} option specifies the sending interval.
+
+
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
 Information about this fix is written to "binary restart files"_restart.html .
@@ -118,7 +139,7 @@ command. All triangles with the same ID are considered to form a face.
 [Related commands:]
 
 "compute nparticles/tracer/region"_compute_nparticles_tracer_region.html,
-"fix massflow/mesh"_fix_massflow_mesh.html
+"fix massflow/mesh"_fix_massflow_mesh.html, "partition"_partition.html
 
 [Default:] 
 

@@ -18,19 +18,20 @@ fix ID group-ID ave/euler/region/universe nevery N region reg-ID keywords values
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 ave/euler/region = style name of this fix command :l
 nevery = obligatory keyword :l
-N = calculate average values every this many timesteps :l
+N = calculate average values every this many timesteps (also sending interval in universe version) :l
 region = obligatory keyword :l
 reg-ID = ID of region with style mesh/hex defining the grid :l
 zero or more keyword/value pairs may be appended :l
 keyword = {basevolume_region} :l
   {basevolume_region} value = region-ID
     region-ID = correct grid cell volume based on this region :pre
+
 one or more ukeyword/uvalue pairs must be appended for the universe version of this command :l
-ukeywords = {send_to_partition} or {sync} :l
-  {send_to_partition} value = partition (obligatory)
+ukeywords = {send_to_partition} (obligatory) or {sync} :l
+  {send_to_partition} value = partition
     partition = partition to send data to in multi-partition simulations
   {sync} value = mode
-    mode = {yes} to use MPI_Ssend, {no} to use MPI_Bsend :pre
+    mode = {yes} to use MPI_Ssend, {no} to use MPI_Bsend for communication between partitions :pre
 :ule
 
 [Examples:]
@@ -72,6 +73,15 @@ calculate the volume fraction in the near-wall cells.
 the calculation of overlap between grid cells and the region
 is done using a Monte-Carlo approach.
 
+If LIGGGHTS is invoked in multi-partition mode (cf. "Command-line options"_Section_start.html#start_7),
+where each partition represents a separate coarse-graining level of the multi-level
+coarse-grain model, the universe version of this command needs to be used to
+provide input data for a fix of style {forcecontrol/region/universe} on the
+coupled partition.
+The coupled partition must be specified via the {send_to_partition} option.
+Furthermore, in this mode the {nevery} option also specifies the sending interval.
+
+
 :line
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
@@ -100,6 +110,6 @@ aligned with the grid will be incorrect.
 "compute"_compute.html, "compute stress/atom"_compute_stress_atom.html,
 "fix ave/atom"_fix_ave_atom.html, "fix ave/euler"_fix_ave_euler.html,
 "fix ave/histo"_fix_ave_histo.html, "fix ave/time"_fix_ave_time.html,
-"fix ave/spatial"_fix_ave_spatial.html
+"fix ave/spatial"_fix_ave_spatial.html, "partition"_partition.html
 
 [Default:] none

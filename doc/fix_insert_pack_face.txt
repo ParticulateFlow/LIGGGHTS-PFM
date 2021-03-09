@@ -8,10 +8,12 @@
 :line
 
 fix insert/pack/face command :h3
+fix insert/pack/face/universe command :h3
 
 [Syntax:]
 
-fix ID group-ID insert/pack/face seed seed_value general_keywords general_values pack_face_keywords pack_face_values ... :pre
+fix ID group-ID insert/pack/face seed seed_value general_keywords general_values pack_face_keywords pack_face_values
+fix ID group-ID insert/pack/face/universe seed seed_value general_keywords general_values pack_face_keywords pack_face_values ukeyword uvalue :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 insert/pack/face = style names of this fix command :l
@@ -23,7 +25,7 @@ general_keywords = {verbose} or {maxattampt} or {insert_every} or {all_in} :l
   {maxattempt} value = ma
     ma = max # of insertion attempts per atom (positive integer)
   {insert_every} value = ie
-    ie = every how many time-steps particles are inserted - insertion happens periodically (positive integer)
+    ie = every how many time-steps particles are inserted (also receiving interval in universe version) - insertion happens periodically (positive integer)
   {start} value = ts
     ts = time-step at which insertion should start (positive integer larger than current time-step)
   {all_in} value = yes or no :pre
@@ -33,13 +35,22 @@ pack_face_keywords = {region} or {massflow_face} or {cg} or {type_offset} or {nt
   {region} value = region-ID
     region-ID = ID of the region mesh/hex where the particles will be generated
   {massflow_face} values = fix-ID
-    fix-ID =  ID of a "fix massflow/mesh/face"_fix_massflow_mesh_face.html command
+    fix-ID =  ID of a "fix massflow/mesh/face"_fix_massflow_mesh_face.html or "fix massflow/mesh/face/universe"_fix_massflow_mesh_face.html command
   {cg} value = cg
-    cg = coarse grain ratio of particles to insert
+    cg = coarse grain ratio of particles to insert (N/A to universe version)
   {type_offset} value = to
     to = offset in atom type compared to particles measured by "fix massflow/mesh/face"_fix_massflow_mesh_face.html
   {ntry_mc} values = n
-    n = number of Monte-Carlo steps for calculating the region's volume  (positive integer) :pre
+    n = number of Monte-Carlo steps for calculating the region's volume (positive integer)
+  {temperature} value = {yes} or {no}
+    yes = to set the temperature of the inserted particles
+  {chemistry} value = {yes} or {no}
+    yes = to set the reduction state of the inserted particles :pre
+
+one ukeyword/uvalue pair must be appended for the universe version of this command :l
+ukeywords = {receive_from_partition} :l
+  {receive_from_partition} value = partition
+    partition = partition to receive data from in multi-partition simulations :pre
 :ule
 
 [Examples:]
@@ -110,6 +121,16 @@ To determine the volume of each hexahedron of the insertion region,
 a Monte Carlo approach is used. The {ntry_mc} keyword is used to control
 the number of MC tries that are used for the volume calculation.
 
+If LIGGGHTS is invoked in multi-partition mode (cf. "Command-line options"_Section_start.html#start_7),
+where each partition represents a separate coarse-graining level of the multi-level
+coarse-grain model, the universe version of this command needs to be used.
+In this case the coupled partition must be specified via the {receive_from_partition}
+option.
+Furthermore, {massflow_face} needs to specify a fix of style {massflow/mesh/face/universe}
+on the coupled partition.
+In this mode the {nevery} option also specifies the interval for receiving data.
+
+
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
 Information about this fix is written to "binary restart
@@ -133,10 +154,10 @@ Dynamic regions are not supported as insertion region.
 
 "fix insert/pack"_fix_insert_pack.html, "fix insert/rate/region"_fix_insert_rate_region.html,
 "fix insert/stream"_fix_insert_stream.html, "fix deposit"_fix_deposit.html,
-"fix pour"_fix_pour.html", region"_region.html
+"fix pour"_fix_pour.html", region"_region.html, "partition"_partition.html
 
 [Default:]
 
-The defaults are maxattempt = 50, all_in = no, start = next time-step,
-cg = 1, type_offset = 0, ntry_mc = 100000
+The defaults are {maxattempt} = 50, {all_in} = {no}, {start} = next time-step,
+{cg} = 1, {type_offset} = 0, {ntry_mc} = 100000
 

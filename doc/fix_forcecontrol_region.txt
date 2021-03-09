@@ -19,13 +19,16 @@ ID, group-ID are documented in "fix"_fix.html command :ulb,l
 forcecontrol/region = style name of this fix command :l
 control_keyword/value pairs :l
 control_keywords = {ctrlPV} (obligatory) or {actual_val} (obligatory) or {target_val} (obligatory) or {velocity_limit} or {kp} or {ki} or {kd} or {actual_cg} or {target_cg} or {max_cg} :l
-{ctrlPV} values = stress or velocity
+{ctrlPV} values = {stress} or {velocity}
     stress = use stress as control process value
     velocity = use velocity as control process value
 {actual_val} values = fix-ID
-    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html or "fix ave/euler/region/universe"_fix_ave_euler_region.html command that holds the actual values for the controller
+    fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html command that holds the actual values for the controller
 {target_val} values = fix-ID
     fix-ID = ID of a "fix ave/euler/region"_fix_ave_euler_region.html or "fix ave/euler/region/universe"_fix_ave_euler_region.html command that holds the target values for the controller
+{velocity_limit} values = mode value
+    mode = {off} or {on} or {relative} or {absolute}
+    value = N/A to {off} or {on} mode, allowed deviation from target velocity for {relative} and {absolute} mode
 {kp} values = k
     k = proportional constant for PID controller 
 {ki} values = k
@@ -35,9 +38,10 @@ control_keywords = {ctrlPV} (obligatory) or {actual_val} (obligatory) or {target
 {actual_cg} values = cg
     cg = coarse-grain ratio of the actual particles (N/A to universe version)
 {target_cg} values = cg
-    cg = coarse-grain ratio of the target particles  (N/A to universe version)
+    cg = coarse-grain ratio of the target particles (N/A to universe version)
 {max_cg} values = cg
     cg = maximum coarse-grain ratio in the simulation (N/A to universe version) :pre
+
 two ukeyword/uvalue pairs must be appended for the universe version of this command :l
 ukeywords = {receive_from_partition} and {couple_every} :l
   {receive_from_partition} value = partition
@@ -81,8 +85,45 @@ output = kp * error + ki * errorsum + kd * errorchange
 where 'error' is the current deviation of the control process value to the target value, 
 'errorsum' is the time integration (sum) of the error values and 'errorchange' its derivative.
 
-The {target_cg} parameter allows to specify the coarse-grain ratio of the target particles
-in adaptive resolution simulations.
+In difficult to control systems (i.e. hard to reach stress target values) the
+controller force may produce undesirably high particle velocities.
+In this case the {velocity_limit} option may be used to bring velocities of the
+controlled particles (or more precisely the controller force) in line with the
+velocity range of the target system.
+The option {velocity_limit on} will try to limit particle velocities to the
+target system's max/min velocities times (1 plus/minus 0.2), i.e. plus/minus 20%.
+Similarly, the option {velocity_limit relative value} will try to limit
+particle velocities to the target system's max/min velocities times (1 plus/minus {value}).
+The option {velocity_limit absolute value} will try to limit particle velocities
+to the target system's max/min velocities plus/minus {value}.
+
+The {actual_cg} parameter allows to specify the coarse-grain ratio of the
+controlled group of particles in single-partition multi-level coarse-grain
+simulations.
+In multi-partition simulations this coarse-grain ratio is automatically deduced
+from the "coarsegraining"_coarsegraining.html command active in the same
+partition.
+
+The {target_cg} parameter allows to specify the coarse-grain ratio of the target
+particles in single-partition multi-level coarse-grain simulations.
+In multi-partition simulations this coarse-grain ratio is automatically deduced
+from the "coarsegraining"_coarsegraining.html command active in the coupled
+partition.
+
+The {max_cg} parameter allows to specify the maximum coarse-grain ratio of
+particles in single-partition multi-level coarse-grain simulations.
+This coarse-grain ratio is need to properly scale the controlled region of
+stress-based controllers.
+
+If LIGGGHTS is invoked in multi-partition mode (cf. "Command-line options"_Section_start.html#start_7),
+where each partition represents a separate coarse-graining level of the multi-level
+coarse-grain model, the universe version of this command needs to be used.
+In this case the coupled partition must be specified via the {receive_from_partition}
+option.
+Furthermore, {target_val} needs to specify a fix of style {ave/euler/region/universe}
+on the coupled partition and the interval for receiving data from that fix needs
+to be set via the {couple_every} option.
+
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
@@ -94,9 +135,11 @@ to turn on/off corrections to a 'velocity' controller to achieve proper mass flo
 
 [Related commands:]
 
-"fix ave/euler/region"_fix_ave_euler_region.html, "region mesh/hex"_region.html
+"fix ave/euler/region"_fix_ave_euler_region.html, "region mesh/hex"_region.html,
+"partition"_partition.html
 
 [Default:] 
 
-kp = 1, ki = 0, kd = 0, cg = 1
+{velocity_limit} = {off}, {kp} = 1, {ki} = 0, {kd} = 0, {target_cg} = 1,
+{actual_cg} = taken from {coarsegraining} command or 1, {max_cg} = {actual_cg}
 
