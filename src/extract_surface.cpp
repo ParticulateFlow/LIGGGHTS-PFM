@@ -26,7 +26,8 @@
 #if defined(LAMMPS_VTK) //NP do not use #ifdef here (VS C++ bug)
 #include "lmptype.h"
 #include "mpi.h"
-#include "stdlib.h"
+#include <stdlib.h>
+#include <string.h>
 #include "extract_surface.h"
 #include "math_extra.h"
 #include <vtkVersion.h>
