@@ -22,6 +22,9 @@
 #include "force.h"
 #include "error.h"
 #include "domain.h" //NP modified GM
+#include "fix_property_atom.h"
+#include "fix_cfd_coupling_force_implicit.h"
+#include "modify.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -33,7 +36,10 @@ enum{NONE,DIPOLE};
 /* ---------------------------------------------------------------------- */
 
 FixNVESphere::FixNVESphere(LAMMPS *lmp, int narg, char **arg) :
-  FixNVE(lmp, narg, arg)
+  FixNVE(lmp, narg, arg),
+  implicitIntegration_(false),
+  fix_Ksl_(0),
+  fix_cfd_coupling_force_implicit_(0)
 {
   if (narg < 3) error->all(FLERR,"Illegal fix nve/sphere command");
 
@@ -50,7 +56,21 @@ FixNVESphere::FixNVESphere(LAMMPS *lmp, int narg, char **arg) :
       if (strcmp(arg[iarg+1],"dipole") == 0) extra = DIPOLE;
       else error->all(FLERR,"Illegal fix nve/sphere command");
       iarg += 2;
-    } else error->all(FLERR,"Illegal fix nve/sphere command");
+    }
+    else if(strcmp(arg[iarg],"implicit_integration") == 0)
+    {
+        if(narg < iarg+2)
+            error->fix_error(FLERR,this,"not enough arguments for 'transfer_reactant'");
+        iarg++;
+        if(strcmp(arg[iarg],"yes") == 0)
+            implicitIntegration_ = true;
+        else if(strcmp(arg[iarg],"no") == 0)
+            implicitIntegration_ = false;
+        else
+            error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'implicit_integration'");
+        iarg++;
+    }
+    else error->all(FLERR,"Illegal fix nve/sphere command");
   }
 
   // error checks
@@ -62,6 +82,29 @@ FixNVESphere::FixNVESphere(LAMMPS *lmp, int narg, char **arg) :
 }
 
 /* ---------------------------------------------------------------------- */
+
+void FixNVESphere::post_create()
+{
+    if (implicitIntegration_)
+    {
+        fix_Ksl_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("Ksl","property/atom","scalar",0,0,style,false));
+        if (!fix_Ksl_)
+        {
+            error->fix_error(FLERR,this,"Fix NVE/sphere could not find fix 'Ksl' for the drag coefficient");
+        }
+
+        fix_cfd_coupling_force_implicit_ = static_cast<FixCfdCouplingForceImplicit*>(modify->find_fix_style_strict("couple/cfd/force/implicit",0));
+        if (!fix_cfd_coupling_force_implicit_)
+        {
+            error->fix_error(FLERR,this,"Could not find fix ID 'couple/cfd/force/implicit'");
+        }
+
+        if (!fix_cfd_coupling_force_implicit_->implicitIntegration())
+        {
+            error->fix_error(FLERR,this,"Fix 'couple/cfd/force/implicit' is not in mode for implicit integration.");
+        }
+    }
+}
 
 void FixNVESphere::init()
 {
@@ -97,6 +140,9 @@ void FixNVESphere::initial_integrate(int vflag)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
+  double invImpDenom;
+  double *Ksl;
+  if (implicitIntegration_) Ksl = fix_Ksl_->vector_atom;
 
   // set timestep here since dt may have changed or come via rRESPA
 
@@ -107,21 +153,54 @@ void FixNVESphere::initial_integrate(int vflag)
   // update v,x,omega for all particles
   // d_omega/dt = torque / inertia
 
-  for (int i = 0; i < nlocal; i++) {
-    if (mask[i] & groupbit) {
-      dtfm = dtf / rmass[i];
-      v[i][0] += dtfm * f[i][0];
-      v[i][1] += dtfm * f[i][1];
-      v[i][2] += dtfm * f[i][2];
-      x[i][0] += dtv * v[i][0];
-      x[i][1] += dtv * v[i][1];
-      x[i][2] += dtv * v[i][2];
+  if (implicitIntegration_)
+  {
+      for (int i = 0; i < nlocal; i++)
+      {
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
 
-      dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
-      omega[i][0] += dtirotate * torque[i][0];
-      omega[i][1] += dtirotate * torque[i][1];
-      omega[i][2] += dtirotate * torque[i][2];
-    }
+              invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
+              v[i][0] *= invImpDenom;
+              v[i][1] *= invImpDenom;
+              v[i][2] *= invImpDenom;
+
+              x[i][0] += dtv * v[i][0];
+              x[i][1] += dtv * v[i][1];
+              x[i][2] += dtv * v[i][2];
+
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
+  }
+  else
+  {
+      for (int i = 0; i < nlocal; i++)
+      {
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
+
+              x[i][0] += dtv * v[i][0];
+              x[i][1] += dtv * v[i][1];
+              x[i][2] += dtv * v[i][2];
+
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
   }
 
   // update mu for dipoles
@@ -160,6 +239,9 @@ void FixNVESphere::final_integrate()
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   if (igroup == atom->firstgroup) nlocal = atom->nfirst;
+  double invImpDenom;
+  double *Ksl;
+  if (implicitIntegration_) Ksl = fix_Ksl_->vector_atom;
 
   // set timestep here since dt may have changed or come via rRESPA
 
@@ -170,16 +252,44 @@ void FixNVESphere::final_integrate()
   // update v,omega for all particles
   // d_omega/dt = torque / inertia
 
-  for (int i = 0; i < nlocal; i++)
-    if (mask[i] & groupbit) {
-      dtfm = dtf / rmass[i];
-      v[i][0] += dtfm * f[i][0];
-      v[i][1] += dtfm * f[i][1];
-      v[i][2] += dtfm * f[i][2];
+  if (implicitIntegration_)
+  {
+      for (int i = 0; i < nlocal; i++)
+      {
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
+              invImpDenom = 1.0/(1.0 + dtfm * Ksl[i]);
+              v[i][0] *= invImpDenom;
+              v[i][1] *= invImpDenom;
+              v[i][2] *= invImpDenom;
 
-      dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
-      omega[i][0] += dtirotate * torque[i][0];
-      omega[i][1] += dtirotate * torque[i][1];
-      omega[i][2] += dtirotate * torque[i][2];
-    }
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
+  }
+  else
+  {
+      for (int i = 0; i < nlocal; i++)
+      {
+          if (mask[i] & groupbit)
+          {
+              dtfm = dtf / rmass[i];
+              v[i][0] += dtfm * f[i][0];
+              v[i][1] += dtfm * f[i][1];
+              v[i][2] += dtfm * f[i][2];
+
+              dtirotate = dtfrotate / (radius[i]*radius[i]*rmass[i]);
+              omega[i][0] += dtirotate * torque[i][0];
+              omega[i][1] += dtirotate * torque[i][1];
+              omega[i][2] += dtirotate * torque[i][2];
+          }
+      }
+  }
 }

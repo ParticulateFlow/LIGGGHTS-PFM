@@ -103,8 +103,7 @@ FixHeatGranCond::~FixHeatGranCond()
 
   //NP could delete fixes with no callbacks here since FixHeatGran has no callbacks
 
-  if (conductivity_)
-    delete []conductivity_;
+  delete []conductivity_;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -144,19 +143,21 @@ void FixHeatGranCond::init()
   double expo, Yeff_ij, Yeff_orig_ij, ratio;
   int max_type = pair_gran->get_properties()->max_type();
 
-  if (conductivity_) delete []conductivity_;
+  delete []conductivity_;
   conductivity_ = new double[max_type];
   fix_conductivity_ =
     static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalConductivity","property/global","peratomtype",max_type,0,style));
 
   // pre-calculate conductivity for possible contact material combinations
   for(int i=1;i< max_type+1; i++)
+  {
       for(int j=1;j<max_type+1;j++)
       {
           conductivity_[i-1] = fix_conductivity_->compute_vector(i-1);
           if(conductivity_[i-1] < 0.)
             error->all(FLERR,"Fix heat/gran/conduction: Thermal conductivity must not be < 0");
       }
+  }
 
   // calculate heat transfer correction
 
@@ -289,8 +290,7 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
     if(HISTFLAG) touch = firsttouch[i];
 
     for (jj = 0; jj < jnum; jj++) {
-      j = jlist[jj];
-      j &= NEIGHMASK;
+      j = jlist[jj] & NEIGHMASK;
 
       if (!(mask[i] & groupbit) && !(mask[j] & groupbit)) continue;
 
@@ -334,7 +334,9 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
             contactArea = - M_PI/4 * ( (r-radi-radj)*(r+radi-radj)*(r-radi+radj)*(r+radi+radj) )/(r*r); //contact area of the two spheres
         }
         else if (CONTACTAREA == CONDUCTION_CONTACT_AREA_CONSTANT)
+        {
             contactArea = fixed_contact_area_;
+        }
         else if (CONTACTAREA == CONDUCTION_CONTACT_AREA_PROJECTION)
         {
             double rmax = MathExtraLiggghts::max(radi,radj);
@@ -375,8 +377,11 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
 
   //NP reverse comm to send heat fluxes back
   //NP only necessary in case of newton_pair=1, since pair stored once on all procs
-  if(newton_pair) fix_heatFlux->do_reverse_comm();
-  if(newton_pair) fix_directionalHeatFlux->do_reverse_comm();
+  if(newton_pair)
+  {
+    fix_heatFlux->do_reverse_comm();
+    fix_directionalHeatFlux->do_reverse_comm();
+  }
 }
 
 /* ----------------------------------------------------------------------

@@ -34,11 +34,11 @@ class VolumeMesh : public TrackingMesh<NUM_NODES>
 
     bool addElement(double **nodeToAdd);
 
-    void move(double *vecTotal, double *vecIncremental);
-    void move(double *vecIncremental);
+    void move(const double *vecTotal, const double *vecIncremental);
+    void move(const double *vecIncremental);
     void scale(double factor);
 
-    bool isInside(double *p);
+    bool isInside(const double *p);
 
     //NP generateRandomSubbox (used by fix insert/pack): return random pos in my subbox
     //NP generateRandomSubboxWithin: return random pos in my subbox delta away from proc boundaries
@@ -86,13 +86,13 @@ class VolumeMesh : public TrackingMesh<NUM_NODES>
 
     virtual bool shareFace(int i, int j, int &iFace, int &jFace) = 0;
 
-    virtual bool isInside(int nElem, double *p) = 0;
+    virtual bool isInside(int nElem, const double *p) = 0;
     virtual double calcVol(int nElem) = 0;
 
     int randomOwnedGhostElement();
 
-    void rotate(double *totalQ, double *dQ,double *totalDispl,double *dDispl);
-    void rotate(double *dQ,double *dDispl);
+    void rotate(const double *totalQ, const double *dQ, const double *totalDispl, const double *dDispl);
+    void rotate(const double *dQ, const double *dDispl);
 
     // inline access
 

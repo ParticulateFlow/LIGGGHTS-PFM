@@ -68,6 +68,10 @@ class FixInsertPack : public FixInsert {
   char *idregion;
   double region_volume,region_volume_local;
   int ntry_mc;
+  double px_;
+  double py_;
+  double pz_;
+  bool insert_at;
 
   // target that region should fulfil after each insertion
   double volumefraction_region;

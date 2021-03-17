@@ -44,51 +44,93 @@ class FixAveEuler : public Fix {
  public:
 
   FixAveEuler(class LAMMPS *, int, char **);
-  ~FixAveEuler();
+  virtual ~FixAveEuler();
 
-  void post_create();
-  int setmask();
-  void init();
+  virtual void post_create();
+  virtual int setmask();
+  virtual void init();
   void setup(int vflag);
+  void post_integrate();
+  void pre_force(int);
 
   void end_of_step();
 
-  double compute_array(int i, int j);
+  virtual double compute_array(int i, int j);
 
-  int ncells_pack();
+  int ncells_pack() const;
 
-  // inline access functions for cell based values
+  inline int ncells() const
+  { return ncells_; }
 
-  inline double cell_center(int i, int j)
+  inline int ncells(int dim) const
+  { return ncells_dim_[dim]; }
+
+  inline double cell_size(int dim) const
+  { return cell_size_[dim]; }
+
+  virtual double cell_volume(int) const
+  { return cell_volume_; }
+
+  // access functions for cell based values
+
+  virtual double cell_center(int i, int j) const
   { return center_[i][j]; }
 
-  inline double cell_v_av(int i, int j)
+  inline double cell_v_av(int i, int j) const
   { return v_av_[i][j]; }
 
-  inline double cell_vol_fr(int i)
+  inline double cell_vol_fr(int i) const
   { return vol_fr_[i]; }
 
-  inline double cell_radius(int i)
+  inline double cell_mass(int i) const
+  { return mass_[i]; }
+
+  inline double cell_radius(int i) const
   { return radius_[i]; }
 
-  inline double cell_pressure(int i)
+  inline double cell_pressure(int i) const
   { return stress_[i][0]; }
 
-  inline double cell_stress(int i,int j)
+  inline double cell_stress(int i,int j) const
   { return stress_[i][j+1]; }
 
- private:
+  inline int cell_count(int i) const
+  { return ncount_[i]; }
 
-  inline int ntry_per_cell()
+  inline int cell_head(int i)
+  { if (dirty_) lazy_bin_atoms(i); return cellhead_[i]; }
+
+  inline int cell_ptr(int i) const
+  { return cellptr_[i]; }
+
+  inline double cell_weight(int i) const
+  { return weight_[i]; }
+
+  inline void set_cell_weight(int i, double w)
+  { weight_[i] = w; }
+
+  inline bool is_parallel()
+  { return parallel_; }
+
+  virtual void cell_bounds(int i, double bounds[6]) const;
+
+  virtual void cell_points(int i, double points[24]) const;
+
+ protected:
+  inline int ntry_per_cell() const
   { return 50; }
 
-  void setup_bins();
-  void bin_atoms();
-  void calculate_eu();
+ private:
+  virtual void setup_bins();
+  virtual void bin_atoms();
+  virtual void lazy_bin_atoms(int i) { bin_atoms(); }
+  virtual void calculate_eu();
   void allreduce();
   inline int coord2bin(double *x); //NP modified A.A.
 
+ protected:
   bool parallel_;
+  bool dirty_;
 
   int exec_every_;
   bool box_change_size_, box_change_domain_;
@@ -141,7 +183,7 @@ class FixAveEuler : public Fix {
   double *vol_fr_;
 
   // cell-based weight for each cell
-  
+
   double *weight_;
 
   // cell-based average radius

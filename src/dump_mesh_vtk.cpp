@@ -81,6 +81,9 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
   f_node_(0),
   T_(0),
   min_active_edge_dist_(0),
+  int_scalar_containers_(0),
+  int_scalar_container_names_(0),
+  n_int_scalar_containers_(0),
   scalar_containers_(0),
   scalar_container_names_(0),
   n_scalar_containers_(0),
@@ -249,19 +252,24 @@ DumpMeshVTK::DumpMeshVTK(LAMMPS *lmp, int narg, char **arg) : Dump(lmp, narg, ar
   min_active_edge_dist_ = new ScalarContainer<double>*[nMesh_];
 
   //NP allocate container_bases_
+  int_scalar_containers_ = new ScalarContainer<int>**[n_container_bases_];
+  int_scalar_container_names_ = new char*[n_container_bases_];
   scalar_containers_ = new ScalarContainer<double>**[n_container_bases_];
   scalar_container_names_ = new char*[n_container_bases_];
   vector_containers_ = new VectorContainer<double,3>**[n_container_bases_];
   vector_container_names_ = new char*[n_container_bases_];
   for(int i = 0; i < n_container_bases_; i++)
   {
+      int_scalar_containers_[i] = new ScalarContainer<int>*[nMesh_];
       scalar_containers_[i] = new ScalarContainer<double>*[nMesh_];
       vector_containers_[i] = new VectorContainer<double,3>*[nMesh_];
+      int_scalar_container_names_[i] = new char[200];
       scalar_container_names_[i] = new char[200];
       vector_container_names_[i] = new char[200];
 
       for(int j = 0; j < nMesh_; j++)
       {
+          int_scalar_containers_[i][j] = 0;
           scalar_containers_[i][j] = 0;
           vector_containers_[i][j] = 0;
       }
@@ -293,13 +301,17 @@ DumpMeshVTK::~DumpMeshVTK()
 
   for(int i = 0; i < n_container_bases_; i++)
   {
+      delete [] int_scalar_containers_[i];
       delete [] scalar_containers_[i];
       delete [] vector_containers_[i];
+      delete [] int_scalar_container_names_[i];
       delete [] scalar_container_names_[i];
       delete [] vector_container_names_[i];
   }
+  delete [] int_scalar_containers_;
   delete [] scalar_containers_;
   delete [] vector_containers_;
+  delete [] int_scalar_container_names_;
   delete [] scalar_container_names_;
   delete [] vector_container_names_;
 }
@@ -361,6 +373,7 @@ void DumpMeshVTK::init_style()
   //NP get refs so can compute size
   getGeneralRefs();
 
+  size_one += n_int_scalar_containers_*1;
   size_one += n_scalar_containers_*1;
   size_one += n_vector_containers_*3;
 
@@ -478,19 +491,28 @@ void DumpMeshVTK::getGeneralRefs()
   //NP general implementation
   //NP go through list of fields
 
+  n_int_scalar_containers_ = 0;
   n_scalar_containers_ = 0;
   n_vector_containers_ = 0;
   char cid[200];
 
   for(int ib = 0; ib < n_container_bases_; ib++)
   {
-      bool found_scalar = false, found_vector = false;
+      bool found_int_scalar = false, found_scalar = false, found_vector = false;
 
       /*NL*/ //if (screen) fprintf(screen,"looking for container %s\n",container_args_[ib]);
 
       for(int i = 0; i < nMesh_; i++)
       {
-          if(meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]))
+          if(meshList_[i]->prop().getElementProperty<ScalarContainer<int> >(container_args_[ib]))
+          {
+              /*NL*/ //fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
+              found_int_scalar = true;
+              int_scalar_containers_[n_int_scalar_containers_][i] = meshList_[i]->prop().getElementProperty<ScalarContainer<int> >(container_args_[ib]);
+              int_scalar_containers_[n_int_scalar_containers_][i]->id(cid);
+              strcpy(int_scalar_container_names_[n_int_scalar_containers_],cid);
+          }
+          else if(meshList_[i]->prop().getElementProperty<ScalarContainer<double> >(container_args_[ib]))
           {
               /*NL*/ //if (screen) fprintf(screen,"mesh %s: prop %s found\n",meshList_[i]->mesh_id(),container_args_[ib]);
               found_scalar = true;
@@ -498,9 +520,7 @@ void DumpMeshVTK::getGeneralRefs()
               scalar_containers_[n_scalar_containers_][i]->id(cid);
               strcpy(scalar_container_names_[n_scalar_containers_],cid);
           }
-          /*NL*/ //else if (screen) fprintf(screen,"mesh %s: prop %s NOT found\n",meshList_[i]->mesh_id(),container_args_[ib]);
-
-          if(meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]))
+          else if(meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]))
           {
               found_vector = true;
               vector_containers_[n_vector_containers_][i] = meshList_[i]->prop().getElementProperty<VectorContainer<double,3> >(container_args_[ib]);
@@ -509,12 +529,14 @@ void DumpMeshVTK::getGeneralRefs()
           }
       }
 
+      if(found_int_scalar)
+        n_int_scalar_containers_++;
       if(found_scalar)
         n_scalar_containers_++;
       if(found_vector)
         n_vector_containers_++;
 
-      if(!found_scalar && !found_vector)
+      if(!found_int_scalar && !found_scalar && !found_vector)
         error->all(FLERR,"Illegal dump mesh/vtk command, unknown keyword or mesh");
   }
 
@@ -528,6 +550,7 @@ void DumpMeshVTK::pack(int *ids)
   int m = 0;
   double node[3];
   TriMesh *mesh;
+  ScalarContainer<int> *cb0;
   ScalarContainer<double> *cb1;
   VectorContainer<double,3> *cb2;
 
@@ -647,6 +670,12 @@ void DumpMeshVTK::pack(int *ids)
         if(dump_what_ & DUMP_MIN_ACTIVE_EDGE_DIST)
         {
             buf[m++] = min_active_edge_dist_[iMesh] ? min_active_edge_dist_[iMesh]->get(iTri) : 0.;
+        }
+
+        for(int ib = 0; ib < n_int_scalar_containers_; ib++)
+        {
+           cb0 = int_scalar_containers_[ib][iMesh];
+           buf[m++] = cb0 ? static_cast<double>((*cb0)(iTri)) : 0.;
         }
 
         for(int ib = 0; ib < n_scalar_containers_; ib++)
@@ -1164,6 +1193,21 @@ void DumpMeshVTK::write_data_ascii_face(int n, double *mybuf)
       for (int i = 0; i < n; i++)
       {
           fprintf(fp,"%f\n",mybuf[m]);
+          m += size_one;
+      }
+      buf_pos++;
+  }
+
+  //NP compute size
+  for(int ib = 0; ib < n_int_scalar_containers_; ib++)
+  {
+      //write owner data
+      fprintf(fp,"SCALARS %s int 1\nLOOKUP_TABLE default\n",int_scalar_container_names_[ib]);
+      m = buf_pos;
+      /*NL*/ //fprintf(screen,"size_one %d\n",size_one);
+      for (int i = 0; i < n; i++)
+      {
+          fprintf(fp,"%d\n",static_cast<int>(mybuf[m]));
           m += size_one;
       }
       buf_pos++;

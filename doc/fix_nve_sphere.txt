@@ -16,9 +16,10 @@ fix ID group-ID nve/sphere :pre
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 nve/sphere = style name of this fix command :l
 zero or more keyword/value pairs may be appended :l
-keyword = {update} :l
+keyword = {update} or {implicit_integration} :l
   {update} value = {dipole}
-    dipole = update orientation of dipole moment during integration :pre
+    dipole = update orientation of dipole moment during integration
+  {implicit_integration} value = {yes} or {no} :pre
 :ule
 
 [Examples:]
@@ -41,6 +42,10 @@ orientation of the dipole moment of each particle is also updated
 during the time integration.  This option should be used for models
 where a dipole moment is assigned to particles via use of the
 "atom_style dipole"_atom_style.html command.
+
+{implicit_integration} (default {no}) treats the drag force in a coupled simulation implicitly
+if the same option is activated in fix/cfd/coupling/force/implicit and the CFDEM
+drag force model.
 
 :line
 

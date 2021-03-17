@@ -435,7 +435,7 @@
   }
 
   template<typename T, int NUM_VEC, int LEN_VEC>
-  void GeneralContainer<T,NUM_VEC,LEN_VEC>::move(double *delta)
+  void GeneralContainer<T,NUM_VEC,LEN_VEC>::move(const double *delta)
   {
       if(isTranslationInvariant()) return;
 
@@ -451,7 +451,7 @@
   }
 
   template<typename T, int NUM_VEC, int LEN_VEC>
-  void GeneralContainer<T,NUM_VEC,LEN_VEC>::moveElement(int i,double *delta)
+  void GeneralContainer<T,NUM_VEC,LEN_VEC>::moveElement(int i,const double *delta)
   {
       if(isTranslationInvariant()) return;
 
@@ -461,7 +461,7 @@
   }
 
   template<typename T, int NUM_VEC, int LEN_VEC>
-  void GeneralContainer<T,NUM_VEC,LEN_VEC>::rotate(double *dQ)
+  void GeneralContainer<T,NUM_VEC,LEN_VEC>::rotate(const double *dQ)
   {
       if(isRotationInvariant()) return;
 

@@ -165,11 +165,20 @@ void FixContactHistoryMesh::allocate_pages()
     ipage2_ = new MyPage<int>[numpages_];
     dpage2_ = new MyPage<double>[numpages_];
     keeppage_ = new MyPage<bool>*[numpages_];
+
     for (int i = 0; i < numpages_; i++) {
-      ipage1_[i].init(oneatom_,pgsize_);
-      dpage1_[i].init(oneatom_*MathExtraLiggghts::max(1,dnum_),pgsize_);
-      ipage2_[i].init(oneatom_,pgsize_);
-      dpage2_[i].init(oneatom_*MathExtraLiggghts::max(1,dnum_),pgsize_);
+      if (ipage1_[i].init(oneatom_,pgsize_) != 0) {
+        error->fix_error(FLERR, this, "bad ipage1 initialization");
+      }
+      if (dpage1_[i].init(oneatom_*MathExtraLiggghts::max(1,dnum_),pgsize_) != 0) {
+        error->fix_error(FLERR, this, "bad dpage1 initialization");
+      }
+      if (ipage2_[i].init(oneatom_,pgsize_) != 0) {
+        error->fix_error(FLERR, this, "bad ipage2 initialization");
+      }
+      if (dpage2_[i].init(oneatom_*MathExtraLiggghts::max(1,dnum_),pgsize_) != 0) {
+        error->fix_error(FLERR, this, "bad dpage2 initialization");
+      }
     }
 
 #if defined(_OPENMP)
@@ -183,7 +192,9 @@ void FixContactHistoryMesh::allocate_pages()
 #else
     for (int i = 0; i < numpages_; i++) {
       keeppage_[i] = new MyPage<bool>();
-      keeppage_[i]->init(oneatom_,pgsize_);
+      if (keeppage_[i]->init(oneatom_,pgsize_) != 0) {
+        error->fix_error(FLERR, this, "bad keeppage initialization");
+      }
     }
 #endif
 

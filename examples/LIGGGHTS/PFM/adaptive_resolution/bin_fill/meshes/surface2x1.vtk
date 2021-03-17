@@ -1,0 +1,26 @@
+# vtk DataFile Version 3.0
+LIGGGHTS grid/mesh
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 6 float
+-0.02 -0.02 0.08
+0.00 -0.02 0.08
+0.02 -0.02 0.08
+-0.02 0.0 0.08
+0.00 0.0 0.08
+0.02 0.0 0.08
+
+CELLS 2 10
+4 0 1 4 3
+4 1 2 5 4
+
+CELL_TYPES 2
+9
+9
+
+CELL_DATA 2
+SCALARS face_id int 1
+LOOKUP_TABLE default
+6
+7
+

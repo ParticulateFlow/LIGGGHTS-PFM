@@ -46,8 +46,8 @@ namespace LAMMPS_NS{
 
         virtual void buildNeighbours() = 0;
 
-        virtual void move(double *vecTotal, double *vecIncremental);
-        virtual void move(double *vecIncremental);
+        virtual void move(const double *vecTotal, const double *vecIncremental);
+        virtual void move(const double *vecIncremental);
 
         virtual void scale(double factor);
 
@@ -103,10 +103,10 @@ namespace LAMMPS_NS{
         void clearMap();
         void generateMap();
 
-        virtual void moveElement(int i,double *vecIncremental);
+        virtual void moveElement(int i, const double *vecIncremental);
 
-        virtual void rotate(double *totalQ, double *dQ,double *origin);
-        virtual void rotate(double *dQ,double *origin);
+        virtual void rotate(const double *totalQ, const double *dQ, const double *origin);
+        virtual void rotate(const double *dQ, const double *origin);
 
         // buffer operations
 
