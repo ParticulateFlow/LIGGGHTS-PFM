@@ -194,8 +194,6 @@ void FixSpeedControl::init()
 
   //NP modified C.K.
   // error checks on coarsegraining
-  if(force->cg_active())
-    error->cg(FLERR,this->style);
 }
 
 /* ---------------------------------------------------------------------- */

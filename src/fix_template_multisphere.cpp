@@ -535,6 +535,11 @@ void FixTemplateMultisphere::randomize_ptilist(int n_random,int distribution_gro
           vectorZeroize3D(pti_m->omega_ins);
 
           pti_m->groupbit = groupbit | distribution_groupbit; //NP also contains insert_groupbit
+
+          pti_m->fix_properties.clear();
+          pti_m->fix_property_values.clear();
+          pti_m->property_iindex = -1;
+          pti_m->property_index = -1;
     }
 }
 

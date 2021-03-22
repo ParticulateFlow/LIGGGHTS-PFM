@@ -62,14 +62,14 @@ namespace LAMMPS_NS
 
         double calcVol(int n);
         double calcCenter(int n);
-        bool isInside(int iTet,double *pos);
+        bool isInside(int iTet, const double *pos);
 
         bool shareFace(int i, int j, int &iFace, int &jFace);
 
       private:
 
-        double calcTetVol(double* v0, double* v1, double* v2, double* v3);
-        void baryToCart(int iTet,double *bary_coo,double *pos);
+        double calcTetVol(const double* v0, const double* v1, const double* v2, const double* v3);
+        void baryToCart(int iTet, const double *bary_coo,double *pos);
   };
 
   // *************************************

@@ -126,7 +126,7 @@ void CfdDatacoupling::grow_()
    pull property from other code
 ------------------------------------------------------------------------- */
 
-void CfdDatacoupling::pull(const char *name, const char *type, void *&, const char *)
+void CfdDatacoupling::pull(const char *name, const char *type, void *&, const char *, int iworld)
 {
     // for MPI this is called by the library interface
     // check if the requested property was registered by a LIGGGHTS model
@@ -164,7 +164,7 @@ void CfdDatacoupling::pull(const char *name, const char *type, void *&, const ch
    push property to other code
 ------------------------------------------------------------------------- */
 
-void CfdDatacoupling::push(const char *name, const char *type, void *&, const char *)
+void CfdDatacoupling::push(const char *name, const char *type, void *&, const char *, int iworld)
 {
     // for MPI this is called by the library interface
     // check if the requested property was registered by a LIGGGHTS model

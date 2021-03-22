@@ -351,6 +351,7 @@ int FixInsertPack::calc_ninsert_this()
   }
   else error->one(FLERR,"Internal error in FixInsertPack::calc_ninsert_this()");
 
+
   // can be < 0 due to overflow, round-off etc
   int const warning_limit = static_cast<int>(0.9 * static_cast<double>( INT_MAX ) );
   if(ninsert_this < 0){

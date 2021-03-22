@@ -50,9 +50,10 @@ namespace LAMMPS_NS
         T* getElementProperty(const char *_id);
 
         inline ContainerBase* getElementPropertyBase(const char *_id);
-        inline ContainerBase* getElementPropertyBase(int i);
 
-        inline int getElementPropertyIndex(const char *_id);
+        inline bool hasElementProperty(const char *_id);
+
+        inline void setElementPropertyToDefault(int n);
 
         template<typename T, typename U>
         void setElementProperty(const char *_id, U def);
@@ -92,11 +93,11 @@ namespace LAMMPS_NS
         inline void storeGlobalPropOrig(const char *_id);
         inline void resetGlobalPropToOrig(const char *_id);
 
-        inline void moveElement(int i, double *delta);
-        void move(double *vecTotal, double *vecIncremental);
-        void move(double *vecIncremental);
-        void rotate(double *totalQ, double *dQ);
-        void rotate(double *dQ);
+        inline void moveElement(int i, const double *delta);
+        void move(const double *vecTotal, const double *vecIncremental);
+        void move(const double *vecIncremental);
+        void rotate(const double *totalQ, const double *dQ);
+        void rotate(const double *dQ);
         void scale(double factor);
 
         // buffer operations

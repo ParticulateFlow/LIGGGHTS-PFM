@@ -310,7 +310,7 @@ void FixRemove::pre_exchange()
 
     // print to logfile
 
-    if(0 == comm->me)
+    if(comm->me == 0)
     {
         if(verbose_ && screen)
             fprintf(screen,"Timestep %d, removing material, mass to remove this step %f\n",

@@ -229,7 +229,7 @@ void FixCheckTimestepGran::calc_rayleigh_hertz_estims()
           if(mesh->isMoving())
           {
               // check if perElementProperty 'v' exists
-              if (mesh->prop().getElementPropertyIndex("v") == -1)
+              if (!mesh->prop().hasElementProperty("v"))
                   error->one(FLERR,"Internal error - mesh has no perElementProperty 'v' \n");
               // loop local elements only
               for(int itri=0;itri<mesh->sizeLocal();itri++)

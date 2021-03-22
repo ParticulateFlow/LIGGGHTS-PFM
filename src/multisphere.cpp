@@ -162,23 +162,9 @@ void Multisphere::add_body(int nspheres, double *xcm_ins, double *xcm_to_xbound_
         angmom_(n)
     );
 
-    // loop all non-initialized properties and set to their
+    // set all non-initialized properties to their
     // default values
-    int iProperty = 0;
-    for(ContainerBase *cb = customValues_.getElementPropertyBase(iProperty); cb; cb = customValues_.getElementPropertyBase(++iProperty))
-    {
-        /*NL*///char id[200];
-        /*NL*///cb->id(id);
-        /*NL*///if (screen) fprintf(screen,"iProperty %d, property %s\n",iProperty,id);
-
-        //NP this funtion is inlinable
-        if(cb->useDefault())
-        {
-            //NP this is virtual fct
-            cb->setToDefault(n);
-            /*NL*///if (screen) fprintf(screen,"    setting default here\n");
-        }
-    }
+    customValues_.setElementPropertyToDefault(n);
 
     /*NL*/ //if (screen) {
     /*NL*/ //fprintf(screen,"start_step_ins %d\n",start_step_ins);

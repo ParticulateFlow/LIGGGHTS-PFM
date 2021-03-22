@@ -69,8 +69,8 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
         bool areCoplanarNeighs(int tag_i, int tag_j);
         bool isOnSurface(double *pos);
 
-        void move(double *vecTotal, double *vecIncremental);
-        void move(double *vecIncremental);
+        void move(const double *vecTotal, const double *vecIncremental);
+        void move(const double *vecIncremental);
         void scale(double factor);
 
         //NP generateRandomSubbox:           random pos on mesh in my subbox
@@ -173,8 +173,8 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
 
         int randomOwnedGhostElement();
 
-        void rotate(double *totalQ, double *dQ,double *origin);
-        void rotate(double *dQ,double *origin);
+        void rotate(const double *totalQ, const double *dQ, const double *origin);
+        void rotate(const double *dQ, const double *origin);
 
         // inline access
         inline double&  area(int i)         {return (area_)(i);}

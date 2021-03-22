@@ -114,7 +114,7 @@ int ParticleToInsertSuperquadric::check_near_set_x_v_omega(double *x,double *v, 
     if(nspheres > 1)
         error->one(FLERR,"check_near_set_x_v_omega not implemented yet for nparticles>1");
 
-    if(neighList.hasOverlap_superquadric(x, radius_ins[0], quat, shape_ins, blockiness_ins)) {
+    if(neighList.hasOverlap_superquadric(x, radius_ins[0], get_atom_type(), quat, shape_ins, blockiness_ins)) {
       return 0;
     }
 
@@ -126,7 +126,7 @@ int ParticleToInsertSuperquadric::check_near_set_x_v_omega(double *x,double *v, 
     vectorCopy4D(quat, quat_ins);
 
     // add to xnear
-    neighList.insert_superquadric(x_ins[0], radius_ins[0], quat_ins, shape_ins, blockiness_ins);
+    neighList.insert_superquadric(x_ins[0], radius_ins[0], get_atom_type(), quat_ins, shape_ins, blockiness_ins);
 
     return 1;
 }

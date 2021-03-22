@@ -1,0 +1,151 @@
+# 3D bin - fill (coupled coarse grain - original size)
+# test for establishing boundary conditions via stress controller
+# run with 2 partitions, e.g.: mpirun -np 3 lmp_ubuntuVTK -in in.bin_fill_universe -partition 1 2
+
+variable rp               equal 0.001 # original particle radius
+variable dp_mm            equal round(2000*${rp})
+variable np_in_reg        equal 45 # number of cg particles
+variable world_name       world root child
+variable world_cg         world 2 1
+variable world_send_recv  world 2 1
+variable world_couplefreq world 500 500
+variable world_minx       world -0.021 -0.021
+variable world_maxx       world  0.021  0.021
+variable world_miny       world -0.021 -0.021
+variable world_maxy       world  0.001  0.001
+variable world_minz       world -0.021 -0.001
+variable world_maxz       world  0.125  0.081
+
+coarsegraining ${world_cg} model_check warn 
+
+atom_style  sphere
+atom_modify map array sort 0 0
+boundary    f f f
+newton      off
+
+communicate single vel yes
+processors  * 1 1
+
+units       si
+
+region      reg block ${world_minx} ${world_maxx} ${world_miny} ${world_maxy} ${world_minz} ${world_maxz} units box
+create_box  3 reg
+
+neighbor    0.00025 bin
+neigh_modify delay 0
+
+# material properties required for pair style
+fix m1 all property/global youngsModulus peratomtype 1.e8 1.e8 1.e8 # wall coarse resolved
+fix m2 all property/global poissonsRatio peratomtype 0.35 0.35 0.35
+fix m3 all property/global coefficientRestitution peratomtypepair 3 0.6 0.6 0.6 &
+                                                                    0.6 0.6 0.6 &
+                                                                    0.6 0.6 0.6
+fix m4 all property/global coefficientFriction peratomtypepair 3 0.5 0.5 0.5 &
+                                                                 0.5 0.3 0.3 &
+                                                                 0.5 0.3 0.3
+fix m5 all property/global coefficientRollingFriction peratomtypepair 3 0.02 0.02 0.02 &
+                                                                        0.02 0.01 0.01 &
+                                                                        0.02 0.01 0.01
+
+# pair style
+pair_style  gran model hertz tangential history rolling_friction epsd2
+pair_coeff  * *
+
+timestep	0.000001
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+# x-walls for coarse part
+fix xwall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 xplane -0.02
+fix xwall2 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 xplane  0.02
+# front & back walls
+fix ywall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 yplane -0.02
+fix ywall2 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 yplane  0.00
+# bottom wall
+fix zwall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 zplane -0.02
+
+# generate surface with face ids and the insertion volume, can be removed if files already exist
+extrude_surface meshes/surface2x1.vtk        file meshes/testsurface2x1.vtk        meshes/testextrusion2x1.vtk        extrude_length 0.003 min_rad 0.001
+extrude_surface meshes/surface2x1_bottom.vtk file meshes/testsurface2x1_bottom.vtk meshes/testextrusion2x1_bottom.vtk extrude_length 0.0035 min_rad 0.0005
+
+# insertion of coarse grain particles
+fix pts1 all particletemplate/sphere 1 atom_type 2 density constant 2500 radius constant ${rp}
+fix pdd1 all particledistribution/discrete 33335 1 pts1 1.0
+
+partition yes 1 region ins_reg block -0.02  0.02 -0.02 0.0 0.10 0.12 units box
+partition yes 1 fix ins_cg2 all insert/pack seed 674562 distributiontemplate pdd1 verbose no &
+                maxattempt 300 insert_every 500 overlapcheck yes all_in yes vel constant 0. 0. 0. &
+                region ins_reg particles_in_region ${np_in_reg}
+
+# load surface file with face ids (cell_data option)
+partition yes 1 fix surface  all mesh/surface file meshes/testsurface2x1.vtk        type 1 cell_data yes
+partition yes 1 fix surfaceb all mesh/surface file meshes/testsurface2x1_bottom.vtk type 1 cell_data yes
+
+# measure mass flow through face,
+# also specify that all calculations should consider the coarse grain factor (cg 2)
+partition yes 1 fix massflowcg2  all massflow/mesh/face/universe mesh surface  count once inside_out &
+                send_to_partition ${world_send_recv} couple_every ${world_couplefreq}#file post/testmassflowprop.txt
+partition yes 1 fix massflowcg2b all massflow/mesh/face/universe mesh surfaceb count once inside_out &
+                send_to_partition ${world_send_recv} couple_every ${world_couplefreq}#file post/testmassflowpropb.txt
+
+# load volume file with face ids for insertion
+partition yes 2 region hexregion  mesh/hex file meshes/testextrusion2x1.vtk        scale 1. move 0. 0. 0. rotate 0. 0. 0. cell_data yes units box
+partition yes 2 region hexregionb mesh/hex file meshes/testextrusion2x1_bottom.vtk scale 1. move 0. 0. 0. rotate 0. 0. 0. cell_data yes units box
+
+# insert particles based on the massflow measured,
+# also specify that all calculations should consider the coarse grain factor (cg 1)
+# and an atom type different from the measured particle shall be used
+partition yes 2 fix ins_cg1  all insert/pack/face/universe seed 7238  random_distribute exact maxattempt 1000 insert_every ${world_couplefreq} &
+                overlapcheck yes all_in yes region hexregion  ntry_mc 10000 massflow_face massflowcg2  receive_from_partition ${world_send_recv}
+partition yes 2 fix ins_cg1b all insert/pack/face/universe seed 72332 random_distribute exact maxattempt 1000 insert_every ${world_couplefreq} &
+                overlapcheck yes all_in yes region hexregionb ntry_mc 10000 massflow_face massflowcg2b receive_from_partition ${world_send_recv}
+
+# average region of simulation
+region ave_reg mesh/hex file meshes/grid2x1.vtk scale 1. move 0. 0. 0. rotate 0. 0. 0. cell_data yes units box
+
+variable nevery equal 15
+variable one_over_nevery equal 1.0/${nevery}
+variable one_over_neverydt equal 1.0/(${nevery}*dt)
+
+# stress computation
+partition yes 1 fix stress_cg2 all ave/euler/region/universe nevery ${nevery} region ave_reg send_to_partition ${world_send_recv} sync yes
+partition yes 2 fix stress_cg1 all ave/euler/region nevery ${nevery} region ave_reg
+
+# control stress in resolved transition region
+partition yes 2 fix stressctrl all forcecontrol/region/universe ctrlPV stress actual_val stress_cg1 target_val stress_cg2 &
+                kp ${one_over_nevery} ki ${one_over_neverydt} kd 0.0 velocity_limit on receive_from_partition ${world_send_recv} couple_every ${nevery}
+# deactivate controller in the central part of the resolved region
+partition yes 2 fix_modify stressctrl deactivate 2 5
+
+# integrator 
+fix integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          2000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run 1
+
+dump dmp0 all custom/vtk 10000 post/bin_fill_d${dp_mm}mm_${world_name}_*.vtk id type radius mass x y z vx vy vz fx fy fz omegax omegay omegaz
+#partition yes 2 dump dmp1 all euler/vtk 2000 post/euler_${world_name}*.vtk ave_euler stress_cg1
+#partition yes 1 dump dmp2 all euler/vtk 2000 post/euler_${world_name}*.vtk ave_euler stress_cg2
+
+run 1000000 upto
+
+partition yes 2 unfix ins_cg1b
+partition yes 1 unfix massflowcg2b
+
+run 1500000 upto
+
+partition yes 2 unfix ins_cg1
+partition yes 1 unfix massflowcg2
+
+run 1760000 upto
+
+partition yes 1 unfix ins_cg2
+
+run 2000000 upto
+

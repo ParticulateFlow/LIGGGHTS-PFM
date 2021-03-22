@@ -11,6 +11,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
+#include <string.h>
 #include "compute_com_molecule.h"
 #include "atom.h"
 #include "update.h"

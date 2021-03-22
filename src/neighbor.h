@@ -27,6 +27,8 @@
 #include "pointers.h"
 #include <algorithm> //NP modified C.K.
 
+namespace LIGGGHTS { class RegionNeighborList; }
+
 namespace LAMMPS_NS {
 
 class Neighbor : protected Pointers {
@@ -39,6 +41,7 @@ class Neighbor : protected Pointers {
   //NP modified St.A.
   friend class FixHeatGranRad;
   friend class FixLiquidTrackingInstant;
+  friend class LIGGGHTS::RegionNeighborList;
 
  public:
   int style;                       // 0,1,2 = nsq, bin, multi

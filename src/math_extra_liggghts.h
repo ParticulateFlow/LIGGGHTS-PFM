@@ -7,7 +7,8 @@
 
    Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2016 DCS Computing GmbH, Linz
+   Copyright 2017-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -19,6 +20,11 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing author:
+   Daniel Queteschiner <daniel.queteschiner@jku.at> (JKU Linz)
+------------------------------------------------------------------------- */
+
 #ifndef LMP_MATH_EXTRA_LIGGGHTS_H
 #define LMP_MATH_EXTRA_LIGGGHTS_H
 
@@ -26,6 +32,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include "error.h"
 #include "vector_liggghts.h"
 #include "math_extra.h"
@@ -77,17 +84,17 @@ namespace MathExtraLiggghts {
 
   // quaternion operations
   inline void quat_normalize(double *q);
-  inline void qconjugate(double *q, double *qc);
+  inline void qconjugate(const double *q, double *qc);
   inline void quat_from_vec(const double *v, double *q);
   inline void vec_from_quat(const double *q, double *v);
-  inline void vec_quat_rotate(double *vec, double *quat, double *result);
-  inline void vec_quat_rotate(double *vec, double *quat);
-  inline void vec_quat_rotate(int *vec, double *quat) { UNUSED(vec); UNUSED(quat); }
-  inline void vec_quat_rotate(bool *vec, double *quat) { UNUSED(vec); UNUSED(quat); }
-  inline void quat_diff(double *q_new, double *q_old, double *q_diff);
-  inline void angmom_from_omega(double *w,
-                                  double *ex, double *ey, double *ez,
-                                  double *idiag, double *m);
+  inline void vec_quat_rotate(const double *vec, const double *quat, double *result);
+  inline void vec_quat_rotate(double *vec, const double *quat);
+  inline void vec_quat_rotate(int *vec, const double *quat) { UNUSED(vec); UNUSED(quat); }
+  inline void vec_quat_rotate(bool *vec, const double *quat) { UNUSED(vec); UNUSED(quat); }
+  inline void quat_diff(const double *q_new, const double *q_old, double *q_diff);
+  inline void angmom_from_omega(const double *w,
+                                  const double *ex, const double *ey, const double *ez,
+                                  const double *idiag, double *m);
 
   // double comparison, added by P.S.
   inline bool compDouble(double const a, double const b, double const prec = 1e-13);
@@ -99,7 +106,23 @@ namespace MathExtraLiggghts {
   inline void random_unit_quat(LAMMPS_NS::RanPark *random,double *quat);
 
   inline bool is_int(char *str);
-};
+
+  inline bool line_triangle_intersect(const double *origin, const double *dir, const double *v0, const double *v1, const double *v2);
+
+  // Zobel et al., 'In-memory hash tables for accumulating text vocabularies', Inf. Process. Lett., 80(6), pp. 271-277 (2001)
+  inline unsigned int bitwiseHash(const std::string& str) {
+    unsigned int hash = 1315423911;
+    for (std::size_t i = 0; i < str.length(); ++i) {
+      hash ^= ((hash << 5) + str[i] + (hash >> 2));
+    }
+    return hash;
+  }
+
+  inline unsigned int bitwiseHash(const std::string& str, unsigned int max) {
+    return bitwiseHash(str) % max;
+  }
+
+}
 
 /* ----------------------------------------------------------------------
    matrix  times col vector //NP modified C.K.
@@ -362,7 +385,7 @@ void MathExtraLiggghts::cartesian_coosys_to_local_orthogonal(double *local,doubl
    assume q is of unit length
 ------------------------------------------------------------------------- */
 
-void MathExtraLiggghts::qconjugate(double *q, double *qc)
+void MathExtraLiggghts::qconjugate(const double *q, double *qc)
 {
   qc[0] = q[0];
   qc[1] = -q[1];
@@ -397,7 +420,7 @@ void MathExtraLiggghts::vec_from_quat(const double *q, double *v)
    rotoate vector by quaternion
 ------------------------------------------------------------------------- */
 
-void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat, double *result)
+void MathExtraLiggghts::vec_quat_rotate(const double *vec, const double *quat, double *result)
 {
     double vecQ[4], resultQ[4], quatC[4], temp[4];
 
@@ -419,7 +442,7 @@ void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat, double *resul
    rotoate vector by quaternion
 ------------------------------------------------------------------------- */
 
-void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat)
+void MathExtraLiggghts::vec_quat_rotate(double *vec, const double *quat)
 {
     double vecQ[4], resultQ[4], quatC[4], temp[4], result[3];
 
@@ -447,9 +470,9 @@ void MathExtraLiggghts::vec_quat_rotate(double *vec, double *quat)
    Mspace = P Mbody
 ------------------------------------------------------------------------- */
 
-inline void MathExtraLiggghts::angmom_from_omega(double *w,
-                                  double *ex, double *ey, double *ez,
-                                  double *idiag, double *m)
+inline void MathExtraLiggghts::angmom_from_omega(const double *w,
+                                  const double *ex, const double *ey, const double *ez,
+                                  const double *idiag, double *m)
 {
   double mbody[3];
 
@@ -479,7 +502,7 @@ inline void MathExtraLiggghts::quat_normalize(double *q)
    calculate the quaternion that would rotate q_old into q_new
 ------------------------------------------------------------------------- */
 
-inline void MathExtraLiggghts::quat_diff(double *q_new, double *q_old, double *q_diff)
+inline void MathExtraLiggghts::quat_diff(const double *q_new, const double *q_old, double *q_diff)
 {
     double q_old_c[4];
 
@@ -609,5 +632,65 @@ bool MathExtraLiggghts::is_int(char *str)
 
     return true;
 }
+
+
+/* ----------------------------------------------------------------------
+   check if line and triangle intersect
+------------------------------------------------------------------------- */
+
+bool MathExtraLiggghts::line_triangle_intersect(const double *origin, const double *dir, const double *v0, const double *v1, const double *v2)
+{
+  // Compute the offset origin, edges, and normal.
+  double edge1[3]; MathExtra::sub3(v1, v0, edge1);// = v1 - v0;
+  double edge2[3]; MathExtra::sub3(v2, v0, edge2);// = v2 - v0;
+  double normal[3]; MathExtra::cross3(edge1, edge2, normal);// = Cross(edge1, edge2);
+
+  // Solve Q + t*D = b1*E1 + b2*E2 (Q = diff, D = line direction,
+  // E1 = edge1, E2 = edge2, N = Cross(E1,E2)) by
+  //   |Dot(D,N)|*b1 = sign(Dot(D,N))*Dot(D,Cross(Q,E2))
+  //   |Dot(D,N)|*b2 = sign(Dot(D,N))*Dot(D,Cross(E1,Q))
+  //   |Dot(D,N)|*t = -sign(Dot(D,N))*Dot(Q,N)
+  //MathExtra::norm3(dir);
+  double DdN = MathExtra::dot3(dir, normal);
+  double sign;
+  if (DdN > 0.)
+  {
+      sign = 1.;
+  }
+  else if (DdN < 0.)
+  {
+      sign = -1.;
+      DdN = -DdN;
+  }
+  else
+  {
+      // Line and triangle are parallel, call it a "no intersection"
+      // even if the line and triangle are coplanar and intersecting.
+      return false;
+  }
+
+  double diff[3]; MathExtra::sub3(origin, v0, diff);// = origin - v0;
+  double cross[3]; MathExtra::cross3(diff, edge2, cross);
+  double DdQxE2 = sign*MathExtra::dot3(dir, cross);//sign*DotCross(dir, diff, edge2);
+  if (DdQxE2 >= 0.)
+  {
+      MathExtra::cross3(edge1, diff, cross);
+      double DdE1xQ = sign*MathExtra::dot3(dir, cross);//sign*DotCross(dir, edge1, diff);
+      if (DdE1xQ >= 0.)
+      {
+          if (DdQxE2 + DdE1xQ <= DdN)
+          {
+              // Line intersects triangle.
+              return true;
+          }
+          // else: b1+b2 > 1, no intersection
+      }
+      // else: b2 < 0, no intersection
+  }
+  // else: b1 < 0, no intersection
+
+  return false;
+}
+
 
 #endif
