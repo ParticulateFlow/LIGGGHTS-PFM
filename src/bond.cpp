@@ -14,6 +14,7 @@
 #include <string.h>
 #include "bond.h"
 #include "atom.h"
+#include "atom_vec.h"
 #include "comm.h"
 #include "force.h"
 #include "suffix.h"
@@ -76,6 +77,8 @@ void Bond::n_granhistory(int nhist)
 {
     ngranhistory = nhist;
     atom->n_bondhist = ngranhistory;
+    if (atom->nmax)
+      atom->avec->grow(atom->nmax); // make sure atom->bond_hist is created
 
     //NP error check necessary because n_bondhist influences avec grow
     //NP do not check this here since is already set before in AtomVecBondGran::settings()
