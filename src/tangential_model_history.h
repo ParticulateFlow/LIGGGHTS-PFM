@@ -66,7 +66,7 @@ namespace ContactModels
       registry.connect("coeffFrict", coeffFrict,"tangential_model history");
     }
 
-    inline void collision(const CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
+    inline void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
     {
       // normal forces = Hookian contact + normal velocity damping
       const double enx = cdata.en[0];

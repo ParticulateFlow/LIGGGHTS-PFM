@@ -2236,7 +2236,7 @@ void FixRigidSmall::write_restart_file(char *file)
     sprintf(outfile,"%s.rigid",file);
     fp = fopen(outfile,"w");
     if (fp == NULL) {
-      char str[128];
+      char str[256];
       sprintf(str,"Cannot open fix rigid restart file %s",outfile);
       error->one(FLERR,str);
     }

@@ -696,6 +696,7 @@ void FixBoxRelax::remap()
 
   domain->set_global_box();
   domain->set_local_box();
+  domain->update_all_regions();
 
   // convert pertinent atoms and rigid bodies back to box coords
 

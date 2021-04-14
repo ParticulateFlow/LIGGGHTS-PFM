@@ -39,8 +39,9 @@
 #include "memory.h"
 #include "error.h"
 #include "fix_multisphere.h"
-#include "fix_particledistribution_discrete.h"
+#include "fix_particledistribution.h"
 #include "fix_template_sphere.h"
+#include "fix_property_atom.h"
 #include "fix_insert.h"
 #include "math_extra_liggghts.h"
 #include "mpi_liggghts.h"
@@ -59,7 +60,8 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
-  Fix(lmp, narg, arg)
+  Fix(lmp, narg, arg),
+  neighList(lmp)
 {
   if (narg < 7) error->fix_error(FLERR,this,"not enough arguments");
 
@@ -109,9 +111,9 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
     if(strcmp(arg[iarg],"distributiontemplate") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
       int ifix = modify->find_fix(arg[iarg+1]);
-      if(ifix < 0 || strcmp(modify->fix[ifix]->style,"particledistribution/discrete"))
+      if(ifix < 0 || strncmp(modify->fix[ifix]->style,"particledistribution", 20))
         error->fix_error(FLERR,this,"Fix insert requires you to define a valid ID for a fix of type particledistribution/discrete");
-      fix_distribution = static_cast<FixParticledistributionDiscrete*>(modify->fix[ifix]);
+      fix_distribution = static_cast<FixParticledistribution*>(modify->fix[ifix]);
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"maxattempt") == 0) {
@@ -170,6 +172,15 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
       else if(strcmp(arg[iarg+1],"no")==0) all_in_flag = 0;
       else error->fix_error(FLERR,this,"");
       iarg += 2;
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"set_property") == 0) {
+      if (iarg+3 > narg) error->fix_error(FLERR,this,"");
+      int n = strlen(arg[iarg+1]) + 1;
+      property_name = new char[n];
+      strcpy(property_name,arg[iarg+1]);
+      fix_property_value = force->numeric(FLERR,arg[iarg+2]);
+      fix_property_ivalue = static_cast<int>(fix_property_value);
+      iarg += 3;
       hasargs = true;
     } else if (strcmp(arg[iarg],"random_distribute") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
@@ -268,13 +279,6 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
   // memory not allocated initially
   ninsert_this_max_local = 0;
 
-  // check for missing or contradictory settings
-  sanity_check();
-
-  //min/max type to be inserted, need that to check if material properties defined for all materials
-  type_max = fix_distribution->max_type();
-  type_min = fix_distribution->min_type();
-
   // allgather arrays
   MPI_Comm_rank(world,&me);
   MPI_Comm_size(world,&nprocs);
@@ -292,15 +296,6 @@ FixInsert::FixInsert(LAMMPS *lmp, int narg, char **arg) :
 
   print_stats_start_flag = 1;
 
-  // calc max insertion radius
-  int ntypes = atom->ntypes;
-  maxrad = 0.;
-  minrad = 1000.;
-  for(int i = 1; i <= ntypes; i++)
-  {
-     maxrad = MathExtraLiggghts::max(maxrad,max_rad(i));
-     minrad = MathExtraLiggghts::min(minrad,min_rad(i));
-  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -311,6 +306,29 @@ FixInsert::~FixInsert()
   delete randomAll;
   delete [] recvcounts;
   delete [] displs;
+  delete [] property_name;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixInsert::post_create()
+{
+  // check for missing or contradictory settings
+  sanity_check();
+
+  //min/max type to be inserted, need that to check if material properties defined for all materials
+  type_max = fix_distribution->max_type();
+  type_min = fix_distribution->min_type();
+
+  // calc max insertion radius
+  int ntypes = atom->ntypes;
+  maxrad = 0.;
+  minrad = 1000.;
+  for(int i = 1; i <= ntypes; i++)
+  {
+     maxrad = MathExtraLiggghts::max(maxrad,max_rad(i));
+     minrad = MathExtraLiggghts::min(minrad,min_rad(i));
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -389,6 +407,13 @@ void FixInsert::init_defaults()
 
   print_stats_during_flag = 1;
   warn_boxentent = true;
+
+  property_name = 0;
+  fix_property = 0;
+  fix_property_value = 0.;
+  fix_property_ivalue = 0;
+  property_index = -1;
+  property_iindex = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -497,6 +522,42 @@ void FixInsert::init()
     // in case of new fix insert in a restarted simulation, have to add current time-step
     if(next_reneighbor > 0 && next_reneighbor < ntimestep)
         error->fix_error(FLERR,this,"'start' step can not be before current step");
+
+    if(property_name)
+    {
+        fix_property = static_cast<FixPropertyAtom*>(modify->find_fix_property(property_name,"property/atom","scalar",1,1,this->style,false));
+        if(!fix_property)
+        {
+            if(strstr(property_name,"i_") == property_name)
+            {
+                int flag;
+                property_iindex = atom->find_custom(&property_name[2],flag);
+                if(property_iindex < 0 || flag != 0)
+                {
+                    char errmsg[500];
+                    sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
+                    error->all(FLERR,errmsg);
+                }
+            }
+            else if(strstr(property_name,"d_") == property_name)
+            {
+                int flag;
+                property_index = atom->find_custom(&property_name[2],flag);
+                if(property_index < 0 || flag != 1)
+                {
+                    char errmsg[500];
+                    sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
+                    error->all(FLERR,errmsg);
+                }
+            }
+            else
+            {
+                char errmsg[500];
+                sprintf(errmsg,"Could not locate a property storing value(s) for %s as requested by %s.",property_name,this->style);
+                error->all(FLERR,errmsg);
+            }
+        }
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -538,6 +599,8 @@ double FixInsert::max_r_bound() const
 
 double FixInsert::extend_cut_ghost() const
 {
+    if(!fix_multisphere)
+        return 0.;
     //NP this is to extend ghost region
     return 2.*fix_distribution->max_r_bound();
 }
@@ -687,7 +750,7 @@ void FixInsert::pre_exchange()
 
   // actual particle insertion
 
-  fix_distribution->pre_insert();
+  fix_distribution->pre_insert(ninserted_this_local,fix_property,fix_property_value,property_index,fix_property_ivalue,property_iindex);
 
   //NP pti list is body list, so use ninserted_this as arg
   ninserted_spheres_this_local = fix_distribution->insert(ninserted_this_local);
@@ -723,6 +786,11 @@ void FixInsert::pre_exchange()
   //NP setup inserted particles, overwrites particle velocity, which needs to be set to fulfill rigid body constraint
   //NP also sets molecule id
   fix_distribution->finalize_insertion();
+
+  if (atom->molecule_flag)
+  {
+    atom->mol_extend();
+  }
 
   // give derived classes the chance to do some wrap-up
   //NP do this after distribution wrap up
@@ -868,12 +936,12 @@ int FixInsert::load_xnear(int)
 {
   // load up neighbor list with local and ghosts
 
-  double **x = atom->x;
-  double *radius = atom->radius;
-  const int nall = atom->nlocal + atom->nghost;
+  neighList.reset();
+  if(maxrad <= 0.)
+    return 0;
 
   BoundingBox bb = getBoundingBox();
-  neighList.reset();
+
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
   neighList.set_obb_flag(check_obb_flag);
 #endif
@@ -883,17 +951,22 @@ int FixInsert::load_xnear(int)
 #endif
 
   if(neighList.setBoundingBox(bb, maxrad)) {
+    double **x = atom->x;
+    double *radius = atom->radius;
+    int *type = atom->type;
+    const int nall = atom->nlocal + atom->nghost;
+
     for (int i = 0; i < nall; ++i)
     {
       if (is_nearby(i))
       {
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
         if(atom->superquadric_flag && check_obb_flag)
-          neighList.insert_superquadric(x[i], radius[i], atom->quaternion[i], atom->shape[i], atom->blockiness[i]);
+          neighList.insert_superquadric(x[i], radius[i], type[i], atom->quaternion[i], atom->shape[i], atom->blockiness[i]);
         else
-          neighList.insert(x[i], radius[i]);
+          neighList.insert(x[i], radius[i], type[i]);
 #else
-        neighList.insert(x[i], radius[i]);
+        neighList.insert(x[i], radius[i], type[i]);
 #endif
       }
     }

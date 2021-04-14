@@ -46,6 +46,7 @@ class FixScaleDiameter : public Fix {
   void init();
   void setup_pre_force(int);
   void pre_force(int);
+  double compute_scalar();
 
   void set_scale_mass(bool scale) { scale_mass_ = scale; }
   void set_scale(double scale);

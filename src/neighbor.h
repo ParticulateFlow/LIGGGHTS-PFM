@@ -27,6 +27,8 @@
 #include "pointers.h"
 #include <algorithm> //NP modified C.K.
 
+namespace LIGGGHTS { class RegionNeighborList; }
+
 namespace LAMMPS_NS {
 
 class Neighbor : protected Pointers {
@@ -39,6 +41,7 @@ class Neighbor : protected Pointers {
   //NP modified St.A.
   friend class FixHeatGranRad;
   friend class FixLiquidTrackingInstant;
+  friend class LIGGGHTS::RegionNeighborList;
 
  public:
   int style;                       // 0,1,2 = nsq, bin, multi
@@ -107,7 +110,7 @@ class Neighbor : protected Pointers {
   int exclude_setting();
   int neigh_once(){return build_once;} //NP modified C.K.
   int n_neighs(); //NP modified C.K.
-  int n_blist() {return nblist;} 
+  int n_blist() {return nblist;}
 
   //NP modified C.K.
   void multi_levels(double &, double &, int &);
@@ -206,8 +209,8 @@ class Neighbor : protected Pointers {
   void bin_atoms();                     // bin all atoms
   double bin_distance(int, int, int);   // distance between binx
   double bin_largest_distance(int, int, int); //NP modified C.K.
-  int coord2bin(double *);              // mapping atom coord to a bin
-  int coord2bin(double *, int &, int &, int&); // ditto
+  int coord2bin(const double *);              // mapping atom coord to a bin
+  int coord2bin(const double *, int &, int &, int&); // ditto
   void bin_center(int ix, int iy, int iz, double * center);
 
   void binBorders(int, double &, double &, double &, double &, double &, double &); //NP modified St.A.

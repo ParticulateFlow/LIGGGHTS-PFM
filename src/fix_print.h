@@ -37,6 +37,8 @@ class FixPrint : public Fix {
   FILE *fp;
   char *string,*copy,*work;
   int maxcopy,maxwork;
+  double tstart, tend;
+  bool tstartexists, tendexists;
 };
 
 }

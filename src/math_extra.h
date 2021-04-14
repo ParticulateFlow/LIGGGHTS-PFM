@@ -33,6 +33,7 @@ namespace MathExtra {
   inline void negate3(double *v);
   inline void scale3(double s, double *v);
   inline void add3(const double *v1, const double *v2, double *ans);
+  inline void addscaled3(const double *v1, const double *v2, double s, double *ans);
   inline void sub3(const double *v1, const double *v2, double *ans);
   inline double len3(const double *v);
   inline double lensq3(const double *v);
@@ -192,6 +193,17 @@ void MathExtra::add3(const double *v1, const double *v2, double *ans)
   ans[0] = v1[0] + v2[0];
   ans[1] = v1[1] + v2[1];
   ans[2] = v1[2] + v2[2];
+}
+
+/* ----------------------------------------------------------------------
+   ans = v1 + s*v2
+------------------------------------------------------------------------- */
+
+void MathExtra::addscaled3(const double *v1, const double *v2, double s, double *ans)
+{
+    ans[0] = v1[0] + s * v2[0];
+    ans[1] = v1[1] + s * v2[1];
+    ans[2] = v1[2] + s * v2[2];
 }
 
 /* ----------------------------------------------------------------------

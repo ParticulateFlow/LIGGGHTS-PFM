@@ -61,18 +61,18 @@ namespace LAMMPS_NS
         virtual void scale(double factor);
 
         // linear move w/ total and incremental displacement
-        virtual void move(double *vecTotal, double *vecIncremental);
+        virtual void move(const double *vecTotal, const double *vecIncremental);
 
         // linear move w/ incremental displacement
-        virtual void move(double *vecIncremental);
+        virtual void move(const double *vecIncremental);
 
         // rotation w/ total and incremental displacement
         //   calls rotate(double *totalQuat,double *dQuat,double *displacement)
-        void rotate(double totalAngle, double dAngle, double *axis, double *p);
+        void rotate(double totalAngle, double dAngle, const double *axis, const double *p);
 
         // rotation w/ incremental displacement
         //   calls rotate(double *dQuat,double *displacement)
-        void rotate(double dAngle, double *axis, double *p);
+        void rotate(double dAngle, const double *axis, const double *p);
 
         //NP must be called after nodes are manipulated from outside
         //NP eg deforming mesh
@@ -164,12 +164,12 @@ namespace LAMMPS_NS
         void extendToElem(int const nElem) const;
 
         // linear move of single element w/ incremental displacement
-        virtual void moveElement(int i,double *vecIncremental);
+        virtual void moveElement(int i, const double *vecIncremental);
 
         // rotation using quaternions
         //NP called by rotation functions above
-        virtual void rotate(double *totalQ, double *dQ,double *origin);
-        virtual void rotate(double *dQ, double *origin);
+        virtual void rotate(const double *totalQ, const double *dQ, const double *origin);
+        virtual void rotate(const double *dQ, const double *origin);
 
         // mesh nodes
         MultiVectorContainer<double,NUM_NODES,3> node_;

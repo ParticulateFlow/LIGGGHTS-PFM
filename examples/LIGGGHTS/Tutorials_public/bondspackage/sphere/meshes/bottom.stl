@@ -1,0 +1,16 @@
+solid ascii
+ facet normal 0 -0 1
+  outer loop
+   vertex 0.05 0.05 0.025
+   vertex 0.15 0.05 0.025
+   vertex 0.15 0.15 0.025
+  endloop
+ endfacet
+ facet normal 0 0 -1
+  outer loop
+   vertex 0.05 0.05 0.025
+   vertex 0.05 0.15 0.025
+   vertex 0.15 0.15 0.025
+  endloop
+ endfacet
+endsolid

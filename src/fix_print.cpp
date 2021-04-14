@@ -28,7 +28,11 @@ using namespace FixConst;
 /* ---------------------------------------------------------------------- */
 
 FixPrint::FixPrint(LAMMPS *lmp, int narg, char **arg) :
-  Fix(lmp, narg, arg)
+  Fix(lmp, narg, arg),
+  tstart(0.0),
+  tend(0.0),
+  tstartexists(false),
+  tendexists(false)
 {
   if (narg < 5) error->all(FLERR,"Illegal fix print command");
   nevery = force->inumeric(FLERR,arg[3]);
@@ -52,6 +56,7 @@ FixPrint::FixPrint(LAMMPS *lmp, int narg, char **arg) :
   bool write_title = true;
 
   int iarg = 5;
+
   while (iarg < narg) {
     if (strcmp(arg[iarg],"file") == 0 || strcmp(arg[iarg],"append") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix print command");
@@ -82,6 +87,18 @@ FixPrint::FixPrint(LAMMPS *lmp, int narg, char **arg) :
         strcpy(title,arg[iarg+1]);
       }
       iarg += 2;
+    } else if(strcmp(arg[iarg],"starttime") == 0) {
+      if(narg < iarg+2) error->fix_error(FLERR,this,"not enough arguments for 'starttime'");
+      iarg++;
+      tstart = atof(arg[iarg]);
+      tstartexists = true;
+      iarg++;
+    } else if(strcmp(arg[iarg],"endtime") == 0) {
+      if(narg < iarg+2) error->fix_error(FLERR,this,"not enough arguments for 'endtime'");
+      iarg++;
+      tend = atof(arg[iarg]);
+      tendexists = true;
+      iarg++;
     } else error->all(FLERR,"Illegal fix print command");
   }
 
@@ -126,6 +143,9 @@ int FixPrint::setmask()
 
 void FixPrint::end_of_step()
 {
+  double time = update->ntimestep * update->dt;
+  if (tstartexists && time < tstart) return;
+  if (tendexists && time > tend) return;
   // make a copy of string to work on
   // substitute for $ variables (no printing)
   // append a newline and print final copy

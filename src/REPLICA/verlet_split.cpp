@@ -521,6 +521,7 @@ void VerletSplit::r2k_comm()
       MPI_Recv(domain->boxhi,3,MPI_DOUBLE,1,0,block,&status);
       domain->set_global_box();
       domain->set_local_box();
+      domain->update_all_regions();
       force->kspace->setup();
     }
   }

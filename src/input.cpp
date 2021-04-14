@@ -557,6 +557,7 @@ int Input::execute_command()
   else if (!strcmp(command,"dump_modify")) dump_modify();
   else if (!strcmp(command,"fix")) fix();
   else if (!strcmp(command,"fix_modify")) fix_modify();
+  else if (!strcmp(command,"fix_update")) fix_update();
   else if (!strcmp(command,"group")) group_command();
   else if (!strcmp(command,"improper_coeff")) improper_coeff();
   else if (!strcmp(command,"improper_style")) improper_style();
@@ -1275,6 +1276,13 @@ void Input::fix()
 void Input::fix_modify()
 {
   modify->modify_fix(narg,arg);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void Input::fix_update()
+{
+  modify->update_fix(narg,arg);
 }
 
 /* ---------------------------------------------------------------------- */

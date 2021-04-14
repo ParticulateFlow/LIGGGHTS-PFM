@@ -18,37 +18,27 @@
 
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
-#include "fix_particledistribution_discrete.h"
 
-#include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
-
-#include "fix_template_sphere.h"
 #include "atom.h"
-#include "atom_vec.h"
-#include "domain.h"
-#include "region.h"
+#include "neighbor.h"
 #include "update.h"
+#include "fix_template_sphere.h"
+#include "fix_particledistribution_discrete.h"
 #include "modify.h"
-#include "output.h"
-#include "memory.h"
 #include "error.h"
 #include "random_park.h"
 #include "particleToInsert.h"
 #include "comm.h"
+#include "force.h"
 
 using namespace LAMMPS_NS;
-using namespace FixConst;
-
-#define LMP_DEBUGMODE_SPHERE false
 
 /* ---------------------------------------------------------------------- */
 
 FixParticledistributionDiscrete::FixParticledistributionDiscrete(LAMMPS *lmp, int narg, char **arg) :
-  Fix(lmp, narg, arg)
+  FixParticledistribution(lmp, narg, arg)
 {
   restart_global = 1;
 
@@ -68,7 +58,7 @@ FixParticledistributionDiscrete::FixParticledistributionDiscrete(LAMMPS *lmp, in
   parttogen = new int[ntemplates];
   distorder = new int[ntemplates];
 
-  iarg = 5;
+  int iarg = 5;
 
   int itemp=0;
 
@@ -226,17 +216,7 @@ FixParticledistributionDiscrete::~FixParticledistributionDiscrete()
     delete []cumweight;
     delete []parttogen;
     delete []distorder;
-    delete random;
 }
-
-/* ----------------------------------------------------------------------*/
-
-int FixParticledistributionDiscrete::setmask()
-{
-    int mask = 0;
-    return mask;
-}
-
 
 /* ----------------------------------------------------------------------
    prepares the fix for a series of randomize_list() command
@@ -369,11 +349,12 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
         int chosendist = distorder[i];
         for (int j = 0; j < parttogen[chosendist]; j++)
         {
-          pti_list.push_back(templates[chosendist]->pti_list[j]);
+            pti_list.push_back(templates[chosendist]->pti_list[j]);
         }
     }
 
-    if(static_cast<int>(pti_list.size()) != ninsert) error->all(FLERR,"Internal error in FixParticledistributionDiscrete::randomize_list");
+    if(pti_list.size() != static_cast<pti_list_type::size_type>(ninsert))
+        error->all(FLERR,"Internal error in FixParticledistributionDiscrete::randomize_list");
 
     ninserted = ninsert;
     return ninsert;
@@ -383,16 +364,138 @@ int FixParticledistributionDiscrete::randomize_list(int ntotal,int insert_groupb
    preparations before insertion
 ------------------------------------------------------------------------- */
 
-void FixParticledistributionDiscrete::pre_insert()
+void FixParticledistributionDiscrete::pre_insert(int n, FixPropertyAtom *fp, double val, int idx, int ival, int iidx)
 {
-    // allow fixes to e.g. update some pointers before set_arrays is called
-    // set_arrays called in ParticleToInsert::insert()
+    FixParticledistribution::pre_insert();
 
-    int nfix = modify->nfix;
-    Fix **fix = modify->fix;
+    // set fix property as desired by fix insert
+    // loop to n, not n_pti
+    if(fp)
+    {
+        for(int i = 0; i < n; i++)
+        {
+            pti_list[i]->fix_properties.push_back(fp);
+            std::vector<double> value(1,val);
+            pti_list[i]->fix_property_values.push_back(value);
+        }
+    }
+    else if(idx >= 0)
+    {
+        for(int i = 0; i < n; i++)
+        {
+            pti_list[i]->property_index = idx;
+            pti_list[i]->fix_property_dvalue = val;
+        }
+    }
+    else if(iidx >= 0)
+    {
+        for(int i = 0; i < n; i++)
+        {
+            pti_list[i]->property_iindex = iidx;
+            pti_list[i]->fix_property_ivalue = ival;
+        }
+    }
 
-    for (int j = 0; j < nfix; j++)
-        if (fix[j]->create_attribute) fix[j]->pre_set_arrays();
+    // save bond history of ghost particles from neighbor to atom and delete it in neighbor;
+    // this needs to be done prior to insertion of new particles since that will destroy the
+    // neighbor/ghost information;
+    // neighbor operates exclusively on local atom indices, while atom stores tags of bond partners
+    // bond history that does not involve ghost atoms is handled in FixBondPropagateGran::pre_exchange()
+    if (atom->molecular && atom->n_bondhist)
+    {
+        int i1,i2,ip,n;
+
+        int **bondlist = neighbor->bondlist;
+        double **bondhistlist = neighbor->bondhistlist;
+        int nbondlist = neighbor->nbondlist;
+
+        int **bond_atom = atom->bond_atom;
+        int *num_bond = atom->num_bond;
+        double ***bond_hist = atom->bond_hist;
+        int n_bondhist = atom->n_bondhist; // number of bond history values
+
+        int nlocal = atom->nlocal;
+        int *tag = atom->tag;
+
+        int newton_bond = force->newton_bond;
+
+        for (n = 0; n < nbondlist; n++) {
+
+          if(bondlist[n][3]) continue; //do not copy broken bonds
+
+          i1 = bondlist[n][0]; // local index
+          i2 = bondlist[n][1]; // local index
+
+          if ((newton_bond || i1 < nlocal) && i2 >= nlocal)
+          {
+              ip = -1;
+              for(int k = 0; k < num_bond[i1]; k++)
+              {
+                  if(bond_atom[i1][k] == tag[i2])
+                  {
+                      ip = k;
+                      break;
+                  }
+              }
+
+              if(ip == -1)
+              {
+                  /*NL*/ if(screen) fprintf(screen,"[%d] step " BIGINT_FORMAT ": nlocal %d ilocal %d %d tags %d %d mol %d %d\n",
+                  /*NL*/         comm->me,update->ntimestep,nlocal,i1,i2,atom->tag[i1],atom->tag[i2], atom->molecule[i1], atom->molecule[i2]);
+                  error->one(FLERR,"Failed to operate on granular bond history during copy i1");
+              }
+
+              for(int k = 0; k < n_bondhist; k++)
+                 bond_hist[i1][ip][k] = bondhistlist[n][k];
+          }
+
+          if ((newton_bond || i2 < nlocal) && i1 >= nlocal)
+          {
+              ip = -1;
+              for(int k = 0; k < num_bond[i2]; k++)
+              {
+                  if(bond_atom[i2][k] == tag[i1])
+                  {
+                      ip = k;
+                      break;
+                  }
+              }
+
+              if(ip == -1)
+              {
+                  /*NL*/ if(screen) fprintf(screen,"[%d] step " BIGINT_FORMAT ": nlocal %d ilocal %d %d tags %d %d mol %d %d\n",
+                  /*NL*/         comm->me,update->ntimestep,nlocal,i1,i2,atom->tag[i1],atom->tag[i2], atom->molecule[i1], atom->molecule[i2]);
+                  error->one(FLERR,"Failed to operate on granular bond history during copy i2");
+              }
+
+              for(int k = 0; k < n_bondhist; k++)
+                 bond_hist[i2][ip][k] = -bondhistlist[n][k];
+          }
+        }
+
+        // delete neighbor bondlist involving ghosts
+        for (n = nbondlist-1; n >=0; --n)
+        {
+            i1 = bondlist[n][0];
+            i2 = bondlist[n][1];
+
+            if(i1 < nlocal && i2 < nlocal) continue;
+
+            if(n < nbondlist-1)
+            {
+                bondlist[n][0] = bondlist[nbondlist-1][0];
+                bondlist[n][1] = bondlist[nbondlist-1][1];
+                bondlist[n][2] = bondlist[nbondlist-1][2];
+                bondlist[n][3] = bondlist[nbondlist-1][3];
+
+                for(int k = 0; k < n_bondhist; k++)
+                   bondhistlist[n][k] = bondhistlist[nbondlist-1][k];
+            }
+            --nbondlist;
+        }
+
+        neighbor->nbondlist = nbondlist;
+    }
 }
 
 /* ----------------------------------------------------------------------
@@ -403,7 +506,7 @@ void FixParticledistributionDiscrete::pre_insert()
 int FixParticledistributionDiscrete::insert(int n)
 {
     int ninserted_spheres_local = 0;
-    assert(n <= static_cast<int>(pti_list.size()));
+    assert(static_cast<pti_list_type::size_type>(n) <= pti_list.size());
     for(int i = 0; i < n; i++)
     {
         /*NL*/ //if (screen) fprintf(screen,"inserting pti #%d\n",i);
@@ -429,20 +532,6 @@ void FixParticledistributionDiscrete::finalize_insertion(bool pti_delete_flag)
   }
 
   pti_list.clear();
-}
-
-/* ----------------------------------------------------------------------*/
-
-double FixParticledistributionDiscrete::vol_expect()
-{
-    return volexpect;
-}
-
-/* ----------------------------------------------------------------------*/
-
-double FixParticledistributionDiscrete::mass_expect()
-{
-    return massexpect;
 }
 
 /* ----------------------------------------------------------------------*/
@@ -481,60 +570,10 @@ double FixParticledistributionDiscrete::max_rad(int type) const
     return maxrad_type;
 }
 
-/* ----------------------------------------------------------------------*/
-
-int FixParticledistributionDiscrete::max_type() const
-{
-    return maxtype;
-}
-
-/* ----------------------------------------------------------------------*/
-
-int FixParticledistributionDiscrete::min_type() const
-{
-    return mintype;
-}
-
-/* ----------------------------------------------------------------------*/
-
-int FixParticledistributionDiscrete::max_nspheres() const
-{
-    return maxnspheres;
-}
-
-/* ----------------------------------------------------------------------
-   pack entire state of Fix into one write
-------------------------------------------------------------------------- */
-
-void FixParticledistributionDiscrete::write_restart(FILE *fp)
-{
-  int n = 0;
-  double list[1];
-  list[n++] = static_cast<int>(random->state());
-
-  if (comm->me == 0) {
-    int size = n * sizeof(double);
-    fwrite(&size,sizeof(int),1,fp);
-    fwrite(list,sizeof(double),n,fp);
-  }
-}
-
-/* ----------------------------------------------------------------------
-   use state info from restart file to restart the Fix
-------------------------------------------------------------------------- */
-
-void FixParticledistributionDiscrete::restart(char *buf)
-{
-  int n = 0;
-  double *list = (double *) buf;
-
-  seed = static_cast<int> (list[n++]) + comm->me;
-
-  random->reset(seed);
-}
 /* ----------------------------------------------------------------------
    return true if any of the templates is of type multisphere
-   ------------------------------------------------------------------------- */
+------------------------------------------------------------------------- */
+
 bool FixParticledistributionDiscrete::has_multisphere()
 {
   for(int i=0;i<ntemplates;i++){
@@ -544,6 +583,8 @@ bool FixParticledistributionDiscrete::has_multisphere()
   }
   return false;
 }
+
+/* ----------------------------------------------------------------------*/
 
 ParticleToInsert* FixParticledistributionDiscrete::get_random_particle(int insert_groupbit)
 {

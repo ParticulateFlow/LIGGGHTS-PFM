@@ -2053,7 +2053,7 @@ void Neighbor::bin_atoms()
    for triclinic, doesn't matter since stencil & neigh list built differently
 ------------------------------------------------------------------------- */
 
-int Neighbor::coord2bin(double *x)
+int Neighbor::coord2bin(const double *x)
 {
   int ix,iy,iz;
 
@@ -2088,7 +2088,7 @@ int Neighbor::coord2bin(double *x)
    same as coord2bin, but also return ix,iy,iz offsets in each dim
 ------------------------------------------------------------------------- */
 
-int Neighbor::coord2bin(double *x, int &ix, int &iy, int &iz)
+int Neighbor::coord2bin(const double *x, int &ix, int &iy, int &iz)
 {
   if (x[0] >= bboxhi[0])
     ix = static_cast<int> ((x[0]-bboxhi[0])*bininvx) + nbinx;

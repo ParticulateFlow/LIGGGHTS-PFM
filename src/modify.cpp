@@ -899,6 +899,21 @@ void Modify::modify_fix(int narg, char **arg)
 }
 
 /* ----------------------------------------------------------------------
+   update a Fix's internal state
+------------------------------------------------------------------------- */
+
+void Modify::update_fix(int narg, char **arg)
+{
+  int ifix;
+  for (ifix = 0; ifix < nfix; ifix++)
+    if (strcmp(arg[0],fix[ifix]->id) == 0) break;
+  if (ifix == nfix) error->all(FLERR,"Could not find fix_update ID");
+
+  if (narg == 1) fix[ifix]->update_fix(0,NULL);
+  else fix[ifix]->update_fix(narg-1,&arg[1]);
+}
+
+/* ----------------------------------------------------------------------
    delete a Fix from list of Fixes
    Atom class must update indices in its list of callbacks to fixes
 ------------------------------------------------------------------------- */
@@ -906,7 +921,14 @@ void Modify::modify_fix(int narg, char **arg)
 void Modify::delete_fix(const char *id, bool unfixflag) //NP modified C.K.
 {
   int ifix = find_fix(id);
-  if (ifix < 0) error->all(FLERR,"Could not find fix ID to delete");
+  if (ifix < 0)
+  {
+    char * errmsg = new char[50+strlen(id)];
+    sprintf(errmsg,"Could not find fix with ID \"%s\" to delete",id);
+    error->all(FLERR,errmsg);
+    delete [] errmsg;
+//error->all(FLERR,"Could not find fix ID to delete");
+  }
 
   //NP modified C.K.
   //NP this is if fix has to do clean-up, such as to delete other fixes

@@ -13,6 +13,7 @@ Fixes :h1
    fix_ave_atom
    fix_ave_correlate
    fix_ave_euler
+   fix_ave_euler_region
    fix_ave_histo
    fix_ave_spatial
    fix_ave_time
@@ -25,6 +26,7 @@ Fixes :h1
    fix_break_particle
    fix_buoyancy
    fix_cfd_coupling_chemistry
+   fix_cfd_coupling_deform
    fix_cfd_coupling_recurrence
    fix_check_timestep_gran
    fix_chem_shrink
@@ -39,6 +41,7 @@ Fixes :h1
    fix_evaporate
    fix_execute
    fix_external
+   fix_forcecontrol_region
    fix_freeze
    fix_gcmc
    fix_gld
@@ -50,6 +53,7 @@ Fixes :h1
    fix_indent
    fix_insert_pack
    fix_insert_pack_dense
+   fix_insert_pack_face
    fix_insert_rate_region
    fix_insert_stream
    fix_insert_stream_moving
@@ -63,6 +67,8 @@ Fixes :h1
    fix_limit_vel
    fix_lineforce
    fix_massflow_mesh
+   fix_massflow_mesh_face
+   fix_mean_free_time
    fix_mesh_surface
    fix_mesh_surface_stress
    fix_mesh_surface_stress_6dof
@@ -101,6 +107,7 @@ Fixes :h1
    fix_orient_fcc
    fix_particledistribution_discrete
    fix_particletemplate_fragments
+   fix_particletemplate_multiplespheres
    fix_particletemplate_multisphere
    fix_particletemplate_sphere
    fix_particletemplate_superquadric

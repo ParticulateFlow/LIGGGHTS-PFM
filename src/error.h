@@ -37,9 +37,10 @@ class Error : protected Pointers {
   void universe_warn(const char *, int, const char *);
 
   void all(const char *, int, const char *);
-  void fix_error(const char *, int, class Fix*,const char *); //NP modified C.K.
-  void compute_error(const char *, int, class Compute*,const char *); //NP modified C.K.
-  void cg(const char *, int, const char *); //NP modified C.K.
+  void fix_error(const char *, int, class Fix*, const char *);
+  void fix_warning(const char *, int, class Fix*, const char *, int = 1);
+  void compute_error(const char *, int, class Compute*, const char *);
+  void cg(const char *, int, const char *);
   void one(const char *, int, const char *);
   void warning(const char *, int, const char *, int = 1);
   void message(const char *, int, const char *, int = 1);

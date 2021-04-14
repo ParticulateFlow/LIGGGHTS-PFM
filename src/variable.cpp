@@ -2800,7 +2800,8 @@ int Variable::group_function(char *word, char *contents, Tree **tree,
       strcmp(word,"bound") && strcmp(word,"gyration") &&
       strcmp(word,"ke") && strcmp(word,"angmom") &&
       strcmp(word,"torque") && strcmp(word,"inertia") &&
-      strcmp(word,"omega") && strcmp(word,"idbound"))
+      strcmp(word,"omega") && strcmp(word,"idbound") &&
+      strcmp(word,"boundid"))
     return 0;
 
   // parse contents for arg1,arg2,arg3 separated by commas
@@ -2904,6 +2905,19 @@ int Variable::group_function(char *word, char *contents, Tree **tree,
     double minmax[6];
     if (narg == 2) group->bounds(igroup,minmax);
     else if (narg == 3) group->bounds(igroup,minmax,region_function(arg3));
+    else error->all(FLERR,"Invalid group function in variable formula");
+    if (strcmp(arg2,"xmin") == 0) value = minmax[0];
+    else if (strcmp(arg2,"xmax") == 0) value = minmax[1];
+    else if (strcmp(arg2,"ymin") == 0) value = minmax[2];
+    else if (strcmp(arg2,"ymax") == 0) value = minmax[3];
+    else if (strcmp(arg2,"zmin") == 0) value = minmax[4];
+    else if (strcmp(arg2,"zmax") == 0) value = minmax[5];
+    else error->all(FLERR,"Invalid group function in variable formula");
+
+  } else if (strcmp(word,"boundid") == 0) {
+    int minmax[6];
+    if (narg == 2) group->boundids(igroup,minmax);
+    else if (narg == 3) group->boundids(igroup,minmax,region_function(arg3));
     else error->all(FLERR,"Invalid group function in variable formula");
     if (strcmp(arg2,"xmin") == 0) value = minmax[0];
     else if (strcmp(arg2,"xmax") == 0) value = minmax[1];

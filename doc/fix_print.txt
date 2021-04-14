@@ -17,11 +17,12 @@ print = style name of this fix command :l
 N = print every N steps :l
 string = text string to print with optional variable names :l
 zero or more keyword/value pairs may be appended :l
-keyword = {file} or {append} or {screen} or {title} :l
+keyword = {file} or {append} or {screen} or {title} or {starttime} or {endtime} :l
   {file} value = filename
   {append} value = filename
   {screen} value = {yes} or {no}
   {title} value = string
+  {start/endtime} value = float
     string =  text to print as 1st line of output file :pre
 :ule
 
@@ -65,7 +66,10 @@ printed as the first line of the output file, assuming the {file} or
 # Fix print output for fix ID :pre
 
 where ID is replaced with the fix-ID. If the specified string equals
-{none}, no title line is printed
+{none}, no title line is printed.
+
+{starttime} and/or {endtime} allow to specifiy a time window when output
+is printed.
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 
