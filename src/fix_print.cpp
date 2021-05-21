@@ -56,7 +56,6 @@ FixPrint::FixPrint(LAMMPS *lmp, int narg, char **arg) :
   bool write_title = true;
 
   int iarg = 5;
-  bool hasargs = true;
 
   while (iarg < narg) {
     if (strcmp(arg[iarg],"file") == 0 || strcmp(arg[iarg],"append") == 0) {

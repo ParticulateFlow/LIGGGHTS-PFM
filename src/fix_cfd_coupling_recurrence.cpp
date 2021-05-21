@@ -61,7 +61,8 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
     use_tracer_(false),
     use_property_(false),
     limit_fluc(false),
-    relative_limit(false)
+    relative_limit(false),
+    iregion(-1)
 {
     int iarg = 3;
 

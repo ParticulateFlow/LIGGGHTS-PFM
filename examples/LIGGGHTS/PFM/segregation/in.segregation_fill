@@ -1,0 +1,104 @@
+################################################################################
+# brief: Size segregation of binary particles in a moving granular bed filter  #
+#                                                                              #
+# Filling stage of granular bed                                                #
+# Cf. M. Jiang, P. Wu, X. Chen, H. Fu, N. Qiu, L. Wang and C. Dong,            #
+#     Powder Technol. 387, 205–214 (2021)                                      #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: May 2021                                                               #
+# copyright: 2021- JKU Linz                                                    #
+################################################################################
+
+atom_style  granular
+boundary    f f f
+newton      off
+atom_modify map array sort 0 0
+
+communicate single vel yes
+units       si
+
+region      reg block -0.250 0.700 -0.001 0.031 -0.010 1.800 units box
+create_box  2 reg
+
+neighbor    0.0015 bin
+neigh_modify delay 0
+
+# material properties required for granular pair style
+fix m1 all property/global youngsModulus peratomtype 1.24e8 2.33e7 # particle wall
+fix m2 all property/global poissonsRatio peratomtype 0.24 0.37
+fix m3 all property/global coefficientRestitution peratomtypepair     2 0.50 0.45 0.45 0.00
+fix m4 all property/global coefficientFriction peratomtypepair        2 0.30 0.26 0.26 0.00
+fix m5 all property/global coefficientRollingFriction peratomtypepair 2 0.10 0.01 0.01 0.00
+
+# granular pair style
+pair_style  gran model hertz tangential history rolling_friction epsd2
+pair_coeff  * *
+
+timestep    0.00001
+
+fix gravity all gravity 9.81 vector 0.0 0.0 -1.0
+
+# definition of insertion face
+fix inface all mesh/surface/planar file meshes/insertion_face.stl type 1
+# import triangular mesh
+fix cad all mesh/surface file meshes/mesh.stl type 2 scale 1.0
+
+# use the imported mesh as granular wall
+fix granwalls all wall/gran model hertz tangential history rolling_friction epsd2 mesh n_meshes 1 meshes cad
+
+# planes for front, back and bottom walls
+fix ywall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 2 yplane  0.00
+fix ywall2 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 2 yplane  0.03
+fix zwall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 2 zplane  0.00
+
+# particle distribution
+fix pts1 all particletemplate/sphere 4987193 atom_type 1 density constant 4000 radius constant 0.006
+fix pts2 all particletemplate/sphere 1791951 atom_type 1 density constant 4000 radius constant 0.003
+fix pdd1 all particledistribution/discrete 6851797 2 pts1 0.5 pts2 0.5 # mass percentages
+
+# particle insertion
+fix ins all insert/stream seed 668671 distributiontemplate pdd1 maxattempt 200 &
+    mass INF massrate 0.6 insert_every 10000 &
+    overlapcheck yes all_in yes &
+    vel constant 0. 0. -0.5 &
+    insertion_face inface
+
+fix integrator all nve/sphere
+
+fix ts all check/timestep/gran 500 0.15 0.15
+
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run 1
+
+# output
+dump    dmp all custom/vtk 10000 post/segregation*.vtk id type x y z vx vy vz &
+        fx fy fz omegax omegay omegaz radius
+
+run     2000 upto
+
+unfix ts
+
+run     1000000 upto
+write_restart post/restart/segregation010.restart
+
+run     2000000 upto
+write_restart post/restart/segregation020.restart
+
+run     3000000 upto
+write_restart post/restart/segregation030.restart
+
+run     4000000 upto
+write_restart post/restart/segregation040.restart
+
+run     5000000 upto
+write_restart post/restart/segregation050.restart
+
+run     5500000 upto
+write_restart post/restart/segregation055.restart
+

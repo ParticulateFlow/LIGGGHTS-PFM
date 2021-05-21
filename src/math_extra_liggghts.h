@@ -31,6 +31,7 @@
 #include "pointers.h"
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <string>
 #include "error.h"
 #include "vector_liggghts.h"
