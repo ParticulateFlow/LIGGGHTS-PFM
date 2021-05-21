@@ -35,6 +35,9 @@ namespace LAMMPS_NS
   BoundingBox::BoundingBox()
   : xLo(0.), xHi(0.), yLo(0.), yHi(0.), zLo(0.), zHi(0.), initGiven(false), dirty(true)
   {}
+  BoundingBox::BoundingBox(double bounds[6])
+  : xLo(bounds[0]), xHi(bounds[1]), yLo(bounds[2]), yHi(bounds[3]), zLo(bounds[4]), zHi(bounds[5]), initGiven(true), dirty(true)
+  {}
   BoundingBox::BoundingBox(double xLo_, double xHi_, double yLo_, double yHi_, double zLo_, double zHi_)
   : xLo(xLo_), xHi(xHi_), yLo(yLo_), yHi(yHi_), zLo(zLo_), zHi(zHi_), initGiven(true), dirty(true)
   {}

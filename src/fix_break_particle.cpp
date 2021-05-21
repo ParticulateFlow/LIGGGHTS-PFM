@@ -52,11 +52,13 @@
 #include "neigh_list.h"
 #include "math_const.h"
 #include "math_extra.h"
+#include "math_extra_liggghts.h"
 #include "fix_wall_gran.h"
 #include "primitive_wall.h"
 #include "tri_mesh_contacts.h"
 
 using namespace MathConst;
+using namespace MathExtraLiggghts;
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace LIGGGHTS::ContactModels;
@@ -541,19 +543,6 @@ void FixBreakParticle::pre_force(int)
 
 /* ---------------------------------------------------------------------- */
 
-unsigned int JSHash(const std::string& str)
-{
-  unsigned int hash = 1315423911;
-
-  for (std::size_t i = 0; i < str.length(); ++i) {
-    hash ^= ((hash << 5) + str[i] + (hash >> 2));
-  }
-
-  return hash;
-}
-
-/* ---------------------------------------------------------------------- */
-
 void FixBreakParticle::end_of_step()
 {
   if (next_reneighbor-1 != update->ntimestep) return;
@@ -739,7 +728,7 @@ void FixBreakParticle::check_energy_criterion()
 
                 if (breaker_energy[iPart] < impact_energy_limited_i) {
                   breaker_energy[iPart] = impact_energy_limited_i;
-                  breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
+                  breaker_tag[iPart] = static_cast<int>(bitwiseHash(fwg->id));
 
                   double probability;
                   if (fMatstyle == ATOM) {
@@ -789,7 +778,7 @@ void FixBreakParticle::check_energy_criterion()
 
           if (breaker_energy[iPart] < impact_energy_limited_i) {
             breaker_energy[iPart] = impact_energy_limited_i;
-            breaker_tag[iPart] = static_cast<int>(JSHash(fwg->id));
+            breaker_tag[iPart] = static_cast<int>(bitwiseHash(fwg->id));
 
             double probability;
             if (fMatstyle == ATOM) {
@@ -897,7 +886,7 @@ void FixBreakParticle::check_energy_criterion()
               if (iPart >= nlocal) continue;
               if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
               if (radius[iPart] < min_break_rad) continue;
-              if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(JSHash(fwg->id))) continue;
+              if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(bitwiseHash(fwg->id))) continue;
 
               double *contact_history = get_triangle_contact_history(mesh, fix_contact, iPart, iTri);
 
@@ -929,7 +918,7 @@ void FixBreakParticle::check_energy_criterion()
             if (iPart >= nlocal) continue;
             if (!(mask[iPart] & groupbit) || !(mask[iPart] & fwg->groupbit)) continue;
             if (radius[iPart] < min_break_rad) continue;
-            if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(JSHash(fwg->id))) continue;
+            if (fix_breaker_wall->get_vector_atom_int(iPart) != static_cast<int>(bitwiseHash(fwg->id))) continue;
 
             double *contact_history = c_history[iPart];
             if (contact_history[deltaMaxOffset] < 0.0) {

@@ -74,6 +74,9 @@ class DumpMeshVTK : public Dump {
   class ScalarContainer<double> **min_active_edge_dist_;
 
   // general implementation
+  class ScalarContainer<int> ***int_scalar_containers_;
+  char **int_scalar_container_names_;
+  int n_int_scalar_containers_;
   class ScalarContainer<double> ***scalar_containers_;
   char **scalar_container_names_;
   int n_scalar_containers_;

@@ -189,9 +189,9 @@ public:
     const int freeze_group_bit = pg->freeze_group_bit();
 
     // clear data, just to be safe
-    memset(aligned_cdata, 0, sizeof(CollisionData));
-    memset(aligned_i_forces, 0, sizeof(ForceData));
-    memset(aligned_j_forces, 0, sizeof(ForceData));
+    memset((void*)aligned_cdata, 0, sizeof(CollisionData));
+    memset((void*)aligned_i_forces, 0, sizeof(ForceData));
+    memset((void*)aligned_j_forces, 0, sizeof(ForceData));
     aligned_cdata->area_ratio = 1.0;
 
     CollisionData & cdata = *aligned_cdata;

@@ -28,6 +28,7 @@
 #include <vector>
 #include "vector_liggghts.h"
 #include "bounding_box.h"
+#include "pointers.h"
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
 #include "math_extra_liggghts_superquadric.h"
@@ -41,16 +42,17 @@ namespace LIGGGHTS {
 struct Particle {
   double x[3];
   double radius;
-
+  int type;
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
   double shape[3];
   double quaternion[4];
   double blockiness[2];
 #endif
 
-  Particle(const double * pos, double rad) {
+  Particle(const double * pos, double rad, int type) {
     LAMMPS_NS::vectorCopy3D(pos, x);
     radius = rad;
+    this->type = type;
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
     quaternion[0] = 1.0;
     quaternion[1] = quaternion[2] = quaternion[3] = 0.0;
@@ -60,9 +62,10 @@ struct Particle {
   }
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
-  Particle(int _i,const double * pos, double rad, const double *quaternion_, const double *shape_, const double *blockiness_, int,int,double,double,double) {
+  Particle(int _i,const double * pos, double rad, int type, const double *quaternion_, const double *shape_, const double *blockiness_, int,int,double,double,double) {
     LAMMPS_NS::vectorCopy3D(pos, x);
     radius = rad;
+    this->type = type;
     LAMMPS_NS::vectorCopy4D(quaternion_, quaternion);
     LAMMPS_NS::vectorCopy3D(shape_, shape);
     LAMMPS_NS::vectorCopy2D(blockiness_, blockiness);
@@ -78,11 +81,10 @@ struct Particle {
  * Instead of accessing internal data structures directly, manipulations and queries
  * can only occur through the given interface.
  */
-class RegionNeighborList
+class RegionNeighborList : protected LAMMPS_NS::Pointers
 {
 public:
   typedef std::vector<Particle> ParticleBin;
-  typedef std::vector<const ParticleBin*> BinPtrVector;
 
 private:
 
@@ -102,17 +104,18 @@ private:
 
   double bin_distance(int i, int j, int k);
   int coord2bin(const double *x) const;
+  bool type_exclusion(int itype, int jtype) const;
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
   int check_obb_flag;
 #endif
 
 public:
-    RegionNeighborList();
+    RegionNeighborList(LAMMPS_NS::LAMMPS *lmp);
 
     bool hasOverlap(const Particle &p) const;
-    bool hasOverlap(const double * x, double radius) const;
-    void insert(const double * x, double radius);
+    bool hasOverlap(const double * x, double radius, int type=-1) const;
+    void insert(const double * x, double radius, int type);
     size_t count() const;
     void reset();
     bool setBoundingBox(LAMMPS_NS::BoundingBox & bb, double maxrad);
@@ -120,8 +123,8 @@ public:
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
     inline void coord2bin_calc_interpolation_weights(const double *x,int ibin,int ix,int iy, int iz,int &quadrant,double &wx,double &wy,double &wz) const;
     int coord2bin(const double *x,int &quadrant,double &wx,double &wy,double &wz) const;
-    bool hasOverlap_superquadric(const double * x, double radius, const double *quaternion, double *shape, double *blockiness) const;
-    void insert_superquadric(const double * x, double radius, const double *quaternion, const double *shape, const double *blockiness, int index = -1);
+    bool hasOverlap_superquadric(const double * x, double radius, int type, const double *quaternion, double *shape, double *blockiness) const;
+    void insert_superquadric(const double * x, double radius, int type, const double *quaternion, const double *shape, const double *blockiness, int index = -1);
     void set_obb_flag(int check_obb_flag_) { check_obb_flag = check_obb_flag_; }
     int mbins() const { return mbinx*mbiny*mbinz; }
 #endif

@@ -1,0 +1,81 @@
+# 3D bin - fill (reference size)
+
+variable rp        equal 0.001
+variable dp_mm     equal round(2000*${rp})
+variable np_in_reg equal 360
+
+atom_style  sphere
+atom_modify map array sort 0 0
+boundary    f f f
+newton      off
+
+communicate single vel yes
+processors  * 1 1
+
+units       si
+
+region      reg block -0.021 0.021 -0.021 0.001 -0.021 0.125 units box
+create_box  2 reg
+
+neighbor    0.00025 bin
+neigh_modify delay 0
+
+# material properties required for granular pair style
+fix m1 all property/global youngsModulus peratomtype 1.e8 1.e8 # wall particles
+fix m2 all property/global poissonsRatio peratomtype 0.35 0.35
+fix m3 all property/global coefficientRestitution     peratomtypepair 2 0.6 0.6 &
+                                                                        0.6 0.6
+fix m4 all property/global coefficientFriction        peratomtypepair 2 0.5 0.5 &
+                                                                        0.5 0.3
+fix m5 all property/global coefficientRollingFriction peratomtypepair 2 0.02 0.02 &
+                                                                        0.02 0.01 
+
+# pair style
+pair_style  gran model hertz tangential history rolling_friction epsd2
+pair_coeff  * *
+
+timestep	0.000001
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix xwall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 xplane -0.02
+fix xwall2 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 xplane  0.02
+fix ywall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 yplane -0.02
+fix ywall2 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 yplane  0.0
+fix zwall1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 1 zplane -0.02
+
+region ins_reg block -0.02  0.02 -0.02 0.0 0.10 0.12 units box
+
+fix pts1 all particletemplate/sphere 1 atom_type 2 density constant 2500 radius constant ${rp}
+fix pdd1 all particledistribution/discrete 33335 1 pts1 1.0
+
+fix ins_ref all insert/pack seed 5331 distributiontemplate pdd1 verbose no &
+    maxattempt 300 insert_every 500 overlapcheck yes all_in yes vel constant 0. 0. 0. &
+    region ins_reg particles_in_region ${np_in_reg}
+
+
+# stress computation
+#region ave_reg mesh/hex file meshes/grid2x1.vtk scale 1. move 0. 0. 0. rotate 0. 0. 0. cell_data yes units box
+#fix stress_ref all ave/euler/region nevery 10 region ave_reg
+
+# integrator 
+fix integr all nve/sphere
+
+# output settings
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke
+thermo          2000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run 1
+
+dump dmp0 all custom/vtk 10000 post/bin_fill_d${dp_mm}mm_*.vtk id type radius mass x y z vx vy vz fx fy fz omegax omegay omegaz
+#dump dmp1 all euler/vtk 10000 post/euler_ref*.vtk ave_euler stress_ref
+
+run 1760000 upto
+
+unfix ins_ref
+
+run 2000000 upto
+

@@ -54,16 +54,16 @@ ParticleToInsert::ParticleToInsert(LAMMPS* lmp,int ns) :
   mass_ins(0.0),
   r_bound_ins(0.0),
   atom_type_vector_flag(false),
-  fix_property(NULL),
-  n_fix_property(0),
-  fix_property_nentry(NULL),
-  fix_property_value(NULL),
   local_start(-1),
   needs_bonding(false)
 {
     memory->create(x_ins,nspheres,3,"x_ins");
     radius_ins = new double[nspheres]();
     atom_type_vector = new int[nspheres]();
+    fix_property_dvalue = 0.0;
+    fix_property_ivalue = 0;
+    property_index = -1;
+    property_iindex = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -73,15 +73,6 @@ ParticleToInsert::~ParticleToInsert()
     memory->destroy(x_ins);
     delete []radius_ins;
     delete []atom_type_vector;
-
-    if (fix_property_value)
-    {
-        for (int i = 0; i < n_fix_property; i++)
-            delete [] fix_property_value[i];
-        delete [] fix_property_value;
-    }
-
-    delete [] fix_property;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -117,27 +108,27 @@ int ParticleToInsert::insert()
                 atom->density[m] = density_ins;
                 atom->rmass[m] = (nspheres==1)? (mass_ins) : (MathConst::MY_4PI3*radius_ins[i]*radius_ins[i]*radius_ins[i]*density_ins);
 
-                //pre_set_arrays() called above
+                //pre_set_arrays() called via FixParticleDistribution
                 for (int j = 0; j < nfix; j++)
-                   if (fix[j]->create_attribute) fix[j]->set_arrays(m);
+                    if (fix[j]->create_attribute) fix[j]->set_arrays(m);
 
                 // apply fix property setting coming from fix insert
                 // this overrides the set_arrays call above
-                if(fix_property)
+                if(!fix_properties.empty())
                 {
-                    for (int j = 0; j < n_fix_property; j++)
+                    for (size_t j = 0; j < fix_properties.size(); j++)
                     {
-                        if (fix_property_nentry[j] == 1)
+                        if (fix_properties[j]->num_defaultvalues() == 1)
                         {
-                            fix_property[j]->vector_atom[m] = fix_property_value[j][0];
-                            if(strcmp(fix_property[j]->id,"bond_random_id") == 0)
+                            fix_properties[j]->vector_atom[m] = fix_property_values[j][0];
+                            if(strcmp(fix_properties[j]->id,"bond_random_id") == 0)
                             {
                                 if (atom->molecule_flag)
                                 {
                                     needs_bonding = true;
                                     // use random part as base for dummy molecule ID
                                     // see FixTemplateMultiplespheres::randomize_ptilist
-                                    double dmol = (fix_property_value[j][0] - static_cast<double>(update->ntimestep));
+                                    double dmol = (fix_property_values[j][0] - static_cast<double>(update->ntimestep));
                                     if(dmol > 1.0 || dmol < 0.0)
                                         error->one(FLERR, "Internal error (particle to insert: mol id)");
                                     atom->molecule[m] = -static_cast<int>(dmol * INT_MAX);
@@ -147,10 +138,18 @@ int ParticleToInsert::insert()
                         }
                         else
                         {
-                            for (int k = 0; k < fix_property_nentry[j]; k++)
-                                fix_property[j]->array_atom[m][k] = fix_property_value[j][k];
+                            for (size_t k = 0; k < fix_property_values[j].size(); k++)
+                                fix_properties[j]->array_atom[m][k] = fix_property_values[j][k];
                         }
                     }
+                }
+                if(property_iindex >= 0)
+                {
+                    atom->ivector[property_iindex][m] = fix_property_ivalue;
+                }
+                if(property_index >= 0)
+                {
+                    atom->dvector[property_index][m] = fix_property_dvalue;
                 }
         //}
     }
@@ -389,7 +388,7 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
 
     vectorCopy3D(x,x_ins[0]);
 
-    if(neighList.hasOverlap(x_ins[0], radius_ins[0])) {
+    if(neighList.hasOverlap(x_ins[0], radius_ins[0], get_atom_type())) {
         return 0;
     }
 
@@ -398,7 +397,7 @@ int ParticleToInsert::check_near_set_x_v_omega(double *x,double *v, double *omeg
     vectorCopy3D(v,v_ins);
     vectorCopy3D(omega,omega_ins);
 
-    neighList.insert(x_ins[0], radius_ins[0]);
+    neighList.insert(x_ins[0], radius_ins[0], get_atom_type());
 
     return 1;
 }
@@ -423,7 +422,7 @@ int ParticleToInsert::check_near_set_x_v_omega_ms(double *x,double *v, double *o
         MathExtraLiggghts::vec_quat_rotate(rel,quat);
         vectorAdd3D(rel,x,xins_j_try);
 
-        if(neighList.hasOverlap(xins_j_try, radius_ins[j])) {
+        if(neighList.hasOverlap(xins_j_try, radius_ins[j], get_atom_type())) {
             return 0;
         }
     }
@@ -442,7 +441,7 @@ int ParticleToInsert::check_near_set_x_v_omega_ms(double *x,double *v, double *o
     // add to xnear for future checks
     for(int j = 0; j < nspheres; j++)
     {
-        neighList.insert(x_ins[j], radius_ins[j]);
+        neighList.insert(x_ins[j], radius_ins[j], get_atom_type());
     }
 
     return nspheres;

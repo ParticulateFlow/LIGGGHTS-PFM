@@ -55,21 +55,21 @@ namespace LAMMPS_NS
         virtual void scale(double factor) = 0;
 
         // linear move w/ total and incremental displacement
-        virtual void move(double *vecTotal, double *vecIncremental) = 0;
+        virtual void move(const double *vecTotal, const double *vecIncremental) = 0;
 
         // linear move w/ incremental displacement
-        virtual void move(double *vecIncremental) = 0;
+        virtual void move(const double *vecIncremental) = 0;
 
         // rotation w/ total and incremental displacement
         //   calls rotate(double *totalQuat,double *dQuat,double *displacement)
-        virtual void rotate(double totalAngle, double dAngle, double *axis, double *p) = 0;
+        virtual void rotate(double totalAngle, double dAngle, const double *axis, const double *p) = 0;
 
         // rotation w/ incremental displacement
         //   calls rotate(double *dQuat,double *displacement)
-        virtual void rotate(double dAngle, double *axis, double *p) = 0;
+        virtual void rotate(double dAngle, const double *axis, const double *p) = 0;
 
         // rotation using quaternions
-        virtual void rotate(double *totalQ, double *dQ,double *origin) = 0;
+        virtual void rotate(const double *totalQ, const double *dQ, const double *origin) = 0;
 
         // initialize movement
         virtual bool registerMove(bool _scale, bool _translate, bool _rotate) = 0;

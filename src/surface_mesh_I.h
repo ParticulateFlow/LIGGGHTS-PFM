@@ -1058,13 +1058,13 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::checkNodeRecursive(int iSrf,double *n
 ------------------------------------------------------------------------- */
 
 template<int NUM_NODES, int NUM_NEIGH_MAX>
-void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::move(double *vecTotal, double *vecIncremental)
+void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::move(const double *vecTotal, const double *vecIncremental)
 {
     TrackingMesh<NUM_NODES>::move(vecTotal,vecIncremental);
 }
 
 template<int NUM_NODES, int NUM_NEIGH_MAX>
-void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::move(double *vecIncremental)
+void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::move(const double *vecIncremental)
 {
     TrackingMesh<NUM_NODES>::move(vecIncremental);
 }
@@ -1099,7 +1099,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::scale(double factor)
 ------------------------------------------------------------------------- */
 
 template<int NUM_NODES, int NUM_NEIGH_MAX>
-void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::rotate(double *totalQ, double *dQ,double *origin)
+void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::rotate(const double *totalQ, const double *dQ, const double *origin)
 {
     TrackingMesh<NUM_NODES>::rotate(totalQ,dQ,origin);
 
@@ -1128,7 +1128,7 @@ void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::rotate(double *totalQ, double *dQ,dou
 }
 
 template<int NUM_NODES, int NUM_NEIGH_MAX>
-void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::rotate(double *dQ,double *origin)
+void SurfaceMesh<NUM_NODES,NUM_NEIGH_MAX>::rotate(const double *dQ, const double *origin)
 {
     TrackingMesh<NUM_NODES>::rotate(dQ,origin);
 

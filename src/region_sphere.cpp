@@ -95,12 +95,12 @@ void RegSphere::init()
 
 int RegSphere::inside(double x, double y, double z)
 {
-  double delx = x - xc;
-  double dely = y - yc;
-  double delz = z - zc;
-  double r = sqrt(delx*delx + dely*dely + delz*delz);
+  const double delx = x - xc;
+  const double dely = y - yc;
+  const double delz = z - zc;
+  const double rsq = delx*delx + dely*dely + delz*delz;
 
-  if (r <= radius) return 1;
+  if (rsq <= radius*radius) return 1;
   return 0;
 }
 
@@ -113,18 +113,20 @@ int RegSphere::inside(double x, double y, double z)
 
 int RegSphere::surface_interior(double *x, double cutoff)
 {
-  double delx = x[0] - xc;
-  double dely = x[1] - yc;
-  double delz = x[2] - zc;
-  double r = sqrt(delx*delx + dely*dely + delz*delz);
-  if (r > radius || r == 0.0) return 0;
+  const double delx = x[0] - xc;
+  const double dely = x[1] - yc;
+  const double delz = x[2] - zc;
+  const double rsq = delx*delx + dely*dely + delz*delz;
+  if (rsq > radius*radius || rsq == 0.0) return 0;
 
-  double delta = radius - r;
+  const double r = sqrt(rsq);
+  const double delta = radius - r;
   if (delta < cutoff) {
+    const double segment = 1.0-radius/r;
     contact[0].r = delta;
-    contact[0].delx = delx*(1.0-radius/r);
-    contact[0].dely = dely*(1.0-radius/r);
-    contact[0].delz = delz*(1.0-radius/r);
+    contact[0].delx = delx*segment;
+    contact[0].dely = dely*segment;
+    contact[0].delz = delz*segment;
     return 1;
   }
   return 0;
@@ -138,18 +140,20 @@ int RegSphere::surface_interior(double *x, double cutoff)
 
 int RegSphere::surface_exterior(double *x, double cutoff)
 {
-  double delx = x[0] - xc;
-  double dely = x[1] - yc;
-  double delz = x[2] - zc;
-  double r = sqrt(delx*delx + dely*dely + delz*delz);
-  if (r < radius) return 0;
+  const double delx = x[0] - xc;
+  const double dely = x[1] - yc;
+  const double delz = x[2] - zc;
+  const double rsq = delx*delx + dely*dely + delz*delz;
+  if (rsq < radius*radius) return 0;
 
-  double delta = r - radius;
+  const double r = sqrt(rsq);
+  const double delta = r - radius;
   if (delta < cutoff) {
+    const double segment = 1.0-radius/r;
     contact[0].r = delta;
-    contact[0].delx = delx*(1.0-radius/r);
-    contact[0].dely = dely*(1.0-radius/r);
-    contact[0].delz = delz*(1.0-radius/r);
+    contact[0].delx = delx*segment;
+    contact[0].dely = dely*segment;
+    contact[0].delz = delz*segment;
     return 1;
   }
   return 0;

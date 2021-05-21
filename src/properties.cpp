@@ -109,10 +109,9 @@ int Properties::max_type()
 
 void* Properties::find_property(const char *name, const char *type, int &len1, int &len2)
 {
-
     void *ptr = NULL;
 
-    // possibility 1
+    // possibility 1A
     // may be atom property - look up in atom class
 
     ptr = atom->extract(name,len2);
@@ -123,6 +122,36 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
         // check if length correct
         if(((strcmp(type,"scalar-atom") == 0) && (len2 != 1)) || ((strcmp(type,"vector-atom") == 0) && (len2 != 3)))
             return NULL;
+        return ptr;
+    }
+
+    // possibility 1B
+    // may be custom atom property - look up in atom class
+    int flag = 0;
+    int idx = atom->find_custom(name, flag);
+    if(idx >= 0)
+    {
+        len1 = atom->tag_max();
+        // check if length correct
+        if(((strcmp(type,"scalar-atom") == 0) && (flag > 1)) || ((strcmp(type,"vector-atom") == 0) && (flag < 2)))
+            return NULL;
+
+        switch(flag)
+        {
+        case 0:
+          ptr = atom->ivector[idx];
+          len2 = 1;
+          break;
+        case 1:
+          ptr = atom->dvector[idx];
+          len2 = 1;
+          break;
+        case 2:
+          ptr = atom->darray[idx];
+          len2 = 3;
+          break;
+        }
+
         return ptr;
     }
 
@@ -197,7 +226,7 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
     }
     else if(strcmp(name,"ex") == 0)
     {
-        // possiblility 4A - Dipole is specified as atom property (requires DIPOLE package)
+        // possibility 4A - Dipole is specified as atom property (requires DIPOLE package)
         ptr = atom->extract("mu",len2);
         printf("len2 of mu: %d \n", len2);
         if(ptr)
@@ -209,7 +238,7 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
             return ptr;
         }
 
-        // possiblility 4B - Quaternion is specified as atom property (requires ASPHERE package)
+        // possibility 4B - Quaternion is specified as atom property (requires ASPHERE package)
         // requires a fix that computes orientation data from quaternion,
         // or another fix that provides orientationEx (e.g., from POEMS)
         //TODO: Write fix that computes orientation from quaternion
@@ -223,5 +252,6 @@ void* Properties::find_property(const char *name, const char *type, int &len1, i
         }
         else printf("WARNING: Fix with name 'orientationEx' not found that stores orientation information. \n");
     }
+
     return NULL;
 }

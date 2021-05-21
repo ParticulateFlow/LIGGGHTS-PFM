@@ -154,6 +154,19 @@ void Error::fix_error(const char *file, int line, Fix *fix,const char *str)
   exit(1);
 }
 
+/* ----------------------------------------------------------------------
+   called by one proc in world
+   only write to screen if non-NULL on this proc since could be file
+------------------------------------------------------------------------- */
+
+void Error::fix_warning(const char *file, int line, Fix *fix, const char *str, int logflag)
+{
+  if (screen) fprintf(screen,"WARNING: Fix %s (id %s): %s (%s:%d)\n",fix->style,fix->id,str,file,line);
+  if (logflag && logfile) fprintf(logfile,"WARNING: Fix %s (id %s): %s (%s:%d)\n",
+                                  fix->style,fix->id,str,file,line);
+}
+
+
 void Error::compute_error(const char *file, int line, Compute *compute,const char *str)
 {
   MPI_Barrier(world);

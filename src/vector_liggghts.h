@@ -102,7 +102,7 @@ inline double pointDistance(const double *point1, const double *point2)
   );
 }
 
-inline double pointDistanceSqr(const double *point1, const double *point2)
+inline double pointDistanceSquared(const double *point1, const double *point2)
 {
   return
   (
@@ -269,15 +269,15 @@ inline void vectorCopy4D(const double *from, double *to)
 
 inline void vectorScalarMultN(int n,double *v, double s)
 {
-    for(int i = 0; i < n; i++)
-        v[i] = s*v[i];
+  for(int i = 0; i < n; i++)
+    v[i] *= s;
 }
 
 inline void vectorScalarMult3D(double *v, double s)
 {
-  v[0]=s*v[0];
-  v[1]=s*v[1];
-  v[2]=s*v[2];
+  v[0] *= s;
+  v[1] *= s;
+  v[2] *= s;
 }
 
 inline void vectorScalarMult3D(const double *v, double s, double *result)
@@ -289,10 +289,10 @@ inline void vectorScalarMult3D(const double *v, double s, double *result)
 
 inline void vectorScalarDiv3D(double *v, double s)
 {
-  double sinv = 1./s;
-  v[0]=sinv*v[0];
-  v[1]=sinv*v[1];
-  v[2]=sinv*v[2];
+  const double sinv = 1./s;
+  v[0] *= sinv;
+  v[1] *= sinv;
+  v[2] *= sinv;
 }
 
 inline void vectorScalarAdd3D(double *v, double s)

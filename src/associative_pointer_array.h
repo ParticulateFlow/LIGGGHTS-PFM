@@ -7,7 +7,8 @@
 
    Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Copyright 2012-2015 DCS Computing GmbH, Linz
+   Copyright 2015-     JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -23,12 +24,14 @@
    Contributing authors:
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Philippe Seil (JKU Linz)
+   Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #ifndef LMP_ASSOCIATIVE_POINTER_ARRAY_H
 #define LMP_ASSOCIATIVE_POINTER_ARRAY_H
 
-#include <string.h>
+#include <string>
+#include <map>
 #include "memory.h"
 
 namespace LAMMPS_NS
@@ -77,10 +80,11 @@ class AssociativePointerArray
         inline void storeOrig(const char *_id,class AssociativePointerArray &orig);
         inline bool reset(class AssociativePointerArray &orig);
         inline bool reset(const char *_id,class AssociativePointerArray &orig);
+        inline void setToDefault(int n);
 
-        void rotate(double *dQ);
-        void move(double *delta);
-        void moveElement(int i,double *delta);
+        void rotate(const double *dQ);
+        void move(const double *delta);
+        void moveElement(int i,const double *delta);
         void scale(double factor);
 
         inline int bufSize(int operation,bool scale,bool translate,bool rotate) const;
@@ -97,15 +101,13 @@ class AssociativePointerArray
         inline int pushElemToBuffer(int n, double *buf, int operation,bool scale,bool translate, bool rotate);
         inline int popElemFromBuffer(double *buf, int operation,bool scale,bool translate, bool rotate);
 
-        int idToIndex(const char *_id);
-        void indexToId(int index, char *_id);
+        bool hasId(const char *_id);
 
       private:
 
-        T **content_;
-        int numElem_, maxElem_;
-
-        void growArrays();
+        std::map<std::string, T*> content_;
+        typedef typename std::map<std::string, T*>:: iterator content_iterator;
+        typedef typename std::map<std::string, T*>:: const_iterator content_const_iterator;
 };
 
   // *************************************

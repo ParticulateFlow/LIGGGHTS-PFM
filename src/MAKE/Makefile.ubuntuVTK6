@@ -67,7 +67,7 @@ JPG_LIB =
 
 VTK_INC = -I/usr/include/vtk-6.0
 VTK_PATH = 
-VTK_LIB = -lvtkCommonCore-6.0 -lvtkIOCore-6.0 -lvtkIOXML-6.0 -lvtkIOLegacy-6.0 -lvtkCommonDataModel-6.0
+VTK_LIB = -lvtkCommonCore-6.0 -lvtkIOCore-6.0 -lvtkIOXML-6.0 -lvtkIOLegacy-6.0 -lvtkCommonDataModel-6.0 -lvtkFiltersCore-6.0 -lvtkFiltersVerdict-6.0 -lvtkFiltersGeometry-6.0 -lvtkCommonExecutionModel-6.0
 
 # ---------------------------------------------------------------------
 # build rules and dependencies

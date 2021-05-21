@@ -1,0 +1,124 @@
+# hourglass (coupled coarse grain - original size)
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+processors * 1 1
+
+units       cgs
+
+region      reg block -3.1 3.1 -1.6 1.6 -3.61 3.61 units box
+create_box  1 reg
+
+neighbor    0.008 bin
+neigh_modify    delay 0
+
+
+# material properties required for pair style
+fix m1 all property/global youngsModulus peratomtype 1.e8
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.5
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.1
+
+region reg_coarse   block -3.1 0.0 -1.6 1.6 -3.61 3.61 units box
+region reg_resolved block  0.0 3.1 -1.6 1.6 -3.61 3.61 units box
+
+group coarse   region reg_coarse
+group resolved region reg_resolved
+
+# pair style
+pair_style gran model hertz tangential history
+pair_coeff * *
+
+timestep   0.00001
+
+fix gravi all gravity 981 vector 0.0 0.0 -1.0
+
+variable cg   equal 2.0
+variable d    equal 0.07
+variable d_cg equal ${cg}*${d}
+variable r    equal 0.5*${d}
+variable r_cg equal ${cg}*${r}
+
+extract_surface meshes/hourglass_grid.vtk file meshes/hourglass_surface.vtk meshes/hourglass_extrusion.vtk extrude_length 0.19 min_rad ${r}
+
+fix inface all mesh/surface file meshes/hourglass_insert_top.stl type 1 scale 0.9 move -1.55 0.0 0.0
+
+fix hourglass_surf_cg all mesh/surface file meshes/hourglass_surface.vtk type 1 cell_data yes scale 1.0 move -1.55 0.0 0.0
+
+fix hourglass    all mesh/surface file meshes/hourglass_wall.stl type 1 scale 1.0 move  1.55 0.0 0.0
+fix hourglass_cg all mesh/surface file meshes/hourglass_wall.stl type 1 scale 1.0 move -1.55 0.0 0.0
+fix granwalls    all wall/gran model hertz tangential history mesh n_meshes 2 meshes hourglass hourglass_cg
+
+fix pts1_cg all particletemplate/sphere 3451 atom_type 1 density constant 2.500 radius constant ${r_cg}
+
+fix pdd1_cg all particledistribution/discrete 5331 1 pts1_cg 1.0
+
+# particle insertion
+fix ins coarse insert/stream seed 5331 distributiontemplate pdd1_cg &
+        nparticles 1500 massrate 100 overlapcheck yes all_in no vel constant 0.0 0.0 -5.0 &
+        insertion_face inface extrude_length 0.5
+
+region remove_reg_top    block 0.005 3.1 -1.6 1.6  2.01 3.6 units box
+region remove_reg_bottom block 0.005 3.1 -1.6 1.6 -3.6 -2.01 units box
+
+# measure mass flow through face,
+# also specify that all calculations should consider the coarse grain factor (cg 2)
+fix massflowcg2 all massflow/mesh/face mesh hourglass_surf_cg count once cg 2 inside_out #file massflow.txt
+
+# load volume file with face ids for insertion
+region hexregion mesh/hex file meshes/hourglass_extrusion.vtk scale 1. move 1.55 0. 0. rotate 0. 0. 0. cell_data yes units box
+
+fix ins_cg1 resolved insert/pack/face seed 5330 random_distribute exact maxattempt 150 &
+        insert_every 500 overlapcheck yes all_in yes type_offset 0 &
+        region hexregion ntry_mc 10000 massflow_face massflowcg2 cg 1
+
+# average region of coarse grain simulation
+region ave_reg  mesh/hex file meshes/hourglass_grid.vtk scale 1. move -1.55 0. 0. rotate 0. 0. 0. cell_data yes units box
+# average region of resolved part
+region ave_reg1 mesh/hex file meshes/hourglass_grid.vtk scale 1. move  1.55 0. 0. rotate 0. 0. 0. cell_data yes units box
+
+variable nevery equal 10
+variable one_over_nevery equal 1.0/${nevery}
+# stress computation
+fix velocity_cg2 coarse   ave/euler/region nevery ${nevery} region ave_reg
+fix velocity_cg1 resolved ave/euler/region nevery ${nevery} region ave_reg1
+
+# control velocity in coarse region
+fix velocityctrl coarse forcecontrol/region ctrlPV velocity actual_val velocity_cg2 target_val velocity_cg1 kp ${one_over_nevery} ki 0.0 kd 0.0 cg 2
+# activate controller only where required
+fix_modify velocityctrl deactivate 0 44
+fix_modify velocityctrl activate 13
+fix_modify velocityctrl activate 22
+fix_modify velocityctrl activate 27 35
+# correct mass flow by scaling particles inside a spherical region
+region scale_reg sphere -1.55 0.0 0.0 0.5 units box
+fix scale all scale/diameter 10 region scale_reg scale 1.0 0.7
+fix_modify velocityctrl massflow_correction_scale scale 22
+
+# apply nve integration
+fix integr all nve/sphere
+
+# output settings 
+thermo_style    custom step atoms ke  
+thermo          2000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic no extra 0
+
+run 1
+
+dump dmp all custom/vtk 2000 post/hourglass_2lvl_scale*.vtk id type radius x y z vx vy vz fx fy fz
+
+fix removebottom resolved remove nevery 250 massrate 2000 style delete seed 5143 region remove_reg_bottom atomtype 1
+
+run 40000 upto
+
+unfix ins_cg1
+unfix massflowcg2
+
+run 400000 upto
+

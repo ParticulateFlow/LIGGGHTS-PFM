@@ -397,6 +397,8 @@ int lammps_get_natoms(void *ptr)
      e.g. x[0][0],x[0][1],x[0][2],x[1][0],x[1][1],x[1][2],x[2][0],...
    data must be pre-allocated by caller to correct length
 ------------------------------------------------------------------------- */
+#define INT_TYPE 0
+#define DOUBLE_TYPE 1
 
 void lammps_gather_atoms(void *ptr, const char *name,
                          int type, int count, void *data)
@@ -426,7 +428,7 @@ void lammps_gather_atoms(void *ptr, const char *name,
   // use atom ID to insert each atom's values into copy
   // MPI_Allreduce with MPI_SUM to merge into data, ordered by atom ID
 
-  if (type == 0) {
+  if (type == INT_TYPE) {
     int *vector = NULL;
     int **array = NULL;
     if (count == 1) vector = (int *) vptr;
@@ -453,7 +455,7 @@ void lammps_gather_atoms(void *ptr, const char *name,
     MPI_Allreduce(copy,data,count*natoms,MPI_INT,MPI_SUM,lmp->world);
     lmp->memory->destroy(copy);
 
-  } else {
+  } else { // DOUBLE_TYPE
     double *vector = NULL;
     double **array = NULL;
     if (count == 1) vector = (double *) vptr;
@@ -520,7 +522,7 @@ void lammps_scatter_atoms(void *ptr, const char *name,
   // use atom ID to insert each atom's values into copy
   // MPI_Allreduce with MPI_SUM to merge into data, ordered by atom ID
 
-  if (type == 0) {
+  if (type == INT_TYPE) {
     int *vector = NULL;
     int **array = NULL;
     if (count == 1) vector = (int *) vptr;
@@ -539,7 +541,7 @@ void lammps_scatter_atoms(void *ptr, const char *name,
             array[m][j] = dptr[offset++];
         }
     }
-  } else {
+  } else { // DOUBLE_TYPE
     double *vector = NULL;
     double **array = NULL;
     if (count == 1) vector = (double *) vptr;

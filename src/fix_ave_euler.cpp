@@ -55,6 +55,7 @@ using namespace MathConst;
 FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   parallel_(true),
+  dirty_(true),
   exec_every_(1),
   box_change_size_(false),
   box_change_domain_(false),
@@ -86,6 +87,12 @@ FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
 
   // random number generator, seed is hardcoded
   random_ = new RanPark(lmp,15485863);
+
+  ncells_dim_[0] = ncells_dim_[1] = ncells_dim_[2] = 0;
+  cell_size_[0] = cell_size_[1] = cell_size_[2] = -1.0;
+
+  // don't parse arguments for derived classes
+  if (strlen(style) > strlen("ave/euler")) return;
 
   // parse args
   if (narg < 6) error->all(FLERR,"Illegal fix ave/euler command");
@@ -179,6 +186,8 @@ void FixAveEuler::post_create()
 int FixAveEuler::setmask()
 {
   int mask = 0;
+  mask |= POST_INTEGRATE;
+  mask |= PRE_FORCE;
   mask |= END_OF_STEP;
   return mask;
 }
@@ -223,6 +232,17 @@ void FixAveEuler::setup(int vflag)
 {
     setup_bins();
     end_of_step();
+}
+
+/* ---------------------------------------------------------------------- */
+void FixAveEuler::post_integrate()
+{
+  dirty_ = true;
+}
+/* ---------------------------------------------------------------------- */
+void FixAveEuler::pre_force(int)
+{
+  dirty_ = true;
 }
 
 /* ----------------------------------------------------------------------
@@ -410,7 +430,7 @@ void FixAveEuler::end_of_step()
     }
 
     // bin atoms
-    bin_atoms();
+    if (dirty_) bin_atoms();
 
     // calculate Eulerian grid properties
     // performs allreduce if necessary
@@ -418,7 +438,7 @@ void FixAveEuler::end_of_step()
 }
 /* ---------------------------------------------------------------------- */
 
-int FixAveEuler::ncells_pack()
+int FixAveEuler::ncells_pack() const
 {
     // in parallel mode, each proc will pack
     if (parallel_)
@@ -477,6 +497,7 @@ void FixAveEuler::bin_atoms()
       cellptr_[i] = cellhead_[ibin];
       cellhead_[ibin] = i;
   }
+  dirty_ = false;
 }
 
 /* ----------------------------------------------------------------------
@@ -676,3 +697,55 @@ double FixAveEuler::compute_array(int i, int j)
   else if(j < 15) return radius_[i];
   else return 0.0;
 }
+
+/* ---------------------------------------------------------------------- */
+
+void FixAveEuler::cell_bounds(int i, double bounds[6]) const
+{
+  bounds[0] = center_[i][0]-0.5*cell_size_[0];
+  bounds[1] = center_[i][0]+0.5*cell_size_[0];
+  bounds[2] = center_[i][1]-0.5*cell_size_[1];
+  bounds[3] = center_[i][1]+0.5*cell_size_[1];
+  bounds[4] = center_[i][2]-0.5*cell_size_[2];
+  bounds[5] = center_[i][2]+0.5*cell_size_[2];
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixAveEuler::cell_points(int i, double points[24]) const
+{
+    // bottom
+    points[0]  = center_[i][0]-0.5*cell_size_[0];
+    points[1]  = center_[i][1]-0.5*cell_size_[1];
+    points[2]  = center_[i][2]-0.5*cell_size_[2];
+
+    points[3]  = center_[i][0]+0.5*cell_size_[0];
+    points[4]  = center_[i][1]-0.5*cell_size_[1];
+    points[5]  = center_[i][2]-0.5*cell_size_[2];
+
+    points[6]  = center_[i][0]+0.5*cell_size_[0];
+    points[7]  = center_[i][1]+0.5*cell_size_[1];
+    points[8]  = center_[i][2]-0.5*cell_size_[2];
+
+    points[9]  = center_[i][0]-0.5*cell_size_[0];
+    points[10] = center_[i][1]+0.5*cell_size_[1];
+    points[11] = center_[i][2]-0.5*cell_size_[2];
+
+    // top
+    points[12] = center_[i][0]-0.5*cell_size_[0];
+    points[13] = center_[i][1]-0.5*cell_size_[1];
+    points[14] = center_[i][2]+0.5*cell_size_[2];
+
+    points[15] = center_[i][0]+0.5*cell_size_[0];
+    points[16] = center_[i][1]-0.5*cell_size_[1];
+    points[17] = center_[i][2]+0.5*cell_size_[2];
+
+    points[18] = center_[i][0]+0.5*cell_size_[0];
+    points[19] = center_[i][1]+0.5*cell_size_[1];
+    points[20] = center_[i][2]+0.5*cell_size_[2];
+
+    points[21] = center_[i][0]-0.5*cell_size_[0];
+    points[22] = center_[i][1]+0.5*cell_size_[1];
+    points[23] = center_[i][2]+0.5*cell_size_[2];
+}
+

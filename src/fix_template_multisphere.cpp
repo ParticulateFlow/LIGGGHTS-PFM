@@ -357,7 +357,7 @@ void FixTemplateMultisphere::calc_inertia()
   moi_[1][0] = moi_[0][1];
   moi_[0][2] = (moi_[0][2]+moi_[2][0])/2.;
   moi_[2][0] = moi_[0][2];
-  moi_[2][1] = (moi_[2][1]+moi_[2][0])/2.;
+  moi_[2][1] = (moi_[2][1]+moi_[1][2])/2.;
   moi_[1][2] = moi_[2][1];
 
 }
@@ -535,6 +535,11 @@ void FixTemplateMultisphere::randomize_ptilist(int n_random,int distribution_gro
           vectorZeroize3D(pti_m->omega_ins);
 
           pti_m->groupbit = groupbit | distribution_groupbit; //NP also contains insert_groupbit
+
+          pti_m->fix_properties.clear();
+          pti_m->fix_property_values.clear();
+          pti_m->property_iindex = -1;
+          pti_m->property_index = -1;
     }
 }
 

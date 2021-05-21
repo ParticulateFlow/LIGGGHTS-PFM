@@ -543,7 +543,9 @@ void Set::command(int narg, char **arg)
       strcpy(variablename,arg[iarg+1]);
       updFix = NULL;
       for (int ifix = 0; ifix < (lmp->modify->nfix); ifix++){
-        if ((strncmp(modify->fix[ifix]->style,"property/atom",13) == 0) && (strcmp(((FixPropertyAtom*)(modify->fix[ifix]))->variablename,variablename)==0) ){
+        if ((strncmp(modify->fix[ifix]->style,"property/atom",13) == 0) &&
+            (strcmp(modify->fix[ifix]->style,"property/atom/lammps") != 0) &&
+            (strcmp(((FixPropertyAtom*)(modify->fix[ifix]))->variablename,variablename) == 0)) {
             updFix=(FixPropertyAtom*)(lmp->modify->fix[ifix]);
         }
       }

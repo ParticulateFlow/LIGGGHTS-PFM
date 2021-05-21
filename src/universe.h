@@ -33,7 +33,7 @@ class Universe : protected Pointers {
 
   int existflag;          // 1 if universe exists due to -partition flag
   int nworlds;            // # of worlds in universe
-  int iworld;             // which world I am in
+  int iworld;             // which world I am in // 0 ... nworlds-1
   int *procs_per_world;   // # of procs in each world
   int *root_proc;         // root proc in each world
 

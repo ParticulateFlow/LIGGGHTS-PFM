@@ -575,24 +575,17 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
 
           pti->groupbit = groupbit | distribution_groupbit; //NP also contains insert_groupbit
 
-          if(bonded)
-          {
-            if (!pti->fix_property)
-            {
-              pti->fix_property = new FixPropertyAtom*[1];
-              if (pti->fix_property_value)
-                error->one(FLERR, "Internal error (fix property pti list)");
-              pti->fix_property_value = new double*[1];
-              pti->fix_property_value[0] = new double[1];
-              if (pti->fix_property_nentry)
-                error->one(FLERR, "Internal error (fix property pti list)");
-              pti->fix_property_nentry = new int[1];
-            }
-            pti->fix_property[0] = fix_bond_random_id;
+          pti->fix_properties.clear();
+          pti->fix_property_values.clear();
+          pti->property_iindex = -1;
+          pti->property_index = -1;
 
-            pti->fix_property_value[0][0] = static_cast<double>(update->ntimestep)+random->uniform();
-            pti->n_fix_property = 1;
-            pti->fix_property_nentry[0] = 1;
+          if(bonded && fix_bond_random_id)
+          {
+            pti->fix_properties.push_back(fix_bond_random_id); // 1st of any properties
+            std::vector<double> value(1,static_cast<double>(update->ntimestep)+random->uniform());
+            pti->fix_property_values.push_back(value);
+
             pti->bond_type = bond_type;
           }
     }
@@ -608,14 +601,14 @@ void FixTemplateMultiplespheres::finalize_insertion()
         for(int i = 0; i < n_pti_max; ++i)
         {
             ParticleToInsert *pti = pti_list[i];
-            // only need to create bonds if fix_property is fix_bond_random_id
-            if(pti->fix_property && pti->fix_property[0] == fix_bond_random_id)
+            // only need to create bonds if 1st entry in fix_properties is fix_bond_random_id
+            if(!pti->fix_properties.empty() && pti->fix_properties[0] == fix_bond_random_id)
             {
                 // only need to create bonds for pti created this time step
                 // timestep is integer part of fix_property_value
                 // Note: it's possble that not each pti gets inserted, the pti itself
                 //       does the final check if bond creation is necessary
-                bigint insertionstep = static_cast<bigint>(pti->fix_property_value[0][0]);
+                bigint insertionstep = static_cast<bigint>(pti->fix_property_values[0][0]);
                 if(insertionstep == update->ntimestep)
                     pti->create_bonds(np, p);
             }

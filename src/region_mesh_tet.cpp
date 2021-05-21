@@ -322,35 +322,35 @@ void RegTetMesh::grow_arrays()
 
 /* ---------------------------------------------------------------------- */
 
-int RegTetMesh::n_tet()
+int RegTetMesh::n_tet() const
 {
     return nTet;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::total_vol()
+double RegTetMesh::total_vol() const
 {
     return total_volume;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::tet_vol(int i)
+double RegTetMesh::tet_vol(int i) const
 {
     return volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::tet_acc_vol(int i)
+double RegTetMesh::tet_acc_vol(int i) const
 {
     return acc_volume[i];
 }
 
 /* ---------------------------------------------------------------------- */
 
-inline double RegTetMesh::volume_of_tet(int iTet)
+inline double RegTetMesh::volume_of_tet(int iTet) const
 {
     return volume_of_tet(node[iTet][0],node[iTet][1],node[iTet][2],node[iTet][3]);
 }
@@ -379,7 +379,7 @@ inline int RegTetMesh::is_inside_tet(int iTet,double *pos)
 
 /* ---------------------------------------------------------------------- */
 
-double RegTetMesh::volume_of_tet(double* v0, double* v1, double* v2, double* v3)
+double RegTetMesh::volume_of_tet(double* v0, double* v1, double* v2, double* v3) const
 {
    double A[3];
    A[0] = v3[0] - v1[0];
