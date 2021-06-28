@@ -62,6 +62,7 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
     use_property_(false),
     limit_fluc(false),
     relative_limit(false),
+    remove_vel_across_walls(false),
     iregion(-1)
 {
     int iarg = 3;
@@ -182,6 +183,17 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
             iarg += 2;
             hasargs = true;
         }
+        else if (strcmp(arg[iarg],"remove_vel_across_walls") == 0)
+        {
+            if (narg < iarg+2) error->all(FLERR,"Illegal fix couple/cfd/recurrence command");
+            remove_vel_across_walls = true;
+            int n = strlen(arg[iarg+1]) + 1 + 6;
+            wallfixname = new char[n];
+            strcpy(wallfixname,"force_");
+            strcat(wallfixname,arg[iarg+1]);
+            iarg += 2;
+            hasargs = true;
+        }
         else if (strcmp(arg[iarg],"region") == 0)
         {
             if (narg < iarg+2) error->all(FLERR,"Illegal fix couple/cfd/recurrence command");
@@ -211,7 +223,7 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
 
 FixCfdCouplingRecurrence::~FixCfdCouplingRecurrence()
 {
-
+  if(wallfixname) delete []wallfixname;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -370,6 +382,18 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double **vrec = fix_vrec_->array_atom;
+  double **fwall = NULL;
+
+  double v_conv[3];
+  double v_fluc[3];
+
+  if (remove_vel_across_walls)
+  {
+    class FixPropertyAtom* fix_fwall = static_cast<FixPropertyAtom*>(modify->find_fix_property(wallfixname,"property/atom","vector",3,0,style,false));
+    if (!fix_fwall)
+        error->fix_error(FLERR,this,"Fix couple/cfd/recurrence could not find fix for particle-wall forces with provided name");
+    fwall = fix_fwall->array_atom;
+  }
 
   // displace particles if necessary
   if(use_fluc_)
@@ -384,14 +408,24 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
     {
       if (mask[i] & groupbit)
       {
+        for (int j = 0; j < 3; j++)
+        {
+          v_fluc[j] = vfluc[i][j];
+        }
+
         if (limit_fluc)
         {
-          limit_vfluc(x[i],vfluc[i],rad[i]/dt);
+          limit_vfluc(x[i],v_fluc,rad[i]/dt);
+        }
+
+        if (remove_vel_across_walls)
+        {
+          correct_vel_across_walls(v_fluc,fwall[i]);
         }
 
         for(int j=0; j<3; j++)
         {
-          x_new[j] = x[i][j] + vfluc[i][j] * dt;
+          x_new[j] = x[i][j] + v_fluc[j] * dt;
           if (x_new[j] <= domain->boxlo[j] || x_new[j] >= domain->boxhi[j])
           {
             // if outside domain either a) reflect fluctuations or b) ignore them
@@ -413,7 +447,17 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
   {
     if (mask[i] & groupbit)
     {
-      vectorCopy3D(vrec[i],v[i]);
+      for (int j = 0; j < 3; j++)
+      {
+        v_conv[j] = vrec[i][j];
+      }
+
+      if (remove_vel_across_walls)
+      {
+        correct_vel_across_walls(v_conv,fwall[i]);
+      }
+
+      vectorCopy3D(v_conv,v[i]);
     }
   }
 }
@@ -468,3 +512,23 @@ void FixCfdCouplingRecurrence::limit_vfluc(double* pos, double* vfluc, double re
     MathExtra::scale3(vmax/absvfluc,vfluc);
   }
 }
+
+void FixCfdCouplingRecurrence::correct_vel_across_walls(double* vel, double* fw)
+{
+  double fw2 = MathExtra::dot3(fw,fw);
+  if (fw2 < 1e-9) return;
+
+  double n[3];
+  n[0] = fw[0];
+  n[1] = fw[1];
+  n[2] = fw[2];
+
+  MathExtra::norm3(n);
+
+  double vn = MathExtra::dot3(vel,n);
+// reflect velocity component, hence factor 2
+  vel[0] -= 2*vn*n[0];
+  vel[1] -= 2*vn*n[1];
+  vel[2] -= 2*vn*n[2];
+}
+
