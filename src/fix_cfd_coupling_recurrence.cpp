@@ -185,13 +185,14 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
         }
         else if (strcmp(arg[iarg],"remove_vel_across_walls") == 0)
         {
-            if (narg < iarg+2) error->all(FLERR,"Illegal fix couple/cfd/recurrence command");
+            if (narg < iarg+3) error->all(FLERR,"Illegal fix couple/cfd/recurrence command");
             remove_vel_across_walls = true;
             int n = strlen(arg[iarg+1]) + 1 + 6;
             wallfixname = new char[n];
             strcpy(wallfixname,"force_");
             strcat(wallfixname,arg[iarg+1]);
-            iarg += 2;
+            fwcrit = atof(arg[iarg+2]);
+            iarg += 3;
             hasargs = true;
         }
         else if (strcmp(arg[iarg],"region") == 0)
@@ -516,7 +517,7 @@ void FixCfdCouplingRecurrence::limit_vfluc(double* pos, double* vfluc, double re
 void FixCfdCouplingRecurrence::correct_vel_across_walls(double* vel, double* fw)
 {
   double fw2 = MathExtra::dot3(fw,fw);
-  if (fw2 < 1e-9) return;
+  if (fw2 < fwcrit*fwcrit) return;
 
   double n[3];
   n[0] = fw[0];
@@ -526,7 +527,11 @@ void FixCfdCouplingRecurrence::correct_vel_across_walls(double* vel, double* fw)
   MathExtra::norm3(n);
 
   double vn = MathExtra::dot3(vel,n);
-// reflect velocity component, hence factor 2
+
+  // correct only if velocity has components towards the wall
+  if (vn > 0) return;
+
+  // reflect velocity component, hence factor 2
   vel[0] -= 2*vn*n[0];
   vel[1] -= 2*vn*n[1];
   vel[2] -= 2*vn*n[2];

@@ -75,6 +75,7 @@ class FixCfdCouplingRecurrence : public Fix  {
 
   bool remove_vel_across_walls;
   char *wallfixname;
+  double fwcrit;
 
   int iregion;
   char *idregion;

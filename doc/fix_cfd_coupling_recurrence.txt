@@ -20,7 +20,7 @@ keyword = {transfer_density} or {transfer_type} or {transfer_force} or {transfer
   {limit_fluctuations} value = {yes} or {no} :pre
   {max_vfluc} value = maximum fluctuation velocity :pre
   {relative_limit} value = {yes} or {no} :pre
-  {remove_vel_across_walls} value = name of fix gran/walls :pre
+  {remove_vel_across_walls} values = name of fix gran/walls and absolute value of critical force :pre
   {region} value = name of region :pre
 :ule
 
@@ -36,6 +36,6 @@ Particle positions, velocities, radii and volumeweights are transferred from LIG
 
 If needed, particle types and densities can also be communicated from LIGGGHTS to CFDEMcoupling (disabled per default) and forces (e.g. drag), velocity fluctuations and tracer concentrations from CFDEMcoupling to LIGGGHTS (disabled per default). Fluctuations may be limited with an absolute or relative (in units of particle radius per time step) value, either everywhere or in a specific region.
 
-If {remove_vel_across_walls} is enabled by providing the name of the gran/wall fix, it is checked for each particle if it is subject to a wall contact force. If so, the velocity component in the direction towards the wall is reversed such that the particle does not try to cross the wall.
+If {remove_vel_across_walls} is enabled by providing the name of the gran/wall fix, it is checked for each particle if it is subject to a wall contact force. If so, the velocity component in the direction towards the wall is reversed such that the particle does not try to cross the wall. The value of the critical force provided by the user determines at which point the fix gets active for each particle.
 
 This fix needs a fix couple/cfd before it is defined.
