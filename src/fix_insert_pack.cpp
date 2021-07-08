@@ -465,26 +465,22 @@ void FixInsertPack::x_v_omega(int ninsert_this_local,int &ninserted_this_local, 
         {
             pti = fix_distribution->pti_list[ninserted_this_local];
             double rbound = pti->r_bound_ins;
-            if(!all_in_flag) rbound = 0.0;
 
             if(screen && print_stats_during_flag && (ninsert_this_local >= 10) && (0 == itotal % (ninsert_this_local/10)))
                 fprintf(screen,"insertion: proc %d at %d %%\n",comm->me,10*itotal/(ninsert_this_local/10));
 
-            do
-            {
-                //NP generate a point in my subdomain
-                if(all_in_flag) {
-                    ins_region->generate_random_shrinkby_cut(pos,rbound,true);
-                } else if (insert_at) {
-                    pos[0] = px_;
-                    pos[1] = py_;
-                    pos[2] = pz_;
-                } else {
-                    ins_region->generate_random(pos,true);
-                }
-                ntry++;
+            //NP generate a point in my subdomain
+            if(all_in_flag) {
+                ins_region->generate_random_shrinkby_cut(pos,rbound,true);
+            } else if (insert_at) {
+                pos[0] = px_;
+                pos[1] = py_;
+                pos[2] = pz_;
+                if(!domain->is_in_subdomain(pos)) break;
+            } else {
+                ins_region->generate_random(pos,true);
             }
-            while(ntry < maxtry && domain->dist_subbox_borders(pos) < rbound);
+            ntry++;
 
             if(ntry == maxtry) break;
 
