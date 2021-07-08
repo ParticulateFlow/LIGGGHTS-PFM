@@ -663,7 +663,7 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
                 generate_random(pos,rad_to_insert);
                 ntry++;
             }
-            while(ntry < maxtry && ((!domain->is_in_subdomain(pos)) || (domain->dist_subbox_borders(pos) < rad_to_insert)));
+            while(ntry < maxtry && (!domain->is_in_subdomain(pos)));
 
             // could randomize vel, omega, quat here
 
