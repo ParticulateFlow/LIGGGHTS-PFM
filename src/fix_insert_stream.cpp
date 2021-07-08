@@ -665,14 +665,14 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
             }
             while(ntry < maxtry && (!domain->is_in_subdomain(pos)));
 
-            // could randomize vel, omega, quat here
-
-            if(quat_random_)
-                    MathExtraLiggghts::random_unit_quat(random,quat_insert);
-
             //NP only insert if could successfully randomize position
             if(ntry < maxtry)
             {
+                // could randomize vel, omega, quat here
+
+                if(quat_random_)
+                    MathExtraLiggghts::random_unit_quat(random,quat_insert);
+
                 nins = pti->set_x_v_omega(pos,v_normal,omega_tmp,quat_insert);
 
                 ninserted_spheres_this_local += nins;
@@ -702,15 +702,15 @@ void FixInsertStream::x_v_omega(int ninsert_this_local,int &ninserted_this_local
                 }
                 while(ntry < maxtry && ((!domain->is_in_subdomain(pos)) || (domain->dist_subbox_borders(pos) < rad_to_insert)));
 
-                // could randomize vel, omega, quat here
-
-                if(quat_random_)
-                    MathExtraLiggghts::random_unit_quat(random,quat_insert);
-                /*NL*/ //if (screen) fprintf(screen,"quat %f %f %f %f\n",quat_insert[0],quat_insert[1],quat_insert[2],quat_insert[3]);
-
                 //NP only insert if could successfully randomize position
                 if(ntry < maxtry)
                 {
+                    // could randomize vel, omega, quat here
+
+                    if(quat_random_)
+                        MathExtraLiggghts::random_unit_quat(random,quat_insert);
+                    /*NL*/ //if (screen) fprintf(screen,"quat %f %f %f %f\n",quat_insert[0],quat_insert[1],quat_insert[2],quat_insert[3]);
+
                     /*NL*///if (screen) fprintf(screen,"domain->dist_subbox_borders(pos) %f rad_to_insert %f\n",domain->dist_subbox_borders(pos),rad_to_insert);
                     nins = pti->check_near_set_x_v_omega(pos,v_normal,omega_tmp,quat_insert,neighList);
                 }
