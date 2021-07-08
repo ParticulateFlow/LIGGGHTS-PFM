@@ -110,7 +110,6 @@ FixScalarTransportEquation::FixScalarTransportEquation(LAMMPS *lmp, int narg, ch
 
   scalar_flag = 1; //NP total thermal energy computed
   global_freq = 1; //NP available always
-  cg_ = force->cg();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -358,7 +357,7 @@ void FixScalarTransportEquation::final_integrate()
                                                             flux[i] 
                                                           + source[i]*double(nevery_) //multiply source to account for missing steps
                                                         ) * dt  
-                                                      / (rmass[i]/(cg_*cg_*cg_)*capacity);
+                                                      / (rmass[i]*capacity);
            }
         }
     }
@@ -406,7 +405,7 @@ double FixScalarTransportEquation::compute_scalar()
         for (int i = 0; i < nlocal; i++)
         {
            capacity = fix_capacity->compute_vector(type[i]-1);
-           quantity_sum += capacity * (rmass[i]/(cg_*cg_*cg_)) * quantity[i];
+           quantity_sum += capacity * rmass[i] * quantity[i];
            /*NL*///if (screen) fprintf(screen,"step %d, proc %d, i %d quantity %f\n",update->ntimestep, comm->me,i,quantity[i]);
         }
     }
