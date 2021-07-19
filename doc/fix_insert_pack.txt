@@ -65,18 +65,19 @@ pack_keywords = where exactly one out of {volumefraction_region} or {particles_i
   {region} value = region-ID
     region-ID = ID of the region where the particles will be generated (positive integer)
   {volumefraction_region} values = vol
-    vol =  desired volume fraction for the region (positive float, 0 < vol < 1)
+    vol =  desired volume fraction for the region (positive float or variable, 0 < vol < 1)
   {particles_in_region} values = np
-    np =  desired number of particles in the region (positive integer)
+    np =  desired number of particles in the region (positive integer or variable)
   {mass_in_region} values = m
-    m =  desired mass in the region (positive float, m > 0)
+    m =  desired mass in the region (positive float or variable, m > 0)
   {ntry_mc} values = n
     n = number of Monte-Carlo steps for calculating the region's volume  (positive integer) :pre
 :ule
 
 [Examples:]
 
-fix ins all insert/pack seed 1001 distributiontemplate pdd1 insert_every once overlapcheck yes volumefraction_region 0.3 region mysphere ntry_mc 10000 :pre
+fix ins all insert/pack seed 1001 distributiontemplate pdd1 insert_every once overlapcheck yes volumefraction_region 0.3 region mysphere ntry_mc 10000
+fix ins all insert/pack seed 1001 distributiontemplate pdd1 insert_every once overlapcheck yes volumefraction_region v_volfrac region mysphere ntry_mc 10000 :pre
 
 [Description:]
 

@@ -42,6 +42,8 @@
 #include "random_park.h"
 #include "memory.h"
 #include "error.h"
+#include "input.h"
+#include "variable.h"
 #include "fix_particledistribution_discrete.h"
 #include "fix_template_sphere.h"
 #include "vector_liggghts.h"
@@ -54,6 +56,8 @@
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+
+enum{VOLFRAC,NUMPART,MASSPART};
 
 /* ---------------------------------------------------------------------- */
 
@@ -79,23 +83,47 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
       hasargs = true;
     } else if (strcmp(arg[iarg],"volumefraction_region") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
-      volumefraction_region = atof(arg[iarg+1]);
-      if(volumefraction_region < 0. || volumefraction_region > 1.)
-        error->fix_error(FLERR,this,"Invalid volumefraction");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
+        int n = strlen(&arg[iarg+1][2]) + 1;
+        varstr = new char[n];
+        strcpy(varstr,&arg[iarg+1][2]);
+        varflag = 1;
+      } else {
+        volumefraction_region = atof(arg[iarg+1]);
+        if(volumefraction_region < 0. || volumefraction_region > 1.)
+          error->fix_error(FLERR,this,"Invalid volumefraction");
+      }
+      target_style = VOLFRAC;
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"particles_in_region") == 0) {
-      if (iarg+2 > narg)
-        error->fix_error(FLERR,this,"");
-      ntotal_region = atoi(arg[iarg+1]);
-      if(ntotal_region <= 0) error->fix_error(FLERR,this,"'ntotal_region' > 0 required");
+      if (iarg+2 > narg) error->fix_error(FLERR,this,"");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
+        int n = strlen(&arg[iarg+1][2]) + 1;
+        varstr = new char[n];
+        strcpy(varstr,&arg[iarg+1][2]);
+        varflag = 1;
+      } else {
+        ntotal_region = atoi(arg[iarg+1]);
+        if(ntotal_region <= 0)
+          error->fix_error(FLERR,this,"'ntotal_region' > 0 required");
+      }
+      target_style = NUMPART;
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"mass_in_region") == 0) {
       if (iarg+2 > narg) error->fix_error(FLERR,this,"");
-      masstotal_region = atof(arg[iarg+1]);
-      if(masstotal_region <= 0.)
-        error->fix_error(FLERR,this,"'masstotal_region' > 0 required");
+      if (strstr(arg[iarg+1],"v_") == arg[iarg+1]) {
+        int n = strlen(&arg[iarg+1][2]) + 1;
+        varstr = new char[n];
+        strcpy(varstr,&arg[iarg+1][2]);
+        varflag = 1;
+      } else {
+        masstotal_region = atof(arg[iarg+1]);
+        if(masstotal_region <= 0.)
+          error->fix_error(FLERR,this,"'masstotal_region' > 0 required");
+      }
+      target_style = MASSPART;
       iarg += 2;
       hasargs = true;
     } else if (strcmp(arg[iarg],"ntry_mc") == 0) {
@@ -136,6 +164,10 @@ FixInsertPack::FixInsertPack(LAMMPS *lmp, int narg, char **arg) :
 FixInsertPack::~FixInsertPack()
 {
   delete []idregion;
+  if (varflag)
+  {
+    delete [] varstr;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -158,6 +190,9 @@ void FixInsertPack::init_defaults()
 
       region_volume = region_volume_local = 0.;
 
+      varflag = 0;
+      varindex = -1;
+
       insertion_ratio = 0.;
 
       warn_region = true;
@@ -176,6 +211,13 @@ void FixInsertPack::init()
         if (iregion == -1)
             error->fix_error(FLERR,this,"region ID does not exist");
         ins_region = domain->regions[iregion];
+    }
+
+    if (varflag)
+    {
+        varindex = input->variable->find(varstr);
+        if (varindex < 0)
+            error->all(FLERR,"Variable name for fix/insert/pack does not exist");
     }
 }
 
@@ -212,9 +254,9 @@ void FixInsertPack::calc_insertion_properties()
 
     // error check if exactly one target is specified
     int n_defined = 0;
-    if(volumefraction_region > 0.) n_defined++;
-    if(ntotal_region > 0) n_defined++;
-    if(masstotal_region > 0.) n_defined++;
+    if(target_style == VOLFRAC) n_defined++;
+    if(target_style == NUMPART) n_defined++;
+    if(target_style == MASSPART) n_defined++;
 
     if(n_defined != 1)
         error->fix_error(FLERR,this,"must define exactly one keyword out of 'volumefraction_region', 'particles_in_region', and 'mass_in_region'");
@@ -421,6 +463,34 @@ BoundingBox FixInsertPack::getBoundingBox() const {
   bb.extendByDelta(extend);
 
   return bb;
+}
+
+
+void FixInsertPack::pre_insert()
+{
+    if (varflag)
+    {
+        if (target_style == VOLFRAC)
+        {
+            volumefraction_region = input->variable->compute_equal(varindex);
+            if(volumefraction_region < 0. || volumefraction_region > 1.)
+                error->fix_error(FLERR,this,"Invalid volumefraction");
+        }
+        else if (target_style == NUMPART)
+        {
+            double ntot = input->variable->compute_equal(varindex);
+            ntotal_region = (int) ntot;
+            if(ntotal_region <= 0)
+                error->fix_error(FLERR,this,"'ntotal_region' > 0 required");
+        }
+        else if (target_style == MASSPART)
+        {
+            masstotal_region = input->variable->compute_equal(varindex);
+            if(masstotal_region <= 0.)
+                error->fix_error(FLERR,this,"'masstotal_region' > 0 required");
+        }
+        else error->fix_error(FLERR,this,"'no valid insertion target style found");
+    }
 }
 
 /* ----------------------------------------------------------------------
