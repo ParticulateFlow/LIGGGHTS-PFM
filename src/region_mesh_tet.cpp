@@ -85,7 +85,7 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
   my_input->meshtetfile(filename,this,true);
   delete my_input;
 
-  // extent of sphere
+  // extent of mesh
 
   if (interior) {
     bboxflag = 1;
@@ -116,8 +116,8 @@ void RegTetMesh::rebuild()
 
 void RegTetMesh::precalc_ico_points()
 {
-  // icosaedron point
-  ico_points = memory->create<double>(ico_points,n_ico_point,3,"icosaeder points");
+  // icosahedron points
+  ico_points = memory->create<double>(ico_points,n_ico_point,3,"icosahedron points");
 
   double const coord2 = sqrt(3)/phi;
   double const coord1 = coord2/phi;
@@ -221,12 +221,12 @@ int RegTetMesh::surface_interior(double *x, double cutoff)
   double point[3];
 
   // instead of solving the full surface/particle problem, check if
-  // the 12 points of a surrounding icosaedron are inside the
+  // the 12 points of a surrounding icosahedron are inside the
   // domain.
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
     if(!inside(point[0],point[1],point[2])){
-      // NOTE: crude approximation of contac point on region surface!!!
+      // NOTE: crude approximation of contact point on region surface!!!
       add_contact(n_contact,x,point[0],point[1],point[2]);
       n_contact++;
     }
@@ -249,7 +249,7 @@ int RegTetMesh::surface_exterior(double *x, double cutoff)
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
     if(inside(point[0],point[1],point[2])){
-      // NOTE: crude approximation of contac point on region surface!!!
+      // NOTE: crude approximation of contact point on region surface!!!
       add_contact(n_contact,x,point[0],point[1],point[2]);
       n_contact++;
     }
