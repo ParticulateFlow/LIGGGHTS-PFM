@@ -237,13 +237,16 @@ int RegTetMesh::surface_exterior(double *x, double cutoff)
 {
   // check subdomain
   if(!domain->is_in_subdomain(x)) return 0;
+  if(inside(x[0],x[1],x[2])) return 0;
 
   int n_contact = 0;
   double point[3];
 
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
-    if(inside(x[0],x[1],x[2])) n_contact++;
+    if(inside(point[0],point[1],point[2])){
+      n_contact++;
+    }
   }
 
   return n_contact;
