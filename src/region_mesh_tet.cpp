@@ -92,7 +92,7 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
     set_extent();
   } else bboxflag = 0;
 
-  cmax = 1;
+  cmax = 12;
   contact = new Contact[cmax];
 
   precalc_ico_points();
@@ -225,7 +225,11 @@ int RegTetMesh::surface_interior(double *x, double cutoff)
   // domain.
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
-    if(!inside(point[0],point[1],point[2])) n_contact++;
+    if(!inside(point[0],point[1],point[2])){
+      // NOTE: crude approximation of contac point on region surface!!!
+      add_contact(n_contact,x,point[0],point[1],point[2]);
+      n_contact++;
+    }
   }
 
   return n_contact;
@@ -245,6 +249,8 @@ int RegTetMesh::surface_exterior(double *x, double cutoff)
   for(int i=0;i<n_ico_point;i++){
     vectorAddMultiply3D(x,ico_points[i],cutoff,point);
     if(inside(point[0],point[1],point[2])){
+      // NOTE: crude approximation of contac point on region surface!!!
+      add_contact(n_contact,x,point[0],point[1],point[2]);
       n_contact++;
     }
   }
