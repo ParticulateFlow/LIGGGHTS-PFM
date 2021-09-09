@@ -62,6 +62,7 @@ void DeleteAtoms::command(int narg, char **arg)
   // delete the atoms
 
   if (strcmp(arg[0],"group") == 0) delete_group(narg,arg);
+  else if (strcmp(arg[0],"group_directional") == 0) delete_group_directional(narg,arg);
   else if (strcmp(arg[0],"region") == 0) delete_region(narg,arg);
   else if (strcmp(arg[0],"overlap") == 0) delete_overlap(narg,arg);
   else if (strcmp(arg[0],"porosity") == 0) delete_porosity(narg,arg);
@@ -145,6 +146,84 @@ void DeleteAtoms::delete_group(int narg, char **arg)
 
   for (int i = 0; i < nlocal; i++)
     if (mask[i] & groupbit) dlist[i] = 1;
+}
+
+/* ----------------------------------------------------------------------
+   delete atoms in group from given direction until target mass is reached
+   group will still exist
+------------------------------------------------------------------------- */
+
+void DeleteAtoms::delete_group_directional(int narg, char **arg)
+{
+  if (narg < 6) error->all(FLERR,"Illegal delete_atoms command");
+
+  int igroup = group->find(arg[1]);
+  if (igroup == -1) error->all(FLERR,"Could not find delete_atoms group ID");
+  options(narg-2,&arg[2]);
+
+  // allocate and initialize deletion list
+
+  int nlocal = atom->nlocal;
+  memory->create(dlist,nlocal,"delete_atoms:dlist");
+  for (int i = 0; i < nlocal; i++) dlist[i] = 0;
+
+  int *mask = atom->mask;
+  int groupbit = group->bitmask[igroup];
+  double **x = atom->x;
+  double *mass = atom->rmass;
+  
+  double minmax[6];
+  group->bounds(igroup,minmax);
+  double mincoordinate = minmax[2*direction_];
+  double maxcoordinate = minmax[2*direction_+1];
+  double separationcoordinate = 0.0;
+  double coordinate = 0.0;
+  double mass_to_remove = 0.0;
+  double mass_to_remove_global = 0.0;
+  double group_mass = group->mass(igroup);
+  
+  if (orientation_ == 0)
+  {
+    separationcoordinate = maxcoordinate;
+    while(group_mass - mass_to_remove_global > target_mass_ && separationcoordinate > mincoordinate)
+    {
+      mass_to_remove = 0.0;
+      separationcoordinate -= stepsize_;
+      for (int i = 0; i < nlocal; i++)
+      {
+        coordinate = x[i][direction_];
+        if (mask[i] && groupbit && coordinate > separationcoordinate) mass_to_remove += mass[i];
+      }
+      MPI_Allreduce(&mass_to_remove,&mass_to_remove_global,1,MPI_DOUBLE,MPI_SUM,world);
+    }
+    
+    for (int i = 0; i < nlocal; i++)
+    {
+      coordinate = x[i][direction_];
+      if (mask[i] && groupbit && coordinate > separationcoordinate) dlist[i] = 1;
+    }
+  }
+  else
+  {
+    separationcoordinate = mincoordinate;
+    while(group_mass - mass_to_remove_global > target_mass_ && separationcoordinate < maxcoordinate)
+    {
+      mass_to_remove = 0.0;
+      separationcoordinate += stepsize_;
+      for (int i = 0; i < nlocal; i++)
+      {
+        coordinate = x[i][direction_];
+        if (mask[i] && groupbit && coordinate < separationcoordinate) mass_to_remove += mass[i];
+      }
+      MPI_Allreduce(&mass_to_remove,&mass_to_remove_global,1,MPI_DOUBLE,MPI_SUM,world);
+    }
+    
+    for (int i = 0; i < nlocal; i++)
+    {
+      coordinate = x[i][direction_];
+      if (mask[i] && groupbit && coordinate < separationcoordinate) dlist[i] = 1;
+    }
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -406,21 +485,73 @@ void DeleteAtoms::options(int narg, char **arg)
 {
   compress_flag = 1;
   mol_flag = 0;
+  direction_ = -1;
+  target_mass_ = 0.0;
+  stepsize_ = 0.001;
 
   int iarg = 0;
-  while (iarg < narg) {
+  bool hasargs = true;
+  while (iarg < narg && hasargs) {
+     hasargs = false;
     if (strcmp(arg[iarg],"compress") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal delete_atoms command");
       if (strcmp(arg[iarg+1],"yes") == 0) compress_flag = 1;
       else if (strcmp(arg[iarg+1],"no") == 0) compress_flag = 0;
       else error->all(FLERR,"Illegal delete_atoms command");
       iarg += 2;
+      hasargs = true;
     } else if (strcmp(arg[iarg],"mol") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal delete_atoms command");
       if (strcmp(arg[iarg+1],"yes") == 0) mol_flag = 1;
       else if (strcmp(arg[iarg+1],"no") == 0) mol_flag = 0;
       else error->all(FLERR,"Illegal delete_atoms command");
       iarg += 2;
-    } else error->all(FLERR,"Illegal delete_atoms command");
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"direction") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal delete_atoms command");
+      if (strcmp(arg[iarg+1],"-x") == 0)
+      {
+        direction_ = 0;
+        orientation_ = 0;
+      }
+      else if (strcmp(arg[iarg+1],"+x") == 0)
+      {
+        direction_ = 0;
+        orientation_ = 1;
+      }
+      else if (strcmp(arg[iarg+1],"-y") == 0)
+      {
+        direction_ = 1;
+        orientation_ = 0;
+      }
+      else if (strcmp(arg[iarg+1],"+y") == 0)
+      {
+        direction_ = 1;
+        orientation_ = 1;
+      }
+      else if (strcmp(arg[iarg+1],"-z") == 0)
+      {
+        direction_ = 2;
+        orientation_ = 0;
+      }
+      else if (strcmp(arg[iarg+1],"+z") == 0)
+      {
+        direction_ = 2;
+        orientation_ = 1;
+      }
+      else error->all(FLERR,"Illegal delete_atoms command");
+      iarg += 2;
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"target_mass") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal delete_atoms command");
+      target_mass_ = atof(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
+    } else if (strcmp(arg[iarg],"stepsize") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal delete_atoms command");
+      stepsize_ = atof(arg[iarg+1]);
+      iarg += 2;
+      hasargs = true;
+    }
   }
 }
