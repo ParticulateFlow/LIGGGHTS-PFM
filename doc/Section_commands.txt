@@ -732,6 +732,7 @@ of each style or click on the style itself for a full description:
 "chem/shrink/core"_fix_chem_shrink_core.html,
 "colvars"_fix_colvars.html,
 "couple/cfd/chemistry"_fix_cfd_coupling_chemistry.html,
+"couple/cfd/dissolve"_fix_cfd_coupling_dissolve.html,
 "couple/cfd/deform"_fix_cfd_coupling_deform.html,
 "couple/cfd/recurrence"_fix_cfd_coupling_recurrence.html,
 "deform"_fix_deform.html,
