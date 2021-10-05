@@ -122,13 +122,13 @@ class Force : protected Pointers {
   tagint tnumeric(const char *, int, char *);
   bigint memory_usage();
 
-  inline double cg() //NP modified C.K.
+  inline double cg() const //NP modified C.K.
   { return coarsegraining; }
 
-  inline bool cg_active() //NP modified C.K.
+  inline bool cg_active() const //NP modified C.K.
   { return (cg() > 1.); }
 
-  inline bool error_cg() //NP modified C.K.
+  inline bool error_cg() const //NP modified C.K.
   { return error_coarsegraining; }
 
   PropertyRegistry registry;

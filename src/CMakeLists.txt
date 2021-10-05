@@ -5,15 +5,15 @@ OPTION(USE_SUPERQUADRIC "Superquadric particles" OFF)
 OPTION(USE_OPENMP "OpenMP parallelization" OFF)
 OPTION(TESTING "TESTING" OFF)
 
-SET(LIGGGHTS_MAJOR_VERSION 19)
-SET(LIGGGHTS_MINOR_VERSION 09)
+SET(LIGGGHTS_MAJOR_VERSION 21)
+SET(LIGGGHTS_MINOR_VERSION 03)
 SET(LIGGGHTS_PATCH_VERSION 0)
 SET(LIGGGHTS_VERSION ${LIGGGHTS_MAJOR_VERSION}.${LIGGGHTS_MINOR_VERSION}.${LIGGGHTS_PATCH_VERSION})
 MESSAGE(STATUS "${LIGGGHTS_VERSION}")
 
 IF (NOT CMAKE_CXX_FLAGS)
   IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-literal-suffix -std=c++11")
+    SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-literal-suffix -Wno-cast-function-type -std=c++11")
   ENDIF()
 ENDIF()
 

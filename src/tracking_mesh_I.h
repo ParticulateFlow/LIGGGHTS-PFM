@@ -341,7 +341,7 @@
   ------------------------------------------------------------------------- */
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::move(double *vecTotal, double *vecIncremental)
+  void TrackingMesh<NUM_NODES>::move(const double *vecTotal, const double *vecIncremental)
   {
     //NP this handles owned and ghost elements
     MultiNodeMesh<NUM_NODES>::move(vecTotal, vecIncremental);
@@ -349,7 +349,7 @@
   }
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::move(double *vecIncremental)
+  void TrackingMesh<NUM_NODES>::move(const double *vecIncremental)
   {
     //NP this handles owned and ghost elements
     MultiNodeMesh<NUM_NODES>::move(vecIncremental);
@@ -357,14 +357,14 @@
   }
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::moveElement(int i,double *vecIncremental)
+  void TrackingMesh<NUM_NODES>::moveElement(int i, const double *vecIncremental)
   {
     MultiNodeMesh<NUM_NODES>::moveElement(i,vecIncremental);
     customValues_.moveElement(i,vecIncremental);
   }
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::rotate(double *totalQ, double *dQ,double *origin)
+  void TrackingMesh<NUM_NODES>::rotate(const double *totalQ, const double *dQ, const double *origin)
   {
     double negorigin[3];
     bool trans = vectorMag3DSquared(origin) > 0.;
@@ -379,7 +379,7 @@
   }
 
   template<int NUM_NODES>
-  void TrackingMesh<NUM_NODES>::rotate(double *dQ,double *origin)
+  void TrackingMesh<NUM_NODES>::rotate(const double *dQ, const double *origin)
   {
     double negorigin[3];
     bool trans = vectorMag3DSquared(origin) > 0.;

@@ -25,16 +25,24 @@ Click on the surface model style itself for a full description:
 Click on the normal model style itself for a full description:
 
 "hertz"_gran_model_hertz.html,
+hertz/break,
 "hertz/stiffness"_gran_model_hertz_stiffness.html,
 "hooke"_gran_model_hooke.html,
-"hooke/stiffness"_gran_model_hooke_stiffness.html :tb(c=4,ea=c)
+hooke/break,
+hooke/hysteresis,
+"hooke/stiffness"_gran_model_hooke_stiffness.html,
+hooke/stiffness/collheat,
+jkr :tb(c=2,ea=c)
 
 4.3 cohesion commands :link(con_3),h4
 
 Click on the cohesion model style itself for a full description:
 
+capillary,
+hamaker,
+morse,
 "sjkr"_gran_cohesion_sjkr.html,
-"sjkr2"_gran_cohesion_sjkr2.html :tb(c=4,ea=c)
+"sjkr2"_gran_cohesion_sjkr2.html :tb(c=2,ea=c)
 
 4.4 tangential commands :link(con_4),h4
 

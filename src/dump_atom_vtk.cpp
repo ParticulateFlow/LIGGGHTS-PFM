@@ -358,8 +358,8 @@ void DumpATOMVTK::setFileCurrent() {
     else {
       char bif[8],pad[16];
       strcpy(bif,BIGINT_FORMAT);
-      sprintf(pad,"%%s%%0%d_%%d%s%%s",padflag,&bif[1]);
-      sprintf(filecurrent,pad,filename,comm->me,update->ntimestep,ptr+1);
+      sprintf(pad,"%%s%%0%d%s%%s",padflag,&bif[1]);
+      sprintf(filecurrent,pad,filename,update->ntimestep,ptr+1);
     }
     *ptr = '*';
   }

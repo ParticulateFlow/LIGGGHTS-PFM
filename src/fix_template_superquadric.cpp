@@ -485,6 +485,9 @@ void FixTemplateSuperquadric::randomize_ptilist(int n_random,int distribution_gr
         vectorZeroize3D(pti_list[i]->omega_ins);
 
         pti_list[i]->groupbit = groupbit | distribution_groupbit;
+
+        pti_list[i]->fix_properties.clear();
+        pti_list[i]->fix_property_values.clear();
     }
 
 }

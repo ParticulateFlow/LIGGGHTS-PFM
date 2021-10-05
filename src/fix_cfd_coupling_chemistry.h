@@ -69,9 +69,10 @@ class FixCfdCouplingChemistry : public Fix  {
   class FixPropertyAtom**   fix_molarfraction_;
   class FixPropertyAtom*    fix_partPressure_;
   class FixPropertyAtom*    fix_reactantPerParticle_;
+  class FixPropertyAtom*    fix_relLayerRadii_;
 
  private:
-  bool use_Re_, use_reactant_;
+  bool init_layer_radii_,use_Re_, use_reactant_;
 };
 
 }

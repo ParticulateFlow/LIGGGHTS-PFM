@@ -37,8 +37,6 @@
 using namespace LAMMPS_NS;
 using namespace std;
 
-#define DELTA 10000
-
 /* ---------------------------------------------------------------------- */
 
 CfdDatacouplingMPI::CfdDatacouplingMPI(LAMMPS *lmp,int iarg, int narg, char **arg,FixCfdCoupling* fc) :
@@ -76,27 +74,27 @@ void CfdDatacouplingMPI::exchange()
 
 /* ---------------------------------------------------------------------- */
 
-void CfdDatacouplingMPI::pull(const char *name,const char *type,void *&from,const char *datatype)
+void CfdDatacouplingMPI::pull(const char *name,const char *type,void *&from,const char *datatype,int iworld)
 {
     CfdDatacoupling::pull(name,type,from,datatype);
 
     if(strcmp(datatype,"double") == 0)
-        pull_mpi<double>(name,type,from);
+        pull_mpi<double>(name,type,from,iworld);
     else if(strcmp(datatype,"int") == 0)
-        pull_mpi<int>(name,type,from);
+        pull_mpi<int>(name,type,from,iworld);
     else error->one(FLERR,"Illegal call to CfdDatacouplingMPI::pull, valid datatypes are 'int' and double'");
 }
 
 /* ---------------------------------------------------------------------- */
 
-void CfdDatacouplingMPI::push(const char *name,const char *type,void *&to,const char *datatype)
+void CfdDatacouplingMPI::push(const char *name,const char *type,void *&to,const char *datatype,int iworld)
 {
     CfdDatacoupling::push(name,type,to,datatype);
 
     if(strcmp(datatype,"double") == 0)
-        push_mpi<double>(name,type,to);
+        push_mpi<double>(name,type,to,iworld);
     else if(strcmp(datatype,"int") == 0)
-        push_mpi<int>(name,type,to);
+        push_mpi<int>(name,type,to,iworld);
     else error->one(FLERR,"Illegal call to CfdDatacouplingMPI::pull, valid datatypes are 'int' and double'");
 }
 

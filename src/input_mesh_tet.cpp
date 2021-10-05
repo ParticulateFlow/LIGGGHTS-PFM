@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 #include "input.h"
 #include "modify.h"
 #include "update.h"
@@ -31,15 +32,11 @@
 #include "domain.h"
 #include "comm.h"
 #include "memory.h"
-#include <math.h>
 #include "vector_liggghts.h"
 #include "input_mesh_tet.h"
 #include "region_mesh_tet.h"
 
 using namespace LAMMPS_NS;
-
-#define MAXLINE 2048
-#define DELTA 4
 
 InputMeshTet::InputMeshTet(LAMMPS *lmp, int argc, char **argv) : Input(lmp, argc, argv),
 verbose_(false)
@@ -63,8 +60,8 @@ void InputMeshTet::meshtetfile(const char *filename, class RegTetMesh *mesh, boo
   // if single open file is not stdin, close it
   // open new filename and set stl___file
 
-  if (me == 0) {
-
+  if (me == 0)
+  {
     nonlammps_file = fopen(filename,"r");
     if (nonlammps_file == NULL) {
       char str[128];
@@ -87,9 +84,12 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 {
   int n,m;
 
-  double phix = (mesh->rot_angle[0])*M_PI/180.;
-  double phiy = (mesh->rot_angle[1])*M_PI/180.;
-  double phiz = (mesh->rot_angle[2])*M_PI/180.;
+  const double sin_phix = sin(mesh->rot_angle[0] * M_PI/180.);
+  const double sin_phiy = sin(mesh->rot_angle[1] * M_PI/180.);
+  const double sin_phiz = sin(mesh->rot_angle[2] * M_PI/180.);
+  const double cos_phix = cos(mesh->rot_angle[0] * M_PI/180.);
+  const double cos_phiy = cos(mesh->rot_angle[1] * M_PI/180.);
+  const double cos_phiz = cos(mesh->rot_angle[2] * M_PI/180.);
 
   int flag_outside = 0;
 
@@ -104,11 +104,12 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
   int iLine = 0;
 
   int nLines = 0;
+  int nPointLines = 0;
 
   int flag_other_than_tet = 0;
 
-  while (1) {
-
+  while (1)
+  {
     // read a line from input script
     // n = length of line including str terminator, 0 if end of file
     // if line ends in continuation char '&', concatenate next line
@@ -171,50 +172,67 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
     if(iLine == 2)
     {
-        if(strcmp(arg[0],"ASCII")) error->all(FLERR,"Expecting ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"ASCII"))
+            error->all(FLERR,"Expecting ASCII VTK mesh file, cannot continue");
         continue;
     }
 
     if(iLine == 3)
     {
-        if(strcmp(arg[0],"DATASET") || strcmp(arg[1],"UNSTRUCTURED_GRID")) error->all(FLERR,"Expecting ASCII VTK unstructured grid mesh file, cannot continue");
+        if(strcmp(arg[0],"DATASET") || strcmp(arg[1],"UNSTRUCTURED_GRID"))
+            error->all(FLERR,"Expecting ASCII VTK unstructured grid mesh file, cannot continue");
         continue;
     }
 
     if(iLine == 4)
     {
-        if(strcmp(arg[0],"POINTS")) error->all(FLERR,"Expecting 'POINTS' section in ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"POINTS"))
+            error->all(FLERR,"Expecting 'POINTS' section in ASCII VTK mesh file, cannot continue");
         npoints = atoi(arg[1]);
 
         memory->create(points,npoints,3,"input_mesh:points");
         continue;
     }
 
-    if(iLine <= 4+npoints)
+    if(ipoint < npoints)
     {
-        if(narg != 3) error->all(FLERR,"Expecting 3 values per line for each point in 'POINTS' section of ASCII VTK mesh file, cannot continue");
+        if(narg % 3)
+            error->all(FLERR,"Expecting multiple of 3 values of point data in 'POINTS' section of ASCII VTK mesh file, cannot continue");
 
-        //read the vertex, translate and scale it
-        for (int j=0;j<3;j++) vert_before_rot[j]=(atof(arg[j])+(mesh->off_fact[j]))*(mesh->scale_fact);
+        for(int i = 0; i < narg/3; ++i)
+        {
+            // read the vertex, translate and scale it
+            for(int j = 0; j < 3; ++j)
+            {
+                vert_before_rot[j] = (atof(arg[j]) + (mesh->off_fact[j])) * mesh->scale_fact;
+            }
 
-        //rotate the vertex
-        vert_after_rot[0] = vert_before_rot[0]*cos(phiy)*cos(phiz)+vert_before_rot[1]*(cos(phiz)*sin(phix)*sin(phiy)-cos(phix)*sin(phiz))+vert_before_rot[2]*(cos(phix)*cos(phiz)*sin(phiy)+sin(phix)*sin(phiz));
-        vert_after_rot[1] = vert_before_rot[0]*cos(phiy)*sin(phiz)+vert_before_rot[2]*(-cos(phiz)*sin(phix)+cos(phix)*sin(phiy)*sin(phiz))+vert_before_rot[1]*(cos(phix)*cos(phiz)+sin(phix)*sin(phiy)*sin(phiz));
-        vert_after_rot[2] = vert_before_rot[2]*cos(phix)*cos(phiy)+vert_before_rot[1]*cos(phiy)*sin(phix)-vert_before_rot[0]*sin(phiy);
+            // rotate the vertex
+            vert_after_rot[0] = vert_before_rot[0] *   cos_phiy*cos_phiz
+                              + vert_before_rot[1] * ( cos_phiz*sin_phix*sin_phiy - cos_phix*sin_phiz)
+                              + vert_before_rot[2] * ( cos_phix*cos_phiz*sin_phiy + sin_phix*sin_phiz);
+            vert_after_rot[1] = vert_before_rot[0] *   cos_phiy*sin_phiz
+                              + vert_before_rot[2] * (-cos_phiz*sin_phix + cos_phix*sin_phiy*sin_phiz)
+                              + vert_before_rot[1] * ( cos_phix*cos_phiz + sin_phix*sin_phiy*sin_phiz);
+            vert_after_rot[2] = vert_before_rot[2] *   cos_phix*cos_phiy
+                              + vert_before_rot[1] *   cos_phiy*sin_phix
+                              - vert_before_rot[0] *   sin_phiy;
 
-        if (!domain->is_in_domain(vert_after_rot))
-            flag_outside = 1;
+            if (!domain->is_in_domain(vert_after_rot))
+                flag_outside = 1;
 
-        //store the vertex
-
-        vectorCopy3D(vert_after_rot,points[ipoint]);
-        ipoint++;
+            // store the vertex
+            vectorCopy3D(vert_after_rot,points[ipoint]);
+            ++ipoint;
+        }
+        ++nPointLines;
         continue;
     }
 
-    if(iLine == 5+npoints)
+    if(iLine == 5+nPointLines)
     {
-        if(strcmp(arg[0],"CELLS")) error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"CELLS"))
+            error->all(FLERR,"Expecting 'CELLS' section in ASCII VTK mesh file, cannot continue");
         ncells = atoi(arg[1]);
 
         memory->create(cells,ncells,4,"input_mesh:cells");
@@ -222,12 +240,12 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
     }
 
     //copy data of all which have 4 values - can be tet, quad, poly_line or triangle_strip
-    if(iLine <= 5+npoints+ncells)
+    if(iLine <= 5+nPointLines+ncells)
     {
         if(narg == 5)
         {
-            for (int j=0;j<4;j++) cells[icell][j] = atoi(arg[1+j]);
-
+            for (int j=0;j<4;j++)
+                cells[icell][j] = atoi(arg[1+j]);
         }
         else
         {
@@ -238,17 +256,19 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
         continue;
     }
 
-    if(iLine == 6+npoints+ncells)
+    if(iLine == 6+nPointLines+ncells)
     {
-        if(strcmp(arg[0],"CELL_TYPES")) error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
-        if(ncells != atoi(arg[1]))  error->all(FLERR,"Inconsistency in 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
+        if(strcmp(arg[0],"CELL_TYPES"))
+            error->all(FLERR,"Expecting 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
+        if(ncells != atoi(arg[1]))
+            error->all(FLERR,"Inconsistency in 'CELL_TYPES' section in ASCII VTK mesh file, cannot continue");
         icell = 0;
 
         continue;
     }
 
     //only take tetraeders (cell type 10 according to VTK standard) - count them
-    if(iLine <= 6+npoints+2*ncells)
+    if(iLine <= 6+nPointLines+2*ncells)
     {
         if(strcmp(arg[0],"10"))
         {
@@ -256,10 +276,11 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
             flag_other_than_tet = 1;
         }
         else ntets++;
+
         icell++;
         continue;
     }
-}
+  }
 
   //must throw an error here since regions may not extend outside box
   if(flag_outside)
@@ -273,7 +294,9 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
 
   for(int i = 0; i < ncells; i++)
   {
-      if(cells[i][0] == -1) continue;
+      if(cells[i][0] == -1)
+        continue;
+
       for (int j = 0; j < 4; j++)
         vectorCopy3D(points[cells[i][j]],tetnodes[j]);
 

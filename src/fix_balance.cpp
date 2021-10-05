@@ -272,6 +272,7 @@ void FixBalance::rebalance()
 
   if (domain->triclinic) domain->set_lamda_box();
   domain->set_local_box();
+  domain->update_all_regions();
 
   // if splits moved further than neighboring processor
   // move atoms to new processors via irregular()

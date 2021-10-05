@@ -192,6 +192,8 @@ void Group::assign(int narg, char **arg)
 
   // style = type, molecule, id
 
+  } else if (strcmp(arg[1],"empty") == 0) {
+  // don't do anything
   } else if (strcmp(arg[1],"type") == 0 || strcmp(arg[1],"molecule") == 0 ||
              strcmp(arg[1],"id") == 0) {
 
@@ -970,6 +972,132 @@ void Group::bounds(int igroup, double *minmax, int iregion)
   minmax[2] = -minmax[2];
   minmax[4] = -minmax[4];
 }
+
+
+/* ----------------------------------------------------------------------
+   compute the IDs with the atoms with the most extreme coordinates
+   of the group of atoms
+   periodic images are not considered, so atoms are NOT unwrapped
+------------------------------------------------------------------------- */
+
+void Group::boundids(int igroup, int *minmax)
+{
+  int groupbit = bitmask[igroup];
+  int *id = atom->tag;
+
+  double extent[6];
+  extent[0] = extent[2] = extent[4] = BIG;
+  extent[1] = extent[3] = extent[5] = -BIG;
+
+  double **x = atom->x;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit) {
+      for (int j=0; j < 3; j++) {
+        if (extent[2*j] > x[i][j]) {
+          extent[2*j] = x[i][j];
+          minmax[2*j] = id[i];
+        }
+        if (extent[2*j+1] < x[i][j]) {
+          extent[2*j+1] = x[i][j];
+          minmax[2*j+1] = id[i];
+        }
+      }
+    }
+  }
+
+  // compute extent across all procs
+  // flip sign of MIN to do it in one Allreduce MAX
+  // set box by extent in shrink-wrapped dims
+
+  extent[0] = -extent[0];
+  extent[2] = -extent[2];
+  extent[4] = -extent[4];
+
+  struct doubleint {
+    double extent;
+    int id;
+  };
+
+  doubleint local_id_extent[6],global_id_extent[6];
+
+  for (int j = 0; j < 6; j++) {
+    local_id_extent[j].extent = extent[j];
+    local_id_extent[j].id = minmax[j];
+  }
+
+  MPI_Allreduce(local_id_extent,global_id_extent,6,MPI_DOUBLE_INT,MPI_MAXLOC,world);
+
+  for (int j = 0; j < 6; j++) {
+    minmax[j] = global_id_extent[j].id;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   compute the IDs with the atoms with the most extreme coordinates in region
+   periodic images are not considered, so atoms are NOT unwrapped
+----------------------------------------------------------------------------- */
+
+void Group::boundids(int igroup, int *minmax, int iregion)
+{
+  int groupbit = bitmask[igroup];
+  int *id = atom->tag;
+  Region *region = domain->regions[iregion];
+  region->prematch();
+
+  double extent[6];
+  extent[0] = extent[2] = extent[4] = BIG;
+  extent[1] = extent[3] = extent[5] = -BIG;
+
+  double **x = atom->x;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (mask[i] & groupbit && region->match(x[i][0],x[i][1],x[i][2])) {
+      for (int j=0; j > 3; j++) {
+        if (extent[2*j] > x[i][j]) {
+          extent[2*j] = x[i][j];
+          minmax[2*j] = id[i];
+        }
+        if (extent[2*j+1] < x[i][j]) {
+          extent[2*j+1] = x[i][j];
+          minmax[2*j+1] = id[i];
+        }
+      }
+    }
+  }
+
+  // compute extent across all procs
+  // flip sign of MIN to do it in one Allreduce MAX
+  // set box by extent in shrink-wrapped dims
+
+  extent[0] = -extent[0];
+  extent[2] = -extent[2];
+  extent[4] = -extent[4];
+
+  struct doubleint {
+    double extent;
+    int id;
+  };
+
+  doubleint local_id_extent[6],global_id_extent[6];
+
+  for (int j = 0; j < 6; j++) {
+    local_id_extent[j].extent = extent[j];
+    local_id_extent[j].id = minmax[j];
+  }
+
+  MPI_Allreduce(local_id_extent,global_id_extent,6,MPI_DOUBLE_INT,MPI_MAXLOC,world);
+
+  for (int j = 0; j < 6; j++) {
+    minmax[j] = global_id_extent[j].id;
+  }
+}
+
+
 
 /* ----------------------------------------------------------------------
    compute the id bounds of the group of atoms

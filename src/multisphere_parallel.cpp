@@ -19,8 +19,6 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
-#define DELTA 10000
-
 #include "multisphere_parallel.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -248,7 +246,6 @@ void MultisphereParallel::writeRestart(FILE *fp)
     sizeGlobal = MPI_Gather0_Vector(sendbuf,sizeLocal,recvbuf,world);
 
 
-    /*NL*/ //if (screen) fprintf(screen,"id index %d, xcm index %d\n",customValues_.getElementPropertyIndex("id"),customValues_.getElementPropertyIndex("xcm"));
     /*NL*/ //if (screen) printVecN(screen,"recvbuf",recvbuf,1248);
 
     // write data to file

@@ -1,0 +1,52 @@
+# extract surface from hexhedral mesh example
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block -1 1 -1 1 -0.05 1.05 units box
+create_box  1 reg
+
+neighbor    0.002 bin
+neigh_modify    delay 0
+
+
+#material properties required for pair styles
+
+fix m1 all property/global youngsModulus peratomtype 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.9
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.05
+
+#pair style
+pair_style gran model hertz tangential history #Hertzian without cohesion
+pair_coeff * *
+
+timestep   0.00001
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+extrude_surface data/shell.vtk file data/testsurface.vtk data/testextrusion.vtk extrude_length 0.1 min_rad 0.025
+
+#region and insertion
+variable d equal 0.05
+create_atoms 1 single 0 0 0.5
+set group all density 2000 diameter $d
+
+#apply nve integration
+#fix integr all nve/sphere
+
+#output settings, include total thermal energy
+compute         rke all erotate/sphere
+thermo_style	custom step atoms ke c_rke vol
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run		1 post no
+

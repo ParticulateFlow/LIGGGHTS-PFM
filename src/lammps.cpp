@@ -56,6 +56,7 @@
 #include "timer.h"
 #include "memory.h"
 #include "error.h"
+#include "mpi_liggghts.h"
 
 using namespace LAMMPS_NS;
 
@@ -237,7 +238,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
 
   // universe cannot use stdin for input file
 
-  if (universe->existflag && inflag == 0)
+  if (universe->existflag && inflag == 0 && !(strcmp("cfdemcoupling", arg[0]) == 0))
     error->universe_all(FLERR,"Must use -in switch with multiple partitions");
 
   // if no partition command-line switch, cannot use -pscreen option
@@ -327,53 +328,56 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
     MPI_Comm_split(universe->uworld,universe->iworld,0,&world);
     MPI_Comm_rank(world,&me);
 
-    if (me == 0)
-      if (partscreenflag == 0)
-       if (screenflag == 0) {
-         char str[32];
-         sprintf(str,"screen.%d",universe->iworld);
-         screen = fopen(str,"w");
-         if (screen == NULL) error->one(FLERR,"Cannot open screen file");
-       } else if (strcmp(arg[screenflag],"none") == 0)
-         screen = NULL;
-       else {
-         char str[128];
-         sprintf(str,"%s.%d",arg[screenflag],universe->iworld);
-         screen = fopen(str,"w");
-         if (screen == NULL) error->one(FLERR,"Cannot open screen file");
-       }
-      else if (strcmp(arg[partscreenflag],"none") == 0)
+    if (me == 0) {
+      if (partscreenflag == 0) {
+        if (screenflag == 0) {
+          char str[32];
+          sprintf(str,"screen.%d",universe->iworld);
+          screen = fopen(str,"w");
+          if (screen == NULL) error->one(FLERR,"Cannot open screen file");
+        } else if (strcmp(arg[screenflag],"none") == 0) {
+          screen = NULL;
+        } else {
+          char str[128];
+          sprintf(str,"%s.%d",arg[screenflag],universe->iworld);
+          screen = fopen(str,"w");
+          if (screen == NULL) error->one(FLERR,"Cannot open screen file");
+        }
+      } else if (strcmp(arg[partscreenflag],"none") == 0) {
         screen = NULL;
-      else {
+      } else {
         char str[128];
         sprintf(str,"%s.%d",arg[partscreenflag],universe->iworld);
         screen = fopen(str,"w");
         if (screen == NULL) error->one(FLERR,"Cannot open screen file");
-      } else screen = NULL;
+      }
+    } else {
+      screen = NULL;
+    }
 
-    if (me == 0)
-      if (partlogflag == 0)
-       if (logflag == 0) {
-         char str[128];
-         sprintf(str,"log.liggghts.%d",universe->iworld); //NP modified C.K.
-         logfile = fopen(str,"w");
-         if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
-         sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
-         if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
-         if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
-       } else if (strcmp(arg[logflag],"none") == 0) {
-         logfile = NULL;
-         thermofile = NULL; //NP modified C.K.
-       } else {
-         char str[128];
-         sprintf(str,"%s.%d",arg[logflag],universe->iworld);
-         logfile = fopen(str,"w");
-         if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
-         sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
-         if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
-         if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
-       }
-      else if (strcmp(arg[partlogflag],"none") == 0) {
+    if (me == 0) {
+      if (partlogflag == 0) {
+        if (logflag == 0) {
+          char str[128];
+          sprintf(str,"log.liggghts.%d",universe->iworld); //NP modified C.K.
+          logfile = fopen(str,"w");
+          if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
+          sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
+          if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
+          if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
+        } else if (strcmp(arg[logflag],"none") == 0) {
+          logfile = NULL;
+          thermofile = NULL; //NP modified C.K.
+        } else {
+          char str[128];
+          sprintf(str,"%s.%d",arg[logflag],universe->iworld);
+          logfile = fopen(str,"w");
+          if (logfile == NULL) error->one(FLERR,"Cannot open logfile");
+          sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
+          if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
+          if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
+        }
+      } else if (strcmp(arg[partlogflag],"none") == 0) {
         logfile = NULL;
         thermofile = NULL; //NP modified C.K.
       } else {
@@ -384,19 +388,22 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
         sprintf(str,"%s.%d",arg[thermoflag],universe->iworld); //NP modified C.K.
         if (thermoflag > 0) thermofile = fopen(str,"w"); //NP modified C.K.
         if (thermoflag > 0 && thermofile == NULL) error->one(FLERR,"Cannot open thermofile"); //NP modified C.K.
-      } else {
-        logfile = NULL;
-        thermofile = NULL;
       }
+    } else {
+      logfile = NULL;
+      thermofile = NULL;
+    }
 
-    if (me == 0) {
+    if (me == 0 && inflag) {
       infile = fopen(arg[inflag],"r");
       if (infile == NULL) {
         char str[128];
         sprintf(str,"Cannot open input script %s",arg[inflag]);
         error->one(FLERR,str);
       }
-    } else infile = NULL;
+    } else {
+      infile = NULL;
+    }
 
     // screen and logfile messages for universe and world
 
@@ -443,6 +450,10 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
   if (mpisize != sizeof(bigint))
       error->all(FLERR,
                  "MPI_LMP_BIGINT and bigint in lmptype.h are not compatible");
+
+  // create custom MPI operations
+
+  mpi_create_custom_operations();
 
 #ifdef LAMMPS_SMALLBIG
   if (sizeof(smallint) != 4 || sizeof(tagint) != 4 || sizeof(bigint) != 8)
@@ -549,6 +560,8 @@ LAMMPS::~LAMMPS()
   delete universe;
   delete error;
   delete memory;
+
+  mpi_free_custom_operations();
 }
 
 /* ----------------------------------------------------------------------

@@ -408,7 +408,7 @@ void FixTemplateMultisphere::calc_eigensystem()
   double ez[3];
   vectorCross3D(ex_space_,ey_space_,ez);
   double dot = vectorDot3D(ez,ez_space_);
-  if (dot < 0.) vectorScalarMult3D(ez_space_,-1.);
+  if (dot < 0.) vectorFlip3D(ez_space_);
 
   //NP test for valid principal moments & axes like in fix_rigid.cpp init() omitted here
 }
@@ -535,6 +535,11 @@ void FixTemplateMultisphere::randomize_ptilist(int n_random,int distribution_gro
           vectorZeroize3D(pti_m->omega_ins);
 
           pti_m->groupbit = groupbit | distribution_groupbit; //NP also contains insert_groupbit
+
+          pti_m->fix_properties.clear();
+          pti_m->fix_property_values.clear();
+          pti_m->property_iindex = -1;
+          pti_m->property_index = -1;
     }
 }
 

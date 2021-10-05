@@ -38,7 +38,10 @@ args = list of arguments for a particular style :l
       keywords = {output}
       {output} values = face or interpolate 
       dump-identifier = 'stress' or 'id' or 'wear' or 'vel' or 'stresscomponents' or 'owner' or 'area' or 'aedges' or 'acorners' or 'nneigs' or any ID of a "fix mesh/surface"_fix_mesh_surface.html
-  {euler/vtk} args = none
+  {euler/vtk} args = zero or more keyword/ value pairs
+      keywords = {ave_euler} or {cell_center}
+      {ave_euler} fix-identifier = ID of a fix ave/euler or fix ave/euler/region command
+      {cell_center} flag = {yes} (default) or {no}
   {decomposition/vtk} args = none :pre
 
   {local} args = list of local attributes
@@ -382,7 +385,13 @@ commands, you can specify which meshes to dump. If no meshes are specified,
 all meshes used in the simulation are dumped.
 
 The {euler/vtk} style dumps the output of a "fix ave/euler"_fix_ave_euler.html
-command into a series of VTK files. No further args are expected.
+or "fix ave/euler/region"_fix_ave_euler_region.html command into a series of VTK
+files. If no further args are specified, the first fix of type ave/euler or
+ave/euler/region will be used.
+The option {ave_euler} allows to specify the fix-ID of a fix ave/euler or
+fix ave/euler/region command.
+If {cell_center} is set to {yes}, only the cell centers are dumped, if set to
+{no} the cell shapes are dumped.
 
 The {decomposition/vtk} style dumps the processor grid decomposition
 into a series of VTK files. No further args are expected.

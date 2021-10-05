@@ -39,14 +39,15 @@ namespace LIGGGHTS {
     RegionDistanceField();
     void build(LAMMPS_NS::Region *region, LAMMPS_NS::BoundingBox &bbox, double const rmax);
     void reset();
-    bool isInside(double *x);
-    bool isOutside(double *x);
-    bool isInBoundary(double *x);
+    bool isInside(const double *x);
+    bool isOutside(const double *x);
+    bool isInBoundary(const double *x);
+
   private:
     enum PointStatus {INSIDE,BOUNDARY,OUTSIDE};
 
     int index3ToIndex1(int const ix, int const iy, int const iz);
-    int posToIndex(double *x);
+    int posToIndex(const double *x);
     void indexToPos(int index, double *x);
     void index3ToPos(int ix, int iy, int iz, double *x);
     void dump();

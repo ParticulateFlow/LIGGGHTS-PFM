@@ -108,7 +108,7 @@ void ReadDump::command(int narg, char **arg)
 
   if (me == 0 && screen) fprintf(screen,"Scanning dump file ...\n");
 
-  bigint ntimestep = seek(nstep,1);
+  bigint ntimestep = seek(nstep,exactflag);
   if (ntimestep < 0)
     error->all(FLERR,"Dump file does not contain requested snapshot");
   header(1);
@@ -537,6 +537,7 @@ void ReadDump::atoms()
     domain->set_global_box();
     comm->set_proc_grid(0);
     domain->set_local_box();
+    domain->update_all_regions();
   }
 
   // move atoms back inside simulation box and to new processors
@@ -645,6 +646,7 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
   addflag = 0;
   bruteaddflag = 0;
   retainstepflag = 0;
+  exactflag = 1;
   for (int i = 0; i < nfield; i++) fieldlabel[i] = NULL;
   scaleflag = 0;
   wrapflag = 1;
@@ -684,6 +686,12 @@ int ReadDump::fields_and_keywords(int narg, char **arg)
       if (iarg+2 > narg) error->all(FLERR,"Illegal read_dump command");
       if (strcmp(arg[iarg+1],"yes") == 0) bruteaddflag = 1;
       else if (strcmp(arg[iarg+1],"no") == 0) bruteaddflag = 0;
+      else error->all(FLERR,"Illegal read_dump command");
+      iarg += 2;
+    } else if (strcmp(arg[iarg],"exactstep") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal read_dump command");
+      if (strcmp(arg[iarg+1],"yes") == 0) exactflag = 1;
+      else if (strcmp(arg[iarg+1],"no") == 0) exactflag = 0;
       else error->all(FLERR,"Illegal read_dump command");
       iarg += 2;
     } else if (strcmp(arg[iarg],"retaintimestep") == 0) {

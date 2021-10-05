@@ -47,6 +47,8 @@
 #include "memory.h"
 #include "error.h"
 #include <vector>
+#include <set>
+#include <map>
 #include <algorithm>
 
 // defining NDEBUG disables assertions
@@ -87,6 +89,10 @@ Atom::Atom(LAMMPS *lmp) : Pointers(lmp)
   tag = type = mask = NULL;
   image = NULL;
   x = v = f = NULL;
+
+  // molecular data to per-atom property
+  x_mol = NULL;     // A. N.
+  v_mol = NULL;     // A. N.
 
   molecule = NULL;
   q = NULL;
@@ -225,6 +231,10 @@ Atom::~Atom()
   memory->destroy(v);
   memory->destroy(f);
   memory->destroy(thread);
+
+  // modified A. N.
+  memory->destroy(x_mol);
+  memory->destroy(v_mol);
 
   memory->destroy(q);
   memory->destroy(mu);
@@ -587,6 +597,36 @@ void Atom::modify_params(int narg, char **arg)
       iarg += 3;
     } else error->all(FLERR,"Illegal atom_modify command");
   }
+}
+
+/* ----------------------------------------------------------------------
+   add unique mol ids to any atoms with mol <= 0
+   new mol ids are grouped by proc and start after max current mol id
+   called after creating new bonded atoms
+------------------------------------------------------------------------- */
+
+void Atom::mol_extend()
+{
+  int maxmol = 0;
+  for (int i = 0; i < nlocal; ++i) maxmol = MAX(maxmol,molecule[i]);
+  int maxmol_all;
+  MPI_Allreduce(&maxmol,&maxmol_all,1,MPI_INT,MPI_MAX,world);
+
+  // nomol = # of molecules I own with no mol id (molecule <= 0)
+  // nomol_sum = # of total molecules on procs <= me with no mol id
+
+  std::set<int> uniquemol;
+  for (int i = 0; i < nlocal; i++) if (molecule[i] <= 0) uniquemol.insert(molecule[i]);
+  int nomol = uniquemol.size();
+  int nomol_sum;
+  MPI_Scan(&nomol,&nomol_sum,1,MPI_INT,MPI_SUM,world);
+
+  // imol = 1st new mol id that my untagged molecules should use
+
+  int imol = maxmol_all + nomol_sum - nomol + 1;
+  std::map<int, int> dummy2mol;
+  for (std::set<int>::iterator it=uniquemol.begin(); it!=uniquemol.end(); ++it) dummy2mol[*it] = imol++;
+  for (int i = 0; i < nlocal; ++i) if (molecule[i] <= 0) molecule[i] = dummy2mol[molecule[i]];
 }
 
 /* ----------------------------------------------------------------------
@@ -1950,6 +1990,9 @@ void *Atom::extract(const char *name,int &len) //NP modified C.K. added len
   if (strcmp(name,"omega") == 0) return (void *) omega;
   if (strcmp(name,"angmom") == 0) return (void *) angmom;
   if (strcmp(name,"torque") == 0) return (void *) torque;
+  if (strcmp(name,"x_mol") == 0) return (void *) x_mol;     // modified A.N.
+  if (strcmp(name,"v_mol") == 0) return (void *) v_mol;     // modified A.N.
+
 
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
   if (strcmp(name,"shape") == 0 && shape!=NULL) return (void *) shape;

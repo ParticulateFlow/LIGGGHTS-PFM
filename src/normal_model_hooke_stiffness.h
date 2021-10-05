@@ -96,7 +96,7 @@ namespace ContactModels
     {
       const int itype = cdata.itype;
       const int jtype = cdata.jtype;
-      double meff=cdata.meff;
+      const double meff = cdata.meff;
 
       double kn = k_n[itype][jtype];
       double kt = k_t[itype][jtype];
@@ -130,7 +130,7 @@ namespace ContactModels
 
       const double Fn_damping = -gamman*cdata.vn;
       const double Fn_contact = kn*cdata.deltan;
-      double Fn                       = Fn_damping + Fn_contact;
+      double Fn = Fn_damping + Fn_contact;
 
       //limit force to avoid the artefact of negative repulsion force
       if(limitForce && (Fn<0.0) )

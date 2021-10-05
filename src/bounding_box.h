@@ -41,6 +41,7 @@ class BoundingBox
   public:
 
     BoundingBox();
+    explicit BoundingBox(double bounds[6]);
     BoundingBox(double xLo, double xHi, double yLo, double yHi, double zLo, double zHi);
     virtual ~BoundingBox();
 
@@ -164,7 +165,7 @@ class BoundingBox
     bool isInitialized()
     { return initGiven; }
 
-    bool isInside(double *p)
+    bool isInside(const double *p)
     {
        // check bbox
        // test for >= and < as in Domain class

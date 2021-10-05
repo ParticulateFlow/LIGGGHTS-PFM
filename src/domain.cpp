@@ -217,7 +217,6 @@ void Domain::set_initial_box()
 
 void Domain::set_global_box()
 {
-  /*NL*/ //if (screen) fprintf(screen, "box set to %f %f %f / %f %f %f",boxlo[0],boxlo[1],boxlo[2],boxhi[0],boxhi[1],boxhi[2]);
   prd[0] = xprd = boxhi[0] - boxlo[0];
   prd[1] = yprd = boxhi[1] - boxlo[1];
   prd[2] = zprd = boxhi[2] - boxlo[2];
@@ -455,6 +454,10 @@ void Domain::reset_box()
     x2lamda(atom->nlocal);
     pbc();
   }
+
+  // if shrink-wrapped, update regions (e.g. local search trees)
+  // external box updates need to explicitly take care of region updates!
+  if (nonperiodic == 2) update_all_regions();
 }
 
 /*NP
@@ -1366,6 +1369,15 @@ int Domain::find_region(const char *name)
   for (int iregion = 0; iregion < nregion; iregion++)
     if (strcmp(name,regions[iregion]->id) == 0) return iregion;
   return -1;
+}
+
+/* ----------------------------------------------------------------------
+   update regions upon (sub)domain change (e.g. due to load balancing)
+------------------------------------------------------------------------- */
+
+void Domain::update_all_regions()
+{
+  for (int i = 0; i < nregion; i++) regions[i]->rebuild();
 }
 
 /* ----------------------------------------------------------------------

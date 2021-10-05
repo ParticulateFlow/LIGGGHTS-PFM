@@ -1146,6 +1146,7 @@ void FixNH::remap()
 
   domain->set_global_box();
   domain->set_local_box();
+  domain->update_all_regions();
 
   // convert pertinent atoms and rigid bodies back to box coords
 
@@ -2251,6 +2252,7 @@ void FixNH::pre_exchange()
   if (flip) {
     domain->set_global_box();
     domain->set_local_box();
+    domain->update_all_regions();
 
     domain->image_flip(flipxy,flipxz,flipyz);
 

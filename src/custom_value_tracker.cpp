@@ -117,7 +117,7 @@ using namespace LAMMPS_NS;
    rotate all properties, applies to vector and multivector only
   ------------------------------------------------------------------------- */
 
-  void CustomValueTracker::rotate(double *totalQ,double *dQ)
+  void CustomValueTracker::rotate(const double *totalQ, const double *dQ)
   {
       /*NL*/ //if (screen) printVec4D(screen,"totalQ",totalQ);
       /*NL*/ //if (screen) printVec4D(screen,"dQ",dQ);
@@ -127,7 +127,7 @@ using namespace LAMMPS_NS;
       globalProperties_.rotate(totalQ);
   }
 
-  void CustomValueTracker::rotate(double *dQ)
+  void CustomValueTracker::rotate(const double *dQ)
   {
       //NP this handles owned and ghost elements
       elementProperties_.rotate(dQ);
@@ -149,14 +149,14 @@ using namespace LAMMPS_NS;
    move all properties
   ------------------------------------------------------------------------- */
 
-  void CustomValueTracker::move(double *vecTotal, double *vecIncremental)
+  void CustomValueTracker::move(const double *vecTotal, const double *vecIncremental)
   {
       //NP this handles owned and ghost elements
       elementProperties_.move(vecIncremental);
       globalProperties_.move(vecTotal);
   }
 
-  void CustomValueTracker::move(double *vecIncremental)
+  void CustomValueTracker::move(const double *vecIncremental)
   {
       //NP this handles owned and ghost elements
       elementProperties_.move(vecIncremental);

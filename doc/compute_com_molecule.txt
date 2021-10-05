@@ -12,8 +12,14 @@ compute com/molecule command :h3
 
 compute ID group-ID com/molecule :pre
 
-ID, group-ID are documented in "compute"_compute.html command
-com/molecule = style name of this compute command :ul
+ID, group-ID are documented in "compute"_compute.html command :ulb,l
+com/molecule = style name of this compute command :l
+zero or more keyword/value pairs may be appended :l
+keyword = {unwrap} :l
+  {unwrap} value = yes or no
+    yes = coordinates of the center-of-mass in unwrapped form
+    no = coordinates of the center-of-mass remapped into the periodic domain :pre
+:ule
 
 [Examples:]
 
@@ -34,7 +40,7 @@ calculation for the molecule.
 
 The ordering of per-molecule quantities produced by this compute is
 consistent with the ordering produced by other compute commands that
-generate per-molecule datums.  Conceptually, them molecule IDs will be
+generate per-molecule datums.  Conceptually, the molecule IDs will be
 in ascending order for any molecule with one or more of its atoms in
 the specified group.
 
@@ -48,7 +54,7 @@ image flags (e.g. to 0) before invoking this compute by using the "set
 image"_set.html command.
 
 IMPORTANT NOTE: If an atom is part of a rigid body (see the "fix
-rigid"_fix_rigid.html command), it's periodic image flags are altered,
+rigid"_fix_rigid.html command), its periodic image flags are altered,
 and its contribution to the center-of-mass may not reflect its true
 contribution.  See the "fix rigid"_fix_rigid.html command for details.
 Thus, to compute the center-of-mass of rigid bodies as they cross
@@ -58,10 +64,12 @@ file"_dump.html containing coordinates of the atoms in the bodies.
 [Output info:]
 
 This compute calculates a global array where the number of rows =
-Nmolecules and the number of columns = 3 for the x,y,z center-of-mass
-coordinates of each molecule.  These values can be accessed by any
-command that uses global array values from a compute as input.  See
-"Section_howto 15"_Section_howto.html#howto_15 for an overview of
+Nmolecules and the number of columns = 6 for the x,y,z center-of-mass
+coordinates and x,y,z components of the center-of-mass velocity of each
+molecule.
+These values can be accessed by any command that uses global array values
+from a compute as input.
+See "Section_howto 15"_Section_howto.html#howto_15 for an overview of
 LAMMPS output options.
 
 The array values are "intensive".  The array values will be in
@@ -73,4 +81,7 @@ distance "units"_units.html.
 
 "compute com"_compute_com.html
 
-[Default:] none
+[Default:]
+
+unwrap = yes
+

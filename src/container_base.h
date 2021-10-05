@@ -78,9 +78,9 @@ namespace LAMMPS_NS
           virtual bool setFromContainer(ContainerBase *cont) = 0;
 
           virtual void scale(double factor) = 0;
-          virtual void move(double *dx) = 0;
-          virtual void moveElement(int i,double *dx) = 0;
-          virtual void rotate(double *dQ) = 0;
+          virtual void move(const double *dx) = 0;
+          virtual void moveElement(int i, const double *dx) = 0;
+          virtual void rotate(const double *dQ) = 0;
 
           virtual void setToDefault(int n) = 0;
 
