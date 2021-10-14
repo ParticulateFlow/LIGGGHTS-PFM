@@ -36,11 +36,13 @@
 #include "comm.h"
 #include <math.h>
 #include "vector_liggghts.h"
+#include "math_const.h"
 #include "fix_cfd_coupling_dissolve.h"
 #include "fix_property_atom.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
 
@@ -145,7 +147,7 @@ void FixCfdCouplingDissolve::post_force(int)
     double *pmass_ = atom->rmass;
     double *pdensity_ = atom->density;
 
-    double vmin = (4./3.)*M_PI*rmin*rmin*rmin;
+    double vmin = MY_4PI3*rmin*rmin*rmin;
 
     // communicate convective flux to ghosts, there might be new data
 
@@ -178,7 +180,7 @@ void FixCfdCouplingDissolve::post_force(int)
                 else
                 {
                     // set new radius
-                    radius_[i] = cbrt(0.75*pmass_[i]/(M_PI*pdensity_[i]));
+                    radius_[i] = cbrt(0.75*pmass_[i]/(MY_PI*pdensity_[i]));
                 }
             }
         }
