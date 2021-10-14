@@ -50,9 +50,9 @@ class FixCfdCouplingDissolve : public Fix {
   void pre_exchange();
 
  protected:
-  class FixCfdCoupling* fix_coupling;
-  class FixPropertyAtom* fix_convectiveFlux;
-  double rmin;
+  class FixCfdCoupling* fix_coupling_;
+  class FixPropertyAtom* fix_convectiveFlux_;
+  double rmin_;
 
   std::vector<int> atom_tags_delete_;
 

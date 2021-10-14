@@ -48,9 +48,9 @@ using namespace MathConst;
 
 FixCfdCouplingDissolve::FixCfdCouplingDissolve(LAMMPS *lmp, int narg, char **arg) :  Fix(lmp, narg, arg)
 {
-    fix_coupling = NULL;
-    fix_convectiveFlux = NULL;
-    rmin = -1.0;
+    fix_coupling_ = NULL;
+    fix_convectiveFlux_ = NULL;
+    rmin_ = -1.0;
 
     int iarg = 3;
 
@@ -64,13 +64,13 @@ FixCfdCouplingDissolve::FixCfdCouplingDissolve(LAMMPS *lmp, int narg, char **arg
             if (narg < iarg+2)
                 error->fix_error(FLERR,this,"not enough arguments for 'rmin'");
             iarg++;
-            rmin = atof(arg[iarg]);
+            rmin_ = atof(arg[iarg]);
             iarg++;
             hasargs = true;
         }
     }
 
-    if (rmin < 0.) error->all(FLERR,"Fix couple/cfd/dissolve: rmin must be >= 0. Specify a meaningful value.");
+    if (rmin_ < 0.) error->all(FLERR,"Fix couple/cfd/dissolve: rmin must be >= 0. Specify a meaningful value.");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -83,7 +83,7 @@ FixCfdCouplingDissolve::~FixCfdCouplingDissolve()
 
 void FixCfdCouplingDissolve::pre_delete(bool unfixflag)
 {
-    if (fix_convectiveFlux) modify->delete_fix("convectiveMassFlux");
+    if (fix_convectiveFlux_) modify->delete_fix("convectiveMassFlux");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -101,7 +101,7 @@ int FixCfdCouplingDissolve::setmask()
 void FixCfdCouplingDissolve::post_create()
 {
     // register convective flux
-    if (!fix_convectiveFlux)
+    if (!fix_convectiveFlux_)
     {
         const char* fixarg[11];
         fixarg[0]="convectiveMassFlux";
@@ -113,7 +113,7 @@ void FixCfdCouplingDissolve::post_create()
         fixarg[6]="yes";    //NP communicate ghost
         fixarg[7]="no";     //NP communicate rev
         fixarg[8]="0.";
-        fix_convectiveFlux = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        fix_convectiveFlux_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 }
 
@@ -126,14 +126,14 @@ void FixCfdCouplingDissolve::init()
         error->fix_error(FLERR,this,"More than one fix of this style is not allowed");
 
     // find coupling fix
-    fix_coupling = static_cast<FixCfdCoupling*>(modify->find_fix_style_strict("couple/cfd",0));
-    if (!fix_coupling)
+    fix_coupling_ = static_cast<FixCfdCoupling*>(modify->find_fix_style_strict("couple/cfd",0));
+    if (!fix_coupling_)
         error->fix_error(FLERR,this,"needs a fix of type couple/cfd");
 
     // values to come from OF
-    fix_coupling->add_pull_property("convectiveMassFlux","scalar-atom");
+    fix_coupling_->add_pull_property("convectiveMassFlux","scalar-atom");
 
-    fix_convectiveFlux = static_cast<FixPropertyAtom*>(modify->find_fix_property("convectiveMassFlux","property/atom","scalar",0,0,style));
+    fix_convectiveFlux_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("convectiveMassFlux","property/atom","scalar",0,0,style));
 }
 
 /* ---------------------------------------------------------------------- */
@@ -143,20 +143,20 @@ void FixCfdCouplingDissolve::post_force(int)
     int *mask = atom->mask;
     int nlocal = atom->nlocal;
     double dt = update->dt;
-    double *radius_ = atom->radius;
-    double *pmass_ = atom->rmass;
-    double *pdensity_ = atom->density;
+    double *radius = atom->radius;
+    double *rmass = atom->rmass;
+    double *density = atom->density;
 
-    double vmin = MY_4PI3*rmin*rmin*rmin;
+    double vmin = MY_4PI3*rmin_*rmin_*rmin_;
 
     // communicate convective flux to ghosts, there might be new data
 
     if (0 == neighbor->ago)
     {
-        fix_convectiveFlux->do_forward_comm();
+        fix_convectiveFlux_->do_forward_comm();
     }
 
-    double *convectiveFlux = fix_convectiveFlux->vector_atom;
+    double *convectiveFlux = fix_convectiveFlux_->vector_atom;
 
 
     //NP add convective flux to per-particle mass flux
@@ -165,22 +165,22 @@ void FixCfdCouplingDissolve::post_force(int)
     {
         if (mask[i] & groupbit)
         {
-            if (radius_[i] > rmin)
+            if (radius[i] > rmin_)
             {
-                pmass_[i] += convectiveFlux[i]*dt;
+                rmass[i] += convectiveFlux[i]*dt;
 
-                if (pmass_[i] <= (vmin*pdensity_[i]))
+                if (rmass[i] <= (vmin*density[i]))
                 {
                     // set to minimum radius and mark for delete
-                    pmass_[i] = vmin*pdensity_[i];
-                    radius_[i] = rmin;
+                    rmass[i] = vmin*density[i];
+                    radius[i] = rmin_;
                     atom_tags_delete_.push_back(atom->tag[i]);
                     //fprintf(screen, "Marking atom %i for deletion \n",atom->tag[i]);
                 }
                 else
                 {
                     // set new radius
-                    radius_[i] = cbrt(0.75*pmass_[i]/(MY_PI*pdensity_[i]));
+                    radius[i] = cbrt(0.75*rmass[i]/(MY_PI*density[i]));
                 }
             }
         }
@@ -194,7 +194,7 @@ void FixCfdCouplingDissolve::pre_exchange()
 
 void FixCfdCouplingDissolve::delete_atoms()
 {
-    int nparticles_deleted_this_ = 0.;
+    int nparticles_deleted_this = 0.;
     int *atom_map_array = atom->get_map_array();
     AtomVec *avec = atom->avec;
     int nlocal = atom->nlocal;
@@ -205,7 +205,7 @@ void FixCfdCouplingDissolve::delete_atoms()
 
         avec->copy(nlocal-1,iPart,1);
 
-        nparticles_deleted_this_++;
+        nparticles_deleted_this++;
         nlocal--;
 
         //NP manipulate atom map array
