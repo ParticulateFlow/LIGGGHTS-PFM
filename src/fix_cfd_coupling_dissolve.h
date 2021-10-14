@@ -48,7 +48,6 @@ class FixCfdCouplingDissolve : public Fix {
   virtual void init();
   virtual void post_force(int);
   void pre_exchange();
-  void delete_atoms();
 
  protected:
   class FixCfdCoupling* fix_coupling;
@@ -57,6 +56,7 @@ class FixCfdCouplingDissolve : public Fix {
 
   std::vector<int> atom_tags_delete_;
 
+  void delete_atoms();
 };
 
 }
