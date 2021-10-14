@@ -37,6 +37,7 @@
 #include <math.h>
 #include "vector_liggghts.h"
 #include "math_const.h"
+#include "mpi_liggghts.h"
 #include "fix_cfd_coupling_dissolve.h"
 #include "fix_property_atom.h"
 
@@ -194,7 +195,7 @@ void FixCfdCouplingDissolve::pre_exchange()
 
 void FixCfdCouplingDissolve::delete_atoms()
 {
-    int nparticles_deleted_this = 0.;
+    int nparticles_deleted_this = 0;
     int *atom_map_array = atom->get_map_array();
     AtomVec *avec = atom->avec;
     int nlocal = atom->nlocal;
@@ -217,6 +218,8 @@ void FixCfdCouplingDissolve::delete_atoms()
 
     atom_tags_delete_.clear();
 
+    MPI_Sum_Scalar(nparticles_deleted_this,world);
+
     //NP tags and maps
     atom->nlocal = nlocal;
 
@@ -225,13 +228,16 @@ void FixCfdCouplingDissolve::delete_atoms()
     bigint nblocal = atom->nlocal;
     MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
 
-    if (atom->tag_enable)
+    if (nparticles_deleted_this)
     {
-        if (atom->map_style)
+        if (atom->tag_enable)
         {
-            atom->nghost = 0;
-            atom->map_init();
-            atom->map_set();
+            if (atom->map_style)
+            {
+                atom->nghost = 0;
+                atom->map_init();
+                atom->map_set();
+            }
         }
     }
 }
