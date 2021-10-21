@@ -1190,18 +1190,18 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
 
     // limit mass change - can't remove more than present in cell
     // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor
-    // if reacted mass is very small, do not limit it because of numerical stability
-    if(limit_reactant_consumption_ && -dmA_sum > 1e-9)
+    // if reacted mass is very small, do not limit it because of numerical stability (division by dmA_sum below)
+    if (limit_reactant_consumption_ && dmA_sum > 1e-12)
     {
         if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
 
         double dAmax = p_A / (Runiv * T_[i]) * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
 
-        if(-dmA_sum > dAmax)
+        if (dmA_sum > dAmax)
         {
             for (int j = 0 ; j < layers_; j++)
             {
-                dmA_[j] = -dAmax * dmA_[j] / dmA_sum;
+                dmA_[j] = dAmax * dmA_[j] / dmA_sum;
                 dmA_f_[i][j] = dmA_[j];
             }
         }
@@ -1675,18 +1675,18 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 
     // limit mass change - can't remove more than present in cell
     // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor
-    // if reacted mass is very small, do not limit it because of numerical stability
-    if(limit_reactant_consumption_ && -dmA_sum > 1e-9)
+    // if reacted mass is very small, do not limit it because of numerical stability (division by dmA_sum below)
+    if (limit_reactant_consumption_ && dmA_sum > 1e-12)
     {
         if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
 
         double dAmax = p_A / (Runiv * T_[i]) * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
 
-        if(-dmA_sum > dAmax)
+        if (dmA_sum > dAmax)
         {
             for (int j = 0 ; j < layers_; j++)
             {
-                dmA_[j] = -dAmax * dmA_[j] / dmA_sum;
+                dmA_[j] = dAmax * dmA_[j] / dmA_sum;
                 dmA_f_[i][j] = dmA_[j];
             }
         }

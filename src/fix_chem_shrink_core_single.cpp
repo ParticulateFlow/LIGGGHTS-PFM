@@ -969,10 +969,10 @@ void FixChemShrinkCoreSingle::reaction(int i, double &dmA_, const double x0_eq_)
 
         double dAmax = p_A / (Runiv * T_[i]) * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
 
-        if(-dmA_ > dAmax) dmA_ = -dAmax;
+        if(dmA_ > dAmax) dmA_ = dAmax;
     }
 
-    // fix property added so values are otuputted to file
+    // fix property added so values are outputted to file
     dmA_f_[i] = dmA_;
 }
 
