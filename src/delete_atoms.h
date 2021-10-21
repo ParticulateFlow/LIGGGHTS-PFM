@@ -34,8 +34,15 @@ class DeleteAtoms : protected Pointers {
   int *dlist;
   int compress_flag,mol_flag;
   std::map<int,int> *hash;
+  
+  // variables for directional removal with target mass
+  int direction_;
+  int orientation_;
+  double stepsize_;
+  double target_mass_;
 
   void delete_group(int, char **);
+  void delete_group_directional(int, char **);
   void delete_region(int, char **);
   void delete_overlap(int, char **);
   void delete_porosity(int, char **);
