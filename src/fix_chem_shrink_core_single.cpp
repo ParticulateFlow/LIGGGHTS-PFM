@@ -538,6 +538,7 @@ void FixChemShrinkCoreSingle::updatePtrs()
     changeOfA_      =   fix_changeOfA_      ->  vector_atom;
     changeOfC_      =   fix_changeOfC_      ->  vector_atom;
     T_              =   fix_tgas_           ->  vector_atom;
+    Tpart_          =   fix_tpart_          ->  vector_atom;
     heatFlux_       =   fix_heatFlux_       ->  vector_atom;
     molecularDiffusion_  = fix_diffcoeff_   ->  vector_atom;
     nuf_            =   fix_nuField_        ->  vector_atom;
@@ -606,7 +607,8 @@ void FixChemShrinkCoreSingle::init()
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style));
-    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style));
+    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style)); // gas temperature at location of particle
+    fix_tpart_          =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp", "property/atom", "scalar", 0, 0, style));     // particle temperature
     fix_heatFlux_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("heatFlux", "property/atom", "scalar", 0, 0, style));
     fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, style));
     fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style));
@@ -1078,6 +1080,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     if (!heatToParticle_ && !heatToFluid_) return;
 
     double T = T_[i];
+    double Tpart = Tpart_[i];
     double dH = 0.0;
     double dHcoeffs[6] = {0.0};
 
@@ -1155,8 +1158,19 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     // reaction enthalpy in kJ/mol
     dH = dHcoeffs[0]*T + 0.5*dHcoeffs[1]*T*T + 0.333*dHcoeffs[2]*T*T*T;
     dH += 0.25*dHcoeffs[3]*T*T*T*T - dHcoeffs[4]/T + dHcoeffs[5];
-    // reaction enthalpy in J/mol
+    // reaction enthalpy (enthalpy of formation + thermal energy of gas phases) in J/mol
     dH *= 1000;
+    
+    // add contribution of coke thermal energy
+    double Cp = 10.2; // heat capacity coke in J/(mol K)
+    if (reactionHeatIndex_ == 0)  // O2 + 2C -> 2C0
+    {
+        dH -= 2*Cp*(Tpart-298);
+    }
+    else if (reactionHeatIndex_ == 1) // CO2 + C -> 2CO
+    {
+        dH -= Cp*(Tpart-298);
+    }
 
     double cg3 = cg_ * cg_ * cg_;
 
@@ -1193,7 +1207,7 @@ void FixChemShrinkCoreSingle::init_defaults()
     radius_ = pmass_ = pdensity_ = NULL;
 
     // initialise fix handles
-    changeOfA_ = changeOfC_ = T_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = heatFlux_ = NULL;
+    changeOfA_ = changeOfC_ = T_ = Tpart_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = heatFlux_ = NULL;
     Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
     fracRed_ = NULL;
 
@@ -1204,6 +1218,7 @@ void FixChemShrinkCoreSingle::init_defaults()
     fix_changeOfA_ = NULL;
     fix_changeOfC_ = NULL;
     fix_tgas_ = NULL;       // [K]
+    fix_tpart_ = NULL;       // [K]
     fix_heatFlux_= NULL;
     fix_diffcoeff_ = NULL;  // [m^2/s]
     fix_nuField_ = NULL;    // [m^2/s]
