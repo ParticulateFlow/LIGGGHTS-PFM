@@ -25,6 +25,7 @@
 #include "fix_remove.h"
 #include "atom.h"
 #include "error.h"
+#include "force.h"
 #include "update.h"
 #include "region.h"
 #include "domain.h"
@@ -37,6 +38,9 @@
 #include "math_const.h"
 #include "input.h"
 #include "variable.h"
+#include "fix_property_atom.h"
+#include "fix_property_global.h"
+#include "pair_gran.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -70,6 +74,10 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   restart_write_(true),
   verbose_(false),
   compress_flag_(1),
+  monitor_heat_(false),
+  heat_removed_(0.),
+  fix_temp_(NULL),
+  fix_capacity_(NULL),
   fix_ms_(0),
   ms_(0)
 {
@@ -165,6 +173,14 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
       else if(strcmp(arg[iarg+1],"yes"))
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'integrated_error'");
       iarg += 2;
+    } else if(strcmp(arg[iarg],"monitor_heat") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'monitor_heat'");
+      if(strcmp(arg[iarg+1],"yes") == 0)
+        monitor_heat_ = true;
+      else if(strcmp(arg[iarg+1],"no"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'monitor_heat_'");
+      iarg += 2;
     } else if (strcmp(arg[iarg],"minmass") == 0){
       iarg++;
       m_remove_min_ = atof(arg[iarg++]);
@@ -185,6 +201,16 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   time_depend = 1;
   force_reneighbor = 1;
   next_reneighbor = time_origin_ + nevery;
+
+  vector_flag = 1;
+  if (monitor_heat_)
+  {
+    size_vector = 2;
+  }
+  else
+  {
+    size_vector = 1;
+  }
 
   if (restart_read_ || restart_write_)
   {
@@ -264,6 +290,15 @@ void FixRemove::init()
   /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::init end\n");
 
   if (variable_rate_) ivar_ = input->variable->find(rate_name_);
+
+  if (monitor_heat_)
+  {
+      fix_temp_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp", "property/atom", "scalar", 0, 0, style));
+
+      PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+      int max_type = pair_gran->get_properties()->max_type();
+      fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style));
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -340,20 +375,21 @@ void FixRemove::pre_exchange()
         return;
 
     double mass_removed_this_me = 0., mass_removed_this = 0.;
+    double heat_removed_this_me = 0., heat_removed_this = 0.;
     int nremoved_this = 0, nremoved_this_me = 0;
 
     //NP delete all particles if eligible mass smaller that mass to remove
     if(mass_eligible <= mass_to_remove_)
-        delete_all(mass_eligible_me,ratio_ms_to_remove_me,mass_removed_this_me,nremoved_this_me);
+        delete_all(mass_eligible_me,ratio_ms_to_remove_me,mass_removed_this_me,heat_removed_this_me,nremoved_this_me);
     //NP shrink eligible particles
     else if(REMOVE_SHRINK == style_)
-        shrink(mass_to_remove_me,mass_shrink_me,mass_removed_this_me,nremoved_this_me);
+        shrink(mass_to_remove_me,mass_shrink_me,mass_removed_this_me,heat_removed_this_me,nremoved_this_me);
     //NP delete particles
     else if(REMOVE_DELETE == style_ && !fix_ms_)
-        delete_partial_particles(mass_to_remove_me,mass_removed_this_me,nremoved_this_me);
+        delete_partial_particles(mass_to_remove_me,mass_removed_this_me,heat_removed_this_me,nremoved_this_me);
     else if(REMOVE_DELETE == style_)
         delete_partial_particles_bodies(mass_to_remove_me,mass_removed_this_me,
-                                        nremoved_this_me,ratio_ms_to_remove_me);
+                                        heat_removed_this_me,nremoved_this_me,ratio_ms_to_remove_me);
 
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 7\n");
 
@@ -361,6 +397,12 @@ void FixRemove::pre_exchange()
     MPI_Allreduce(&mass_removed_this_me,&mass_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
     mass_removed_ += mass_removed_this;
+
+    if(monitor_heat_)
+    {
+        MPI_Allreduce(&heat_removed_this_me,&heat_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
+        heat_removed_ += heat_removed_this;
+    }
 
     if(comm->me == 0)
     {
@@ -484,10 +526,18 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
 ------------------------------------------------------------------------- */
 
 void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
-                           double &mass_removed_this_me,int &nremoved_this_me)
+                           double &mass_removed_this_me,double &heat_removed_this_me,
+                           int &nremoved_this_me)
 {
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 4\n");
     double *rmass = atom->rmass;
+    int *type = atom->type;
+    double *T = NULL;
+
+    if(monitor_heat_)
+    {
+        T = fix_temp_->vector_atom;
+    }
 
     //NP delete in reverse order
     //NP so deletion does not mess up list
@@ -496,6 +546,11 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
     {
         int i = atom->map(atom_tags_eligible_[ilist]);
         mass_removed_this_me += rmass[i];
+        if(monitor_heat_)
+        {
+            double Cp = fix_capacity_->compute_vector(type[i]-1);
+            heat_removed_this_me += rmass[i]*T[i]*Cp;
+        }
         nremoved_this_me++;
         delete_particle(i);
     }
@@ -519,11 +574,19 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
 ------------------------------------------------------------------------- */
 
 void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
-                       double &mass_removed_this_me,int &nremoved_this_me)
+                       double &mass_removed_this_me,double &heat_removed_this_me,
+                       int &nremoved_this_me)
 {
     double ratio_m,ratio_r;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
+    int *type = atom->type;
+    double *T = NULL;
+
+    if(monitor_heat_)
+    {
+        T = fix_temp_->vector_atom;
+    }
 
     //NP multisphere case NOT handled here, cannot shrink
     //NP error in init() function
@@ -539,6 +602,11 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         if(radius[i] < delete_below_)
         {
             mass_removed_this_me += rmass[i];
+            if(monitor_heat_)
+            {
+                double Cp = fix_capacity_->compute_vector(type[i]-1);
+                heat_removed_this_me += rmass[i]*T[i]*Cp;
+            }
             nremoved_this_me++;
             mass_to_remove_me -= rmass[i];
             delete_particle(i);
@@ -558,6 +626,11 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         {
             int i = atom->map(atom_tags_eligible_[ilist]);
             mass_removed_this_me += (1.-ratio_m)*rmass[i];
+            if(monitor_heat_)
+            {
+                double Cp = fix_capacity_->compute_vector(type[i]-1);
+                heat_removed_this_me += (1.-ratio_m)*rmass[i]*T[i]*Cp;
+            }
             mass_to_remove_me -= (1.-ratio_m)*rmass[i];
             rmass[i] *= ratio_m;
             radius[i] *= ratio_r;
@@ -573,11 +646,19 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
 ------------------------------------------------------------------------- */
 
 void FixRemove::delete_partial_particles(double &mass_to_remove_me,
-                double &mass_removed_this_me,int &nremoved_this_me)
+                double &mass_removed_this_me,double &heat_removed_this_me,
+                int &nremoved_this_me)
 {
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 6\n");
 
     double *rmass = atom->rmass;
+    int *type = atom->type;
+    double *T = NULL;
+
+    if(monitor_heat_)
+    {
+        T = fix_temp_->vector_atom;
+    }
 
     while (atom_tags_eligible_.size() > 0 && mass_to_remove_me > 0.)
     {
@@ -591,6 +672,11 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
 
         // delete particle i
         mass_removed_this_me += rmass[i];
+        if(monitor_heat_)
+        {
+            double Cp = fix_capacity_->compute_vector(type[i]-1);
+            heat_removed_this_me += rmass[i]*T[i]*Cp;
+        }
         nremoved_this_me++;
         mass_to_remove_me -= rmass[i];
         delete_particle(i);
@@ -604,13 +690,21 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
 ------------------------------------------------------------------------- */
 
 void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
-                double &mass_removed_this_me,int &nremoved_this_me,double ratio_ms_to_remove_me)
+                double &mass_removed_this_me,double &heat_removed_this_me,
+                int &nremoved_this_me,double ratio_ms_to_remove_me)
 {
     /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 6\n");
 
     double *rmass = atom->rmass;
     bool ms;
     int i,ibody;
+    int *type = atom->type;
+    double *T = NULL;
+    
+    if(monitor_heat_)
+    {
+        T = fix_temp_->vector_atom;
+    }
 
     while ((atom_tags_eligible_.size() > 0 || body_tags_eligible_.size() > 0) && mass_to_remove_me > 0.)
     {
@@ -634,6 +728,11 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
 
             // delete particle i
             mass_removed_this_me += rmass[i];
+            if(monitor_heat_)
+            {
+                double Cp = fix_capacity_->compute_vector(type[i]-1);
+                heat_removed_this_me += rmass[i]*T[i]*Cp;
+            }
             nremoved_this_me++;
             mass_to_remove_me -= rmass[i];
             delete_particle(i);
@@ -647,6 +746,10 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
 
             ibody = ms_->map(body_tags_eligible_[ilist]);
             mass_removed_this_me += ms_->mass(ibody);
+            if(monitor_heat_)
+            {
+                error->fix_error(FLERR,this,"Monitoring of removed heat not implemented for multispheres yet.");
+            }
             nremoved_this_me++;
             mass_to_remove_me -= ms_->mass(ibody);
             body_tags_delete_.push_back(body_tags_eligible_[ilist]);
@@ -725,4 +828,22 @@ void FixRemove::restart(char *buf)
 
   rate_remove_ = rate_remove_re;
   random_->reset(seed_);
+}
+
+/* ----------------------------------------------------------------------
+   provide accumulated removed mass and optionally heat
+------------------------------------------------------------------------- */
+
+double FixRemove::compute_vector(int n)
+{
+  if (n==0)
+  {
+    return mass_removed_;
+  }
+  else if (n==1 && monitor_heat_)
+  {
+    return heat_removed_;
+  }
+
+  return -1.0;
 }
