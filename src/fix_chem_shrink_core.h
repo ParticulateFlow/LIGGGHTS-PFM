@@ -206,6 +206,11 @@ public:
   class FixPropertyAtom *fix_dmA_; // [internal]
   double **dmA_f_;
 
+  class FixPropertyAtom *fix_reactantPerParticle_;
+  double *reactantPerParticle_;
+  bool limit_reactant_consumption_;
+  double maxReactantConsumptionFrac_;
+
 };
 }
 

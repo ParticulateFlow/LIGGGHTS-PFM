@@ -65,7 +65,9 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     k0_(-1.0),
     T0_(-1.0),
     Tmin_(0.0),
-    nPreFactor_(0)
+    nPreFactor_(0),
+    Cp_coke_(10.2),
+    T_room_(298)
 {
     if ((strncmp(style, "chem/shrink/core/single", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core/single needs per particle radius and mass");
@@ -270,6 +272,28 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
             else error->all(FLERR,"Illegal fix/chem/shrink command");
             iarg_ += 2;
             hasargs = true;
+        }
+        else if(strcmp(arg[iarg_],"limit_reactant_consumption") == 0)
+        {
+            if(narg < iarg_+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'limit_reactant_consumption'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"yes") == 0)
+                limit_reactant_consumption_ = true;
+            else if(strcmp(arg[iarg_],"no") == 0)
+                limit_reactant_consumption_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'limit_reactant_consumption'");
+            iarg_++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"maxReactantConsumptionFrac") == 0)
+        {
+            maxReactantConsumptionFrac_ = atof(arg[iarg_+1]);
+            if (maxReactantConsumptionFrac_ < 0)
+                error -> fix_error(FLERR, this, "maxReactantConsumptionFractor is not well-defined");
+            hasargs = true;
+            iarg_ +=2;
         }
         else
         {
@@ -516,6 +540,7 @@ void FixChemShrinkCoreSingle::updatePtrs()
     changeOfA_      =   fix_changeOfA_      ->  vector_atom;
     changeOfC_      =   fix_changeOfC_      ->  vector_atom;
     T_              =   fix_tgas_           ->  vector_atom;
+    Tpart_          =   fix_tpart_          ->  vector_atom;
     heatFlux_       =   fix_heatFlux_       ->  vector_atom;
     molecularDiffusion_  = fix_diffcoeff_   ->  vector_atom;
     nuf_            =   fix_nuField_        ->  vector_atom;
@@ -552,6 +577,11 @@ void FixChemShrinkCoreSingle::updatePtrs()
     dY          =   fix_dY_         ->  vector_atom;
     dmA_f_      =   fix_dmA_ -> vector_atom;
     reactionheat_ = fix_reactionheat -> vector_atom;
+
+    if(limit_reactant_consumption_)
+    {
+        reactantPerParticle_ = fix_reactantPerParticle_ -> vector_atom;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -579,7 +609,8 @@ void FixChemShrinkCoreSingle::init()
     // references for per atom properties.
     fix_changeOfA_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massA, "property/atom", "scalar", 0, 0, style));
     fix_changeOfC_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(massC, "property/atom", "scalar", 0, 0, style));
-    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style));
+    fix_tgas_           =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partTemp", "property/atom", "scalar", 0, 0, style)); // gas temperature at location of particle
+    fix_tpart_          =   static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp", "property/atom", "scalar", 0, 0, style));     // particle temperature
     fix_heatFlux_       =   static_cast<FixPropertyAtom*>(modify->find_fix_property("heatFlux", "property/atom", "scalar", 0, 0, style));
     fix_diffcoeff_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property(diffA, "property/atom", "scalar", 0, 0, style));
     fix_nuField_        =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partNu", "property/atom", "scalar", 0, 0, style));
@@ -662,6 +693,11 @@ void FixChemShrinkCoreSingle::init()
 
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
     fix_reactionheat   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
+
+    if(limit_reactant_consumption_)
+    {
+        fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -929,7 +965,18 @@ void FixChemShrinkCoreSingle::reaction(int i, double &dmA_, const double x0_eq_)
                * (MY_4PI * ((radius_[i] * radius_[i]) / (cg_ * cg_)))
                * TimeStep * nevery;
 
-    // fix property added so values are otuputted to file
+    // limit mass change - can't remove more than present in cell
+    // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor
+    if(limit_reactant_consumption_)
+    {
+        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+
+        double dAmax = p_A / (Runiv * T_[i]) * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
+
+        if(dmA_ > dAmax) dmA_ = dAmax;
+    }
+
+    // fix property added so values are outputted to file
     dmA_f_[i] = dmA_;
 }
 
@@ -1035,6 +1082,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     if (!heatToParticle_ && !heatToFluid_) return;
 
     double T = T_[i];
+    double Tpart = Tpart_[i];
     double dH = 0.0;
     double dHcoeffs[6] = {0.0};
 
@@ -1112,8 +1160,18 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     // reaction enthalpy in kJ/mol
     dH = dHcoeffs[0]*T + 0.5*dHcoeffs[1]*T*T + 0.333*dHcoeffs[2]*T*T*T;
     dH += 0.25*dHcoeffs[3]*T*T*T*T - dHcoeffs[4]/T + dHcoeffs[5];
-    // reaction enthalpy in J/mol
+    // reaction enthalpy (enthalpy of formation + thermal energy of gas phases) in J/mol
     dH *= 1000;
+    
+    // add contribution of coke thermal energy
+    if (reactionHeatIndex_ == 0)  // O2 + 2C -> 2C0
+    {
+        dH -= 2*Cp_coke_*(Tpart-T_room_);
+    }
+    else if (reactionHeatIndex_ == 1) // CO2 + C -> 2CO
+    {
+        dH -= Cp_coke_*(Tpart-T_room_);
+    }
 
     double cg3 = cg_ * cg_ * cg_;
 
@@ -1150,7 +1208,7 @@ void FixChemShrinkCoreSingle::init_defaults()
     radius_ = pmass_ = pdensity_ = NULL;
 
     // initialise fix handles
-    changeOfA_ = changeOfC_ = T_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = heatFlux_ = NULL;
+    changeOfA_ = changeOfC_ = T_ = Tpart_ = molecularDiffusion_ = nuf_ = Rep_ = partP_ = Massterm = heatFlux_ = NULL;
     Aterm = Bterm = effDiffBinary = effDiffKnud = NULL;
     fracRed_ = NULL;
 
@@ -1161,6 +1219,7 @@ void FixChemShrinkCoreSingle::init_defaults()
     fix_changeOfA_ = NULL;
     fix_changeOfC_ = NULL;
     fix_tgas_ = NULL;       // [K]
+    fix_tpart_ = NULL;       // [K]
     fix_heatFlux_= NULL;
     fix_diffcoeff_ = NULL;  // [m^2/s]
     fix_nuField_ = NULL;    // [m^2/s]
@@ -1187,6 +1246,11 @@ void FixChemShrinkCoreSingle::init_defaults()
     fix_dmA_ = NULL;
 
     fix_reactionheat = NULL;
+
+    fix_reactantPerParticle_ = NULL;
+    reactantPerParticle_ = NULL;
+    limit_reactant_consumption_ = false;
+    maxReactantConsumptionFrac_ = 0.5;
 
     massA = massC = NULL;
     diffA = moleFracA = moleFracC = NULL;
