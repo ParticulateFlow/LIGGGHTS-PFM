@@ -194,6 +194,10 @@ public:
   bool limit_reactant_consumption_;
   double maxReactantConsumptionFrac_;
 
+  // constant parameters for reactions
+  const double Cp_coke_; // heat capacity coke in J/(mol K)
+  const double T_room_;
+
 };
 }
 

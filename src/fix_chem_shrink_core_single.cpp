@@ -65,7 +65,9 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     k0_(-1.0),
     T0_(-1.0),
     Tmin_(0.0),
-    nPreFactor_(0)
+    nPreFactor_(0),
+    Cp_coke_(10.2),
+    T_room_(298)
 {
     if ((strncmp(style, "chem/shrink/core/single", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core/single needs per particle radius and mass");
@@ -1162,14 +1164,13 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     dH *= 1000;
     
     // add contribution of coke thermal energy
-    double Cp = 10.2; // heat capacity coke in J/(mol K)
     if (reactionHeatIndex_ == 0)  // O2 + 2C -> 2C0
     {
-        dH -= 2*Cp*(Tpart-298);
+        dH -= 2*Cp_coke_*(Tpart-T_room_);
     }
     else if (reactionHeatIndex_ == 1) // CO2 + C -> 2CO
     {
-        dH -= Cp*(Tpart-298);
+        dH -= Cp_coke_*(Tpart-T_room_);
     }
 
     double cg3 = cg_ * cg_ * cg_;
