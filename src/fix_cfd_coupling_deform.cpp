@@ -35,6 +35,9 @@
 #include "fix_cfd_coupling_deform.h"
 #include "fix_property_atom.h"
 #include "fix_property_atom_polydispparcel.h"
+#include "fix_property_global.h"
+#include "pair_gran.h"
+#include "force.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -53,11 +56,15 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     mass_removed_(0.0),
     rmin_(0.0),
     fmax_(1.5), // 1/alpha_max \approx 1.5
-    default_effvolfactors_(NULL)
+    default_effvolfactors_(NULL),
+    monitor_heat_(false),
+    heat_removed_(0.),
+    fix_temp_(NULL),
+    fix_capacity_(NULL)
 {
 
   int iarg = 3;
- 
+
   while (iarg < narg) {
     if(strcmp(arg[iarg],"compress") == 0)
     {
@@ -90,7 +97,26 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
         error->fix_error(FLERR,this,"rmin cannot be negative");
       iarg += 2;
     }
+    else if(strcmp(arg[iarg],"monitor_heat") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'monitor_heat'");
+      if(strcmp(arg[iarg+1],"yes") == 0)
+        monitor_heat_ = true;
+      else if(strcmp(arg[iarg+1],"no"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'monitor_heat_'");
+      iarg += 2;
+    }
     else error->fix_error(FLERR,this,"unknown keyword");
+  }
+
+  vector_flag = 1;
+  if (monitor_heat_)
+  {
+    size_vector = 2;
+  }
+  else
+  {
+    size_vector = 1;
   }
 }
 
@@ -165,6 +191,15 @@ void FixCfdCouplingDeform::init()
 
     // values to come from OF
     fix_coupling_->add_pull_property("partDeformations","scalar-atom");
+
+    if (monitor_heat_)
+    {
+        fix_temp_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("Temp", "property/atom", "scalar", 0, 0, style));
+
+        PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+        int max_type = pair_gran->get_properties()->max_type();
+        fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style));
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -195,6 +230,13 @@ void FixCfdCouplingDeform::post_force(int)
 
     double f0 = 0.0;
 
+    double *T = NULL;
+    if(monitor_heat_)
+    {
+        T = fix_temp_->vector_atom;
+    }
+    double heat_removed_this_me = 0., heat_removed_this = 0.;
+
     for (int i = 0; i < nlocal; i++)
     {
         if (mask[i] & groupbit)
@@ -222,6 +264,13 @@ void FixCfdCouplingDeform::post_force(int)
             {
                 nremoved_this_me++;
                 mass_removed_this_me += rmass[i];
+
+                if(monitor_heat_)
+                {
+                    double Cp = fix_capacity_->compute_vector(type[i]-1);
+                    heat_removed_this_me += rmass[i]*T[i]*Cp;
+                }
+
                 delete_particle(i);
             }
         }
@@ -230,6 +279,13 @@ void FixCfdCouplingDeform::post_force(int)
     MPI_Allreduce(&mass_removed_this_me,&mass_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
     mass_removed_ += mass_removed_this;
+
+    if(monitor_heat_)
+    {
+        MPI_Allreduce(&heat_removed_this_me,&heat_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
+        heat_removed_ += heat_removed_this;
+    }
+
 
     if(comm->me == 0)
     {
@@ -257,4 +313,23 @@ void FixCfdCouplingDeform::delete_particle(int i)
 {
     atom->avec->copy(atom->nlocal-1,i,1);
     atom->nlocal--;
+}
+
+
+/* ----------------------------------------------------------------------
+   provide accumulated removed mass and optionally heat
+------------------------------------------------------------------------- */
+
+double FixCfdCouplingDeform::compute_vector(int n)
+{
+  if (n==0)
+  {
+    return mass_removed_;
+  }
+  else if (n==1 && monitor_heat_)
+  {
+    return heat_removed_;
+  }
+
+  return -1.0;
 }

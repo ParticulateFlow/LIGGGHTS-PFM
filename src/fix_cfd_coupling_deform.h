@@ -42,6 +42,8 @@ class FixCfdCouplingDeform : public Fix  {
   void init();
   void post_force(int);
 
+  double compute_vector(int n);
+
  protected:
 
   class FixCfdCoupling* fix_coupling_;
@@ -60,6 +62,14 @@ class FixCfdCouplingDeform : public Fix  {
   const double fmax_;
 
   double* default_effvolfactors_;
+
+  bool monitor_heat_;
+
+  double heat_removed_;
+
+  class FixPropertyAtom *fix_temp_;
+
+  class FixPropertyGlobal* fix_capacity_;
 
   void delete_particle(int);
 };

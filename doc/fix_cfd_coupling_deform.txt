@@ -15,10 +15,11 @@ fix ID group-ID couple/cfd/deform keyword values :pre
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 couple/cfd/deform = style name of this fix command :l
 zero or more keyword/value pairs may be appended :l
-keyword = {compress} or {verbose} or {rmin}:l
+keyword = {compress} or {verbose} or {rmin} or {monitor_heat} :l
   {compress} value = {yes} or {no}
   {verbose} value = {yes} or {no}
-  {rmin} value = radius below which particles cannot deform :pre
+  {rmin} value = radius below which particles cannot deform
+  {monitor_heat} value = {yes} or {no} :pre
 :ule
 
 [Examples:]
@@ -28,6 +29,6 @@ fix cfd2 all couple/cfd/deform verbose yes :pre
 
 [Description:]
 
-This fix pulls data between 0 and 1 for each particle from CFDEMcoupling describing the extent a grains deforms subject to some local field. 0 means no deformation, 1 means maximum deformation and > 1 means particle removal.
+This fix pulls data between 0 and 1 for each particle from CFDEMcoupling describing the extent a grains deforms subject to some local field. 0 means no deformation, 1 means maximum deformation and > 1 means particle removal. The accumulated removed mass (and optionally heat) can be accessed analogously as for fix remove.
 
 This fix needs a fix couple/cfd before it is defined.
