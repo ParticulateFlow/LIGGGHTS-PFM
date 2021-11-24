@@ -1,0 +1,135 @@
+################################################################################
+# brief: heat conduction between 2 spheres of different type                   #
+#                                                                              #
+# Check the temperature evolution of two spheres in contact                    #
+# Cf. J.Musser, Modeling of heat transfer and reactive chemistry for particles #
+# in gas-solid flow utilizing continuum-discrete methodology (CDM), PhD (2011) #
+#                                                                              #
+# The simulation outputs the temperature of both particles over time           #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Nov 2021                                                               #
+# copyright: 2021- JKU Linz                                                    #
+################################################################################
+
+# define the attributes associated with the particles,
+# 'granular' (or 'sphere') style uses diameter, mass and angular velocity
+atom_style      granular
+
+# use an array to map particle IDs to local storage index,
+# do not sort atoms spatially
+atom_modify     map array sort 0 0
+
+# set simulation domain to be fixed in x y z
+boundary        f f f
+
+# save communication by turning off Newton's 3rd law for pairwise interaction,
+# note: this setting only influences communication between procs, Newton's
+# 3rd law is still used for contact force calculations
+newton          off
+
+# use a single value for ghost particle cutoff distance and
+# enable velocity to be communicated with ghost particles
+communicate     single vel yes
+
+# set unit system to SI
+units           si
+
+# define the region used as simulation domain (min/max X, min/max Y, min/max Z)
+region          domain block -0.01 0.01 -0.01 0.01 0.0 0.01 units box
+
+# create the simulation domain and 2 material types for particles
+create_box      2 domain
+
+# specify the skin distance for neighbor list generation
+neighbor        0.001 bin
+neigh_modify    delay 0
+
+# particle properties
+variable z1      equal 0.001499864
+variable z2      equal 0.004799731
+variable rp1     equal 0.0015 # [m]
+variable rp2     equal 0.0018 # [m]
+variable dp1     equal 2*${rp1}
+variable dp2     equal 2*${rp2}
+variable rho1    equal  420 # [kg/m^3]
+variable rho2    equal 8850 # [kg/m^3]
+variable T10     equal 298.15 # [K]
+variable T20     equal 453.15 # [K]
+variable lambda1 equal 54.99994 # [W/(K*m)] = 0.131453 [cal/s*cm*K]
+variable lambda2 equal 0.840147 # [W/(K*m)] = 0.002008 [cal/s*cm*K]
+variable cp1     equal 800.5329072 # [J/(kg*K)] = 0.191204 [cal/g*K]
+variable cp2     equal  55.0354860 # [J/(kg*K)] = 0.013145 [cal/g*K]
+
+# define the material properties required for granular pair styles
+fix     m1 all property/global youngsModulus peratomtype 1.e7 1.e7
+fix     m2 all property/global poissonsRatio peratomtype 0.45 0.45
+fix     m3 all property/global coefficientRestitution peratomtypepair 2 0.8 0.8 0.8 0.8
+fix     m4 all property/global coefficientFriction peratomtypepair 2 0.1 0.1 0.1 0.1
+fix     m5 all property/global thermalConductivity peratomtype ${lambda1} ${lambda2}
+fix     m6 all property/global thermalCapacity peratomtype ${cp1} ${cp2}
+
+# specify contact model to use
+pair_style gran model hertz tangential incremental_history
+pair_coeff * *
+
+timestep    0.000001
+
+# set gravity to act in -z direction
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix zwall1 all wall/gran model hertz tangential incremental_history primitive type 1 zplane 0.0
+
+# granular heat conduction
+fix heattransfer all heat/gran initial_temperature ${T10}
+
+# create particles
+create_atoms    1 single 0.0 0.0 ${z1} units box
+create_atoms    2 single 0.0 0.0 ${z2} units box
+
+# set diameter and density
+set             atom 1 diameter ${dp1} density  420.
+set             atom 2 diameter ${dp2} density 8850.
+
+# output settings
+thermo_style    custom step atoms f_heattransfer
+
+# set frequency of output
+thermo          1000000
+
+# ignore particles leaving the simulation domain,
+# do not normalize thermodynamic output values by the number of atoms
+thermo_modify   lost ignore norm no
+
+# set dynamic to 'no' as number of particles does not change
+compute_modify  thermo_temp dynamic no
+
+# run 1 time step so that property/atom Temp can be set
+run     1
+set     atom 2 property/atom Temp ${T20}
+
+# dump particle data every 10000000 time steps
+dump    dmp all custom/vtk 10000000 post/conduction*.vtk id type x y z &
+        fx fy fz radius f_Temp f_heatFlux
+
+variable time equal time
+variable myT atom f_Temp
+variable T1 equal v_myT[1]
+variable T2 equal v_myT[2]
+
+# analytic solution
+variable l12 equal ${z2}-${z1}
+variable tmp equal (${rp2}*${rp2}-${rp1}*${rp1}+${l12}*${l12})/(2.*${l12})
+variable rc  equal sqrt(${rp2}*${rp2}-${tmp}*${tmp})
+variable a   equal 4.*${lambda1}*${lambda2}/(mass[1]*${cp1}*(${lambda1}+${lambda2}))*${rc}
+variable b   equal 4.*${lambda1}*${lambda2}/(mass[2]*${cp2}*(${lambda1}+${lambda2}))*${rc}
+variable T1analytic equal (${b}*${T10}+${a}*${T20}+${a}*(${T10}-${T20})*exp(-v_time*(${a}+${b})))/(${a}+${b})
+variable T2analytic equal (${b}*${T10}+${a}*${T20}-${b}*(${T10}-${T20})*exp(-v_time*(${a}+${b})))/(${a}+${b})
+
+fix     printTemp all print 10000000 "${time} ${T1} ${T1analytic} ${T2} ${T2analytic}" &
+        file post/Temp.dat screen no title "#time T1 T1analytic T2 T2analytic"
+
+# temperature equilibration
+run     500000000 upto
+
+
