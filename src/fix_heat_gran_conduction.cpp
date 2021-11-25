@@ -339,8 +339,8 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
         }
         else if (CONTACTAREA == CONDUCTION_CONTACT_AREA_PROJECTION)
         {
-            double rmax = MathExtraLiggghts::max(radi,radj);
-            contactArea = M_PI*rmax*rmax;
+            double rmin = MathExtraLiggghts::min(radi,radj);
+            contactArea = M_PI*rmin*rmin;
         }
 
         tcoi = conductivity_[type[i]-1];
