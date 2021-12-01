@@ -72,7 +72,7 @@ namespace ContactModels {
       if(cdata.is_wall)
         Acont = M_PI * 2. * ri * (ri - r) * cdata.area_ratio;
       else
-        Acont = M_PI * 2. * (2.*ri*rj/(ri+rj)) * (ri + rj - r);
+        Acont = M_PI * 2. * (ri*rj/(ri+rj)) * (ri + rj - r);
 
       const double Fn_coh = -cohEnergyDens[cdata.itype][cdata.jtype]*Acont;
       cdata.Fn += Fn_coh;

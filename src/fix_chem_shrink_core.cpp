@@ -215,6 +215,28 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
             iarg_ += 2; // iarg = 15
             hasargs = true;
         }
+        else if(strcmp(arg[iarg_],"limit_reactant_consumption") == 0)
+        {
+            if(narg < iarg_+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'limit_reactant_consumption'");
+            iarg_++;
+            if(strcmp(arg[iarg_],"yes") == 0)
+                limit_reactant_consumption_ = true;
+            else if(strcmp(arg[iarg_],"no") == 0)
+                limit_reactant_consumption_ = false;
+            else
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'limit_reactant_consumption'");
+            iarg_++;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg_],"maxReactantConsumptionFrac") == 0)
+        {
+            maxReactantConsumptionFrac_ = atof(arg[iarg_+1]);
+            if (maxReactantConsumptionFrac_ < 0)
+                error -> fix_error(FLERR, this, "maxReactantConsumptionFractor is not well-defined");
+            hasargs = true;
+            iarg_ +=2;
+        }
         else if (strcmp(this->style,"chem/shrink") == 0)
         {
             error->fix_error(FLERR,this,"necessary keyword is missing");
@@ -553,6 +575,11 @@ void FixChemShrinkCore::updatePtrs()
 
     dY          =   fix_dY_         ->  array_atom;
     dmA_f_      =   fix_dmA_ -> array_atom;
+
+    if(limit_reactant_consumption_)
+    {
+        reactantPerParticle_ = fix_reactantPerParticle_ -> vector_atom;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -671,6 +698,11 @@ void FixChemShrinkCore::init()
     delete [] propertyname;
 
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
+
+    if(limit_reactant_consumption_)
+    {
+        fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1143,6 +1175,7 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
             dY[i][0] = 0.0;
     }
 
+    double dmA_sum = 0.0;
     for (int j = 0 ; j < layers_; j++)
     {
         // mass flow rate for reactant gas species
@@ -1150,8 +1183,28 @@ void FixChemShrinkCore::reaction(int i, double *dmA_, const double *x0_eq_)
         dmA_[j] =   dY[i][j] * (1.0 / (Runiv * T_[i])) * molMass_A_
                    * (MY_4PI * ((radius_[i] * radius_[i]) / (cg_ * cg_)))
                    * TimeStep * nevery;
-        // fix property added so values are otuputted to file
+        dmA_sum += dmA_[j];
+        // fix property added so values are outputted to file
         dmA_f_[i][j] = dmA_[j];
+    }
+
+    // limit mass change - can't remove more than present in cell
+    // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor
+    // if reacted mass is very small, do not limit it because of numerical stability (division by dmA_sum below)
+    if (limit_reactant_consumption_ && dmA_sum > 1e-12)
+    {
+        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+
+        double dAmax = p_A / (Runiv * T_[i]) * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
+
+        if (dmA_sum > dAmax)
+        {
+            for (int j = 0 ; j < layers_; j++)
+            {
+                dmA_[j] = dAmax * dmA_[j] / dmA_sum;
+                dmA_f_[i][j] = dmA_[j];
+            }
+        }
     }
 }
 
@@ -1290,6 +1343,7 @@ void FixChemShrinkCore::FractionalReduction(int i)
     const double f_HM = 1 - ((2*massLayer_[i][3]/layerMolMasses_[3])/(2*massLayer_[i][3]/layerMolMasses_[3]+3*massLayer_[i][2]/layerMolMasses_[2]+massLayer_[i][1]/layerMolMasses_[1]+massLayer_[i][0]/layerMolMasses_[0]));
     */
 
+    // this formulation assumes that molar concentrations n_i of the layers satisfy n_i / nu_i = n_j / nu_j, e.g. n_Hem / 3 = n_Mag / 2
     const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
     const double f_HM = 1.0 - relRadii_[i][3]*relRadii_[i][3]*relRadii_[i][3];
@@ -1608,13 +1662,34 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
     dY[i][0] = dY[i][1];
 #endif
 
+    double dmA_sum = 0.0;
     for (int j = 0 ; j < layers_; j++)
     {
         // mass flow rate for reactant gas species
         // dmA is a positive value
         dmA_[j] =   dY[i][j]*(1.0/(Runiv*T_[i]))*molMass_A_*(MY_4PI*((radius_[i]*radius_[i])/(cg_*cg_)))*TimeStep*nevery;
+        dmA_sum += dmA_[j];
         // fix property added so values are outputted to file
         dmA_f_[i][j] = dmA_[j];
+    }
+
+    // limit mass change - can't remove more than present in cell
+    // limit it with species mass per volume x voidfraction x cell volume / particles in cell x relaxation factor
+    // if reacted mass is very small, do not limit it because of numerical stability (division by dmA_sum below)
+    if (limit_reactant_consumption_ && dmA_sum > 1e-12)
+    {
+        if (screenflag_ && screen) fprintf(screen,"checking reactant limitation\n");
+
+        double dAmax = p_A / (Runiv * T_[i]) * molMass_A_ * reactantPerParticle_[i] * maxReactantConsumptionFrac_;
+
+        if (dmA_sum > dAmax)
+        {
+            for (int j = 0 ; j < layers_; j++)
+            {
+                dmA_[j] = dAmax * dmA_[j] / dmA_sum;
+                dmA_f_[i][j] = dmA_[j];
+            }
+        }
     }
 
 #ifndef TWO_LAYERS
@@ -1738,6 +1813,11 @@ void FixChemShrinkCore::init_defaults()
     fix_pore_diameter_ = NULL;  // [m]
     fix_dY_ = NULL;
     fix_dmA_ = NULL;
+
+    fix_reactantPerParticle_ = NULL;
+    reactantPerParticle_ = NULL;
+    limit_reactant_consumption_ = false;
+    maxReactantConsumptionFrac_ = 0.5;
 
     massA = massC = NULL;
     diffA = moleFracA = moleFracC = NULL;

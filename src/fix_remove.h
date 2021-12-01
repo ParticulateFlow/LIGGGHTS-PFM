@@ -48,6 +48,7 @@ class FixRemove : public Fix {
   void pre_exchange();
   void write_restart(FILE *fp);
   void restart(char *buf);
+  double compute_vector(int n);
 
  private:
 
@@ -55,14 +56,17 @@ class FixRemove : public Fix {
               double &mass_shrink_me,double &mass_to_remove_me,
               double &ratio_ms_to_remove_me);
   void delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
-              double &mass_removed_this_me,int &nremoved_this_me);
+              double &mass_removed_this_me,double &heat_removed_this_me,
+              int &nremoved_this_me);
   void shrink(double &mass_to_remove_me,double mass_shrink_me,
-              double &mass_removed_this_me,int &nremoved_this_me);
+              double &mass_removed_this_me,double &heat_removed_this_me,
+              int &nremoved_this_me);
   void delete_partial_particles(double &mass_to_remove_me,
-              double &mass_removed_this_me,int &nremoved_this_me);
+              double &mass_removed_this_me,double &heat_removed_this_me,
+              int &nremoved_this_me);
   void delete_partial_particles_bodies(double &mass_to_remove_me,
-              double &mass_removed_this_me,int &nremoved_this_me,
-              double ratio_ms_to_remove_me);
+              double &mass_removed_this_me,double &heat_removed_this_me,
+              int &nremoved_this_me,double ratio_ms_to_remove_me);
 
   void delete_particle(int);
   void delete_bodies();
@@ -89,6 +93,11 @@ class FixRemove : public Fix {
   bool restart_write_;
   bool verbose_;
   int compress_flag_;
+
+  bool monitor_heat_;
+  double heat_removed_;
+  class FixPropertyAtom *fix_temp_;
+  class FixPropertyGlobal* fix_capacity_;
 
   class FixMultisphere *fix_ms_;
   class MultisphereParallel *ms_;

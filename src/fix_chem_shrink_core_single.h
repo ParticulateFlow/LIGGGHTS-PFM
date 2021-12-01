@@ -120,6 +120,7 @@ public:
   // handles of fixes
   double *changeOfA_, *changeOfC_;
   double *T_;
+  double *Tpart_;
   double *molecularDiffusion_;
   double *nuf_;
   double *Rep_;
@@ -143,6 +144,7 @@ public:
   class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_tpart_;        // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_heatFlux_;     // [cfd/coupling/convection]
   class FixPropertyAtom *fix_diffcoeff_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_nuField_;      // [cfd/coupling/chemistry]
@@ -186,6 +188,15 @@ public:
 
   class FixPropertyAtom *fix_reactionheat;
   double *reactionheat_;
+
+  class FixPropertyAtom *fix_reactantPerParticle_;
+  double *reactantPerParticle_;
+  bool limit_reactant_consumption_;
+  double maxReactantConsumptionFrac_;
+
+  // constant parameters for reactions
+  const double Cp_coke_; // heat capacity coke in J/(mol K)
+  const double T_room_;
 
 };
 }

@@ -1,0 +1,34 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix couple/cfd/dissolve command :h3
+
+[Syntax:]
+
+fix ID group-ID couple/cfd/dissolve rmin rm :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+couple/cfd/dissolve = style name of this fix command :l
+rm = minimal particle radius :pre
+:ule
+
+[Examples:]
+
+fix cfd4 all couple/cfd/dissolve rmin 0.001 :pre
+
+[Description:]
+
+This fix exchanges mass transfer relevant data between LIGGGHTS and CFDEMcoupling, 
+and shrinks/grows particles according to the mass flux. {rmin} specifies the minimal
+particle radius, particles shrunk smaller than this value will be deleted.
+
+[Restrictions:]
+
+This fix needs a fix couple/cfd before it is defined.
+

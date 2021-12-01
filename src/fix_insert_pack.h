@@ -63,6 +63,8 @@ class FixInsertPack : public FixInsert {
   int is_nearby_body(int);
   virtual BoundingBox getBoundingBox() const;
 
+  void pre_insert();
+
   // region to be used for insertion
   class Region *ins_region;
   char *idregion;
@@ -77,6 +79,9 @@ class FixInsertPack : public FixInsert {
   double volumefraction_region;
   int ntotal_region;
   double masstotal_region;
+  int target_style;
+  int varflag,varindex;
+  char *varstr;
 
   // ratio how many particles have been inserted
   double insertion_ratio;

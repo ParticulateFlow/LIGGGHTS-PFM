@@ -1,0 +1,269 @@
+solid GranularBedFilter
+facet normal 0 0 0
+outer loop
+vertex 0.700 0.00 1.695
+vertex 0.700 0.03 1.695
+vertex 0.700 0.03 1.247
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.700 0.03 1.247
+vertex 0.700 0.00 1.247
+vertex 0.700 0.00 1.695
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.700 0.00 1.247
+vertex 0.700 0.03 1.247
+vertex 0.250 0.03 0.895
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.250 0.03 0.895
+vertex 0.250 0.00 0.895
+vertex 0.700 0.00 1.247
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.250 0.00 0.895
+vertex 0.250 0.03 0.895
+vertex 0.250 0.03 0.566
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.250 0.03 0.566
+vertex 0.250 0.00 0.566
+vertex 0.250 0.00 0.895
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.250 0.00 0.566
+vertex 0.250 0.03 0.566
+vertex 0.282 0.03 0.554
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.282 0.03 0.554
+vertex 0.282 0.00 0.554
+vertex 0.250 0.00 0.566
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.282 0.00 0.554
+vertex 0.282 0.03 0.554
+vertex 0.382 0.03 0.654
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.382 0.03 0.654
+vertex 0.382 0.00 0.654
+vertex 0.282 0.00 0.554
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.382 0.00 0.654
+vertex 0.382 0.03 0.654
+vertex 0.422 0.03 0.614
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.422 0.03 0.614
+vertex 0.422 0.00 0.614
+vertex 0.382 0.00 0.654
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.422 0.00 0.614
+vertex 0.422 0.03 0.614
+vertex 0.382 0.03 0.469
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.382 0.03 0.469
+vertex 0.382 0.00 0.469
+vertex 0.422 0.00 0.614
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.382 0.00 0.469
+vertex 0.382 0.03 0.469
+vertex 0.382 0.03 0.404
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.382 0.03 0.404
+vertex 0.382 0.00 0.404
+vertex 0.382 0.00 0.469
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.382 0.00 0.404
+vertex 0.382 0.03 0.404
+vertex 0.194 0.03 0.000
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.194 0.03 0.000
+vertex 0.194 0.00 0.000
+vertex 0.382 0.00 0.404
+endloop
+endfacet
+
+facet normal 0 0 0
+outer loop
+vertex  0.044 0.00 0.000
+vertex -0.128 0.00 0.448
+vertex -0.128 0.03 0.448
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.128 0.03 0.448
+vertex  0.044 0.03 0.000
+vertex  0.044 0.00 0.000
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.128 0.00 0.448
+vertex -0.128 0.00 0.584
+vertex -0.128 0.03 0.584
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.128 0.03 0.584
+vertex -0.128 0.03 0.448
+vertex -0.128 0.00 0.448
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.128 0.00 0.584
+vertex -0.228 0.00 0.684
+vertex -0.228 0.03 0.684
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.228 0.03 0.684
+vertex -0.128 0.03 0.584
+vertex -0.128 0.00 0.584
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.228 0.00 0.684
+vertex -0.188 0.00 0.724
+vertex -0.188 0.03 0.724
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.188 0.03 0.724
+vertex -0.228 0.03 0.684
+vertex -0.228 0.00 0.684
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.188 0.00 0.724
+vertex -0.032 0.00 0.669
+vertex -0.032 0.03 0.669
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.032 0.03 0.669
+vertex -0.188 0.03 0.724
+vertex -0.188 0.00 0.724
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex -0.032 0.00 0.669
+vertex  0.000 0.00 0.681
+vertex  0.000 0.03 0.681
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex  0.000 0.03 0.681
+vertex -0.032 0.03 0.669
+vertex -0.032 0.00 0.669
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.000 0.00 0.681
+vertex 0.000 0.00 0.895
+vertex 0.000 0.03 0.895
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.000 0.03 0.895
+vertex 0.000 0.03 0.681
+vertex 0.000 0.00 0.681
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.000 0.00 0.895
+vertex 0.000 0.00 1.495
+vertex 0.000 0.03 1.495
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.000 0.03 1.495
+vertex 0.000 0.03 0.895
+vertex 0.000 0.00 0.895
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.000 0.00 1.495
+vertex 0.450 0.00 1.495
+vertex 0.450 0.03 1.495
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.450 0.03 1.495
+vertex 0.000 0.03 1.495
+vertex 0.000 0.00 1.495
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.450 0.00 1.495
+vertex 0.450 0.00 1.695
+vertex 0.450 0.03 1.695
+endloop
+endfacet
+facet normal 0 0 0
+outer loop
+vertex 0.450 0.03 1.695
+vertex 0.450 0.03 1.495
+vertex 0.450 0.00 1.495
+endloop
+endfacet
+endsolid GranularBedFilter

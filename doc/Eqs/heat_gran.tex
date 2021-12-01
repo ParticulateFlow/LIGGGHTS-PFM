@@ -1,0 +1,14 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\begin{document}
+\begin{flalign}
+\nonumber \dot{Q}_{pi-pj} &= h_{c,i-j}\Delta T_{pi-pj}&&\\
+\nonumber h_{c,i-j} &= \frac{4k_{pi}k_{pj}}{k_{pi} + k_{pj}} \left(\frac{A_{contact,i-j}}{\pi}\right)^{1/2}&&\\
+\nonumber m_p c_p \frac{dT_{pi}}{dt} &= \underbrace{\smashoperator[r]{\sum_{contacts\ i-j}}\dot{Q}_{pi-pj}}_{\substack{\text{heat conduction} \\ \text{by contacts}}} + \underbrace{\dot{Q}_{pi,source}}_{\substack{\text{heat generation} \\ \text{due to sources,} \\ \text{e.g.\ reactions}}}
+\end{flalign}
+$h_{c}$ \dots heat transfer coefficient $\left[\frac{J}{K\, s}\right]$\\
+$k_{pi}$ \dots  thermal conductivity of particle $i$ $\left[\frac{J}{K\, s\, m}\right]$\\
+$c_{p}$ \dots  specific thermal capacity $\left[\frac{J}{kg\, K}\right]$\\
+$A_{contact,i-j}$ \dots  particle contact area $\left[m^{2}\right]$
+\end{document}

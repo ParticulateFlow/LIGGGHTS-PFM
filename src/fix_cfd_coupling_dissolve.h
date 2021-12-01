@@ -5,8 +5,7 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Department for Particulate Flow Modelling
-   Copyright 2015-     JKU Linz
+   Copyright 2021- Eindhoven University of Technology
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -18,60 +17,46 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Tim Nijssen (TU/e)
+------------------------------------------------------------------------- */
+
 #ifdef FIX_CLASS
 
-FixStyle(couple/cfd/deform,FixCfdCouplingDeform)
+FixStyle(couple/cfd/dissolve,FixCfdCouplingDissolve)
 
 #else
 
-#ifndef LMP_FIX_CFD_COUPLING_DEFORM_H
-#define LMP_FIX_CFD_COUPLING_DEFORM_H
+#ifndef LMP_FIX_CFD_COUPLING_DISSOLVE_H
+#define LMP_FIX_CFD_COUPLING_DISSOLVE_H
 
 #include "fix_cfd_coupling.h"
+#include <vector>
 
 namespace LAMMPS_NS {
 
-class FixCfdCouplingDeform : public Fix  {
+class FixCfdCouplingDissolve : public Fix {
+
  public:
-  FixCfdCouplingDeform(class LAMMPS *, int, char **);
-  ~FixCfdCouplingDeform();
+  FixCfdCouplingDissolve(class LAMMPS *, int, char **);
+  ~FixCfdCouplingDissolve();
   void post_create();
   void pre_delete(bool unfixflag);
 
-  int setmask();
-  void init();
-  void post_force(int);
-
-  double compute_vector(int n);
+  virtual int setmask();
+  virtual void init();
+  virtual void post_force(int);
+  void pre_exchange();
 
  protected:
-
   class FixCfdCoupling* fix_coupling_;
-  class FixPropertyAtom* fix_partdeformations_;
-  class FixPropertyAtomPolydispParcel* fix_effvolfactors_;
-
- private:
-  bool verbose_;
-
-  int compress_flag_;
-
-  double mass_removed_;
-
+  class FixPropertyAtom* fix_convectiveFlux_;
   double rmin_;
 
-  const double fmax_;
+  std::vector<int> atom_tags_delete_;
 
-  double* default_effvolfactors_;
-
-  bool monitor_heat_;
-
-  double heat_removed_;
-
-  class FixPropertyAtom *fix_temp_;
-
-  class FixPropertyGlobal* fix_capacity_;
-
-  void delete_particle(int);
+  void delete_atoms();
 };
 
 }

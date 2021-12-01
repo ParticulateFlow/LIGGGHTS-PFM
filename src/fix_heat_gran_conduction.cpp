@@ -26,6 +26,7 @@
 #include "fix_property_atom.h"
 #include "fix_property_global.h"
 #include "force.h"
+#include "math_const.h"
 #include "math_extra.h"
 #include "math_extra_liggghts.h"
 #include "properties.h"
@@ -35,6 +36,7 @@
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
+using namespace MathConst;
 
 // modes for conduction contact area calaculation
 // same as in fix_wall_gran.cpp
@@ -248,7 +250,7 @@ void FixHeatGranCond::cpl_evaluate(ComputePairGranLocal *caller)
 template <int HISTFLAG,int CONTACTAREA>
 void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
 {
-  double hc,contactArea,delta_n,flux,dirFlux[3];
+  double hc,contactAreaOverPi,delta_n,flux,dirFlux[3];
   int i,j,ii,jj,inum,jnum;
   double xtmp,ytmp,ztmp,delx,dely,delz;
   double radi,radj,radsum,rsq,r,tcoi,tcoj;
@@ -331,22 +333,22 @@ void FixHeatGranCond::post_force_eval(int vflag,int cpl_flag)
               r = radsum - delta_n;
             }
 
-            contactArea = - M_PI/4 * ( (r-radi-radj)*(r+radi-radj)*(r-radi+radj)*(r+radi+radj) )/(r*r); //contact area of the two spheres
+            contactAreaOverPi = -0.25 * ( (r-radi-radj)*(r+radi-radj)*(r-radi+radj)*(r+radi+radj) )/(r*r); //contact area of the two spheres/Pi
         }
         else if (CONTACTAREA == CONDUCTION_CONTACT_AREA_CONSTANT)
         {
-            contactArea = fixed_contact_area_;
+            contactAreaOverPi = fixed_contact_area_/MY_PI;
         }
         else if (CONTACTAREA == CONDUCTION_CONTACT_AREA_PROJECTION)
         {
-            double rmax = MathExtraLiggghts::max(radi,radj);
-            contactArea = M_PI*rmax*rmax;
+            double rmin = MathExtraLiggghts::min(radi,radj);
+            contactAreaOverPi = rmin*rmin;
         }
 
         tcoi = conductivity_[type[i]-1];
         tcoj = conductivity_[type[j]-1];
         if (tcoi < SMALL || tcoj < SMALL) hc = 0.;
-        else hc = 4.*tcoi*tcoj/(tcoi+tcoj)*sqrt(contactArea);
+        else hc = 4.*tcoi*tcoj/(tcoi+tcoj)*sqrt(contactAreaOverPi);
 
         flux = (Temp[j]-Temp[i])*hc;
 

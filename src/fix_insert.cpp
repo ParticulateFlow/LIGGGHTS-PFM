@@ -787,7 +787,7 @@ void FixInsert::pre_exchange()
   //NP also sets molecule id
   fix_distribution->finalize_insertion();
 
-  if (atom->molecule_flag)
+  if (atom->molecular && atom->molecule_flag)
   {
     atom->mol_extend();
   }

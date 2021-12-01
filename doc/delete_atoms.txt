@@ -12,7 +12,7 @@ delete_atoms command :h3
 
 delete_atoms style args keyword value ... :pre
 
-style = {group} or {region} or {overlap} or {porosity} :ulb,l
+style = {group} or {region} or {overlap} or {porosity} or {group_directional} :ulb,l
   {group} args = group-ID
   {region} args = region-ID
   {overlap} args = cutoff group1-ID group2-ID
@@ -22,7 +22,11 @@ style = {group} or {region} or {overlap} or {porosity} :ulb,l
   {porosity} args = region-ID fraction seed
     region-ID = region within which to perform deletions
     fraction = delete this fraction of atoms
-    seed = random number seed (positive integer) :pre
+    seed = random number seed (positive integer)
+  {group_directional} args = group-ID direction target_mass stepsize
+    direction = {-x} or {+x} or {-y} or {+y} or {-z} or {+z}
+    target_mass = remove as many particles such that the remaining group mass equals the target value
+    stepsize = step size how group is seperated into particles to be removed and to remain :pre
 zero or more keyword/value pairs may be appended :l
 keyword = {compress} or {mol} :l
   {compress} value = {no} or {yes}
@@ -32,6 +36,7 @@ keyword = {compress} or {mol} :l
 [Examples:]
 
 delete_atoms group edge
+delete_atoms group_directional edge direction +z target_mass 5.0 stepsize 0.01
 delete_atoms region sphere compress no
 delete_atoms overlap 0.3 all all
 delete_atoms overlap 0.5 solvent colloid
@@ -73,6 +78,11 @@ within the specified region.  For example, if fraction is 0.1, then
 randomly.  There is no guarantee that the exact fraction of atoms will
 be deleted, or that the same atoms will be deleted when running on
 different numbers of processors.
+
+For style {group_directional}, particles are removed in the specified
+direction until the target mass is reached. E.g. for direction {-x},
+starting from the particle with the largest x coordinate, particles are
+sequentially removed.
 
 If the {compress} keyword is set to {yes}, then after atoms are
 deleted, then atom IDs are re-assigned so that they run from 1 to the
