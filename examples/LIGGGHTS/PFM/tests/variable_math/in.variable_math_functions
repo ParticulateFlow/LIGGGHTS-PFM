@@ -1,0 +1,55 @@
+################################################################################
+# brief: quick test of variable math functions                                 #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Nov 2021                                                               #
+# copyright: 2021- JKU Linz                                                    #
+################################################################################
+
+variable SQRTx  equal sqrt(9)
+variable CBRTx  equal cbrt(-27)
+variable EXP1   equal exp(1)
+variable LN1    equal ln(1)
+variable LNe    equal ln(exp(1))
+variable LOG1   equal log(1)
+variable LOG10  equal log(10)
+variable ABSx   equal abs(-1)
+variable SIN0   equal sin(0)
+variable COS0   equal cos(0)
+variable SINx   equal sin(PI)
+variable COSx   equal cos(PI)
+variable TAN0   equal tan(0)
+variable TANx   equal tan(PI)
+variable ASIN0  equal asin(0)
+variable ASIN1  equal asin(1)
+variable ACOS0  equal acos(0)
+variable ACOS1  equal acos(1)
+variable ATAN0  equal atan(0)
+variable ATAN1  equal atan(1)
+variable CEILx  equal ceil(PI)
+variable FLOORx equal floor(PI)
+variable ROUNDx equal round(PI)
+
+print "test sqrt(9)    expected result:  3            actual result:  ${SQRTx}"
+print "test cbrt(-27)  expected result: -3            actual result: ${CBRTx}"
+print "test exp(1)     expected result:  2.718281828  actual result:  ${EXP1}"
+print "test ln(1)      expected result:  0            actual result:  ${LN1} "
+print "test ln(exp(1)) expected result:  1            actual result:  ${LNe} "
+print "test log(1)     expected result:  0            actual result:  ${LOG1}"
+print "test log(10)    expected result:  1            actual result:  ${LOG10}"
+print "test abs(-1)    expected result:  1            actual result:  ${ABSx}"
+print "test sin(0)     expected result:  0            actual result:  ${SIN0}"
+print "test cos(0)     expected result:  1            actual result:  ${COS0}"
+print "test sin(PI)    expected result:  0            actual result:  ${SINx}"
+print "test cos(PI)    expected result: -1            actual result: ${COSx}"
+print "test tan(0)     expected result:  0            actual result:  ${TAN0}"
+print "test tan(PI)    expected result:  0            actual result:  ${TANx}"
+print "test asin(0)    expected result:  0            actual result:  ${ASIN0}"
+print "test asin(1)    expected result:  PI/2         actual result:  ${ASIN1}"
+print "test acos(0)    expected result:  PI/2         actual result:  ${ACOS0}"
+print "test acos(1)    expected result:  0            actual result:  ${ACOS1}"
+print "test atan(0)    expected result:  0            actual result:  ${ATAN0}"
+print "test atan(1)    expected result:  PI/4         actual result:  ${ATAN1}"
+print "test ceil(PI)   expected result:  4            actual result:  ${CEILx}"
+print "test floor(PI)  expected result:  3            actual result:  ${FLOORx}"
+print "test round(PI)  expected result:  3            actual result:  ${ROUNDx}"
