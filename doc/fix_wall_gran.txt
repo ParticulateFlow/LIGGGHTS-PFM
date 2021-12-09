@@ -30,8 +30,7 @@ wallstyle args for wallstyle {mesh} = {n_meshes} and {meshes} :l
   {meshes} values = meshlist
     meshlist =  id(s) of the mesh(es) (see "fix mesh/surface"_fix_mesh_surface.html) to be used. These must be defined before :pre
 
-wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zplane} or {xcylinder} or {ycylinder} or {zcylinder} 
-                                           or {general_plane} or {general_cylinder} or {general_cone} :l
+wallstyle args for wallstyle {primitive} = {type} or {xplane} or {yplane} or {zplane} or {xcylinder} or {ycylinder} or {zcylinder} or {general_plane} or {general_cylinder} or {general_cone} :l
   {type} args = tp
     tp = atom_type (material type) of the wall
   {xplane} or {yplane} or {zplane} args = pos
