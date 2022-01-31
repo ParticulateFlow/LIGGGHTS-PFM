@@ -18,8 +18,8 @@
 ------------------------------------------------------------------------- */
 
 #ifdef LAMMPS_VTK
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 #include <vtkVersion.h>
 #ifndef VTK_MAJOR_VERSION
 #include <vtkConfigure.h>
