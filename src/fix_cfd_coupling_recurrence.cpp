@@ -64,6 +64,8 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
     limit_fluc(false),
     relative_limit(false),
     remove_vel_across_walls(false),
+    wallfixname(NULL),
+    idregion(NULL),
     iregion(-1)
 {
     int iarg = 3;
@@ -242,7 +244,8 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
 
 FixCfdCouplingRecurrence::~FixCfdCouplingRecurrence()
 {
-  if(wallfixname) delete []wallfixname;
+  if (wallfixname) delete []wallfixname;
+  if (idregion) delete []idregion;
 }
 
 /* ---------------------------------------------------------------------- */
