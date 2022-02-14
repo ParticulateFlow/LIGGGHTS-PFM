@@ -38,6 +38,7 @@
 #include "fix_property_global.h"
 #include "pair_gran.h"
 #include "force.h"
+#include "group.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -53,6 +54,8 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     fix_effvolfactors_(0),
     verbose_(false),
     compress_flag_(1),
+    igroup_fully_deformed_(-1),
+    igroup_fully_deformed_bit_(-1),
     mass_removed_(0.0),
     rmin_(0.0),
     fmax_(1.5), // 1/alpha_max \approx 1.5
@@ -60,7 +63,12 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     monitor_heat_(false),
     heat_removed_(0.),
     fix_temp_(NULL),
-    fix_capacity_(NULL)
+    fix_capacity_(NULL),
+    use_latent_heat_(false),
+    latent_heat_per_mass_(0.0),
+    latent_heat_transferred_(0.0),
+    fix_latent_heat_(NULL),
+    latent_heat_(NULL)
 {
 
   int iarg = 3;
@@ -106,18 +114,26 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'monitor_heat_'");
       iarg += 2;
     }
+    else if(strcmp(arg[iarg],"use_latent_heat") == 0) {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'use_latent_heat'");
+      if(strcmp(arg[iarg+1],"yes") == 0)
+        use_latent_heat_ = true;
+      else if(strcmp(arg[iarg+1],"no"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'use_latent_heat_'");
+      iarg += 2;
+    }
+    else if (strcmp(arg[iarg],"latent_heat") == 0) {
+        if (iarg + 2 > narg)
+            error -> fix_error(FLERR, this, "not enough arguments for 'latent_heat'");
+        latent_heat_per_mass_ = atof(arg[iarg+1]);
+        iarg +=2;
+    }
     else error->fix_error(FLERR,this,"unknown keyword");
   }
 
   vector_flag = 1;
-  if (monitor_heat_)
-  {
-    size_vector = 2;
-  }
-  else
-  {
-    size_vector = 1;
-  }
+  size_vector = 3;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -172,6 +188,7 @@ void FixCfdCouplingDeform::pre_delete(bool unfixflag)
 int FixCfdCouplingDeform::setmask()
 {
   int mask = 0;
+  mask |= INITIAL_INTEGRATE;
   mask |= POST_FORCE;
   return mask;
 }
@@ -200,6 +217,110 @@ void FixCfdCouplingDeform::init()
         int max_type = pair_gran->get_properties()->max_type();
         fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style));
     }
+
+    // look up group of fully deformed particles; needs to be defined in run script before this fix
+    igroup_fully_deformed_ = group->find("fullyDeformed");
+    if (igroup_fully_deformed_ == -1)
+    {
+        error->all(FLERR,"FixCfdCouplingDeform: group ID for fully deformed particles does not exist");
+    }
+    igroup_fully_deformed_bit_ = group->bitmask[igroup_fully_deformed_];
+
+    if (use_latent_heat_)
+    {
+        fix_latent_heat_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixCfdCouplingDeform::initial_integrate(int)
+{
+    bigint prev_time = update->ntimestep - 1;
+
+    // only delete group immediately after pull/push so that no latent heat is neglected
+    if (prev_time != fix_coupling_->latestpull("partDeformations")) return;
+
+    int *mask = atom->mask;
+    int nlocal = atom->nlocal;
+    int *type = atom->type;
+    double *rmass = atom->rmass;
+
+    int nremoved_this_me = 0;
+    int nremoved_this = 0;
+    double mass_removed_this_me = 0.0;
+    double mass_removed_this = 0.0;
+
+    double *T = NULL;
+    if(monitor_heat_)
+    {
+        T = fix_temp_->vector_atom;
+    }
+    double heat_removed_this_me = 0., heat_removed_this = 0.;
+
+    double latent_heat_transferred_this_me = 0., latent_heat_transferred_this = 0.;
+
+    // remove all elements in group of fully deformed particles
+    for (int i = 0; i < nlocal; i++)
+    {
+        if (mask[i] & igroup_fully_deformed_bit_)
+        {
+            nremoved_this_me++;
+            mass_removed_this_me += rmass[i];
+
+            if (monitor_heat_)
+            {
+                double Cp = fix_capacity_->compute_vector(type[i]-1);
+                heat_removed_this_me += rmass[i]*T[i]*Cp;
+            }
+
+            if (use_latent_heat_)
+            {
+                latent_heat_transferred_this_me -= latent_heat_per_mass_ * rmass[i];
+            }
+            delete_particle(i);
+        }
+    }
+
+    MPI_Allreduce(&mass_removed_this_me,&mass_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
+    MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
+    mass_removed_ += mass_removed_this;
+
+    if(monitor_heat_)
+    {
+        MPI_Allreduce(&heat_removed_this_me,&heat_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
+        heat_removed_ += heat_removed_this;
+    }
+
+    if (use_latent_heat_)
+    {
+        MPI_Allreduce(&latent_heat_transferred_this_me,&latent_heat_transferred_this,1,MPI_DOUBLE,MPI_SUM,world);
+        latent_heat_transferred_ += latent_heat_transferred_this;
+    }
+
+    if(comm->me == 0)
+    {
+        if(verbose_ && screen)
+            fprintf(screen,"    Particle removal due to deformation:  n = %d, m = %f, m_tot = %f\n",
+                    nremoved_this, mass_removed_this,mass_removed_);
+    }
+
+    if (atom->molecular == 0 && compress_flag_)
+    {
+        int *tag = atom->tag;
+        for (int i = 0; i < atom->nlocal; i++) tag[i] = 0;
+        atom->tag_extend();
+    }
+
+    if (atom->tag_enable)
+    {
+        if (atom->map_style)
+        {
+            atom->nghost = 0;
+            atom->map_init();
+            atom->map_set();
+        }
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -220,26 +341,17 @@ void FixCfdCouplingDeform::post_force(int)
     double effvolfactor = 1.0;
     double neweffvolfactor = 1.0;
     double deformation = 0.0;
-
-    int nremoved_this_me = 0;
-    int nremoved_this = 0;
-    double mass_removed_this_me = 0.0;
-    double mass_removed_this = 0.0;
-
     double newradius = 0.0;
-
     double f0 = 0.0;
 
-    double *T = NULL;
-    if(monitor_heat_)
+    if (use_latent_heat_)
     {
-        T = fix_temp_->vector_atom;
+        latent_heat_ = fix_latent_heat_ -> vector_atom;
     }
-    double heat_removed_this_me = 0., heat_removed_this = 0.;
 
     for (int i = 0; i < nlocal; i++)
     {
-        if (mask[i] & groupbit)
+        if (mask[i] & groupbit && !(mask[i] & igroup_fully_deformed_bit_))
         {
             deformation = partdeformations[i];
             if (deformation < 1.0 - SMALL && deformation > SMALL)
@@ -247,7 +359,7 @@ void FixCfdCouplingDeform::post_force(int)
                 effvolfactor = effvolfactors_[i];
                 f0 = default_effvolfactors_[type[i]];
                 neweffvolfactor = f0 + deformation * (fmax_ - f0);
-                // update properties only if new eff vol factor larger than old one (by e.g. 1%) 
+                // update properties only if new eff vol factor larger than old one (by e.g. 1%)
                 if (neweffvolfactor <= 1.01*effvolfactor) continue;
 
                 // deform particle such that it keeps its volume
@@ -258,54 +370,17 @@ void FixCfdCouplingDeform::post_force(int)
                     radius[i] = newradius;
                     fix_effvolfactors_->set_vector(i,neweffvolfactor);
                 }
-
             }
             else if (deformation >= 1.0 - SMALL)
             {
-                nremoved_this_me++;
-                mass_removed_this_me += rmass[i];
+                mask[i] |= igroup_fully_deformed_bit_;
 
-                if(monitor_heat_)
+                if (use_latent_heat_)
                 {
-                    double Cp = fix_capacity_->compute_vector(type[i]-1);
-                    heat_removed_this_me += rmass[i]*T[i]*Cp;
+                    latent_heat_[i] -= latent_heat_per_mass_ * rmass[i];
                 }
-
-                delete_particle(i);
             }
         }
-    }
-
-    MPI_Allreduce(&mass_removed_this_me,&mass_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
-    MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
-    mass_removed_ += mass_removed_this;
-
-    if(monitor_heat_)
-    {
-        MPI_Allreduce(&heat_removed_this_me,&heat_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
-        heat_removed_ += heat_removed_this;
-    }
-
-
-    if(comm->me == 0)
-    {
-        if(verbose_ && screen)
-            fprintf(screen,"    Particle removal due to deformation:  n = %d, m = %f, m_tot = %f\n",
-                    nremoved_this, mass_removed_this,mass_removed_);
-    }
-
-    if (atom->molecular == 0 && compress_flag_) {
-      int *tag = atom->tag;
-      for (int i = 0; i < atom->nlocal; i++) tag[i] = 0;
-      atom->tag_extend();
-    }
-
-    if (atom->tag_enable) {
-      if (atom->map_style) {
-        atom->nghost = 0;
-        atom->map_init();
-        atom->map_set();
-      }
     }
 }
 
@@ -322,14 +397,18 @@ void FixCfdCouplingDeform::delete_particle(int i)
 
 double FixCfdCouplingDeform::compute_vector(int n)
 {
-  if (n==0)
-  {
-    return mass_removed_;
-  }
-  else if (n==1 && monitor_heat_)
-  {
-    return heat_removed_;
-  }
+    if (n==0)
+    {
+        return mass_removed_;
+    }
+    else if (n==1 && monitor_heat_)
+    {
+        return heat_removed_;
+    }
+    else if (n==2 && use_latent_heat_)
+    {
+        return latent_heat_transferred_;
+    }
 
   return -1.0;
 }
