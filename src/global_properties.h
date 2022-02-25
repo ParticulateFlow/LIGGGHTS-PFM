@@ -77,6 +77,10 @@ namespace MODEL_PARAMS
   MatrixProperty* createCoeffMaxElasticStiffness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffAdhesionStiffness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffPlasticityDepth(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+
+  VectorProperty* createSurfaceRoughness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  MatrixProperty* createHminSigma(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  MatrixProperty* createCoeffFrictLub(PropertyRegistry & registry, const char * caller, bool sanity_checks);
 }
 
 #endif /* GLOBAL_PROPERTIES_H_ */

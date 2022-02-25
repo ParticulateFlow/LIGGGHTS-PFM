@@ -58,6 +58,8 @@ namespace MODEL_PARAMS
   static const char * COEFFICIENT_MAX_ELASTIC_STIFFNESS = "coefficientMaxElasticStiffness";
   static const char * COEFFICIENT_ADHESION_STIFFNESS = "coefficientAdhesionStiffness";
   static const char * COEFFICIENT_PLASTICITY_DEPTH = "coefficientPlasticityDepth";
+  static const char * SURFACE_ROUGHNESS = "surfaceRoughness";
+  static const char * COEFFICIENT_FRICTION_LUBRICATED = "coefficientFrictionLubricated";
 
   /* -----------------------------------------------------------------------
    * Utility functions
@@ -609,4 +611,53 @@ namespace MODEL_PARAMS
   }
 
   /* ---------------------------------------------------------------------- */
+
+  VectorProperty * createSurfaceRoughness(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    VectorProperty * vec = new VectorProperty(max_type+1);
+    FixPropertyGlobal * sigma = registry.getGlobalProperty(SURFACE_ROUGHNESS,"property/global","peratomtype",max_type,0,caller);
+
+    for(int i=1; i < max_type+1; i++)
+    {
+      const double sigmai = sigma->compute_vector(i-1);
+
+      vec->data[i] = sigmai;
+    }
+
+    return vec;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  MatrixProperty * createHminSigma(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    registry.registerProperty(SURFACE_ROUGHNESS, &createSurfaceRoughness);
+
+    MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
+    VectorProperty * surfaceRoughness = registry.getVectorProperty(SURFACE_ROUGHNESS,caller);
+    double * sigma = surfaceRoughness->data;
+
+    for(int i=1;i< max_type+1; i++)
+    {
+      for(int j=1;j<max_type+1;j++)
+      {
+        const double sigmai=sigma[i];
+        const double sigmaj=sigma[j];
+        matrix->data[i][j] = (sigmai+sigmaj)/2.;
+      }
+    }
+
+    return matrix;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  MatrixProperty* createCoeffFrictLub(PropertyRegistry & registry, const char * caller, bool)
+  {
+    return createPerTypePairProperty(registry, COEFFICIENT_FRICTION_LUBRICATED, caller);
+  }
 }

@@ -42,13 +42,23 @@ namespace ContactModels
   public:
     static const int MASK = CM_REGISTER_SETTINGS | CM_CONNECT_TO_PROPERTIES | CM_COLLISION;
 
-    NormalModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp),
+    NormalModel(LAMMPS * lmp, IContactHistorySetup * hsetup) : Pointers(lmp),
       Yeff(NULL),
       Geff(NULL),
       betaeff(NULL),
+      hminSigma(NULL),
       limitForce(false),
       displayedSettings(false)
     {
+      history_offset = hsetup->add_history_value("deltav0", "0");
+      hsetup->add_history_value("hmin", "1");
+
+#ifdef NONSPHERICAL_ACTIVE_FLAG
+      error->all(FLERR,"HERTZ/LUBRICATED not defined for non-spherical particles\n");
+#endif
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      error->all(FLERR,"HERTZ/LUBRICATED not defined for supersquadric particles\n");
+#endif      
       /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HERTZ/LUBRICATED loaded\n");
     }
 
@@ -62,10 +72,12 @@ namespace ContactModels
       registry.registerProperty("Yeff", &MODEL_PARAMS::createYeff,"model hertz/lubricated");
       registry.registerProperty("Geff", &MODEL_PARAMS::createGeff,"model hertz/lubricated");
       registry.registerProperty("betaeff", &MODEL_PARAMS::createBetaEff,"model hertz/lubricated");
+      registry.registerProperty("hminSigma", &MODEL_PARAMS::createHminSigma,"model hertz/lubricated");
 
       registry.connect("Yeff", Yeff,"model hertz/lubricated");
       registry.connect("Geff", Geff,"model hertz/lubricated");
       registry.connect("betaeff", betaeff,"model hertz/lubricated");
+      registry.connect("hminSigma", hminSigma,"model hertz/lubricated");
     }
 
     // effective exponent for stress-strain relationship
@@ -82,60 +94,113 @@ namespace ContactModels
       const double ri = cdata.radi;
       const double rj = cdata.radj;
       double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
-#ifdef SUPERQUADRIC_ACTIVE_FLAG
-      if(cdata.is_non_spherical && atom->superquadric_flag)
-        reff = cdata.reff;
-#endif
-      const double meff = cdata.meff;
-      const double deltan = cdata.deltan;
+      double * const deltav0 = &cdata.contact_history[history_offset];
+      double * const hmin  = &cdata.contact_history[history_offset+1];
 
-      const double sqrtval = sqrt(reff*deltan);
+      // gap height
+      double hij;
+      if(cdata.is_wall)
+        hij = cdata.r - cdata.radi;
+      else
+        hij = cdata.r - cdata.radsum;
 
-      const double Sn=2.*Yeff[itype][jtype]*sqrtval;
-      const double St=8.*Geff[itype][jtype]*sqrtval;
+      fprintf(screen,"h: %g\t",hij);
 
-      double kn=4./3.*Yeff[itype][jtype]*sqrtval;
-      double kt=St;
-      const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
-      const double gamman=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(Sn*meff);
-      double gammat=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(St*meff);
-      /*NL*/ //if (screen) fprintf(screen,"tangential_damping %s\n",tangential_damping?"yes":"no");
-      if (!tangential_damping) gammat = 0.0;
+      double hco = reff; // FIXME: make parameter
+      
+      double Fn = 0.; // total normal force
+      double Fl = 0.; // lubrication force
+      double Fc = 0.; // contact force
 
-      if(!displayedSettings)
+      if (hij <= hco) 
       {
-        displayedSettings = true;
+        // approach velocity
+        const double oldDeltav0 = *deltav0;
+        if (cdata.vn<0. || hij<*hmin)
+          *deltav0 = MAX(*deltav0,-cdata.vn);
+        else
+          *deltav0 = 0.;
 
-      }
-      // convert Kn and Kt from pressure units to force/distance^2
-      kn /= force->nktv2p;
-      kt /= force->nktv2p;
+        fprintf(screen,"vn: %g\t",cdata.vn);
+        fprintf(screen,"vn0: %g\t",*deltav0);
+        
+        const double mul = 1e-3; //FIXME: couple with CFD
 
-      const double Fn_damping = -gamman*cdata.vn;
-      const double Fn_contact = kn*deltan;
-      double Fn = Fn_damping + Fn_contact;
+        // approach distance
+        if (*deltav0!=oldDeltav0 && *deltav0>0.) {
+          const double hmine = 0.37 * pow(mul**deltav0/Yeff[itype][jtype],0.4) * pow(reff,0.6);
+          *hmin = MAX(hminSigma[itype][jtype],hmine);
 
-      //limit force to avoid the artefact of negative repulsion force
-      if(limitForce && (Fn<0.0) )
-      {
-          Fn = 0.0;
-      }
+          fprintf(screen,"hmine: %g\t",hmine);
+          fprintf(screen,"hmins: %g\t",hminSigma[itype][jtype]);
+        }
+        fprintf(screen,"hmin: %g\t",*hmin);
 
-      cdata.Fn = Fn;
-      cdata.kn = kn;
-      cdata.kt = kt;
-      cdata.gamman = gamman;
-      cdata.gammat = gammat;
+        // lubrication force
+        if (hij>0.)
+          Fl = -6.*M_PI*mul*cdata.vn*reff*reff/MAX(hij,*hmin);
 
-#ifdef NONSPHERICAL_ACTIVE_FLAG
-      double torque_i[3] = {0., 0., 0.};
-      double Fn_i[3] = { Fn * cdata.en[0], Fn * cdata.en[1], Fn * cdata.en[2] };
-      if(cdata.is_non_spherical) {
-        double xci[3];
-        vectorSubtract3D(cdata.contact_point, atom->x[cdata.i], xci);
-        vectorCross3D(xci, Fn_i, torque_i);
-      }
-#endif
+        // contact force
+        if (hij<=*hmin)
+        {
+          // overlap
+          const double deltan = MAX(*hmin - hij, 0.);
+          fprintf(screen,"deltan: %g\t",deltan);
+          
+          const double meff = cdata.meff;
+          const double sqrtval = sqrt(reff*deltan);
+
+          const double Sn=2.*Yeff[itype][jtype]*sqrtval;
+          const double St=8.*Geff[itype][jtype]*sqrtval;
+
+          double kn=4./3.*Yeff[itype][jtype]*sqrtval;
+          double kt=St;
+          const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
+          const double gamman=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(Sn*meff);
+          double gammat=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(St*meff);
+          /*NL*/ //if (screen) fprintf(screen,"tangential_damping %s\n",tangential_damping?"yes":"no");
+          if (!tangential_damping) gammat = 0.0;
+
+          if(!displayedSettings)
+          {
+            displayedSettings = true;
+          }
+          // convert Kn and Kt from pressure units to force/distance^2
+          kn /= force->nktv2p;
+          kt /= force->nktv2p;
+
+          const double Fc_damping = -gamman*cdata.vn;
+          const double Fc_contact = kn*deltan;
+          Fc = Fc_damping + Fc_contact;
+
+          //limit force to avoid the artefact of negative repulsion force
+          if(limitForce && (Fc<0.0) )
+          {
+            Fc = 0.;
+          }
+
+          cdata.kn = kn;
+          cdata.kt = kt;
+          cdata.gamman = gamman;
+          cdata.gammat = gammat;
+        }
+
+        // add to total force
+        if (hij>*hmin)
+          Fn = Fl;
+        else if (hij<=0.)
+          Fn = Fc;
+        else 
+        {
+          double frac = hij / *hmin;
+          Fn = frac*Fl + (1-frac)*Fc;
+        }
+        cdata.Fn = Fn;
+      }  
+
+      fprintf(screen,"Fl: %g\t",Fl); 
+      fprintf(screen,"Fc: %g\t",Fc);
+      fprintf(screen,"Fn: %g\n",Fn);
 
       // apply normal force
       if(cdata.is_wall) {
@@ -143,14 +208,6 @@ namespace ContactModels
         i_forces.delta_F[0] = Fn_ * cdata.en[0];
         i_forces.delta_F[1] = Fn_ * cdata.en[1];
         i_forces.delta_F[2] = Fn_ * cdata.en[2];
-#ifdef NONSPHERICAL_ACTIVE_FLAG
-        if(cdata.is_non_spherical) {
-          // for non-spherical particles normal force can produce torque!
-          i_forces.delta_torque[0] += torque_i[0];
-          i_forces.delta_torque[1] += torque_i[1];
-          i_forces.delta_torque[2] += torque_i[2];
-        }
-#endif
       } else {
         i_forces.delta_F[0] = cdata.Fn * cdata.en[0];
         i_forces.delta_F[1] = cdata.Fn * cdata.en[1];
@@ -159,23 +216,6 @@ namespace ContactModels
         j_forces.delta_F[0] = -i_forces.delta_F[0];
         j_forces.delta_F[1] = -i_forces.delta_F[1];
         j_forces.delta_F[2] = -i_forces.delta_F[2];
-#ifdef NONSPHERICAL_ACTIVE_FLAG
-        if(cdata.is_non_spherical) {
-          // for non-spherical particles normal force can produce torque!
-          double xcj[3], torque_j[3];
-          double Fn_j[3] = { -Fn_i[0], -Fn_i[1], -Fn_i[2]};
-          vectorSubtract3D(cdata.contact_point, atom->x[cdata.j], xcj);
-          vectorCross3D(xcj, Fn_j, torque_j);
-
-          i_forces.delta_torque[0] += torque_i[0];
-          i_forces.delta_torque[1] += torque_i[1];
-          i_forces.delta_torque[2] += torque_i[2];
-
-          j_forces.delta_torque[0] += torque_j[0];
-          j_forces.delta_torque[1] += torque_j[1];
-          j_forces.delta_torque[2] += torque_j[2];
-        }
-#endif
       }
     }
 
@@ -187,6 +227,9 @@ namespace ContactModels
     double ** Yeff;
     double ** Geff;
     double ** betaeff;
+    double ** hminSigma;
+
+    int history_offset;
 
     bool tangential_damping;
     bool limitForce;
