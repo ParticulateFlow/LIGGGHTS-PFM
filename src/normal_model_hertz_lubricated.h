@@ -47,6 +47,8 @@ namespace ContactModels
       Geff(NULL),
       betaeff(NULL),
       hminSigma(NULL),
+      hco(1.0),
+      coeffMu(NULL),
       limitForce(false),
       displayedSettings(false)
     {
@@ -73,11 +75,15 @@ namespace ContactModels
       registry.registerProperty("Geff", &MODEL_PARAMS::createGeff,"model hertz/lubricated");
       registry.registerProperty("betaeff", &MODEL_PARAMS::createBetaEff,"model hertz/lubricated");
       registry.registerProperty("hminSigma", &MODEL_PARAMS::createHminSigma,"model hertz/lubricated");
+      registry.registerProperty("hco", &MODEL_PARAMS::createLubricationCutoff,"model hertz/lubricated");
+      registry.registerProperty("coeffMu", &MODEL_PARAMS::createCoeffMu,"model hertz/lubricated");
 
       registry.connect("Yeff", Yeff,"model hertz/lubricated");
       registry.connect("Geff", Geff,"model hertz/lubricated");
       registry.connect("betaeff", betaeff,"model hertz/lubricated");
       registry.connect("hminSigma", hminSigma,"model hertz/lubricated");
+      registry.connect("hco", hco, "model hertz/lubricated");
+      registry.connect("coeffMu", coeffMu,"model hertz/lubricated");
     }
 
     // effective exponent for stress-strain relationship
@@ -105,14 +111,12 @@ namespace ContactModels
         hij = cdata.r - cdata.radsum;
 
       fprintf(screen,"h: %g\t",hij);
-
-      double hco = reff; // FIXME: make parameter
       
       double Fn = 0.; // total normal force
       double Fl = 0.; // lubrication force
       double Fc = 0.; // contact force
 
-      if (hij <= hco) 
+      if (hij <= hco*reff) 
       {
         // approach velocity
         const double oldDeltav0 = *deltav0;
@@ -124,7 +128,7 @@ namespace ContactModels
         fprintf(screen,"vn: %g\t",cdata.vn);
         fprintf(screen,"vn0: %g\t",*deltav0);
         
-        const double mul = 1e-3; //FIXME: couple with CFD
+        const double mul = coeffMu[itype][jtype]; //FIXME: couple with CFD
 
         // approach distance
         if (*deltav0!=oldDeltav0 && *deltav0>0.) {
@@ -228,6 +232,8 @@ namespace ContactModels
     double ** Geff;
     double ** betaeff;
     double ** hminSigma;
+    double hco;
+    double ** coeffMu;
 
     int history_offset;
 

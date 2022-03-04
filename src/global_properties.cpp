@@ -60,6 +60,7 @@ namespace MODEL_PARAMS
   static const char * COEFFICIENT_PLASTICITY_DEPTH = "coefficientPlasticityDepth";
   static const char * SURFACE_ROUGHNESS = "surfaceRoughness";
   static const char * COEFFICIENT_FRICTION_LUBRICATED = "coefficientFrictionLubricated";
+  static const char * LUBRICATION_CUTOFF = "lubricationCutoff";
 
   /* -----------------------------------------------------------------------
    * Utility functions
@@ -659,5 +660,12 @@ namespace MODEL_PARAMS
   MatrixProperty* createCoeffFrictLub(PropertyRegistry & registry, const char * caller, bool)
   {
     return createPerTypePairProperty(registry, COEFFICIENT_FRICTION_LUBRICATED, caller);
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  ScalarProperty* createLubricationCutoff(PropertyRegistry & registry, const char * caller, bool)
+  {
+    return createScalarProperty(registry, LUBRICATION_CUTOFF, caller);
   }
 }

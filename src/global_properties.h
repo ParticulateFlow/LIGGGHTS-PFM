@@ -81,6 +81,7 @@ namespace MODEL_PARAMS
   VectorProperty* createSurfaceRoughness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createHminSigma(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffFrictLub(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  ScalarProperty* createLubricationCutoff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
 }
 
 #endif /* GLOBAL_PROPERTIES_H_ */
