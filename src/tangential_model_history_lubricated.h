@@ -35,6 +35,7 @@ TANGENTIAL_MODEL(TANGENTIAL_HISTORY_LUBRICATED,history/lubricated,3)
 #include "update.h"
 #include "global_properties.h"
 #include "atom.h"
+#include "pair_gran.h"
 
 namespace LIGGGHTS {
 namespace ContactModels
@@ -43,17 +44,27 @@ namespace ContactModels
   class TangentialModel<TANGENTIAL_HISTORY_LUBRICATED> : protected Pointers
   {
     double ** coeffFrict;
+    double ** coeffFrictLub;
+    double ** hminSigma;
     int history_offset;
+    class PairGran *pair_gran;
+    int hmin_offset;
 
   public:
     static const int MASK = CM_CONNECT_TO_PROPERTIES | CM_COLLISION | CM_NO_COLLISION;
 
     TangentialModel(LAMMPS * lmp, IContactHistorySetup * hsetup) : Pointers(lmp),
-      coeffFrict(NULL)
+      coeffFrict(NULL),
+      coeffFrictLub(NULL),
+      hminSigma(NULL)
     {
       history_offset = hsetup->add_history_value("shearx", "1");
       hsetup->add_history_value("sheary", "1");
       hsetup->add_history_value("shearz", "1");
+
+      pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+      hmin_offset = pair_gran->get_history_value_offset("hmin");
+      if (hmin_offset < 0) error->all(FLERR,"HISTORY/LUBRICATED could not find hmin offset, requires HERTZ/LUBRICATED\n");
 
       /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "TANGENTIAL/HISTORY/LUBRICATED loaded\n");
     }
@@ -63,11 +74,17 @@ namespace ContactModels
     inline void connectToProperties(PropertyRegistry & registry)
     {
       registry.registerProperty("coeffFrict", &MODEL_PARAMS::createCoeffFrict);
+      registry.registerProperty("coeffFrictLub", &MODEL_PARAMS::createCoeffFrictLub);
+      registry.registerProperty("hminSigma", &MODEL_PARAMS::createHminSigma);
       registry.connect("coeffFrict", coeffFrict,"tangential_model history/lubricated");
+      registry.connect("coeffFrictLub", coeffFrictLub,"tangential_model history/lubricated");
+      registry.connect("hminSigma", hminSigma,"tangential_model history/lubricated");
     }
 
     inline void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
     {
+      double * const hmin  = &cdata.contact_history[hmin_offset];
+
       // normal forces = Hookian contact + normal velocity damping
       const double enx = cdata.en[0];
       const double eny = cdata.en[1];
@@ -93,7 +110,15 @@ namespace ContactModels
 
       const double shrmag = sqrt(shear[0]*shear[0] + shear[1]*shear[1] + shear[2]*shear[2]);
       const double kt = cdata.kt;
-      const double xmu = coeffFrict[cdata.itype][cdata.jtype];
+
+      // set friction coefficient
+      double xmu;
+      if (*hmin>hminSigma[cdata.itype][cdata.jtype])
+        xmu = coeffFrictLub[cdata.itype][cdata.jtype];
+      else
+        xmu = coeffFrict[cdata.itype][cdata.jtype];
+      
+      fprintf(screen,"muf: %g\t",xmu);
 
       // tangential forces = shear + tangential velocity damping
       double Ft1 = -(kt * shear[0]);
