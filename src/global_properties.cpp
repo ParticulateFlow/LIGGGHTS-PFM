@@ -41,6 +41,7 @@ namespace MODEL_PARAMS
   static const char * CHARACTERISTIC_VELOCITY = "characteristicVelocity";
   static const char * STIFFFNESS_RATIO = "stiffnessRatio";
   static const char * YOUNGS_MODULUS = "youngsModulus";
+  static const char * YOUNGS_MODULUS_ORIGINAL = "youngsModulusOriginal";
   static const char * POISSONS_RATIO = "poissonsRatio";
   static const char * COEFFICIENT_RESTITUTION = "coefficientRestitution";
   static const char * COEFFICIENT_RESTITUTION_LOG = "coefficientRestitutionLog";
@@ -175,6 +176,33 @@ namespace MODEL_PARAMS
 
   /* ---------------------------------------------------------------------- */
 
+  VectorProperty * createYoungsModulusOriginal(PropertyRegistry & registry, const char * caller, bool sanity_checks)
+  {
+    LAMMPS * lmp = registry.getLAMMPS();
+    const int max_type = registry.max_type();
+
+    VectorProperty * vec = new VectorProperty(max_type+1);
+    FixPropertyGlobal * YO = registry.getGlobalProperty(YOUNGS_MODULUS_ORIGINAL,"property/global","peratomtype",max_type,0,caller);
+
+    for(int i=1; i < max_type+1; i++)
+    {
+      const double YOi = YO->compute_vector(i-1);
+
+      // error checks on Y
+      if(sanity_checks)
+      {
+        if(YOi < 0)
+          lmp->error->all(FLERR,"youngsModulusOriginal >= 0 required");
+      }
+
+      vec->data[i] = YOi;
+    }
+
+    return vec;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
   VectorProperty * createPoissonsRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks)
   {
     LAMMPS * lmp = registry.getLAMMPS();
@@ -224,6 +252,36 @@ namespace MODEL_PARAMS
         const double vi=v[i];
         const double vj=v[j];
         matrix->data[i][j] = 1./((1.-vi*vi)/Yi+(1.-vj*vj)/Yj);
+      }
+    }
+
+    return matrix;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  MatrixProperty * createYeffOriginal(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    registry.registerProperty(YOUNGS_MODULUS_ORIGINAL, &createYoungsModulusOriginal);
+    registry.registerProperty(POISSONS_RATIO, &createPoissonsRatio);
+
+    MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
+    VectorProperty * youngsModulusOriginal = registry.getVectorProperty(YOUNGS_MODULUS_ORIGINAL,caller);
+    VectorProperty * poissonRatio = registry.getVectorProperty(POISSONS_RATIO,caller);
+    double * YO = youngsModulusOriginal->data;
+    double * v = poissonRatio->data;
+
+    for(int i=1;i< max_type+1; i++)
+    {
+      for(int j=1;j<max_type+1;j++)
+      {
+        const double YOi=YO[i];
+        const double YOj=YO[j];
+        const double vi=v[i];
+        const double vj=v[j];
+        matrix->data[i][j] = 1./((1.-vi*vi)/YOi+(1.-vj*vj)/YOj);
       }
     }
 

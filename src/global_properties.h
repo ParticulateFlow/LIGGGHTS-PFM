@@ -49,8 +49,10 @@ namespace MODEL_PARAMS
   ScalarProperty* createStiffnessRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCohesionEnergyDensity(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   VectorProperty* createYoungsModulus(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  VectorProperty* createYoungsModulusOriginal(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   VectorProperty* createPoissonsRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createYeff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  MatrixProperty* createYeffOriginal(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createGeff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffRest(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffRestLog(PropertyRegistry & registry, const char * caller, bool sanity_checks);

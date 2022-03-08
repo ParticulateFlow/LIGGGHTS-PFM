@@ -68,6 +68,7 @@ namespace ContactModels
     {
       settings.registerOnOff("tangential_damping", tangential_damping, true);
       settings.registerOnOff("limitForce", limitForce);
+      settings.registerOnOff("correctYoungsModulus", correctYoungsModulus);
     }
 
     void connectToProperties(PropertyRegistry & registry) {
@@ -84,6 +85,12 @@ namespace ContactModels
       registry.connect("hminSigma", hminSigma,"model hertz/lubricated");
       registry.connect("hco", hco, "model hertz/lubricated");
       registry.connect("coeffMu", coeffMu,"model hertz/lubricated");
+
+      if (correctYoungsModulus) {
+        registry.registerProperty("YeffOriginal", &MODEL_PARAMS::createYeffOriginal,"model hertz/lubricated");
+        registry.connect("YeffOriginal", YeffOriginal,"model hertz/lubricated");
+        /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HERTZ/LUBRICATED using YoungsModulusOriginal\n");
+      }
     }
 
     // effective exponent for stress-strain relationship
@@ -127,7 +134,14 @@ namespace ContactModels
 
         // approach distance
         if (*deltav0!=oldDeltav0 && *deltav0>0.) {
-          const double hmine = 0.37 * pow(mul**deltav0/Yeff[itype][jtype],0.4) * pow(reff,0.6);
+
+          double YoungsModulusEff;
+          if (correctYoungsModulus)
+            YoungsModulusEff = YeffOriginal[itype][jtype];
+          else
+            YoungsModulusEff = Yeff[itype][jtype];
+
+          const double hmine = 0.37 * pow(mul**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
           *hmin = MAX(hminSigma[itype][jtype],hmine);
         }
 
@@ -223,6 +237,7 @@ namespace ContactModels
 
   protected:
     double ** Yeff;
+    double ** YeffOriginal;
     double ** Geff;
     double ** betaeff;
     double ** hminSigma;
@@ -234,6 +249,7 @@ namespace ContactModels
     bool tangential_damping;
     bool limitForce;
     bool displayedSettings;
+    bool correctYoungsModulus;
   };
 
 }
