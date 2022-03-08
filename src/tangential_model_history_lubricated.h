@@ -129,6 +129,8 @@ namespace ContactModels
       const double Ft_shear = kt * shrmag; // sqrt(Ft1 * Ft1 + Ft2 * Ft2 + Ft3 * Ft3);
       const double Ft_friction = xmu * fabs(cdata.Fn);
 
+      fprintf(screen,"Ft: %g\n",MIN(Ft_shear,Ft_friction));
+
       // energy loss from sliding or damping
       if (Ft_shear > Ft_friction) {
         if (shrmag != 0.0) {

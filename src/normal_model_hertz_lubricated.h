@@ -109,8 +109,6 @@ namespace ContactModels
         hij = cdata.r - cdata.radi;
       else
         hij = cdata.r - cdata.radsum;
-
-      fprintf(screen,"h: %g\t",hij);
       
       double Fn = 0.; // total normal force
       double Fl = 0.; // lubrication force
@@ -124,9 +122,6 @@ namespace ContactModels
           *deltav0 = MAX(*deltav0,-cdata.vn);
         else
           *deltav0 = 0.;
-
-        fprintf(screen,"vn: %g\t",cdata.vn);
-        fprintf(screen,"vn0: %g\t",*deltav0);
         
         const double mul = coeffMu[itype][jtype]; //FIXME: couple with CFD
 
@@ -134,11 +129,7 @@ namespace ContactModels
         if (*deltav0!=oldDeltav0 && *deltav0>0.) {
           const double hmine = 0.37 * pow(mul**deltav0/Yeff[itype][jtype],0.4) * pow(reff,0.6);
           *hmin = MAX(hminSigma[itype][jtype],hmine);
-
-          fprintf(screen,"hmine: %g\t",hmine);
-          fprintf(screen,"hmins: %g\t",hminSigma[itype][jtype]);
         }
-        fprintf(screen,"hmin: %g\t",*hmin);
 
         // lubrication force
         if (hij>0.)
@@ -149,7 +140,6 @@ namespace ContactModels
         {
           // overlap
           const double deltan = MAX(*hmin - hij, 0.);
-          fprintf(screen,"deltan: %g\t",deltan);
           
           const double meff = cdata.meff;
           const double sqrtval = sqrt(reff*deltan);
@@ -199,23 +189,27 @@ namespace ContactModels
           double frac = hij / *hmin;
           Fn = frac*Fl + (1-frac)*Fc;
         }
-        cdata.Fn = Fn;
+        cdata.Fn = Fc; // store only contact force for friction calculation in tangential model
       }  
 
+      fprintf(screen,"h: %g\t",hij);
+      fprintf(screen,"vn: %g\t",cdata.vn);
+      fprintf(screen,"vn0: %g\t",*deltav0);
+      fprintf(screen,"hmin: %g\t",*hmin);
       fprintf(screen,"Fl: %g\t",Fl); 
       fprintf(screen,"Fc: %g\t",Fc);
-      fprintf(screen,"Fn: %g\n",Fn);
+      fprintf(screen,"Fn: %g\t",Fn);
 
-      // apply normal force
+      // apply total normal force
       if(cdata.is_wall) {
         const double Fn_ = Fn * cdata.area_ratio;
         i_forces.delta_F[0] = Fn_ * cdata.en[0];
         i_forces.delta_F[1] = Fn_ * cdata.en[1];
         i_forces.delta_F[2] = Fn_ * cdata.en[2];
       } else {
-        i_forces.delta_F[0] = cdata.Fn * cdata.en[0];
-        i_forces.delta_F[1] = cdata.Fn * cdata.en[1];
-        i_forces.delta_F[2] = cdata.Fn * cdata.en[2];
+        i_forces.delta_F[0] = Fn * cdata.en[0];
+        i_forces.delta_F[1] = Fn * cdata.en[1];
+        i_forces.delta_F[2] = Fn * cdata.en[2];
 
         j_forces.delta_F[0] = -i_forces.delta_F[0];
         j_forces.delta_F[1] = -i_forces.delta_F[1];
