@@ -60,6 +60,8 @@ class FixCfdCouplingDeform : public Fix  {
 
   int igroup_fully_deformed_bit_;
 
+  int particles_removed_;
+
   double mass_removed_;
 
   double rmin_;

@@ -56,6 +56,7 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     compress_flag_(1),
     igroup_fully_deformed_(-1),
     igroup_fully_deformed_bit_(-1),
+    particles_removed_(0),
     mass_removed_(0.0),
     rmin_(0.0),
     fmax_(1.5), // 1/alpha_max \approx 1.5
@@ -284,6 +285,7 @@ void FixCfdCouplingDeform::initial_integrate(int)
 
     MPI_Allreduce(&mass_removed_this_me,&mass_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
+    particles_removed_ += nremoved_this;
     mass_removed_ += mass_removed_this;
 
     if(monitor_heat_)
@@ -301,8 +303,8 @@ void FixCfdCouplingDeform::initial_integrate(int)
     if(comm->me == 0)
     {
         if(verbose_ && screen)
-            fprintf(screen,"    Particle removal due to deformation:  n = %d, m = %f, m_tot = %f\n",
-                    nremoved_this, mass_removed_this,mass_removed_);
+            fprintf(screen,"    Particle removal due to deformation:  n = %d, m = %f, n_tot = %d, m_tot = %f\n",
+                    nremoved_this, mass_removed_this, particles_removed_, mass_removed_);
     }
 
     if (atom->molecular == 0 && compress_flag_)
@@ -361,7 +363,6 @@ void FixCfdCouplingDeform::post_force(int)
                 neweffvolfactor = f0 + deformation * (fmax_ - f0);
                 // update properties only if new eff vol factor larger than old one (by e.g. 1%)
                 if (neweffvolfactor <= 1.01*effvolfactor) continue;
-
                 // deform particle such that it keeps its volume
                 newradius = pow(3.0*rmass[i]/(4.0*MY_PI*density[i]*neweffvolfactor),0.33333);
                 // particles can gradually deform but won't recover state of higher sphericity

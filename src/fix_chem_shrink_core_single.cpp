@@ -1071,7 +1071,7 @@ void FixChemShrinkCoreSingle::FractionalReduction(int i)
 {
     const double f = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
 
-    fracRed_[i][0] = f;
+    fracRed_[i][0] = std::min(0.9999,f);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1162,7 +1162,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     dH += 0.25*dHcoeffs[3]*T*T*T*T - dHcoeffs[4]/T + dHcoeffs[5];
     // reaction enthalpy (enthalpy of formation + thermal energy of gas phases) in J/mol
     dH *= 1000;
-    
+
     // add contribution of coke thermal energy
     if (reactionHeatIndex_ == 0)  // O2 + 2C -> 2C0
     {
