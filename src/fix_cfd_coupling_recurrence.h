@@ -79,8 +79,8 @@ class FixCfdCouplingRecurrence : public Fix  {
   char *wallfixname;
   double fwcrit;
 
-  int iregion;
   char *idregion;
+  int iregion;
 
   void limit_v(double*, double*, double);
 
