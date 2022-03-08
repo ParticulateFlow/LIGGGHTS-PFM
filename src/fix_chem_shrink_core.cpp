@@ -1245,7 +1245,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         if (massLayer_[i][j] < 0.0)
             massLayer_[i][j] = 0.0;
     }
-    for (int j = 0; j <= MAX_LAYERS; j++)
+    for (int j = 0; j <= layers_; j++)
     {
         // calculate total mass of particle
         // since there is a minimum radius for layers, there is always a
