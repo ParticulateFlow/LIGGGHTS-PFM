@@ -116,8 +116,7 @@ namespace ContactModels
       if(cdata.is_wall)
         hij = cdata.r - cdata.radi;
       else
-        hij = cdata.r - cdata.radsum;
-      fprintf(screen,"h: %g\t",hij);  
+        hij = cdata.r - cdata.radsum; 
 
       // minimum approach distance
       const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, cdata.vn, hij, reff);
@@ -150,7 +149,6 @@ namespace ContactModels
         j_forces.delta_F[1] = -i_forces.delta_F[1];
         j_forces.delta_F[2] = -i_forces.delta_F[2];
       }
-      fprintf(screen,"\n");  
     }
 
     void noCollision(ContactData& cdata, ForceData & i_forces, ForceData & j_forces)
@@ -167,7 +165,6 @@ namespace ContactModels
         hij = r - cdata.radi;
       else
         hij = r - cdata.radsum;
-      fprintf(screen,"h: %g\t",hij);
 
       double Fn = 0.;
 
@@ -200,7 +197,6 @@ namespace ContactModels
 
         // lubrication force
         double Fl = -6.*M_PI*coeffMu[itype][jtype]*vn*reff*reff/MAX(hij,hmin);
-        fprintf(screen,"Fl: %g\t",Fl); 
 
         // contact force
         double Fc;
@@ -247,7 +243,6 @@ namespace ContactModels
           double frac = hij / hmin;
           Fn = frac*Fl + (1-frac)*Fc;
         }
-        fprintf(screen,"Fn: %g\t",Fn);
 
         // apply total normal force
         if(cdata.is_wall) {
@@ -276,7 +271,6 @@ namespace ContactModels
         }
       }
       cdata.has_force_update = true;
-      fprintf(screen,"\n");
     }
 
     double compute_minimum_approach_distance(ContactData & cdata, int itype, int jtype, double vn, double hij, double reff)
@@ -305,10 +299,6 @@ namespace ContactModels
         const double hmine = 0.37 * pow(mul**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
         *hmin = MAX(hminSigma[itype][jtype],hmine);
       }
-
-      fprintf(screen,"vn: %g\t",vn);
-      fprintf(screen,"vn0: %g\t",*deltav0);
-      fprintf(screen,"hmin: %g\t",*hmin);
 
       return *hmin;
     }
@@ -346,8 +336,6 @@ namespace ContactModels
       //limit force to avoid the artefact of negative repulsion force
       if (limitForce && (Fc<0.0))
         Fc = 0.;
-
-      fprintf(screen,"Fc: %g\t",Fc);
         
       return Fc;
     }

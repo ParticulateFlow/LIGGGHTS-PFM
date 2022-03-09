@@ -23,6 +23,7 @@
    Contributing authors:
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Richard Berger (JKU Linz)
+   Tim M.J. Nijssen (TU Delft)
 ------------------------------------------------------------------------- */
 
 #ifdef TANGENTIAL_MODEL
@@ -128,8 +129,6 @@ namespace ContactModels
       // rescale frictional displacements and forces if needed
       const double Ft_shear = kt * shrmag; // sqrt(Ft1 * Ft1 + Ft2 * Ft2 + Ft3 * Ft3);
       const double Ft_friction = xmu * fabs(cdata.Fn);
-
-      fprintf(screen,"Ft: %g\n",MIN(Ft_shear,Ft_friction));
 
       // energy loss from sliding or damping
       if (Ft_shear > Ft_friction) {
