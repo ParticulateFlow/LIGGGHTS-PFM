@@ -1348,9 +1348,9 @@ void FixChemShrinkCore::FractionalReduction(int i)
     const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
     const double f_HM = 1.0 - relRadii_[i][3]*relRadii_[i][3]*relRadii_[i][3];
 
-    fracRed_[i][0] = std::min(0.9997,f_WF);
-    fracRed_[i][1] = std::min(0.9998,f_MW);
-    fracRed_[i][2] = std::min(0.9999,f_HM);
+    fracRed_[i][0] = f_WF;
+    fracRed_[i][1] = f_MW;
+    fracRed_[i][2] = f_HM;
 
 }
 
@@ -1708,8 +1708,8 @@ void FixChemShrinkCore::FractionalReduction_low(int i)
     const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
     const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
 
-    fracRed_[i][0] = std::min(0.9998,f_WF);
-    fracRed_[i][1] = std::min(0.9999,f_MW);
+    fracRed_[i][0] = f_WF;
+    fracRed_[i][1] = f_MW;
     fracRed_[i][2] = 0.0;
 }
 

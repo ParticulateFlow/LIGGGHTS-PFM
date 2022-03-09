@@ -1010,7 +1010,7 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
     dmL_[0] = dmL_[1] * rhoeff_[i][0] * porosity_[0] / (rhoeff_[i][1] * porosity_[1]);
     massLayer_[i][0] += dmL_[0]*scale_reduction_rate;
 
-    for (int j = 0; j <= 1; j++)
+    for (int j = 0; j <= layers_; j++)
     {
         // calculate total mass of particle
         // since there is a minimum radius for layers, there is always a
@@ -1071,7 +1071,7 @@ void FixChemShrinkCoreSingle::FractionalReduction(int i)
 {
     const double f = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
 
-    fracRed_[i][0] = std::min(0.9999,f);
+    fracRed_[i][0] = f;
 }
 
 /* ---------------------------------------------------------------------- */
