@@ -56,6 +56,8 @@ namespace ContactModels
       history_offset = hsetup->add_history_value("deltav0", "0");
       hsetup->add_history_value("hmin", "1");
 
+      pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
+
 #ifdef NONSPHERICAL_ACTIVE_FLAG
       error->all(FLERR,"HERTZ/LUBRICATED not defined for non-spherical particles\n");
 #endif
@@ -116,93 +118,37 @@ namespace ContactModels
       else
         hij = cdata.r - cdata.radsum;
       fprintf(screen,"h: %g\t",hij);  
+
+      // minimum approach distance
+      const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, cdata.vn, hij, reff);
+
+      // contact force
+      double kn, kt, gamman, gammat;
+      double Fc = compute_contact_force(itype, jtype, cdata.vn, reff, cdata.meff, hij, hmin, kn, kt, gamman, gammat);
       
-      double Fn = 0.; // total normal force
+      cdata.kn = kn;
+      cdata.kt = kt;
+      cdata.gamman = gamman;
+      cdata.gammat = gammat;
+      cdata.Fn = Fc;
 
-      if (hij <= hco*reff) 
-      {
-        fprintf(screen,"vn: %g\t",cdata.vn);
+      // during collision(), total force is the contact force
+      double Fn = Fc;
 
-        // minimum approach distance
-        const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, cdata.vn, hij, reff);
+      // apply total normal force
+      if(cdata.is_wall) {
+        const double Fn_ = Fn * cdata.area_ratio;
+        i_forces.delta_F[0] = Fn_ * cdata.en[0];
+        i_forces.delta_F[1] = Fn_ * cdata.en[1];
+        i_forces.delta_F[2] = Fn_ * cdata.en[2];
+      } else {
+        i_forces.delta_F[0] = Fn * cdata.en[0];
+        i_forces.delta_F[1] = Fn * cdata.en[1];
+        i_forces.delta_F[2] = Fn * cdata.en[2];
 
-        // lubrication force
-        double Fl = compute_lubrication_force(itype, jtype, cdata.vn, reff, hij, hmin);
-
-        // contact force
-        double Fc = 0.;
-        if (hij<=hmin)
-        {
-          // overlap
-          const double deltan = MAX(hmin - hij, 0.);
-          
-          const double meff = cdata.meff;
-          const double sqrtval = sqrt(reff*deltan);
-
-          const double Sn=2.*Yeff[itype][jtype]*sqrtval;
-          const double St=8.*Geff[itype][jtype]*sqrtval;
-
-          double kn=4./3.*Yeff[itype][jtype]*sqrtval;
-          double kt=St;
-          const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
-          const double gamman=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(Sn*meff);
-          double gammat=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(St*meff);
-          /*NL*/ //if (screen) fprintf(screen,"tangential_damping %s\n",tangential_damping?"yes":"no");
-          if (!tangential_damping) gammat = 0.0;
-
-          if(!displayedSettings)
-          {
-            displayedSettings = true;
-          }
-          // convert Kn and Kt from pressure units to force/distance^2
-          kn /= force->nktv2p;
-          kt /= force->nktv2p;
-
-          const double Fc_damping = -gamman*cdata.vn;
-          const double Fc_contact = kn*deltan;
-          Fc = Fc_damping + Fc_contact;
-
-          //limit force to avoid the artefact of negative repulsion force
-          if (limitForce && (Fc<0.0))
-            Fc = 0.;
-
-          fprintf(screen,"Fc: %g\t",Fc);
-
-          cdata.kn = kn;
-          cdata.kt = kt;
-          cdata.gamman = gamman;
-          cdata.gammat = gammat;
-        }
-        cdata.Fn = Fc; // store only contact force for friction calculation in tangential model
-
-        // total normal force
-        Fn = compute_total_normal_force(Fl, Fc, hij, hmin);
-
-        // apply total normal force
-        if(cdata.is_wall) {
-          const double Fn_ = Fn * cdata.area_ratio;
-          i_forces.delta_F[0] = Fn_ * cdata.en[0];
-          i_forces.delta_F[1] = Fn_ * cdata.en[1];
-          i_forces.delta_F[2] = Fn_ * cdata.en[2];
-        } else {
-          i_forces.delta_F[0] = Fn * cdata.en[0];
-          i_forces.delta_F[1] = Fn * cdata.en[1];
-          i_forces.delta_F[2] = Fn * cdata.en[2];
-
-          j_forces.delta_F[0] = -i_forces.delta_F[0];
-          j_forces.delta_F[1] = -i_forces.delta_F[1];
-          j_forces.delta_F[2] = -i_forces.delta_F[2];
-        }
-      }
-      else 
-      {
-        // apply no force
-        for (int ii=0; ii<3; ii++)
-        {
-          i_forces.delta_F[ii] = 0.;
-          if(!cdata.is_wall)
-            j_forces.delta_F[ii] = 0.;
-        }
+        j_forces.delta_F[0] = -i_forces.delta_F[0];
+        j_forces.delta_F[1] = -i_forces.delta_F[1];
+        j_forces.delta_F[2] = -i_forces.delta_F[2];
       }
       fprintf(screen,"\n");  
     }
@@ -250,18 +196,58 @@ namespace ContactModels
         const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
 
         // minimum approach distance
-        double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff);
+        const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff);
 
         // lubrication force
-        double Fl = compute_lubrication_force(itype, jtype, vn, reff, hij, hmin);
+        double Fl = -6.*M_PI*coeffMu[itype][jtype]*vn*reff*reff/MAX(hij,hmin);
+        fprintf(screen,"Fl: %g\t",Fl); 
 
         // contact force
-        // TODO contact force calculation
-        double Fc = 0.;
-        fprintf(screen,"Fc: %g\t",Fc);
+        double Fc;
+        if (hij<=hmin)
+        {
+          // compute meff
+          double mi, mj;
+
+          double *rmass = atom->rmass;
+          double *mass = atom->mass;
+          int *mask = atom->mask;
+
+          if (rmass) {
+            mi = rmass[i];
+            mj = rmass[j];
+          } else {
+            mi = mass[itype];
+            mj = mass[jtype];
+          }
+          if (pair_gran->fr_pair()) {
+            const double * mass_rigid = pair_gran->mr_pair();
+            if (mass_rigid[i] > 0.0) mi = mass_rigid[i];
+            if (mass_rigid[j] > 0.0) mj = mass_rigid[j];
+          }
+
+          double meff = mi * mj / (mi + mj);
+          if (mask[i] & pair_gran->freeze_group_bit())
+            meff = mj;
+          if (mask[j] & pair_gran->freeze_group_bit())
+            meff = mi;
+
+          // contact force calculation
+          double kn, kt, gamman, gammat;
+          Fc = compute_contact_force(itype, jtype, vn, reff, meff, hij, hmin, kn, kt, gamman, gammat);
+        }
+        else
+          Fc = 0.;
 
         // total normal force
-        Fn = compute_total_normal_force(Fl, Fc, hij, hmin);
+        if (hij>hmin)
+          Fn = Fl;
+        else 
+        {
+          double frac = hij / hmin;
+          Fn = frac*Fl + (1-frac)*Fc;
+        }
+        fprintf(screen,"Fn: %g\t",Fn);
 
         // apply total normal force
         if(cdata.is_wall) {
@@ -327,35 +313,43 @@ namespace ContactModels
       return *hmin;
     }
 
-    double compute_lubrication_force(int itype, int jtype, double vn, double reff, double hij, double hmin)
+    double compute_contact_force(int itype, int jtype, double vn, double reff, double meff, double hij, double hmin, double &kn, double &kt, double &gamman, double &gammat)
     {
-      double Fl;
-      if (hij>0.)
-        Fl = -6.*M_PI*coeffMu[itype][jtype]*vn*reff*reff/MAX(hij,hmin);
-      else
-        Fl = 0.;
-
-      fprintf(screen,"Fl: %g\t",Fl); 
+      // overlap
+      const double deltan = MAX(hmin - hij, 0.);
       
-      return Fl;
-    }
+      const double sqrtval = sqrt(reff*deltan);
 
-    double compute_total_normal_force(double Fl, double Fc, double hij, double hmin)
-    {
-      double Fn;
-      if (hij>hmin)
-        Fn = Fl;
-      else if (hij<=0.)
-        Fn = Fc;
-      else 
+      const double Sn=2.*Yeff[itype][jtype]*sqrtval;
+      const double St=8.*Geff[itype][jtype]*sqrtval;
+
+      kn=4./3.*Yeff[itype][jtype]*sqrtval;
+      kt=St;
+      const double sqrtFiveOverSix = 0.91287092917527685576161630466800355658790782499663875;
+      gamman=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(Sn*meff);
+      gammat=-2.*sqrtFiveOverSix*betaeff[itype][jtype]*sqrt(St*meff);
+      /*NL*/ //if (screen) fprintf(screen,"tangential_damping %s\n",tangential_damping?"yes":"no");
+      if (!tangential_damping) gammat = 0.0;
+
+      if(!displayedSettings)
       {
-        double frac = hij / hmin;
-        Fn = frac*Fl + (1-frac)*Fc;
+        displayedSettings = true;
       }
+      // convert Kn and Kt from pressure units to force/distance^2
+      kn /= force->nktv2p;
+      kt /= force->nktv2p;
 
-      fprintf(screen,"Fn: %g\t",Fn);
+      const double Fc_damping = -gamman*vn;
+      const double Fc_contact = kn*deltan;
+      double Fc = Fc_damping + Fc_contact;
 
-      return Fn;
+      //limit force to avoid the artefact of negative repulsion force
+      if (limitForce && (Fc<0.0))
+        Fc = 0.;
+
+      fprintf(screen,"Fc: %g\t",Fc);
+        
+      return Fc;
     }
 
     void beginPass(CollisionData&, ForceData&, ForceData&){}
@@ -371,6 +365,7 @@ namespace ContactModels
     double ** coeffMu;
 
     int history_offset;
+    PairGran *pair_gran;
 
     bool tangential_damping;
     bool limitForce;
