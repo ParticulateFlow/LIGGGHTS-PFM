@@ -118,8 +118,6 @@ namespace ContactModels
         xmu = coeffFrictLub[cdata.itype][cdata.jtype];
       else
         xmu = coeffFrict[cdata.itype][cdata.jtype];
-      
-      fprintf(screen,"muf: %g\t",xmu);
 
       // tangential forces = shear + tangential velocity damping
       double Ft1 = -(kt * shear[0]);
