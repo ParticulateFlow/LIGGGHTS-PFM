@@ -272,25 +272,26 @@ namespace ContactModels
 
       // approach velocity
       const double oldDeltav0 = *deltav0;
-      if (vn<0. || hij<*hmin)
-        *deltav0 = MAX(*deltav0,-vn);
+      if (vn<0. && hij>*hmin)
+      {
+        if (-vn>*deltav0)
+        {
+          *deltav0 = -vn;
+
+          const double mul = coeffMu[itype][jtype]; //FIXME: couple with CFD
+
+          double YoungsModulusEff;
+          if (correctYoungsModulus)
+            YoungsModulusEff = YeffOriginal[itype][jtype];
+          else
+            YoungsModulusEff = Yeff[itype][jtype];
+
+          const double hmine = 0.37 * pow(mul**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
+          *hmin = MAX(hminSigma[itype][jtype],hmine);
+        }
+      }
       else
         *deltav0 = 0.;
-        
-      const double mul = coeffMu[itype][jtype]; //FIXME: couple with CFD
-
-      // approach distance
-      if (*deltav0!=oldDeltav0 && *deltav0>0.)
-      {
-        double YoungsModulusEff;
-        if (correctYoungsModulus)
-          YoungsModulusEff = YeffOriginal[itype][jtype];
-        else
-          YoungsModulusEff = Yeff[itype][jtype];
-
-        const double hmine = 0.37 * pow(mul**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
-        *hmin = MAX(hminSigma[itype][jtype],hmine);
-      }
 
       return *hmin;
     }
