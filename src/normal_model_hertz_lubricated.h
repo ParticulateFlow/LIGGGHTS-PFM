@@ -157,19 +157,23 @@ namespace ContactModels
       const double ri = cdata.radi;
       const double rj = cdata.radj;
       const double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
-      const double r = sqrt(cdata.rsq);
 
-      // gap height
-      double hij;
+      // contact radius
+      double rc;
       if(cdata.is_wall)
-        hij = r - cdata.radi;
+        rc = cdata.radi;
       else
-        hij = r - cdata.radsum;
+        rc = cdata.radsum;
+
+      double cutoff = hco*reff+rc; // cutoff distance
 
       double Fn = 0.;
 
-      if (hij <= hco*reff)
+      if (cdata.rsq <= cutoff*cutoff)
       {
+        const double r = sqrt(cdata.rsq);
+        const double hij = r-rc;
+
         int *type = atom->type;
         const int i = cdata.i;
         const int j = cdata.j;
@@ -199,7 +203,7 @@ namespace ContactModels
         double Fl = -6.*M_PI*coeffMu[itype][jtype]*vn*reff*reff/MAX(hij,hmin);
 
         // contact force
-        double Fc;
+        double Fc = 0;
         if (hij<=hmin)
         {
           // compute meff
@@ -232,8 +236,6 @@ namespace ContactModels
           double kn, kt, gamman, gammat;
           Fc = compute_contact_force(itype, jtype, vn, reff, meff, hij, hmin, kn, kt, gamman, gammat);
         }
-        else
-          Fc = 0.;
 
         // total normal force
         if (hij>hmin)
