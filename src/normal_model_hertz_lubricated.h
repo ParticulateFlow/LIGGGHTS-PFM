@@ -261,18 +261,8 @@ namespace ContactModels
           j_forces.delta_F[1] = -i_forces.delta_F[1];
           j_forces.delta_F[2] = -i_forces.delta_F[2];
         }
+        cdata.has_force_update = true;
       }
-      else
-      {
-        // apply no force
-        for (int ii=0; ii<3; ii++)
-        {
-          i_forces.delta_F[ii] = 0.;
-          if(!cdata.is_wall)
-            j_forces.delta_F[ii] = 0.;
-        }
-      }
-      cdata.has_force_update = true;
     }
 
     double compute_minimum_approach_distance(ContactData & cdata, int itype, int jtype, double vn, double hij, double reff)
