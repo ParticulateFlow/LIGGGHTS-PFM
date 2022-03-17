@@ -31,6 +31,7 @@ NORMAL_MODEL(HERTZ_LUBRICATED,hertz/lubricated,9)
 #ifndef NORMAL_MODEL_HERTZ_LUBRICATED_H_
 #define NORMAL_MODEL_HERTZ_LUBRICATED_H_
 #include "global_properties.h"
+#include "fix_property_atom.h"
 #include <math.h>
 
 namespace LIGGGHTS {
@@ -49,7 +50,6 @@ namespace ContactModels
       betaeff(NULL),
       hminSigma(NULL),
       hco(1.0),
-      coeffMu(NULL),
       limitForce(false),
       displayedSettings(false)
     {
@@ -80,20 +80,21 @@ namespace ContactModels
       registry.registerProperty("betaeff", &MODEL_PARAMS::createBetaEff,"model hertz/lubricated");
       registry.registerProperty("hminSigma", &MODEL_PARAMS::createHminSigma,"model hertz/lubricated");
       registry.registerProperty("hco", &MODEL_PARAMS::createLubricationCutoff,"model hertz/lubricated");
-      registry.registerProperty("coeffMu", &MODEL_PARAMS::createCoeffMu,"model hertz/lubricated");
 
       registry.connect("Yeff", Yeff,"model hertz/lubricated");
       registry.connect("Geff", Geff,"model hertz/lubricated");
       registry.connect("betaeff", betaeff,"model hertz/lubricated");
       registry.connect("hminSigma", hminSigma,"model hertz/lubricated");
       registry.connect("hco", hco, "model hertz/lubricated");
-      registry.connect("coeffMu", coeffMu,"model hertz/lubricated");
 
       if (correctYoungsModulus) {
         registry.registerProperty("YeffOriginal", &MODEL_PARAMS::createYeffOriginal,"model hertz/lubricated");
         registry.connect("YeffOriginal", YeffOriginal,"model hertz/lubricated");
         /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HERTZ/LUBRICATED using YoungsModulusOriginal\n");
       }
+
+      fix_visc = static_cast<FixPropertyAtom*>(modify->find_fix_property("fluidViscosity","property/atom","scalar",0,0,"normal_model hertz/lubricated"));
+      visc = fix_visc->vector_atom;
     }
 
     // effective exponent for stress-strain relationship
@@ -119,11 +120,12 @@ namespace ContactModels
         hij = cdata.r - cdata.radsum; 
 
       // minimum approach distance
-      const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, cdata.vn, hij, reff);
+      // note: hmin does not change during the contact, so we just take the previous value here
+      double * const hmin  = &cdata.contact_history[history_offset+1];
 
       // contact force
       double kn, kt, gamman, gammat;
-      double Fc = compute_contact_force(itype, jtype, cdata.vn, reff, cdata.meff, hij, hmin, kn, kt, gamman, gammat);
+      double Fc = compute_contact_force(itype, jtype, cdata.vn, reff, cdata.meff, hij, *hmin, kn, kt, gamman, gammat);
       
       cdata.kn = kn;
       cdata.kt = kt;
@@ -196,11 +198,19 @@ namespace ContactModels
         // normal velocity
         const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
 
+        // viscosity
+        visc = fix_visc->vector_atom;
+        double etaf;
+        if(cdata.is_wall)
+          etaf = visc[i];
+        else
+          etaf = (visc[i] + visc[j])/2.;
+
         // minimum approach distance
-        const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff);
+        const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff, etaf);
 
         // lubrication force
-        double Fl = -6.*M_PI*coeffMu[itype][jtype]*vn*reff*reff/MAX(hij,hmin);
+        double Fl = -6.*M_PI*etaf*vn*reff*reff/MAX(hij,hmin);
 
         // contact force
         double Fc = 0;
@@ -265,20 +275,17 @@ namespace ContactModels
       }
     }
 
-    double compute_minimum_approach_distance(ContactData & cdata, int itype, int jtype, double vn, double hij, double reff)
+    double compute_minimum_approach_distance(ContactData & cdata, int itype, int jtype, double vn, double hij, double reff, double etaf)
     {
       double * const deltav0 = &cdata.contact_history[history_offset];
       double * const hmin  = &cdata.contact_history[history_offset+1];
 
       // approach velocity
-      const double oldDeltav0 = *deltav0;
       if (vn<0. && hij>*hmin)
       {
         if (-vn>*deltav0)
         {
           *deltav0 = -vn;
-
-          const double mul = coeffMu[itype][jtype]; //FIXME: couple with CFD
 
           double YoungsModulusEff;
           if (correctYoungsModulus)
@@ -286,7 +293,7 @@ namespace ContactModels
           else
             YoungsModulusEff = Yeff[itype][jtype];
 
-          const double hmine = 0.37 * pow(mul**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
+          const double hmine = 0.37 * pow(etaf**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
           *hmin = MAX(hminSigma[itype][jtype],hmine);
         }
       }
@@ -343,7 +350,9 @@ namespace ContactModels
     double ** betaeff;
     double ** hminSigma;
     double hco;
-    double ** coeffMu;
+
+    double * visc;
+    FixPropertyAtom* fix_visc;
 
     int history_offset;
     PairGran *pair_gran;
