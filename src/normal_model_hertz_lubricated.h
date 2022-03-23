@@ -158,16 +158,12 @@ namespace ContactModels
       // compute approach properties
       const double ri = cdata.radi;
       const double rj = cdata.radj;
-      const double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
+      const double reff = cdata.is_wall ? ri : (ri*rj/(ri+rj));
 
       // contact radius
-      double rc;
-      if(cdata.is_wall)
-        rc = cdata.radi;
-      else
-        rc = cdata.radsum;
+      const double rc = cdata.is_wall ? ri : (ri+rj);
 
-      double cutoff = hco*reff+rc; // cutoff distance
+      double cutoff = hco*reff + rc; // cutoff distance
 
       double Fn = 0.;
 
@@ -200,11 +196,7 @@ namespace ContactModels
 
         // viscosity
         visc = fix_visc->vector_atom;
-        double etaf;
-        if(cdata.is_wall)
-          etaf = visc[i];
-        else
-          etaf = (visc[i] + visc[j])/2.;
+        const double etaf = cdata.is_wall ? visc[i] : ((visc[i] + visc[j])/2.);
 
         // minimum approach distance
         const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff, etaf);
@@ -272,6 +264,11 @@ namespace ContactModels
           j_forces.delta_F[2] = -i_forces.delta_F[2];
         }
         cdata.has_force_update = true;
+        if(cdata.touch) *cdata.touch |= TOUCH_NORMAL_MODEL;
+      }
+      else
+      {
+        if(cdata.touch) *cdata.touch &= ~TOUCH_NORMAL_MODEL;
       }
     }
 
