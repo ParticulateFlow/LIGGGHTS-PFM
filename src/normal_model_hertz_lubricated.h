@@ -42,7 +42,7 @@ namespace ContactModels
   class NormalModel<HERTZ_LUBRICATED> : protected Pointers
   {
   public:
-    static const int MASK = CM_REGISTER_SETTINGS | CM_CONNECT_TO_PROPERTIES | CM_COLLISION;
+    static const int MASK = CM_REGISTER_SETTINGS | CM_CONNECT_TO_PROPERTIES | CM_COLLISION | CM_NO_COLLISION;
 
     NormalModel(LAMMPS * lmp, IContactHistorySetup * hsetup) : Pointers(lmp),
       Yeff(NULL),
