@@ -54,7 +54,7 @@ namespace ContactModels
       displayedSettings(false)
     {
       history_offset = hsetup->add_history_value("deltav0", "0");
-      hsetup->add_history_value("hmin", "1");
+      hsetup->add_history_value("hmin", "0");
 
       pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
 
@@ -120,12 +120,11 @@ namespace ContactModels
         hij = cdata.r - cdata.radsum; 
 
       // minimum approach distance
-      // note: hmin does not change during the contact, so we just take the previous value here
-      double * const hmin  = &cdata.contact_history[history_offset+1];
+      const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, cdata.vn, hij, reff);
 
       // contact force
       double kn, kt, gamman, gammat;
-      double Fc = compute_contact_force(itype, jtype, cdata.vn, reff, cdata.meff, hij, *hmin, kn, kt, gamman, gammat);
+      double Fc = compute_contact_force(itype, jtype, cdata.vn, reff, cdata.meff, hij, hmin, kn, kt, gamman, gammat);
       
       cdata.kn = kn;
       cdata.kt = kt;
@@ -151,6 +150,7 @@ namespace ContactModels
         j_forces.delta_F[1] = -i_forces.delta_F[1];
         j_forces.delta_F[2] = -i_forces.delta_F[2];
       }
+      if(cdata.touch) *cdata.touch |= TOUCH_NORMAL_MODEL;
     }
 
     void noCollision(ContactData& cdata, ForceData & i_forces, ForceData & j_forces)
@@ -194,12 +194,12 @@ namespace ContactModels
         // normal velocity
         const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
 
+        // minimum approach distance
+        const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff);
+
         // viscosity
         visc = fix_visc->vector_atom;
-        const double etaf = cdata.is_wall ? visc[i] : ((visc[i] + visc[j])/2.);
-
-        // minimum approach distance
-        const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff, etaf);
+        const double etaf = cdata.is_wall ? visc[i] : ((visc[i] + visc[j])/2.); 
 
         // lubrication force
         double Fl = -6.*M_PI*etaf*vn*reff*reff/MAX(hij,hmin);
@@ -269,33 +269,41 @@ namespace ContactModels
       else
       {
         if(cdata.touch) *cdata.touch &= ~TOUCH_NORMAL_MODEL;
+        if(!cdata.contact_history) return;
+        double * const deltav0 = &cdata.contact_history[history_offset];
+        double * const hmin  = &cdata.contact_history[history_offset+1];
+        *deltav0 = 0.0;
+        *hmin = 0.0;
       }
     }
 
-    double compute_minimum_approach_distance(ContactData & cdata, int itype, int jtype, double vn, double hij, double reff, double etaf)
+    double compute_minimum_approach_distance(ContactData & cdata, int itype, int jtype, double vn, double hij, double reff)
     {
       double * const deltav0 = &cdata.contact_history[history_offset];
       double * const hmin  = &cdata.contact_history[history_offset+1];
 
-      // approach velocity
-      if (vn<0. && hij>*hmin)
+      // revaluate at first contact, or when approach velocity increased
+      bool revaluate = true;
+      if (*cdata.touch & TOUCH_NORMAL_MODEL)
+        if ((hij<=*hmin) || (-vn<=*deltav0))
+          revaluate = false;
+
+      if (revaluate)
       {
-        if (-vn>*deltav0)
-        {
-          *deltav0 = -vn;
+        // approach velocity
+        *deltav0 = MAX(-vn,0.);
 
-          double YoungsModulusEff;
-          if (correctYoungsModulus)
-            YoungsModulusEff = YeffOriginal[itype][jtype];
-          else
-            YoungsModulusEff = Yeff[itype][jtype];
+        // effective youngs modulus
+        const double YoungsModulusEff = correctYoungsModulus ? YeffOriginal[itype][jtype] : Yeff[itype][jtype];
 
-          const double hmine = 0.37 * pow(etaf**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
-          *hmin = MAX(hminSigma[itype][jtype],hmine);
-        }
+        // viscosity
+        visc = fix_visc->vector_atom;
+        const double etaf = cdata.is_wall ? visc[cdata.i] : ((visc[cdata.i] + visc[cdata.j])/2.); 
+
+        // elastic approach distance
+        const double hmine = 0.37 * pow(etaf**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
+        *hmin = MAX(hminSigma[itype][jtype],hmine);
       }
-      else
-        *deltav0 = 0.;
 
       return *hmin;
     }
