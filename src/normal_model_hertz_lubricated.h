@@ -111,11 +111,7 @@ namespace ContactModels
       double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
 
       // gap height
-      double hij;
-      if(cdata.is_wall)
-        hij = cdata.r - cdata.radi;
-      else
-        hij = cdata.r - cdata.radsum; 
+      const double hij = cdata.is_wall ? (cdata.r-cdata.radi) : (cdata.r-cdata.radsum)
 
       // minimum approach distance
       const double hmin = compute_minimum_approach_distance(cdata, cdata.vn, hij, reff);
