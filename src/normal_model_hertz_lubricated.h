@@ -106,8 +106,6 @@ namespace ContactModels
 
     inline void collision(CollisionData & cdata, ForceData & i_forces, ForceData & j_forces)
     {
-      const int itype = cdata.itype;
-      const int jtype = cdata.jtype;
       const double ri = cdata.radi;
       const double rj = cdata.radj;
       double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
@@ -120,11 +118,11 @@ namespace ContactModels
         hij = cdata.r - cdata.radsum; 
 
       // minimum approach distance
-      const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, cdata.vn, hij, reff);
+      const double hmin = compute_minimum_approach_distance(cdata, cdata.vn, hij, reff);
 
       // contact force
       double kn, kt, gamman, gammat;
-      double Fc = compute_contact_force(itype, jtype, cdata.vn, reff, cdata.meff, hij, hmin, kn, kt, gamman, gammat);
+      double Fc = compute_contact_force(cdata, cdata.vn, reff, cdata.meff, hij, hmin, kn, kt, gamman, gammat);
       
       cdata.kn = kn;
       cdata.kt = kt;
@@ -172,30 +170,27 @@ namespace ContactModels
         const double r = sqrt(cdata.rsq);
         const double hij = r-rc;
 
-        int *type = atom->type;
         const int i = cdata.i;
         const int j = cdata.j;
-        const int itype = type[i];
-        const int jtype = type[j];
+        const int itype = cdata.itype;
+        const int jtype = cdata.jtype;
 
         // relative velocity
-        double **v = atom->v;
-        const double vr1 = v[i][0] - v[j][0];
-        const double vr2 = v[i][1] - v[j][1];
-        const double vr3 = v[i][2] - v[j][2];
+        const double vr1 = cdata.v_i[0] - cdata.v_j[0];
+        const double vr2 = cdata.v_i[1] - cdata.v_j[1];
+        const double vr3 = cdata.v_i[2] - cdata.v_j[2];
 
         // normal vector
-        double **x = atom->x;
         const double rinv = 1./r;
-        const double enx = (x[i][0] - x[j][0])*rinv;
-        const double eny = (x[i][1] - x[j][1])*rinv;
-        const double enz = (x[i][2] - x[j][2])*rinv;
+        const double enx = cdata.delta[0]*rinv;
+        const double eny = cdata.delta[1]*rinv;
+        const double enz = cdata.delta[2]*rinv;
 
         // normal velocity
         const double vn = vr1 * enx + vr2 * eny + vr3 * enz;
 
         // minimum approach distance
-        const double hmin = compute_minimum_approach_distance(cdata, itype, jtype, vn, hij, reff);
+        const double hmin = compute_minimum_approach_distance(cdata, vn, hij, reff);
 
         // viscosity
         visc = fix_visc->vector_atom;
@@ -209,34 +204,44 @@ namespace ContactModels
         if (hij<=hmin)
         {
           // compute meff
-          double mi, mj;
-
           double *rmass = atom->rmass;
           double *mass = atom->mass;
           int *mask = atom->mask;
 
-          if (rmass) {
-            mi = rmass[i];
-            mj = rmass[j];
-          } else {
-            mi = mass[itype];
-            mj = mass[jtype];
+          double meff;
+          if (cdata.is_wall)
+          {
+            if (rmass)
+              meff = rmass[i];
+            else
+              meff = mass[itype];
           }
-          if (pair_gran->fr_pair()) {
-            const double * mass_rigid = pair_gran->mr_pair();
-            if (mass_rigid[i] > 0.0) mi = mass_rigid[i];
-            if (mass_rigid[j] > 0.0) mj = mass_rigid[j];
-          }
+          else
+          {
+            double mi, mj;
+            if (rmass) {
+              mi = rmass[i];
+              mj = rmass[j];
+            } else {
+              mi = mass[itype];
+              mj = mass[jtype];
+            }
+            if (pair_gran->fr_pair()) {
+              const double * mass_rigid = pair_gran->mr_pair();
+              if (mass_rigid[i] > 0.0) mi = mass_rigid[i];
+              if (mass_rigid[j] > 0.0) mj = mass_rigid[j];
+            }
 
-          double meff = mi * mj / (mi + mj);
-          if (mask[i] & pair_gran->freeze_group_bit())
-            meff = mj;
-          if (mask[j] & pair_gran->freeze_group_bit())
-            meff = mi;
+            meff = mi * mj / (mi + mj);
+            if (mask[i] & pair_gran->freeze_group_bit())
+              meff = mj;
+            if (mask[j] & pair_gran->freeze_group_bit())
+              meff = mi;
+          }
 
           // contact force calculation
           double kn, kt, gamman, gammat;
-          Fc = compute_contact_force(itype, jtype, vn, reff, meff, hij, hmin, kn, kt, gamman, gammat);
+          Fc = compute_contact_force(cdata, vn, reff, meff, hij, hmin, kn, kt, gamman, gammat);
         }
 
         // total normal force
@@ -277,21 +282,24 @@ namespace ContactModels
       }
     }
 
-    double compute_minimum_approach_distance(ContactData & cdata, int itype, int jtype, double vn, double hij, double reff)
+    double compute_minimum_approach_distance(ContactData & cdata, double vn, double hij, double reff)
     {
       double * const deltav0 = &cdata.contact_history[history_offset];
       double * const hmin  = &cdata.contact_history[history_offset+1];
 
+      const int itype = cdata.itype;
+      const int jtype = cdata.jtype;
+
       // revaluate at first contact, or when approach velocity increased
       bool revaluate = true;
-      if (*cdata.touch & TOUCH_NORMAL_MODEL)
+      if (cdata.touch && (*cdata.touch & TOUCH_NORMAL_MODEL))
         if ((hij<=*hmin) || (-vn<=*deltav0))
           revaluate = false;
 
       if (revaluate)
       {
         // approach velocity
-        *deltav0 = MAX(-vn,0.);
+        *deltav0 = MAX(*deltav0,MAX(-vn,0.));
 
         // effective youngs modulus
         const double YoungsModulusEff = correctYoungsModulus ? YeffOriginal[itype][jtype] : Yeff[itype][jtype];
@@ -308,8 +316,11 @@ namespace ContactModels
       return *hmin;
     }
 
-    double compute_contact_force(int itype, int jtype, double vn, double reff, double meff, double hij, double hmin, double &kn, double &kt, double &gamman, double &gammat)
+    double compute_contact_force(ContactData & cdata, double vn, double reff, double meff, double hij, double hmin, double &kn, double &kt, double &gamman, double &gammat)
     {
+      const int itype = cdata.itype;
+      const int jtype = cdata.jtype;
+
       // overlap
       const double deltan = MAX(hmin - hij, 0.);
       
