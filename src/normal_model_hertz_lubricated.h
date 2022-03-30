@@ -51,6 +51,7 @@ namespace ContactModels
       hminSigma(NULL),
       hco(1.0),
       limitForce(false),
+      correctYoungsModulus(false),
       displayedSettings(false)
     {
       history_offset = hsetup->add_history_value("deltav0", "0");
@@ -111,7 +112,7 @@ namespace ContactModels
       double reff = cdata.is_wall ? cdata.radi : (ri*rj/(ri+rj));
 
       // gap height
-      const double hij = cdata.is_wall ? (cdata.r-cdata.radi) : (cdata.r-cdata.radsum)
+      const double hij = cdata.is_wall ? (cdata.r-cdata.radi) : (cdata.r-cdata.radsum);
 
       // minimum approach distance
       const double hmin = compute_minimum_approach_distance(cdata, cdata.vn, hij, reff);
@@ -371,8 +372,8 @@ namespace ContactModels
 
     bool tangential_damping;
     bool limitForce;
-    bool displayedSettings;
     bool correctYoungsModulus;
+    bool displayedSettings;
   };
 
 }
