@@ -288,10 +288,11 @@ namespace ContactModels
       const int jtype = cdata.jtype;
 
       // revaluate at first contact, or when approach velocity increased
-      bool revaluate = true;
-      if (cdata.touch && (*cdata.touch & TOUCH_NORMAL_MODEL))
-        if ((hij<=*hmin) || (-vn<=*deltav0))
-          revaluate = false;
+      bool revaluate = false;
+      if (cdata.touch && !(*cdata.touch & TOUCH_NORMAL_MODEL))
+        revaluate = true;
+      else if ((hij>*hmin) && (-vn>*deltav0))
+        revaluate = true;
 
       if (revaluate)
       {
