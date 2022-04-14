@@ -87,7 +87,7 @@ fix id all property/global coefficientFrictionLubricated peratomtypepair n_atomt
     (value_ij=value for the (static) lubricated coefficient of friction between atom type i and j; n_atomtypes is the number of atom types you want to use in your simulation)
 fix id all property/global surfaceRoughness peratomtype value_1 value_2 ...
     (value_i=value for surface roughness of atom type i)
-fix id all property/atom fluidViscosity scalar yes yes yes value
+fix id all property/atom fluidViscosity scalar yes yes no value
     (value=value for the (dynamic) fluid viscosity)    
 fix id all property/global lubricationCutoff scalar value
     (value=value for cutoff distance of lubrication force calculation, expressed as a multiple of the reduced radius) :pre
