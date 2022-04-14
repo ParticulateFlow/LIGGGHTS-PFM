@@ -38,4 +38,8 @@ fix id all property/global coefficientFriction peratomtypepair n_atomtypes value
 fix id all property/global coefficientFrictionLubricated peratomtypepair n_atomtypes value_11 value_12 .. value_21 value_22 .. .
     (value_ij=value for the (static) lubricated coefficient of friction between atom type i and j; n_atomtypes is the number of atom types you want to use in your simulation) :pre
 
+[Related commands:]
+
+"model hertz/lubricated"_gran_model_hertz_lubricated.html
+
 [(Nijssen)] T.M.J. Nijssen, M. Ottens, J.T. Padding, Powder Technology (2022). 

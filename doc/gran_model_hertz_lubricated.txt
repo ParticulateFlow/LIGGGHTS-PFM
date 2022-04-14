@@ -39,6 +39,8 @@ During the approach of two particles, the minimum approach distance between thei
 This is governed either by their surface roughness, or by their elastic deformation during the lubricated collision.
 By using the correctYoungsModulus keyword, the minimum approach distance calculation can be performed using the 
 original Youngs modulus, while the contact force calculation is performed using a lower Youngs modulus.
+The viscosity of the interstial liquid is set by "fix property/atom"_fix_property.html {fluidViscosity}. In a coupled 
+simulations, this can be performed through "fix cfd/coupling/fluidproperties"_fix_cfd_coupling_fluidproperties.html.
 
 :c,image(Eqs/gran_model_hertz_lubricated_1.png)
 
@@ -97,6 +99,7 @@ IMPORTANT NOTE: You have to use atom styles beginning from 1, e.g. 1,2,3,...
 [Force Limiting:]
 
 Note, that not using limitForce might lead to attractive forces between particles and walls, especially in case the coefficient of restitution is small. Be sure you include this key word for the pair style and the wall model if you like to avoid this.
+
 [Restrictions:]
 
 If using SI units, youngsModulus must be > 5e6
@@ -108,6 +111,12 @@ When using the limitForce, the specified coefficient of restitution is only appr
 {tangential_damping} = 'on'
 {limitForce} = 'off'
 {correctYoungsModulus} = 'off'
+
+[Related commands:]
+
+"fix cfd/coupling/fluidproperties"_fix_cfd_coupling_fluidproperties.html
+
+"tangential history/lubricated"_gran_tangential_history_lubricated.html
 
 [(Nijssen)] T.M.J. Nijssen, M. Ottens, J.T. Padding, Powder Technology (2022). 
 

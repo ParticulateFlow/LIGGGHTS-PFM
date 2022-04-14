@@ -1,0 +1,35 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix couple/cfd/fluidproperties command :h3
+
+[Syntax:]
+
+fix ID group-ID couple/cfd/fluidproperties :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+couple/cfd/dissolve = style name of this fix command :l
+:ule
+
+[Examples:]
+
+fix cfd5 all couple/cfd/fluidproperties :pre
+
+[Description:]
+
+This fix exchanges fluid properties (density and dynamic viscosity) at the particle locations
+from OpenFOAM to LIGGGHTS. These properties become available as "fix property/atom"_fix_property.html
+{fluidDensity} and {fluidViscosity}, respectively.
+
+[Restrictions:]
+
+This fix needs a fix couple/cfd before it is defined.
+
+This fix requires forcemodel {transferFluidProperties} be active.
+
