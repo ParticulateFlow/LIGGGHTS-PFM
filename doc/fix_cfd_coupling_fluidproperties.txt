@@ -31,5 +31,5 @@ from OpenFOAM to LIGGGHTS. These properties become available as "fix property/at
 
 This fix needs a fix couple/cfd before it is defined.
 
-This fix requires forcemodel {transferFluidProperties} be active.
+This fix requires forceModel {transferFluidProperties} be active.
 
