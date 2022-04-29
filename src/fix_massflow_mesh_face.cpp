@@ -1153,6 +1153,7 @@ void FixMassflowMeshFace::restart(char *buf)
   t_count_ = list[n++];
   mass_last_ = list[n++];
   nparticles_last_ = static_cast<int>(list[n++]);
+  nparticles_ = nparticles_last_;
   mass_deleted_ = list[n++];
   nparticles_deleted_ = static_cast<int>(list[n++]);
 }
