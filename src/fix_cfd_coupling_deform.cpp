@@ -65,6 +65,8 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     heat_removed_(0.),
     fix_temp_(NULL),
     fix_capacity_(NULL),
+    fix_capacity_per_atom_(NULL),
+    capacity_per_atom_(false),
     use_latent_heat_(false),
     latent_heat_per_mass_(0.0),
     latent_heat_transferred_(0.0),
@@ -217,6 +219,12 @@ void FixCfdCouplingDeform::init()
         PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
         int max_type = pair_gran->get_properties()->max_type();
         fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style));
+        
+        if (!fix_capacity_)
+        {
+            fix_capacity_per_atom_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("thermalCapacity","property/atom","scalar",0,0,style));
+            if (fix_capacity_per_atom_) capacity_per_atom_ = true;
+        }
     }
 
     // look up group of fully deformed particles; needs to be defined in run script before this fix
@@ -271,7 +279,9 @@ void FixCfdCouplingDeform::initial_integrate(int)
 
             if (monitor_heat_)
             {
-                double Cp = fix_capacity_->compute_vector(type[i]-1);
+                double Cp = 0.0;
+                if (!capacity_per_atom_) Cp = fix_capacity_->compute_vector(type[i]-1);
+                else Cp = fix_capacity_per_atom_->vector_atom[i];
                 heat_removed_this_me += rmass[i]*T[i]*Cp;
             }
 

@@ -66,7 +66,9 @@ class FixScalarTransportEquation : public Fix {
 
   //storage capacity - would be thermal capacity for heat conduction
   int capacity_flag;
+  bool capacity_per_atom;
   class FixPropertyGlobal* fix_capacity;
+  class FixPropertyAtom* fix_capacity_per_atom;
   double *capacity;
   char *capacity_name;
 
