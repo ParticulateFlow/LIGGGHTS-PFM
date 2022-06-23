@@ -70,18 +70,26 @@ public:
   // update reactant and product gas masses depending on chemical reaction rate
   void update_gas_properties(int, const double);
   void heat_of_reaction(int, const double);
+  double conv_enthalpy(const double *, double);
+  double spec_heat(const double *, double);
 
   // pre-defined variables for reduction process
 //  int const nmaxlayers_;
   static double const Runiv; // universal gas constant
+  static const double a_coeff_CO[];
+  static const double a_coeff_CO2[];
+  static const double a_coeff_O2[];
+  static const double a_coeff_ash[];
+  static const double a_coeff_coke[];
 
+  
   // variables
   bool screenflag_;
   double TimeStep;
   char* massA, *massC;
 
-  double molMass_A_, molMass_B_, molMass_C_;
-  int nu_A_, nu_B_, nu_C_;   
+  double molMass_A_, molMass_B_, molMass_C_, molMass_D_;
+  int nu_A_, nu_B_, nu_C_, nu_D_;   
   double scale_reduction_rate;
 
   char *diffA;
@@ -166,6 +174,7 @@ public:
   // particle properties
   class FixPropertyAtom *fix_layerRelRad_;  // [script]
   class FixPropertyAtom *fix_layerMass_;    // [script]
+  class FixPropertyAtom *fix_thermal_capacity_; // [script]
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
@@ -179,6 +188,7 @@ public:
   class FixPropertyGlobal *fix_porosity_;     // [script/internal]
   class FixPropertyGlobal *fix_tortuosity_; // [script]
   class FixPropertyGlobal *fix_pore_diameter_; // [script]
+  class FixPropertyGlobal *fix_layer_thermal_capacity_; // [script]
 
   class FixPropertyAtom *fix_dY_; // [internal]
   double *dY;

@@ -72,6 +72,7 @@ public:
   void update_gas_properties(int, const double *);
   void heat_of_reaction(int, const double *, const double *, const double *);
   double conv_enthalpy(const double *, int);
+  double spec_heat(const double *, double);
   double K_eq_low(int, int);
   void reaction_low(int, double *, const double *);
   void FractionalReduction_low(int);
@@ -137,6 +138,7 @@ public:
   // handles of fixes
   double *changeOfA_, *changeOfC_;
   double *T_;
+  double *Tpart_;
   double *molecularDiffusion_;
   double *nuf_;
   double *Rep_;
@@ -160,6 +162,7 @@ public:
   class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_tpart_;        // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_reactionHeat_; // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_diffcoeff_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_nuField_;      // [cfd/coupling/chemistry]
@@ -182,6 +185,7 @@ public:
   class FixPropertyAtom *fix_layerRelRad_;  // [script]
   class FixPropertyAtom *fix_layerMass_;    // [internal]
   class FixPropertyAtom *fix_rhoeff_;       // [internal]
+  class FixPropertyAtom *fix_thermal_capacity_; // [script]
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
