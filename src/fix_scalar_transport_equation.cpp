@@ -246,11 +246,18 @@ void FixScalarTransportEquation::init()
       if(capacity) delete []capacity;
       capacity = new double[max_type+1];
 
-      fix_capacity = static_cast<FixPropertyGlobal*>(modify->find_fix_property(capacity_name,"property/global","peratomtype",max_type,0,style));
+      fix_capacity = static_cast<FixPropertyGlobal*>(modify->find_fix_property(capacity_name,"property/global","peratomtype",max_type,0,style,false));
       
-      fix_capacity_per_atom = static_cast<FixPropertyAtom*>(modify->find_fix_property(capacity_name,"property/atom","scalar",0,0,style));
-      if (fix_capacity_per_atom) capacity_per_atom = true;   
-
+      fix_capacity_per_atom = static_cast<FixPropertyAtom*>(modify->find_fix_property(capacity_name,"property/atom","scalar",0,0,style,false));
+      if (fix_capacity_per_atom) capacity_per_atom = true;  
+      
+      if (!fix_capacity && !fix_capacity_per_atom)
+      {
+          char errmsg[500];
+          sprintf(errmsg,"Could not locate a fix/property storing value(s) for %s as requested by FixScalarTransportEquation.",capacity_name);
+          error->all(FLERR,errmsg);   
+      }
+ 
       //pre-calculate parameters for possible contact material combinations
       for(int i=1;i< max_type+1; i++)
           for(int j=1;j<max_type+1;j++)

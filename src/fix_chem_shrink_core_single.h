@@ -82,14 +82,14 @@ public:
   static const double a_coeff_ash[];
   static const double a_coeff_coke[];
 
-  
+
   // variables
   bool screenflag_;
   double TimeStep;
   char* massA, *massC;
 
   double molMass_A_, molMass_B_, molMass_C_, molMass_D_;
-  int nu_A_, nu_B_, nu_C_, nu_D_;   
+  int nu_A_, nu_B_, nu_C_, nu_D_;
   double scale_reduction_rate;
 
   char *diffA;
@@ -188,7 +188,6 @@ public:
   class FixPropertyGlobal *fix_porosity_;     // [script/internal]
   class FixPropertyGlobal *fix_tortuosity_; // [script]
   class FixPropertyGlobal *fix_pore_diameter_; // [script]
-  class FixPropertyGlobal *fix_layer_thermal_capacity_; // [script]
 
   class FixPropertyAtom *fix_dY_; // [internal]
   double *dY;

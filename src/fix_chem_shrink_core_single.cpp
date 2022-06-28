@@ -340,6 +340,11 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
         error->fix_error(FLERR,this,"specify positive values for k0 and T0");
     }
 
+    if (molMass_D_ < SMALL * molMass_B_)
+    {
+        error->fix_error(FLERR,this,"set sensible value for molar mass of solid reaction product");
+    }
+
     if (heatToParticle_ && heatToFluid_)
     {
         error->fix_error(FLERR,this,"trying to apply reaction heat to both particles and fluid");
@@ -682,12 +687,6 @@ void FixChemShrinkCoreSingle::init()
     strcat(propertyname,group->names[igroup]);
     fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "scalar", 0, 0,style));
     delete [] propertyname;
-    
-    propertyname = new char [strlen("layer_thermal_capacity_")+strlen(group->names[igroup])+1];
-    strcpy(propertyname,"layer_thermal_capacity_");
-    strcat(propertyname,group->names[igroup]);
-    fix_layer_thermal_capacity_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "vector", 0, 0,style));
-    delete [] propertyname; 
 
     propertyname = new char [strlen("Aterm_")+strlen(id)+1];
     strcpy (propertyname,"Aterm_");
@@ -1050,7 +1049,7 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
         dmL_[0] = dmL_[1] * molMass_D_ * nu_D_ / (molMass_B_ * nu_B_);
         massLayer_[i][0] += dmL_[0]*scale_reduction_rate;
     }
-    
+
     layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
     layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
     Cp += massLayer_[i][0] * layer_Cp[0] / molMass_D_;
@@ -1065,7 +1064,7 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
     }
     Cp /= sum_mass_p_new;
     fix_thermal_capacity_->vector_atom[i] = Cp;
-    
+
     if (!shrink_) return;
 
     // if (screen) fprintf(screen,"total mass of particle = %f \n", sum_mass_p_new);
@@ -1132,7 +1131,7 @@ void FixChemShrinkCoreSingle::FractionalReduction(int i)
 /* heat of reaction calcualtion using the NASA 7 coefficient polynomials */
 void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
 {
-    
+
     if (!heatToParticle_ && !heatToFluid_) return;
 
     double T = T_[i];
@@ -1279,7 +1278,7 @@ double FixChemShrinkCoreSingle::spec_heat (const double *a, double Ti)
 
 void FixChemShrinkCoreSingle::init_defaults()
 {
-    molMass_A_ = molMass_B_ = molMass_C_ = 0.0;
+    molMass_A_ = molMass_B_ = molMass_C_ = molMass_D_ = 0.0;
     rhoeff_ = NULL;
     porosity_ = NULL;
     pore_diameter_ = tortuosity_ = 0.0;
@@ -1288,7 +1287,7 @@ void FixChemShrinkCoreSingle::init_defaults()
     scale_reduction_rate = 1.;
     layerDensities_ = NULL;
 
-    nu_A_ = nu_B_ = nu_C_ = 1;
+    nu_A_ = nu_B_ = nu_C_ = nu_D_ = 1;
 
     // particle properties total
     radius_ = pmass_ = pdensity_ = NULL;
@@ -1329,7 +1328,6 @@ void FixChemShrinkCoreSingle::init_defaults()
     fix_rhoeff_ = NULL;
     fix_tortuosity_ = NULL;
     fix_pore_diameter_ = NULL;  // [m]
-    fix_layer_thermal_capacity_ = NULL;
     fix_dY_ = NULL;
     fix_dmA_ = NULL;
 
@@ -1360,7 +1358,7 @@ void FixChemShrinkCoreSingle::update_fix(int narg, char **arg)
             {
                 pdensity_[i] /= effvolfactors_[i];
             }
-            
+
             double Cp = 0.0;
             double layer_Cp[2] = {0.};
             double Tpart = Tpart_[i];
