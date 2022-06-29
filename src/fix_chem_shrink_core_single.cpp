@@ -1351,22 +1351,32 @@ void FixChemShrinkCoreSingle::update_fix(int narg, char **arg)
     {
         if (mask[i] & groupbit)
         {
-            pmass_[i] = (massLayer_[i][0] + massLayer_[i][1])*cg_*cg_*cg_;
+            active_layers(i);
+            double m = 0.0;
+            double Cp = 0.0;
+            double layer_Cp[2] = {0.};
+            double Tpart = Tpart_[i];
+
+            layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
+            layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
+
+            Cp += massLayer_[i][0] * layer_Cp[0] / molMass_D_;
+            m += massLayer_[i][0];
+            if (layers_ > 0)
+            {
+                Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_; // only include this contribution if core is still present
+                m += massLayer_[i][1];
+            }
+
+            Cp /= m;
+            fix_thermal_capacity_->vector_atom[i] = Cp;
+
+            pmass_[i] = m*cg_*cg_*cg_;
             pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);
             if (fix_polydisp_)
             {
                 pdensity_[i] /= effvolfactors_[i];
             }
-
-            double Cp = 0.0;
-            double layer_Cp[2] = {0.};
-            double Tpart = Tpart_[i];
-            layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
-            layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
-            Cp += massLayer_[i][0] * layer_Cp[0] / molMass_D_;
-            Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_;
-            Cp /= (massLayer_[i][0] + massLayer_[i][1]);
-            fix_thermal_capacity_->vector_atom[i] = Cp;
         }
     }
 }
