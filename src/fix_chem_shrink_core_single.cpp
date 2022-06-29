@@ -1023,7 +1023,6 @@ void FixChemShrinkCoreSingle::reaction(int i, double &dmA_, const double x0_eq_)
 
 void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
 {
-    if (!shrink_) return;
     if (screenflag_ && screen)
         fprintf(screen,"run update atom props \n");
 
