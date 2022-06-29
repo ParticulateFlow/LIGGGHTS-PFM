@@ -1224,7 +1224,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     double dmL_[MAX_LAYERS+1] = {0.};     // mass flow rate between each layer i.e. (btw h->m, m->w, w->Fe) must consider reduction and growth at the same time
     double sum_mass_p_new = 0.0;
     double Cp = 0.0;
-    double layer_Cp[MAX_LAYERS] = {0.};
+    double layer_Cp[MAX_LAYERS+1] = {0.};
     double Tpart = Tpart_[i];
 
     layer_Cp[0] = spec_heat(a_coeff_nasa_Fe,Tpart);
@@ -1902,7 +1902,7 @@ void FixChemShrinkCore::update_fix(int narg, char **arg)
             active_layers(i);
             double m = 0.0;
             double Cp = 0.0;
-            double layer_Cp[MAX_LAYERS] = {0.};
+            double layer_Cp[MAX_LAYERS+1] = {0.};
             double Tpart = Tpart_[i];
             
             layer_Cp[0] = spec_heat(a_coeff_nasa_Fe,Tpart);
