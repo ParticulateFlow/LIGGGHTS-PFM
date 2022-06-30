@@ -373,7 +373,7 @@ void FixCfdCouplingDeform::post_force(int)
             if (deformation < 1.0 - SMALL && deformation > SMALL)
             {
                 effvolfactor = effvolfactors_[i];
-                f0 = default_effvolfactors_[type[i]];
+                f0 = default_effvolfactors_[type[i]-1];
                 neweffvolfactor = f0 + deformation * (fmax_ - f0);
                 // update properties only if new eff vol factor larger than old one (by e.g. 1%)
                 if (neweffvolfactor <= 1.01*effvolfactor) continue;
