@@ -1,0 +1,74 @@
+#Heat transfer example
+
+atom_style	granular
+atom_modify	map array
+boundary	m m m
+newton		off
+
+communicate	single vel yes
+
+units		si
+
+region		reg block -0.05 0.05 -0.05 0.05 -0.05 0.05 units box
+create_box	1 reg
+
+neighbor	0.002 bin
+neigh_modify	delay 0
+
+#Material properties required for granular pair styles
+
+fix 		m1 all property/global youngsModulus peratomtype 5.e6
+fix 		m2 all property/global poissonsRatio peratomtype 0.45
+fix 		m3 all property/global coefficientRestitution peratomtypepair 1 0.95
+fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.05
+#fix 		m5 all property/global characteristicVelocity scalar 2.
+
+
+#pair style
+pair_style gran model hertz tangential history #  Hertzian without cohesion
+pair_coeff	* *
+
+timestep	0.000025
+
+fix		gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+#heat transfer
+fix 		ftco all property/global thermalConductivity peratomtype 5.
+fix 		ftca all property/global thermalCapacity peratomtype 10.
+fix             heattransfer all heat/gran initial_temperature 300.
+
+create_atoms    1 single 0.0 0.0 -0.025 units box
+create_atoms    1 single 0.0 0.0  0.025 units box
+set             atom 1 type 1 diameter 0.01 density 1000.
+set             atom 2 type 1 diameter 0.01 density 1000.
+
+
+#apply nve integration to all particles
+fix		integr all nve/sphere
+
+compute rke all erotate/sphere
+compute Tmin all reduce min f_Temp
+compute Tmax all reduce max f_Temp
+
+#output settings, include total thermal energy
+thermo_style	custom step atoms ke c_rke f_heattransfer c_Tmin c_Tmax vol
+thermo			1000
+thermo_modify	lost ignore norm no
+compute_modify	thermo_temp dynamic yes
+
+variable T1 equal f_Temp[1]
+variable T2 equal f_Temp[2]
+fix T all print 1 "${T1} ${T2}" file "Temp.txt"
+
+
+#set heat sources for distint particles
+region	pos_source block INF INF INF INF 0.0 INF units box 
+region	neg_source block INF INF INF INF INF 0.0 units box 
+
+run 0
+set		region pos_source property/atom heatSource 1.5
+set		region neg_source property/atom heatSource -1.5
+fix limT all limit/property/atom Temp values_to_limit 1 min 250 max 350
+
+#run to see heat transfer
+run		10000 upto
