@@ -13,7 +13,6 @@ MESSAGE(STATUS "${LIGGGHTS_VERSION}")
 
 IF (NOT CMAKE_CXX_FLAGS)
   IF(CMAKE_COMPILER_IS_GNUCXX)
-#    SET(CMAKE_CXX_FLAGS "-g -funroll-loops -fstrict-aliasing -Wall -Wextra -Wno-unused-result -pg -std=c++11")
     SET(CMAKE_CXX_FLAGS "-O2 -funroll-loops -fstrict-aliasing -Wall -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-literal-suffix -Wno-cast-function-type -std=c++11")
   ENDIF()
 ENDIF()
