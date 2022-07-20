@@ -396,6 +396,9 @@ void FixInsert::init_defaults()
 
   exact_number = 1;
 
+  type_max = 0;
+  type_min = 0;
+
   v_randomSetting = RANDOM_CONSTANT;
   vectorZeroize3D(v_insert);
   vectorZeroize3D(v_insertFluct);
