@@ -139,6 +139,10 @@ class FixBreakParticle : public FixInsert {
   double virtual_v_j[3];
   LIGGGHTS::ContactModels::ForceData virtual_f_i;
   LIGGGHTS::ContactModels::ForceData virtual_f_j;
+
+private:
+
+ virtual int distribute_ninsert_this(int);
 };
 
 }
