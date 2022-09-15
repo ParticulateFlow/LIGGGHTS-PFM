@@ -498,6 +498,10 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
 
   if(iTreeNode == 0){
     for(int iTet=0;iTet<nTet;iTet++){
+      if(bbox.isInside(center[iTet])){
+        data.insert(iTet);
+        continue;
+      }
       for(int iNode=0;iNode<4;iNode++){
         if(bbox.isInside(node[iTet][iNode])){
           data.insert(iTet);
@@ -512,6 +516,10 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
     if(parent_data.size() < TREE_MIN_ELEMENTS_PER_NODE)
       return; // nothing to do
     for(TreeBin::iterator it=parent_data.begin();it!=parent_data.end();++it){
+      if(bbox.isInside(center[*it])){
+        data.insert(*it);
+        continue;
+      }
       for(int iNode=0;iNode<4;iNode++){
         if(bbox.isInside(node[*it][iNode])){
           data.insert(*it);
