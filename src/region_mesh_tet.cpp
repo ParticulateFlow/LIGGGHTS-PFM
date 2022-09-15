@@ -55,7 +55,7 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
   if(scaleflag) error->all(FLERR,"Lattice scaling not implemented for region mesh/tet, please use 'units box'");
 
   if(strcmp(arg[2],"file"))
-    error->all(FLERR,"Illegal region mesh/tet command, expecting keyword 'scale'");
+    error->all(FLERR,"Illegal region mesh/tet command, expecting keyword 'file'");
   char *filename = arg[3];
 
   if(strcmp(arg[4],"scale"))
