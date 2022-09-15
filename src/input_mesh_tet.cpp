@@ -204,7 +204,7 @@ void InputMeshTet::meshtetfile_vtk(class RegTetMesh *mesh)
             // read the vertex, translate and scale it
             for(int j = 0; j < 3; ++j)
             {
-                vert_before_rot[j] = (atof(arg[j]) + (mesh->off_fact[j])) * mesh->scale_fact;
+                vert_before_rot[j] = (atof(arg[3*i+j])+(mesh->off_fact[j]))*(mesh->scale_fact);
             }
 
             // rotate the vertex
