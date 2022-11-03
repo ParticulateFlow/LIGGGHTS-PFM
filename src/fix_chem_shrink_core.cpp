@@ -559,7 +559,7 @@ void FixChemShrinkCore::updatePtrs()
     //
     porosity_       =   fix_porosity_       ->  values;
     tortuosity_     =   fix_tortuosity_     ->  compute_scalar();
-    pore_diameter_  =   fix_pore_diameter_  ->  compute_scalar();
+    pore_diameter_  =   fix_pore_diameter_  ->  values;
     //
     fracRed_        =   fix_fracRed         ->  array_atom;
     Aterm           =   fix_Aterm           ->  array_atom;
@@ -654,7 +654,7 @@ void FixChemShrinkCore::init()
     propertyname = new char [strlen("pore_diameter_")+strlen(group->names[igroup])+1];
     strcpy(propertyname,"pore_diameter_");
     strcat(propertyname,group->names[igroup]);
-    fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "scalar", 0, 0,style));
+    fix_pore_diameter_  =   static_cast<FixPropertyGlobal*>(modify->find_fix_property(propertyname, "property/global", "vector", 0, 0,style));
     delete [] propertyname;
 
     propertyname = new char [strlen("Aterm_")+strlen(id)+1];
@@ -970,7 +970,7 @@ void FixChemShrinkCore::getB(int i)
         effDiffBinary[i][layer] = molecularDiffusion_[i]*(porosity_[layer]/tortuosity_) + SMALL;
 
         // Calculate the knudsen diffusion
-        effDiffKnud[i][layer]  =  (pore_diameter_/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[layer]/tortuosity_) + SMALL;
+        effDiffKnud[i][layer]  =  (pore_diameter_[layer]/6.0)*sqrt((8*Runiv*T_[i])/(M_PI*molMass_A_))*(porosity_[layer]/tortuosity_) + SMALL;
 
         // total effective diffusivity
         diffEff_[layer] =   effDiffKnud[i][layer]*effDiffBinary[i][layer]/(effDiffBinary[i][layer]+effDiffKnud[i][layer]) + SMALL;
@@ -1828,8 +1828,8 @@ void FixChemShrinkCore::init_defaults()
 {
     molMass_A_ = molMass_C_ = 0.0;
     rhoeff_ = NULL;
-    porosity_ = NULL;
-    pore_diameter_ = tortuosity_ = 0.0;
+    porosity_ = pore_diameter_ = NULL;
+    tortuosity_ = 0.0;
     relRadii_ = massLayer_ = NULL;
     k0_ = Ea_ = NULL;
     xA_ = xC_ = NULL;
