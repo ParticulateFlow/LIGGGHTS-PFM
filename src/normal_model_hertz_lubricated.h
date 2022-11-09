@@ -64,7 +64,7 @@ namespace ContactModels
 #endif
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
       error->all(FLERR,"HERTZ/LUBRICATED not defined for supersquadric particles\n");
-#endif      
+#endif
       /*NL*/ if(comm->me == 0 && screen) fprintf(screen, "HERTZ/LUBRICATED loaded\n");
     }
 
@@ -120,7 +120,7 @@ namespace ContactModels
       // contact force
       double kn, kt, gamman, gammat;
       double Fc = compute_contact_force(cdata, cdata.vn, reff, cdata.meff, hij, hmin, kn, kt, gamman, gammat);
-      
+
       cdata.kn = kn;
       cdata.kt = kt;
       cdata.gamman = gamman;
@@ -191,7 +191,7 @@ namespace ContactModels
 
         // viscosity
         visc = fix_visc->vector_atom;
-        const double etaf = cdata.is_wall ? visc[i] : ((visc[i] + visc[j])/2.); 
+        const double etaf = cdata.is_wall ? visc[i] : ((visc[i] + visc[j])/2.);
 
         // lubrication force
         double Fl = -6.*M_PI*etaf*vn*reff*reff/MAX(hij,hmin);
@@ -244,7 +244,7 @@ namespace ContactModels
         // total normal force
         if (hij>hmin)
           Fn = Fl;
-        else 
+        else
         {
           double frac = hij / hmin;
           Fn = frac*Fl + (1-frac)*Fc;
@@ -304,7 +304,7 @@ namespace ContactModels
 
         // viscosity
         visc = fix_visc->vector_atom;
-        const double etaf = cdata.is_wall ? visc[cdata.i] : ((visc[cdata.i] + visc[cdata.j])/2.); 
+        const double etaf = cdata.is_wall ? visc[cdata.i] : ((visc[cdata.i] + visc[cdata.j])/2.);
 
         // elastic approach distance
         const double hmine = 0.37 * pow(etaf**deltav0/YoungsModulusEff,0.4) * pow(reff,0.6);
@@ -321,7 +321,7 @@ namespace ContactModels
 
       // overlap
       const double deltan = MAX(hmin - hij, 0.);
-      
+
       const double sqrtval = sqrt(reff*deltan);
 
       const double Sn=2.*Yeff[itype][jtype]*sqrtval;
@@ -350,7 +350,7 @@ namespace ContactModels
       //limit force to avoid the artefact of negative repulsion force
       if (limitForce && (Fc<0.0))
         Fc = 0.;
-        
+
       return Fc;
     }
 
