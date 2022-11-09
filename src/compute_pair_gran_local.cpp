@@ -285,6 +285,8 @@ void ComputePairGranLocal::compute_local()
           ipair = 0;
           fixheat->cpl_evaluate(this);
       }
+
+      size_local_rows = ipair;
   }
   // get wall data
   else
@@ -344,11 +346,6 @@ int ComputePairGranLocal::count_pairs()
       if (!(mask[j] & groupbit)) continue;
       if (newton_pair == 0 && j >= nlocal && atom->tag[i] <= atom->tag[j]) continue;
 
-      delx = xtmp - x[j][0];
-      dely = ytmp - x[j][1];
-      delz = ztmp - x[j][2];
-      rsq = delx*delx + dely*dely + delz*delz;
-      if (rsq >= (radius[i]+radius[j])*(radius[i]+radius[j])) continue;
       m++;
     }
   }
@@ -375,6 +372,8 @@ void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,do
     double *xi,*xj,xi_w[3],xj_w[3],*vi,*vj;
     int nlocal;
 
+    if (!array || ipair >= ncount)
+        error->one(FLERR,"Internal error in ComputePairGranLocal::add_pair - inconsistent pair count");
     //NP return if pair not meant to be included (was not counted in the count() procedure
     if (!(atom->mask[i] & groupbit)) return;
     if (!(atom->mask[j] & groupbit)) return;
@@ -382,6 +381,17 @@ void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,do
     nlocal = atom->nlocal;
 
     if (newton_pair == 0 && j >= nlocal && atom->tag[i] <= atom->tag[j]) return;
+
+    if (hfflag) {
+        // since heat flux is only calculated for pairs in contact
+        // we need to skip other pairs (with no collision (e.g. cohesion) forces)
+        // otherwise pair data in array will be out of sync in add_pair() and add_heat()
+        radi = atom->radius[i];
+        radj = atom->radius[j];
+        vectorSubtract3D(atom->x[i],atom->x[j],del);
+        rsq = vectorMag3DSquared(del);
+        if (rsq >= (radi+radj)*(radi+radj)) return;
+    }
 
     xi = atom->x[i];
     xj = atom->x[j];
@@ -493,6 +503,9 @@ void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,do
 
 void ComputePairGranLocal::add_heat(int i,int j,double hf)
 {
+    if (!array || ipair >= ncount)
+        error->one(FLERR,"Internal error in ComputePairGranLocal::add_heat - inconsistent pair count");
+
     if (newton_pair == 0 && j >= atom->nlocal && atom->tag[i] <= atom->tag[j]) return;
 
     //NP return if pair not meant to be included (was not counted in the count() procedure
