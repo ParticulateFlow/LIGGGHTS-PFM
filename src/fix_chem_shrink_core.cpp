@@ -635,7 +635,7 @@ void FixChemShrinkCore::init()
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
     fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
-    fix_thermal_capacity_=  static_cast<FixPropertyAtom*>(modify->find_fix_property("thermalCapacity", "property/atom", "scalar", 0, 0, style));
+    fix_thermal_capacity_=  static_cast<FixPropertyAtom*>(modify->find_fix_property("thermalCapacity", "property/atom", "scalar", 0, 0, style,false));
     fix_polydisp_       =   static_cast<FixPropertyAtomPolydispParcel*>(modify->find_fix_property("effvolfactor", "property/atom","scalar",0,0,style,false));
 
     // references for global properties - valid for every particle equally
@@ -704,6 +704,15 @@ void FixChemShrinkCore::init()
     if(limit_reactant_consumption_)
     {
         fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
+    }
+
+    if(fix_thermal_capacity_)
+    {
+         variableCp_ = true;
+    }
+    else
+    {
+         variableCp_ = false;
     }
 }
 
@@ -1227,11 +1236,13 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     double layer_Cp[MAX_LAYERS+1] = {0.};
     double Tpart = Tpart_[i];
 
-    layer_Cp[0] = spec_heat(a_coeff_nasa_Fe,Tpart);
-    layer_Cp[1] = spec_heat(a_coeff_nasa_FeO,Tpart);
-    layer_Cp[2] = spec_heat(a_coeff_nasa_Fe3O4,Tpart);
-    layer_Cp[3] = spec_heat(a_coeff_nasa_Fe2O3,Tpart);
-                
+    if (variableCp_)
+    {
+        layer_Cp[0] = spec_heat(a_coeff_nasa_Fe,Tpart);
+        layer_Cp[1] = spec_heat(a_coeff_nasa_FeO,Tpart);
+        layer_Cp[2] = spec_heat(a_coeff_nasa_Fe3O4,Tpart);
+        layer_Cp[3] = spec_heat(a_coeff_nasa_Fe2O3,Tpart);
+    }
 
     // Mass Change of Layers
     // dmL is a positive value, therefore it will be subtracted from the total mass
@@ -1263,8 +1274,11 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         // non-zero contribution (at least from the innermost layer)
         sum_mass_p_new += massLayer_[i][j];
     }
-    Cp /= sum_mass_p_new;
-    fix_thermal_capacity_->vector_atom[i] = Cp;
+    if (variableCp_)
+    {
+        Cp /= sum_mass_p_new;
+        fix_thermal_capacity_->vector_atom[i] = Cp;
+    }
 
     // if (screen) fprintf(screen,"total mass of particle = %f \n", sum_mass_p_new);
 
@@ -1453,7 +1467,7 @@ double FixChemShrinkCore::conv_enthalpy (const double *a, int i)
     double value = 0.;
 
     if (T_[i] < SMALL)
-        error->fix_error(FLERR, this, "Error T <= ZERO");
+        error->warning(FLERR, "T <= ZERO");
 
     if (T_[i] < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];
@@ -1509,7 +1523,7 @@ double FixChemShrinkCore::spec_heat (const double *a, double Ti)
     double value = 0.;
 
     if (Ti < SMALL)
-        error->fix_error(FLERR, this, "Error T <= ZERO");
+        error->warning(FLERR, "T <= ZERO");
 
     if (Ti < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];
@@ -1887,6 +1901,8 @@ void FixChemShrinkCore::init_defaults()
     massA = massC = NULL;
     diffA = moleFracA = moleFracC = NULL;
     speciesA = speciesC = NULL;
+
+    variableCp_ = false;
 }
 
 void FixChemShrinkCore::update_fix(int narg, char **arg)
@@ -1904,19 +1920,25 @@ void FixChemShrinkCore::update_fix(int narg, char **arg)
             double Cp = 0.0;
             double layer_Cp[MAX_LAYERS+1] = {0.};
             double Tpart = Tpart_[i];
-            
-            layer_Cp[0] = spec_heat(a_coeff_nasa_Fe,Tpart);
-            layer_Cp[1] = spec_heat(a_coeff_nasa_FeO,Tpart);
-            layer_Cp[2] = spec_heat(a_coeff_nasa_Fe3O4,Tpart);
-            layer_Cp[3] = spec_heat(a_coeff_nasa_Fe2O3,Tpart);
-    
+
             for (int layer = 0 ; layer <= layers_; layer++)
             {
                 m += massLayer_[i][layer];
-                Cp += massLayer_[i][layer] * layer_Cp[layer] / layerMolMasses_[layer];
             }
-            Cp /= m;
-            fix_thermal_capacity_->vector_atom[i] = Cp;
+
+            if (variableCp_)
+            {
+                layer_Cp[0] = spec_heat(a_coeff_nasa_Fe,Tpart);
+                layer_Cp[1] = spec_heat(a_coeff_nasa_FeO,Tpart);
+                layer_Cp[2] = spec_heat(a_coeff_nasa_Fe3O4,Tpart);
+                layer_Cp[3] = spec_heat(a_coeff_nasa_Fe2O3,Tpart);
+                for (int layer = 0 ; layer <= layers_; layer++)
+                {
+                    Cp += massLayer_[i][layer] * layer_Cp[layer] / layerMolMasses_[layer];
+                }
+                Cp /= m;
+                fix_thermal_capacity_->vector_atom[i] = Cp;
+            }
 
             pmass_[i] = m*cg_*cg_*cg_;
             pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);

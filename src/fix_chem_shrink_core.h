@@ -215,6 +215,8 @@ public:
   bool limit_reactant_consumption_;
   double maxReactantConsumptionFrac_;
 
+  bool variableCp_;
+
 };
 }
 

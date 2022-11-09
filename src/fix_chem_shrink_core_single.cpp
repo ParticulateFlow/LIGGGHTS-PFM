@@ -659,7 +659,7 @@ void FixChemShrinkCoreSingle::init()
     fix_partPressure_   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("partP", "property/atom", "scalar", 0, 0, style));
     fix_layerRelRad_    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("relRadii", "property/atom", "vector", 0, 0, style));
     fix_layerMass_      =   static_cast<FixPropertyAtom*>(modify->find_fix_property("massLayer","property/atom","vector",0,0,style));
-    fix_thermal_capacity_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("thermalCapacity","property/atom","scalar",0,0,style));
+    fix_thermal_capacity_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("thermalCapacity","property/atom","scalar",0,0,style,false));
     fix_rhoeff_         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("rhoeff", "property/atom", "vector", 0, 0, style));
     fix_polydisp_       =   static_cast<FixPropertyAtomPolydispParcel*>(modify->find_fix_property("effvolfactor", "property/atom","scalar",0,0,style));
 
@@ -736,6 +736,15 @@ void FixChemShrinkCoreSingle::init()
     if(limit_reactant_consumption_)
     {
         fix_reactantPerParticle_ = static_cast<FixPropertyAtom*>(modify -> find_fix_property("reactantPerParticle","property/atom","scalar",0,0,style));
+    }
+
+    if(fix_thermal_capacity_)
+    {
+         variableCp_ = true;
+    }
+    else
+    {
+        variableCp_ = false;
     }
 }
 
@@ -1049,11 +1058,6 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
         massLayer_[i][0] += dmL_[0]*scale_reduction_rate;
     }
 
-    layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
-    layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
-    Cp += massLayer_[i][0] * layer_Cp[0] / molMass_D_;
-    if (layers_ > 0) Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_; // only include this contribution if core is still present
-
     for (int j = 0; j <= layers_; j++)
     {
         // calculate total mass of particle
@@ -1061,8 +1065,16 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
         // non-zero contribution (at least from the innermost layer)
         sum_mass_p_new += massLayer_[i][j];
     }
-    Cp /= sum_mass_p_new;
-    fix_thermal_capacity_->vector_atom[i] = Cp;
+
+    if (variableCp_)
+    {
+        layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
+        layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
+        Cp = massLayer_[i][0] * layer_Cp[0] / molMass_D_;
+        if (layers_ > 0) Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_; // only include this contribution if core is still present#
+        Cp /= sum_mass_p_new;
+        fix_thermal_capacity_->vector_atom[i] = Cp;
+    }
 
     if (!shrink_) return;
 
@@ -1177,7 +1189,7 @@ double FixChemShrinkCoreSingle::conv_enthalpy (const double *a, double Ti)
     double value = 0.;
 
     if (Ti < SMALL)
-        error->fix_error(FLERR, this, "Error T <= ZERO");
+        error->warning(FLERR, "T <= ZERO");
 
     if (Ti < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];
@@ -1232,7 +1244,7 @@ double FixChemShrinkCoreSingle::spec_heat (const double *a, double Ti)
     double value = 0.;
 
     if (Ti < SMALL)
-        error->fix_error(FLERR, this, "Error T <= ZERO");
+        error->warning(FLERR, "T <= ZERO");
 
     if (Ti < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];
@@ -1340,6 +1352,8 @@ void FixChemShrinkCoreSingle::init_defaults()
     massA = massC = NULL;
     diffA = moleFracA = moleFracC = NULL;
     speciesA = speciesC = NULL;
+
+    variableCp_ = false;
 }
 
 void FixChemShrinkCoreSingle::update_fix(int narg, char **arg)
@@ -1357,19 +1371,21 @@ void FixChemShrinkCoreSingle::update_fix(int narg, char **arg)
             double layer_Cp[2] = {0.};
             double Tpart = Tpart_[i];
 
-            layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
-            layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
-
-            Cp += massLayer_[i][0] * layer_Cp[0] / molMass_D_;
-            m += massLayer_[i][0];
+            m = massLayer_[i][0];
             if (layers_ > 0)
             {
-                Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_; // only include this contribution if core is still present
                 m += massLayer_[i][1];
             }
 
-            Cp /= m;
-            fix_thermal_capacity_->vector_atom[i] = Cp;
+            if (variableCp_)
+            {
+                layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
+                layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
+                Cp = massLayer_[i][0] * layer_Cp[0] / molMass_D_;
+                if (layers_ > 0) Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_; // only include this contribution if core is still present
+                Cp /= m;
+                fix_thermal_capacity_->vector_atom[i] = Cp;
+            }
 
             pmass_[i] = m*cg_*cg_*cg_;
             pdensity_[i] = 0.75*pmass_[i]/(M_PI*radius_[i]*radius_[i]*radius_[i]);

@@ -207,6 +207,7 @@ public:
   const double Cp_coke_; // heat capacity coke in J/(mol K)
   const double T_room_;
 
+  bool variableCp_;
 };
 }
 
