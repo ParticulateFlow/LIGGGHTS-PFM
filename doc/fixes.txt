@@ -28,6 +28,7 @@ Fixes :h1
    fix_cfd_coupling_chemistry
    fix_cfd_coupling_dissolve
    fix_cfd_coupling_deform
+   fix_cfd_coupling_fluidproperties
    fix_cfd_coupling_recurrence
    fix_check_timestep_gran
    fix_chem_shrink

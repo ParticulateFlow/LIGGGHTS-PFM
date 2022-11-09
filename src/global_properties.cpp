@@ -41,6 +41,7 @@ namespace MODEL_PARAMS
   static const char * CHARACTERISTIC_VELOCITY = "characteristicVelocity";
   static const char * STIFFFNESS_RATIO = "stiffnessRatio";
   static const char * YOUNGS_MODULUS = "youngsModulus";
+  static const char * YOUNGS_MODULUS_ORIGINAL = "youngsModulusOriginal";
   static const char * POISSONS_RATIO = "poissonsRatio";
   static const char * COEFFICIENT_RESTITUTION = "coefficientRestitution";
   static const char * COEFFICIENT_RESTITUTION_LOG = "coefficientRestitutionLog";
@@ -58,6 +59,9 @@ namespace MODEL_PARAMS
   static const char * COEFFICIENT_MAX_ELASTIC_STIFFNESS = "coefficientMaxElasticStiffness";
   static const char * COEFFICIENT_ADHESION_STIFFNESS = "coefficientAdhesionStiffness";
   static const char * COEFFICIENT_PLASTICITY_DEPTH = "coefficientPlasticityDepth";
+  static const char * SURFACE_ROUGHNESS = "surfaceRoughness";
+  static const char * COEFFICIENT_FRICTION_LUBRICATED = "coefficientFrictionLubricated";
+  static const char * LUBRICATION_CUTOFF = "lubricationCutoff";
 
   /* -----------------------------------------------------------------------
    * Utility functions
@@ -172,6 +176,33 @@ namespace MODEL_PARAMS
 
   /* ---------------------------------------------------------------------- */
 
+  VectorProperty * createYoungsModulusOriginal(PropertyRegistry & registry, const char * caller, bool sanity_checks)
+  {
+    LAMMPS * lmp = registry.getLAMMPS();
+    const int max_type = registry.max_type();
+
+    VectorProperty * vec = new VectorProperty(max_type+1);
+    FixPropertyGlobal * YO = registry.getGlobalProperty(YOUNGS_MODULUS_ORIGINAL,"property/global","peratomtype",max_type,0,caller);
+
+    for(int i=1; i < max_type+1; i++)
+    {
+      const double YOi = YO->compute_vector(i-1);
+
+      // error checks on Y
+      if(sanity_checks)
+      {
+        if(YOi < 0)
+          lmp->error->all(FLERR,"youngsModulusOriginal >= 0 required");
+      }
+
+      vec->data[i] = YOi;
+    }
+
+    return vec;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
   VectorProperty * createPoissonsRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks)
   {
     LAMMPS * lmp = registry.getLAMMPS();
@@ -221,6 +252,36 @@ namespace MODEL_PARAMS
         const double vi=v[i];
         const double vj=v[j];
         matrix->data[i][j] = 1./((1.-vi*vi)/Yi+(1.-vj*vj)/Yj);
+      }
+    }
+
+    return matrix;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  MatrixProperty * createYeffOriginal(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    registry.registerProperty(YOUNGS_MODULUS_ORIGINAL, &createYoungsModulusOriginal);
+    registry.registerProperty(POISSONS_RATIO, &createPoissonsRatio);
+
+    MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
+    VectorProperty * youngsModulusOriginal = registry.getVectorProperty(YOUNGS_MODULUS_ORIGINAL,caller);
+    VectorProperty * poissonRatio = registry.getVectorProperty(POISSONS_RATIO,caller);
+    double * YO = youngsModulusOriginal->data;
+    double * v = poissonRatio->data;
+
+    for(int i=1;i< max_type+1; i++)
+    {
+      for(int j=1;j<max_type+1;j++)
+      {
+        const double YOi=YO[i];
+        const double YOj=YO[j];
+        const double vi=v[i];
+        const double vj=v[j];
+        matrix->data[i][j] = 1./((1.-vi*vi)/YOi+(1.-vj*vj)/YOj);
       }
     }
 
@@ -609,4 +670,60 @@ namespace MODEL_PARAMS
   }
 
   /* ---------------------------------------------------------------------- */
+
+  VectorProperty * createSurfaceRoughness(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    VectorProperty * vec = new VectorProperty(max_type+1);
+    FixPropertyGlobal * sigma = registry.getGlobalProperty(SURFACE_ROUGHNESS,"property/global","peratomtype",max_type,0,caller);
+
+    for(int i=1; i < max_type+1; i++)
+    {
+      const double sigmai = sigma->compute_vector(i-1);
+
+      vec->data[i] = sigmai;
+    }
+
+    return vec;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  MatrixProperty * createHminSigma(PropertyRegistry & registry, const char * caller, bool)
+  {
+    const int max_type = registry.max_type();
+
+    registry.registerProperty(SURFACE_ROUGHNESS, &createSurfaceRoughness);
+
+    MatrixProperty * matrix = new MatrixProperty(max_type+1, max_type+1);
+    VectorProperty * surfaceRoughness = registry.getVectorProperty(SURFACE_ROUGHNESS,caller);
+    double * sigma = surfaceRoughness->data;
+
+    for(int i=1;i< max_type+1; i++)
+    {
+      for(int j=1;j<max_type+1;j++)
+      {
+        const double sigmai=sigma[i];
+        const double sigmaj=sigma[j];
+        matrix->data[i][j] = (sigmai+sigmaj)/2.;
+      }
+    }
+
+    return matrix;
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  MatrixProperty* createCoeffFrictLub(PropertyRegistry & registry, const char * caller, bool)
+  {
+    return createPerTypePairProperty(registry, COEFFICIENT_FRICTION_LUBRICATED, caller);
+  }
+
+  /* ---------------------------------------------------------------------- */
+
+  ScalarProperty* createLubricationCutoff(PropertyRegistry & registry, const char * caller, bool)
+  {
+    return createScalarProperty(registry, LUBRICATION_CUTOFF, caller);
+  }
 }
