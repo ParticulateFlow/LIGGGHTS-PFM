@@ -84,6 +84,10 @@ class FixPropertyAtom : public Fix {
   int num_defaultvalues();
   double defaultvalue(int);
 
+  int store_old_time_values()
+  {
+      return store_old_time_values_;
+  }
   FixPropertyAtom *old_time_values();
 
   virtual void mark_tracers(int ilo, int ihi) { UNUSED(ilo); UNUSED(ihi); }
