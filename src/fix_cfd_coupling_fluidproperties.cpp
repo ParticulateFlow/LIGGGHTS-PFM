@@ -113,7 +113,7 @@ void FixCfdCouplingFluidproperties::post_create()
         fixarg[6]="yes";     // communicate ghost
         fixarg[7]="no";     // communicate rev
         fixarg[8]="0.";
-        fix_fluid_density_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        fix_fluid_viscosity_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
     }
 }
 
