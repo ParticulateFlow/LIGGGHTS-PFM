@@ -304,11 +304,8 @@ void ComputePairGranLocal::compute_local()
 int ComputePairGranLocal::count_pairs()
 {
   int i,j,m,n,ii,jj,inum,jnum;
-  double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
   int *ilist,*jlist,*numneigh,**firstneigh;
 
-  double **x = atom->x;
-  double *radius = atom->radius;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   int nall = nlocal + atom->nghost;
@@ -332,9 +329,6 @@ int ComputePairGranLocal::count_pairs()
     i = ilist[ii];
     if (!(mask[i] & groupbit)) continue;
 
-    xtmp = x[i][0];
-    ytmp = x[i][1];
-    ztmp = x[i][2];
     jlist = firstneigh[i];
     jnum = numneigh[i];
 
