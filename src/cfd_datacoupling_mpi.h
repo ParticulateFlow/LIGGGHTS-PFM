@@ -165,7 +165,13 @@ void CfdDatacouplingMPI::pull_mpi(const char *name,const char *type,void *&from,
                 for (int j = 0; j < len2; j++)
                     to_t[m][j] = allred[i*len2 + j];
     }
-    else if(strcmp(type,"scalar-global") == 0 || strcmp(type,"vector-global") == 0 || strcmp(type,"matrix-global") == 0)
+    else if(strcmp(type,"scalar-global") == 0 || strcmp(type,"vector-global") == 0)
+    {
+        T *to_t = (T*) to;
+        for (int i = 0; i < len1; i++)
+            to_t[i] = allred[i];
+    }
+    else if(strcmp(type,"matrix-global") == 0)
     {
         T **to_t = (T**) to;
         for (int i = 0; i < len1; i++)
