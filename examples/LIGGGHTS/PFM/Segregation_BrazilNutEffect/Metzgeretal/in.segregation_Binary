@@ -65,7 +65,7 @@ fix gravity all gravity 9.81 vector 0.0 0.0 -1.0
 # define walls
 fix wall all wall/gran model hertz tangential history rolling_friction cdt primitive type 2 zcylinder 0.06 0 0 
 
-fix bottomCad all mesh/surface file bottom.stl type 2 scale 0.01 rotate axis 1 0 0 angle 90
+fix bottomCad all mesh/surface file meshes/bottom.stl type 2 scale 0.01 rotate axis 1 0 0 angle 90
 fix bottomWall all wall/gran model hertz tangential history rolling_friction cdt mesh n_meshes 1 meshes bottomCad
 
 # particle distributions and insertion
