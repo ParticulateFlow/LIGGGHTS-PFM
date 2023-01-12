@@ -30,8 +30,11 @@ NORMAL_MODEL(HERTZ_LUBRICATED,hertz/lubricated,9)
 #else
 #ifndef NORMAL_MODEL_HERTZ_LUBRICATED_H_
 #define NORMAL_MODEL_HERTZ_LUBRICATED_H_
+#include "contact_models.h"
 #include "global_properties.h"
 #include "fix_property_atom.h"
+#include "atom.h"
+#include "force.h"
 #include <math.h>
 
 namespace LIGGGHTS {

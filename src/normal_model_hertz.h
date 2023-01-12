@@ -29,7 +29,9 @@ NORMAL_MODEL(HERTZ,hertz,3)
 #else
 #ifndef NORMAL_MODEL_HERTZ_H_
 #define NORMAL_MODEL_HERTZ_H_
+#include "contact_models.h"
 #include "global_properties.h"
+#include "force.h"
 #include <math.h>
 
 namespace LIGGGHTS {
