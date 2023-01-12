@@ -163,9 +163,7 @@ void FixMeshSurfaceStressContact::init_area_correction()
             error->fix_error(FLERR,this,"'area_correction' requires using a granular pair style");
         int max_type = pair_gran->get_properties()->max_type();
 
-        if(force->pair_match("gran/hooke",0)) expo = 1.;
-        else if(force->pair_match("gran/hertz",0)) expo = 2./3.;
-        else error->fix_error(FLERR,this,"area correction could not identify the granular pair style you are using, supported are hooke and hertz types");
+        expo = 1./pair_gran->stressStrainExponent();
 
         Y = static_cast<FixPropertyGlobal*>(modify->find_fix_property("youngsModulus","property/global","peratomtype",max_type,0,style))->get_values();
         nu = static_cast<FixPropertyGlobal*>(modify->find_fix_property("poissonsRatio","property/global","peratomtype",max_type,0,style))->get_values();
