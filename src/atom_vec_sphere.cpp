@@ -81,10 +81,9 @@ void AtomVecSphere::init()
       if (modify->fix[i]->rad_mass_vary_flag) {
         radvary = 1;
         size_forward = 6; //NP mass, density, radius
+        atom->radvary_flag = 1;
         break;
       }
-
-  if(radvary) atom->radvary_flag = 1;
 }
 
 /* ----------------------------------------------------------------------
