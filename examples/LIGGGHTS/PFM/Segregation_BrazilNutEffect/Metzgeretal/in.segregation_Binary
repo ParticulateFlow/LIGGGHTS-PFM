@@ -14,7 +14,7 @@ echo both
 # 'granular' (or 'sphere') style uses diameter, mass and angular velocity
 atom_style      granular
 
-# use an array to map particle IDs to local storage index,
+# use an array to map particle IDs to local storage index
 atom_modify     map array
 
 # set simulation domain to be fixed in x y z
@@ -44,7 +44,7 @@ neigh_modify    delay 0
 
 
 # define the material properties required for granular pair styles
-# type 1 = particles 
+# type 1 = particles
 # type 2 = walls
 fix m1 all property/global youngsModulus peratomtype 2.6e7 2.6e7
 fix m2 all property/global poissonsRatio peratomtype 0.25 0.25
@@ -63,7 +63,7 @@ timestep    0.000001
 fix gravity all gravity 9.81 vector 0.0 0.0 -1.0
 
 # define walls
-fix wall all wall/gran model hertz tangential history rolling_friction cdt primitive type 2 zcylinder 0.06 0 0 
+fix wall all wall/gran model hertz tangential history rolling_friction cdt primitive type 2 zcylinder 0.06 0 0
 
 fix bottomCad all mesh/surface file meshes/bottom.stl type 2 scale 0.01 rotate axis 1 0 0 angle 90
 fix bottomWall all wall/gran model hertz tangential history rolling_friction cdt mesh n_meshes 1 meshes bottomCad
@@ -71,7 +71,7 @@ fix bottomWall all wall/gran model hertz tangential history rolling_friction cdt
 # particle distributions and insertion
 fix pts1 all particletemplate/sphere 367127 atom_type 1 density constant 2200 radius constant 0.0025
 fix pts2 all particletemplate/sphere 367127 atom_type 1 density constant 2200 radius constant 0.005
-fix pdd1 all particledistribution/discrete 681573 2 pts1 0.5 pts2 0.5 
+fix pdd1 all particledistribution/discrete 681573 2 pts1 0.5 pts2 0.5
 
 region insReg cylinder z 0 0 0.06 0 0.2
 fix ins all insert/pack seed 4763687 distributiontemplate pdd1 vel constant 0.0 0.0 -0.15 &
@@ -86,7 +86,6 @@ thermo_style    custom step atoms ke
 # set frequency of output
 thermo          1000
 
-
 thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic yes
 
@@ -96,12 +95,12 @@ run 1
 # output particle properties
 dump dmp all custom/vtk 5000 post/binarymix_*.vtk id type x y z vx vy vz &
      fx fy fz omegax omegay omegaz radius
-     
+
 #dump dmpstl all mesh/stl 5000 post/drum*.stl bottomCad
 
 run 250000 upto
 
-#apply vibration
+# apply vibration
 fix   vibration all move/mesh mesh bottomCad wiggle amplitude 0.0 0. 0.001 period 0.025
 run   15000000 upto
 
