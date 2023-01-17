@@ -889,7 +889,7 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             Keq_ = exp(3968.37/T_[i]+3.94);        // Valipour 2009, Nietrost 2012
         else if (layer == 1)
             Keq_ = pow(10.0,(-1834.0/T_[i]+2.17)); // Nietrost 2012
-            // Keq_ = exp(-3585.64/T_[i]+4.58);    // ??? // exp(-3585.64/T_[i]+8.98); // Valipour 2009
+            // Keq_ = exp(-3585.64/T_[i]+4.58);    // Valipour 2006 // exp(-3585.64/T_[i]+8.98); // Valipour 2009
         else if (layer == 0)
             Keq_ = pow(10.0,(914.0/T_[i]-1.097));  // Nietrost 2012
             // Keq_ = exp(2744.63/T_[i]-2.946);    // Valipour 2009
