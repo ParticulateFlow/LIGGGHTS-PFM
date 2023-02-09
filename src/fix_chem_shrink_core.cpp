@@ -105,7 +105,7 @@ const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 0.0, 2.0 }; // productio
 const double FixChemShrinkCore::k0_low_CO[] = { 100., 100., 150. };
 const double FixChemShrinkCore::k0_low_H2[] = {  33.,  33.,  25. };
 const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 70000., 75000. };
-const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000., 75000. };
+const double FixChemShrinkCore::Ea_low_H2[] = { 70000., 70000., 75000. };
 #else
 
 #endif
