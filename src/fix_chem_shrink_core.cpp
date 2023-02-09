@@ -102,8 +102,8 @@ const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.231532, 0.1596
 #ifdef PSEUDO_THREE_LAYERS // ignore wustite layer; TODO! beware of CO transformation!!!
 const double FixChemShrinkCore::v_reac_low_[] = { 0.0, 0.25, 3.0 }; // reaction of Fe, m, h
 const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 0.0, 2.0 }; // production of Fe, Fe, m
-const double FixChemShrinkCore::k0_low_CO[] = { 150., 150., 150. };
-const double FixChemShrinkCore::k0_low_H2[] = {  50.,  50.,  25. };
+const double FixChemShrinkCore::k0_low_CO[] = { 100., 100., 150. };
+const double FixChemShrinkCore::k0_low_H2[] = {  33.,  33.,  25. };
 const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 70000., 75000. };
 const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000., 75000. };
 #else
