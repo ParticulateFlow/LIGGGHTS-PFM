@@ -39,10 +39,12 @@
 #include "force.h"
 #include "group.h"
 #include "math_const.h"
+#include "math_special.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
+using namespace MathSpecial;
 
 #define SMALL   1e-10
 
@@ -942,7 +944,7 @@ void FixChemShrinkCore::getA(int i)
     for (int j = 0; j < layers_ ; j++)
     {
             Aterm[i][j] = (k0_[j] * exp(-Ea_[j] / (Runiv*T_[i])))
-                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * cbrt(square(1.0 - fracRed_[i][j]))
                         * (1.0 + 1.0 / K_eq(j,i));
             Aterm[i][j] = 1.0 / Aterm[i][j];
     }
@@ -1742,7 +1744,7 @@ void FixChemShrinkCore::getA_low(int i)
         for (int j = 0; j < layers_ ; j++)
         {
             Aterm[i][j] = (k0_low_CO[j] * exp(-Ea_low_CO[j] / (Runiv * T_[i])))
-                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * cbrt(square(1.0 - fracRed_[i][j]))
                         * (1.0 + 1.0 / K_eq_low(j,i));
             Aterm[i][j] = 1.0 / Aterm[i][j];
         }
@@ -1752,7 +1754,7 @@ void FixChemShrinkCore::getA_low(int i)
         for (int j = 0; j < layers_ ; j++)
         {
             Aterm[i][j] = (k0_low_H2[j] * exp(-Ea_low_H2[j] / (Runiv * T_[i])))
-                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * cbrt(square(1.0 - fracRed_[i][j]))
                         * (1.0 + 1.0 / K_eq_low(j,i));
             Aterm[i][j] = 1.0 / Aterm[i][j];
         }
