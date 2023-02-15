@@ -60,9 +60,12 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
     use_type_(false),
     use_tracer_(false),
     use_property_(false),
+    limit_conv(false),
     limit_fluc(false),
     relative_limit(false),
     remove_vel_across_walls(false),
+    wallfixname(NULL),
+    idregion(NULL),
     iregion(-1)
 {
     int iarg = 3;
@@ -173,6 +176,23 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
             iarg += 2;
             hasargs = true;
         }
+        else if (strcmp(arg[iarg],"limit_convection") == 0)
+        {
+            if (narg < iarg+2) error->all(FLERR,"Illegal fix couple/cfd/recurrence command");
+            if(strcmp(arg[iarg+1],"yes") == 0)
+                limit_conv = true;
+            else if(strcmp(arg[iarg+1],"no"))
+                error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'limit_convection'");
+            iarg += 2;
+            hasargs = true;
+        }
+        else if (strcmp(arg[iarg],"max_vconv") == 0)
+        {
+            if (narg < iarg+2) error->all(FLERR,"Illegal fix couple/cfd/recurrence command");
+            maxvconv = atof(arg[iarg+1]);
+            iarg += 2;
+            hasargs = true;
+        }
         else if (strcmp(arg[iarg],"relative_limit") == 0)
         {
             if (narg < iarg+2) error->all(FLERR,"Illegal fix couple/cfd/recurrence command");
@@ -224,7 +244,8 @@ FixCfdCouplingRecurrence::FixCfdCouplingRecurrence(LAMMPS *lmp, int narg, char *
 
 FixCfdCouplingRecurrence::~FixCfdCouplingRecurrence()
 {
-  if(wallfixname) delete []wallfixname;
+  if (wallfixname) delete []wallfixname;
+  if (idregion) delete []idregion;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -379,14 +400,18 @@ void FixCfdCouplingRecurrence::init()
 
 void FixCfdCouplingRecurrence::initial_integrate(int)
 {
+  double **x = atom->x;
   double **v = atom->v;
+  double *rad = atom->radius;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   double **vrec = fix_vrec_->array_atom;
   double **fwall = NULL;
+  double dt = update->dt;
 
   double v_conv[3];
   double v_fluc[3];
+  double vmax = maxvfluc;
 
   if (remove_vel_across_walls)
   {
@@ -399,11 +424,8 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
   // displace particles if necessary
   if(use_fluc_)
   {
-    double *rad = atom->radius;
     double **vfluc = fix_vfluc_->array_atom;
-    double **x = atom->x;
     double x_new[3];
-    double dt = update->dt;
 
     for (int i = 0; i < nlocal; i++)
     {
@@ -416,7 +438,11 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
 
         if (limit_fluc)
         {
-          limit_vfluc(x[i],v_fluc,rad[i]/dt);
+          if (relative_limit)
+          {
+            vmax = maxvfluc * rad[i]/dt;
+          }
+          limit_v(x[i],v_fluc,vmax);
         }
 
         if (remove_vel_across_walls)
@@ -443,6 +469,7 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
     }
   }
 
+  vmax = maxvconv;
   // set particle velocity to that of recurrence field
   for (int i = 0; i < nlocal; i++)
   {
@@ -451,6 +478,15 @@ void FixCfdCouplingRecurrence::initial_integrate(int)
       for (int j = 0; j < 3; j++)
       {
         v_conv[j] = vrec[i][j];
+      }
+
+      if (limit_conv)
+      {
+        if (relative_limit)
+        {
+          vmax = maxvconv * rad[i]/dt;
+        }
+        limit_v(x[i],v_conv,vmax);
       }
 
       if (remove_vel_across_walls)
@@ -493,24 +529,18 @@ void FixCfdCouplingRecurrence::post_force(int)
 
 /* ---------------------------------------------------------------------- */
 
-void FixCfdCouplingRecurrence::limit_vfluc(double* pos, double* vfluc, double relativescale)
+void FixCfdCouplingRecurrence::limit_v(double* pos, double* v, double vmax)
 {
-  double vmax = maxvfluc;
 
   if (iregion >= 0 && !domain->regions[iregion]->match(pos[0],pos[1],pos[2]))
   {
     return;
   }
 
-  if (relative_limit)
+  double absv = MathExtra::len3(v);
+  if (absv > vmax)
   {
-    vmax = maxvfluc * relativescale;
-  }
-
-  double absvfluc = MathExtra::len3(vfluc);
-  if (absvfluc > vmax)
-  {
-    MathExtra::scale3(vmax/absvfluc,vfluc);
+    MathExtra::scale3(vmax/absv,v);
   }
 }
 

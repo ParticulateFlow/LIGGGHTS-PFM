@@ -30,7 +30,10 @@ NORMAL_MODEL(JKR,jkr,5)
 #else
 #ifndef NORMAL_MODEL_JKR_H_
 #define NORMAL_MODEL_JKR_H_
+#include "contact_models.h"
 #include "global_properties.h"
+#include "atom.h"
+#include "force.h"
 #include <math.h>
 #include <limits>
 

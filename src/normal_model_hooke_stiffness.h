@@ -30,6 +30,8 @@ NORMAL_MODEL(HOOKE_STIFFNESS,hooke/stiffness,1)
 #ifndef NORMAL_MODEL_HOOKE_STIFFNESS_H_
 #define NORMAL_MODEL_HOOKE_STIFFNESS_H_
 #include "contact_models.h"
+#include "global_properties.h"
+#include "force.h"
 
 namespace LIGGGHTS {
 namespace ContactModels

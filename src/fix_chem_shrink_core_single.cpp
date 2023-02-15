@@ -1010,7 +1010,7 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
     dmL_[0] = dmL_[1] * rhoeff_[i][0] * porosity_[0] / (rhoeff_[i][1] * porosity_[1]);
     massLayer_[i][0] += dmL_[0]*scale_reduction_rate;
 
-    for (int j = 0; j <= 1; j++)
+    for (int j = 0; j <= layers_; j++)
     {
         // calculate total mass of particle
         // since there is a minimum radius for layers, there is always a
@@ -1162,7 +1162,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     dH += 0.25*dHcoeffs[3]*T*T*T*T - dHcoeffs[4]/T + dHcoeffs[5];
     // reaction enthalpy (enthalpy of formation + thermal energy of gas phases) in J/mol
     dH *= 1000;
-    
+
     // add contribution of coke thermal energy
     if (reactionHeatIndex_ == 0)  // O2 + 2C -> 2C0
     {

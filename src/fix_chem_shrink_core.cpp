@@ -39,10 +39,12 @@
 #include "force.h"
 #include "group.h"
 #include "math_const.h"
+#include "math_special.h"
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
+using namespace MathSpecial;
 
 #define SMALL   1e-10
 
@@ -98,17 +100,17 @@ const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.231532, 0.1596
 #define MAX_LAYERS 3
 #define PSEUDO_THREE_LAYERS
 #ifdef PSEUDO_THREE_LAYERS // ignore wustite layer; TODO! beware of CO transformation!!!
-const double FixChemShrinkCore::v_reac_low_[] = { 0.0, 0.25, 3.0 };  // reaction of Fe, m, h
+const double FixChemShrinkCore::v_reac_low_[] = { 0.0, 0.25, 3.0 }; // reaction of Fe, m, h
 const double FixChemShrinkCore::v_prod_low_[] = { 0.75, 0.0, 2.0 }; // production of Fe, Fe, m
-const double FixChemShrinkCore::k0_low_CO[] = { 150., 150., 150. };
-const double FixChemShrinkCore::k0_low_H2[] = {  50.,  50.,  25. };
+const double FixChemShrinkCore::k0_low_CO[] = { 100., 100., 150. };
+const double FixChemShrinkCore::k0_low_H2[] = {  33.,  33.,  25. };
 const double FixChemShrinkCore::Ea_low_CO[] = { 70000., 70000., 75000. };
-const double FixChemShrinkCore::Ea_low_H2[] = { 75000., 75000., 75000. };
+const double FixChemShrinkCore::Ea_low_H2[] = { 70000., 70000., 75000. };
 #else
 
 #endif
 //                                                  {       Fe,      FeO,    Fe3O4,     Fe2O3 }
-const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.071844, 0.231532, 0.1596882 };
+const double FixChemShrinkCore::layerMolMasses_[] = { 0.055845, 0.071844, 0.231532, 0.1596882 }; // [kg/mol]
 #endif
 
 enum {
@@ -889,7 +891,7 @@ double FixChemShrinkCore::K_eq(int layer, int i)
             Keq_ = exp(3968.37/T_[i]+3.94);        // Valipour 2009, Nietrost 2012
         else if (layer == 1)
             Keq_ = pow(10.0,(-1834.0/T_[i]+2.17)); // Nietrost 2012
-            // Keq_ = exp(-3585.64/T_[i]+4.58);    // ??? // exp(-3585.64/T_[i]+8.98); // Valipour 2009
+            // Keq_ = exp(-3585.64/T_[i]+4.58);    // Valipour 2006 // exp(-3585.64/T_[i]+8.98); // Valipour 2009
         else if (layer == 0)
             Keq_ = pow(10.0,(914.0/T_[i]-1.097));  // Nietrost 2012
             // Keq_ = exp(2744.63/T_[i]-2.946);    // Valipour 2009
@@ -942,7 +944,7 @@ void FixChemShrinkCore::getA(int i)
     for (int j = 0; j < layers_ ; j++)
     {
             Aterm[i][j] = (k0_[j] * exp(-Ea_[j] / (Runiv*T_[i])))
-                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * cbrt(square(1.0 - fracRed_[i][j]))
                         * (1.0 + 1.0 / K_eq(j,i));
             Aterm[i][j] = 1.0 / Aterm[i][j];
     }
@@ -1245,7 +1247,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         if (massLayer_[i][j] < 0.0)
             massLayer_[i][j] = 0.0;
     }
-    for (int j = 0; j <= MAX_LAYERS; j++)
+    for (int j = 0; j <= layers_; j++)
     {
         // calculate total mass of particle
         // since there is a minimum radius for layers, there is always a
@@ -1742,7 +1744,7 @@ void FixChemShrinkCore::getA_low(int i)
         for (int j = 0; j < layers_ ; j++)
         {
             Aterm[i][j] = (k0_low_CO[j] * exp(-Ea_low_CO[j] / (Runiv * T_[i])))
-                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * cbrt(square(1.0 - fracRed_[i][j]))
                         * (1.0 + 1.0 / K_eq_low(j,i));
             Aterm[i][j] = 1.0 / Aterm[i][j];
         }
@@ -1752,7 +1754,7 @@ void FixChemShrinkCore::getA_low(int i)
         for (int j = 0; j < layers_ ; j++)
         {
             Aterm[i][j] = (k0_low_H2[j] * exp(-Ea_low_H2[j] / (Runiv * T_[i])))
-                        * cbrt((1.0 - fracRed_[i][j]) * (1.0 - fracRed_[i][j]))
+                        * cbrt(square(1.0 - fracRed_[i][j]))
                         * (1.0 + 1.0 / K_eq_low(j,i));
             Aterm[i][j] = 1.0 / Aterm[i][j];
         }

@@ -28,7 +28,9 @@ NORMAL_MODEL(HOOKE_STIFFNESS_COLLHEAT,hooke/stiffness/collheat,6)
 #else
 #ifndef NORMAL_MODEL_HOOKE_STIFFNESS_COLLHEAT_H_
 #define NORMAL_MODEL_HOOKE_STIFFNESS_COLLHEAT_H_
+#include "contact_models.h"
 #include "fix_property_atom.h"
+#include "global_properties.h"
 #include <math.h>
 
 namespace MODEL_PARAMS

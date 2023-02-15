@@ -41,6 +41,9 @@ struct ContactData {
   double rsq; // squared distance between centers of collision partners
   double delta[3]; // line of centers
 
+  double * v_i;
+  double * v_j;
+
   double area_ratio;
 
   int * touch;
@@ -48,6 +51,9 @@ struct ContactData {
 
   int i; // local particle index
   int j;
+
+  int itype; // atom/material type
+  int jtype;
 
   bool is_wall;
   bool has_force_update;
@@ -67,11 +73,15 @@ struct ContactData {
     radj(0.0),
     radsum(0.0),
     rsq(0.0),
+    v_i(NULL),
+    v_j(NULL),
     area_ratio(1.0),
     touch(NULL),
     contact_history(NULL),
     i(-1),
     j(-1),
+    itype(-1),
+    jtype(-1),
     is_wall(false),
     has_force_update(false),
     is_non_spherical(false)
@@ -87,8 +97,6 @@ struct CollisionData: ContactData {
   double r; // distance between centers of collision partners
   double rinv; // one over r
   double en[3]; // direction of r
-  double * v_i;
-  double * v_j;
   double * omega_i;
   double * omega_j;
 
@@ -118,8 +126,6 @@ struct CollisionData: ContactData {
 
   int computeflag;
   int shearupdate;
-  int itype; // atom/material type
-  int jtype;
 
   CollisionData() : Fn(0.0), Ft(0.0) {}
 };

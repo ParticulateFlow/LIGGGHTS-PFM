@@ -1,0 +1,164 @@
+################################################################################
+# brief: Simulation of hopper discharge with mass flow regime                  #
+#                                                                              #
+# Adopted from this paper but the number of particles is different!            #
+# Cf. Y. Yu and H. Saxén, Adv. Powder Technol. 22(3), 324-331 (2011)           #
+#                                                                              #
+# authors: Behrad Esgandari                                                    #
+# date: Jan 2023                                                               #
+# copyright: 2023- JKU Linz                                                    #
+################################################################################
+
+atom_style  granular
+atom_modify map array
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+boundary    f f f
+#processors 2 1 4
+
+units       si
+
+region      domain block -0.14 0.14 -0.14 0.14 -0.5 0.06 units box
+create_box  2 domain
+
+neighbor        0.001 bin
+neigh_modify    delay 0
+
+
+# material properties required for granular pair styles
+fix     m1 all property/global youngsModulus peratomtype 5.5e8 5.5e8
+fix     m2 all property/global poissonsRatio peratomtype 0.25 0.25
+fix     m3 all property/global coefficientRestitution peratomtypepair 2 0.99 0.99 0.99 0.99
+fix     m4 all property/global coefficientFriction peratomtypepair 2 0.60 0.16 0.16 0.16
+fix     m5 all property/global coefficientRollingFriction peratomtypepair 2 0.01 0.05 0.05 0.05
+
+# pair style
+pair_style  gran model hertz tangential history rolling_friction epsd2
+pair_coeff  * *
+
+timestep    0.000005
+
+fix         gravi all gravity 9.81 vector 0.0 0.0 1.0
+
+fix silo all mesh/surface file meshes/cylhopper.stl type 2 curvature_tolerant yes
+fix granwalls all wall/gran model hertz tangential history rolling_friction epsd2 mesh n_meshes 1 meshes silo
+
+fix zwalls1 all wall/gran model hertz tangential history rolling_friction epsd2 primitive type 2 zplane 0.04
+
+
+# region of insertion
+region      insReg1 cylinder z 0.0 0.0 0.115 -0.15  0.00 units box
+region      insReg2 cylinder z 0.0 0.0 0.115 -0.25 -0.10 units box
+region      insReg3 cylinder z 0.0 0.0 0.115 -0.35 -0.10 units box
+region      insReg4 cylinder z 0.0 0.0 0.115 -0.30 -0.15 units box
+region      insReg5 cylinder z 0.0 0.0 0.115 -0.45 -0.20 units box
+region      insReg6 cylinder z 0.0 0.0 0.115 -0.40 -0.25 units box
+region      insReg7 cylinder z 0.0 0.0 0.115 -0.455 -0.26 units box
+
+# particle distributions
+fix         pts1 all particletemplate/sphere 563461 atom_type 1 density constant 2505 radius constant 0.005
+fix         pts2 all particletemplate/sphere 563461 atom_type 1 density constant 2505 radius constant 0.0049 # just a bit smaller to show the different colors in
+                                                                                                             # visualization using radius
+fix         pdd1 all particledistribution/discrete 65751 1 pts1 1.0
+fix         pdd2 all particledistribution/discrete 65751 1 pts2 1.0
+
+# insert first particle layer
+fix         ins1 all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. 0.15 &
+                insert_every once overlapcheck yes all_in yes particles_in_region 3100 region insReg1
+
+# surface mesh for mass flow measurement
+fix surface_mf all mesh/surface file meshes/massflow.stl type 1 scale 1.0 move 0.0 0.0 0.002
+
+# mass flow measurement
+# count particles only once, define outside by 3D point 'on the outside'
+#fix massflow all massflow/mesh mesh surface_mf count once point_at_outlet 0.0 0.0 0.0 file massflow_particle_data.txt
+# count particles multiple times (e.g. rebouncing, periodic bc, ...), define outside by direction vector pointing to the outside
+fix massflow all massflow/mesh mesh surface_mf count multiple vec_side 0.0 0.0 1.0 writeTime file massflow_particle_data.txt
+
+variable time   equal step*dt       # current simulation time (step and dt are built-in variables)
+variable m      equal f_massflow[1] # total mass that has crossed the mesh since simulation start
+variable np     equal f_massflow[2] # total number of particles that have crossed the mesh since simulation start
+variable mdot   equal f_massflow[3] # current mass flow
+variable npdot  equal f_massflow[4] # current particle flow rate
+
+fix pmassout all print 4000 "${time} ${m} ${np} ${mdot} ${npdot}" screen no title "t mass particles massflow particlerate" file massflow.txt
+
+
+# apply nve integration to all particles
+fix         integr all nve/sphere
+
+# check the timestep to be less than 15% of Rayleigh time and Hertz time
+fix ts all check/timestep/gran 500 0.15 0.15
+
+# output settings, include total thermal energy
+compute         rke all erotate/sphere
+thermo_style    custom step atoms ke c_rke vol
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run     1
+dump    dmp all custom/vtk 2000 post/cylhopper*.vtk id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
+
+run 2000 upto
+
+unfix ts
+
+# insert other particle layers
+run 100000 upto
+
+fix         ins2 all insert/pack seed 100001 distributiontemplate pdd2 vel constant 0. 0. 0.0 &
+            insert_every once overlapcheck yes all_in yes particles_in_region 2000 region insReg2
+
+run 200000 upto
+
+fix         ins3 all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. 0.05 &
+            insert_every once overlapcheck yes all_in yes particles_in_region 3000 region insReg3
+
+run 300000 upto
+
+fix         ins4 all insert/pack seed 100001 distributiontemplate pdd2 vel constant 0. 0. 0.0 &
+            insert_every once overlapcheck yes all_in yes particles_in_region 2000 region insReg4
+
+run 400000 upto
+
+fix         ins5 all insert/pack seed 100001 distributiontemplate pdd1 vel constant 0. 0. 0.05 &
+            insert_every once overlapcheck yes all_in yes particles_in_region 3000 region insReg5
+
+run 500000 upto
+
+fix         ins6 all insert/pack seed 100001 distributiontemplate pdd2 vel constant 0. 0. 0.0 &
+            insert_every once overlapcheck yes all_in yes particles_in_region 2000 region insReg6
+
+run 600000 upto
+
+fix         ins7 all insert/rate/region seed 100001  distributiontemplate pdd1 &
+            nparticles 3000 particlerate 850000 insert_every 10000 &
+            overlapcheck yes vel constant 0.0 0.0 0.05 region insReg7 ntry_mc 40000
+
+run 700000 upto
+
+fix         ins8 all insert/rate/region seed 100001  distributiontemplate pdd2 &
+            nparticles 2000 particlerate 850000 insert_every 10000 &
+            overlapcheck yes vel constant 0.0 0.0 0.05 region insReg7 ntry_mc 40000
+
+run 800000 upto
+
+fix         ins9 all insert/rate/region seed 100001  distributiontemplate pdd1 &
+            nparticles 3000 particlerate 850000 insert_every 10000 &
+            overlapcheck yes vel constant 0.0 0.0 0.05 region insReg7 ntry_mc 40000
+
+run 900000 upto
+
+fix         ins10 all insert/rate/region seed 100001  distributiontemplate pdd2 &
+            nparticles 1183 particlerate 850000 insert_every 10000 &
+            overlapcheck yes vel constant 0.0 0.0 0.05 region insReg7 ntry_mc 40000
+
+run 1000000 upto
+
+unfix zwalls1
+
+run 10000000

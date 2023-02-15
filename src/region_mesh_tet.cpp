@@ -55,7 +55,7 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
   if(scaleflag) error->all(FLERR,"Lattice scaling not implemented for region mesh/tet, please use 'units box'");
 
   if(strcmp(arg[2],"file"))
-    error->all(FLERR,"Illegal region mesh/tet command, expecting keyword 'scale'");
+    error->all(FLERR,"Illegal region mesh/tet command, expecting keyword 'file'");
   char *filename = arg[3];
 
   if(strcmp(arg[4],"scale"))
@@ -498,6 +498,10 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
 
   if(iTreeNode == 0){
     for(int iTet=0;iTet<nTet;iTet++){
+      if(bbox.isInside(center[iTet])){
+        data.insert(iTet);
+        continue;
+      }
       for(int iNode=0;iNode<4;iNode++){
         if(bbox.isInside(node[iTet][iNode])){
           data.insert(iTet);
@@ -512,6 +516,10 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
     if(parent_data.size() < TREE_MIN_ELEMENTS_PER_NODE)
       return; // nothing to do
     for(TreeBin::iterator it=parent_data.begin();it!=parent_data.end();++it){
+      if(bbox.isInside(center[*it])){
+        data.insert(*it);
+        continue;
+      }
       for(int iNode=0;iNode<4;iNode++){
         if(bbox.isInside(node[*it][iNode])){
           data.insert(*it);

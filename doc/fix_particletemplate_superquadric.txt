@@ -30,7 +30,7 @@ keyword = {atom_type} or {density} or {volume_limit} or {shape} or {blockiness} 
 
 [Examples:]
 
-fix pts1 all particletemplate/superquadric 123457 atom_type 1 density constant 2500 shape constant 0.0015 0.0025 0.0035 blockiness 4.0 4.0 :pre
+fix pts1 all particletemplate/superquadric 123457 atom_type 1 density constant 2500 shape constant 0.0015 0.0025 0.0035 blockiness constant 4.0 4.0 :pre
 
 [Description:]
 

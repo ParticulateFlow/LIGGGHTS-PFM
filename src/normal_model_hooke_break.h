@@ -31,6 +31,7 @@ NORMAL_MODEL(HOOKE_BREAK,hooke/break,8)
 #ifndef NORMAL_MODEL_HOOKE_BREAK_H_
 #define NORMAL_MODEL_HOOKE_BREAK_H_
 #include "contact_models.h"
+#include "global_properties.h"
 #include <math.h>
 #include "atom.h"
 #include "force.h"

@@ -389,11 +389,17 @@ public:
         const double rsq = delx * delx + dely * dely + delz * delz;
         const double radj = radius[j];
         const double radsum = radi + radj;
+        const int itype = type[i];
+        const int jtype = type[j];
 
         cdata.j = j;
         cdata.delta[0] = delx;
         cdata.delta[1] = dely;
         cdata.delta[2] = delz;
+        cdata.itype = itype;
+        cdata.jtype = jtype;
+        cdata.v_i     = v[i];
+        cdata.v_j     = v[j];
         cdata.rsq = rsq;
         cdata.radj = radj;
         cdata.radsum = radsum;
@@ -416,8 +422,6 @@ public:
           // if I or J part of rigid body, use body mass
           // if I or J is frozen, meff is other particle
           double mi, mj;
-          const int itype = type[i];
-          const int jtype = type[j];
 
           if (rmass) {
             mi = rmass[i];
@@ -440,8 +444,6 @@ public:
 
           // copy collision data to struct (compiler can figure out a better way to
           // interleave these stores with the double calculations above.
-          cdata.itype = itype;
-          cdata.jtype = jtype;
           cdata.r = r;
           cdata.rinv = rinv;
           cdata.meff = meff;
@@ -450,8 +452,6 @@ public:
           cdata.en[0]   = enx;
           cdata.en[1]   = eny;
           cdata.en[2]   = enz;
-          cdata.v_i     = v[i];
-          cdata.v_j     = v[j];
           cdata.omega_i = omega[i];
           cdata.omega_j = omega[j];
 

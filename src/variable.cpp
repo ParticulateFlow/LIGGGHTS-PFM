@@ -140,6 +140,8 @@ void Variable::set(int narg, char **arg)
 {
   if (narg < 2) error->all(FLERR,"Illegal variable command");
 
+  int replaceflag = 0;
+
   // DELETE
   // doesn't matter if variable no longer exists
 
@@ -348,19 +350,23 @@ void Variable::set(int narg, char **arg)
 
   } else if (strcmp(arg[1],"equal") == 0) {
     if (narg != 3) error->all(FLERR,"Illegal variable command");
-    if (find(arg[0]) >= 0) {
+    int ivar = find(arg[0]);
+    if (ivar >= 0) {
       if (style[find(arg[0])] != EQUAL)
         error->all(FLERR,"Cannot redefine variable as a different style");
-      remove(find(arg[0]));
+      delete [] data[ivar][0];
+      copy(1,&arg[2],data[ivar]);
+      replaceflag = 1;
+    } else {
+      if (nvar == maxvar) grow();
+      style[nvar] = EQUAL;
+      num[nvar] = 2;
+      which[nvar] = 0;
+      pad[nvar] = 0;
+      data[nvar] = new char*[num[nvar]];
+      copy(1,&arg[2],data[nvar]);
+      data[nvar][1] = NULL;
     }
-    if (nvar == maxvar) grow();
-    style[nvar] = EQUAL;
-    num[nvar] = 2;
-    which[nvar] = 0;
-    pad[nvar] = 0;
-    data[nvar] = new char*[num[nvar]];
-    copy(1,&arg[2],data[nvar]);
-    data[nvar][1] = NULL;
 
   // ATOM
   // remove pre-existing var if also style ATOM (allows it to be reset)
@@ -384,9 +390,11 @@ void Variable::set(int narg, char **arg)
 
   } else error->all(FLERR,"Illegal variable command");
 
-  // set name of variable
+  // set name of variable, if not replacing one flagged with replaceflag
   // must come at end, since STRING/EQUAL/ATOM reset may have removed name
   // name must be all alphanumeric chars or underscores
+
+  if (replaceflag) return;
 
   int n = strlen(arg[0]) + 1;
   names[nvar] = new char[n];

@@ -35,9 +35,9 @@ for ii=1:nFiles
         line = fgetl(fin); line = fgetl(fin);
         line = fgetl(fin); line = fgetl(fin);
         A = sscanf(line,'%f',[1 4]);
-        % write normal overlap (micrometer) and Force (N) to the new file
+        % write normal overlap (micrometer) and Force (kN) to the new file
         fprintf(fout1,'%f %f\n',A(4)*1000000,-A(1)*0.001);
-        % write time (microseconds) and Force (N) to the new file
+        % write time (microseconds) and Force (kN) to the new file
         fprintf(fout2,'%f %f\n',(ii-1),-A(1)*0.001);
     end
     fclose(fin);

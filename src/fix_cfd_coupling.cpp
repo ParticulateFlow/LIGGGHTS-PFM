@@ -196,7 +196,7 @@ void FixCfdCoupling::end_of_step()
     // call region model
     if(rm_) rm_->rm_update();
 
-    // call data exchange model to exchane data
+    // call data exchange model to exchange data
     dc_->exchange();
 
     // check if datatransfer was successful

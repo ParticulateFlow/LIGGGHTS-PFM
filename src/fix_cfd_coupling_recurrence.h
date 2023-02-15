@@ -69,18 +69,20 @@ class FixCfdCouplingRecurrence : public Fix  {
   char property_name[200];
   char property_type[200];
 
+  bool limit_conv;
   bool limit_fluc;
   bool relative_limit;
+  double maxvconv;
   double maxvfluc;
 
   bool remove_vel_across_walls;
   char *wallfixname;
   double fwcrit;
 
-  int iregion;
   char *idregion;
+  int iregion;
 
-  void limit_vfluc(double*, double*, double);
+  void limit_v(double*, double*, double);
 
   void correct_vel_across_walls(double*, double*);
 };

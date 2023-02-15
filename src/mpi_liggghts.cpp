@@ -22,13 +22,10 @@
    Daniel Queteschiner (JKU Linz)
 ------------------------------------------------------------------------- */
 
-#ifndef LMP_MPI_LIGGGHTS_H
-#define LMP_MPI_LIGGGHTS_H
-
-#include <mpi.h>
 #include <stdlib.h>
 #include <math.h>
 #include <algorithm>
+#include "mpi_liggghts.h"
 
 /* ---------------------------------------------------------------------- */
 // register custom MPI operations
@@ -149,4 +146,3 @@ void mpi_free_custom_operations()
 
 } // end namespace LAMMPS_NS
 
-#endif

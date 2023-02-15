@@ -30,6 +30,7 @@ RegionStyle(mesh/hex,RegHexMesh)
 #include "random_park.h"
 #include "region.h"
 #include "custom_value_tracker.h"
+#include <vector>
 #include <vtkHexahedron.h>
 #include <vtkPoints.h>
 #include <vtkNew.h>

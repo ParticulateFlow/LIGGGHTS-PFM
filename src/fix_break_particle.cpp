@@ -457,6 +457,13 @@ double FixBreakParticle::insertion_fraction()
 
 /* ---------------------------------------------------------------------- */
 
+int FixBreakParticle::distribute_ninsert_this(int)
+{
+  return n_break_this_local;
+}
+
+/* ---------------------------------------------------------------------- */
+
 inline int FixBreakParticle::is_nearby(int i)
 {
   // need not check overlap with existing particles since we

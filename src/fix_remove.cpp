@@ -407,11 +407,11 @@ void FixRemove::pre_exchange()
     if(comm->me == 0)
     {
         if(verbose_ && screen)
-            fprintf(screen,"    fix %s: this step: mass removed %f, #particles removed %d; accumulated: mass removed: %f\n",
-                    id,mass_removed_this,nremoved_this,mass_removed_);
+            fprintf(screen,"    fix %s: this step: mass removed %f (of %f eligible), #particles removed %d; accumulated: mass removed: %f\n",
+                    id,mass_removed_this,mass_eligible,nremoved_this,mass_removed_);
         if(logfile)
-            fprintf(logfile,"    fix %s: this step: mass removed %f, #particles removed %d; accumulated: mass removed: %f\n",
-                    id,mass_removed_this,nremoved_this,mass_removed_);
+            fprintf(logfile,"    fix %s: this step: mass removed %f (of %f eligible), #particles removed %d; accumulated: mass removed: %f\n",
+                    id,mass_removed_this,mass_eligible,nremoved_this,mass_removed_);
     }
 
     //NP tags and maps
@@ -660,7 +660,7 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
         T = fix_temp_->vector_atom;
     }
 
-    while (atom_tags_eligible_.size() > 0 && mass_to_remove_me > 0.)
+    while (atom_tags_eligible_.size() > 0 && mass_to_remove_me > m_remove_min_)
     {
         //NP randomize which particle to delete
         //NP this avoids a bias: large particles are inserted first
