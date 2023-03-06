@@ -71,7 +71,7 @@ fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 &
 # chemical properties for unreacted shrinking core model
 # these are actually hard-coded for low T:
 #                                                w->Fe  m->w   h->m
-fix     k0_CO all property/global k0_cfd5 vector   150   150   150
+fix     k0_CO all property/global k0_cfd5 vector   100   100   150
 fix     Ea_CO all property/global Ea_cfd5 vector 70000 70000 75000
 
 # particle porosity/tortuosity/pore diameter
