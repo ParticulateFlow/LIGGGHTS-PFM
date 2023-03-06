@@ -46,7 +46,10 @@ class FixPropertyAtom : public Fix {
  public:
   FixPropertyAtom(class LAMMPS *, int, char **,bool parse = true);
   ~FixPropertyAtom();
+  void pre_delete(bool);
+  void post_create();
   virtual int setmask();
+  void end_of_step();
 
   void do_forward_comm();
   void do_reverse_comm();
@@ -81,6 +84,12 @@ class FixPropertyAtom : public Fix {
   int num_defaultvalues();
   double defaultvalue(int);
 
+  int store_old_time_values()
+  {
+      return store_old_time_values_;
+  }
+  FixPropertyAtom *old_time_values();
+
   virtual void mark_tracers(int ilo, int ihi) { UNUSED(ilo); UNUSED(ihi); }
 
  protected:
@@ -96,6 +105,9 @@ class FixPropertyAtom : public Fix {
   // in case of initialization from property - name of property
   char *propertyname;
   double *property;
+
+  int store_old_time_values_;
+  FixPropertyAtom *old_time_values_;
 }; //end class
 
 }

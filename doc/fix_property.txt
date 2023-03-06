@@ -12,7 +12,7 @@ fix property/atom command :h3
 
 [Syntax:]
 
-fix id group property/atom variablename style restartvalue comm_ghost_value comm_reverse_ghost_value defaultvalue(s)...
+fix id group property/atom variablename style restartvalue comm_ghost_value comm_reverse_ghost_value (store_old_time_value) defaultvalue(s)...
 fix id group property/global variablename style stylearg defaultvalue(s)... :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
@@ -36,6 +36,7 @@ fix property/atom:
     restartvalue = yes or no :l
     communicate_ghost_value = yes or no :l
     communicate_reverse_ghost_value = yes or no :l
+    store_old_time_value = 'yes' or 'no' (optional) :l
  :ule
 
 [Examples:]
@@ -64,6 +65,8 @@ when this happens depends on the model that uses this fix.
 Keyword {communicate_reverse_ghost_value} determines whether information about the values stored by this fix 
 can be communicated from ghost particles to owned particles (reverse communication). The exact location 
 during a time-step when this happens depends on the model that uses this fix.
+Keyword {store_old_time_value} allows to activate storage of the previous time step values, which might be
+necessary to evalulate time derivatives. This keyword need not be specified and is set to {false} per default.
 
 [Fix property/global] reserves global properties to be accessed by the user or other 
 fixes or pair styles. The number of defaultvalues determines the length of the vector / 

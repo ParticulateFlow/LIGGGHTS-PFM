@@ -125,6 +125,16 @@ void AtomVecHybrid::init()
 {
   AtomVec::init();
   for (int k = 0; k < nstyles; k++) styles[k]->init();
+
+  // style sphere (granular) or sph/var may change size_forward in their init methods;
+  // this case can be detected by checking Atom::radvary_flag and if so size_forward
+  // must be recalculated
+  if (atom->radvary_flag == 1) {
+    size_forward = 3;
+    for (int k = 0; k < nstyles; k++) {
+      size_forward += styles[k]->size_forward - 3;
+    }
+  }
 }
 
 /* ----------------------------------------------------------------------

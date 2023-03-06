@@ -1,0 +1,212 @@
+################################################################################
+# brief: Lubricated oblique impact of two identical spheres                    #
+#                                                                              #
+# Check the lubricated oblique contact between two spheres                     #
+# Cf. T.M.J. Nijssen et al., Powder Technol. 413, 118017 (2022)                #
+#                                                                              #
+# The simulation outputs the total restitution coefficient, the normal         #
+# and tangential restitution coefficients, the effective rebound angle and     #
+# the rebound angle as a function of the impact angle.                         #
+# In case an impact angle of 20°, the simulation outputs the normal contact    #
+# force and overlap. Run processData.m to generate force-displacement and      #
+# force-time data files.                                                       #
+# The script accepts:                                                          #
+# the normal model in the input variable NORMALMODEL,                          #
+# the tangential model in                TANGENTIALMODEL,                      #
+# an optional model option in            MODELOPTION,                          #
+# with model option setting in           MODELOPTIONSETTING,                   #
+# the Stokes number in                   STOKES,                               #
+# the Young's modulus in                 YOUNG,                                #
+# the Poisson's ratio in                 POISSON,                              #
+# the particle density in                DENSITY,                              #
+# the dry friction coefficient in        FRICTION,                             #
+# the lubricated friction coefficient in FRICTIONLUB,                          #
+# the surface roughness in               ROUGHNESS                             #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Nov 2022                                                               #
+# copyright: 2022- JKU Linz                                                    #
+################################################################################
+
+variable NORMALMODEL        index hertz/lubricated
+variable TANGENTIALMODEL    index history/lubricated
+variable MODELOPTION        index limitForce
+variable MODELOPTIONSETTING index off
+variable STOKES             index 50
+# delrin # glass # steel bead
+variable YOUNG              index 2.8e9  # 60e9   # 190e9
+variable POISSON            index 0.35   # 0.23   # 0.27
+variable DENSITY            index 1400   # 2540   # 7780
+variable FRICTION           index 0.2    # 0.4    # 0.11
+variable FRICTIONLUB        index 0.1    # 0.1    # 0.02
+variable ROUGHNESS          index 796e-9 # 134e-9 # 272e-9
+
+# remove old output file
+shell rm -f post/${NORMALMODEL}_rebound_properties.txt
+shell install -D /dev/null post/${NORMALMODEL}_rebound_properties.txt
+
+label startloop
+# impact angles
+variable anglevariations uloop 16
+variable Theta universe 5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80
+
+# define the attributes associated with the particles,
+# 'granular' (or 'sphere') style uses diameter, mass and angular velocity
+atom_style      granular
+
+# use an array to map particle IDs to local storage index,
+# do not sort atoms spatially
+atom_modify     map array sort 0 0
+
+# set simulation domain to be fixed in x y z
+boundary        f f f
+
+# save communication by turning off Newton's 3rd law for pairwise interaction,
+# note: this setting only influences communication between procs, Newton's
+# 3rd law is still used for contact force calculations
+newton          off
+
+# use a single value for ghost particle cutoff distance and
+# enable velocity to be communicated with ghost particles
+communicate     single vel yes
+
+# set unit system to SI
+units           si
+
+# define the region used as simulation domain (min/max X, min/max Y, min/max Z)
+region          domain block -0.1 0.1 -0.1 0.1 -0.1 0.1 units box
+
+# create the simulation domain and 1 material type for particles and walls
+create_box      1 domain
+
+# specify the skin distance for neighbor list generation
+neighbor        0.006 bin
+neigh_modify    delay 0
+
+
+variable normalModel     string ${NORMALMODEL}
+variable tangentialModel string ${TANGENTIALMODEL}
+
+variable deg2rad         equal PI/180. # factor to convert degrees to radians
+
+# particle size and density
+variable rhop            equal ${DENSITY}                   # (kg/m3)
+variable dp              equal 0.0127                       # (m)
+variable rp              equal ${dp}/2
+variable dp_             equal ${dp}*${dp}/(${dp}+${dp})    # reduced diameter (m)
+variable rp_             equal ${dp_}/2                     # reduced radius(m)
+variable vp              equal PI/6*${dp}*${dp}*${dp}       # volume (m3)
+variable mp              equal ${vp}*${rhop}                # mass (kg)
+variable mp_             equal ${mp}*${mp}/(${mp}+${mp})    # reduced mass (kg)
+
+variable h0              equal ${dp_}                       # initial gap height (m)
+variable hco             equal 1                            # lubrication cut-off distance
+variable St              equal ${STOKES}                    # total Stokes number
+variable etaf            equal 1e-3                         # dynamic viscosity (Pa s)
+variable vr0             equal ${St}*6*PI*${etaf}*${rp_}*${rp_}/${mp_} # (m/s)
+variable velx1           equal ${vr0}*cos(${deg2rad}*${Theta}) # (m/s)
+variable vely1           equal ${vr0}*sin(${deg2rad}*${Theta}) # (m/s)
+variable velx2           equal 0                            # (m/s)
+variable vely2           equal 0                            # (m/s)
+variable x1              equal -cos(${deg2rad}*${Theta})*${h0}-${rp}
+variable y1              equal -sin(${deg2rad}*${Theta})*${h0}
+variable x2              equal ${rp}
+variable y2              equal 0
+
+# define the material properties required for granular pair styles
+variable Young           equal  ${YOUNG} # (N/m2)
+variable Poisson         equal  ${POISSON}
+variable coeffRes        equal  0.97
+variable coeffFric       equal  ${FRICTION}
+variable coeffFricLub    equal  ${FRICTIONLUB}
+variable sigma           equal  ${ROUGHNESS}
+
+fix     m1 all property/global youngsModulus peratomtype ${Young}
+fix     m2 all property/global poissonsRatio peratomtype ${Poisson}
+fix     m3 all property/global coefficientRestitution peratomtypepair 1 ${coeffRes}
+fix     m4 all property/global coefficientFriction peratomtypepair 1 ${coeffFric}
+fix     m5 all property/global characteristicVelocity scalar ${vr0}
+
+fix     m6 all property/global coefficientFrictionLubricated peratomtypepair 1 ${coeffFricLub}
+fix     m7 all property/global surfaceRoughness peratomtype ${sigma}
+fix     m8 all property/global lubricationCutoff scalar ${hco}
+
+fix     m9 all property/atom   fluidViscosity scalar yes yes no ${etaf}
+
+# specify contact model to use
+pair_style gran model ${normalModel} tangential ${tangentialModel} ${MODELOPTION} ${MODELOPTIONSETTING}
+pair_coeff * *
+
+# set the time step
+variable    dt equal 0.000005
+timestep    ${dt}
+print "timestep ${dt}"
+
+# create two particles of type 1 at the given positions
+# by default particles are assigned to a group named 'all'
+create_atoms    1 single ${x1} ${y1} 0.0 units box
+create_atoms    1 single ${x2} ${y2} 0.0 units box
+# set diameter, density and initial velocity of created particles
+set             atom 1 diameter ${dp} density ${rhop} vx ${velx1} vy ${vely1}
+set             atom 2 diameter ${dp} density ${rhop} vx ${velx2} vy ${vely2}
+
+# use constant NVE integration to update position, velocity and angular velocity
+fix integr all nve/sphere
+
+# check time step size
+fix ts_check all check/timestep/gran 1 0.21 0.21
+
+# compute rotational kinetic energy
+compute rke all erotate/sphere
+
+# output settings, include kinetic energy
+thermo_style    custom step atoms ke c_rke
+
+# set frequency of output
+thermo          1000
+
+# ignore particles leaving the simulation domain,
+# do not normalize thermodynamic output values by the number of atoms
+thermo_modify   lost ignore norm no
+
+# set dynamic to 'no' as number of particles does not change
+compute_modify  thermo_temp dynamic no
+
+# compute normal force and overlap (delta)
+compute pgl all pair/gran/local force_normal delta
+
+# run 200000 time steps
+# output normal force and overlap (history) for impact angle of 20°
+if "${Theta} == 20" then &
+  "run     101450" &
+  "dump dmpdisp all local 1 post/displacement*.txt c_pgl[1] c_pgl[2] c_pgl[3] c_pgl[4]" &
+  "dump_modify dmpdisp pad 6" &
+  "run     200" &
+  "undump dmpdisp" &
+  "run     98350" &
+else &
+  "run 200000"
+
+variable vrx equal vx[1]-vx[2]
+variable vry equal vy[1]-vy[2]
+variable vrz equal vz[1]-vz[2]
+variable vrend equal sqrt(${vrx}*${vrx}+${vry}*${vry}+${vrz}*${vrz})
+variable etot equal ${vrend}/${vr0}             # total restitution coefficient
+variable en equal abs((vx[1]-vx[2])/(${velx1}-${velx2})) # normal restitution coefficient
+variable et equal abs((vy[1]-vy[2])/(${vely1}-${vely2})) # tangential restitution coefficient
+variable thetai1 equal atan(vy[1]/vx[1])        # rebound angle i, rad
+variable thetaj1 equal atan(vy[2]/vx[2])        # rebound angle j, rad
+variable sigmaeff equal abs(${thetaj1}-${thetai1})/(PI/2) # effective rebound angle
+variable Thetai1 equal ${thetai1}/PI*180        # rebound angle i, deg
+
+print "St = ${St}; theta0 = ${Theta} deg; e = ${etot}; en = ${en}; et = ${et}; Sigma = ${sigmaeff}; theta1 = ${Thetai1}"
+
+fix     output all print 1 "${Theta} ${St} ${etot} ${en} ${et} ${sigmaeff} ${Thetai1}" title "none" &
+        append post/${NORMALMODEL}_rebound_properties.txt
+run     1
+
+next    anglevariations Theta
+clear
+jump    SELF startloop
+
+

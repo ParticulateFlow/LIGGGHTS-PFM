@@ -49,8 +49,10 @@ namespace MODEL_PARAMS
   ScalarProperty* createStiffnessRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCohesionEnergyDensity(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   VectorProperty* createYoungsModulus(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  VectorProperty* createYoungsModulusOriginal(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   VectorProperty* createPoissonsRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createYeff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  MatrixProperty* createYeffOriginal(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createGeff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffRest(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffRestLog(PropertyRegistry & registry, const char * caller, bool sanity_checks);
@@ -77,6 +79,11 @@ namespace MODEL_PARAMS
   MatrixProperty* createCoeffMaxElasticStiffness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffAdhesionStiffness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffPlasticityDepth(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+
+  VectorProperty* createSurfaceRoughness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  MatrixProperty* createHminSigma(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  MatrixProperty* createCoeffFrictLub(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  ScalarProperty* createLubricationCutoff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
 }
 
 #endif /* GLOBAL_PROPERTIES_H_ */

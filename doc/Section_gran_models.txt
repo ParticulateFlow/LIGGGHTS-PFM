@@ -27,6 +27,7 @@ Click on the normal model style itself for a full description:
 "hertz"_gran_model_hertz.html,
 hertz/break,
 "hertz/stiffness"_gran_model_hertz_stiffness.html,
+"hertz/lubricated"_gran_model_hertz_lubricated.html,
 "hooke"_gran_model_hooke.html,
 hooke/break,
 hooke/hysteresis,
@@ -49,8 +50,9 @@ morse,
 Click on the tangential model style itself for a full description:
 
 "history"_gran_tangential_history.html,
+"history/lubricated"_gran_tangential_history_lubricated.html,
 "incremental_history"_gran_tangential_incremental_history.html,
-"no_history"_gran_tangential_no_history.html :tb(c=4,ea=c)
+"no_history"_gran_tangential_no_history.html :tb(c=2,ea=c)
 
 4.5 rolling_friction commands :link(con_5),h4
 
