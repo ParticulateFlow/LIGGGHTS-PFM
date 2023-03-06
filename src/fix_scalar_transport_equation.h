@@ -82,6 +82,11 @@ class FixScalarTransportEquation : public Fix {
 
   int  nevery_; //integrate only this many time steps (to avoid round-off issues)
   bool performedIntegrationLastStep_;
+
+  bool time_dependent_capacity;
+    
+  bool limit_change;
+  double max_change;
 };
 
 }

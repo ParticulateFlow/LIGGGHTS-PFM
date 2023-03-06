@@ -46,6 +46,8 @@ FixCfdCouplingConvection::FixCfdCouplingConvection(LAMMPS *lmp, int narg, char *
     fix_conductiveFlux = fix_convectiveFlux  = fix_heatFlux = NULL;
     T0 = -1.0;
     gran_field_conduction = false;
+    limit_change = false;
+    max_change = -1.0;
 
     int iarg = 3;
 
@@ -74,6 +76,13 @@ FixCfdCouplingConvection::FixCfdCouplingConvection(LAMMPS *lmp, int narg, char *
                 gran_field_conduction = false;
             else
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_conduction'");
+            iarg++;
+            hasargs = true;
+        }
+        else if(strcmp(arg[iarg],"max_change") == 0)
+        {
+            max_change = atof(arg[iarg++]);
+            limit_change = true;
             iarg++;
             hasargs = true;
         }
@@ -144,9 +153,11 @@ void FixCfdCouplingConvection::post_create()
 
   //  add heat transfer model if not yet active
   FixScalarTransportEquation *fix_ste = modify->find_fix_scalar_transport_equation("heattransfer");
+  int nargs = 15;
+  if (limit_change) nargs += 2;
   if(!fix_ste)
   {
-        const char *newarg[15];
+        const char *newarg[nargs];
         newarg[0] = "ste_heattransfer";
         newarg[1] = group->names[igroup];
         newarg[2] = "transportequation/scalar";
@@ -164,7 +175,14 @@ void FixCfdCouplingConvection::post_create()
         newarg[12] = "heatSource";
         newarg[13] = "capacity_quantity";
         newarg[14] = "thermalCapacity";
-        modify->add_fix(15,const_cast<char**>(newarg));
+        if (limit_change)
+        {
+            newarg[15] = "max_change";
+            char arg16[30];
+            sprintf(arg16,"%f",max_change);
+            newarg[16] = arg16;
+        }
+        modify->add_fix(nargs,const_cast<char**>(newarg));
   }
 }
 
