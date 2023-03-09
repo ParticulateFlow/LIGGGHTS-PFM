@@ -63,7 +63,7 @@ class FixPropertyAtom : public Fix {
   virtual void set_arrays(int);
 
   virtual void set_all(double value);
-  
+
   virtual void set_array(int, int, double);
   virtual void set_vector(int, double);
 
@@ -81,8 +81,8 @@ class FixPropertyAtom : public Fix {
   int pack_reverse_comm(int, int, double *);
   void unpack_reverse_comm(int, int *, double *);
   double compute_vector(int n);
-  int num_defaultvalues();
-  double defaultvalue(int);
+  virtual int num_defaultvalues();
+  virtual double defaultvalue(int);
 
   int store_old_time_values()
   {

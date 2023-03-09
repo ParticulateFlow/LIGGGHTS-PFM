@@ -150,7 +150,6 @@ FixCfdCouplingDeform::~FixCfdCouplingDeform()
 
 void FixCfdCouplingDeform::post_create()
 {
-//  register convective flux
     if(!fix_partdeformations_)
     {
         const char* fixarg[9];
@@ -219,15 +218,15 @@ void FixCfdCouplingDeform::init()
         PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
         int max_type = pair_gran->get_properties()->max_type();
         fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style,false));
-        
+
         fix_capacity_per_atom_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("thermalCapacity","property/atom","scalar",0,0,style,false));
         if (fix_capacity_per_atom_) capacity_per_atom_ = true;
-        
+
         if (!fix_capacity_ && !fix_capacity_per_atom_)
         {
             char errmsg[500];
             sprintf(errmsg,"Could not locate a fix/property storing value(s) for thermalCapacity as requested by FixCfdCouplingDeform.");
-            error->all(FLERR,errmsg);   
+            error->all(FLERR,errmsg);
         }
     }
 
