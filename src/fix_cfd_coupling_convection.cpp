@@ -81,7 +81,8 @@ FixCfdCouplingConvection::FixCfdCouplingConvection(LAMMPS *lmp, int narg, char *
         }
         else if(strcmp(arg[iarg],"max_change") == 0)
         {
-            max_change = atof(arg[iarg++]);
+            iarg++;
+            max_change = atof(arg[iarg]);
             limit_change = true;
             iarg++;
             hasargs = true;
