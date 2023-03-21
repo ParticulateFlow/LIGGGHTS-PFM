@@ -56,6 +56,8 @@ class FixCfdCouplingDeform : public Fix  {
 
   int compress_flag_;
 
+  bool delete_fully_deformed_particles_;
+
   int igroup_fully_deformed_;
 
   int igroup_fully_deformed_bit_;

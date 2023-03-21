@@ -54,6 +54,7 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     fix_effvolfactors_(0),
     verbose_(false),
     compress_flag_(1),
+    delete_fully_deformed_particles_(true),
     igroup_fully_deformed_(-1),
     igroup_fully_deformed_bit_(-1),
     particles_removed_(0),
@@ -97,6 +98,16 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
         verbose_ = true;
       else if(strcmp(arg[iarg+1],"no"))
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'verbose'");
+      iarg += 2;
+    }
+    else if(strcmp(arg[iarg],"delete_fully_deformed_particles") == 0)
+    {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'delete_fully_deformed_particles'");
+      if(strcmp(arg[iarg+1],"no") == 0)
+        delete_fully_deformed_particles_ = false;
+      else if(strcmp(arg[iarg+1],"yes"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'delete_fully_deformed_particles'");
       iarg += 2;
     }
     else if(strcmp(arg[iarg],"rmin") == 0)
@@ -248,6 +259,8 @@ void FixCfdCouplingDeform::init()
 
 void FixCfdCouplingDeform::initial_integrate(int)
 {
+    if (!delete_fully_deformed_particles_) return;
+
     bigint prev_time = update->ntimestep - 1;
 
     // only delete group immediately after pull/push so that no latent heat is neglected
