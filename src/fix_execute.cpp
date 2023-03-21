@@ -30,6 +30,7 @@ using namespace FixConst;
 
 FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
+  execution_point(1),
   conditional(false),
   file(false),
   var(NULL),
@@ -86,6 +87,12 @@ FixExecute::FixExecute(LAMMPS *lmp, int narg, char **arg) :
       iarg++;
       hasargs = true;
     }
+    else if(strcmp(arg[iarg],"start_of_step") == 0)
+    {
+      execution_point = 0;
+      iarg++;
+      hasargs = true;
+    }
     else 
     {
       error->fix_error(FLERR,this,"unknown keyword");
@@ -105,13 +112,28 @@ FixExecute::~FixExecute()
 int FixExecute::setmask()
 {
   int mask = 0;
-  mask |= END_OF_STEP;
+  if (execution_point == 0) mask |= INITIAL_INTEGRATE;
+  if (execution_point == 1) mask |= END_OF_STEP;
   return mask;
 }
 
 /* ---------------------------------------------------------------------- */
 
+void FixExecute::initial_integrate(int)
+{
+  if (execution_point == 0) execution_command();
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixExecute::end_of_step()
+{
+  if (execution_point == 1) execution_command();
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixExecute::execution_command()
 {
   if (conditional)
   {

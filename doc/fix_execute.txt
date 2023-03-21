@@ -16,7 +16,7 @@ ID, group-ID are documented in "fix"_fix.html command :ulb,l
 execute = style name of this fix command :l
 N = execute every N steps :l
 string = text string to be executed with optional variable names :l
-keyword = none or {once} or {conditional} or {file} :l
+keyword = none or {once} or {conditional} or {file} or {start_of_step}:l
 {conditional} value = variable name, target value, tolerance
     variable name = variable that triggers execution, needs to be defined beforehand in the input script
     target value = value of variable at which fix is executed
@@ -34,7 +34,7 @@ fix ex3 all execute 100 "../DEM/in.subfunctions" file :pre
 
 Executes a text string as LIGGGHTS command every N steps during a simulation run. This can
 be used for coupled simulations that would otherwise only take a given number of timesteps. If the "once" keyword is specified,
-the command is executed only once at time step N. The "conditional" keyword allows to specify a variable which triggers the execution of the fix if it holds the desired value. If the "file" keyword is present, LIGGGHTS looks for an input script with the name of the string to be executed. 
+the command is executed only once at time step N. The "conditional" keyword allows to specify a variable which triggers the execution of the fix if it holds the desired value. If the "file" keyword is present, LIGGGHTS looks for an input script with the name of the string to be executed. "start_of_step" executes the command at the beginning of the timestep whereas per default it is executed at the end.
 
 [Restart, fix_modify, output, run start/stop, minimize info:]
 

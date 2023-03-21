@@ -30,11 +30,14 @@ class FixExecute : public Fix {
   FixExecute(class LAMMPS *, int, char **);
   ~FixExecute();
   int setmask();
+  void initial_integrate(int);
   void end_of_step();
 
  private:
   int me;
   char *string;
+
+  int execution_point; // 0 initial_integrate, 1 end_of_step
 
   // conditional execution
   bool conditional;
@@ -48,6 +51,8 @@ class FixExecute : public Fix {
   // single execution
   bool once;
   int execution_step;
+
+  void execution_command();
 };
 
 }
