@@ -175,6 +175,8 @@ public:
   class FixPropertyAtom *fix_layerRelRad_;  // [script]
   class FixPropertyAtom *fix_layerMass_;    // [script]
   class FixPropertyAtom *fix_thermal_capacity_; // [script]
+  class FixPropertyAtom *fix_internal_energy_; // [internal]
+  bool created_fix_internal_energy_;
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
@@ -202,10 +204,6 @@ public:
   double *reactantPerParticle_;
   bool limit_reactant_consumption_;
   double maxReactantConsumptionFrac_;
-
-  // constant parameters for reactions
-  const double Cp_coke_; // heat capacity coke in J/(mol K)
-  const double T_room_;
 
   bool variableCp_;
 };

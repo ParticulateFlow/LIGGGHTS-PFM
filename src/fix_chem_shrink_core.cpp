@@ -127,7 +127,8 @@ FixChemShrinkCore::FixChemShrinkCore(LAMMPS *lmp, int narg, char **arg) :
     rmin_(1e-5),      //  [m]
     created_fix_layerMass_(false),
     created_fix_rhoeff_(false),
-    created_fix_fracRed(false)
+    created_fix_fracRed(false),
+    created_fix_internal_energy_(false)
 {
     if ((strncmp(style, "chem/shrink/core", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core needs per particle radius and mass");
@@ -483,6 +484,21 @@ void FixChemShrinkCore::post_create()
         created_fix_fracRed = true;
     }
 
+    fix_internal_energy_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("internalEnergy","property/atom","scalar",0,0,style,false));
+    if (fix_internal_energy_ == NULL) {
+        const char* fixarg[9];
+        fixarg[0]="internalEnergy";            // fixid
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="internalEnergy";           // propertyid
+        fixarg[4]="scalar";
+        fixarg[5]="yes";             // restart yes
+        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[7]="no";              // communicate rev no
+        fixarg[8]="0.0";
+        fix_internal_energy_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        created_fix_internal_energy_ = true;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -501,6 +517,7 @@ void FixChemShrinkCore::pre_delete(bool unfixflag)
         if (fix_layerMass_ && created_fix_layerMass_)   { modify->delete_fix(fix_layerMass_->id); massLayer_ = NULL; }
         if (fix_rhoeff_    && created_fix_rhoeff_)      { modify->delete_fix(fix_rhoeff_->id); rhoeff_ = NULL; }
         if (fix_fracRed    && created_fix_fracRed)      { modify->delete_fix(fix_fracRed->id); fracRed_ = NULL; }
+        if (fix_internal_energy_ && created_fix_internal_energy_) {modify->delete_fix(fix_internal_energy_->id);}
     }
 }
 
@@ -1235,6 +1252,8 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
     double Cp = 0.0;
     double layer_Cp[MAX_LAYERS+1] = {0.};
     double Tpart = Tpart_[i];
+    double H = 0.0;
+    double layer_H[4] = {0.};
 
     if (variableCp_)
     {
@@ -1243,6 +1262,11 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         layer_Cp[2] = spec_heat(a_coeff_nasa_Fe3O4,Tpart);
         layer_Cp[3] = spec_heat(a_coeff_nasa_Fe2O3,Tpart);
     }
+    
+    layer_H[0] = conv_enthalpy(a_coeff_nasa_Fe, i);
+    layer_H[1] = conv_enthalpy(a_coeff_nasa_FeO,i);
+    layer_H[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,i);
+    layer_H[3] = conv_enthalpy(a_coeff_nasa_Fe2O3,i);
 
     // Mass Change of Layers
     // dmL is a positive value, therefore it will be subtracted from the total mass
@@ -1266,6 +1290,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         massLayer_[i][j] -= dmL_[j]*scale_reduction_rate;
         if (massLayer_[i][j] < 0.0) massLayer_[i][j] = 0.0;
         Cp += massLayer_[i][j] * layer_Cp[j] / layerMolMasses_[j];
+        H += massLayer_[i][j] * layer_H[j] / layerMolMasses_[j];
     }
     for (int j = 0; j <= layers_; j++)
     {
@@ -1284,6 +1309,8 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
 
     // Total mass of particle with coarse-graining
     pmass_[i] = sum_mass_p_new*cg_*cg_*cg_;
+
+    fix_internal_energy_->vector_atom[i] = H*cg_*cg_*cg_;
 
     // if (screen) fprintf(screen, "pmass = %f \n",pmass_[i]);
 
@@ -1371,9 +1398,13 @@ void FixChemShrinkCore::FractionalReduction(int i)
     */
 
     // this formulation assumes that molar concentrations n_i of the layers satisfy n_i / nu_i = n_j / nu_j, e.g. n_Hem / 3 = n_Mag / 2
-    const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
-    const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
-    const double f_HM = 1.0 - relRadii_[i][3]*relRadii_[i][3]*relRadii_[i][3];
+    double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+    double f_HM = 1.0 - relRadii_[i][3]*relRadii_[i][3]*relRadii_[i][3];
+
+    if (f_HM > 1.0 - SMALL) f_HM = 1.0 - SMALL;
+    if (f_MW > 1.0 - SMALL) f_MW = 1.0 - SMALL;
+    if (f_WF > 1.0 - SMALL) f_WF = 1.0 - SMALL;
 
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
@@ -1782,8 +1813,11 @@ void FixChemShrinkCore::reaction_low(int i, double *dmA_, const double *x0_eq_)
 
 void FixChemShrinkCore::FractionalReduction_low(int i)
 {
-    const double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
-    const double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+    double f_WF = 1.0 - relRadii_[i][1]*relRadii_[i][1]*relRadii_[i][1];
+    double f_MW = 1.0 - relRadii_[i][2]*relRadii_[i][2]*relRadii_[i][2];
+
+    if (f_MW > 1.0 - SMALL) f_MW = 1.0 - SMALL;
+    if (f_WF > 1.0 - SMALL) f_WF = 1.0 - SMALL;
 
     fracRed_[i][0] = f_WF;
     fracRed_[i][1] = f_MW;
@@ -1888,6 +1922,7 @@ void FixChemShrinkCore::init_defaults()
     fix_porosity_ = NULL;       //  [%]
     fix_rhoeff_ = NULL;
     fix_thermal_capacity_ = NULL;
+    fix_internal_energy_ = NULL;
     fix_tortuosity_ = NULL;
     fix_pore_diameter_ = NULL;  // [m]
     fix_dY_ = NULL;

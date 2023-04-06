@@ -186,6 +186,7 @@ public:
   class FixPropertyAtom *fix_layerMass_;    // [internal]
   class FixPropertyAtom *fix_rhoeff_;       // [internal]
   class FixPropertyAtom *fix_thermal_capacity_; // [script]
+  class FixPropertyAtom *fix_internal_energy_; // [internal]
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
@@ -203,6 +204,7 @@ public:
   bool created_fix_layerMass_;
   bool created_fix_rhoeff_;
   bool created_fix_fracRed;
+  bool created_fix_internal_energy_;
 
   class FixPropertyAtom *fix_dY_; // [internal]
   double **dY;

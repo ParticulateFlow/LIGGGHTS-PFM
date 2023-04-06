@@ -80,9 +80,9 @@ class FixCfdCouplingDeform : public Fix  {
 
   class FixPropertyGlobal* fix_capacity_;
   
-  class FixPropertyAtom* fix_capacity_per_atom_;
+  class FixPropertyAtom *fix_internal_energy_;
 
-  bool capacity_per_atom_;
+  bool internal_energy_;
   
   bool use_latent_heat_;
 

@@ -84,8 +84,7 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
     T0_(-1.0),
     Tmin_(0.0),
     nPreFactor_(0),
-    Cp_coke_(10.2),
-    T_room_(298)
+    created_fix_internal_energy_(false)
 {
     if ((strncmp(style, "chem/shrink/core/single", 15) == 0) && ((!atom->radius_flag) || (!atom->rmass_flag)))
         error->all(FLERR, "Fix chem/shrink/core/single needs per particle radius and mass");
@@ -531,6 +530,22 @@ void FixChemShrinkCoreSingle::post_create()
         fix_dmA_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
         delete []fixname;
     }
+
+    fix_internal_energy_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("internalEnergy","property/atom","scalar",0,0,style,false));
+    if (fix_internal_energy_ == NULL) {
+        const char* fixarg[9];
+        fixarg[0]="internalEnergy";            // fixid
+        fixarg[1]="all";
+        fixarg[2]="property/atom";
+        fixarg[3]="internalEnergy";           // propertyid
+        fixarg[4]="scalar";
+        fixarg[5]="yes";             // restart yes
+        fixarg[6]="yes";             // communicate ghost - yes
+        fixarg[7]="no";              // communicate rev no
+        fixarg[8]="0.0";
+        fix_internal_energy_ = modify->add_fix_property_atom(9,const_cast<char**>(fixarg),style);
+        created_fix_internal_energy_ = true;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -546,6 +561,7 @@ void FixChemShrinkCoreSingle::pre_delete(bool unfixflag)
         if (fix_effDiffKnud)    { modify->delete_fix(fix_effDiffKnud->id); effDiffKnud = NULL; }
         if (fix_dY_)            { modify->delete_fix(fix_dY_->id); dY = NULL; }
         if (fix_dmA_)           { modify->delete_fix(fix_dmA_->id); dmA_f_ = NULL; }
+        if (fix_internal_energy_ && created_fix_internal_energy_) {modify->delete_fix(fix_internal_energy_->id);}
     }
 }
 
@@ -1044,6 +1060,11 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
     double Cp = 0.0;
     double layer_Cp[2] = {0.};
     double Tpart = Tpart_[i];
+    double H = 0.0;
+    double layer_H[2] = {0.};
+
+    layer_H[0] = conv_enthalpy(a_coeff_ash, Tpart);
+    layer_H[1] = conv_enthalpy(a_coeff_coke,Tpart);
 
     if (shrink_)
     {
@@ -1071,10 +1092,14 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
         layer_Cp[0] = spec_heat(a_coeff_ash,Tpart);
         layer_Cp[1] = spec_heat(a_coeff_coke,Tpart);
         Cp = massLayer_[i][0] * layer_Cp[0] / molMass_D_;
-        if (layers_ > 0) Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_; // only include this contribution if core is still present#
+        if (layers_ > 0) Cp += massLayer_[i][1] * layer_Cp[1] / molMass_B_; // only include this contribution if core is still present
         Cp /= sum_mass_p_new;
         fix_thermal_capacity_->vector_atom[i] = Cp;
     }
+
+    H = massLayer_[i][0] * layer_H[0] / molMass_D_;
+    if (layers_ > 0) H += massLayer_[i][1] * layer_H[1] / molMass_B_;
+    fix_internal_energy_->vector_atom[i] = H*cg_*cg_*cg_;
 
     if (!shrink_) return;
 
