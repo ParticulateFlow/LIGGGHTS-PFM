@@ -96,7 +96,7 @@ FixScalarTransportEquation::FixScalarTransportEquation(LAMMPS *lmp, int narg, ch
       strcpy(capacity_name,arg[iarg++]);
   }
 
-  if(strcmp(arg[iarg++],"max_change") == 0)
+  if(narg >= 17 && strcmp(arg[iarg++],"max_change") == 0)
   {
     max_change = atof(arg[iarg++]);
     limit_change = true;
@@ -270,6 +270,13 @@ void FixScalarTransportEquation::init()
       {
           char errmsg[500];
           sprintf(errmsg,"Could not locate a fix/property storing value(s) for %s as requested by FixScalarTransportEquation.",capacity_name);
+          error->all(FLERR,errmsg);
+      }
+
+      if (fix_capacity && fix_capacity_per_atom)
+      {
+          char errmsg[500];
+          sprintf(errmsg,"Found both a fix/property/atom and a fix/property/global storing value(s) for %s as requested by FixScalarTransportEquation.",capacity_name);
           error->all(FLERR,errmsg);
       }
 

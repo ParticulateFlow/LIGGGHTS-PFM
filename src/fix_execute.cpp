@@ -1,14 +1,26 @@
 /* ----------------------------------------------------------------------
+   LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
+   Transfer Simulations
+
+   LIGGGHTS is part of the CFDEMproject
+   www.liggghts.com | www.cfdem.com
+
+   Department for Particule Flow Modelling
+   Copyright 2014- JKU Linz
+
+   LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
-   Copyright (2003) Sandia Corporation.  Under the terms of Contract
-   DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains
-   certain rights in this software.  This software is distributed under
-   the GNU General Public License.
+   This software is distributed under the GNU General Public License.
 
-   See the README file in the top-level LAMMPS directory.
+   See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Thomas Lichtenegger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include <stdlib.h>
@@ -121,14 +133,14 @@ int FixExecute::setmask()
 
 void FixExecute::initial_integrate(int)
 {
-  if (execution_point == 0) execution_command();
+  execution_command();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixExecute::end_of_step()
 {
-  if (execution_point == 1) execution_command();
+  execution_command();
 }
 
 /* ---------------------------------------------------------------------- */

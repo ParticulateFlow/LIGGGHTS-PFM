@@ -11,18 +11,17 @@ fix limit/property/atom command :h3
 
 [Syntax:]
 
-fix id all limit/property/atom targetfixname values_to_limit values_to_limit_value min min_value(s) max max_value(s) :pre
+fix id all limit/property/atom targetfixname min min_value(s) max max_value(s) :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
 targetfixname = name of the fix/property/atom to be limited   :l
-values_to_limit_value = number of values stored by targetfixname per atom :l
 min_value(s) = list of lower limiting values :l
 max_value(s) = list of upper limiting values :l
 :ule
 
 [Examples:]
 
-fix limT all limit/property/atom Temp values_to_limit 1 min 250 max 350 :pre
+fix limT all limit/property/atom Temp min 250 max 350 :pre
 
 [LIGGGHTS vs. LAMMPS Info:]
 

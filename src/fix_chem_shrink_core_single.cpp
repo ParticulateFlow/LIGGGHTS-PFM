@@ -185,7 +185,7 @@ FixChemShrinkCoreSingle::FixChemShrinkCoreSingle(LAMMPS *lmp, int narg, char **a
         {
             nu_D_ = atoi(arg[iarg_+1]);
             if (nu_D_ < 1)
-                error -> fix_error(FLERR, this, "nuB is not well-defined");
+                error -> fix_error(FLERR, this, "nuD is not well-defined");
             hasargs = true;
             iarg_ +=2;
         }
@@ -1213,9 +1213,6 @@ double FixChemShrinkCoreSingle::conv_enthalpy (const double *a, double Ti)
 {
     double value = 0.;
 
-    if (Ti < SMALL)
-        error->warning(FLERR, "T <= ZERO");
-
     if (Ti < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];
         const double Tbound_low_sq = Tbound_low*Tbound_low;
@@ -1267,9 +1264,6 @@ double FixChemShrinkCoreSingle::conv_enthalpy (const double *a, double Ti)
 double FixChemShrinkCoreSingle::spec_heat (const double *a, double Ti)
 {
     double value = 0.;
-
-    if (Ti < SMALL)
-        error->warning(FLERR, "T <= ZERO");
 
     if (Ti < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];

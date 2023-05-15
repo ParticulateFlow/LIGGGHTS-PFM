@@ -1497,9 +1497,6 @@ double FixChemShrinkCore::conv_enthalpy (const double *a, int i)
 {
     double value = 0.;
 
-    if (T_[i] < SMALL)
-        error->warning(FLERR, "T <= ZERO");
-
     if (T_[i] < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];
         const double Tbound_low_sq = Tbound_low*Tbound_low;
@@ -1552,9 +1549,6 @@ double FixChemShrinkCore::conv_enthalpy (const double *a, int i)
 double FixChemShrinkCore::spec_heat (const double *a, double Ti)
 {
     double value = 0.;
-
-    if (Ti < SMALL)
-        error->warning(FLERR, "T <= ZERO");
 
     if (Ti < a[0]) { // Temperature smaller than lower bound
         const double Tbound_low = a[0];

@@ -68,7 +68,7 @@ region	neg_source block INF INF INF INF INF 0.0 units box
 run 0
 set		region pos_source property/atom heatSource 1.5
 set		region neg_source property/atom heatSource -1.5
-fix limT all limit/property/atom Temp values_to_limit 1 min 250 max 350
+fix limT all limit/property/atom Temp min 250 max 350
 
 #run to see heat transfer
 run		10000 upto

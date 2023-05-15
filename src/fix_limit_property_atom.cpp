@@ -5,9 +5,8 @@
    LIGGGHTS is part of the CFDEMproject
    www.liggghts.com | www.cfdem.com
 
-   Christoph Kloss, christoph.kloss@cfdem.com
-   Copyright 2009-2012 JKU Linz
-   Copyright 2012-     DCS Computing GmbH, Linz
+   Department for Particule Flow Modelling
+   Copyright 2014- JKU Linz
 
    LIGGGHTS is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
@@ -17,6 +16,11 @@
    This software is distributed under the GNU General Public License.
 
    See the README file in the top-level directory.
+------------------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------------
+   Contributing authors:
+   Thomas Lichtenegger (JKU Linz)
 ------------------------------------------------------------------------- */
 
 #include <math.h>
@@ -55,31 +59,31 @@ void FixLimitPropertyAtom::parse_args(int narg, char **arg)
     strcpy(targetfixname,arg[3]);
     fix_target_ = NULL;
 
-    if (strcmp(arg[4],"values_to_limit")==0)
+    if (narg < 8 || (narg - 6) % 2)
     {
-        nvalues = atoi(arg[5]);
-        maxvalues = new double[nvalues];
-        minvalues = new double[nvalues];
+        error->all(FLERR,"Wrong number of arguments in fix limit/property/atom.");
     }
-    else error->all(FLERR,"Specify number of limiting values in fix limit/property/atom.");
+    nvalues = (narg - 6)/2;
+    maxvalues = new double[nvalues];
+    minvalues = new double[nvalues];
 
-    if (strcmp(arg[6],"min") == 0)
+    if (strcmp(arg[4],"min") == 0)
     {
         for (int j = 0; j < nvalues; j++)
         {
-            minvalues[j] = atof(arg[7+j]);
+            minvalues[j] = atof(arg[5+j]);
         }
     }
     else error->all(FLERR,"Expected to find minimum limiting values");
 
-    if (strcmp(arg[7+nvalues],"max") == 0)
+    if (strcmp(arg[5+nvalues],"max") == 0)
     {
         for (int j = 0; j < nvalues; j++)
         {
-            maxvalues[j] = atof(arg[8+nvalues+j]);
+            maxvalues[j] = atof(arg[6+nvalues+j]);
         }
     }
-    else error->all(FLERR,"Expected to find maximum limiting values");    
+    else error->all(FLERR,"Expected to find maximum limiting values");
 }
 
 /* ---------------------------------------------------------------------- */

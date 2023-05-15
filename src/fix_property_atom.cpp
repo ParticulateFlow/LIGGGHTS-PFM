@@ -309,7 +309,7 @@ void FixPropertyAtom::post_create()
         strcat(fixname,"_oldtime");
 
         int nargs = nvalues+8;
-        const char* fixarg[nargs];
+        const char **fixarg = new const char*[nargs];
         fixarg[0]=fixname;
         fixarg[1]=group->names[igroup];
         fixarg[2]="property/atom";
@@ -332,6 +332,7 @@ void FixPropertyAtom::post_create()
         }
         old_time_values_ = modify->add_fix_property_atom(nargs,const_cast<char**>(fixarg),style);
         delete [] fixname;
+        delete [] fixarg;
     }
 }
 
@@ -341,7 +342,10 @@ int FixPropertyAtom::setmask()
 {
   int mask = 0;
   mask |= PRE_EXCHANGE;
-  mask |= END_OF_STEP;
+  if (store_old_time_values_)
+  {
+      mask |= END_OF_STEP;
+  }
   return mask;
 }
 
@@ -349,8 +353,6 @@ int FixPropertyAtom::setmask()
 
 void FixPropertyAtom::end_of_step()
 {
-    if (!store_old_time_values_) return;
-
     for (int i = 0; i < atom->nlocal; i++)
     {
         if (data_style)

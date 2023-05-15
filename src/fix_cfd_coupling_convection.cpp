@@ -158,32 +158,30 @@ void FixCfdCouplingConvection::post_create()
   if (limit_change) nargs += 2;
   if(!fix_ste)
   {
-        const char *newarg[nargs];
-        newarg[0] = "ste_heattransfer";
-        newarg[1] = group->names[igroup];
-        newarg[2] = "transportequation/scalar";
-        newarg[3] = "equation_id";
-        newarg[4] = "heattransfer";
-        newarg[5] = "quantity";
-        newarg[6] = "Temp";
-        newarg[7] = "default_value";
+        const char *fixarg[17];
+        fixarg[0] = "ste_heattransfer";
+        fixarg[1] = group->names[igroup];
+        fixarg[2] = "transportequation/scalar";
+        fixarg[3] = "equation_id";
+        fixarg[4] = "heattransfer";
+        fixarg[5] = "quantity";
+        fixarg[6] = "Temp";
+        fixarg[7] = "default_value";
         char arg8[30];
         sprintf(arg8,"%f",T0);
-        newarg[8] = arg8;
-        newarg[9] = "flux_quantity";
-        newarg[10] = "heatFlux";
-        newarg[11] = "source_quantity";
-        newarg[12] = "heatSource";
-        newarg[13] = "capacity_quantity";
-        newarg[14] = "thermalCapacity";
-        if (limit_change)
-        {
-            newarg[15] = "max_change";
-            char arg16[30];
-            sprintf(arg16,"%f",max_change);
-            newarg[16] = arg16;
-        }
-        modify->add_fix(nargs,const_cast<char**>(newarg));
+        fixarg[8] = arg8;
+        fixarg[9] = "flux_quantity";
+        fixarg[10] = "heatFlux";
+        fixarg[11] = "source_quantity";
+        fixarg[12] = "heatSource";
+        fixarg[13] = "capacity_quantity";
+        fixarg[14] = "thermalCapacity";
+        // the following lines are only passed to modify->add_fix if limit_change == true
+        fixarg[15] = "max_change";
+        char arg16[30];
+        sprintf(arg16,"%f",max_change);
+        fixarg[16] = arg16;
+        modify->add_fix(nargs,const_cast<char**>(fixarg));
   }
 }
 
