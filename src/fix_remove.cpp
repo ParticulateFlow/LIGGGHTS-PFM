@@ -78,6 +78,8 @@ FixRemove::FixRemove(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
   heat_removed_(0.),
   fix_temp_(NULL),
   fix_capacity_(NULL),
+  fix_internal_energy_(NULL),
+  internal_energy_(false),
   fix_ms_(0),
   ms_(0)
 {
@@ -297,7 +299,17 @@ void FixRemove::init()
 
       PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
       int max_type = pair_gran->get_properties()->max_type();
-      fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style));
+      fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style,false));
+        
+      fix_internal_energy_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("internalEnergy","property/atom","scalar",0,0,style,false));
+      if (fix_internal_energy_) internal_energy_ = true;
+
+      if (!fix_capacity_ && !fix_internal_energy_)
+      {
+          char errmsg[500];
+          sprintf(errmsg,"Could neither locate a fix/property storing value(s) for thermalCapacity nor one for the internal energy as requested by FixRemove.");
+          error->all(FLERR,errmsg);   
+      }
   }
 }
 
@@ -548,8 +560,15 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
         mass_removed_this_me += rmass[i];
         if(monitor_heat_)
         {
-            double Cp = fix_capacity_->compute_vector(type[i]-1);
-            heat_removed_this_me += rmass[i]*T[i]*Cp;
+            if (internal_energy_)
+            {
+                heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+            }
+            else
+            {
+                double Cp = fix_capacity_->compute_vector(type[i]-1);
+                heat_removed_this_me += rmass[i]*T[i]*Cp;
+            }
         }
         nremoved_this_me++;
         delete_particle(i);
@@ -604,8 +623,15 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
             mass_removed_this_me += rmass[i];
             if(monitor_heat_)
             {
-                double Cp = fix_capacity_->compute_vector(type[i]-1);
-                heat_removed_this_me += rmass[i]*T[i]*Cp;
+                if (internal_energy_)
+                {
+                    heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                }
+                else
+                {
+                    double Cp = fix_capacity_->compute_vector(type[i]-1);
+                    heat_removed_this_me += rmass[i]*T[i]*Cp;
+                }
             }
             nremoved_this_me++;
             mass_to_remove_me -= rmass[i];
@@ -628,8 +654,15 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
             mass_removed_this_me += (1.-ratio_m)*rmass[i];
             if(monitor_heat_)
             {
-                double Cp = fix_capacity_->compute_vector(type[i]-1);
-                heat_removed_this_me += (1.-ratio_m)*rmass[i]*T[i]*Cp;
+                if (internal_energy_)
+                {
+                    heat_removed_this_me += (1.-ratio_m)*fix_internal_energy_->vector_atom[i];
+                }
+                else
+                {
+                    double Cp = fix_capacity_->compute_vector(type[i]-1);
+                    heat_removed_this_me += (1.-ratio_m)*rmass[i]*T[i]*Cp;
+                }
             }
             mass_to_remove_me -= (1.-ratio_m)*rmass[i];
             rmass[i] *= ratio_m;
@@ -674,8 +707,15 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
         mass_removed_this_me += rmass[i];
         if(monitor_heat_)
         {
-            double Cp = fix_capacity_->compute_vector(type[i]-1);
-            heat_removed_this_me += rmass[i]*T[i]*Cp;
+            if (internal_energy_)
+            {
+                heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+            }
+            else
+            {
+                double Cp = fix_capacity_->compute_vector(type[i]-1);
+                heat_removed_this_me += rmass[i]*T[i]*Cp;
+            }
         }
         nremoved_this_me++;
         mass_to_remove_me -= rmass[i];
@@ -730,8 +770,15 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
             mass_removed_this_me += rmass[i];
             if(monitor_heat_)
             {
-                double Cp = fix_capacity_->compute_vector(type[i]-1);
-                heat_removed_this_me += rmass[i]*T[i]*Cp;
+                if (internal_energy_)
+                {
+                    heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                }
+                else
+                {
+                    double Cp = fix_capacity_->compute_vector(type[i]-1);
+                    heat_removed_this_me += rmass[i]*T[i]*Cp;
+                }
             }
             nremoved_this_me++;
             mass_to_remove_me -= rmass[i];

@@ -309,15 +309,29 @@ Fix* Modify::find_fix_property(const char *varname,const char *style,const char 
   if((len1 < 0) || (len2 < 0))
     error->all(FLERR,"Lengths for find_fix_property not valid");
 
-  for(ifix = 0; ifix < nfix; ifix++)
+  if(strncmp(style,"property/atom",13) == 0)
   {
+    for(ifix = 0; ifix < nfix; ifix++)
+    {
       if(strncmp(fix[ifix]->style,"property/atom",13) == 0 && dynamic_cast<FixPropertyAtom*>(fix[ifix]))
-         fix_i = static_cast<FixPropertyAtom*>(fix[ifix])->check_fix(varname,svmstyle,len1,len2,caller,errflag);
-      else if(strcmp(fix[ifix]->style,"property/global") == 0 && dynamic_cast<FixPropertyGlobal*>(fix[ifix]))
-         fix_i = static_cast<FixPropertyGlobal*>(fix[ifix])->check_fix(varname,svmstyle,len1,len2,caller,errflag);
-
+      {
+        fix_i = static_cast<FixPropertyAtom*>(fix[ifix])->check_fix(varname,svmstyle,len1,len2,caller,errflag);
+      }
       // check_fix returns either this or NULL
       if(fix_i) return fix_i;
+    }
+  }
+  else if(strcmp(style,"property/global") == 0)
+  {
+    for(ifix = 0; ifix < nfix; ifix++)
+    {
+      if(strcmp(fix[ifix]->style,"property/global") == 0 && dynamic_cast<FixPropertyGlobal*>(fix[ifix]))
+      {
+        fix_i = static_cast<FixPropertyGlobal*>(fix[ifix])->check_fix(varname,svmstyle,len1,len2,caller,errflag);
+      }
+      // check_fix returns either this or NULL
+      if(fix_i) return fix_i;
+    }
   }
 
   // no fix found

@@ -1,7 +1,6 @@
 ################################################################################
 # chemistry test case (unreacted shrinking core model)
-# reduction of a single particle at low T without CFD coupling
-# requires LIGGGHTS to be compiled with -DTWO_LAYERS
+# reduction of a single particle with increasing T without CFD coupling
 ################################################################################
 
 log             log.liggghts
@@ -25,7 +24,6 @@ neigh_modify    delay 0
 
 ################################################################################
 # material properties required for granular pair styles
-
 fix         m1 all property/global youngsModulus peratomtype 5.e6
 fix         m2 all property/global poissonsRatio peratomtype 0.45
 fix         m3 all property/global coefficientRestitution peratomtypepair 1 0.3
@@ -41,13 +39,14 @@ timestep    0.02
 ################################################################################
 # thermal properties
 fix     ftco all property/global thermalConductivity peratomtype 1.4
-fix     ftca all property/global thermalCapacity peratomtype 3000
+fix     ftca all property/atom thermalCapacity scalar yes no no 3000
 
 ################################################################################
 # chemistry
 # input fixes for fix chem/shrink/core that would otherwise be provided by fix
 # couple/cfd/chemistry
-fix     partTemp all property/atom partTemp scalar yes no no 840.0 # Kelvin
+fix     partTemp all property/atom partTemp scalar yes no no 600 #1223.15 # Kelvin
+fix     Temp all property/atom Temp scalar yes no no 600 #1223.15 # Kelvin
 fix     partNu   all property/atom partNu   scalar yes no no 0.00004125
 fix     partRe   all property/atom partRe   scalar yes no no 2.7500
 fix     partP    all property/atom partP    scalar yes no no 101325
@@ -64,138 +63,155 @@ fix     Modified_CO2 all property/atom Modified_CO2 scalar yes yes no 0.0
 fix     reactionHeat all property/atom reactionHeat scalar yes no  no 0.0
 
 ################################################################################
-# activate 2-layer unreacted shrinking core model
+# activate 3-layer unreacted shrinking core model
 fix     cfd5 all chem/shrink/core speciesA CO molMassA 0.02801 &
         speciesC CO2 molMassC 0.04401 &
-        scale_reduction_rate 10.0 nevery 1 #screen yes
+        scale_reduction_rate 2.0 nevery 25 #screen yes
 
 # chemical properties for unreacted shrinking core model
-# these are actually hard-coded for low T:
-#                                                m->Fe   h->m
-fix     k0_CO all property/global k0_cfd5 vector   150   150
-fix     Ea_CO all property/global Ea_cfd5 vector 70000 75000
+# k0, Ea for high T, values for low T are actually hard-coded
+#                                                w->Fe  m->w   h->m
+fix     k0_CO all property/global k0_cfd5 vector    17    25   2700
+fix     Ea_CO all property/global Ea_cfd5 vector 69488 73674 113859
 
 # particle porosity/tortuosity/pore diameter
-fix     porosity        all property/global porosity_all      vector 0.61 0.16 0.15
+fix     porosity        all property/global porosity_all      vector 0.61 0.31 0.16 0.15
 fix     tortuosity      all property/global tortuosity_all    scalar 3
 fix     pore_diameter   all property/global pore_diameter_all vector 5.5e-7 5.5e-7 5.5e-7
 
 # define layer properties
-fix     LayerRelRadii   all property/atom relRadii vector yes no no  1.0 0.998 0.98
+fix     LayerRelRadii   all property/atom relRadii vector yes no no  1.0 0.998 0.995 0.98
 
 # define fix for layer densities
-fix     LayerDensities  all property/global density_all vector 7870. 5170. 5240.
+fix     LayerDensities  all property/global density_all vector 7870. 5740. 5170. 5240.
 
 ################################################################################
 # Write data into files for post-processing
-variable WI     equal 10
+variable WI     equal 100
 variable time   equal time
 variable m1     equal mass[1]
 variable rp     equal radius[1]
 variable rho1   equal mass[1]/((4./3.)*PI*radius[1]*radius[1]*radius[1])
 
 fix printmass all print ${WI} "${time} ${m1} ${rp}" &
-    file post/mass-rad-2layer.dat title "#time mass radius" screen no
+    file post/mass_rad.dat title "#time mass radius" screen no
 
 # effective layer densities
 variable lrhoeff1atom atom f_rhoeff[1]
 variable lrhoeff2atom atom f_rhoeff[2]
 variable lrhoeff3atom atom f_rhoeff[3]
+variable lrhoeff4atom atom f_rhoeff[4]
 
 variable lrhoeff1 equal v_lrhoeff1atom[1]
 variable lrhoeff2 equal v_lrhoeff2atom[1]
 variable lrhoeff3 equal v_lrhoeff3atom[1]
+variable lrhoeff4 equal v_lrhoeff4atom[1]
 
-fix printrho all print ${WI} "${time} ${rho1} ${lrhoeff1} ${lrhoeff2} ${lrhoeff3}" &
-    file post/rho-2layer.dat title "#time \rho \rho_{eff1} \rho_{eff2} \rho_{eff3}" screen no
-
+fix printrho all print ${WI} "${time} ${rho1} ${lrhoeff1} ${lrhoeff2} ${lrhoeff3} ${lrhoeff4}" &
+    file post/rho.dat title "#time \rho \rho_{eff1} \rho_{eff2} \rho_{eff3} \rho_{eff4}" screen no
 
 # specific resistance terms depending on reacting gases
 variable a_CO_1atom atom f_Aterm_cfd5[1]
 variable a_CO_2atom atom f_Aterm_cfd5[2]
+variable a_CO_3atom atom f_Aterm_cfd5[3]
 
 variable a_CO_1 equal v_a_CO_1atom[1]
 variable a_CO_2 equal v_a_CO_2atom[1]
+variable a_CO_3 equal v_a_CO_3atom[1]
 
 variable b_CO_1atom atom f_Bterm_cfd5[1]
 variable b_CO_2atom atom f_Bterm_cfd5[2]
+variable b_CO_3atom atom f_Bterm_cfd5[3]
 
 variable b_CO_1 equal v_b_CO_1atom[1]
 variable b_CO_2 equal v_b_CO_2atom[1]
+variable b_CO_3 equal v_b_CO_3atom[1]
 
 variable mt_COatom atom f_Massterm_cfd5
 variable mt_CO equal v_mt_COatom[1]
 
 # chemical reaction resistance
-fix printAterm all print ${WI} "${time} ${a_CO_1} ${a_CO_2}" &
-    file post/Aterm-2layer.dat title "#time A1_{CO}(m->Fe) A2_{CO}(h->m)" screen no
+fix printAterm all print ${WI} "${time} ${a_CO_1} ${a_CO_2} ${a_CO_3}" &
+    file post/Aterm.dat title "#time A1_{CO}(w->Fe) A2_{CO}(m->w) A3_{CO}(h->m)" screen no
 
 # diffusion resistance
-fix printBterm all print ${WI} "${time} ${b_CO_1} ${b_CO_2}" &
-    file post/Bterm-2layer.dat title "#time B1_{CO}(Fe) B2_{CO}(m)" screen no
+fix printBterm all print ${WI} "${time} ${b_CO_1} ${b_CO_2} ${b_CO_3}" &
+    file post/Bterm.dat title "#time B1_{CO}(Fe) B2_{CO}(w) B3_{CO}(m)" screen no
 
 # mass transfer resistance
 fix printMassTerm all print ${WI} "${time} ${mt_CO}" &
-    file post/MassTerm-2layer.dat title "#time mt_{CO}" screen no
+    file post/MassTerm.dat title "#time mt_{CO}" screen no
 
 # rate change of mass for gaseous reactant
 variable dmdot_1atom atom f_dmA_cfd5[1]
 variable dmdot_2atom atom f_dmA_cfd5[2]
+variable dmdot_3atom atom f_dmA_cfd5[3]
 
 variable dmdot_1 equal v_dmdot_1atom[1]
 variable dmdot_2 equal v_dmdot_2atom[1]
+variable dmdot_3 equal v_dmdot_3atom[1]
 
-fix printdmdot all print ${WI} "${time} ${dmdot_1} ${dmdot_2}" &
-    file post/dmdot-2layer.dat title "#time dmdot_1 dmdot_2" screen no
+fix printdmdot all print ${WI} "${time} ${dmdot_1} ${dmdot_2} ${dmdot_3}" &
+    file post/dmdot.dat title "#time dmdot_1 dmdot_2 dmdot_3" screen no
 
 # fractional reduction for specific diameter ranges as well as total fractional reduction
 variable fr_d1_1atom atom f_fracRed[1]
 variable fr_d1_2atom atom f_fracRed[2]
+variable fr_d1_3atom atom f_fracRed[3]
 
 variable fr_d1_1 equal v_fr_d1_1atom[1]
 variable fr_d1_2 equal v_fr_d1_2atom[1]
+variable fr_d1_3 equal v_fr_d1_3atom[1]
 
 # calculate total fractional reduction
-variable frOV_d1 equal 1./3.*(v_fr_d1_2)+2./3.*(v_fr_d1_1) # ???
+variable frOV_d1 equal 1./9.*(v_fr_d1_3)+2./9.*(v_fr_d1_2)+6./9.*(v_fr_d1_1)
 
-fix printfr1 all print ${WI} "${time} ${fr_d1_1} ${fr_d1_2} ${frOV_d1}" &
-    file post/fr-d1-2layer.dat title "#time fr_{m->Fe} fr_{h->m} fr_{overall}" screen no
+fix printfr1 all print ${WI} "${time} ${fr_d1_1} ${fr_d1_2} ${fr_d1_3} ${frOV_d1}" &
+    file post/fr_d1.dat title "#time fr_{w->Fe} fr_{m->w} fr_{h->m} fr_{overall}" screen no
 
 # layer radii
 variable rr1atom atom f_LayerRelRadii[1]
 variable rr2atom atom f_LayerRelRadii[2]
 variable rr3atom atom f_LayerRelRadii[3]
+variable rr4atom atom f_LayerRelRadii[4]
 
 variable rr1 equal v_rr1atom[1]
 variable rr2 equal v_rr2atom[1]
 variable rr3 equal v_rr3atom[1]
+variable rr4 equal v_rr4atom[1]
 
-fix printRelRadii all print ${WI} "${time} ${rr1} ${rr2} ${rr3}" &
-    file post/relRadii-2layer.dat title "#time relRad_{Fe} relRad_{m} relRad_{h}" screen no
+fix printRelRadii all print ${WI} "${time} ${rr1} ${rr2} ${rr3} ${rr4}" &
+    file post/relRadii.dat title "#time relRad_{Fe} relRad_{w} relRad_{m} relRad_{h}" screen no
 
 # layer masses
 variable lmass1atom atom f_LayerMasses[1]
 variable lmass2atom atom f_LayerMasses[2]
 variable lmass3atom atom f_LayerMasses[3]
+variable lmass4atom atom f_LayerMasses[4]
 
 variable lmass1 equal v_lmass1atom[1]
 variable lmass2 equal v_lmass2atom[1]
 variable lmass3 equal v_lmass3atom[1]
-variable lmasstot equal v_lmass1+v_lmass2+v_lmass3
+variable lmass4 equal v_lmass4atom[1]
+variable lmasstot equal v_lmass1+v_lmass2+v_lmass3+v_lmass4
 
 # masses calculated from relative layer radii
 variable lmassfromrr1 equal 4.*PI*v_lrhoeff1*(v_rr1*v_rr1*v_rr1-v_rr2*v_rr2*v_rr2)*v_rp*v_rp*v_rp/3.
 variable lmassfromrr2 equal 4.*PI*v_lrhoeff2*(v_rr2*v_rr2*v_rr2-v_rr3*v_rr3*v_rr3)*v_rp*v_rp*v_rp/3.
-variable lmassfromrr3 equal 4.*PI*v_lrhoeff3*(v_rr3*v_rr3*v_rr3)*v_rp*v_rp*v_rp/3.
-variable lmassfromrrtot equal v_lmassfromrr1+v_lmassfromrr2+v_lmassfromrr3
-fix printmasslayer all print ${WI} "${time} ${m1} ${lmass1} ${lmass2} ${lmass3} ${lmasstot} ${lmassfromrr1} ${lmassfromrr2} ${lmassfromrr3} ${lmassfromrrtot}" &
-    file post/mass-layer-2layer.dat title "#time mass lmass1 lmass2 lmass3 lmass_{tot} lmassfromrr1 lmassfromrr2 lmassfromrr3 lmassfromrr_{tot}" screen no
+variable lmassfromrr3 equal 4.*PI*v_lrhoeff3*(v_rr3*v_rr3*v_rr3-v_rr4*v_rr4*v_rr4)*v_rp*v_rp*v_rp/3.
+variable lmassfromrr4 equal 4.*PI*v_lrhoeff4*(v_rr4*v_rr4*v_rr4)*v_rp*v_rp*v_rp/3.
+variable lmassfromrrtot equal v_lmassfromrr1+v_lmassfromrr2+v_lmassfromrr3+v_lmassfromrr4
+
+fix printmasslayer all print ${WI} "${time} ${m1} ${lmass1} ${lmass2} ${lmass3} ${lmass4} ${lmasstot} ${lmassfromrr1} ${lmassfromrr2} ${lmassfromrr3} ${lmassfromrr4} ${lmassfromrrtot}" &
+    file post/mass_layer.dat title "#time mass lmass1 lmass2 lmass3 lmass4 lmass_{tot} lmassfromrr1 lmassfromrr2 lmassfromrr3 lmassfromrr4 lmassfromrr_{tot}" screen no
 
 # absolute layer radii
 variable ar2 equal v_rr2*v_rp
 variable ar3 equal v_rr3*v_rp
-fix printabsrad all print ${WI} "${time} ${rp} ${ar2} ${ar3}" &
-    file post/absRadii-2layer.dat title "#time r_{Fe} r_{m} r_{h}" screen no
+variable ar4 equal v_rr4*v_rp
+
+fix printabsrad all print ${WI} "${time} ${rp} ${ar2} ${ar3} ${ar4}" &
+    file post/absRadii.dat title "#time r_{Fe} r_{w} r_{m} r_{h}" screen no
 
 # rate change of species
 variable XAatom atom f_Modified_CO
@@ -205,15 +221,21 @@ variable XA equal v_XAatom[1]
 variable XC equal v_XCatom[1]
 
 fix printXAC all print ${WI} "${time} ${XA} ${XC}" &
-    file post/XAC-2layer.dat title "#time X_{CO} X_{CO2}" screen no
+    file post/XAC.dat title "#time X_{CO} X_{CO2}" screen no
 
 # reaction heat
 variable rheatatom atom f_reactionHeat
 variable rheat equal v_rheatatom[1]
 
 fix printheat all print ${WI} "${time} ${rheat}" &
-    file post/heat-2layer.dat title "#time heat" screen no
+    file post/heat.dat title "#time heat" screen no
 
+# heat capacity
+variable Cpatom atom f_ftca
+variable Cp equal v_Cpatom[1]
+
+fix printCp all print ${WI} "${time} ${Cp}" &
+    file post/Cp.dat title "#time Cp" screen no
 ################################################################################
 
 # screen output
@@ -223,9 +245,15 @@ thermo          100
 thermo_modify   lost ignore norm no
 compute_modify  thermo_temp dynamic no extra 0
 
-dump    dmp all custom 100 post/dump_2layer_*.liggghts_run id type x y z vx vy vz &
+dump    dmp all custom 1000 post/dump*.liggghts_run id type x y z vx vy vz &
         fx fy fz radius mass f_fracRed[1] f_fracRed[2] f_fracRed[3] &
         f_partNu f_partRe f_partP f_partTemp f_CO_diffCoeff
 
-run     60000
+variable rampT equal 600+step*0.001
+
+fix printT all print ${WI} "${time} ${rampT}" &
+    file post/T.dat title "#time T" screen no
+
+run     600000 every 5000 "set group all property/atom partTemp ${rampT}" "set group all property/atom Temp ${rampT}"
+
 

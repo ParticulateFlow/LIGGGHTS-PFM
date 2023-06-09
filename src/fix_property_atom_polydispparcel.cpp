@@ -69,7 +69,7 @@ void FixPropertyAtomPolydispParcel::parse_args(int narg, char **arg)
 
     restart_peratom = 1;
     restart_global = 1;
- 
+
     commGhost = 0;
     commGhostRev = 0;
 
@@ -82,7 +82,7 @@ void FixPropertyAtomPolydispParcel::parse_args(int narg, char **arg)
     create_attribute = 1;
 
     propertyname = NULL;
- 
+
     for (int j = 0; j < ndefaultvalues; j++)
     {
         defaultvalues[j] = force->numeric(FLERR,arg[4+j]);
@@ -92,7 +92,7 @@ void FixPropertyAtomPolydispParcel::parse_args(int narg, char **arg)
             error->all(FLERR,"Polydisp. parcel factor larger than 1 / alpha_max not reasonable.");
         }
     }
-    
+
 
 
     size_peratom_cols = 0;
@@ -164,7 +164,7 @@ void FixPropertyAtomPolydispParcel::init()
                 variablename,ntypes);
         error->fix_error(FLERR,this,errmsg);
     }
-    
+
     int *types = atom->type;
     int nlocal = atom->nlocal;
     int type = 0;
@@ -221,4 +221,19 @@ void FixPropertyAtomPolydispParcel::set_vector(int i, double value)
     double *radius = atom->radius;
     double newmass = MY_4PI3 * radius[i]*radius[i]*radius[i] * density[i] * vector_atom[i];
     mass[i] = newmass;
+}
+
+int FixPropertyAtomPolydispParcel::num_defaultvalues()
+{
+  return ndefaultvalues;
+}
+
+double FixPropertyAtomPolydispParcel::defaultvalue(int n)
+{
+    if(n<0 || n>=ndefaultvalues)
+    {
+        error->fix_error(FLERR,this,"request non-existent default value");
+    }
+
+    return defaultvalues[n];
 }

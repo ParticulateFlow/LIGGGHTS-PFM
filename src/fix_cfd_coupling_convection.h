@@ -51,6 +51,9 @@ class FixCfdCouplingConvection : public Fix {
   class FixPropertyAtom* fix_heatFlux;
   double T0;
   bool gran_field_conduction;
+  
+  bool limit_change;
+  double max_change;
 };
 
 }

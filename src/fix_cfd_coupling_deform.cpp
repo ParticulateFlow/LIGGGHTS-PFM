@@ -54,6 +54,7 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     fix_effvolfactors_(0),
     verbose_(false),
     compress_flag_(1),
+    delete_fully_deformed_particles_(true),
     igroup_fully_deformed_(-1),
     igroup_fully_deformed_bit_(-1),
     particles_removed_(0),
@@ -65,6 +66,8 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
     heat_removed_(0.),
     fix_temp_(NULL),
     fix_capacity_(NULL),
+    fix_internal_energy_(NULL),
+    internal_energy_(false),
     use_latent_heat_(false),
     latent_heat_per_mass_(0.0),
     latent_heat_transferred_(0.0),
@@ -95,6 +98,16 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
         verbose_ = true;
       else if(strcmp(arg[iarg+1],"no"))
         error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'verbose'");
+      iarg += 2;
+    }
+    else if(strcmp(arg[iarg],"delete_fully_deformed_particles") == 0)
+    {
+      if(narg < iarg+2)
+        error->fix_error(FLERR,this,"not enough arguments for 'delete_fully_deformed_particles'");
+      if(strcmp(arg[iarg+1],"no") == 0)
+        delete_fully_deformed_particles_ = false;
+      else if(strcmp(arg[iarg+1],"yes"))
+        error->fix_error(FLERR,this,"expecing 'yes' or 'no' for 'delete_fully_deformed_particles'");
       iarg += 2;
     }
     else if(strcmp(arg[iarg],"rmin") == 0)
@@ -148,7 +161,6 @@ FixCfdCouplingDeform::~FixCfdCouplingDeform()
 
 void FixCfdCouplingDeform::post_create()
 {
-//  register convective flux
     if(!fix_partdeformations_)
     {
         const char* fixarg[9];
@@ -216,7 +228,17 @@ void FixCfdCouplingDeform::init()
 
         PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
         int max_type = pair_gran->get_properties()->max_type();
-        fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style));
+        fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style,false));
+
+        fix_internal_energy_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("internalEnergy","property/atom","scalar",0,0,style,false));
+        if (fix_internal_energy_) internal_energy_ = true;
+
+        if (!fix_capacity_ && !fix_internal_energy_)
+        {
+            char errmsg[500];
+            sprintf(errmsg,"Could neither locate a fix/property storing value(s) for thermalCapacity nor one for the internal energy as requested by FixCfdCouplingDeform.");
+            error->all(FLERR,errmsg);
+        }
     }
 
     // look up group of fully deformed particles; needs to be defined in run script before this fix
@@ -237,6 +259,8 @@ void FixCfdCouplingDeform::init()
 
 void FixCfdCouplingDeform::initial_integrate(int)
 {
+    if (!delete_fully_deformed_particles_) return;
+
     bigint prev_time = update->ntimestep - 1;
 
     // only delete group immediately after pull/push so that no latent heat is neglected
@@ -271,8 +295,15 @@ void FixCfdCouplingDeform::initial_integrate(int)
 
             if (monitor_heat_)
             {
-                double Cp = fix_capacity_->compute_vector(type[i]-1);
-                heat_removed_this_me += rmass[i]*T[i]*Cp;
+                if (internal_energy_)
+                {
+                    heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                }
+                else
+                {
+                    double Cp = fix_capacity_->compute_vector(type[i]-1);
+                    heat_removed_this_me += rmass[i]*T[i]*Cp;
+                }
             }
 
             if (use_latent_heat_)
@@ -359,7 +390,7 @@ void FixCfdCouplingDeform::post_force(int)
             if (deformation < 1.0 - SMALL && deformation > SMALL)
             {
                 effvolfactor = effvolfactors_[i];
-                f0 = default_effvolfactors_[type[i]];
+                f0 = default_effvolfactors_[type[i]-1];
                 neweffvolfactor = f0 + deformation * (fmax_ - f0);
                 // update properties only if new eff vol factor larger than old one (by e.g. 1%)
                 if (neweffvolfactor <= 1.01*effvolfactor) continue;

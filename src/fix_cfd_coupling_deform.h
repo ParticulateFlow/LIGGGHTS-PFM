@@ -56,6 +56,8 @@ class FixCfdCouplingDeform : public Fix  {
 
   int compress_flag_;
 
+  bool delete_fully_deformed_particles_;
+
   int igroup_fully_deformed_;
 
   int igroup_fully_deformed_bit_;
@@ -77,7 +79,11 @@ class FixCfdCouplingDeform : public Fix  {
   class FixPropertyAtom *fix_temp_;
 
   class FixPropertyGlobal* fix_capacity_;
+  
+  class FixPropertyAtom *fix_internal_energy_;
 
+  bool internal_energy_;
+  
   bool use_latent_heat_;
 
   double latent_heat_per_mass_;

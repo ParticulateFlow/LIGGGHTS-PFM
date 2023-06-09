@@ -1,0 +1,44 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix limit/property/atom command :h3
+
+[Syntax:]
+
+fix id all limit/property/atom targetfixname min min_value(s) max max_value(s) :pre
+
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+targetfixname = name of the fix/property/atom to be limited   :l
+min_value(s) = list of lower limiting values :l
+max_value(s) = list of upper limiting values :l
+:ule
+
+[Examples:]
+
+fix limT all limit/property/atom Temp min 250 max 350 :pre
+
+[LIGGGHTS vs. LAMMPS Info:]
+
+This LIGGGHTS command is not available in LAMMPS.
+
+[Description:]
+
+[Fix limit/property/atom] limits the values stored by a fix/property/atom from below and from above.
+
+Note that the group of atoms the fix is applied to is ignored.
+
+[Restart, fix_modify, output, run start/stop, minimize info:] none
+
+[Restrictions:] none
+
+[Related commands:]
+
+"fix_property"_fix_property.html
+
+[Default:] none

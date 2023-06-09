@@ -47,12 +47,15 @@ class FixPropertyAtomPolydispParcel : public FixPropertyAtom {
   void pre_set_arrays();
   void set_arrays(int);
   void set_all(double value);
-  
+
   void set_vector(int, double);
+
+  int num_defaultvalues();
+  double defaultvalue(int);
 
  protected:
   void parse_args(int narg, char **arg);
-  
+
   int me;
   int ndefaultvalues;
 

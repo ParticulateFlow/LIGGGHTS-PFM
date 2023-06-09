@@ -80,7 +80,7 @@ fix     Ea_CO_1 all property/global Ea_chem1 vector 69488 73674 113859
 # particle porosity/tortuosity/pore diameter
 fix     porosity1        all property/global porosity_group1      vector 0.61 0.31 0.16 0.15
 fix     tortuosity1      all property/global tortuosity_group1    scalar 3
-fix     pore_diameter1   all property/global pore_diameter_group1 scalar 5.5e-7
+fix     pore_diameter1   all property/global pore_diameter_group1 vector 5.5e-7 5.5e-7 5.5e-7
 
 # define fix for layer densities
 fix     LayerDensities1  all property/global density_group1 vector 7870. 5740. 5170. 5240.
@@ -208,7 +208,7 @@ fix     Ea_CO_2 all property/global Ea_chem2 vector 69488 73674 113859
 # particle porosity/tortuosity/pore diameter
 fix     porosity2        all property/global porosity_group2      vector 0.61 0.31 0.16 0.15
 fix     tortuosity2      all property/global tortuosity_group2    scalar 3
-fix     pore_diameter2   all property/global pore_diameter_group2 scalar 5.5e-7
+fix     pore_diameter2   all property/global pore_diameter_group2 vector 5.5e-7 5.5e-7 5.5e-7
 
 # define fix for layer densities
 fix     LayerDensities2  all property/global density_group2 vector 7870. 5740. 5170. 5240.

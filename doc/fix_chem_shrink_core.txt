@@ -88,7 +88,7 @@ group-ID the fixes apply to.
 
 fix porosity      all property/global porosity_all      vector 0.61 0.31 0.16 0.15
 fix tortuosity    all property/global tortuosity_all    scalar 3
-fix pore_diameter all property/global pore_diameter_all scalar 5.5e-7
+fix pore_diameter all property/global pore_diameter_all vector 3.e-07 1.5e-05 1.e-05
 fix density       all property/global density_all       vector 7870. 5740. 5170. 5240. :pre
 
 The initial relative layer radii also need to be specified via a
