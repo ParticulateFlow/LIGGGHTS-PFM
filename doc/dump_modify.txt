@@ -93,6 +93,9 @@ keyword = {acolor} or {adiam} or {amap} or {bcolor} or {bdiam} or {backcolor} or
     R,G,B = red/green/blue numeric values from 0.0 to 1.0
   {framerate} arg = fps
     fps = frames per second for movie :pre
+these keywords apply only to the {custom/vtk} "style"_dump_custom_vtk.html :l
+keyword = {domainfile} :l
+  {domainfile} arg = {yes} or {no} :pre
 :ule
 
 [Examples:]
@@ -637,6 +640,12 @@ simply dropping the rendered images. It is more efficient to dump
 images less frequently.
 
 :line
+
+The {domainfile} keyword can be used with the "dump
+custom/vtk"_dump_custom_vtk.html command to enable or disable the output of the
+extra file describing the domain bounding box.
+
+:line
 :line
 
 [Restrictions:] none
@@ -678,7 +687,8 @@ bdiam = * 0.5
 bitrate = 2000
 boxcolor = yellow
 color = 140 color names are pre-defined as listed below
-framerate = 24 :ul
+framerate = 24
+domainfile = yes :ul
 
 :line
 
