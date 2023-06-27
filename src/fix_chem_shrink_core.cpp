@@ -1488,7 +1488,7 @@ void FixChemShrinkCore::heat_of_reaction(int i, const double *dmA_, const double
 
     // add per-particle reactionHeat flux
     for (int k = 0; k < layers_; k++)
-        reactionHeat_[i] += HR[k];
+        reactionHeat_[i] -= HR[k];
 }
 
 /* ---------------------------------------------------------------------- */
