@@ -414,6 +414,22 @@
    translate, rotate, scale
   ------------------------------------------------------------------------- */
 
+  template<typename T>
+  struct scale_helper {
+    static T scale(T element, double f)
+    {
+      return element*f;
+    }
+  };
+
+  template<>
+  struct scale_helper<bool> {
+    static bool scale(bool element, double f)
+    {
+      return element&&f;
+    }
+  };
+
   template<typename T, int NUM_VEC, int LEN_VEC>
   void GeneralContainer<T,NUM_VEC,LEN_VEC>::scale(double factor)
   {
@@ -431,7 +447,7 @@
       for(int i = 0; i < len; i++)
             for(int j = 0; j < NUM_VEC;j++)
                 for(int k = 0; k < LEN_VEC; k++)
-                    arr_[i][j][k] *= factorApplied;
+                    arr_[i][j][k] = scale_helper<T>::scale(arr_[i][j][k], factorApplied);
   }
 
   template<typename T, int NUM_VEC, int LEN_VEC>
