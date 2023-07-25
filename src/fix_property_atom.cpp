@@ -56,7 +56,7 @@ FixPropertyAtom::FixPropertyAtom(LAMMPS *lmp, int narg, char **arg, bool parse) 
   store_old_time_values_(0),
   old_time_values_(NULL)
 {
-    /*NL*/ //if (screen) fprintf(screen,"HERRE parse for id %s\n",id);
+    /*NL*/ //if (screen) fprintf(screen,"HERE parse for id %s\n",id);
     if(parse) parse_args(narg,arg);
 }
 
@@ -353,7 +353,8 @@ int FixPropertyAtom::setmask()
 
 void FixPropertyAtom::end_of_step()
 {
-    for (int i = 0; i < atom->nlocal; i++)
+    int nall = atom->nlocal + atom->nghost;
+    for (int i = 0; i < nall; i++)
     {
         if (data_style)
         {
