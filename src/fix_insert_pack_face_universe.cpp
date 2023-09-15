@@ -86,6 +86,8 @@ FixInsertPackFaceUniverse::FixInsertPackFaceUniverse(LAMMPS *lmp, int narg, char
   // no fixed total number of particles inserted by this fix exists
   if (strcmp(style,"insert/pack/face/universe") == 0)
     ninsert_exists = 0;
+
+  next_reneighbor = update->ntimestep + insert_every - (update->ntimestep % insert_every);
 }
 
 /* ---------------------------------------------------------------------- */
