@@ -20,9 +20,11 @@ keyword = {type} or {type/fraction} or {mol} or {x} or {y} or {z} or \
           {charge} or {dipole} or {dipole/random} or {quat} or \
           {quat/random} or {diameter} or {shape} or \
           {length} or {tri} or {theta} or {angmom} or \
-          {mass} or {density} or {volume} or {image} or
-          {bond} or {angle} or {dihedral} or {improper} or
-          {meso_e} or {meso_cv} or {meso_rho} or {property/atom} :l
+          {mass} or {density} or {volume} or {image} or \
+          {bond} or {angle} or {dihedral} or {improper} or \
+          {meso_e} or {meso_cv} or {meso_rho} or {property/atom} or \
+          {vx} or {vy} or {vz} or {omegax} or {omegay} or {omegaz} or \
+          {blockiness} or {aspect_ratio} or {inertiax} or {inertiay} or {inertiaz} :l
   {type} value = atom type
     value can be an atom-style variable (see below)
   {type/fraction} values = type fraction seed
@@ -79,16 +81,25 @@ keyword = {type} or {type/fraction} or {mol} or {x} or {y} or {z} or \
     value can be an atom-style variable (see below)
   {meso_cv} value = heat capacity of SPH particles (need units)
     value can be an atom-style variable (see below)
-  {meso_rho} value = density of SPH particles (need units) 
+  {meso_rho} value = density of SPH particles (need units)
     value can be an atom-style variable (see below)
-  {add} value = yes no 
+  {add} value = yes no
     yes = add per-atom quantities to a region or a group
   {until} value = final timestep
     final timestep = the final timestep value until which the per-atom quantity is to be added
-  {property/atom} value = varname var_value[0] var_value[1] ....
+  {property/atom} values = varname var_value[0] var_value[1] ...
     varname = name of the variable to be set
-    var_value[0], var_value[1]... = values of the property to be set.
-    value can be an atom-style variable (see below) :pre
+    var_value[0], var_value[1] ... = values of the property to be set.
+    value can be an atom-style variable (see below)
+  {vx},{vy},{vz} value = atom velocity (velocity units)
+    value can be an atom-style variable (see below)
+  {omegax},{omegay},{omegaz} value = angular velocity (rad / time units)
+    value can be an atom-style variable (see below)
+  {blockiness} values = n1 n2
+    n1, n2 = superquadric blockiness parameters, greater than or equal to 2
+  {aspect_ratio} values = ky kz
+    ky, kz = aspect ratio of a superquadric particle in y and z directions with respect to that in x direction (in principal coordinates). Particle blockiness and volume equivalent diameter must be set first
+  {inertiax},{inertiay},{inertiaz} value = principal moments of inertia for superquadric particles (distance^2 mass units) :pre
 :ule
 
 [Examples:]
@@ -100,13 +111,13 @@ set region half charge 0.5
 set type 3 charge 0.5
 set type 1*3 charge 0.5
 set atom 100*200 x 0.5 y 1.0
-set atom 1492 type 3 
-set region reg add yes until 1000 property/atom liqOnParticle 5e-5 
+set atom 1492 type 3
+set region reg add yes until 1000 property/atom liqOnParticle 5e-5
 set group all property/atom Temp 273.15 :pre
 
 [LIGGGHTS vs. LAMMPS Info:]
 
-This command offers a new keyword property/atom to enable the 
+This command offers a new keyword property/atom to enable the
 set command to assign values to properties defined by a "fix property/atom"_fix_property.html
 
 [Description:]
@@ -361,20 +372,22 @@ capacity, and density of smoothed particle hydrodynamics (SPH)
 particles.  See "this PDF guide"_USER/sph/SPH_LAMMPS_userguide.pdf to
 using SPH in LAMMPS.
 
-Keyword {property/atom} can update per-particle properties defined by 
-a "fix property/atom"_fix_property.html command. varname is the name of 
-the variable you want to set, it is followed by the values that should 
-be assigned to this variable. The number of values provided as 
-var_value[i] must correspond to the number of values needed for the 
-update, i.e. only var_value[0] if the defined property is a scalar, 
-and the appropriate number if the property is a vector. See 
-"fix property/atom"_fix_property.html for details on how to define 
+Keyword {property/atom} can update per-particle properties defined by
+a "fix property/atom"_fix_property.html command. varname is the name of
+the variable you want to set, it is followed by the values that should
+be assigned to this variable. The number of values provided as
+var_value[i] must correspond to the number of values needed for the
+update, i.e. only var_value[0] if the defined property is a scalar,
+and the appropriate number if the property is a vector. See
+"fix property/atom"_fix_property.html for details on how to define
 such a per-particle property.
 
 Keyword {add} and {until} are used to add a per-atom quantity (or property)
-in addition to the keyword {property/atom}. The {add} keyword is used to turn on 
-the addition of a quantity in a region or a group 
+in addition to the keyword {property/atom}. The {add} keyword is used to turn on
+the addition of a quantity in a region or a group
 until the timestep defined by the {until} keyword.
+
+Keywords {shape} and {blockiness} define the superquadric shape of a particle.
 
 [Restrictions:]
 
