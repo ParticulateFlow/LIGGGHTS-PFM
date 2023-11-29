@@ -1264,7 +1264,7 @@ void FixChemShrinkCore::update_atom_properties(int i, const double *dmA_,const d
         layer_Cp[2] = spec_heat(a_coeff_nasa_Fe3O4,Tpart);
         layer_Cp[3] = spec_heat(a_coeff_nasa_Fe2O3,Tpart);
     }
-    
+
     layer_H[0] = conv_enthalpy(a_coeff_nasa_Fe, i);
     layer_H[1] = conv_enthalpy(a_coeff_nasa_FeO,i);
     layer_H[2] = conv_enthalpy(a_coeff_nasa_Fe3O4,i);

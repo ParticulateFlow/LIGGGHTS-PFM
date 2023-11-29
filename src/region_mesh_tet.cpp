@@ -98,7 +98,6 @@ RegTetMesh::RegTetMesh(LAMMPS *lmp, int narg, char **arg) :
   precalc_ico_points();
 
   build_tree();
-
 }
 
 void RegTetMesh::rebuild()
@@ -323,7 +322,7 @@ void RegTetMesh::add_tet(double **n)
 void RegTetMesh::grow_arrays()
 {
     nTetMax += DELTA_TET;
-    node = (double***)(memory->grow(node,nTetMax, 4 , 3, "vtk_tet_node"));
+    node = (double***)(memory->grow(node,nTetMax, 4, 3, "vtk_tet_node"));
     center = (double**)(memory->grow(center,nTetMax, 3, "vtk_tet_center"));
     volume = (double*)(memory->srealloc(volume,nTetMax*sizeof(double),"vtk_tet_volume"));
     acc_volume = (double*)(memory->srealloc(acc_volume,nTetMax*sizeof(double),"vtk_tet_acc_volume"));
@@ -529,9 +528,7 @@ void RegTetMesh::tree_populate_node(int iTreeNode)
 
     }
     extend_bb(bbox,data);
-
   }
-
 
   // if data size is equal, then splitting did not result in any gain
   // thus, empty the bin again
