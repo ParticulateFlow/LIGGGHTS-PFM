@@ -93,8 +93,6 @@ class FixCfdCouplingDeform : public Fix  {
   class FixPropertyAtom *fix_latent_heat_;
 
   double *latent_heat_;
-
-  void delete_particle(int);
 };
 
 }

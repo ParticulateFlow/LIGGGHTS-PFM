@@ -286,7 +286,8 @@ void FixCfdCouplingDeform::initial_integrate(int)
     double latent_heat_transferred_this_me = 0., latent_heat_transferred_this = 0.;
 
     // remove all elements in group of fully deformed particles
-    for (int i = 0; i < nlocal; i++)
+    int i = 0;
+    while (i < nlocal)
     {
         if (mask[i] & igroup_fully_deformed_bit_)
         {
@@ -310,9 +311,17 @@ void FixCfdCouplingDeform::initial_integrate(int)
             {
                 latent_heat_transferred_this_me -= latent_heat_per_mass_ * rmass[i];
             }
-            delete_particle(i);
+
+            atom->avec->copy(nlocal-1,i,1);
+            nlocal--;
+        }
+        else
+        {
+            i++;
         }
     }
+
+    atom->nlocal = nlocal;
 
     MPI_Allreduce(&mass_removed_this_me,&mass_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
@@ -344,6 +353,9 @@ void FixCfdCouplingDeform::initial_integrate(int)
         for (int i = 0; i < atom->nlocal; i++) tag[i] = 0;
         atom->tag_extend();
     }
+
+    bigint nblocal = atom->nlocal;
+    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
 
     if (atom->tag_enable)
     {
@@ -415,13 +427,6 @@ void FixCfdCouplingDeform::post_force(int)
         }
     }
 }
-
-void FixCfdCouplingDeform::delete_particle(int i)
-{
-    atom->avec->copy(atom->nlocal-1,i,1);
-    atom->nlocal--;
-}
-
 
 /* ----------------------------------------------------------------------
    provide accumulated removed mass and optionally heat
