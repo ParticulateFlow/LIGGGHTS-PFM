@@ -48,8 +48,6 @@ using namespace MathConst;
 
 enum{REMOVE_SHRINK,REMOVE_DELETE};
 
-/*NL*/ #define DEBUG_COREX_MATERIALREMOVE false
-/*NL*/ #define DEBUG__OUT_COREX_MATERIALREMOVE screen
 
 /* ---------------------------------------------------------------------- */
 
@@ -249,8 +247,6 @@ int FixRemove::setmask()
 
 void FixRemove::init()
 {
-  /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::init 0\n");
-
   // error checks
   if (!atom->radius_flag)
     error->fix_error(FLERR,this,"requires atom attribute radius (per-particle)");
@@ -289,7 +285,6 @@ void FixRemove::init()
   else
     ms_ = 0;
 
-  /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::init end\n");
 
   if (variable_rate_) ivar_ = input->variable->find(rate_name_);
 
@@ -300,7 +295,7 @@ void FixRemove::init()
       PairGran* pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
       int max_type = pair_gran->get_properties()->max_type();
       fix_capacity_ = static_cast<FixPropertyGlobal*>(modify->find_fix_property("thermalCapacity","property/global","peratomtype",max_type,0,style,false));
-        
+
       fix_internal_energy_ = static_cast<FixPropertyAtom*>(modify->find_fix_property("internalEnergy","property/atom","scalar",0,0,style,false));
       if (fix_internal_energy_) internal_energy_ = true;
 
@@ -308,7 +303,7 @@ void FixRemove::init()
       {
           char errmsg[500];
           sprintf(errmsg,"Could neither locate a fix/property storing value(s) for thermalCapacity nor one for the internal energy as requested by FixRemove.");
-          error->all(FLERR,errmsg);   
+          error->all(FLERR,errmsg);
       }
   }
 }
@@ -330,16 +325,14 @@ void FixRemove::pre_exchange()
         rate_remove_ = input->variable->compute_equal(ivar_);
     }
 
-    //NP clear containers
+    // clear containers
 
     atom_tags_eligible_.clear();
     body_tags_eligible_.clear();
     body_tags_delete_.clear();
 
-     //NP list of particles eligible for deletion
-     //NP list of ms bodies eligible for deletion
-
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 0\n");
+    // list of particles eligible for deletion
+    // list of ms bodies eligible for deletion
 
     // schedule next event and calc mass to remove this step
 
@@ -365,18 +358,16 @@ void FixRemove::pre_exchange()
         if(logfile)
             fprintf(logfile,"Timestep %d, removing material, mass to remove this step %f\n",
                         time_now,mass_to_remove_);
-       if(logfile)
+        if(logfile)
             fprintf(logfile,"fix_remove: integrated rate = %f, rate_remove = %f\n",integrated_rate_,rate_remove_);
     }
 
     // return if nothing to do
-    //NP could e.g. be because very large particle was deleted last deletion step
+    // could e.g. be because very large particle was deleted last deletion step
 
     if(mass_to_remove_ <= m_remove_min_) return;
 
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 1\n");
-
-    //NP count eligible particles
+    // count eligible particles
 
     double mass_eligible_me = 0., mass_eligible = 0.;
     double mass_to_remove_me = 0., ratio_ms_to_remove_me = 0.;
@@ -403,9 +394,7 @@ void FixRemove::pre_exchange()
         delete_partial_particles_bodies(mass_to_remove_me,mass_removed_this_me,
                                         heat_removed_this_me,nremoved_this_me,ratio_ms_to_remove_me);
 
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 7\n");
-
-    //NP gather info about removed particles
+    // gather info about removed particles
     MPI_Allreduce(&mass_removed_this_me,&mass_removed_this,1,MPI_DOUBLE,MPI_SUM,world);
     MPI_Allreduce(&nremoved_this_me,&nremoved_this,1,MPI_INT,MPI_SUM,world);
     mass_removed_ += mass_removed_this;
@@ -426,7 +415,7 @@ void FixRemove::pre_exchange()
                     id,mass_removed_this,mass_eligible,nremoved_this,mass_removed_);
     }
 
-    //NP tags and maps
+    // update tags and map
     int i;
 
     // if non-molecular system and compress flag set,
@@ -438,7 +427,6 @@ void FixRemove::pre_exchange()
       atom->tag_extend();
     }
 
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 8\n");
 
     if (atom->tag_enable) {
       if (atom->map_style) {
@@ -447,8 +435,6 @@ void FixRemove::pre_exchange()
         atom->map_set();
       }
     }
-
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange end\n");
 }
 
 /* ----------------------------------------------------------------------
@@ -469,7 +455,7 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
     double mass_ms_eligible_me = 0.;
     bool fits;
 
-    //NP count total eligible mass for single particles
+    // count total eligible mass for single particles
 
     for (int i = 0; i < nlocal; i++)
     {
@@ -488,7 +474,7 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
        }
     }
 
-    //NP count total eligible mass for multisphere
+    // count total eligible mass for multisphere
 
     if(fix_ms_)
     {
@@ -510,7 +496,7 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
         }
     }
 
-    //NP get eligible mass from all procs
+    // get eligible mass from all procs
 
     MPI_Allreduce(&mass_eligible_me,&mass_eligible,1,MPI_DOUBLE,MPI_SUM,world);
 
@@ -519,7 +505,6 @@ bool FixRemove::count_eligible(double &mass_eligible_me,double &mass_eligible,
     else
         ratio_ms_to_remove_me = 0.;
 
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 2\n");
 
     if(mass_eligible == 0.)
     {
@@ -541,7 +526,6 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
                            double &mass_removed_this_me,double &heat_removed_this_me,
                            int &nremoved_this_me)
 {
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 4\n");
     double *rmass = atom->rmass;
     int *type = atom->type;
     double *T = NULL;
@@ -550,9 +534,6 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
     {
         T = fix_temp_->vector_atom;
     }
-
-    //NP delete in reverse order
-    //NP so deletion does not mess up list
 
     for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
     {
@@ -580,7 +561,7 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
         body_tags_delete_ = body_tags_eligible_;
         mass_removed_this_me += ratio_ms_to_remove_me*mass_eligible_me;
         nremoved_this_me += body_tags_delete_.size();
-        /*NL*/ //if (screen) fprintf(screen,"ratio_ms_to_remove_me %f mass_eligible_me %f\n",ratio_ms_to_remove_me,mass_eligible_me);
+        //if (screen) fprintf(screen,"ratio_ms_to_remove_me %f mass_eligible_me %f\n",ratio_ms_to_remove_me,mass_eligible_me);
     }
     body_tags_eligible_.clear();
 
@@ -607,12 +588,12 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         T = fix_temp_->vector_atom;
     }
 
-    //NP multisphere case NOT handled here, cannot shrink
-    //NP error in init() function
+    // multisphere case NOT handled here, cannot shrink
+    // error in init() function
     if(fix_ms_)
         error->fix_error(FLERR,this,"does not support multisphere");
 
-    //NP first remove all particles that are too small
+    // first remove all particles that are too small
     size_t ilist = 0;
     while(ilist < atom_tags_eligible_.size())
     {
@@ -641,8 +622,8 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         else ilist++;
     }
 
-    //NP then shrink the rest of the particles
-    //NP ratio is shrinkage factor
+    // then shrink the rest of the particles
+    // ratio is shrinkage factor
     if(mass_shrink_me > 0. && mass_to_remove_me > 0.)
     {
         ratio_m = 1. - mass_to_remove_me / mass_shrink_me;
@@ -682,8 +663,6 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
                 double &mass_removed_this_me,double &heat_removed_this_me,
                 int &nremoved_this_me)
 {
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 6\n");
-
     double *rmass = atom->rmass;
     int *type = atom->type;
     double *T = NULL;
@@ -695,8 +674,8 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
 
     while (atom_tags_eligible_.size() > 0 && mass_to_remove_me > m_remove_min_)
     {
-        //NP randomize which particle to delete
-        //NP this avoids a bias: large particles are inserted first
+        // randomize which particle to delete
+        // this avoids a bias: large particles are inserted first
 
         size_t ilist = static_cast<int>(random_->uniform()*static_cast<double>(atom_tags_eligible_.size()));
         if(ilist == atom_tags_eligible_.size())
@@ -733,14 +712,12 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
                 double &mass_removed_this_me,double &heat_removed_this_me,
                 int &nremoved_this_me,double ratio_ms_to_remove_me)
 {
-    /*NL*/ if(DEBUG_COREX_MATERIALREMOVE) fprintf(DEBUG__OUT_COREX_MATERIALREMOVE,"FixRemove::pre_exchange 6\n");
-
     double *rmass = atom->rmass;
     bool ms;
     int i,ibody;
     int *type = atom->type;
     double *T = NULL;
-    
+
     if(monitor_heat_)
     {
         T = fix_temp_->vector_atom;
@@ -757,8 +734,8 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
 
         if(!ms)
         {
-            //NP randomize which particle to delete
-            //NP this avoids a bias: large particles are inserted first
+            // randomize which particle to delete
+            // this avoids a bias: large particles are inserted first
 
             size_t ilist = static_cast<int>(random_->uniform()*static_cast<double>(atom_tags_eligible_.size()));
             if(ilist == atom_tags_eligible_.size())
@@ -811,8 +788,7 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
 
 inline void FixRemove::delete_particle(int i)
 {
-    /*NL*///if (screen) fprintf(screen,"proc %d deleting particle with mass %f\n",comm->me,atom->rmass[i]);
-    //NP if (screen) fprintf(screen,"deleting particle %d, nlocal %d, \n",i,atom->nlocal);
+    // if (screen) fprintf(screen,"[%d] deleting particle %d, nlocal %d, \n",comm->me,i,atom->nlocal);
     atom->avec->copy(atom->nlocal-1,i,1);
     atom->nlocal--;
 }
@@ -822,11 +798,9 @@ inline void FixRemove::delete_particle(int i)
 
 void FixRemove::delete_bodies()
 {
-    /*NL*/ //if (screen) fprintf(screen,"called, size %d\n",body_tags_delete_.size());
     for(size_t ilist = 0; ilist <  body_tags_delete_.size(); ilist++)
     {
         int ibody = ms_->map(body_tags_delete_[ilist]);
-        /*NL*/ //if (screen) fprintf(screen,"  rem body tag %d ibody %d tag2 %d\n",body_tags_delete_[ilist],ibody,ms_->tag(ibody));
         ms_->remove_body(ibody);
     }
     body_tags_delete_.clear();
