@@ -636,7 +636,7 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         ratio_m = 1. - mass_to_remove_me / mass_shrink_me;
         ratio_r = cbrt(ratio_m);
 
-        for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
+        for(size_t ilist = 0; (ilist < atom_tags_eligible_.size()) && (mass_to_remove_me > 0.); ilist++)
         {
             int i = atom->map(atom_tags_eligible_[ilist]);
             if(i >= 0)
@@ -658,7 +658,6 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
                 rmass[i] *= ratio_m;
                 radius[i] *= ratio_r;
             }
-            if(mass_to_remove_me <= 0.) break;
         }
     }
 
