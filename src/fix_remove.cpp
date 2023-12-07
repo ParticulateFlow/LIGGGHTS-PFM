@@ -741,7 +741,6 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
             if(ilist == atom_tags_eligible_.size())
                 ilist--;
             i = atom->map(atom_tags_eligible_[ilist]);
-            if(i == atom->nlocal) i--;
 
             // delete particle i
             mass_removed_this_me += rmass[i];
@@ -790,6 +789,7 @@ inline void FixRemove::delete_particle(int i)
 {
     // if (screen) fprintf(screen,"[%d] deleting particle %d, nlocal %d, \n",comm->me,i,atom->nlocal);
     atom->avec->copy(atom->nlocal-1,i,1);
+    atom->map_one(atom->tag[atom->nlocal-1], i);
     atom->nlocal--;
 }
 /* ----------------------------------------------------------------------
