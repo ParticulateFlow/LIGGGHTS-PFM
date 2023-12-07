@@ -426,6 +426,8 @@ void FixRemove::pre_exchange()
       atom->tag_extend();
     }
 
+    bigint nblocal = atom->nlocal;
+    MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
 
     if (atom->tag_enable) {
       if (atom->map_style) {
