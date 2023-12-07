@@ -416,14 +416,13 @@ void FixRemove::pre_exchange()
     }
 
     // update tags and map
-    int i;
 
     // if non-molecular system and compress flag set,
     // reset atom tags to be contiguous
 
     if (atom->molecular == 0 && compress_flag_) {
       int *tag = atom->tag;
-      for (i = 0; i < atom->nlocal; i++) tag[i] = 0;
+      for (int i = 0; i < atom->nlocal; i++) tag[i] = 0;
       atom->tag_extend();
     }
 
