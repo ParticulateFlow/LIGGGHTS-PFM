@@ -1074,7 +1074,6 @@ void FixMassflowMeshFace::pre_exchange()
     {
         double mass_deleted_this_ = 0.;
         int nparticles_deleted_this_ = 0.;
-        int *atom_map_array = atom->get_map_array();
 
         // delete particles
 
@@ -1082,16 +1081,25 @@ void FixMassflowMeshFace::pre_exchange()
         {
             int iPart = atom->map(atom_tags_delete_[0]);
 
-            mass_deleted_this_ += atom->rmass[iPart];
-            nparticles_deleted_this_++;
+            if(iPart >= 0)
+            {
+                mass_deleted_this_ += atom->rmass[iPart];
+                nparticles_deleted_this_++;
 
-            atom->avec->copy(atom->nlocal-1,iPart,1);
+                atom->avec->copy(atom->nlocal-1,iPart,1);
 
-            // manipulate atom map array
-            // need to do this since atom map is needed for deletion
-            atom_map_array[atom->tag[atom->nlocal-1]] = iPart;
+                // manipulate atom map array
+                // need to do this since atom map is needed to get local index for deletion
+                atom->map_one(atom->tag[atom->nlocal-1], iPart);
 
-            atom->nlocal--;
+                atom->nlocal--;
+            }
+            else
+            {
+                // particle may have been removed already by a different deleting command
+                // e.g. if the particle is in the neighbor list of the meshes of multiple massflow/mesh fixes
+                error->fix_warning(FLERR, this, "failed to find atom for deletion (possibly already deleted by another deleting command)");
+            }
 
             atom_tags_delete_.erase(atom_tags_delete_.begin());
         }
@@ -1107,6 +1115,9 @@ void FixMassflowMeshFace::pre_exchange()
         // tags and maps
         if(nparticles_deleted_this_)
         {
+            bigint nblocal = atom->nlocal;
+            MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
+
             if (atom->tag_enable) {
               if (atom->map_style) {
                 atom->nghost = 0;
