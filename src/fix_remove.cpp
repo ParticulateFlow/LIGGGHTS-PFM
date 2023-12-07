@@ -538,21 +538,29 @@ void FixRemove::delete_all(double mass_eligible_me,double ratio_ms_to_remove_me,
     for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
     {
         int i = atom->map(atom_tags_eligible_[ilist]);
-        mass_removed_this_me += rmass[i];
-        if(monitor_heat_)
+
+        if(i >= 0)
         {
-            if (internal_energy_)
+            if(monitor_heat_)
             {
-                heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                if (internal_energy_)
+                {
+                    heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                }
+                else
+                {
+                    double Cp = fix_capacity_->compute_vector(type[i]-1);
+                    heat_removed_this_me += rmass[i]*T[i]*Cp;
+                }
             }
-            else
-            {
-                double Cp = fix_capacity_->compute_vector(type[i]-1);
-                heat_removed_this_me += rmass[i]*T[i]*Cp;
-            }
+            mass_removed_this_me += rmass[i];
+            nremoved_this_me++;
+            delete_particle(i);
         }
-        nremoved_this_me++;
-        delete_particle(i);
+        else
+        {
+            error->fix_warning(FLERR, this, "failed to find atom for deletion (tag not mapped)");
+        }
     }
     atom_tags_eligible_.clear();
 
@@ -599,9 +607,8 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
     {
         int i = atom->map(atom_tags_eligible_[ilist]);
 
-        if(radius[i] < delete_below_)
+        if(i >= 0 && radius[i] < delete_below_)
         {
-            mass_removed_this_me += rmass[i];
             if(monitor_heat_)
             {
                 if (internal_energy_)
@@ -614,8 +621,9 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
                     heat_removed_this_me += rmass[i]*T[i]*Cp;
                 }
             }
-            nremoved_this_me++;
+            mass_removed_this_me += rmass[i];
             mass_to_remove_me -= rmass[i];
+            nremoved_this_me++;
             delete_particle(i);
             atom_tags_eligible_.erase(atom_tags_eligible_.begin()+ilist);
         }
@@ -632,22 +640,25 @@ void FixRemove::shrink(double &mass_to_remove_me,double mass_shrink_me,
         for(size_t ilist = 0; ilist <  atom_tags_eligible_.size(); ilist++)
         {
             int i = atom->map(atom_tags_eligible_[ilist]);
-            mass_removed_this_me += (1.-ratio_m)*rmass[i];
-            if(monitor_heat_)
+            if(i >= 0)
             {
-                if (internal_energy_)
+                mass_removed_this_me += (1.-ratio_m)*rmass[i];
+                if(monitor_heat_)
                 {
-                    heat_removed_this_me += (1.-ratio_m)*fix_internal_energy_->vector_atom[i];
+                    if (internal_energy_)
+                    {
+                        heat_removed_this_me += (1.-ratio_m)*fix_internal_energy_->vector_atom[i];
+                    }
+                    else
+                    {
+                        double Cp = fix_capacity_->compute_vector(type[i]-1);
+                        heat_removed_this_me += (1.-ratio_m)*rmass[i]*T[i]*Cp;
+                    }
                 }
-                else
-                {
-                    double Cp = fix_capacity_->compute_vector(type[i]-1);
-                    heat_removed_this_me += (1.-ratio_m)*rmass[i]*T[i]*Cp;
-                }
+                mass_to_remove_me -= (1.-ratio_m)*rmass[i];
+                rmass[i] *= ratio_m;
+                radius[i] *= ratio_r;
             }
-            mass_to_remove_me -= (1.-ratio_m)*rmass[i];
-            rmass[i] *= ratio_m;
-            radius[i] *= ratio_r;
             if(mass_to_remove_me <= 0.) break;
         }
     }
@@ -682,23 +693,26 @@ void FixRemove::delete_partial_particles(double &mass_to_remove_me,
             ilist--;
         int i = atom->map(atom_tags_eligible_[ilist]);
 
-        // delete particle i
-        mass_removed_this_me += rmass[i];
-        if(monitor_heat_)
+        if(i >= 0)
         {
-            if (internal_energy_)
+            // delete particle i
+            mass_removed_this_me += rmass[i];
+            if(monitor_heat_)
             {
-                heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                if (internal_energy_)
+                {
+                    heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                }
+                else
+                {
+                    double Cp = fix_capacity_->compute_vector(type[i]-1);
+                    heat_removed_this_me += rmass[i]*T[i]*Cp;
+                }
             }
-            else
-            {
-                double Cp = fix_capacity_->compute_vector(type[i]-1);
-                heat_removed_this_me += rmass[i]*T[i]*Cp;
-            }
+            nremoved_this_me++;
+            mass_to_remove_me -= rmass[i];
+            delete_particle(i);
         }
-        nremoved_this_me++;
-        mass_to_remove_me -= rmass[i];
-        delete_particle(i);
 
         atom_tags_eligible_.erase(atom_tags_eligible_.begin()+ilist);
     }
@@ -742,23 +756,26 @@ void FixRemove::delete_partial_particles_bodies(double &mass_to_remove_me,
                 ilist--;
             i = atom->map(atom_tags_eligible_[ilist]);
 
-            // delete particle i
-            mass_removed_this_me += rmass[i];
-            if(monitor_heat_)
+            if(i >= 0)
             {
-                if (internal_energy_)
+                // delete particle i
+                mass_removed_this_me += rmass[i];
+                if(monitor_heat_)
                 {
-                    heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                    if (internal_energy_)
+                    {
+                        heat_removed_this_me += fix_internal_energy_->vector_atom[i];
+                    }
+                    else
+                    {
+                        double Cp = fix_capacity_->compute_vector(type[i]-1);
+                        heat_removed_this_me += rmass[i]*T[i]*Cp;
+                    }
                 }
-                else
-                {
-                    double Cp = fix_capacity_->compute_vector(type[i]-1);
-                    heat_removed_this_me += rmass[i]*T[i]*Cp;
-                }
+                nremoved_this_me++;
+                mass_to_remove_me -= rmass[i];
+                delete_particle(i);
             }
-            nremoved_this_me++;
-            mass_to_remove_me -= rmass[i];
-            delete_particle(i);
             atom_tags_eligible_.erase(atom_tags_eligible_.begin()+ilist);
         }
         else
