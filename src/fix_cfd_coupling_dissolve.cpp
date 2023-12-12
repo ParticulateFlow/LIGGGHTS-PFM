@@ -195,22 +195,31 @@ void FixCfdCouplingDissolve::pre_exchange()
     int nparticles_deleted_this = 0;
     AtomVec *avec = atom->avec;
     int nlocal = atom->nlocal;
+    int tag_max = atom->tag_max();
 
     while (atom_tags_delete_.size() > 0)
     {
-        int iPart = atom->map(atom_tags_delete_[0]);
-
-        if(iPart >= 0)
+        if(atom_tags_delete_[0] <= tag_max)
         {
-            nparticles_deleted_this++;
+            int iPart = atom->map(atom_tags_delete_[0]);
 
-            avec->copy(nlocal-1,iPart,1);
+            if(iPart >= 0)
+            {
+                nparticles_deleted_this++;
 
-            // update atom map
-            // need to do this since atom map is needed to get local index for deletion
-            atom->map_one(atom->tag[nlocal-1], iPart);
+                avec->copy(nlocal-1,iPart,1);
 
-            nlocal--;
+                // update atom map
+                // need to do this since atom map is needed to get local index for deletion
+                atom->map_one(atom->tag[nlocal-1], iPart);
+
+                nlocal--;
+            }
+            else
+            {
+                // particle may have been removed already by a different deleting command
+                error->fix_warning(FLERR, this, "failed to find atom for deletion (possibly already deleted by another deleting command)");
+            }
         }
         else
         {
