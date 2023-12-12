@@ -536,25 +536,35 @@ void FixMassflowMesh::pre_exchange()
     {
         double mass_deleted_this_ = 0.;
         int nparticles_deleted_this_ = 0.;
+        int tag_max = atom->tag_max();
 
         // delete particles
 
         while (atom_tags_delete_.size() > 0)
         {
-            int iPart = atom->map(atom_tags_delete_[0]);
-
-            if(iPart >= 0)
+            if(atom_tags_delete_[0] <= tag_max)
             {
-                mass_deleted_this_ += atom->rmass[iPart];
-                nparticles_deleted_this_++;
+                int iPart = atom->map(atom_tags_delete_[0]);
 
-                atom->avec->copy(atom->nlocal-1,iPart,1);
+                if(iPart >= 0)
+                {
+                    mass_deleted_this_ += atom->rmass[iPart];
+                    nparticles_deleted_this_++;
 
-                // update atom map
-                // need to do this since atom map is needed to get local index for deletion
-                atom->map_one(atom->tag[atom->nlocal-1], iPart);
+                    atom->avec->copy(atom->nlocal-1,iPart,1);
 
-                atom->nlocal--;
+                    // update atom map
+                    // need to do this since atom map is needed to get local index for deletion
+                    atom->map_one(atom->tag[atom->nlocal-1], iPart); // update map for copied particle
+
+                    atom->nlocal--;
+                }
+                else
+                {
+                    // particle may have been removed already by a different deleting command
+                    // e.g. if the particle is in the neighbor list of the meshes of multiple massflow/mesh fixes
+                    error->fix_warning(FLERR, this, "failed to find atom for deletion (possibly already deleted by another deleting command)");
+                }
             }
             else
             {
