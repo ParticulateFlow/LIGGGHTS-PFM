@@ -100,7 +100,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             hasargs = true;
         } else if(strcmp(arg[iarg],"mesh") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'insert_stream'");
+                error->fix_error(FLERR,this,"not enough arguments for 'mesh'");
             iarg++;
             fix_mesh_ = static_cast<FixMeshSurface*>(modify->find_fix_id_style(arg[iarg++],"mesh/surface"));
             if(!fix_mesh_)
@@ -114,7 +114,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             hasargs = true;
         } else if(strcmp(arg[iarg],"count") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'insert_stream'");
+                error->fix_error(FLERR,this,"not enough arguments for 'count'");
             iarg++;
             if(strcmp(arg[iarg],"once") == 0)
                 once_ = true;
@@ -168,18 +168,18 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             hasargs = true;
         } else if (strcmp(arg[iarg],"screen") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"Illegal keyword entry");
+                error->fix_error(FLERR,this,"not enough arguments for 'screen'");
             if (strcmp(arg[iarg+1],"yes") == 0) screenflag_ = true;
             else if (strcmp(arg[iarg+1],"no") == 0) screenflag_ = false;
-            else error->all(FLERR,"Illegal fix print command");
+            else error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'screen'");
             iarg += 2;
             hasargs = true;
         } else if (strcmp(arg[iarg],"delete_atoms") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"Illegal keyword entry");
+                error->fix_error(FLERR,this,"not enough arguments for 'delete_atoms'");
             if (strcmp(arg[iarg+1],"yes") == 0) delete_atoms_ = true;
             else if (strcmp(arg[iarg+1],"no") == 0) delete_atoms_ = false;
-            else error->all(FLERR,"Illegal delete command");
+            else error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'delete_atoms'");
             iarg += 2;
             hasargs = true;
         } else if(strcmp(style,"massflow/mesh") == 0)
