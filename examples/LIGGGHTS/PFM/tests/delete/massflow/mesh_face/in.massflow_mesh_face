@@ -42,7 +42,7 @@ fix surface_left  all mesh/surface file meshes/surface.vtk type 1 verbose yes ce
 fix surface_right all mesh/surface file meshes/surface.vtk type 1 verbose yes cell_data yes move +0.5 0.0 0.0
 
 fix massflow_left  all massflow/mesh/face mesh surface_left  count once file post/testmassflowleft.txt  inside_out delete_atoms yes
-fix massflow_right all massflow/mesh/face mesh surface_right count once file post/testmassflowright.txt inside_out delete_atoms yes verbose no
+fix massflow_right all massflow/mesh/face mesh surface_right count once file post/testmassflowright.txt inside_out delete_atoms yes verbose yes
 
 # insertion
 create_atoms 1 single -0.75  -0.25 0.1
