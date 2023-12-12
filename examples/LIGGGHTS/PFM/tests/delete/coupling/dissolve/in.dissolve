@@ -1,0 +1,90 @@
+################################################################################
+# brief: Test particle deletion by fix couple/cfd/dissolve                     #
+#                                                                              #
+# Check that the correct particles (with IDs 1, 7 and 8) are removed           #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Dec 2023                                                               #
+# copyright: 2023- JKU Linz                                                    #
+################################################################################
+
+atom_style      granular
+atom_modify     map array sort 0 0
+communicate     single vel yes
+
+boundary        f f p
+newton          off
+
+units           si
+
+region          domain block -1.0 1.0  0.0 0.2  0.0 0.2  units box
+
+create_box      1 domain
+
+neighbor        0.01 bin
+neigh_modify    delay 0
+
+# material properties for granular pair style
+fix m1 all property/global youngsModulus peratomtype 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.5
+
+# pair style
+pair_style  gran model hertz tangential history
+pair_coeff  * *
+
+# timestep
+timestep    0.00001
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+# particle insertion
+create_atoms    1 single -0.9 0.1 0.05 units box
+create_atoms    1 single -0.7 0.1 0.05 units box
+create_atoms    1 single -0.5 0.1 0.05 units box
+create_atoms    1 single -0.3 0.1 0.05 units box
+create_atoms    1 single  0.3 0.1 0.05 units box
+create_atoms    1 single  0.5 0.1 0.05 units box
+create_atoms    1 single  0.7 0.1 0.05 units box
+create_atoms    1 single  0.9 0.1 0.05 units box
+set             atom 1 type 1 diameter 0.04 density 2000.
+set             atom 2 type 1 diameter 0.04 density 2000.
+set             atom 3 type 1 diameter 0.04 density 2000.
+set             atom 4 type 1 diameter 0.04 density 2000.
+set             atom 5 type 1 diameter 0.04 density 2000.
+set             atom 6 type 1 diameter 0.04 density 2000.
+set             atom 7 type 1 diameter 0.04 density 2000.
+set             atom 8 type 1 diameter 0.04 density 2000.
+
+# apply nve integration
+fix integr all nve/sphere
+
+# screen output
+variable        all_mass equal mass(all)
+variable        radii atom radius
+variable        ids atom id
+compute         minRad all reduce min v_radii
+compute         minID all reduce min v_ids
+compute         maxID all reduce max v_ids
+thermo_style    custom step atoms ke v_all_mass c_minRad c_minID c_maxID
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+dump    dmp all custom 1000 post/dump*.dissolve id type x y z radius
+#dump    dmp all custom/vtk 1000 post/dissolve*.vtk id type x y z radius
+
+fix     cfd all couple/cfd couple_every 1000 mpi
+# remove particles with mass below certain threshold (calculated from rmin and density)
+fix     dissolve all couple/cfd/dissolve rmin 0.015
+
+run     2000
+
+# reduce mass so that fix couple/cfd/dissolve removes particles
+variable min_mass equal 2000.0*0.01*0.01*0.01*4.*PI/3.
+set atom 1 mass ${min_mass}
+set atom 7 mass ${min_mass}
+set atom 8 mass ${min_mass}
+
+run     2000
+
