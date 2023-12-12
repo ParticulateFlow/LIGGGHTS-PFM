@@ -71,6 +71,12 @@ namespace LAMMPS_NS
         void get_reference_point(double *point)
         { fix_move_mesh_->get_reference_point(point); }
 
+        void add_reference_axis(double *axis)
+        { fix_move_mesh_->add_reference_axis(axis); }
+
+        void get_reference_axis(double *axis)
+        { fix_move_mesh_->get_reference_axis(axis); }
+
         double ***get_nodes()
         { return mesh_->nodePtr(); }
 
@@ -174,6 +180,28 @@ namespace LAMMPS_NS
                             double axisX, double axisY, double axisZ,
                             double T);
         virtual ~MeshMoverRotate();
+
+        void initial_integrate(double dTAbs,double dTSetup,double dt);
+        void final_integrate(double dTAbs,double dTSetup,double dt) {}
+        void pre_delete();
+        void post_create();
+
+      private:
+
+        double axis_[3], point_[3], omega_;
+  };
+
+  /* ---------------------------------------------------------------------- */
+
+  class MeshMoverRotateModified : public MeshMover {
+
+      public:
+
+        MeshMoverRotateModified(LAMMPS *lmp,AbstractMesh *_mesh,FixMoveMesh *_fix_move_mesh,
+                            double px, double py,double pz,
+                            double axisX, double axisY, double axisZ,
+                            double T);
+        virtual ~MeshMoverRotateModified();
 
         void initial_integrate(double dTAbs,double dTSetup,double dt);
         void final_integrate(double dTAbs,double dTSetup,double dt) {}
@@ -314,6 +342,29 @@ namespace LAMMPS_NS
                 return 0;
 
             return new MeshMoverRotate(lmp,mesh,fix_mm,
+                          // origin
+                          lmp->force->numeric(FLERR,arg[2]),
+                          lmp->force->numeric(FLERR,arg[3]),
+                          lmp->force->numeric(FLERR,arg[4]),
+                          // axis
+                          lmp->force->numeric(FLERR,arg[6]),
+                          lmp->force->numeric(FLERR,arg[7]),
+                          lmp->force->numeric(FLERR,arg[8]),
+                          // period
+                          lmp->force->numeric(FLERR,arg[10]));
+          }
+      } else if(strcmp(name,"rotate/modified") == 0){
+          if(narg < 11) return 0;
+          else
+          {
+            if(strcmp("origin",arg[1]))
+                return 0;
+            if(strcmp("axis",arg[5]))
+                return 0;
+            if(strcmp("period",arg[9]))
+                return 0;
+
+            return new MeshMoverRotateModified(lmp,mesh,fix_mm,
                           // origin
                           lmp->force->numeric(FLERR,arg[2]),
                           lmp->force->numeric(FLERR,arg[3]),
