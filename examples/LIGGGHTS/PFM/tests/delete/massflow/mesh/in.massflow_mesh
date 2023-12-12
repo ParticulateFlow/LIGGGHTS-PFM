@@ -9,7 +9,7 @@
 ################################################################################
 
 atom_style  granular
-atom_modify map array
+atom_modify map array sort 0 0
 boundary    f f f
 newton      off
 
