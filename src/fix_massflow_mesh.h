@@ -91,6 +91,7 @@ class FixMassflowMesh : public Fix {
   class FixPropertyAtom *fix_property_;
   double property_sum_;
 
+  bool verbose_;
   // data write
   bool screenflag_;
   FILE *fp_;
