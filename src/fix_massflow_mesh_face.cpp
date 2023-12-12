@@ -75,6 +75,7 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
   property_check_int_(false),
   fix_property_(NULL),
   property_sum_(0.),
+  verbose_(false),
   screenflag_(false),
   fp_(NULL),
   mass_last_(0.),
@@ -172,6 +173,15 @@ FixMassflowMeshFace::FixMassflowMeshFace(LAMMPS *lmp, int narg, char **arg) :
                 sprintf(str,"Cannot open file %s",arg[iarg+1]);
                 error->fix_error(FLERR,this,str);
             }
+            iarg += 2;
+            hasargs = true;
+        } else if (strcmp(arg[iarg],"verbose") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'verbose'");
+            if(strcmp(arg[iarg+1],"yes") == 0)
+                verbose_ = true;
+            else if(strcmp(arg[iarg+1],"no") != 0)
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'verbose'");
             iarg += 2;
             hasargs = true;
         } else if (strcmp(arg[iarg],"screen") == 0) {
@@ -1097,14 +1107,14 @@ void FixMassflowMeshFace::pre_exchange()
 
                     atom->nlocal--;
                 }
-                else
+                else if (verbose_)
                 {
                     // particle may have been removed already by a different deleting command
                     // e.g. if the particle is in the neighbor list of the meshes of multiple massflow/mesh fixes or on a shared edge
                     error->fix_warning(FLERR, this, "failed to find atom for deletion (possibly already deleted by another deleting command)");
                 }
             }
-            else
+            else if (verbose_)
             {
                 // particle may have been removed already by a different deleting command
                 // e.g. if the particle is in the neighbor list of the meshes of multiple massflow/mesh fixes or on a shared edge
