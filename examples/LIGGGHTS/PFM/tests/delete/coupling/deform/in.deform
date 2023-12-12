@@ -1,0 +1,102 @@
+################################################################################
+# brief: Test particle deletion by fix couple/cfd/deform                       #
+#                                                                              #
+# Check that the correct particles (with IDs 1 and 8) are removed              #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Dec 2023                                                               #
+# copyright: 2023- JKU Linz                                                    #
+################################################################################
+
+atom_style      granular
+atom_modify     map array sort 0 0
+communicate     single vel yes
+
+boundary        f f p
+newton          off
+
+units           si
+
+region          domain block -1.0 1.0  0.0 0.2  0.0 0.2  units box
+
+create_box      1 domain
+
+neighbor        0.01 bin
+neigh_modify    delay 0
+
+# material properties for granular pair style
+fix m1 all property/global youngsModulus peratomtype 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.5
+fix fp all property/atom/polydispparcel effvolfactor 1.0
+
+# pair style
+pair_style  gran model hertz tangential history
+pair_coeff  * *
+
+# timestep
+timestep    0.00001
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+# particle insertion
+create_atoms    1 single -0.9 0.1 0.05 units box
+create_atoms    1 single -0.7 0.1 0.05 units box
+create_atoms    1 single -0.5 0.1 0.05 units box
+create_atoms    1 single -0.3 0.1 0.05 units box
+create_atoms    1 single  0.3 0.1 0.05 units box
+create_atoms    1 single  0.5 0.1 0.05 units box
+create_atoms    1 single  0.7 0.1 0.05 units box
+create_atoms    1 single  0.9 0.1 0.05 units box
+set             atom 1 type 1 diameter 0.04 density 2000.
+set             atom 2 type 1 diameter 0.04 density 2000.
+set             atom 3 type 1 diameter 0.04 density 2000.
+set             atom 4 type 1 diameter 0.04 density 2000.
+set             atom 5 type 1 diameter 0.04 density 2000.
+set             atom 6 type 1 diameter 0.04 density 2000.
+set             atom 7 type 1 diameter 0.04 density 2000.
+set             atom 8 type 1 diameter 0.04 density 2000.
+
+group fullyDeformed empty
+
+# apply nve integration
+fix integr all nve/sphere
+
+# screen output
+variable        all_mass equal mass(all)
+variable        radii atom radius
+variable        ids atom id
+compute         minRad all reduce min v_radii
+compute         minID all reduce min v_ids
+compute         maxID all reduce max v_ids
+thermo_style    custom step atoms ke v_all_mass c_minRad c_minID c_maxID
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+dump    dmp all custom 1000 post/dump*.deform id type x y z radius
+#dump    dmp all custom/vtk 1000 post/deform*.vtk id type x y z radius
+
+fix     cfd all couple/cfd couple_every 1000 file ./
+fix     deform all couple/cfd/deform rmin 0.015 delete_fully_deformed_particles yes compress no verbose yes
+
+# prepare coupling file
+variable fileName0 string ./partDeformations0
+variable fileName1 string ./partDeformations1
+shell rm ${fileName0}
+shell echo '8' >> ${fileName0}
+shell echo '1.0' >> ${fileName0}
+shell echo '0.0' >> ${fileName0}
+shell echo '0.0' >> ${fileName0}
+shell echo '0.0' >> ${fileName0}
+shell echo '0.0' >> ${fileName0}
+shell echo '0.0' >> ${fileName0}
+shell echo '0.0' >> ${fileName0}
+shell echo '1.0' >> ${fileName0}
+
+# after reading, couple/cfd file renames coupling file
+# rename it again for reuse in next coupling step
+run 2000 pre no post no every 1000 "shell mv ${fileName1} ${fileName0}"
+
+run 1 pre no
+
