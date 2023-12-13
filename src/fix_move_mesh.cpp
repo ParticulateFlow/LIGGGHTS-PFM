@@ -337,7 +337,6 @@ void FixMoveMesh::add_reference_axis(double *axis)
     if(mesh_->prop().getGlobalProperty<VectorContainer<double,3> >(refax_id))
         error->fix_error(FLERR,this,"only one reference axis allowed");
 
-    /*NL*/ //if (screen) printVec3D(screen,"adding axis",axis);
     vectorCopy3D(axis,reference_axis_);
 
     mesh_->prop().addGlobalProperty<VectorContainer<double,3> >(refax_id,"comm_none","frame_scale_trans_invariant","restart_no");
@@ -357,25 +356,24 @@ void FixMoveMesh::get_reference_axis(double *axis)
     if(!refax)
         error->fix_error(FLERR,this,"internal error");
 
-    //NP need to explicitly reset reference axis
-    //NP otherwise would be too late since reset is called in rotate()
-    //NP or move() only and first mesh mover needs resetted reference axis
-    //NP so only do this for first mesh mover
+    // need to explicitly reset reference axis
+    // otherwise would be too late since reset is called in rotate()
+    // or move() only and first mesh mover needs resetted reference axis
+    // so only do this for first mesh mover
     if(move_->isFirst())
         mesh_->prop().resetGlobalPropToOrig(refax_id);
 
     refax->get(0,axis);
     vectorCopy3D(axis,reference_axis_);
-    /*NL*/ //if (screen) printVec3D(screen,"getting axis",axis);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMoveMesh::reset_reference_axis()
 {
-    //NP need to re-set reference axis from local copy upon setup
-    //NP this ensures orig value of reference_axis for fix i has been
-    //NP handled by fixes i-1, i-2,... only (not by i, i+1,...)
+    // need to reset reference axis from local copy upon setup
+    // this ensures orig value of reference_axis for fix i has been
+    // handled by fixes i-1, i-2,... only (not by i, i+1,...)
 
     VectorContainer<double,3> *refax;
     char refax_id[200];
@@ -392,6 +390,4 @@ void FixMoveMesh::reset_reference_axis()
 
     // set orig value for property
     mesh_->prop().storeGlobalPropOrig(refax_id);
-
-    /*NL*/ //if (screen) printVec3D(screen,"re-setting axis",reference_axis_);
 }

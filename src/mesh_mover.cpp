@@ -413,20 +413,17 @@ void MeshMoverRotateModified::initial_integrate(double dTAbs,double dTSetup,doub
     const double totalPhi = omega_*dTSetup;
     const double incrementalPhi = omega_*dt;
 
-    //NP get reference point which might have been
-    //NP manipulated (translated, rotated) by move
-    //NP commands which come before this move command
+    // get reference point and axis which might have been
+    // manipulated (translated, rotated) by move
+    // commands which come before this move command
     get_reference_point(reference_point);
     get_reference_axis(rotation_axis);
 
-    //NP size includes owned and ghost elements
+    // size includes owned and ghost elements
     const int size = mesh_->size();
     const int numNodes = mesh_->numNodes();
     double *** const v_node = get_v();
     double *** const nodes = get_nodes();
-
-    /*NL*/ //if (screen) fprintf(screen,"dTAbs %f dTSetup %f totalPhi %f incrementalPhi %f reference_point %f %f %f\n",
-    /*NL*/ //               dTAbs,dTSetup,totalPhi,incrementalPhi,reference_point[0],reference_point[1],reference_point[2]);
 
     // rotate the mesh
     mesh_->rotate(incrementalPhi,rotation_axis,reference_point);
