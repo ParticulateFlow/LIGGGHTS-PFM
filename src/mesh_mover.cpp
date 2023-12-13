@@ -410,7 +410,6 @@ void MeshMoverRotateModified::initial_integrate(double dTAbs,double dTSetup,doub
     double omegaVec[3];
     double reference_point[3];
     double rotation_axis[3];
-    const double totalPhi = omega_*dTSetup;
     const double incrementalPhi = omega_*dt;
 
     // get reference point and axis which might have been
