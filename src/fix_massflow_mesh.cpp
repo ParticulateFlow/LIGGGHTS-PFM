@@ -169,11 +169,11 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             hasargs = true;
         } else if (strcmp(arg[iarg],"verbose") == 0) {
             if(narg < iarg+2)
-              error->fix_error(FLERR,this,"not enough arguments for 'verbose'");
+                error->fix_error(FLERR,this,"not enough arguments for 'verbose'");
             if(strcmp(arg[iarg+1],"yes") == 0)
-              verbose_ = true;
+                verbose_ = true;
             else if(strcmp(arg[iarg+1],"no") != 0)
-              error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'verbose'");
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'verbose'");
             iarg += 2;
             hasargs = true;
         } else if (strcmp(arg[iarg],"screen") == 0) {
