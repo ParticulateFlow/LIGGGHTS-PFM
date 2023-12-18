@@ -193,15 +193,15 @@ namespace LAMMPS_NS
 
   /* ---------------------------------------------------------------------- */
 
-  class MeshMoverRotateModified : public MeshMover {
+  class MeshMoverRotateSuperposable : public MeshMover {
 
       public:
 
-        MeshMoverRotateModified(LAMMPS *lmp,AbstractMesh *_mesh,FixMoveMesh *_fix_move_mesh,
+        MeshMoverRotateSuperposable(LAMMPS *lmp,AbstractMesh *_mesh,FixMoveMesh *_fix_move_mesh,
                             double px, double py,double pz,
                             double axisX, double axisY, double axisZ,
                             double T);
-        virtual ~MeshMoverRotateModified();
+        virtual ~MeshMoverRotateSuperposable();
 
         void initial_integrate(double dTAbs,double dTSetup,double dt);
         void final_integrate(double dTAbs,double dTSetup,double dt) {}
@@ -353,7 +353,7 @@ namespace LAMMPS_NS
                           // period
                           lmp->force->numeric(FLERR,arg[10]));
           }
-      } else if(strcmp(name,"rotate/modified") == 0){
+      } else if(strcmp(name,"rotate/superposable") == 0){
           if(narg < 11) return 0;
           else
           {
@@ -364,7 +364,7 @@ namespace LAMMPS_NS
             if(strcmp("period",arg[9]))
                 return 0;
 
-            return new MeshMoverRotateModified(lmp,mesh,fix_mm,
+            return new MeshMoverRotateSuperposable(lmp,mesh,fix_mm,
                           // origin
                           lmp->force->numeric(FLERR,arg[2]),
                           lmp->force->numeric(FLERR,arg[3]),

@@ -363,10 +363,10 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 }
 
 /* ----------------------------------------------------------------------
-   MeshMoverRotateModified
+   MeshMoverRotateSuperposable
 ------------------------------------------------------------------------- */
 
-MeshMoverRotateModified::MeshMoverRotateModified(LAMMPS *lmp,AbstractMesh *_mesh,
+MeshMoverRotateSuperposable::MeshMoverRotateSuperposable(LAMMPS *lmp,AbstractMesh *_mesh,
                                  FixMoveMesh *_fix_move_mesh,
                                  double px, double py, double pz,
                                  double axisX, double axisY, double axisZ,
@@ -388,24 +388,24 @@ MeshMoverRotateModified::MeshMoverRotateModified(LAMMPS *lmp,AbstractMesh *_mesh
     add_reference_point(point_);
 }
 
-void MeshMoverRotateModified::post_create()
+void MeshMoverRotateSuperposable::post_create()
 {
     isFirst_ = mesh_->registerMove(false,true,true);
 }
 
-void MeshMoverRotateModified::pre_delete()
+void MeshMoverRotateSuperposable::pre_delete()
 {
     mesh_->unregisterMove(false,true,true);
 }
 
-MeshMoverRotateModified::~MeshMoverRotateModified()
+MeshMoverRotateSuperposable::~MeshMoverRotateSuperposable()
 {
 
 }
 
 /* ---------------------------------------------------------------------- */
 
-void MeshMoverRotateModified::initial_integrate(double dTAbs,double dTSetup,double dt)
+void MeshMoverRotateSuperposable::initial_integrate(double dTAbs,double dTSetup,double dt)
 {
     double omegaVec[3];
     double reference_point[3];

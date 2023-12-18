@@ -68,7 +68,7 @@ variable period1 equal 0.1
 
 
 # Rotation of the inner mesh
-fix     moveInner00 all move/mesh mesh cad1 rotate/modified &
+fix     moveInner00 all move/mesh mesh cad1 rotate/superposable &
             origin 0.0 0.0 0.0 &
             axis   0.0 0.0 1.0 &
             period ${period0}
@@ -79,12 +79,12 @@ fix     moveInner00 all move/mesh mesh cad1 rotate/modified &
 #   the outer mesh rotates around the local y-axis
 #   hence, the rotation of the inner mesh must be applied first
 #   then the rotation of the outer mesh relative to the inner mesh can be specified
-fix     moveOuter00 all move/mesh mesh cad2 rotate/modified &
+fix     moveOuter00 all move/mesh mesh cad2 rotate/superposable &
             origin 0.0 0.0 0.0 &
             axis   0.0 0.0 1.0 &
             period ${period0}
 
-fix     moveOuter01 all move/mesh mesh cad2 rotate/modified &
+fix     moveOuter01 all move/mesh mesh cad2 rotate/superposable &
             origin 1.0 0.0 0.0 &
             axis   0.0 1.0 0.0 &
             period ${period1}
