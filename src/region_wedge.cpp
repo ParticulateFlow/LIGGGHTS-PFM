@@ -80,8 +80,8 @@ RegWedge::RegWedge(LAMMPS *lmp, int narg, char **arg) : Region(lmp, narg, arg)
   } else if (axis == 'y') {
     if(strcmp(arg[iarg++],"center"))
         error->all(FLERR,"Illegal region wegde command, expecting keyword 'center'");
-    c1 = xscale*atof(arg[iarg++]);
-    c2 = zscale*atof(arg[iarg++]);
+    c1 = zscale*atof(arg[iarg++]);
+    c2 = xscale*atof(arg[iarg++]);
     if(strcmp(arg[iarg++],"radius"))
         error->all(FLERR,"Illegal region wegde command, expecting keyword 'radius'");
     radius = xscale*atof(arg[iarg++]);
@@ -255,12 +255,12 @@ RegWedge::RegWedge(LAMMPS *lmp, int narg, char **arg) : Region(lmp, narg, arg)
       extent_zhi = c2 + bmax;
     }
     if (axis == 'y') {
-      extent_xlo = c1 + bmin;
-      extent_xhi = c1 + bmax;
+      extent_xlo = c2 + bmin;
+      extent_xhi = c2 + bmax;
       extent_ylo = lo;
       extent_yhi = hi;
-      extent_zlo = c2 + amin;
-      extent_zhi = c2 + amax;
+      extent_zlo = c1 + amin;
+      extent_zhi = c1 + amax;
     }
     if (axis == 'z') {
       extent_xlo = c1 + amin;
