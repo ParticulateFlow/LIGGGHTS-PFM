@@ -74,8 +74,7 @@ Region::~Region()
   delete [] zstr;
   delete [] tstr;
 
-  //NP modified C.K.
-  if (random) delete random;
+  delete random;
 }
 
 /* ---------------------------------------------------------------------- */
