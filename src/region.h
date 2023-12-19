@@ -53,8 +53,8 @@ class Region : protected Pointers {
   Region(class LAMMPS *, int, char **);
   virtual ~Region();
   virtual void init();
-  virtual int dynamic_check();
   virtual void rebuild() {}
+  int dynamic_check();
 
   // called by other classes to check point versus region
 
