@@ -630,6 +630,8 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
         pos[1] = extent_ylo + random->uniform() * (extent_yhi - extent_ylo);
         pos[2] = extent_zlo + random->uniform() * (extent_zhi - extent_zlo);
 
+        if (dynamic) forward_transform(pos[0],pos[1],pos[2]);
+
         if(!domain->is_in_domain(pos)) continue;
 
         // point is in region
