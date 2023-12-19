@@ -234,3 +234,14 @@ void RegUnion::shape_update()
   for (int ilist = 0; ilist < nregion; ilist++)
     regions[list[ilist]]->shape_update();
 }
+
+/* ----------------------------------------------------------------------
+   move/rotate all sub-regions
+------------------------------------------------------------------------- */
+
+void RegUnion::pretransform()
+{
+  Region **regions = domain->regions;
+  for (int ilist = 0; ilist < nregion; ilist++)
+      regions[list[ilist]]->pretransform();
+}

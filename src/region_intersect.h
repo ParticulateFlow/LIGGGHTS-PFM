@@ -33,6 +33,7 @@ class RegIntersect : public Region {
   int surface_interior(double *, double);
   int surface_exterior(double *, double);
   void shape_update();
+  void pretransform();
 
  private:
   int nregion;

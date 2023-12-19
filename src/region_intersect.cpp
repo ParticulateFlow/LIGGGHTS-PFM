@@ -242,3 +242,14 @@ void RegIntersect::shape_update()
   for (int ilist = 0; ilist < nregion; ilist++)
     regions[list[ilist]]->shape_update();
 }
+
+/* ----------------------------------------------------------------------
+   move/rotate all sub-regions
+------------------------------------------------------------------------- */
+
+void RegIntersect::pretransform()
+{
+  Region **regions = domain->regions;
+  for (int ilist = 0; ilist < nregion; ilist++)
+      regions[list[ilist]]->pretransform();
+}
