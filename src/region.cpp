@@ -508,6 +508,7 @@ void Region::generate_random(double *pos,bool subdomain_flag)
         pos[0] = lo[0] + random->uniform()*diff[0];
         pos[1] = lo[1] + random->uniform()*diff[1];
         pos[2] = lo[2] + random->uniform()*diff[2];
+        if (dynamic) forward_transform(pos[0],pos[1],pos[2]);
     }
     while(!match(pos[0],pos[1],pos[2]));
     /*NL*///if (screen) fprintf(screen,"SUCCESS\n");
@@ -537,6 +538,7 @@ void Region::generate_random_shrinkby_cut(double *pos,double cut,bool subdomain_
         pos[2] = lo[2] + random->uniform()*diff[2];
         /*NL*/// if (screen) fprintf(screen,"cut %f\n",cut);
         /*NL*/// if (screen) printVec3D(screen,"diff",diff);
+        if (dynamic) forward_transform(pos[0],pos[1],pos[2]);
     }
     // pos has to be within region, but not within cut of region surface
     while(!match(pos[0],pos[1],pos[2]) || match_cut(pos,cut));
@@ -557,6 +559,7 @@ void Region::generate_random_expandby_cut(double *pos,double cut,bool subdomain_
         pos[0] = lo[0] + random->uniform()*diff[0];
         pos[1] = lo[1] + random->uniform()*diff[1];
         pos[2] = lo[2] + random->uniform()*diff[2];
+        if (dynamic) forward_transform(pos[0],pos[1],pos[2]);
     }
     // pos has to be within region or within a distance (=cut) to region
     while( !match_expandby_cut(pos,cut) );
