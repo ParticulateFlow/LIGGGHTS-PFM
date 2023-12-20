@@ -64,6 +64,10 @@ namespace LAMMPS_NS
         void get_reference_point(double *point);
         void reset_reference_point();
 
+        void add_reference_axis(double *axis);
+        void get_reference_axis(double *axis);
+        void reset_reference_axis();
+
         class AbstractMesh * mesh()
         { return mesh_; }
 
@@ -82,6 +86,7 @@ namespace LAMMPS_NS
         double time_since_setup_;
 
         double reference_point_[3];
+        double reference_axis_[3];
   };
 } /* namespace LAMMPS_NS */
 #endif

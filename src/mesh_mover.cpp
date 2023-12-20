@@ -363,6 +363,89 @@ void MeshMoverRotate::initial_integrate(double dTAbs,double dTSetup,double dt)
 }
 
 /* ----------------------------------------------------------------------
+   MeshMoverRotateSuperposable
+------------------------------------------------------------------------- */
+
+MeshMoverRotateSuperposable::MeshMoverRotateSuperposable(LAMMPS *lmp,AbstractMesh *_mesh,
+                                 FixMoveMesh *_fix_move_mesh,
+                                 double px, double py, double pz,
+                                 double axisX, double axisY, double axisZ,
+                                 double T)
+  : MeshMover(lmp,_mesh,_fix_move_mesh),
+    omega_(2.*M_PI/T)
+{
+    axis_[0] = axisX;
+    axis_[1] = axisY;
+    axis_[2] = axisZ;
+
+    vectorNormalize3D(axis_);
+    add_reference_axis(axis_);
+
+    point_[0] = px;
+    point_[1] = py;
+    point_[2] = pz;
+
+    add_reference_point(point_);
+}
+
+void MeshMoverRotateSuperposable::post_create()
+{
+    isFirst_ = mesh_->registerMove(false,true,true);
+}
+
+void MeshMoverRotateSuperposable::pre_delete()
+{
+    mesh_->unregisterMove(false,true,true);
+}
+
+MeshMoverRotateSuperposable::~MeshMoverRotateSuperposable()
+{
+
+}
+
+/* ---------------------------------------------------------------------- */
+
+void MeshMoverRotateSuperposable::initial_integrate(double dTAbs,double dTSetup,double dt)
+{
+    double omegaVec[3];
+    double reference_point[3];
+    double rotation_axis[3];
+    const double incrementalPhi = omega_*dt;
+
+    // get reference point and axis which might have been
+    // manipulated (translated, rotated) by move
+    // commands which come before this move command
+    get_reference_point(reference_point);
+    get_reference_axis(rotation_axis);
+
+    // size includes owned and ghost elements
+    const int size = mesh_->size();
+    const int numNodes = mesh_->numNodes();
+    double *** const v_node = get_v();
+    double *** const nodes = get_nodes();
+
+    // rotate the mesh
+    mesh_->rotate(incrementalPhi,rotation_axis,reference_point);
+
+    // set mesh velocity, w x rPA
+    vectorScalarMult3D(rotation_axis,omega_,omegaVec);
+
+    #if defined(_OPENMP)
+    #pragma omp parallel for shared(reference_point,omegaVec)
+    #endif
+    for(int i = 0; i < size; i++)
+    {
+      for(int iNode = 0; iNode < numNodes; iNode++)
+      {
+          double vRot[3],rPA[3];
+          vectorSubtract3D(nodes[i][iNode],reference_point,rPA);
+          vectorCross3D(omegaVec,rPA,vRot);
+          vectorAdd3D(v_node[i][iNode],vRot,v_node[i][iNode]);
+      }
+    }
+}
+
+/* ----------------------------------------------------------------------
    MeshMoverRotateVariable
 ------------------------------------------------------------------------- */
 

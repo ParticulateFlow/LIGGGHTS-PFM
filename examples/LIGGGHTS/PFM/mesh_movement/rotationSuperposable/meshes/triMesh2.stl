@@ -1,0 +1,9 @@
+solid triMesh
+facet normal 0 0 1
+  outer loop
+    vertex 1 0.1 -0.1
+    vertex 2 0.0 -0.1
+    vertex 1 -0.1 -0.1
+  endloop
+endfacet
+endsolid triMesh
