@@ -138,7 +138,7 @@ around the rotation axis is consistent with the right-hand rule:
 if your right-hand's thumb points along {R}, then your fingers 
 wrap around the axis in the direction of rotation.
 
-The {rotate/superposable} style is a copy of the {rotate} style. The input
+The {rotate/superposable} style is similar to the {rotate} style. The input
 syntax is identical. The difference to the {rotate} style lies in the
 internal workings of this style. The axis of rotation is made a property
 of the mesh, i.e., when super-imposing rotations, the axis is rotated
