@@ -17,7 +17,7 @@ ID is documented in "fix"_fix.html command, group-ID is ignored :ulb,l
 move/mesh = style name of this fix command :l
 mesh = obligatory keyword :l
 mesh-ID = ID for the fix mesh that the fix move/mesh is applied to :l
-style = {linear} or {linear/variable} or {wiggle} or {riggle} or {rotate} or {rotate/modified} or {rotate/variable} or {viblin} or {vibrot} :l
+style = {linear} or {linear/variable} or {wiggle} or {riggle} or {rotate} or {rotate/superposable} or {rotate/variable} or {viblin} or {vibrot} :l
   {linear} args = Vx Vy Vz
     Vx,Vy,Vz = components of velocity vector (velocity units)
   {linear/variable} args = var_Vx var_Vy var_Vz
