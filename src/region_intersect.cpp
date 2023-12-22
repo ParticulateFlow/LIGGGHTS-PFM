@@ -54,6 +54,18 @@ RegIntersect::RegIntersect(LAMMPS *lmp, int narg, char **arg) :
   for (int ilist = 0; ilist < nregion; ilist++) {
     if (regions[list[ilist]]->varshape) varshape = 1;
     if (regions[list[ilist]]->dynamic) dynamic = 1;
+    if (regions[list[ilist]]->moveflag) {
+      moveflag = 1;
+    }
+    if (regions[list[ilist]]->rotateflag) {
+      rotateflag = 1;
+      point[0] = regions[list[ilist]]->point[0];
+      point[1] = regions[list[ilist]]->point[1];
+      point[2] = regions[list[ilist]]->point[2];
+      runit[0] = regions[list[ilist]]->runit[0];
+      runit[1] = regions[list[ilist]]->runit[1];
+      runit[2] = regions[list[ilist]]->runit[2];
+    }
   }
 
   // extent of intersection of regions
@@ -118,7 +130,7 @@ void RegIntersect::init()
   for (int ilist = 0; ilist < nregion; ilist++) {
     iregion = domain->find_region(idsub[ilist]);
     if (iregion == -1)
-      error->all(FLERR,"Region union region ID does not exist");
+      error->all(FLERR,"Region intersect region ID does not exist");
     list[ilist] = iregion;
   }
 
@@ -139,7 +151,7 @@ int RegIntersect::inside(double x, double y, double z)
   int ilist;
   Region **regions = domain->regions;
   for (ilist = 0; ilist < nregion; ilist++)
-    if (!regions[list[ilist]]->match(x,y,z)) break;
+    if (regions[list[ilist]]->inside(x,y,z) ^ regions[list[ilist]]->interior) break;
 
   if (ilist == nregion) return 1;
   return 0;
@@ -251,5 +263,14 @@ void RegIntersect::pretransform()
 {
   Region **regions = domain->regions;
   for (int ilist = 0; ilist < nregion; ilist++)
-      regions[list[ilist]]->pretransform();
+    regions[list[ilist]]->pretransform();
+
+  if (moveflag) {
+    dx = regions[list[0]]->dx;
+    dy = regions[list[0]]->dy;
+    dz = regions[list[0]]->dz;
+  }
+  if (rotateflag) {
+    theta = regions[list[0]]->theta;
+  }
 }

@@ -55,6 +55,16 @@ RegUnion::RegUnion(LAMMPS *lmp, int narg, char **arg) : Region(lmp, narg, arg)
   for (int ilist = 0; ilist < nregion; ilist++) {
     if (regions[list[ilist]]->varshape) varshape = 1;
     if (regions[list[ilist]]->dynamic) dynamic = 1;
+    if (regions[list[ilist]]->moveflag) moveflag = 1;
+    if (regions[list[ilist]]->rotateflag) {
+      rotateflag = 1;
+      point[0] = regions[list[ilist]]->point[0];
+      point[1] = regions[list[ilist]]->point[1];
+      point[2] = regions[list[ilist]]->point[2];
+      runit[0] = regions[list[ilist]]->runit[0];
+      runit[1] = regions[list[ilist]]->runit[1];
+      runit[2] = regions[list[ilist]]->runit[2];
+    }
   }
 
   // extent of union of regions
@@ -131,7 +141,7 @@ int RegUnion::inside(double x, double y, double z)
   int ilist;
   Region **regions = domain->regions;
   for (ilist = 0; ilist < nregion; ilist++)
-    if (regions[list[ilist]]->match(x,y,z)) break;
+    if (!(regions[list[ilist]]->inside(x,y,z) ^ regions[list[ilist]]->interior)) break;
 
   if (ilist == nregion) return 0;
   return 1;
@@ -243,5 +253,14 @@ void RegUnion::pretransform()
 {
   Region **regions = domain->regions;
   for (int ilist = 0; ilist < nregion; ilist++)
-      regions[list[ilist]]->pretransform();
+    regions[list[ilist]]->pretransform();
+
+  if (moveflag) {
+    dx = regions[list[0]]->dx;
+    dy = regions[list[0]]->dy;
+    dz = regions[list[0]]->dz;
+  }
+  if (rotateflag) {
+    theta = regions[list[0]]->theta;
+  }
 }
