@@ -45,6 +45,9 @@ fix     ftca all property/global thermalCapacity peratomtype 3000
 
 ################################################################################
 # chemistry
+# input fix for fix chem/shrink/core that would otherwise be provided by fix
+# heat/gran or fix couple/cfd/convection or fix couple/cfd/parttempfield
+fix     Temp     all property/atom Temp     scalar yes yes no 840.0 # Kelvin
 # input fixes for fix chem/shrink/core that would otherwise be provided by fix
 # couple/cfd/chemistry
 fix     partTemp all property/atom partTemp scalar yes no no 840.0 # Kelvin

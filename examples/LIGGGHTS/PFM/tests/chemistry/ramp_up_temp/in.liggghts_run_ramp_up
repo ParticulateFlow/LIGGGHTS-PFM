@@ -43,9 +43,12 @@ fix     ftca all property/global thermalCapacity peratomtype 3000
 
 ################################################################################
 # chemistry
+# input fix for fix chem/shrink/core that would otherwise be provided by fix
+# heat/gran or fix couple/cfd/convection or fix couple/cfd/parttempfield
+fix     Temp     all property/atom Temp     scalar yes yes no 600 # Kelvin
 # input fixes for fix chem/shrink/core that would otherwise be provided by fix
 # couple/cfd/chemistry
-fix     partTemp all property/atom partTemp scalar yes no no 600 #1223.15 # Kelvin
+fix     partTemp all property/atom partTemp scalar yes no no 600 # Kelvin
 fix     partNu   all property/atom partNu   scalar yes no no 0.00004125
 fix     partRe   all property/atom partRe   scalar yes no no 2.7500
 fix     partP    all property/atom partP    scalar yes no no 101325
@@ -247,6 +250,7 @@ variable rampT equal 600+step*0.001
 fix printT all print ${WI} "${time} ${rampT}" &
     file post/T.dat title "#time T" screen no
 
-run     600000 every 5000 "set group all property/atom partTemp ${rampT}"
+run     600000 every 5000 "set group all property/atom partTemp ${rampT}" &
+                          "set group all property/atom Temp ${rampT}"
 
 
