@@ -159,10 +159,11 @@ public:
   // coarse_graining factor
   double cg_;
 
+                                            // [<creation>]
   class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]
-  class FixPropertyAtom *fix_tpart_;        // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_tpart_;        // [heat/gran or cfd/couple/convection or cfd/couple/parttempfield]
   class FixPropertyAtom *fix_reactionHeat_; // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_diffcoeff_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_nuField_;      // [cfd/coupling/chemistry]
