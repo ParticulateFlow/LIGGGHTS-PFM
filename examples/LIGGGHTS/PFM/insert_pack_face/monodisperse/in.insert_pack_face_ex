@@ -93,10 +93,10 @@ fix     Ea_CO2 all property/global Ea_cfd52 vector 69488 73674 113859
 # particle porosity/tortuosity/pore diameter
 fix     porosity4        all property/global porosity_cg4group      vector 0.61 0.31 0.16 0.15
 fix     tortuosity4      all property/global tortuosity_cg4group    scalar 3
-fix     pore_diameter4   all property/global pore_diameter_cg4group scalar 5.5e-7
+fix     pore_diameter4   all property/global pore_diameter_cg4group vector 5.5e-7 5.5e-7 5.5e-7
 fix     porosity2        all property/global porosity_cg2group      vector 0.61 0.31 0.16 0.15
 fix     tortuosity2      all property/global tortuosity_cg2group    scalar 3
-fix     pore_diameter2   all property/global pore_diameter_cg2group scalar 5.5e-7
+fix     pore_diameter2   all property/global pore_diameter_cg2group vector 5.5e-7 5.5e-7 5.5e-7
 
 # define layer properties
 fix     LayerRelRadii   all property/atom relRadii vector yes no no  1.0 0.998 0.995 0.98
