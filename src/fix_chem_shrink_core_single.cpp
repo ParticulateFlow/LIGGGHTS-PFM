@@ -629,8 +629,8 @@ void FixChemShrinkCoreSingle::updatePtrs()
     pmass_          =   atom    -> rmass;
     pdensity_       =   atom    -> density;
 
-    dY          =   fix_dY_         ->  vector_atom;
-    dmA_f_      =   fix_dmA_ -> vector_atom;
+    dY          =   fix_dY_     ->  vector_atom;
+    dmA_f_      =   fix_dmA_    ->  vector_atom;
     reactionheat_ = fix_reactionheat -> vector_atom;
 
     if(limit_reactant_consumption_)
@@ -747,7 +747,7 @@ void FixChemShrinkCoreSingle::init()
     delete [] propertyname;
 
     fix_fracRed         =   static_cast<FixPropertyAtom*>(modify->find_fix_property("fracRed", "property/atom", "vector", 0, 0, style));
-    fix_reactionheat   =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
+    fix_reactionheat    =   static_cast<FixPropertyAtom*>(modify->find_fix_property("reactionHeat", "property/atom", "scalar", 0, 0, style));
 
     if(limit_reactant_consumption_)
     {
@@ -756,7 +756,7 @@ void FixChemShrinkCoreSingle::init()
 
     if(fix_thermal_capacity_)
     {
-         variableCp_ = true;
+        variableCp_ = true;
     }
     else
     {
@@ -1111,7 +1111,7 @@ void FixChemShrinkCoreSingle::update_atom_properties(int i, const double dmA_)
     // if (screen) fprintf(screen, "pmass = %f \n",pmass_[i]);
     rad[1] = cbrt((0.75*massLayer_[i][1])/(rhoeff_[i][1]*M_PI));
     // NOTE: This keeps the outer radius of the particle constant. This induces a slight mass conservation error
-    //       unless the inner (B) and outer (D) layer satisfy molMass_D_ * nu_D_ / (porosity_D_ * rho_D_) = molMass_B_ * nu_B_ / (porosity_B_ * rho_B_) 
+    //       unless the inner (B) and outer (D) layer satisfy molMass_D_ * nu_D_ / (porosity_D_ * rho_D_) = molMass_B_ * nu_B_ / (porosity_B_ * rho_B_)
     rad[0] = radius_[i]/cg_;
 
     if (fix_polydisp_)
@@ -1196,7 +1196,7 @@ void FixChemShrinkCoreSingle::heat_of_reaction(int i, const double dmA_)
     if (heatToParticle_)
     {
         // heat flux = released heat / (nevery * dt), but it is reset to 0 in scalar transport equation
-        // at the beginning of each step, hence an additional factor nevery which cancels that in the denominator 
+        // at the beginning of each step, hence an additional factor nevery which cancels that in the denominator
         heatFlux_[i] -= dmA_ / molMass_A_ * dH / TimeStep * cg3;
     }
     else

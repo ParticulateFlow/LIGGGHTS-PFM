@@ -593,8 +593,8 @@ void FixChemShrinkCore::updatePtrs()
     pmass_          =   atom    -> rmass;
     pdensity_       =   atom    -> density;
 
-    dY          =   fix_dY_         ->  array_atom;
-    dmA_f_      =   fix_dmA_ -> array_atom;
+    dY          =   fix_dY_     ->  array_atom;
+    dmA_f_      =   fix_dmA_    ->  array_atom;
 
     if(limit_reactant_consumption_)
     {
@@ -727,11 +727,11 @@ void FixChemShrinkCore::init()
 
     if(fix_thermal_capacity_)
     {
-         variableCp_ = true;
+        variableCp_ = true;
     }
     else
     {
-         variableCp_ = false;
+        variableCp_ = false;
     }
 }
 
