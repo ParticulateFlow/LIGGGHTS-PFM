@@ -882,7 +882,7 @@ void FixMultisphere::pre_exchange()
 
     while(i < atom->nlocal)
     {
-        if(round(delflag[i]) == 1.)
+        if(MathExtraLiggghts::compDouble(delflag[i],1.))
         {
             avec->copy(atom->nlocal-1,i,1);
             atom->nlocal--;
@@ -992,7 +992,7 @@ void FixMultisphere::pre_neighbor()
     existflag = fix_existflag_->vector_atom;
     for(int i = 0; i < nlocal; i++)
     {
-            delflag[i] = (round(existflag[i]) == 0) ? 1. : delflag[i];
+        delflag[i] = (MathExtraLiggghts::compDouble(existflag[i],0.)) ? 1. : delflag[i];
     }
 }
 
