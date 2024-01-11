@@ -414,10 +414,11 @@ void FixMultisphere::initial_integrate(int vflag)
 
   /*NL*/ //if(screen) fprintf(screen,"nbody_all %d\n",n_body_all());
   /*NL*/ //if(screen && map(7833) >= 0) fprintf(screen,"proc %d has body %d at step %d\n",comm->me,7833,update->ntimestep);
+  bool has_stream = modify->n_fixes_style("insert/stream") > 0;
 
   for (int ibody = 0; ibody < nbody; ibody++) {
 
-    if(timestep < start_step[ibody])
+    if(has_stream && timestep < start_step[ibody])
     {
         vectorCopy3D(v_integrate[ibody],vcm[ibody]);
 
@@ -541,10 +542,12 @@ void FixMultisphere::final_integrate()
   if(strstr(style,"nointegration"))
     return;
 
+  bool has_stream = modify->n_fixes_style("insert/stream") > 0;
+
   // resume integration
   for (int ibody = 0; ibody < nbody; ibody++)
   {
-    if(timestep < start_step[ibody]) continue;
+    if(has_stream && timestep < start_step[ibody]) continue;
 
     /*NL*/ //bool eval =  13500 < update->ntimestep && 14000 > update->ntimestep;
 
