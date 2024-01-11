@@ -203,8 +203,7 @@ class FixMultisphere : public Fix
       class FixPropertyAtom *fix_existflag_;
       class FixGravity *fix_gravity_;
 
-      //NP flag stating that image and displace must be communicated to ghosts
-      //int comm_di_;
+      // flag stating that image and displace must be communicated to ghosts
       int fw_comm_flag_;
       int rev_comm_flag_;
 
