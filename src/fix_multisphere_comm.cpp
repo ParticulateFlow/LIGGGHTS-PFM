@@ -20,6 +20,7 @@
 ------------------------------------------------------------------------- */
 
 #include "fix_multisphere.h"
+#include "modify.h"
 #include "comm.h"
 
 
@@ -529,6 +530,20 @@ void FixMultisphere::restart(char *buf)
 {
     double *list = (double *) buf;
 
+    bool have_massflow_mesh = modify->have_restart_data_style("massflow/mesh");
+    if(have_massflow_mesh)
+    {
+        int nmassflow = modify->n_restart_data_global_style("massflow/mesh");
+
+        for(int imf = 0; imf < nmassflow; imf++)
+        {
+            char *id_this = modify->id_restart_data_global_style("massflow/mesh",imf);
+            char *counter_ms_name = new char[strlen(id_this)+12];
+            sprintf(counter_ms_name,"counter_ms_%s",id_this);
+            multisphere_.prop().addElementProperty< ScalarContainer<int> >(counter_ms_name,"comm_exchange_borders","frame_invariant", "restart_yes");
+            delete []counter_ms_name;
+        }
+    }
     //NP have to perform all tasks from add_body_finalize()
     //NP   id_extend_body_extend() not necessary since in restart data
     //NP   multisphere_.restart(list) calls generate_map() and reset_forces(true)

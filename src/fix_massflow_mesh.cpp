@@ -289,8 +289,17 @@ void FixMassflowMesh::post_create()
     if(fix_ms_)
     {
         ms_ = &fix_ms_->data();
-        ms_counter_ = ms_->prop().addElementProperty< ScalarContainer<int> >("counter_ms","comm_exchange_borders","frame_invariant", "restart_yes");
-        ms_counter_->setDefaultValue(-1);
+        char *counter_ms_name = new char[strlen(id) + 12];
+        sprintf(counter_ms_name,"counter_ms_%s",id);
+
+        ms_counter_ = ms_->prop().getElementProperty<ScalarContainer<int> >(counter_ms_name);
+        if(!ms_counter_)
+        {
+            ms_counter_ = ms_->prop().addElementProperty<ScalarContainer<int> >(counter_ms_name,"comm_exchange_borders","frame_invariant","restart_yes");
+            ms_counter_->setDefaultValue(-1);
+        }
+
+        delete []counter_ms_name;
 
         if(delete_atoms_)
             error->fix_error(FLERR,this,"can not use 'delete_atoms' with fix multisphere");
