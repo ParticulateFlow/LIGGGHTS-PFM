@@ -299,17 +299,7 @@ void FixMultisphere::init() //NP modified C.K.
   dtf = 0.5 * update->dt * force->ftm2v;
   dtq = 0.5 * update->dt;
 
-  // calc MS comm properties
-  ntypes_ = modify->n_fixes_style("particletemplate/multisphere");
-  if(Vclump_) delete []Vclump_;
-  Vclump_ = new double [ntypes_+1];
 
-  for(int ifix = 0; ifix < ntypes_; ifix++)
-  {
-      FixTemplateMultisphere *ftm =  static_cast<FixTemplateMultisphere*>(modify->find_fix_style("particletemplate/multisphere",ifix));
-      int itype = ftm->type();
-      Vclump_[itype] = ftm->volexpect();
-  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -323,6 +313,19 @@ void FixMultisphere::add_remove_callback(FixRemove *ptr)
 
 void FixMultisphere::setup(int vflag)
 {
+  // calc MS comm properties
+  ntypes_ = modify->n_fixes_style("particletemplate/multisphere");
+
+  if(Vclump_) delete []Vclump_;
+  Vclump_ = new double [ntypes_+1];
+
+  for(int ifix = 0; ifix < ntypes_; ifix++)
+  {
+      FixTemplateMultisphere *ftm =  static_cast<FixTemplateMultisphere*>(modify->find_fix_style("particletemplate/multisphere",ifix));
+      int itype = ftm->type();
+      Vclump_[itype] = ftm->volexpect();
+  }
+
   //NP guesstimate virial as 2x the set_v contribution
   int i,n;
   int nlocal = atom->nlocal;
@@ -344,6 +347,13 @@ void FixMultisphere::setup(int vflag)
   calc_force();
 
   /*NL*/ if(LMP_DEBUGMODE_RIGID_MS && screen) fprintf(screen,"FixMultisphere::setup finished on proc %d\n",comm->me);
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMultisphere::setup_pre_exchange()
+{
+    pre_exchange();
 }
 
 /* ---------------------------------------------------------------------- */

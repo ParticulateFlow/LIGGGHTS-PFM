@@ -64,6 +64,7 @@ class FixMultisphere : public Fix
 
       virtual void setup(int);
       virtual void setup_pre_force(int) {}
+      virtual void setup_pre_exchange();
       virtual void setup_pre_neighbor();
 
       virtual double extend_cut_ghost() const;
