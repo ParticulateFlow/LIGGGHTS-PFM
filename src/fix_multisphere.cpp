@@ -703,7 +703,7 @@ void FixMultisphere::set_xv(int ghostflag)
 
     // save old positions and velocities for virial
 
-    if (evflag) {
+    if (evflag && i < nlocal) {
       x0 = x[i][0] + xbox*xprd;
       x1 = x[i][1] + ybox*yprd;
       x2 = x[i][2] + zbox*zprd;
@@ -739,7 +739,8 @@ void FixMultisphere::set_xv(int ghostflag)
     // 1/2 factor b/c final_integrate contributes other half
     // assume per-atom contribution is due to constraint force on that atom
 
-    if (evflag) {
+    if (evflag && i < nlocal) {
+
       if (rmass) massone = rmass[i];
       else massone = mass[type[i]];
       fc0 = massone*(v[i][0] - v0)/dtf - f[i][0];
@@ -816,7 +817,7 @@ void FixMultisphere::set_v(int ghostflag)
 
     // save old velocities for virial
 
-    if (evflag) {
+    if (evflag && i < nlocal) {
       v0 = v[i][0];
       v1 = v[i][1];
       v2 = v[i][2];
@@ -836,7 +837,7 @@ void FixMultisphere::set_v(int ghostflag)
     // 1/2 factor b/c initial_integrate contributes other half
     // assume per-atom contribution is due to constraint force on that atom
 
-    if (evflag) {
+    if (evflag && i < nlocal) {
       if (rmass) massone = rmass[i];
       else massone = mass[type[i]];
       fc0 = massone*(v[i][0] - v0)/dtf - f[i][0];
