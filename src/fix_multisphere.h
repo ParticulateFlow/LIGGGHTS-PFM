@@ -169,7 +169,7 @@ class FixMultisphere : public Fix
       { return data().extract_rke(); }
 
       inline void set_v_body_from_atom_index(int iatom,double *vel)
-      { multisphere_.set_v_body(body_[iatom],vel); }
+      { if(body_[iatom] >= 0) multisphere_.set_v_body(body_[iatom],vel); }
 
       inline void set_body_displace(int i,double *_displace,int body_id)
       { body_[i] = body_id; vectorCopy3D(_displace,displace_[i]); }
