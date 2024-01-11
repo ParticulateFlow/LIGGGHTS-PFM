@@ -975,7 +975,7 @@ void FixMultisphere::pre_neighbor()
     vectorZeroizeN(existflag,atom->nlocal+atom->nghost);
 
     if(multisphere_.check_lost_atoms(body_,delflag,existflag))
-        next_reneighbor = update->ntimestep + 100;
+        next_reneighbor = update->ntimestep + 5;
 
     // need to send deletion flag from ghosts to owners
     fix_delflag_->do_reverse_comm();
@@ -991,10 +991,16 @@ void FixMultisphere::pre_neighbor()
     int nlocal = atom->nlocal;
     delflag =   fix_delflag_->vector_atom;
     existflag = fix_existflag_->vector_atom;
+    int force_reneighbour = 0;
     for(int i = 0; i < nlocal; i++)
     {
         delflag[i] = (MathExtraLiggghts::compDouble(existflag[i],0.)) ? 1. : delflag[i];
+        if (MathExtraLiggghts::compDouble(delflag[i],1.0))
+            force_reneighbour = 1;
     }
+    MPI_Max_Scalar(force_reneighbour,world);
+    if (force_reneighbour)
+        next_reneighbor = update->ntimestep + 5;
 }
 
 /* ----------------------------------------------------------------------
