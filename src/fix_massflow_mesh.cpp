@@ -161,7 +161,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
                 fp_ = fopen(filecurrent,"a");
             delete [] filecurrent;
             if (fp_ == NULL) {
-                char str[128];
+                char str[512];
                 sprintf(str,"Cannot open file %s",arg[iarg+1]);
                 error->fix_error(FLERR,this,str);
             }
