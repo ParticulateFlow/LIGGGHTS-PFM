@@ -7,7 +7,7 @@
 
 :line
 
-fix cfd/coupling/convection command :h3
+fix couple/cfd/convection command :h3
 
 [Syntax:]
 

@@ -7,7 +7,7 @@
 
 :line
 
-fix cfd/coupling/deform command :h3
+fix couple/cfd/deform command :h3
 
 [Syntax:]
 
