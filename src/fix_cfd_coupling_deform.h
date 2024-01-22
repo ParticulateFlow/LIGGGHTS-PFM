@@ -41,6 +41,7 @@ class FixCfdCouplingDeform : public Fix  {
   int setmask();
   void init();
   void initial_integrate(int);
+  void pre_exchange();
   void post_force(int);
 
   double compute_vector(int n);

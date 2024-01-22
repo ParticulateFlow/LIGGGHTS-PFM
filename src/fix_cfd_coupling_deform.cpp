@@ -148,6 +148,8 @@ FixCfdCouplingDeform::FixCfdCouplingDeform(LAMMPS *lmp, int narg, char **arg) : 
 
   vector_flag = 1;
   size_vector = 3;
+  force_reneighbor = 1;
+  next_reneighbor = -1;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -202,6 +204,7 @@ int FixCfdCouplingDeform::setmask()
 {
   int mask = 0;
   mask |= INITIAL_INTEGRATE;
+  mask |= PRE_EXCHANGE;
   mask |= POST_FORCE;
   return mask;
 }
@@ -265,6 +268,15 @@ void FixCfdCouplingDeform::initial_integrate(int)
 
     // only delete group immediately after pull/push so that no latent heat is neglected
     if (prev_time != fix_coupling_->latestpull("partDeformations")) return;
+
+    next_reneighbor = update->ntimestep;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixCfdCouplingDeform::pre_exchange()
+{
+    if(next_reneighbor != update->ntimestep) return;
 
     int *mask = atom->mask;
     int nlocal = atom->nlocal;
