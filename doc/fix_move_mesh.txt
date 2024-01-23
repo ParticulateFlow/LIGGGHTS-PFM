@@ -17,7 +17,7 @@ ID is documented in "fix"_fix.html command, group-ID is ignored :ulb,l
 move/mesh = style name of this fix command :l
 mesh = obligatory keyword :l
 mesh-ID = ID for the fix mesh that the fix move/mesh is applied to :l
-style = {linear} or {linear/variable} or {wiggle} or {riggle} or {rotate} or {rotate/variable} or {viblin} or {vibrot} :l
+style = {linear} or {linear/variable} or {wiggle} or {riggle} or {rotate} or {rotate/superposable} or {rotate/variable} or {viblin} or {vibrot} :l
   {linear} args = Vx Vy Vz
     Vx,Vy,Vz = components of velocity vector (velocity units)
   {linear/variable} args = var_Vx var_Vy var_Vz
@@ -37,6 +37,12 @@ style = {linear} or {linear/variable} or {wiggle} or {riggle} or {rotate} or {ro
     amplitude = obligatory keyword
     ampl = amplitude of riggle movement (degree)
   {rotate} args = origin Px Py Pz axis ax ay az period per
+    origin = obligatory keyword
+    Px,Py,Pz = origin point of axis of rotation (distance units)
+    ax,ay,az = axis of rotation vector (distance units)
+    period = obligatory keyword
+    per = period of rotation (time units) 
+  {rotate/superposable} args = origin Px Py Pz axis ax ay az period per
     origin = obligatory keyword
     Px,Py,Pz = origin point of axis of rotation (distance units)
     ax,ay,az = axis of rotation vector (distance units)
@@ -131,6 +137,13 @@ rotation axis to the atom. Note that the direction of rotation
 around the rotation axis is consistent with the right-hand rule: 
 if your right-hand's thumb points along {R}, then your fingers 
 wrap around the axis in the direction of rotation.
+
+The {rotate/superposable} style is similar to the {rotate} style. The input
+syntax is identical. The difference to the {rotate} style lies in the
+internal workings of this style. The axis of rotation is made a property
+of the mesh, i.e., when super-imposing rotations, the axis is rotated
+accordingly. This style allows for a more general superposition of mesh
+rotations.
 
 The {rotate/variable} style does the same as the {rotate} style,
 but uses a variable for the angular velocity so that the angular 

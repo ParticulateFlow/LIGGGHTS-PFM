@@ -1,0 +1,81 @@
+################################################################################
+# brief: Test fix remove with style shrink                                     #
+#                                                                              #
+# Check that the correct particles (with IDs 1 and 8) are removed              #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Dec 2023                                                               #
+# copyright: 2023- JKU Linz                                                    #
+################################################################################
+
+atom_style      granular
+atom_modify     map array
+communicate     single vel yes
+
+boundary        f f f
+newton          off
+
+units           si
+
+region          domain block -1.0 1.0  0.0 0.2  0.0 0.2  units box
+
+create_box      1 domain
+
+neighbor        0.01 bin
+neigh_modify    delay 0
+
+# material properties for granular pair style
+fix m1 all property/global youngsModulus peratomtype 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.3
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.5
+
+# pair style
+pair_style  gran model hertz tangential history
+pair_coeff  * *
+
+# timestep
+timestep    0.00001
+
+# particle insertion
+create_atoms    1 single -0.9 0.1 0.05 units box
+create_atoms    1 single -0.7 0.1 0.05 units box
+create_atoms    1 single -0.5 0.1 0.05 units box
+create_atoms    1 single -0.3 0.1 0.05 units box
+create_atoms    1 single  0.3 0.1 0.05 units box
+create_atoms    1 single  0.5 0.1 0.05 units box
+create_atoms    1 single  0.7 0.1 0.05 units box
+create_atoms    1 single  0.9 0.1 0.05 units box
+set             atom 1 type 1 diameter 0.04 density 2000.
+set             atom 2 type 1 diameter 0.04 density 2000.
+set             atom 3 type 1 diameter 0.04 density 2000.
+set             atom 4 type 1 diameter 0.04 density 2000.
+set             atom 5 type 1 diameter 0.04 density 2000.
+set             atom 6 type 1 diameter 0.04 density 2000.
+set             atom 7 type 1 diameter 0.04 density 2000.
+set             atom 8 type 1 diameter 0.04 density 2000.
+
+# screen output
+variable        all_mass equal mass(all)
+variable        radii atom radius
+variable        ids atom id
+compute         minRad all reduce min v_radii
+compute         minID all reduce min v_ids
+compute         maxID all reduce max v_ids
+thermo_style    custom step atoms v_all_mass c_minRad c_minID c_maxID
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+dump    dmp all custom 1000 post/dump*.remove_shrink id type x y z radius
+#dump    dmp all custom/vtk 1000 post/remove_shrink_*.vtk id type x y z radius
+
+# shrink and remove particles
+region  delreg1 block -1.0 -0.8  0.0 0.2  0.0 0.1  units box
+region  delreg2 block  0.8  1.0  0.0 0.2  0.0 0.1  units box
+region  delreg union 2 delreg1 delreg2 units box
+fix     shrink all remove nevery 1000 massrate 0.67 style shrink delete_below 0.004 &
+        seed 10007143 region delreg atomtype 1 compress no
+
+run     25000
+

@@ -1,0 +1,34 @@
+"LIGGGHTS WWW Site"_liws - "LAMMPS WWW Site"_lws - "LIGGGHTS Documentation"_ld - "LIGGGHTS Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(lws,http://lammps.sandia.gov)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+fix couple/cfd/convection command :h3
+
+[Syntax:]
+
+fix ID group-ID couple/cfd/convection keyword values :pre
+ID, group-ID are documented in "fix"_fix.html command :ulb,l
+couple/cfd/convection = style name of this fix command :l
+zero or more keyword/value pairs may be appended :l
+keyword = {T0} or {transfer_conduction} or {max_change} :l
+  {T0} value = initial temperature for new particles
+  {transfer_conduction} value = {yes} or {no} (default {no})
+  {max_change} value = maximum change of temperature per particle per time step :pre
+:ule
+
+[Examples:]
+
+fix cfd1 all couple/cfd/convection T0 293 :pre
+fix cfd2 all couple/cfd/convection T0 293 transfer_conduction yes :pre
+fix cfd3 all couple/cfd/convection T0 293 max_change 0.1 :pre
+
+[Description:]
+
+This fix pulls data for convective (and optionally conductive, if modeled in a Eulerian fashion) heat fluxes for each particle from CFDEMcoupling and passes them to a scalar transport equation. The maximum change of temperature for each particle may be limited to enhance numerical stability.
+
+This fix needs a fix couple/cfd before it is defined.

@@ -46,6 +46,8 @@ FixCfdCouplingConvection::FixCfdCouplingConvection(LAMMPS *lmp, int narg, char *
     fix_conductiveFlux = fix_convectiveFlux  = fix_heatFlux = NULL;
     T0 = -1.0;
     gran_field_conduction = false;
+    limit_change = false;
+    max_change = -1.0;
 
     int iarg = 3;
 
@@ -74,6 +76,14 @@ FixCfdCouplingConvection::FixCfdCouplingConvection(LAMMPS *lmp, int narg, char *
                 gran_field_conduction = false;
             else
                 error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'transfer_conduction'");
+            iarg++;
+            hasargs = true;
+        }
+        else if(strcmp(arg[iarg],"max_change") == 0)
+        {
+            iarg++;
+            max_change = atof(arg[iarg]);
+            limit_change = true;
             iarg++;
             hasargs = true;
         }
@@ -144,27 +154,34 @@ void FixCfdCouplingConvection::post_create()
 
   //  add heat transfer model if not yet active
   FixScalarTransportEquation *fix_ste = modify->find_fix_scalar_transport_equation("heattransfer");
+  int nargs = 15;
+  if (limit_change) nargs += 2;
   if(!fix_ste)
   {
-        const char *newarg[15];
-        newarg[0] = "ste_heattransfer";
-        newarg[1] = group->names[igroup];
-        newarg[2] = "transportequation/scalar";
-        newarg[3] = "equation_id";
-        newarg[4] = "heattransfer";
-        newarg[5] = "quantity";
-        newarg[6] = "Temp";
-        newarg[7] = "default_value";
+        const char *fixarg[17];
+        fixarg[0] = "ste_heattransfer";
+        fixarg[1] = group->names[igroup];
+        fixarg[2] = "transportequation/scalar";
+        fixarg[3] = "equation_id";
+        fixarg[4] = "heattransfer";
+        fixarg[5] = "quantity";
+        fixarg[6] = "Temp";
+        fixarg[7] = "default_value";
         char arg8[30];
         sprintf(arg8,"%f",T0);
-        newarg[8] = arg8;
-        newarg[9] = "flux_quantity";
-        newarg[10] = "heatFlux";
-        newarg[11] = "source_quantity";
-        newarg[12] = "heatSource";
-        newarg[13] = "capacity_quantity";
-        newarg[14] = "thermalCapacity";
-        modify->add_fix(15,const_cast<char**>(newarg));
+        fixarg[8] = arg8;
+        fixarg[9] = "flux_quantity";
+        fixarg[10] = "heatFlux";
+        fixarg[11] = "source_quantity";
+        fixarg[12] = "heatSource";
+        fixarg[13] = "capacity_quantity";
+        fixarg[14] = "thermalCapacity";
+        // the following lines are only passed to modify->add_fix if limit_change == true
+        fixarg[15] = "max_change";
+        char arg16[30];
+        sprintf(arg16,"%f",max_change);
+        fixarg[16] = arg16;
+        modify->add_fix(nargs,const_cast<char**>(fixarg));
   }
 }
 

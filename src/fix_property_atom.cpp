@@ -40,6 +40,8 @@
 
 #include "mpi_liggghts.h"
 
+#include <string>
+
 using namespace LAMMPS_NS;
 using namespace FixConst;
 
@@ -50,9 +52,11 @@ using namespace FixConst;
 FixPropertyAtom::FixPropertyAtom(LAMMPS *lmp, int narg, char **arg, bool parse) :
   Fix(lmp, narg, arg),
   propertyname(0),
-  property(0)
+  property(0),
+  store_old_time_values_(0),
+  old_time_values_(NULL)
 {
-    /*NL*/ //if (screen) fprintf(screen,"HERRE parse for id %s\n",id);
+    /*NL*/ //if (screen) fprintf(screen,"HERE parse for id %s\n",id);
     if(parse) parse_args(narg,arg);
 }
 
@@ -63,7 +67,7 @@ void FixPropertyAtom::parse_args(int narg, char **arg)
     if (narg > 29) error->warning(FLERR,"Vector length in fix property/atom larger than 20. Are you sure you want that?");
 
     // Read args
-    //NP 8 values for base stuff
+    //NP 8 values for base stuff (or 9 if option for storing old-time values is specified)
     int n = strlen(arg[3]) + 1;
     variablename = new char[n];
     strcpy(variablename,arg[3]);
@@ -92,7 +96,19 @@ void FixPropertyAtom::parse_args(int narg, char **arg)
     else if (strcmp(arg[7],"no") == 0) commGhostRev = 0;
     else error->all(FLERR,"Unknown communicate_reverse_ghost style for fix property/atom. Valid styles are 'yes' or 'no'");
 
-    nvalues = narg - 8;
+    int n_leading_args = 8;
+    if (strcmp(arg[8],"yes") == 0)
+    {
+        store_old_time_values_ = 1;
+        n_leading_args++;
+    }
+    else if (strcmp(arg[8],"no") == 0)
+    {
+        store_old_time_values_ = 0;
+        n_leading_args++;
+    }
+
+    nvalues = narg - n_leading_args;
     if ((nvalues == 1) && (data_style != FIXPROPERTY_ATOM_SCALAR))
       error->all(FLERR,"Error in fix property/atom: Number of default values provided not consistent with vector style. Provide more than 1 value or use style 'scalar'");
 
@@ -110,7 +126,7 @@ void FixPropertyAtom::parse_args(int narg, char **arg)
     propertyname = NULL;
     if(FIXPROPERTY_ATOM_SCALAR == data_style)
     {
-        char *prop = arg[8];
+        char *prop = arg[n_leading_args];
         int n = strlen(prop);
         bool is_digit = false;
         for (int i = 0; i < n; i++)
@@ -138,12 +154,12 @@ void FixPropertyAtom::parse_args(int narg, char **arg)
         for (int j = 0; j < nvalues; j++)
         {
             // if any of the values is none, this fix will not init properties
-            if(strcmp(arg[8+j],"none") == 0)
+            if(strcmp(arg[n_leading_args+j],"none") == 0)
             {
                 create_attribute = 0;
                 continue;
             }
-            defaultvalues[j] = force->numeric(FLERR,arg[8+j]);
+            defaultvalues[j] = force->numeric(FLERR,arg[n_leading_args+j]);
         }
     }
 
@@ -230,6 +246,13 @@ FixPropertyAtom::~FixPropertyAtom()
 
 /* ---------------------------------------------------------------------- */
 
+void FixPropertyAtom::pre_delete(bool unfixflag)
+{
+    if(unfixflag && old_time_values_) modify->delete_fix(old_time_values_->id);
+}
+
+/* ---------------------------------------------------------------------- */
+
 Fix* FixPropertyAtom::check_fix(const char *varname,const char *svmstyle,int len1,int len2,const char *caller,bool errflag)
 {
     char errmsg[400];
@@ -275,11 +298,73 @@ Fix* FixPropertyAtom::check_fix(const char *varname,const char *svmstyle,int len
 
 /* ---------------------------------------------------------------------- */
 
+void FixPropertyAtom::post_create()
+{
+    if(!store_old_time_values_) return;
+
+    if (old_time_values_ == NULL)
+    {
+        char *fixname = new char [strlen("_oldtime")+strlen(id)+1];
+        strcpy(fixname,id);
+        strcat(fixname,"_oldtime");
+
+        int nargs = nvalues+8;
+        const char **fixarg = new const char*[nargs];
+        fixarg[0]=fixname;
+        fixarg[1]=group->names[igroup];
+        fixarg[2]="property/atom";
+        fixarg[3]=fixname;
+
+        if (data_style) fixarg[4]="vector";
+        else fixarg[4]="scalar";
+        // restart
+        if (restart_peratom) fixarg[5]="yes";
+        else fixarg[5]="no";
+        // communicate ghost
+        if (commGhost) fixarg[6]="yes";
+        else fixarg[6]="no";
+        // communicate rev
+        if (commGhostRev) fixarg[7]="yes";
+        else fixarg[7]="no";
+        for (int i=0;i<nvalues;i++)
+        {
+            fixarg[8+i] = std::to_string(defaultvalues[i]).c_str();
+        }
+        old_time_values_ = modify->add_fix_property_atom(nargs,const_cast<char**>(fixarg),style);
+        delete [] fixname;
+        delete [] fixarg;
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+
 int FixPropertyAtom::setmask()
 {
   int mask = 0;
   mask |= PRE_EXCHANGE;
+  if (store_old_time_values_)
+  {
+      mask |= END_OF_STEP;
+  }
   return mask;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixPropertyAtom::end_of_step()
+{
+    int nall = atom->nlocal + atom->nghost;
+    for (int i = 0; i < nall; i++)
+    {
+        if (data_style)
+        {
+            for (int m = 0; m < nvalues; m++)
+            {
+                old_time_values_->array_atom[i][m] = array_atom[i][m];
+            }
+        }
+        else old_time_values_->vector_atom[i] = vector_atom[i];
+    }
 }
 
 /* ----------------------------------------------------------------------
@@ -623,4 +708,17 @@ double FixPropertyAtom::defaultvalue(int n)
     }
 
     return defaultvalues[n];
+}
+
+/* ----------------------------------------------------------------------
+   return pointer to fix property atom storing old-time values
+------------------------------------------------------------------------- */
+
+FixPropertyAtom *FixPropertyAtom::old_time_values()
+{
+    if (!store_old_time_values_)
+    {
+        error->fix_error(FLERR,this,"fix does not store old-time values");
+    }
+    return old_time_values_;
 }

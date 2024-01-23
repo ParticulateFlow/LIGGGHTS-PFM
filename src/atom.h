@@ -217,8 +217,8 @@ class Atom : protected Pointers {
       return extract(_id,a);
   }
 
-  inline int* get_map_array() {return map_array;};
-  inline int get_map_size() {return map_tag_max+1;};
+  inline int* get_map_array() {return map_array;}
+  inline int get_map_size() {return map_tag_max+1;}
 
   bigint memory_usage();
   int memcheck(const char *);

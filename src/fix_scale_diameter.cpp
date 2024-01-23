@@ -146,7 +146,8 @@ FixScaleDiameter::FixScaleDiameter(LAMMPS *lmp, int narg, char **arg) :
 
 FixScaleDiameter::~FixScaleDiameter()
 {
-  delete []idregion;
+  delete[] idregion;
+  delete[] scale_to_str_;
 }
 
 /* ---------------------------------------------------------------------- */

@@ -45,42 +45,42 @@ using namespace LAMMPS_NS;
 CfdDatacoupling::CfdDatacoupling(class LAMMPS *lmp, int jarg, int, char **, class FixCfdCoupling*) :
     Pointers(lmp)
 {
-      iarg_ = jarg;
-      is_parallel = true;
+    iarg_ = jarg;
+    is_parallel = true;
 
-      npull_ = 0;
-      npush_ = 0;
-      nvalues_max_ = 0;
+    npull_ = 0;
+    npush_ = 0;
+    nvalues_max_ = 0;
 
-      pullnames_ = NULL;
-      pulltypes_ = NULL;
-      pushnames_ = NULL;
-      pushtypes_ = NULL;
-      pushinvoked_ = NULL;
-      pullinvoked_ = NULL;
-      latestpull_ = NULL;
-      latestpush_ = NULL;
+    pullnames_ = NULL;
+    pulltypes_ = NULL;
+    pushnames_ = NULL;
+    pushtypes_ = NULL;
+    pushinvoked_ = NULL;
+    pullinvoked_ = NULL;
+    latestpull_ = NULL;
+    latestpush_ = NULL;
 
-      properties_ = NULL;
+    properties_ = NULL;
 
-      ms_ = NULL;
-      ms_data_ = NULL;
+    ms_ = NULL;
+    ms_data_ = NULL;
 
-      grow_();
+    grow_();
 }
 
 /* ---------------------------------------------------------------------- */
 
 CfdDatacoupling::~CfdDatacoupling()
 {
-        memory->destroy(pullnames_);
-        memory->destroy(pulltypes_);
-        memory->destroy(pushnames_);
-        memory->destroy(pushtypes_);
-        memory->destroy(pushinvoked_);
-        memory->destroy(pullinvoked_);
-        memory->destroy(latestpush_);
-        memory->destroy(latestpull_);
+    memory->destroy(pullnames_);
+    memory->destroy(pulltypes_);
+    memory->destroy(pushnames_);
+    memory->destroy(pushtypes_);
+    memory->destroy(pushinvoked_);
+    memory->destroy(pullinvoked_);
+    memory->destroy(latestpush_);
+    memory->destroy(latestpull_);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -90,6 +90,7 @@ void CfdDatacoupling::init()
     PairGran *pair_gran = static_cast<PairGran*>(force->pair_match("gran", 0));
     if(!pair_gran)
       error->all(FLERR,"CFD coupling requires a granular pair style");
+
     properties_ = pair_gran->get_properties();
 
     // multisphere - can be NULL

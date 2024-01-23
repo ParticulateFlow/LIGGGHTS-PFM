@@ -39,6 +39,7 @@
 #include "comm.h"
 
 #define SMALL 1e-8
+#define BIG 1.0e20
 
 using namespace LAMMPS_NS;
 
@@ -74,8 +75,7 @@ Region::~Region()
   delete [] zstr;
   delete [] tstr;
 
-  //NP modified C.K.
-  if (random) delete random;
+  delete random;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -240,7 +240,7 @@ void Region::pretransform()
     if (ystr) dy = input->variable->compute_equal(yvar);
     if (zstr) dz = input->variable->compute_equal(zvar);
   }
-  if (rotateflag) theta = input->variable->compute_equal(tvar);
+  if (rotateflag) if (tstr) theta = input->variable->compute_equal(tvar);
 }
 
 /* ----------------------------------------------------------------------
@@ -252,7 +252,7 @@ void Region::forward_transform(double &x, double &y, double &z)
 {
   if (rotateflag) {
     if (update->ntimestep != lastdynamic)
-      theta = input->variable->compute_equal(tvar);
+      if (tstr) theta = input->variable->compute_equal(tvar);
     rotate(x,y,z,theta);
   }
 
@@ -290,7 +290,7 @@ void Region::inverse_transform(double &x, double &y, double &z)
 
   if (rotateflag) {
     if (update->ntimestep != lastdynamic)
-      theta = input->variable->compute_equal(tvar);
+      if (tstr) theta = input->variable->compute_equal(tvar);
     rotate(x,y,z,-theta);
   }
 
@@ -420,7 +420,7 @@ void Region::options(int narg, char **arg)
       seed = force->numeric(FLERR,arg[iarg+1]);
       iarg += 2;
     }
-     else error->all(FLERR,"Illegal region command");
+    else error->all(FLERR,"Illegal region command");
   }
 
   //NP modified C.K.
@@ -462,36 +462,84 @@ void Region::options(int narg, char **arg)
   else dynamic = 0;
 }
 
-/* ---------------------------------------------------------------------- */
-//NP modified C.K.
+/* ----------------------------------------------------------------------
+   reset random number generator
+------------------------------------------------------------------------- */
+
 void Region::reset_random(int new_seed)
 {
     if(comm->me == 0 && screen) fprintf(screen,"INFO: Resetting random generator for region %s\n",id);
     random->reset(new_seed + comm->me);
 }
 
-/* ---------------------------------------------------------------------- */
-//NP modified C.K.
+/* ----------------------------------------------------------------------
+   get bounds of extents transformed to global space
+------------------------------------------------------------------------- */
+
+void Region::transformed_extents(double *lo,double *hi)
+{
+  if (dynamic) {
+    double corners[8][3];
+    lo[0] = lo[1] = lo[2] = BIG;
+    hi[0] = hi[1] = hi[2] = -BIG;
+    corners[0][0] = extent_xlo; corners[0][1] = extent_ylo; corners[0][2] = extent_zlo;
+    corners[1][0] = extent_xlo; corners[1][1] = extent_ylo; corners[1][2] = extent_zhi;
+    corners[2][0] = extent_xlo; corners[2][1] = extent_yhi; corners[2][2] = extent_zlo;
+    corners[3][0] = extent_xlo; corners[3][1] = extent_yhi; corners[3][2] = extent_zhi;
+    corners[4][0] = extent_xhi; corners[4][1] = extent_ylo; corners[4][2] = extent_zlo;
+    corners[5][0] = extent_xhi; corners[5][1] = extent_ylo; corners[5][2] = extent_zhi;
+    corners[6][0] = extent_xhi; corners[6][1] = extent_yhi; corners[6][2] = extent_zlo;
+    corners[7][0] = extent_xhi; corners[7][1] = extent_yhi; corners[7][2] = extent_zhi;
+
+    for (int i = 0; i < 8; ++i) {
+      forward_transform(corners[i][0],corners[i][1],corners[i][2]);
+    }
+
+    for (int i = 0; i < 8; ++i) {
+        if(corners[i][0] < lo[0]) lo[0] = corners[i][0];
+        if(corners[i][0] > hi[0]) hi[0] = corners[i][0];
+        if(corners[i][1] < lo[1]) lo[1] = corners[i][1];
+        if(corners[i][1] > hi[1]) hi[1] = corners[i][1];
+        if(corners[i][2] < lo[2]) lo[2] = corners[i][2];
+        if(corners[i][2] > hi[2]) hi[2] = corners[i][2];
+    }
+  } else {
+    lo[0] = extent_xlo;
+    lo[1] = extent_ylo;
+    lo[2] = extent_zlo;
+    hi[0] = extent_xhi;
+    hi[1] = extent_yhi;
+    hi[2] = extent_zhi;
+  }
+}
+
+/* ----------------------------------------------------------------------
+   get bounds for random point generation
+------------------------------------------------------------------------- */
+
 inline void Region::rand_bounds(bool subdomain_flag, double *lo, double *hi)
 {
     if(!bboxflag) error->one(FLERR,"Impossible to generate random points on region with incomputable bounding box");
-    if(subdomain_flag)
-    {
-        lo[0] = MathExtraLiggghts::max(extent_xlo,domain->sublo[0]);
-        lo[1] = MathExtraLiggghts::max(extent_ylo,domain->sublo[1]);
-        lo[2] = MathExtraLiggghts::max(extent_zlo,domain->sublo[2]);
-        hi[0] = MathExtraLiggghts::min(extent_xhi,domain->subhi[0]);
-        hi[1] = MathExtraLiggghts::min(extent_yhi,domain->subhi[1]);
-        hi[2] = MathExtraLiggghts::min(extent_zhi,domain->subhi[2]);
-        if(lo[0] >= hi[0] || lo[1] >= hi[1] ||lo[2] >= hi[2])
-            error->one(FLERR,"Impossible to generate random points on wrong sub-domain");
+
+    double transformed_lo[3];
+    double transformed_hi[3];
+
+    transformed_extents(transformed_lo,transformed_hi);
+
+    if (subdomain_flag) {
+        lo[0] = MathExtraLiggghts::max(transformed_lo[0],domain->sublo[0]);
+        lo[1] = MathExtraLiggghts::max(transformed_lo[1],domain->sublo[1]);
+        lo[2] = MathExtraLiggghts::max(transformed_lo[2],domain->sublo[2]);
+        hi[0] = MathExtraLiggghts::min(transformed_hi[0],domain->subhi[0]);
+        hi[1] = MathExtraLiggghts::min(transformed_hi[1],domain->subhi[1]);
+        hi[2] = MathExtraLiggghts::min(transformed_hi[2],domain->subhi[2]);
+
+        if (lo[0] >= hi[0] || lo[1] >= hi[1] || lo[2] >= hi[2])
+            error->one(FLERR,"Failed to get bounds for random points generation - no intersection with sub-domain");
+    } else {
+        vectorConstruct3D(lo, transformed_lo[0],transformed_lo[1],transformed_lo[2]);
+        vectorConstruct3D(hi, transformed_hi[0],transformed_hi[1],transformed_hi[2]);
     }
-    else
-    {
-        vectorConstruct3D(lo,  extent_xlo,extent_ylo,extent_zlo );
-        vectorConstruct3D(hi,  extent_xhi,extent_yhi,extent_zhi );
-    }
-    /*NL*/// if (screen) fprintf(screen,"lo %f %f %f hi %f %f %f\n",lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -503,6 +551,7 @@ void Region::generate_random(double *pos,bool subdomain_flag)
     double lo[3],hi[3],diff[3];
     rand_bounds(subdomain_flag,lo,hi);
     vectorSubtract3D(hi,lo,diff);
+
     do
     {
         pos[0] = lo[0] + random->uniform()*diff[0];
@@ -628,6 +677,8 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
         pos[1] = extent_ylo + random->uniform() * (extent_yhi - extent_ylo);
         pos[2] = extent_zlo + random->uniform() * (extent_zhi - extent_zlo);
 
+        if (dynamic) forward_transform(pos[0],pos[1],pos[2]);
+
         if(!domain->is_in_domain(pos)) continue;
 
         // point is in region
@@ -689,7 +740,9 @@ void Region::volume_mc(int n_test,bool cutflag,double cut,double &vol_global,dou
 int Region::bbox_extends_outside_box()
 {
     double min[3],max[3];
-    vectorConstruct3D(min,extent_xlo+SMALL,extent_ylo+SMALL,extent_zlo+SMALL);
-    vectorConstruct3D(max,extent_xhi-SMALL,extent_yhi-SMALL,extent_zhi-SMALL);
+    transformed_extents(min,max);
+    min[0] += SMALL; min[1] += SMALL; min[2] += SMALL;
+    max[0] -= SMALL; max[1] -= SMALL; max[2] -= SMALL;
+
     return (!(domain->is_in_domain(min)) || !(domain->is_in_domain(max)));
 }

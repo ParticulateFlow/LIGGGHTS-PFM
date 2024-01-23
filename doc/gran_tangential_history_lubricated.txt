@@ -23,8 +23,8 @@ is not available in LAMMPS.
 
 In this granular model, the tangential contact force is calculated in the same manner
 as in "tangential history"_gran_tangential_history.html. This model is to be used in
-conjunction with the normal model "hertz/lubricated"_gran_hertz_lubricated.html, and
-will throw errors without it.
+conjunction with the normal model "hertz/lubricated"_gran_model_hertz_lubricated.html,
+and will throw errors without it.
 
 The coefficient of friction is selected from the dry or the lubricated value, depending
 on the minimum approach distance between particle surfaces.

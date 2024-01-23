@@ -46,6 +46,9 @@ fix     ftca all property/global thermalCapacity peratomtype 3000
 
 ################################################################################
 # chemistry
+# input fix for fix chem/shrink/core that would otherwise be provided by fix
+# heat/gran or fix couple/cfd/convection or fix couple/cfd/parttempfield
+fix     Temp     all property/atom Temp     scalar yes yes no 1223.15 # Kelvin
 # input fixes for fix chem/shrink/core that would otherwise be provided by fix
 # couple/cfd/chemistry
 fix     partTemp all property/atom partTemp scalar yes no no 1223.15 # Kelvin
@@ -80,7 +83,7 @@ fix     Ea_CO_1 all property/global Ea_chem1 vector 69488 73674 113859
 # particle porosity/tortuosity/pore diameter
 fix     porosity1        all property/global porosity_group1      vector 0.61 0.31 0.16 0.15
 fix     tortuosity1      all property/global tortuosity_group1    scalar 3
-fix     pore_diameter1   all property/global pore_diameter_group1 scalar 5.5e-7
+fix     pore_diameter1   all property/global pore_diameter_group1 vector 5.5e-7 5.5e-7 5.5e-7
 
 # define fix for layer densities
 fix     LayerDensities1  all property/global density_group1 vector 7870. 5740. 5170. 5240.
@@ -208,7 +211,7 @@ fix     Ea_CO_2 all property/global Ea_chem2 vector 69488 73674 113859
 # particle porosity/tortuosity/pore diameter
 fix     porosity2        all property/global porosity_group2      vector 0.61 0.31 0.16 0.15
 fix     tortuosity2      all property/global tortuosity_group2    scalar 3
-fix     pore_diameter2   all property/global pore_diameter_group2 scalar 1.1e-6
+fix     pore_diameter2   all property/global pore_diameter_group2 vector 1.1e-6 1.1e-6 1.1e-6
 
 # define fix for layer densities
 fix     LayerDensities2  all property/global density_group2 vector 7870. 5740. 5170. 5240.

@@ -56,6 +56,7 @@ FixMassflowMeshFaceUniverse::FixMassflowMeshFaceUniverse(LAMMPS *lmp, int narg, 
 
     id_hash_ = bitwiseHash(id, mpi_tag_upper_bound(universe->uworld));
     couple_every_ = 0;
+    next_couple_ = -1;
     send_to_world_ = -1;
 
     // parse args for this class
@@ -82,6 +83,11 @@ FixMassflowMeshFaceUniverse::FixMassflowMeshFaceUniverse(LAMMPS *lmp, int narg, 
           ++iarg;
           hasargs = true;
         }
+    }
+
+    if (couple_every_ > 0)
+    {
+        next_couple_ = update->ntimestep + couple_every_ - (update->ntimestep % couple_every_);
     }
 }
 
@@ -121,8 +127,10 @@ void FixMassflowMeshFaceUniverse::send_post_create_data()
 
 void FixMassflowMeshFaceUniverse::send_coupling_data()
 {
-    if ((couple_every_ > 0) &&  (update->ntimestep > 0) && ((update->ntimestep-1) % couple_every_ == 0))
+    if ((couple_every_ > 0) &&  (next_couple_ == update->ntimestep))
     {
+        next_couple_ += couple_every_;
+
         // only proc 0 sends data
         if (comm->me == 0 && send_to_world_ >= 0)
         {

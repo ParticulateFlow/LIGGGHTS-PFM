@@ -64,6 +64,7 @@ class FixMultisphere : public Fix
 
       virtual void setup(int);
       virtual void setup_pre_force(int) {}
+      virtual void setup_pre_exchange();
       virtual void setup_pre_neighbor();
 
       virtual double extend_cut_ghost() const;
@@ -169,7 +170,7 @@ class FixMultisphere : public Fix
       { return data().extract_rke(); }
 
       inline void set_v_body_from_atom_index(int iatom,double *vel)
-      { multisphere_.set_v_body(body_[iatom],vel); }
+      { if(body_[iatom] >= 0) multisphere_.set_v_body(body_[iatom],vel); }
 
       inline void set_body_displace(int i,double *_displace,int body_id)
       { body_[i] = body_id; vectorCopy3D(_displace,displace_[i]); }
@@ -202,8 +203,7 @@ class FixMultisphere : public Fix
       class FixPropertyAtom *fix_existflag_;
       class FixGravity *fix_gravity_;
 
-      //NP flag stating that image and displace must be communicated to ghosts
-      //int comm_di_;
+      // flag stating that image and displace must be communicated to ghosts
       int fw_comm_flag_;
       int rev_comm_flag_;
 

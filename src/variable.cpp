@@ -138,7 +138,7 @@ Variable::~Variable()
 
 void Variable::set(int narg, char **arg)
 {
-  if (narg < 2) error->all(FLERR,"Illegal variable command");
+  if (narg < 2) error->all(FLERR,"Illegal variable command (not enough arguments)");
 
   int replaceflag = 0;
 
@@ -146,7 +146,7 @@ void Variable::set(int narg, char **arg)
   // doesn't matter if variable no longer exists
 
   if (strcmp(arg[1],"delete") == 0) {
-    if (narg != 2) error->all(FLERR,"Illegal variable command");
+    if (narg != 2) error->all(FLERR,"Illegal variable command (style 'delete' takes no additional arguments)");
     if (find(arg[0]) >= 0) remove(find(arg[0]));
     return;
 
@@ -154,7 +154,7 @@ void Variable::set(int narg, char **arg)
   // num = listed args, which = 1st value, data = copied args
 
   } else if (strcmp(arg[1],"index") == 0) {
-    if (narg < 3) error->all(FLERR,"Illegal variable command");
+    if (narg < 3) error->all(FLERR,"Illegal variable command (style 'index' requires one or more arguments)");
     if (find(arg[0]) >= 0) return;
     if (nvar == maxvar) grow();
     style[nvar] = INDEX;
@@ -176,7 +176,7 @@ void Variable::set(int narg, char **arg)
     if (narg == 3 || (narg == 4 && strcmp(arg[3],"pad") == 0)) {
       nfirst = 1;
       nlast = force->inumeric(FLERR,arg[2]);
-      if (nlast <= 0) error->all(FLERR,"Illegal variable command");
+      if (nlast <= 0) error->all(FLERR,"Illegal variable command (N must be > 0 for style 'loop')");
       if (narg == 4 && strcmp(arg[3],"pad") == 0) {
         char digits[12];
         sprintf(digits,"%d",nlast);
@@ -186,13 +186,13 @@ void Variable::set(int narg, char **arg)
       nfirst = force->inumeric(FLERR,arg[2]);
       nlast = force->inumeric(FLERR,arg[3]);
       if (nfirst > nlast || nlast < 0)
-        error->all(FLERR,"Illegal variable command");
+        error->all(FLERR,"Illegal variable command (N1 <= N2 and N2 >= 0 is required for style 'loop')");
       if (narg == 5 && strcmp(arg[4],"pad") == 0) {
         char digits[12];
         sprintf(digits,"%d",nlast);
         pad[nvar] = strlen(digits);
       } else pad[nvar] = 0;
-    } else error->all(FLERR,"Illegal variable command");
+    } else error->all(FLERR,"Illegal variable command (wrong number of arguments for style 'loop')");
     num[nvar] = nlast;
     which[nvar] = nfirst-1;
     data[nvar] = new char*[1];
@@ -203,7 +203,7 @@ void Variable::set(int narg, char **arg)
   // error check that num = # of worlds in universe
 
   } else if (strcmp(arg[1],"world") == 0) {
-    if (narg < 3) error->all(FLERR,"Illegal variable command");
+    if (narg < 3) error->all(FLERR,"Illegal variable command (style 'world' requires one or more arguments)");
     if (find(arg[0]) >= 0) return;
     if (nvar == maxvar) grow();
     style[nvar] = WORLD;
@@ -224,7 +224,7 @@ void Variable::set(int narg, char **arg)
 
   } else if (strcmp(arg[1],"universe") == 0 || strcmp(arg[1],"uloop") == 0) {
     if (strcmp(arg[1],"universe") == 0) {
-      if (narg < 3) error->all(FLERR,"Illegal variable command");
+      if (narg < 3) error->all(FLERR,"Illegal variable command (style 'universe' requires one or more arguments)");
       if (find(arg[0]) >= 0) return;
       if (nvar == maxvar) grow();
       style[nvar] = UNIVERSE;
@@ -233,8 +233,8 @@ void Variable::set(int narg, char **arg)
       data[nvar] = new char*[num[nvar]];
       copy(num[nvar],&arg[2],data[nvar]);
     } else if (strcmp(arg[1],"uloop") == 0) {
-      if (narg < 3 || narg > 4 || (narg == 4 && strcmp(arg[3],"pad") != 0))
-        error->all(FLERR,"Illegal variable command");
+      if (narg < 3 || (narg > 4) || (narg == 4 && strcmp(arg[3],"pad") != 0))
+        error->all(FLERR,"Illegal variable command (wrong number of arguments for style 'uloop')");
       if (find(arg[0]) >= 0) return;
       if (nvar == maxvar) grow();
       style[nvar] = ULOOP;
@@ -272,7 +272,7 @@ void Variable::set(int narg, char **arg)
   // data = 1 value, string to eval
 
   } else if (strcmp(arg[1],"string") == 0) {
-    if (narg != 3) error->all(FLERR,"Illegal variable command");
+    if (narg != 3) error->all(FLERR,"Illegal variable command (style 'string' takes exactly one argument)");
     if (find(arg[0]) >= 0) {
       if (style[find(arg[0])] != STRING)
         error->all(FLERR,"Cannot redefine variable as a different style");
@@ -292,7 +292,7 @@ void Variable::set(int narg, char **arg)
   // data = 1 value, string to eval
 
   } else if (strcmp(arg[1],"getenv") == 0) {
-    if (narg != 3) error->all(FLERR,"Illegal variable command");
+    if (narg != 3) error->all(FLERR,"Illegal variable command (style 'getenv' takes exactly one argument)");
     if (find(arg[0]) >= 0) {
       if (style[find(arg[0])] != GETENV)
         error->all(FLERR,"Cannot redefine variable as a different style");
@@ -312,7 +312,7 @@ void Variable::set(int narg, char **arg)
   // data = 1 value, string to eval
 
   } else if (strcmp(arg[1],"file") == 0) {
-    if (narg != 3) error->all(FLERR,"Illegal variable command");
+    if (narg != 3) error->all(FLERR,"Illegal variable command (style 'file' takes exactly one argument)");
     if (find(arg[0]) >= 0) return;
     if (nvar == maxvar) grow();
     style[nvar] = SCALARFILE;
@@ -330,7 +330,7 @@ void Variable::set(int narg, char **arg)
   // data = NULL
 
   } else if (strcmp(arg[1],"atomfile") == 0) {
-    if (narg != 3) error->all(FLERR,"Illegal variable command");
+    if (narg != 3) error->all(FLERR,"Illegal variable command (style 'atomfile' takes exactly one argument)");
     if (find(arg[0]) >= 0) return;
     if (nvar == maxvar) grow();
     style[nvar] = ATOMFILE;
@@ -349,7 +349,7 @@ void Variable::set(int narg, char **arg)
   // data = 2 values, 1st is string to eval, 2nd is filled on retrieval
 
   } else if (strcmp(arg[1],"equal") == 0) {
-    if (narg != 3) error->all(FLERR,"Illegal variable command");
+    if (narg != 3) error->all(FLERR,"Illegal variable command (style 'equal' takes exactly one argument)");
     int ivar = find(arg[0]);
     if (ivar >= 0) {
       if (style[find(arg[0])] != EQUAL)
@@ -374,7 +374,7 @@ void Variable::set(int narg, char **arg)
   // data = 1 value, string to eval
 
   } else if (strcmp(arg[1],"atom") == 0) {
-    if (narg != 3) error->all(FLERR,"Illegal variable command");
+    if (narg != 3) error->all(FLERR,"Illegal variable command (style 'atom' takes exactly one argument)");
     if (find(arg[0]) >= 0) {
       if (style[find(arg[0])] != ATOM)
         error->all(FLERR,"Cannot redefine variable as a different style");
@@ -388,7 +388,7 @@ void Variable::set(int narg, char **arg)
     data[nvar] = new char*[num[nvar]];
     copy(1,&arg[2],data[nvar]);
 
-  } else error->all(FLERR,"Illegal variable command");
+  } else error->all(FLERR,"Illegal variable command (unknown style)");
 
   // set name of variable, if not replacing one flagged with replaceflag
   // must come at end, since STRING/EQUAL/ATOM reset may have removed name

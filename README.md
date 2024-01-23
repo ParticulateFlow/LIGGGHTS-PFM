@@ -3,7 +3,7 @@
 LIGGGHTS® - LAMMPS Improved for General Granular and Granular Heat Transfer Simulations - is a discrete element method (DEM) particle simulation software.
 LIGGGHTS® is part of the [CFDEM®project](https://www.cfdem.com) and is based on the molecular dynamics simulation code [LAMMPS](https://lammps.sandia.gov/).
 
-[![CircleCI](https://circleci.com/gh/ParticulateFlow/LIGGGHTS.svg?style=shield&circle-token=8905cdbf813717ce628dd05a454d0f7581110907)](https://circleci.com/gh/ParticulateFlow/LIGGGHTS)
+[![CircleCI](https://circleci.com/gh/ParticulateFlow/LIGGGHTS.svg?style=shield&circle-token=4ca67fb317cf07f8794efaa7b37438f4886d5da3)](https://circleci.com/gh/ParticulateFlow/LIGGGHTS)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 ## Disclaimer

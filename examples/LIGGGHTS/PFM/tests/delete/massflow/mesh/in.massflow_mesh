@@ -1,0 +1,77 @@
+################################################################################
+# brief: Test particle deletion by fix massflow/mesh                           #
+#                                                                              #
+# Check that particles in the neighbor list of 2 meshes cause no issue         #
+#                                                                              #
+# authors: Daniel Queteschiner                                                 #
+# date: Dec 2023                                                               #
+# copyright: 2023- JKU Linz                                                    #
+################################################################################
+
+atom_style  granular
+atom_modify map array sort 0 0
+boundary    f f f
+newton      off
+
+communicate single vel yes
+
+units       si
+
+region      reg block -1 1 -1 1 -0.2 0.2 units box
+create_box  1 reg
+
+neighbor    0.002 bin
+neigh_modify    delay 0
+
+
+# material properties required for granular pair styles
+fix m1 all property/global youngsModulus peratomtype 5.e6
+fix m2 all property/global poissonsRatio peratomtype 0.45
+fix m3 all property/global coefficientRestitution peratomtypepair 1 0.8
+fix m4 all property/global coefficientFriction peratomtypepair 1 0.05
+
+# pair style
+pair_style gran model hertz tangential history
+pair_coeff * *
+
+timestep   0.00001
+
+fix gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix surface_left  all mesh/surface file meshes/surface.vtk type 1 verbose yes cell_data yes move -0.5 0.0 0.0
+fix surface_right all mesh/surface file meshes/surface.vtk type 1 verbose yes cell_data yes move +0.5 0.0 0.0
+
+fix massflow_left  all massflow/mesh mesh surface_left  count once file post/testmassflowleft.txt  vec_side 0.0 0.0 -1.0 delete_atoms yes
+fix massflow_right all massflow/mesh mesh surface_right count once file post/testmassflowright.txt vec_side 0.0 0.0 -1.0 delete_atoms yes verbose yes
+
+
+# insertion
+create_atoms 1 single -0.75  -0.25 0.1
+create_atoms 1 single -0.25  -0.25 0.1
+create_atoms 1 single -0.75   0.25 0.1
+create_atoms 1 single -0.25   0.25 0.1
+create_atoms 1 single -0.001  0.25 0.1
+
+create_atoms 1 single  0.25  -0.25 0.1
+create_atoms 1 single  0.75  -0.25 0.1
+create_atoms 1 single  0.25   0.25 0.1
+create_atoms 1 single  0.75   0.25 0.1
+create_atoms 1 single  0.001 -0.25 0.1
+
+set group all density 3000 diameter 0.02
+
+# apply nve integration
+fix integr all nve/sphere
+
+# output settings
+thermo_style	custom step atoms ke
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic no extra 0
+
+run 0
+
+dump    dmp all custom/vtk 1000 post/massflow*.vtk id type radius x y z vx vy vz
+
+run 15000
+

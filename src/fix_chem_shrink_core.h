@@ -72,6 +72,7 @@ public:
   void update_gas_properties(int, const double *);
   void heat_of_reaction(int, const double *, const double *, const double *);
   double conv_enthalpy(const double *, int);
+  double spec_heat(const double *, double);
   double K_eq_low(int, int);
   void reaction_low(int, double *, const double *);
   void FractionalReduction_low(int);
@@ -120,7 +121,7 @@ public:
   // particle-layer variable values
   double **rhoeff_;
   double *porosity_;
-  double pore_diameter_;
+  double *pore_diameter_;
   double tortuosity_;
   double **relRadii_; // relative radii of individual layers
   double **massLayer_; // mass of individual layers
@@ -137,6 +138,7 @@ public:
   // handles of fixes
   double *changeOfA_, *changeOfC_;
   double *T_;
+  double *Tpart_;
   double *molecularDiffusion_;
   double *nuf_;
   double *Rep_;
@@ -157,9 +159,11 @@ public:
   // coarse_graining factor
   double cg_;
 
+                                            // [<creation>]
   class FixPropertyAtom *fix_changeOfA_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_changeOfC_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_tgas_;         // [cfd/coupling/chemistry]
+  class FixPropertyAtom *fix_tpart_;        // [heat/gran or cfd/couple/convection or cfd/couple/parttempfield]
   class FixPropertyAtom *fix_reactionHeat_; // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_diffcoeff_;    // [cfd/coupling/chemistry]
   class FixPropertyAtom *fix_nuField_;      // [cfd/coupling/chemistry]
@@ -182,6 +186,8 @@ public:
   class FixPropertyAtom *fix_layerRelRad_;  // [script]
   class FixPropertyAtom *fix_layerMass_;    // [internal]
   class FixPropertyAtom *fix_rhoeff_;       // [internal]
+  class FixPropertyAtom *fix_thermal_capacity_; // [script]
+  class FixPropertyAtom *fix_internal_energy_; // [internal]
 
 #ifdef PER_ATOM_LAYER_DENSITIES
   class FixPropertyAtom *fix_layerDens_;
@@ -199,6 +205,7 @@ public:
   bool created_fix_layerMass_;
   bool created_fix_rhoeff_;
   bool created_fix_fracRed;
+  bool created_fix_internal_energy_;
 
   class FixPropertyAtom *fix_dY_; // [internal]
   double **dY;
@@ -210,6 +217,8 @@ public:
   double *reactantPerParticle_;
   bool limit_reactant_consumption_;
   double maxReactantConsumptionFrac_;
+
+  bool variableCp_;
 
 };
 }

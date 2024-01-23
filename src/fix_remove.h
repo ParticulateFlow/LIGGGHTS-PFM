@@ -98,6 +98,8 @@ class FixRemove : public Fix {
   double heat_removed_;
   class FixPropertyAtom *fix_temp_;
   class FixPropertyGlobal* fix_capacity_;
+  class FixPropertyAtom *fix_internal_energy_;
+  bool internal_energy_;
 
   class FixMultisphere *fix_ms_;
   class MultisphereParallel *ms_;

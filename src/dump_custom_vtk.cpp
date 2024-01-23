@@ -173,6 +173,8 @@ DumpCustomVTK::DumpCustomVTK(LAMMPS *lmp, int narg, char **arg) :
 
   label = NULL; //NP modified C.K.
 
+  write_domain = 1;
+
   {
     // parallel vtp/vtu requires proc number to be preceded by underscore '_'
     multiname_ex = NULL;
@@ -1439,10 +1441,12 @@ void DumpCustomVTK::write_vtk(int n, double *mybuf)
     writer->SetFileName(filecurrent);
     writer->Write();
 
-    if (domain->triclinic == 0)
-      write_domain_vtk();
-    else
-      write_domain_vtk_triclinic();
+    if (write_domain) {
+      if (domain->triclinic == 0)
+        write_domain_vtk();
+      else
+        write_domain_vtk_triclinic();
+    }
   }
 
   reset_vtk_data_containers();
@@ -1499,12 +1503,14 @@ void DumpCustomVTK::write_vtp(int n, double *mybuf)
         pwriter->Write();
       }
 
-      if (domain->triclinic == 0) {
-        domainfilecurrent[strlen(domainfilecurrent)-1] = 'r'; // adjust filename extension
-        write_domain_vtr();
-      } else {
-        domainfilecurrent[strlen(domainfilecurrent)-1] = 'u'; // adjust filename extension
-        write_domain_vtu_triclinic();
+      if (write_domain) {
+        if (domain->triclinic == 0) {
+          domainfilecurrent[strlen(domainfilecurrent)-1] = 'r'; // adjust filename extension
+          write_domain_vtr();
+        } else {
+          domainfilecurrent[strlen(domainfilecurrent)-1] = 'u'; // adjust filename extension
+          write_domain_vtu_triclinic();
+        }
       }
     }
   }
@@ -1563,11 +1569,13 @@ void DumpCustomVTK::write_vtu(int n, double *mybuf)
         pwriter->Write();
       }
 
-      if (domain->triclinic == 0) {
-        domainfilecurrent[strlen(domainfilecurrent)-1] = 'r'; // adjust filename extension
-        write_domain_vtr();
-      } else {
-        write_domain_vtu_triclinic();
+      if (write_domain) {
+        if (domain->triclinic == 0) {
+          domainfilecurrent[strlen(domainfilecurrent)-1] = 'r'; // adjust filename extension
+          write_domain_vtr();
+        } else {
+          write_domain_vtu_triclinic();
+        }
       }
     }
   }
@@ -2295,6 +2303,14 @@ int DumpCustomVTK::modify_param(int narg, char **arg)
      if (strcmp(arg[1],"yes") == 0) binary = 1;
      else if (strcmp(arg[1],"no") == 0) binary = 0;
      else error->all(FLERR,"Illegal dump_modify command [binary]");
+     return 2;
+  }
+
+  if (strcmp(arg[0],"domainfile") == 0) {
+     if (narg < 2) error->all(FLERR,"Illegal dump_modify command [domainfile]");
+     if (strcmp(arg[1],"yes") == 0) write_domain = 1;
+     else if (strcmp(arg[1],"no") == 0) write_domain = 0;
+     else error->all(FLERR,"Illegal dump_modify command [domainfile]");
      return 2;
   }
 

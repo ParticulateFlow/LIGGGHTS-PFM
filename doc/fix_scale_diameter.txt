@@ -13,7 +13,7 @@ fix scale/diameter command :h3
 fix ID group-ID scale/diameter N keyword value ... :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
-adapt = style name of this fix command :l
+scale/diameter = style name of this fix command :l
 N = scale diameter every this many timesteps :l
 region = obligatory keyword :l
 region_value = ID of a spherical or cylindrical "region"_region.html where the particles will be scaled :l

@@ -26,8 +26,9 @@ Fixes :h1
    fix_break_particle
    fix_buoyancy
    fix_cfd_coupling_chemistry
-   fix_cfd_coupling_dissolve
+   fix_cfd_coupling_convection
    fix_cfd_coupling_deform
+   fix_cfd_coupling_dissolve
    fix_cfd_coupling_fluidproperties
    fix_cfd_coupling_recurrence
    fix_check_timestep_gran
@@ -66,6 +67,7 @@ Fixes :h1
    fix_lb_pc
    fix_lb_rigid_pc_sphere
    fix_lb_viscous
+   fix_limit_property_atom
    fix_limit_vel
    fix_lineforce
    fix_massflow_mesh

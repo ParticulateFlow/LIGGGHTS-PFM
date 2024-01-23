@@ -41,6 +41,7 @@ class FixCfdCouplingDeform : public Fix  {
   int setmask();
   void init();
   void initial_integrate(int);
+  void pre_exchange();
   void post_force(int);
 
   double compute_vector(int n);
@@ -55,6 +56,8 @@ class FixCfdCouplingDeform : public Fix  {
   bool verbose_;
 
   int compress_flag_;
+
+  bool delete_fully_deformed_particles_;
 
   int igroup_fully_deformed_;
 
@@ -78,6 +81,10 @@ class FixCfdCouplingDeform : public Fix  {
 
   class FixPropertyGlobal* fix_capacity_;
 
+  class FixPropertyAtom *fix_internal_energy_;
+
+  bool internal_energy_;
+
   bool use_latent_heat_;
 
   double latent_heat_per_mass_;
@@ -87,8 +94,6 @@ class FixCfdCouplingDeform : public Fix  {
   class FixPropertyAtom *fix_latent_heat_;
 
   double *latent_heat_;
-
-  void delete_particle(int);
 };
 
 }

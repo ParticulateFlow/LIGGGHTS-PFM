@@ -7,7 +7,7 @@
 
 :line
 
-fix cfd/coupling/recurrence command :h3
+fix couple/cfd/recurrence command :h3
 
 [Syntax:]
 

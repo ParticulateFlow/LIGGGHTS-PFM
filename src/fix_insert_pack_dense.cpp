@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
+#include <limits>
 
 #include "force.h"
 #include "region.h"
@@ -516,7 +517,7 @@ void FixInsertPackDense::handle_next_front_sphere()
     }
 
     // then, search for candidate point closest to insertion center
-    double dist_min_sq = 1000.;
+    double dist_min_sq = std::numeric_limits<double>::max();
     ParticleVector::iterator closest_candidate;
     for(ParticleVector::iterator it = candidatePoints.begin(); it != candidatePoints.end(); ++it){
       double dist_sq = pointDistanceSquared((*it).x,x_init);

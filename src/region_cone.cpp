@@ -35,7 +35,7 @@ RegCone::RegCone(LAMMPS *lmp, int narg, char **arg) :
   options(narg-9,&arg[9]);
 
   if (strcmp(arg[2],"x") && strcmp(arg[2],"y") && strcmp(arg[2],"z"))
-    error->all(FLERR,"Illegal region cylinder command");
+    error->all(FLERR,"Illegal region cone command");
   axis = arg[2][0];
 
   if (axis == 'x') {

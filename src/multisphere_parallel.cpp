@@ -270,8 +270,7 @@ void MultisphereParallel::writeRestart(FILE *fp)
 
     memory->destroy(sendbuf);
     //NP need to use simple delete [] b/c MPI_Gather0_Vector uses new
-    if(recvbuf)
-      delete []recvbuf;
+    delete []recvbuf;
 }
 
 /* ----------------------------------------------------------------------

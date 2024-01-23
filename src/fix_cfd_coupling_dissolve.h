@@ -55,8 +55,6 @@ class FixCfdCouplingDissolve : public Fix {
   double rmin_;
 
   std::vector<int> atom_tags_delete_;
-
-  void delete_atoms();
 };
 
 }

@@ -47,6 +47,7 @@ class FixMassflowMeshFaceUniverse : public FixMassflowMeshFace {
   int couple_every_;
   unsigned int id_hash_;
   int send_to_world_;
+  bigint next_couple_;
 
  private:
   std::map<ConstantParticleTemplateSphere, std::vector<double> > distributions_faces_;

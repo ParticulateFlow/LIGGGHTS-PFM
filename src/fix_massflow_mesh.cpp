@@ -62,6 +62,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
   nparticles_(0),
   fix_property_(0),
   property_sum_(0.),
+  verbose_(false),
   screenflag_(false),
   fp_(0),
   writeTime_(false),
@@ -100,7 +101,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             hasargs = true;
         } else if(strcmp(arg[iarg],"mesh") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'insert_stream'");
+                error->fix_error(FLERR,this,"not enough arguments for 'mesh'");
             iarg++;
             fix_mesh_ = static_cast<FixMeshSurface*>(modify->find_fix_id_style(arg[iarg++],"mesh/surface"));
             if(!fix_mesh_)
@@ -114,7 +115,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             hasargs = true;
         } else if(strcmp(arg[iarg],"count") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"not enough arguments for 'insert_stream'");
+                error->fix_error(FLERR,this,"not enough arguments for 'count'");
             iarg++;
             if(strcmp(arg[iarg],"once") == 0)
                 once_ = true;
@@ -160,26 +161,35 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
                 fp_ = fopen(filecurrent,"a");
             delete [] filecurrent;
             if (fp_ == NULL) {
-                char str[128];
+                char str[512];
                 sprintf(str,"Cannot open file %s",arg[iarg+1]);
                 error->fix_error(FLERR,this,str);
             }
             iarg += 2;
             hasargs = true;
+        } else if (strcmp(arg[iarg],"verbose") == 0) {
+            if(narg < iarg+2)
+                error->fix_error(FLERR,this,"not enough arguments for 'verbose'");
+            if(strcmp(arg[iarg+1],"yes") == 0)
+                verbose_ = true;
+            else if(strcmp(arg[iarg+1],"no") != 0)
+                error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'verbose'");
+            iarg += 2;
+            hasargs = true;
         } else if (strcmp(arg[iarg],"screen") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"Illegal keyword entry");
+                error->fix_error(FLERR,this,"not enough arguments for 'screen'");
             if (strcmp(arg[iarg+1],"yes") == 0) screenflag_ = true;
             else if (strcmp(arg[iarg+1],"no") == 0) screenflag_ = false;
-            else error->all(FLERR,"Illegal fix print command");
+            else error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'screen'");
             iarg += 2;
             hasargs = true;
         } else if (strcmp(arg[iarg],"delete_atoms") == 0) {
             if(narg < iarg+2)
-                error->fix_error(FLERR,this,"Illegal keyword entry");
+                error->fix_error(FLERR,this,"not enough arguments for 'delete_atoms'");
             if (strcmp(arg[iarg+1],"yes") == 0) delete_atoms_ = true;
             else if (strcmp(arg[iarg+1],"no") == 0) delete_atoms_ = false;
-            else error->all(FLERR,"Illegal delete command");
+            else error->fix_error(FLERR,this,"expecting 'yes' or 'no' for 'delete_atoms'");
             iarg += 2;
             hasargs = true;
         } else if(strcmp(style,"massflow/mesh") == 0)
@@ -279,8 +289,17 @@ void FixMassflowMesh::post_create()
     if(fix_ms_)
     {
         ms_ = &fix_ms_->data();
-        ms_counter_ = ms_->prop().addElementProperty< ScalarContainer<int> >("counter_ms","comm_exchange_borders","frame_invariant", "restart_yes");
-        ms_counter_->setDefaultValue(-1);
+        char *counter_ms_name = new char[strlen(id) + 12];
+        sprintf(counter_ms_name,"counter_ms_%s",id);
+
+        ms_counter_ = ms_->prop().getElementProperty<ScalarContainer<int> >(counter_ms_name);
+        if(!ms_counter_)
+        {
+            ms_counter_ = ms_->prop().addElementProperty<ScalarContainer<int> >(counter_ms_name,"comm_exchange_borders","frame_invariant","restart_yes");
+            ms_counter_->setDefaultValue(-1);
+        }
+
+        delete []counter_ms_name;
 
         if(delete_atoms_)
             error->fix_error(FLERR,this,"can not use 'delete_atoms' with fix multisphere");
@@ -536,24 +555,42 @@ void FixMassflowMesh::pre_exchange()
     {
         double mass_deleted_this_ = 0.;
         int nparticles_deleted_this_ = 0.;
-        int *atom_map_array = atom->get_map_array();
+        int tag_max = atom->tag_max();
 
         // delete particles
 
         while (atom_tags_delete_.size() > 0)
         {
-            int iPart = atom->map(atom_tags_delete_[0]);
+            if(atom_tags_delete_[0] <= tag_max)
+            {
+                int iPart = atom->map(atom_tags_delete_[0]);
 
-            mass_deleted_this_ += atom->rmass[iPart];
-            nparticles_deleted_this_++;
+                if(iPart >= 0)
+                {
+                    mass_deleted_this_ += atom->rmass[iPart];
+                    nparticles_deleted_this_++;
 
-            atom->avec->copy(atom->nlocal-1,iPart,1);
+                    atom->avec->copy(atom->nlocal-1,iPart,1);
 
-            //NP manipulate atom map array
-            //NP need to do this since atom map is needed for deletion
-            atom_map_array[atom->tag[atom->nlocal-1]] = iPart;
+                    // update atom map
+                    // need to do this since atom map is needed to get local index for deletion
+                    atom->map_one(atom->tag[atom->nlocal-1], iPart); // update map for copied particle
 
-            atom->nlocal--;
+                    atom->nlocal--;
+                }
+                else if (verbose_)
+                {
+                    // particle may have been removed already by a different deleting command
+                    // e.g. if the particle is in the neighbor list of the meshes of multiple massflow/mesh fixes
+                    error->fix_warning(FLERR, this, "failed to find atom for deletion (possibly already deleted by another deleting command)");
+                }
+            }
+            else if (verbose_)
+            {
+                // particle may have been removed already by a different deleting command
+                // e.g. if the particle is in the neighbor list of the meshes of multiple massflow/mesh fixes
+                error->fix_warning(FLERR, this, "failed to find atom for deletion (possibly already deleted by another deleting command)");
+            }
 
             atom_tags_delete_.erase(atom_tags_delete_.begin());
         }
@@ -569,6 +606,9 @@ void FixMassflowMesh::pre_exchange()
         //NP tags and maps
         if(nparticles_deleted_this_)
         {
+            bigint nblocal = atom->nlocal;
+            MPI_Allreduce(&nblocal,&atom->natoms,1,MPI_LMP_BIGINT,MPI_SUM,world);
+
             if (atom->tag_enable) {
               if (atom->map_style) {
                 atom->nghost = 0;

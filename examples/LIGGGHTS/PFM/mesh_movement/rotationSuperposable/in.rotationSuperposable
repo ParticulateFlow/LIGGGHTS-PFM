@@ -1,0 +1,95 @@
+# Simple test with super-imposed rotations
+
+variable dt equal 0.001
+variable runSteps equal 1000
+variable dumpsteps equal 5
+
+atom_style      granular
+atom_modify     map array
+boundary m m m
+newton          off
+
+communicate     single vel yes
+
+units           si
+
+processors      1 1 1
+
+region          reg block -1.5 3.5 -1.5 1.5 -1.5 2.0 units box
+create_box      1 reg
+
+neighbor        0.02 bin
+neigh_modify    delay 0
+
+
+fix             m1 all property/global youngsModulus peratomtype 5.e6
+fix             m2 all property/global poissonsRatio peratomtype 0.45
+fix             m3 all property/global coefficientRestitution &
+                    peratomtypepair 1 0.3
+fix             m4 all property/global coefficientFriction &
+                    peratomtypepair 1 0.5
+
+pair_style gran model hertz tangential history
+pair_coeff      * *
+
+timestep        ${dt}
+
+fix             gravi all gravity 9.81 vector 0.0 0.0 -1.0
+
+fix             cad1 all mesh/surface file meshes/triMesh1.stl type 1
+fix             cad2 all mesh/surface file meshes/triMesh2.stl type 1
+
+fix             pts1 all particletemplate/sphere 1 atom_type 1 &
+                    density constant 2500 &
+                    radius constant 0.0015
+
+fix             pdd1 all particledistribution/discrete 1.  1 pts1 1
+
+fix             integr all nve/sphere
+
+compute         1 all erotate/sphere
+thermo_style    custom step atoms ke c_1 cpu
+thermo          1000
+thermo_modify   lost ignore norm no
+compute_modify  thermo_temp dynamic yes
+
+run     1
+dump    dmp all custom ${dumpsteps} post/dump*.rotatingChute &
+            id type type x y z ix iy iz vx vy vz fx fy fz &
+            omegax omegay omegaz radius 
+
+# Dump the meshes
+dump    dumpmesh1 all mesh/vtk ${dumpsteps} post/dumpMesh1_*.vtk cad1 vel
+dump    dumpmesh2 all mesh/vtk ${dumpsteps} post/dumpMesh2_*.vtk cad2 vel
+
+
+variable period0 equal 1
+variable period1 equal 0.1
+
+
+# Rotation of the inner mesh
+fix     moveInner00 all move/mesh mesh cad1 rotate/superposable &
+            origin 0.0 0.0 0.0 &
+            axis   0.0 0.0 1.0 &
+            period ${period0}
+
+
+# Rotation of the outer mesh
+#   the outer mesh is fixed to the tip of the inner mesh
+#   the outer mesh rotates around the local y-axis
+#   hence, the rotation of the inner mesh must be applied first
+#   then the rotation of the outer mesh relative to the inner mesh can be specified
+fix     moveOuter00 all move/mesh mesh cad2 rotate/superposable &
+            origin 0.0 0.0 0.0 &
+            axis   0.0 0.0 1.0 &
+            period ${period0}
+
+fix     moveOuter01 all move/mesh mesh cad2 rotate/superposable &
+            origin 1.0 0.0 0.0 &
+            axis   0.0 1.0 0.0 &
+            period ${period1}
+
+
+run ${runSteps}
+
+# ----------------------------------------------------------------- end-of-file

@@ -96,9 +96,21 @@ FixScalarTransportEquation::FixScalarTransportEquation(LAMMPS *lmp, int narg, ch
       strcpy(capacity_name,arg[iarg++]);
   }
 
-  fix_quantity = fix_flux = fix_source = NULL; fix_capacity = NULL;
+  if(narg >= 17 && strcmp(arg[iarg++],"max_change") == 0)
+  {
+    max_change = atof(arg[iarg++]);
+    limit_change = true;
+  }
+  else
+  {
+    limit_change = false;
+  }
+
+  fix_quantity = fix_flux = fix_source = NULL; fix_capacity = NULL; fix_capacity_per_atom = NULL;
   capacity = NULL;
 
+  capacity_per_atom = false;
+  time_dependent_capacity = false;
   int_flag = true;
 
   nevery_  = 1;
@@ -134,6 +146,7 @@ void FixScalarTransportEquation::pre_delete(bool unfixflag)
         if (fix_quantity) modify->delete_fix(quantity_name);
         if (fix_flux) modify->delete_fix(flux_name);
         if (fix_source) modify->delete_fix(source_name);
+        if (fix_capacity_per_atom) modify->delete_fix(capacity_name);
     }
 }
 
@@ -244,12 +257,40 @@ void FixScalarTransportEquation::init()
       if(capacity) delete []capacity;
       capacity = new double[max_type+1];
 
-      fix_capacity = static_cast<FixPropertyGlobal*>(modify->find_fix_property(capacity_name,"property/global","peratomtype",max_type,0,style));
+      fix_capacity = static_cast<FixPropertyGlobal*>(modify->find_fix_property(capacity_name,"property/global","peratomtype",max_type,0,style,false));
+
+      fix_capacity_per_atom = static_cast<FixPropertyAtom*>(modify->find_fix_property(capacity_name,"property/atom","scalar",0,0,style,false));
+      if (fix_capacity_per_atom)
+      {
+          capacity_per_atom = true;
+          time_dependent_capacity = fix_capacity_per_atom->store_old_time_values();
+      }
+
+      if (!fix_capacity && !fix_capacity_per_atom)
+      {
+          char errmsg[500];
+          sprintf(errmsg,"Could not locate a fix/property storing value(s) for %s as requested by FixScalarTransportEquation.",capacity_name);
+          error->all(FLERR,errmsg);
+      }
+
+      if (fix_capacity && fix_capacity_per_atom)
+      {
+          char errmsg[500];
+          sprintf(errmsg,"Found both a fix/property/atom and a fix/property/global storing value(s) for %s as requested by FixScalarTransportEquation.",capacity_name);
+          error->all(FLERR,errmsg);
+      }
 
       //pre-calculate parameters for possible contact material combinations
       for(int i=1;i< max_type+1; i++)
           for(int j=1;j<max_type+1;j++)
-              capacity[i] = fix_capacity->compute_vector(i-1);
+              if (!capacity_per_atom)
+              {
+                  capacity[i] = fix_capacity->compute_vector(i-1);
+              }
+              else
+              {
+                  capacity[i] = 0.0;
+              }
   }
 }
 
@@ -328,14 +369,13 @@ void FixScalarTransportEquation::final_integrate()
     double *rmass = atom->rmass;
     int *type = atom->type;
     int *mask = atom->mask;
-    double capacity;
 
     // skip if integration turned off
     if(!int_flag)
         return;
 
     // skip if integration not wanted at this timestep
-    if (update->ntimestep % nevery_) 
+    if (update->ntimestep % nevery_)
     {
         performedIntegrationLastStep_ = false;
         return;
@@ -349,28 +389,53 @@ void FixScalarTransportEquation::final_integrate()
 
     if(capacity_flag)
     {
+        double capacity, capacity_prev, quantity_new, quantity_prev;
         for (int i = 0; i < nlocal; i++)
         {
-           if (mask[i] & groupbit){
-              capacity = fix_capacity->compute_vector(type[i]-1);
-              if(fabs(capacity) > SMALL) quantity[i] += (
-                                                            flux[i] 
-                                                          + source[i]*double(nevery_) //multiply source to account for missing steps
-                                                        ) * dt  
-                                                      / (rmass[i]*capacity);
-           }
+            if (mask[i] & groupbit)
+            {
+                if (!capacity_per_atom)
+                {
+                    capacity = fix_capacity->compute_vector(type[i]-1);
+                    capacity_prev = capacity;
+                }
+                else
+                {
+                    capacity = fix_capacity_per_atom->vector_atom[i];
+                    if (time_dependent_capacity)
+                    {
+                        capacity_prev = fix_capacity_per_atom->old_time_values()->vector_atom[i];
+                    }
+                    else
+                    {
+                        capacity_prev = capacity;
+                    }
+                }
+                quantity_prev = quantity[i];
+                if(fabs(capacity) > SMALL)
+                {
+                    quantity_new = (capacity_prev * quantity_prev + (flux[i] + source[i]*double(nevery_)) * dt / rmass[i]) / capacity;
+                    if (limit_change)
+                    {
+                        if (quantity_new - quantity_prev > max_change) quantity_new = quantity_prev + max_change;
+                        else if (quantity_new - quantity_prev < -max_change) quantity_new = quantity_prev - max_change;
+                    }
+                    quantity[i] = quantity_new;
+                }
+            }
         }
     }
     else
     {
         for (int i = 0; i < nlocal; i++)
         {
-           if (mask[i] & groupbit){
-              quantity[i] += (
-                                  flux[i] 
+            if (mask[i] & groupbit)
+            {
+                quantity[i] += (
+                                  flux[i]
                                 + source[i]*double(nevery_) //multiply source to account for missing steps
                              ) * dt ;
-           }
+            }
         }
     }
     performedIntegrationLastStep_ = true;
@@ -404,9 +469,16 @@ double FixScalarTransportEquation::compute_scalar()
     {
         for (int i = 0; i < nlocal; i++)
         {
-           capacity = fix_capacity->compute_vector(type[i]-1);
-           quantity_sum += capacity * rmass[i] * quantity[i];
-           /*NL*///if (screen) fprintf(screen,"step %d, proc %d, i %d quantity %f\n",update->ntimestep, comm->me,i,quantity[i]);
+            if (!capacity_per_atom)
+            {
+                capacity = fix_capacity->compute_vector(type[i]-1);
+            }
+            else
+            {
+                capacity = fix_capacity_per_atom->vector_atom[i];
+            }
+            quantity_sum += capacity * rmass[i] * quantity[i];
+            /*NL*///if (screen) fprintf(screen,"step %d, proc %d, i %d quantity %f\n",update->ntimestep, comm->me,i,quantity[i]);
         }
     }
     else

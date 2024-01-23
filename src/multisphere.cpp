@@ -349,7 +349,7 @@ void Multisphere::id_extend_body_extend(int *body)
         id_(ibody) = itag;
         /*NL*/ //if (screen) fprintf(screen,"proc %d setting id of local body %d to %d\n",comm->me,ibody,id_(ibody));
 
-        if(nobody_first == nlocal-1)
+        if((nobody_first == nlocal-1) && (nrigid_(ibody) > 1)) //allow body with a single atom
             error->one(FLERR,"Internal error: atom body id inconsistent");
 
         for(int iatom = nobody_first; iatom < nobody_first+nrigid_(ibody); iatom++)

@@ -116,6 +116,7 @@ class DumpCustomVTK : public Dump {
   int ntypes;                // # of atom types
   char **typenames;          // array of element names for each type
 
+  int write_domain;          // 0/1 if domain file gets written
   // private methods
 
   virtual void init_style();
@@ -241,7 +242,7 @@ class DumpCustomVTK : public Dump {
   void pack_erforce(int);
 
 // superquadric start
-  void pack_shapex(int); 
+  void pack_shapex(int);
   void pack_shapey(int);
   void pack_shapez(int);
   void pack_quat1(int);

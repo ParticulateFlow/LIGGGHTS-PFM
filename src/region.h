@@ -40,6 +40,7 @@ class Region : protected Pointers {
   int bboxflag;                     // 1 if bounding box is computable
   int varshape;                     // 1 if region shape changes over time
   int dynamic;                      // 1 if position/orient changes over time
+  int moveflag,rotateflag;          // 1 if position/orientation changes
 
   // contact = particle near region surface
 
@@ -50,11 +51,14 @@ class Region : protected Pointers {
   Contact *contact;           // list of contacts
   int cmax;                   // max # of contacts possible with region
 
+  double dx,dy,dz,theta;      // current displacement and orientation
+  double point[3],runit[3];
+
   Region(class LAMMPS *, int, char **);
   virtual ~Region();
   virtual void init();
-  virtual int dynamic_check();
   virtual void rebuild() {}
+  int dynamic_check();
 
   // called by other classes to check point versus region
 
@@ -103,6 +107,8 @@ class Region : protected Pointers {
   virtual void shape_update() {}
   virtual void pretransform();
 
+  void transformed_extents(double *,double *);
+
  protected:
   void add_contact(int, double *, double, double, double);
   void options(int, char **);
@@ -113,11 +119,9 @@ class Region : protected Pointers {
   //NP modified C.K. end
 
  private:
-  int moveflag,rotateflag;          // 1 if position/orientation changes
-  double point[3],axis[3],runit[3];
+  double axis[3];
   char *xstr,*ystr,*zstr,*tstr;
   int xvar,yvar,zvar,tvar;
-  double dx,dy,dz,theta;
   bigint lastshape,lastdynamic;
 
   void forward_transform(double &, double &, double &);

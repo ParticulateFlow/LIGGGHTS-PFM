@@ -14,7 +14,7 @@ fix couple/cfd/fluidproperties command :h3
 fix ID group-ID couple/cfd/fluidproperties :pre
 
 ID, group-ID are documented in "fix"_fix.html command :ulb,l
-couple/cfd/dissolve = style name of this fix command :l
+couple/cfd/fluidproperties = style name of this fix command :l
 :ule
 
 [Examples:]
